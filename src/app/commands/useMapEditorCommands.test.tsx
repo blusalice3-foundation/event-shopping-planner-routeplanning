@@ -23,6 +23,7 @@ import type {
   PurchaseStatus,
   ShoppingItem,
 } from "../../types/item";
+import type { ExecuteInsertedItemIds } from "../../features/events/itemOps";
 import type { NewItemDefaults } from "../state/useAppUiState";
 import {
   sortMapEditorVerticesNonCrossing,
@@ -204,6 +205,7 @@ const createHarness = (options: HarnessOptions = {}) => {
     itemToEdit: null,
   };
   const selectionEventTarget = new EventTarget();
+  const notify = vi.fn();
   const executeModeItemsRef = { current: stores.executeModeItems };
 
   const setMapData = vi.fn((action: SetStateAction<MapDataStore>) => {
@@ -375,7 +377,7 @@ const createHarness = (options: HarnessOptions = {}) => {
       getItemHallId,
       areItemsInSameHallGroup,
     },
-    effects: { selectionEventTarget },
+    effects: { notify, selectionEventTarget },
     persistence: {
       commitApplicationSnapshotPatch: vi.fn(async () => undefined),
     },
@@ -401,6 +403,7 @@ const createHarness = (options: HarnessOptions = {}) => {
       startVertexSelection,
       toggleVertexSelection,
       finishVertexSelection,
+      notify,
       getMapTabForDate: vi.fn(getMapTabForDate),
     },
   };
@@ -454,6 +457,32 @@ describe("useMapEditorCommands", () => {
       [],
     );
     expect(guarded.spies.commitExecuteModeItemsForEvent).not.toHaveBeenCalled();
+  });
+
+  it("preserves a merge notice across the normal batch add command", () => {
+    const harness = createHarness({
+      executeModeItems: { [EVENT]: { [DAY]: ["a1"] } },
+    });
+    const { result } = renderHarness(harness);
+
+    let inserted: string[] = [];
+    act(() => {
+      inserted = result.current.handleBatchAddToExecuteListFromMap([
+        "a2",
+        "b1",
+      ]);
+    });
+
+    expect(inserted).toEqual(["a2", "b1"]);
+    expect((inserted as ExecuteInsertedItemIds).placement).toBe("mixed");
+    expect((inserted as ExecuteInsertedItemIds).mergedIntoVisitItemIds).toEqual(
+      ["a1"],
+    );
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "a1",
+      "a2",
+      "b1",
+    ]);
   });
 
   it("fails closed on a rejected positioned insert and removes an entire adjacency group", () => {
@@ -510,6 +539,34 @@ describe("useMapEditorCommands", () => {
     expect(harness.spies.updateExecuteModeItems).toHaveBeenCalledTimes(2);
   });
 
+  it("moves every non-contiguous member of a visit while preserving member order", () => {
+    const firstHarness = createHarness({
+      executeModeItems: {
+        [EVENT]: { [DAY]: ["a1", "b1", "a2"] },
+      },
+    });
+    const firstResult = renderHarness(firstHarness).result;
+    act(() => firstResult.current.handleMoveToFirstFromMap("a2"));
+    expect(firstHarness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "a1",
+      "a2",
+      "b1",
+    ]);
+
+    const lastHarness = createHarness({
+      executeModeItems: {
+        [EVENT]: { [DAY]: ["a1", "b1", "a2"] },
+      },
+    });
+    const lastResult = renderHarness(lastHarness).result;
+    act(() => lastResult.current.handleMoveToLastFromMap("a2"));
+    expect(lastHarness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "b1",
+      "a1",
+      "a2",
+    ]);
+  });
+
   it("coordinates map-created and focus-created items through typed UI/state ports", () => {
     const harness = createHarness();
     const { result } = renderHarness(harness);
@@ -536,11 +593,20 @@ describe("useMapEditorCommands", () => {
       purchaseStatus: "Postpone",
       remarks: "",
     };
-    act(() => result.current.handleAddItemFromFocusMode(focusItem));
+    let focusResult:
+      | ReturnType<typeof result.current.handleAddItemFromFocusMode>
+      | undefined;
+    act(() => {
+      focusResult = result.current.handleAddItemFromFocusMode(focusItem);
+    });
     const added = harness.stores.eventLists[EVENT].find(
       (candidate) => candidate.circle === "フォーカス追加",
     );
     expect(added).toBeDefined();
+    expect(focusResult).toMatchObject({
+      newItemId: added?.id,
+      placement: "positioned",
+    });
     expect(harness.stores.executeModeItems[EVENT][DAY]).toContain(added?.id);
     expect(harness.spies.setEventLists).toHaveBeenCalledTimes(1);
     expect(harness.spies.updateExecuteModeItems).toHaveBeenCalledTimes(1);
@@ -567,6 +633,9 @@ describe("useMapEditorCommands", () => {
     ).toBe("highest");
     expect(harness.spies.setHallRouteSettings).toHaveBeenCalledTimes(1);
     expect(harness.spies.updateExecuteModeItems).toHaveBeenCalledTimes(1);
+    expect(harness.spies.notify).toHaveBeenCalledWith(
+      "同じ訪問先の商品として追加しました。訪問順は変更していません。",
+    );
 
     rerender({ ports: harness.createPorts() });
     harness.spies.setEventLists.mockClear();
@@ -578,11 +647,8 @@ describe("useMapEditorCommands", () => {
       ),
     );
     expect(harness.spies.setEventLists).not.toHaveBeenCalled();
-    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
-      "x1",
-      "a2",
-      "a1",
-    ]);
+    expect(harness.spies.updateExecuteModeItems).toHaveBeenCalledTimes(1);
+    expect(harness.spies.notify).toHaveBeenCalledTimes(1);
   });
 
   it("keeps priority and hall state unchanged when the atomic commit fails", async () => {
@@ -604,6 +670,7 @@ describe("useMapEditorCommands", () => {
     expect(harness.stores.hallDefinitions).toEqual(beforeDefinitions);
     expect(harness.spies.setEventLists).not.toHaveBeenCalled();
     expect(harness.spies.setHallDefinitions).not.toHaveBeenCalled();
+    expect(harness.spies.notify).not.toHaveBeenCalled();
   });
 
   it("routes edit-origin priority changes to the mapless inventory when no polygon owns the item", async () => {
@@ -622,6 +689,34 @@ describe("useMapEditorCommands", () => {
       harness.stores.hallRouteSettings[EVENT][getMaplessKey(DAY)],
     ).toBeDefined();
     expect(harness.spies.updateExecuteModeItems).toHaveBeenCalledTimes(1);
+  });
+
+  it("notifies once after an edit-origin priority change merges into an existing visit", async () => {
+    const items = [
+      shoppingItem("a1", { priorityLevel: "priority" }),
+      shoppingItem("b1", {
+        block: "B",
+        number: "02",
+        priorityLevel: "none",
+      }),
+      shoppingItem("a2", { priorityLevel: "highest" }),
+    ];
+    const harness = createHarness({
+      eventLists: { [EVENT]: items },
+      executeModeItems: { [EVENT]: { [DAY]: ["a1", "b1", "a2"] } },
+    });
+    const { result } = renderHarness(harness);
+
+    await act(() =>
+      result.current.handleUpdateItemPriorityFromEdit("a1", "highest"),
+    );
+
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "b1",
+      "a2",
+      "a1",
+    ]);
+    expect(harness.spies.notify).toHaveBeenCalledTimes(1);
   });
 
   it("updates only the active map block collection and rejects incomplete context", () => {

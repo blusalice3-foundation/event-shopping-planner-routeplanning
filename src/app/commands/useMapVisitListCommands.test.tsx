@@ -189,6 +189,26 @@ describe("useMapVisitListCommands", () => {
     expect(harness.stores.hasUnsavedChanges).toBe(true);
   });
 
+  it("keeps unknown ID slots while replacing only the known order", () => {
+    const current = executeModeItems();
+    current[EVENT][DAY_ONE] = ["A1", "missing", "B", "A2"];
+    const harness = createHarness({
+      executeModeItems: current,
+      panelOpen: true,
+      panelMapTab: MAP_ONE,
+    });
+    const { result } = renderHook(() => useMapVisitListCommands(harness.ports));
+
+    act(() => result.current.updateOrder([item("B"), item("A2"), item("A1")]));
+
+    expect(harness.stores.executeModeItems[EVENT][DAY_ONE]).toEqual([
+      "B",
+      "missing",
+      "A2",
+      "A1",
+    ]);
+  });
+
   it("saves optimistic changes without creating a second persistence writer", () => {
     const harness = createHarness({
       panelOpen: true,

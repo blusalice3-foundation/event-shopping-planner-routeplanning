@@ -64,6 +64,23 @@ const getMapTabDay = (mapTab: string | null): string | null => {
   return match?.[1] || null;
 };
 
+const replaceKnownIdsPreservingUnknownSlots = (
+  currentItemIds: readonly string[],
+  reorderedKnownItemIds: readonly string[],
+): string[] => {
+  const reorderedKnownIdSet = new Set(reorderedKnownItemIds);
+  let nextKnownIndex = 0;
+  const nextItemIds = currentItemIds.map((currentItemId) => {
+    if (!reorderedKnownIdSet.has(currentItemId)) return currentItemId;
+    return reorderedKnownItemIds[nextKnownIndex++] ?? currentItemId;
+  });
+
+  if (nextKnownIndex < reorderedKnownItemIds.length) {
+    nextItemIds.push(...reorderedKnownItemIds.slice(nextKnownIndex));
+  }
+  return nextItemIds;
+};
+
 /**
  * Owns the optimistic visit-list transaction.
  *
@@ -158,13 +175,19 @@ export const useMapVisitListCommands = ({
       if (!dayName) return;
       const itemIds = items.map((item) => item.id);
 
-      updateExecuteModeItems((current) => ({
-        ...current,
-        [activeEventName]: {
-          ...current[activeEventName],
-          [dayName]: itemIds,
-        },
-      }));
+      updateExecuteModeItems((current) => {
+        const currentDayItemIds = current[activeEventName]?.[dayName] || [];
+        return {
+          ...current,
+          [activeEventName]: {
+            ...current[activeEventName],
+            [dayName]: replaceKnownIdsPreservingUnknownSlots(
+              currentDayItemIds,
+              itemIds,
+            ),
+          },
+        };
+      });
       setUnsaved(true);
     },
     [activeEventName, panelMapTab, setUnsaved, updateExecuteModeItems],

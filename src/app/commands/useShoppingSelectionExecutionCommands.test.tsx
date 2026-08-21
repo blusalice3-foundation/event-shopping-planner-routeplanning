@@ -17,6 +17,7 @@ import {
 
 const EVENT = "event-a";
 const DAY = "day-1";
+const PADDED_DAY = ` \u3000${DAY}\u3000 `;
 const presentation: RangePresentation = {
   scopeKey: `${EVENT}:${DAY}:execute`,
   grouping: "flat",
@@ -501,8 +502,44 @@ describe("useShoppingSelectionExecutionCommands", () => {
     expect(harness.stores.blockSortDirection).toBeNull();
   });
 
+  it("sorts a selected execution identity as one block including unselected members", () => {
+    const firstVisitMember = item("A1", { number: "9" });
+    const unrelatedItem = item("B", { number: "5" });
+    const secondVisitMember = item("A2", { number: "9" });
+    const selectedOtherVisit = item("C", { number: "2" });
+    const items = [
+      firstVisitMember,
+      unrelatedItem,
+      secondVisitMember,
+      selectedOtherVisit,
+    ];
+    const harness = createHarness({
+      items,
+      executeColumnItems: items,
+      selectedItemIds: new Set(["A1", "C"]),
+      executeModeItems: {
+        [EVENT]: { [DAY]: ["A1", "B", "A2", "C"] },
+      },
+    });
+    const { result } = renderHook(() =>
+      useShoppingSelectionExecutionCommands(harness.ports),
+    );
+
+    act(() => result.current.sortSelectedItems("asc"));
+
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "C",
+      "A1",
+      "A2",
+      "B",
+    ]);
+  });
+
   it("sorts candidate-column slots without moving execute ids", () => {
-    const candidate9 = item("candidate-9", { number: "9" });
+    const candidate9 = item("candidate-9", {
+      eventDate: PADDED_DAY,
+      number: "9",
+    });
     const execute = item("execute", { number: "1" });
     const candidate5 = item("candidate-5", { number: "5" });
     const candidate2 = item("candidate-2", {

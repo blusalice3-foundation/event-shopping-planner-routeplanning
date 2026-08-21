@@ -11,6 +11,7 @@ import {
   resolveHallByBlockName,
   resolveManualHallId,
 } from "../../../utils/hallFallback";
+import { coalesceExecutionVisitItemIdsForExplicitReorder } from "../../../utils/visitProjection";
 
 type PriorityLevel = "none" | "priority" | "highest";
 
@@ -462,7 +463,10 @@ export const reorderExecuteIdsByHallOrder = ({
     }
   });
 
-  return reorderedItems;
+  // This command already performs an explicit persisted reorder. Keep every
+  // visit adjacent in that result so per-item legacy visit-list positions
+  // cannot split one logical visit again.
+  return coalesceExecutionVisitItemIdsForExplicitReorder(reorderedItems, items);
 };
 
 export const getCombinedHallRouteSettingsForDate = ({

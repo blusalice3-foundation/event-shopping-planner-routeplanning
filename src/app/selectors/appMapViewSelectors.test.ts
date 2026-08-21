@@ -91,7 +91,7 @@ const focusState = (
 describe("appMapViewSelectors", () => {
   it("derives hall counts from the current map polygon and execute order", () => {
     const items = [
-      item("inside"),
+      item("inside", { eventDate: "1日目\u3000" }),
       item("outside", { block: "B" }),
       item("other-day", { eventDate: "2日目" }),
     ];

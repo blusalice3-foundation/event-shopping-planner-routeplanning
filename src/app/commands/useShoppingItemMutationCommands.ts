@@ -27,21 +27,30 @@ import {
   computeDeleteItem,
   computeMoveItem,
   computeMoveItemVertical,
-  computeMoveToExecuteColumn,
+  computeMoveToExecuteColumnWithResult,
   computeRemoveFromExecuteColumn,
   computeUpdateItem,
+  repositionExecuteItemAfterIdentityChangeWithResult,
 } from "../../features/events/itemOps";
 import {
   buildMovePlan,
   getCandidateSourceOrderedIds,
 } from "../../features/lists/domain/movePlan";
 import { getSpaceKey } from "../../utils/spaceGrouping";
+import {
+  EXECUTION_VISIT_MERGE_NOTICE,
+  buildExecutionVisitProjectionKey,
+  normalizeExecutionVisitDay,
+} from "../../utils/visitProjection";
 import type { ApplicationSnapshotCommitPort } from "./ApplicationSnapshotCommitPort";
 
 type EventLists = Record<string, ShoppingItem[]>;
 type ExecuteModeItemsByEvent = Record<string, ExecuteModeItems>;
 type DayModesByEvent = Record<string, DayModeState>;
 type StateUpdater<T> = (current: T) => T;
+
+const isSameExecutionVisitDay = (eventDate: string, dayName: string): boolean =>
+  normalizeExecutionVisitDay(eventDate) === normalizeExecutionVisitDay(dayName);
 
 export interface MutableCommandValue<T> {
   current: T;
@@ -51,6 +60,7 @@ export interface ShoppingItemMutationStatePort {
   readonly activeEventName: string | null;
   readonly activeEventDate: string;
   readonly eventLists: EventLists;
+  readonly eventListsRef: MutableCommandValue<EventLists>;
   readonly eventMetadata: Record<string, EventMetadata>;
   readonly dayModes: DayModesByEvent;
   readonly items: ShoppingItem[];
@@ -138,88 +148,94 @@ export interface ShoppingItemMutationCommands {
   toggleCandidateNumberSort(): void;
 }
 
-const buildSpacePriorityKey = (
-  itemId: string,
-  items: readonly ShoppingItem[],
-): string => {
-  const item = items.find((candidate) => candidate.id === itemId);
-  return item
-    ? `${getSpaceKey(item.block, item.number)}::${item.priorityLevel || "none"}`
-    : "";
-};
-
 const moveExecuteSpacePriorityGroup = ({
   direction,
   itemId,
   dayItems,
   items,
   effectiveIds,
+  areBoundaryItemsInSameHall,
 }: {
   direction: "up" | "down";
   itemId: string;
   dayItems: readonly string[];
   items: readonly ShoppingItem[];
   effectiveIds: ReadonlySet<string>;
-}): string[] | null => {
-  const nextDayItems = [...dayItems];
-  const movingGroupKeys = new Set<string>([
-    buildSpacePriorityKey(itemId, items),
-  ]);
+  areBoundaryItemsInSameHall: (firstId: string, secondId: string) => boolean;
+}): { handled: boolean; reordered?: string[] } => {
+  const itemsById = new Map(items.map((item) => [item.id, item]));
+  const getVisitKey = (id: string): string => {
+    const item = itemsById.get(id);
+    return item ? buildExecutionVisitProjectionKey(item) : `unknown:${id}`;
+  };
+  const movingGroupKeys = new Set<string>([getVisitKey(itemId)]);
   effectiveIds.forEach((id) => {
-    if (nextDayItems.includes(id)) {
-      movingGroupKeys.add(buildSpacePriorityKey(id, items));
+    if (dayItems.includes(id)) {
+      movingGroupKeys.add(getVisitKey(id));
     }
   });
 
-  const movingIndices = nextDayItems
-    .map((id, index) =>
-      movingGroupKeys.has(buildSpacePriorityKey(id, items)) ? index : -1,
-    )
+  const visitGroups: Array<{ key: string; itemIds: string[] }> = [];
+  const visitGroupsByKey = new Map<
+    string,
+    { key: string; itemIds: string[] }
+  >();
+  dayItems.forEach((id) => {
+    const key = getVisitKey(id);
+    const existing = visitGroupsByKey.get(key);
+    if (existing) {
+      existing.itemIds.push(id);
+      return;
+    }
+    const group = { key, itemIds: [id] };
+    visitGroupsByKey.set(key, group);
+    visitGroups.push(group);
+  });
+
+  const movingIndices = visitGroups
+    .map((group, index) => (movingGroupKeys.has(group.key) ? index : -1))
     .filter((index) => index >= 0);
-  if (movingIndices.length === 0) return null;
+  if (movingIndices.length === 0) return { handled: true };
 
-  const movingStart = movingIndices[0];
-  const movingEnd = movingIndices[movingIndices.length - 1];
-  const adjacentIndex = direction === "up" ? movingStart - 1 : movingEnd + 1;
-  if (adjacentIndex < 0 || adjacentIndex >= nextDayItems.length) return null;
-
-  const adjacentId = nextDayItems[adjacentIndex];
-  const adjacentGroupKey = buildSpacePriorityKey(adjacentId, items);
-  if (movingGroupKeys.has(adjacentGroupKey)) return null;
-
-  const movingBlock = nextDayItems.slice(movingStart, movingEnd + 1);
-  const remaining = [
-    ...nextDayItems.slice(0, movingStart),
-    ...nextDayItems.slice(movingEnd + 1),
-  ];
-  const adjacentItemIndex = remaining.findIndex((id) => id === adjacentId);
-  if (adjacentItemIndex < 0) return null;
-
-  let insertIndex: number;
-  if (direction === "up") {
-    let targetStart = adjacentItemIndex;
-    while (
-      targetStart > 0 &&
-      buildSpacePriorityKey(remaining[targetStart - 1], items) ===
-        adjacentGroupKey
-    ) {
-      targetStart -= 1;
-    }
-    insertIndex = targetStart;
-  } else {
-    let targetEnd = adjacentItemIndex;
-    while (
-      targetEnd < remaining.length - 1 &&
-      buildSpacePriorityKey(remaining[targetEnd + 1], items) ===
-        adjacentGroupKey
-    ) {
-      targetEnd += 1;
-    }
-    insertIndex = targetEnd + 1;
+  const adjacentIndex =
+    direction === "up"
+      ? movingIndices[0] - 1
+      : movingIndices[movingIndices.length - 1] + 1;
+  const adjacentGroup = visitGroups[adjacentIndex];
+  if (!adjacentGroup || movingGroupKeys.has(adjacentGroup.key)) {
+    return { handled: true };
+  }
+  const boundaryMovingIndex =
+    direction === "up" ? movingIndices[0] : movingIndices.at(-1)!;
+  const boundaryMovingGroup = visitGroups[boundaryMovingIndex];
+  if (
+    !boundaryMovingGroup ||
+    !areBoundaryItemsInSameHall(
+      boundaryMovingGroup.itemIds[0],
+      adjacentGroup.itemIds[0],
+    )
+  ) {
+    return { handled: true };
   }
 
-  remaining.splice(insertIndex, 0, ...movingBlock);
-  return remaining;
+  const movingGroups = visitGroups.filter((group) =>
+    movingGroupKeys.has(group.key),
+  );
+  const remainingGroups = visitGroups.filter(
+    (group) => !movingGroupKeys.has(group.key),
+  );
+  const remainingAdjacentIndex = remainingGroups.findIndex(
+    (group) => group.key === adjacentGroup.key,
+  );
+  if (remainingAdjacentIndex < 0) return { handled: true };
+
+  const insertIndex =
+    direction === "up" ? remainingAdjacentIndex : remainingAdjacentIndex + 1;
+  remainingGroups.splice(insertIndex, 0, ...movingGroups);
+  return {
+    handled: true,
+    reordered: remainingGroups.flatMap((group) => group.itemIds),
+  };
 };
 
 export const useShoppingItemMutationCommands = ({
@@ -233,6 +249,7 @@ export const useShoppingItemMutationCommands = ({
     activeEventName,
     activeEventDate,
     eventLists,
+    eventListsRef,
     eventMetadata,
     dayModes,
     items,
@@ -420,34 +437,71 @@ export const useShoppingItemMutationCommands = ({
     (updatedItem: ShoppingItem) => {
       if (!activeEventName) return;
       const currentMode = dayModes[activeEventName]?.[activeEventDate];
+      const currentItems = eventListsRef.current[activeEventName] || [];
+      const currentItem = currentItems.find(
+        (candidate) => candidate.id === updatedItem.id,
+      );
+      const result = computeUpdateItem(
+        currentItems,
+        updatedItem,
+        currentMode as ViewMode | undefined,
+        currentItem?.protectionLevel,
+        currentItem?.source,
+      );
+      const finalUpdatedItem = result.items.find(
+        (candidate) => candidate.id === updatedItem.id,
+      );
 
-      setEventLists((current) => {
-        const currentItems = current[activeEventName] || [];
-        const currentItem = currentItems.find(
-          (candidate) => candidate.id === updatedItem.id,
-        );
-        const result = computeUpdateItem(
-          currentItems,
-          updatedItem,
-          currentMode as ViewMode | undefined,
-          currentItem?.protectionLevel,
-          currentItem?.source,
-        );
+      setEventLists((current) => ({
+        ...current,
+        [activeEventName]: result.items,
+      }));
 
-        if (result.purchaseStatusChanged || result.purchaseQuantityChanged) {
-          setRecentlyChangedItemIds((currentIds) =>
-            new Set(currentIds).add(updatedItem.id),
+      if (
+        currentItem &&
+        finalUpdatedItem &&
+        buildExecutionVisitProjectionKey(currentItem) !==
+          buildExecutionVisitProjectionKey(finalUpdatedItem)
+      ) {
+        const currentEventItems =
+          executeModeItemsRef.current[activeEventName] || {};
+        const repositionResult =
+          repositionExecuteItemAfterIdentityChangeWithResult(
+            currentEventItems,
+            currentItem,
+            finalUpdatedItem,
+            result.items,
           );
+        if (repositionResult.executeModeItems !== currentEventItems) {
+          updateExecuteModeItems((currentExecuteItems) => ({
+            ...currentExecuteItems,
+            [activeEventName]: repositionResult.executeModeItems,
+          }));
         }
-        return { ...current, [activeEventName]: result.items };
-      });
+        if (
+          repositionResult.placement === "merged-into-existing-visit" ||
+          repositionResult.placement === "mixed"
+        ) {
+          notify(EXECUTION_VISIT_MERGE_NOTICE);
+        }
+      }
+
+      if (result.purchaseStatusChanged || result.purchaseQuantityChanged) {
+        setRecentlyChangedItemIds((currentIds) =>
+          new Set(currentIds).add(updatedItem.id),
+        );
+      }
     },
     [
       activeEventDate,
       activeEventName,
       dayModes,
+      eventListsRef,
+      executeModeItemsRef,
+      notify,
       setEventLists,
       setRecentlyChangedItemIds,
+      updateExecuteModeItems,
     ],
   );
 
@@ -524,6 +578,12 @@ export const useShoppingItemMutationCommands = ({
           [activeEventName]: result.executeModeItems!,
         }));
       }
+      if (
+        result.placement === "merged-into-existing-visit" ||
+        result.placement === "mixed"
+      ) {
+        notify(EXECUTION_VISIT_MERGE_NOTICE);
+      }
     },
     [
       activeEventDate,
@@ -541,6 +601,7 @@ export const useShoppingItemMutationCommands = ({
       setSortState,
       spaceGroupDragItemIdsRef,
       updateExecuteModeItems,
+      notify,
     ],
   );
 
@@ -561,21 +622,29 @@ export const useShoppingItemMutationCommands = ({
       const spaceGroupIds = spaceGroupDragItemIdsRef.current;
 
       if (mode === "edit" && targetColumn === "execute") {
-        const reordered = moveExecuteSpacePriorityGroup({
+        const hallCheck = spaceGroupIds
+          ? (firstId: string, secondId: string) =>
+              areItemsInSameHallGroup(firstId, secondId, activeEventDate)
+          : (firstId: string, secondId: string) =>
+              areItemsInSameHall(firstId, secondId, activeEventDate);
+        const visitMoveResult = moveExecuteSpacePriorityGroup({
           direction,
           itemId,
           dayItems: currentEventExecuteItems[activeEventDate] || [],
           items,
           effectiveIds: new Set(spaceGroupIds ?? selectedItemIds),
+          areBoundaryItemsInSameHall: hallCheck,
         });
-        if (reordered) {
+        if (visitMoveResult.reordered) {
           updateExecuteModeItems((current) => ({
             ...current,
             [activeEventName]: {
               ...current[activeEventName],
-              [activeEventDate]: reordered,
+              [activeEventDate]: visitMoveResult.reordered!,
             },
           }));
+        }
+        if (visitMoveResult.handled) {
           return;
         }
       }
@@ -657,16 +726,27 @@ export const useShoppingItemMutationCommands = ({
         dayName: activeEventDate,
         expansionPolicy: "same-visit",
       });
-      updateExecuteModeItems((current) => ({
-        ...current,
-        [activeEventName]: computeMoveToExecuteColumn(
-          plan.effective,
-          activeEventDate,
-          items,
-          current[activeEventName] || {},
-          new Set(),
-        ),
-      }));
+      const currentEventItems =
+        executeModeItemsRef.current[activeEventName] || {};
+      const moveResult = computeMoveToExecuteColumnWithResult(
+        plan.effective,
+        activeEventDate,
+        items,
+        currentEventItems,
+        new Set(),
+      );
+      if (moveResult.accepted) {
+        updateExecuteModeItems((current) => ({
+          ...current,
+          [activeEventName]: moveResult.executeModeItems,
+        }));
+        if (
+          moveResult.placement === "merged-into-existing-visit" ||
+          moveResult.placement === "mixed"
+        ) {
+          notify(EXECUTION_VISIT_MERGE_NOTICE);
+        }
+      }
       clearSelection();
     },
     [
@@ -675,6 +755,7 @@ export const useShoppingItemMutationCommands = ({
       clearSelection,
       executeModeItemsRef,
       items,
+      notify,
       updateExecuteModeItems,
     ],
   );
@@ -744,8 +825,8 @@ export const useShoppingItemMutationCommands = ({
       blockSortDirection === "asc" ? "desc" : "asc";
     setEventLists((current) => {
       const allItems = [...(current[activeEventName] || [])];
-      const itemsForDate = allItems.filter(
-        (item) => item.eventDate === activeEventDate,
+      const itemsForDate = allItems.filter((item) =>
+        isSameExecutionVisitDay(item.eventDate, activeEventDate),
       );
       if (itemsForDate.length === 0) return current;
 
@@ -763,7 +844,7 @@ export const useShoppingItemMutationCommands = ({
       return {
         ...current,
         [activeEventName]: allItems.map((item) =>
-          item.eventDate === activeEventDate
+          isSameExecutionVisitDay(item.eventDate, activeEventDate)
             ? sortedItemsForDate[sortedIndex++]
             : item,
         ),
@@ -792,7 +873,8 @@ export const useShoppingItemMutationCommands = ({
       const allItems = [...(current[activeEventName] || [])];
       const candidateItems = allItems.filter(
         (item) =>
-          item.eventDate === activeEventDate && !executeIds.has(item.id),
+          isSameExecutionVisitDay(item.eventDate, activeEventDate) &&
+          !executeIds.has(item.id),
       );
       if (candidateItems.length === 0) return current;
 
@@ -807,12 +889,16 @@ export const useShoppingItemMutationCommands = ({
         return nextDirection === "asc" ? comparison : -comparison;
       });
       const executeItems = allItems.filter(
-        (item) => item.eventDate === activeEventDate && executeIds.has(item.id),
+        (item) =>
+          isSameExecutionVisitDay(item.eventDate, activeEventDate) &&
+          executeIds.has(item.id),
       );
       return {
         ...current,
         [activeEventName]: allItems.map((item) => {
-          if (item.eventDate !== activeEventDate) return item;
+          if (!isSameExecutionVisitDay(item.eventDate, activeEventDate)) {
+            return item;
+          }
           return executeIds.has(item.id)
             ? executeItems.shift() || item
             : sortedCandidateItems.shift() || item;
@@ -843,7 +929,8 @@ export const useShoppingItemMutationCommands = ({
       const allItems = [...(current[activeEventName] || [])];
       const candidateItems = allItems.filter(
         (item) =>
-          item.eventDate === activeEventDate && !executeIds.has(item.id),
+          isSameExecutionVisitDay(item.eventDate, activeEventDate) &&
+          !executeIds.has(item.id),
       );
       const filteredCandidateItems =
         selectedBlockFilters.size === 0

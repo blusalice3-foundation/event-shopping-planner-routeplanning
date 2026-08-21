@@ -15,7 +15,10 @@ import type {
   PurchaseStatusControlMode,
   ShoppingItem,
 } from "../../../types/item";
-import type { FocusModeSessionState } from "../../../types/focus";
+import type {
+  FocusModeAddItemReturn,
+  FocusModeSessionState,
+} from "../../../types/focus";
 import type {
   HallDefinition,
   HallDefinitionsStore,
@@ -42,7 +45,7 @@ type FocusModeContainerProps = {
   onMapVisibilityChange?: (isMapVisible: boolean) => void;
   onAddItem?: (
     item: Omit<ShoppingItem, "id"> & { purchaseStatus?: PurchaseStatus },
-  ) => void;
+  ) => FocusModeAddItemReturn;
   onEditRequest?: (item: ShoppingItem) => void;
   onDeleteRequest?: (item: ShoppingItem) => void;
   appZoomLevel?: number;

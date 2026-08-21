@@ -3,6 +3,7 @@ import type { ShoppingItem } from "../types/item";
 import type { DayMapData, HallDefinition } from "../types/map";
 import {
   buildMapRouteExecuteItemIds,
+  buildMapRouteVisitItemIds,
   filterFirstRouteMarkers,
   normalizeMapRouteDayText,
   resolveMapRouteHallOrder,
@@ -127,6 +128,40 @@ describe("filterFirstRouteMarkers", () => {
 });
 
 describe("buildMapRouteExecuteItemIds", () => {
+  it("uses one representative for a non-contiguous visit at its first position", () => {
+    const items = [
+      makeItem({ id: "a1", block: "A", number: "1a" }),
+      makeItem({ id: "b", block: "A", number: "2a" }),
+      makeItem({ id: "a2", block: "A", number: "1a2" }),
+      makeItem({
+        id: "a-priority",
+        block: "A",
+        number: "1a3",
+        priorityLevel: "priority",
+      }),
+    ];
+    const params = {
+      executeModeItemIds: ["a1", "b", "a2", "a-priority"],
+      items,
+      mapData: makeMap(),
+      hallDefinitions: halls,
+      hallOrder: ["hall-a", "hall-a:priority"],
+      dayName: "Day1",
+    };
+
+    expect(buildMapRouteExecuteItemIds(params)).toEqual([
+      "a1",
+      "b",
+      "a-priority",
+    ]);
+    expect(buildMapRouteVisitItemIds(params)).toEqual([
+      "a1",
+      "a2",
+      "b",
+      "a-priority",
+    ]);
+  });
+
   it("uses the priority group order when hallOrder contains the priority group", () => {
     const items = makeItems(30).map((item) =>
       item.id === "item-20"

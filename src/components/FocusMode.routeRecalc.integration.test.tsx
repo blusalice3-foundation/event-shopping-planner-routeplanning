@@ -129,6 +129,73 @@ describe("FocusMode route recalculation cache", () => {
     mockedGenerateRouteSegmentsStrict.mockClear();
   });
 
+  it("uses one normal route stop for non-contiguous members and a distinct phase revisit", () => {
+    renderFocusMode({
+      items: [
+        makeItem({
+          id: "a1",
+          number: "01a",
+          purchaseStatus: "Postpone",
+        }),
+        makeItem({ id: "b", number: "02a" }),
+        makeItem({ id: "a2", number: "01a2" }),
+      ],
+      executeModeItemIds: ["a1", "b", "a2"],
+    });
+
+    const visitPoints =
+      mockedGenerateRouteSegmentsStrict.mock.calls.at(-1)?.[1];
+    expect(visitPoints).toHaveLength(3);
+    expect(visitPoints?.map((point) => point.itemId)).toEqual([
+      expect.stringContaining("normal"),
+      expect.stringContaining("normal"),
+      expect.stringContaining("postponed"),
+    ]);
+    expect(new Set(visitPoints?.map((point) => point.itemId)).size).toBe(3);
+  });
+
+  it("resolves the canonical map key for padded raw event dates", () => {
+    renderFocusMode({
+      items: [
+        makeItem({ id: "padded-1", eventDate: "Day1\u3000", number: "01a" }),
+        makeItem({ id: "padded-2", eventDate: "Day1\u3000", number: "02a" }),
+      ],
+      executeModeItemIds: ["padded-1", "padded-2"],
+    });
+
+    expect(mockedGenerateRouteSegmentsStrict).toHaveBeenCalled();
+    expect(
+      mockedGenerateRouteSegmentsStrict.mock.calls.at(-1)?.[1],
+    ).toHaveLength(2);
+  });
+
+  it("does not regenerate route segments when a member joins an existing visit", () => {
+    const a1 = makeItem({ id: "a1", number: "01a" });
+    const b = makeItem({ id: "b", number: "02a" });
+    const a2 = makeItem({ id: "a2", number: "01a2" });
+    const { rerender } = renderFocusMode({
+      items: [a1, b],
+      executeModeItemIds: ["a1", "b"],
+    });
+    const callsBefore = mockedGenerateRouteSegmentsStrict.mock.calls.length;
+
+    rerender(
+      <FocusMode
+        {...minimalProps({
+          items: [a1, b, a2],
+          executeModeItemIds: ["a1", "b", "a2"],
+        })}
+        mapData={{ Day1マップ: makeMap() }}
+        hallDefinitions={halls}
+        hallOrder={["hall-1"]}
+      />,
+    );
+
+    expect(mockedGenerateRouteSegmentsStrict.mock.calls.length).toBe(
+      callsBefore,
+    );
+  });
+
   it.each([
     ["remarks", { remarks: "after" }],
     ["price", { price: 2000 }],

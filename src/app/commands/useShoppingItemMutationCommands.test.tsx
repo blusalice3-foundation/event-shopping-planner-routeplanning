@@ -20,6 +20,7 @@ import {
 
 const EVENT = "event-a";
 const DAY = "day-1";
+const PADDED_DAY = ` \u3000${DAY}\u3000 `;
 
 const item = (
   id: string,
@@ -82,6 +83,18 @@ interface HarnessOptions extends Partial<
 > {
   executeModeItems?: Record<string, ExecuteModeItems>;
   spaceGroupDragItemIds?: readonly string[] | null;
+  replayEventListUpdater?: boolean;
+  replayExecuteUpdater?: boolean;
+  areItemsInSameHall?: (
+    firstItemId: string,
+    secondItemId: string,
+    eventDate: string,
+  ) => boolean;
+  areItemsInSameHallGroup?: (
+    firstItemId: string,
+    secondItemId: string,
+    eventDate: string,
+  ) => boolean;
 }
 
 const createHarness = (options: HarnessOptions = {}) => {
@@ -108,6 +121,7 @@ const createHarness = (options: HarnessOptions = {}) => {
     candidateNumberSortDirection: options.candidateNumberSortDirection ?? null,
   };
   const executeModeItemsRef = { current: stores.executeModeItems };
+  const eventListsRef = { current: stores.eventLists };
   const spaceGroupDragItemIdsRef = {
     current: options.spaceGroupDragItemIds ?? null,
   };
@@ -119,7 +133,11 @@ const createHarness = (options: HarnessOptions = {}) => {
         current: Record<string, ShoppingItem[]>,
       ) => Record<string, ShoppingItem[]>,
     ) => {
-      stores.eventLists = updater(stores.eventLists);
+      const previous = stores.eventLists;
+      const next = updater(previous);
+      if (options.replayEventListUpdater) updater(previous);
+      stores.eventLists = next;
+      eventListsRef.current = stores.eventLists;
     },
   );
   const setEventMetadata = vi.fn(
@@ -146,7 +164,10 @@ const createHarness = (options: HarnessOptions = {}) => {
         current: Record<string, ExecuteModeItems>,
       ) => Record<string, ExecuteModeItems>,
     ) => {
-      stores.executeModeItems = updater(stores.executeModeItems);
+      const previous = stores.executeModeItems;
+      const next = updater(previous);
+      if (options.replayExecuteUpdater) updater(previous);
+      stores.executeModeItems = next;
       executeModeItemsRef.current = stores.executeModeItems;
     },
   );
@@ -173,8 +194,10 @@ const createHarness = (options: HarnessOptions = {}) => {
   );
   const confirmItemDelete = vi.fn();
   const notify = vi.fn();
-  const areItemsInSameHall = vi.fn(() => true);
-  const areItemsInSameHallGroup = vi.fn(() => true);
+  const areItemsInSameHall = vi.fn(options.areItemsInSameHall ?? (() => true));
+  const areItemsInSameHallGroup = vi.fn(
+    options.areItemsInSameHallGroup ?? (() => true),
+  );
 
   const actions: ShoppingItemMutationActionPort = {
     setEventLists,
@@ -195,6 +218,7 @@ const createHarness = (options: HarnessOptions = {}) => {
     activeEventName,
     activeEventDate: options.activeEventDate ?? DAY,
     eventLists: initialEventLists,
+    eventListsRef,
     eventMetadata: stores.eventMetadata,
     dayModes: stores.dayModes,
     items:
@@ -223,6 +247,7 @@ const createHarness = (options: HarnessOptions = {}) => {
     ports,
     stores,
     refs: {
+      eventListsRef,
       executeModeItemsRef,
       spaceGroupDragItemIdsRef,
       eventUpdatePreviewEpochRef,
@@ -343,6 +368,10 @@ describe("useShoppingItemMutationCommands", () => {
       storedItems[0].id,
     ]);
     expect(harness.spies.updateExecuteModeItems).toHaveBeenCalledOnce();
+    expect(harness.spies.notify).toHaveBeenCalledOnce();
+    expect(harness.spies.notify).toHaveBeenCalledWith(
+      "2 items imported into a new event.",
+    );
   });
 
   it("leaves every bulk-add state slice unchanged when the atomic commit fails", async () => {
@@ -441,6 +470,7 @@ describe("useShoppingItemMutationCommands", () => {
     harness.stores.eventLists = {
       [EVENT]: [original, item("concurrent")],
     };
+    harness.refs.eventListsRef.current = harness.stores.eventLists;
 
     act(() =>
       result.current.updateItem({
@@ -462,6 +492,39 @@ describe("useShoppingItemMutationCommands", () => {
     expect(harness.stores.recentlyChangedItemIds).toEqual(
       new Set(["changing"]),
     );
+  });
+
+  it("moves an identity-edited item behind the existing destination visit", () => {
+    const editing = item("editing", { block: "C", number: "03a" });
+    const between = item("between", { block: "B", number: "02a" });
+    const destination = item("destination", { block: "A", number: "01a" });
+    const items = [editing, between, destination];
+    const harness = createHarness({
+      eventLists: { [EVENT]: items },
+      items,
+      executeModeItems: {
+        [EVENT]: { [DAY]: ["editing", "between", "destination"] },
+      },
+      replayEventListUpdater: true,
+    });
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+
+    act(() =>
+      result.current.updateItem({
+        ...editing,
+        block: "A",
+        number: "01a2",
+      }),
+    );
+
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "between",
+      "destination",
+      "editing",
+    ]);
+    expect(harness.spies.updateExecuteModeItems).toHaveBeenCalledOnce();
   });
 
   it("uses hall-group adjacency for multi-space drag and consumes its override", () => {
@@ -500,6 +563,33 @@ describe("useShoppingItemMutationCommands", () => {
     expect(harness.spies.setBlockSortDirection).toHaveBeenCalledWith(null);
   });
 
+  it("notifies when candidate D&D joins an existing execution visit", () => {
+    const between = item("between", { block: "B", number: "2" });
+    const a1 = item("a1", { block: "A", number: "1a" });
+    const a2 = item("a2", { block: "A", number: "1a2" });
+    const items = [between, a1, a2];
+    const harness = createHarness({
+      eventLists: { [EVENT]: items },
+      items,
+      executeModeItems: { [EVENT]: { [DAY]: ["between", "a1"] } },
+    });
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+
+    act(() => result.current.moveItem("a2", "between", "execute", "candidate"));
+
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "between",
+      "a1",
+      "a2",
+    ]);
+    expect(harness.spies.notify).toHaveBeenCalledOnce();
+    expect(harness.spies.notify).toHaveBeenCalledWith(
+      "同じ訪問先の商品として追加しました。訪問順は変更していません。",
+    );
+  });
+
   it("moves an execute space-priority block across the adjacent block", () => {
     const items = [
       item("a", { block: "A", number: "1" }),
@@ -526,8 +616,121 @@ describe("useShoppingItemMutationCommands", () => {
       "b-1",
       "b-2",
     ]);
-    expect(harness.spies.areItemsInSameHall).not.toHaveBeenCalled();
+    expect(harness.spies.areItemsInSameHall).toHaveBeenCalledWith(
+      "b-1",
+      "c",
+      DAY,
+    );
     expect(harness.spies.areItemsInSameHallGroup).not.toHaveBeenCalled();
+  });
+
+  it("moves a noncontiguous execution visit without capturing intervening visits", () => {
+    const items = [
+      item("a1", { block: "A", number: "1a" }),
+      item("b", { block: "B", number: "2" }),
+      item("a2", { block: "A", number: "1a2" }),
+      item("c", { block: "C", number: "3" }),
+    ];
+    const harness = createHarness({
+      eventLists: { [EVENT]: items },
+      items,
+      executeModeItems: {
+        [EVENT]: { [DAY]: ["a1", "b", "a2", "c"] },
+      },
+    });
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+
+    act(() => result.current.moveItemDown("a2", "execute"));
+
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "b",
+      "a1",
+      "a2",
+      "c",
+    ]);
+  });
+
+  it("moves a split leading visit after its logical neighbor", () => {
+    const items = [
+      item("b1", { block: "B", number: "2a" }),
+      item("c", { block: "C", number: "3" }),
+      item("b2", { block: "B", number: "2a2" }),
+    ];
+    const harness = createHarness({
+      eventLists: { [EVENT]: items },
+      items,
+      executeModeItems: { [EVENT]: { [DAY]: ["b1", "c", "b2"] } },
+    });
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+
+    act(() => result.current.moveItemDown("b1", "execute"));
+
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "c",
+      "b1",
+      "b2",
+    ]);
+  });
+
+  it("handles execute visit boundary no-ops without falling back to raw movement", () => {
+    const items = [
+      item("a1", { block: "A", number: "1a" }),
+      item("b", { block: "B", number: "2" }),
+      item("a2", { block: "A", number: "1a2" }),
+    ];
+    const harness = createHarness({
+      eventLists: { [EVENT]: items },
+      items,
+      executeModeItems: { [EVENT]: { [DAY]: ["a1", "b", "a2"] } },
+    });
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+
+    act(() => result.current.moveItemUp("a2", "execute"));
+    act(() => result.current.moveItemDown("b", "execute"));
+
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "a1",
+      "b",
+      "a2",
+    ]);
+    expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+  });
+
+  it("blocks a logical execute visit from crossing a hall boundary", () => {
+    const items = [
+      item("a1", { block: "A", number: "1a" }),
+      item("b", { block: "B", number: "2" }),
+      item("a2", { block: "A", number: "1a2" }),
+    ];
+    const harness = createHarness({
+      eventLists: { [EVENT]: items },
+      items,
+      executeModeItems: { [EVENT]: { [DAY]: ["a1", "b", "a2"] } },
+      areItemsInSameHall: () => false,
+    });
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+
+    act(() => result.current.moveItemDown("a1", "execute"));
+
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "a1",
+      "b",
+      "a2",
+    ]);
+    expect(harness.spies.areItemsInSameHall).toHaveBeenCalledWith(
+      "a1",
+      "b",
+      DAY,
+    );
+    expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
   });
 
   it("uses the synchronously committed execute order across immediate column commands", () => {
@@ -559,6 +762,29 @@ describe("useShoppingItemMutationCommands", () => {
     expect(harness.spies.clearSelection).toHaveBeenCalledTimes(2);
   });
 
+  it("notifies once when move-to-execute joins an existing visit", () => {
+    const a1 = item("a1", { block: "A", number: "1a" });
+    const a2 = item("a2", { block: "A", number: "1a2" });
+    const items = [a1, a2];
+    const harness = createHarness({
+      eventLists: { [EVENT]: items },
+      items,
+      executeModeItems: { [EVENT]: { [DAY]: ["a1"] } },
+      replayExecuteUpdater: true,
+    });
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+
+    act(() => result.current.moveToExecuteColumn(["a2"]));
+
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual(["a1", "a2"]);
+    expect(harness.spies.notify).toHaveBeenCalledOnce();
+    expect(harness.spies.notify).toHaveBeenCalledWith(
+      "同じ訪問先の商品として追加しました。訪問順は変更していません。",
+    );
+  });
+
   it("deletes one item from the event and every execute day before confirming", () => {
     const deleted = item("deleted");
     const kept = item("kept");
@@ -586,7 +812,10 @@ describe("useShoppingItemMutationCommands", () => {
 
   it("sorts only the active date by block and keeps empty blocks last", () => {
     const otherDate = item("other", { eventDate: "day-2", block: "0" });
-    const block10 = item("block-10", { block: "A10" });
+    const block10 = item("block-10", {
+      eventDate: PADDED_DAY,
+      block: "A10",
+    });
     const empty = item("empty", { block: "" });
     const block2 = item("block-2", { block: "A2" });
     const harness = createHarness({
@@ -610,7 +839,10 @@ describe("useShoppingItemMutationCommands", () => {
   });
 
   it("sorts candidate blocks without moving execute-column slots", () => {
-    const candidateB = item("candidate-b", { block: "B" });
+    const candidateB = item("candidate-b", {
+      eventDate: PADDED_DAY,
+      block: "B",
+    });
     const execute = item("execute", { block: "Z" });
     const candidateA = item("candidate-a", { block: "A" });
     const harness = createHarness({
@@ -633,7 +865,11 @@ describe("useShoppingItemMutationCommands", () => {
   });
 
   it("sorts only candidate numbers inside the selected block filter", () => {
-    const a10 = item("a-10", { block: "A", number: "10" });
+    const a10 = item("a-10", {
+      eventDate: PADDED_DAY,
+      block: "A",
+      number: "10",
+    });
     const b1 = item("b-1", { block: "B", number: "1" });
     const execute = item("execute", { block: "A", number: "0" });
     const a2 = item("a-2", { block: "A", number: "2" });

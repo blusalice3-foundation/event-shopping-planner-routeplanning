@@ -3,9 +3,9 @@ import type {
   ExecuteModeItems,
   ShoppingItem,
 } from "../../types/item";
+import { removeExecutionVisitMemberPreservingBasePosition } from "../../utils/visitProjection";
 import {
   applyEventUpdateToItems,
-  removeDeletedIdsFromExecuteModeItems,
   type EventUpdateApplyOptions,
 } from "./updateApply";
 import { fetchEventItemsFromSpreadsheet } from "./sheetImport";
@@ -55,14 +55,23 @@ export function applyPendingEventUpdate({
     return null;
   }
 
-  const deleteIds = new Set(pending.diff.itemsToDelete.map((item) => item.id));
   const currentExecuteModeItems = state.executeModeItems[pending.eventName];
   const nextExecuteModeItems = currentExecuteModeItems
     ? {
         ...state.executeModeItems,
-        [pending.eventName]: removeDeletedIdsFromExecuteModeItems(
-          currentExecuteModeItems,
-          deleteIds,
+        [pending.eventName]: Object.fromEntries(
+          Object.entries(currentExecuteModeItems).map(([dayName, itemIds]) => [
+            dayName,
+            pending.diff.itemsToDelete.reduce(
+              (remainingItemIds, deletedItem) =>
+                removeExecutionVisitMemberPreservingBasePosition(
+                  remainingItemIds,
+                  deletedItem,
+                  currentItems,
+                ),
+              itemIds,
+            ),
+          ]),
         ),
       }
     : state.executeModeItems;

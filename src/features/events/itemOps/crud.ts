@@ -7,6 +7,12 @@ import type {
   ViewMode,
 } from "../../../types/item";
 import { normalizeLimitedPurchaseFields } from "../../../utils/purchaseQuantity";
+import {
+  buildExecutionVisitProjectionKey,
+  findExecutionDayBucketKey,
+  normalizeExecutionVisitDay,
+  removeExecutionVisitMemberPreservingBasePosition,
+} from "../../../utils/visitProjection";
 
 export interface UpdateItemResult {
   items: ShoppingItem[];
@@ -93,12 +99,17 @@ export function computeDeleteItem(
   executeModeItems: ExecuteModeItems,
 ): DeleteItemResult {
   const newItems = items.filter((item) => item.id !== deletedId);
+  const deletedItem = items.find((item) => item.id === deletedId);
 
   const newExecuteItems: ExecuteModeItems = {};
   Object.keys(executeModeItems).forEach((eventDate) => {
-    newExecuteItems[eventDate] = executeModeItems[eventDate].filter(
-      (id) => id !== deletedId,
-    );
+    newExecuteItems[eventDate] = deletedItem
+      ? removeExecutionVisitMemberPreservingBasePosition(
+          executeModeItems[eventDate],
+          deletedItem,
+          items,
+        )
+      : executeModeItems[eventDate].filter((id) => id !== deletedId);
   });
 
   return { items: newItems, executeModeItems: newExecuteItems };
@@ -112,6 +123,8 @@ export interface AddItemFromFocusModeResult {
   items: ShoppingItem[];
   executeModeItems: ExecuteModeItems;
   newItemId: string;
+  placement?: "positioned" | "merged-into-existing-visit";
+  mergedIntoVisitItemIds?: string[];
 }
 
 /**
@@ -134,14 +147,43 @@ export function computeAddItemFromFocusMode(
 
   const newItems = [...items, item];
   let newExecuteItems = executeModeItems;
+  let placement: AddItemFromFocusModeResult["placement"];
+  let mergedIntoVisitItemIds: string[] | undefined;
 
   if (purchaseStatus === "Postpone" || purchaseStatus === "Late") {
-    const dayName = newItem.eventDate;
+    const dayName =
+      findExecutionDayBucketKey(
+        Object.keys(executeModeItems),
+        newItem.eventDate,
+      ) ?? normalizeExecutionVisitDay(newItem.eventDate);
     if (dayName) {
-      const dayItems = executeModeItems[dayName] || [];
+      const dayItems = [...(executeModeItems[dayName] || [])];
+      const itemsById = new Map(
+        items.map((existing) => [existing.id, existing]),
+      );
+      const visitKey = buildExecutionVisitProjectionKey(item);
+      let firstVisitItemId: string | null = null;
+      let lastVisitIndex = -1;
+      dayItems.forEach((itemId, index) => {
+        const existing = itemsById.get(itemId);
+        if (
+          existing &&
+          buildExecutionVisitProjectionKey(existing) === visitKey
+        ) {
+          firstVisitItemId ??= existing.id;
+          lastVisitIndex = index;
+        }
+      });
+      const insertIndex =
+        lastVisitIndex >= 0 ? lastVisitIndex + 1 : dayItems.length;
+      dayItems.splice(insertIndex, 0, item.id);
+      placement = firstVisitItemId
+        ? "merged-into-existing-visit"
+        : "positioned";
+      if (firstVisitItemId) mergedIntoVisitItemIds = [firstVisitItemId];
       newExecuteItems = {
         ...executeModeItems,
-        [dayName]: [...dayItems, item.id],
+        [dayName]: dayItems,
       };
     }
   }
@@ -150,6 +192,8 @@ export function computeAddItemFromFocusMode(
     items: newItems,
     executeModeItems: newExecuteItems,
     newItemId: item.id,
+    ...(placement ? { placement } : {}),
+    ...(mergedIntoVisitItemIds ? { mergedIntoVisitItemIds } : {}),
   };
 }
 

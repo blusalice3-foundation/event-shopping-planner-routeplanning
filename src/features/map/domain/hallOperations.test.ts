@@ -134,6 +134,30 @@ describe("hallOperations regressions", () => {
     ]);
   });
 
+  it("keeps a legacy non-contiguous visit together after an explicit hall reorder", () => {
+    const items = [
+      { ...makeItem("a1", "A"), number: "01a" },
+      { ...makeItem("other", "A"), number: "02a" },
+      { ...makeItem("a2", "A"), number: "01a2" },
+    ];
+
+    expect(
+      reorderExecuteIdsByHallOrder({
+        hallOrder: ["hall-a"],
+        dayItems: ["a1", "other", "a2"],
+        items,
+        halls,
+        mapData: undefined,
+        hallRouteSettings: {
+          hallOrder: ["hall-a"],
+          hallVisitLists: [
+            { hallId: "hall-a", itemIds: ["a1", "other", "a2"] },
+          ],
+        },
+      }),
+    ).toEqual(["a1", "a2", "other"]);
+  });
+
   it("indexes item ids while preserving the first-match counting behavior", () => {
     const first = makeItem("duplicate", "A");
     const laterDuplicate = makeItem("duplicate", "B");

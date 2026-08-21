@@ -30,6 +30,7 @@ import type {
   LimitedBulkNotificationOwner,
   LimitedPurchaseDialogResult,
 } from "../types/limitedPurchase";
+import type { FocusModeAddItemReturn } from "../types/focus";
 import GripVerticalIcon from "./icons/GripVerticalIcon";
 import ChevronUpIcon from "./icons/ChevronUpIcon";
 import ChevronDownIcon from "./icons/ChevronDownIcon";
@@ -170,7 +171,7 @@ interface ShoppingListProps {
   ) => void;
   onAddItem?: (
     item: Omit<ShoppingItem, "id"> & { purchaseStatus?: PurchaseStatus },
-  ) => void;
+  ) => FocusModeAddItemReturn;
   // 実行モード用: スペース内一括ステータス変更
   onBulkStatusChange?: (
     groupKey: string,

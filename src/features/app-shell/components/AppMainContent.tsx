@@ -5,6 +5,7 @@ import SortAscendingIcon from "../../../components/icons/SortAscendingIcon";
 import SortDescendingIcon from "../../../components/icons/SortDescendingIcon";
 import { MapView } from "../../../components/map";
 import { getSpaceKey } from "../../../utils/spaceGrouping";
+import { normalizeExecutionVisitDay } from "../../../utils/visitProjection";
 import type { BulkAddMetadata } from "../../../features/events/bulkAdd";
 import type {
   DayMapData,
@@ -553,8 +554,14 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
 
   const editSpaceGroupKeys = React.useMemo(() => {
     const groupKeys = new Set<string>();
+    const normalizedActiveEventDate =
+      normalizeExecutionVisitDay(activeEventDate);
     items
-      .filter((item) => item.eventDate === activeEventDate)
+      .filter(
+        (item) =>
+          normalizeExecutionVisitDay(item.eventDate) ===
+          normalizedActiveEventDate,
+      )
       .forEach((item) => {
         const spaceKey = getSpaceKey(item.block, item.number);
         const priority = item.priorityLevel || "none";

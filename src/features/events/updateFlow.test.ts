@@ -9,7 +9,11 @@ import {
 
 const EVENT_NAME = "イベントA";
 
-const item = (id: string, title: string): ShoppingItem => ({
+const item = (
+  id: string,
+  title: string,
+  overrides: Partial<ShoppingItem> = {},
+): ShoppingItem => ({
   id,
   circle: `サークル-${id}`,
   eventDate: "1日目",
@@ -21,6 +25,7 @@ const item = (id: string, title: string): ShoppingItem => ({
   purchaseStatus: "None",
   remarks: "",
   source: "spreadsheet",
+  ...overrides,
 });
 
 const diff = (overrides: Partial<EventUpdateDiff> = {}): EventUpdateDiff => ({
@@ -109,6 +114,31 @@ describe("applyPendingEventUpdate", () => {
 
     expect(result?.eventLists[EVENT_NAME][0].title).toBe("更新後");
     expect(result?.eventMetadata).toBe(state.eventMetadata);
+  });
+
+  it("promotes a surviving visit member into the deleted representative slot", () => {
+    const firstVisitMember = item("A1", "訪問Aの先頭");
+    const unrelatedItem = item("B", "別の訪問", {
+      block: "東B",
+      number: "02a",
+    });
+    const survivingVisitMember = item("A2", "訪問Aの残存商品");
+    const baseItems = [firstVisitMember, unrelatedItem, survivingVisitMember];
+    const state = createState(baseItems);
+    const pending: PendingEventUpdate = {
+      kind: "items-only",
+      eventName: EVENT_NAME,
+      diff: diff({ itemsToDelete: [firstVisitMember] }),
+    };
+
+    const result = applyPendingEventUpdate({
+      state,
+      pending,
+      baseItems,
+      options: {},
+    });
+
+    expect(result?.executeModeItems[EVENT_NAME]["1日目"]).toEqual(["A2", "B"]);
   });
 
   it.each(["edited", "deleted"] as const)(

@@ -24,6 +24,7 @@ import { FocusModeSessionState } from "./types/focus";
 import { getMaplessKey } from "./types/map";
 import { extractEventDates } from "./utils/eventDates";
 import { getSpaceKey } from "./utils/spaceGrouping";
+import { normalizeExecutionVisitDay } from "./utils/visitProjection";
 import { type EventUpdateCommitState } from "./features/events/updateFlow";
 import { getGlobalHallItemCount as computeGlobalHallItemCount } from "./features/map/domain/hallOperations";
 import { normalizeHydratedHallState } from "./features/map/domain/normalizeHydratedHallState";
@@ -55,6 +56,8 @@ import {
   selectDuplicateCircleItemIds,
   selectExecuteColumnItems,
   selectMovePlanState,
+  selectItemsForExecutionDay,
+  selectMapVisitListItems,
   selectSearchMatches,
   selectSortDisplayLabel,
   selectTemporaryVisibleItems,
@@ -743,6 +746,7 @@ const App: React.FC = () => {
       activeEventName,
       activeEventDate,
       eventLists,
+      eventListsRef,
       eventMetadata,
       dayModes,
       items,
@@ -968,7 +972,11 @@ const App: React.FC = () => {
       } else {
         const allGroupKeys = new Set<string>();
         items
-          .filter((item) => item.eventDate === activeEventDate)
+          .filter(
+            (item) =>
+              normalizeExecutionVisitDay(item.eventDate) ===
+              normalizeExecutionVisitDay(activeEventDate),
+          )
           .forEach((item) => {
             const spaceKey = getSpaceKey(item.block, item.number);
             const priority = item.priorityLevel || "none";
@@ -1244,7 +1252,7 @@ const App: React.FC = () => {
       getItemHallId,
       areItemsInSameHallGroup,
     },
-    effects: { selectionEventTarget: window },
+    effects: { selectionEventTarget: window, notify: alert },
     persistence: { commitApplicationSnapshotPatch },
   });
 
@@ -1258,7 +1266,7 @@ const App: React.FC = () => {
 
   const currentTabItems = useMemo(() => {
     if (!activeEventName || !eventDates.includes(activeTab)) return [];
-    return items.filter((item) => item.eventDate === activeTab);
+    return selectItemsForExecutionDay(items, activeTab);
   }, [items, activeTab, activeEventName, eventDates]);
 
   React.useEffect(() => {
@@ -1333,21 +1341,11 @@ const App: React.FC = () => {
   const visitListItems = useMemo(() => {
     if (!visitListPanelMapTab || !activeEventName) return [];
 
-    const dayMatch = visitListPanelMapTab.match(/^(.+)マップ$/);
-    if (!dayMatch) return [];
-    const dayName = dayMatch[1];
-
-    const dayItemsById = new Map<string, ShoppingItem>();
-    items.forEach((item) => {
-      if (item.eventDate === dayName && !dayItemsById.has(item.id)) {
-        dayItemsById.set(item.id, item);
-      }
-    });
-    const executeIds = executeModeItems[activeEventName]?.[dayName] || [];
-
-    return executeIds.flatMap((id: string) => {
-      const item = dayItemsById.get(id);
-      return item ? [item] : [];
+    return selectMapVisitListItems({
+      activeEventName,
+      mapTabName: visitListPanelMapTab,
+      executeModeItems,
+      items,
     });
   }, [visitListPanelMapTab, activeEventName, items, executeModeItems]);
 

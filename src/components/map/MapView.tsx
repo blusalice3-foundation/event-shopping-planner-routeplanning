@@ -20,16 +20,14 @@ import MapVisitListPanel from "./MapVisitListPanel";
 import HallOrderPanel from "./HallOrderPanel";
 import InsertPositionDialog, { InsertPosition } from "./InsertPositionDialog";
 import type { SmartInsertMode } from "../../features/app-shell/types";
-import {
-  extractNumberFromItemNumber,
-  extractNumberAlphaPrefix,
-} from "../../xlsx/domain/itemNumber";
+import { extractNumberFromItemNumber } from "../../xlsx/domain/itemNumber";
 import {
   resolveHallByBlockName,
   resolveManualHallId,
 } from "../../utils/hallFallback";
 import {
   buildMapRouteExecuteItemIds,
+  buildMapRouteVisitItemIds,
   normalizeMapRouteDayText,
   resolveMapRouteHallOrder,
 } from "../../utils/mapRouteOrder";
@@ -49,12 +47,19 @@ import {
 } from "./mapViewRouteCalculations";
 import { validateMapSmartInsert } from "../../utils/mapSmartInsert";
 import type { MapRouteHitResult } from "../../utils/mapRouteHitTest";
-import { expandSameSpacePriorityItemIds } from "../../features/events/itemOps";
+import {
+  expandSameSpacePriorityItemIds,
+  type ExecuteInsertedItemIds,
+} from "../../features/events/itemOps";
 import {
   buildRouteDiagnostics,
   hasRouteDiagnosticIssue,
 } from "../../utils/routeDiagnostics";
 import RouteDiagnosticsOverlay from "./RouteDiagnosticsOverlay";
+import {
+  EXECUTION_VISIT_MERGE_NOTICE,
+  buildExecutionVisitProjectionKey,
+} from "../../utils/visitProjection";
 
 const normalizeDisplayText = (value: string | null | undefined): string => {
   return (value || "").replace(/\u3000/g, " ").trim();
@@ -237,6 +242,8 @@ const MapView: React.FC<MapViewProps> = ({
     };
   }, []);
   const [internalIsRouteVisible, setInternalIsRouteVisible] = useState(true);
+  const [visitMergeNotice, setVisitMergeNotice] = useState<string | null>(null);
+  const [visitMergeNoticeRevision, setVisitMergeNoticeRevision] = useState(0);
   const [isVisitListOpen, setIsVisitListOpen] = useState(false);
   const [internalIsHallOrderOpen, setInternalIsHallOrderOpen] = useState(false);
   const [internalSelectedHallId, setInternalSelectedHallId] =
@@ -628,6 +635,25 @@ const MapView: React.FC<MapViewProps> = ({
     mapName,
   ]);
 
+  const displayRouteVisitItemIds = useMemo(() => {
+    return buildMapRouteVisitItemIds({
+      executeModeItemIds: filteredExecuteModeItemIds,
+      items: filteredItems,
+      mapData: filteredMapData,
+      hallDefinitions: halls,
+      hallOrder: effectiveRouteHallOrder,
+      dayName: mapDayName || normalizeDisplayText(mapName),
+    });
+  }, [
+    filteredExecuteModeItemIds,
+    filteredItems,
+    filteredMapData,
+    halls,
+    effectiveRouteHallOrder,
+    mapDayName,
+    mapName,
+  ]);
+
   const mapRouteResolutionItems = useMemo(() => {
     const normalizedDayName = normalizeMapRouteDayText(
       mapDayName || normalizeDisplayText(mapName),
@@ -803,8 +829,6 @@ const MapView: React.FC<MapViewProps> = ({
     ],
   );
 
-  const routeExecuteModeItemIds = displayRouteExecuteModeItemIds;
-
   const isCellInBlock = useCallback(
     (row: number, col: number, block: BlockDefinition): boolean => {
       if (block.cellGroups && block.cellGroups.length > 0) {
@@ -939,12 +963,28 @@ const MapView: React.FC<MapViewProps> = ({
       result: string[] | boolean | void,
       fallbackIds: string[],
     ): string[] | null => {
-      if (Array.isArray(result)) return result.length > 0 ? result : null;
+      if (Array.isArray(result)) {
+        const annotatedResult = result as ExecuteInsertedItemIds;
+        if (
+          annotatedResult.placement === "merged-into-existing-visit" ||
+          annotatedResult.placement === "mixed"
+        ) {
+          setVisitMergeNotice(EXECUTION_VISIT_MERGE_NOTICE);
+          setVisitMergeNoticeRevision((previous) => previous + 1);
+        }
+        return result.length > 0 ? result : null;
+      }
       if (result === false) return null;
       return fallbackIds;
     },
     [],
   );
+
+  useEffect(() => {
+    if (!visitMergeNotice) return;
+    const timeoutId = window.setTimeout(() => setVisitMergeNotice(null), 5000);
+    return () => window.clearTimeout(timeoutId);
+  }, [visitMergeNotice, visitMergeNoticeRevision]);
 
   const normalizeAffectedItemIds = useCallback(
     (result: string[] | void, fallbackIds: string[]): string[] => {
@@ -1136,25 +1176,20 @@ const MapView: React.FC<MapViewProps> = ({
       const item = itemsById.get(itemId);
       if (!item) return;
 
-      const newItemPrefix = extractNumberAlphaPrefix(item.number);
-      if (newItemPrefix && onAddToExecuteListAtPosition) {
-        const itemBlock = item.block?.trim() || "";
-        let lastMatchId: string | null = null;
+      const newVisitKey = buildExecutionVisitProjectionKey(item);
+      if (onAddToExecuteListAtPosition) {
+        const existingVisitItemId =
+          executeModeItemIds.find((executeItemId) => {
+            const existingItem = itemsById.get(executeItemId);
+            return (
+              existingItem !== undefined &&
+              buildExecutionVisitProjectionKey(existingItem) === newVisitKey
+            );
+          }) ?? null;
 
-        executeModeItemIds.forEach((eid) => {
-          const existingItem = itemsById.get(eid);
-          if (!existingItem) return;
-          const existingBlock = existingItem.block?.trim() || "";
-          if (existingBlock !== itemBlock) return;
-          const existingPrefix = extractNumberAlphaPrefix(existingItem.number);
-          if (existingPrefix === newItemPrefix) {
-            lastMatchId = eid;
-          }
-        });
-
-        if (lastMatchId) {
+        if (existingVisitItemId) {
           const insertedIds = normalizeInsertedItemIds(
-            onAddToExecuteListAtPosition(itemId, lastMatchId, "after"),
+            onAddToExecuteListAtPosition(itemId, existingVisitItemId, "after"),
             [itemId],
           );
           if (insertedIds) {
@@ -1524,25 +1559,26 @@ const MapView: React.FC<MapViewProps> = ({
       const firstItem = itemsById.get(sortedIds[0]);
       if (!firstItem) return;
 
-      const newItemPrefix = extractNumberAlphaPrefix(firstItem.number);
+      const newVisitKey = buildExecutionVisitProjectionKey(firstItem);
       const itemBlock = firstItem.block?.trim() || "";
 
-      if (newItemPrefix && onBatchAddToExecuteListAtPosition) {
-        let lastMatchId: string | null = null;
-        executeModeItemIds.forEach((eid) => {
-          const existingItem = itemsById.get(eid);
-          if (!existingItem) return;
-          const existingBlock = existingItem.block?.trim() || "";
-          if (existingBlock !== itemBlock) return;
-          const existingPrefix = extractNumberAlphaPrefix(existingItem.number);
-          if (existingPrefix === newItemPrefix) {
-            lastMatchId = eid;
-          }
-        });
+      if (onBatchAddToExecuteListAtPosition) {
+        const existingVisitItemId =
+          executeModeItemIds.find((executeItemId) => {
+            const existingItem = itemsById.get(executeItemId);
+            return (
+              existingItem !== undefined &&
+              buildExecutionVisitProjectionKey(existingItem) === newVisitKey
+            );
+          }) ?? null;
 
-        if (lastMatchId) {
+        if (existingVisitItemId) {
           const insertedIds = normalizeInsertedItemIds(
-            onBatchAddToExecuteListAtPosition(sortedIds, lastMatchId, "after"),
+            onBatchAddToExecuteListAtPosition(
+              sortedIds,
+              existingVisitItemId,
+              "after",
+            ),
             sortedIds,
           );
           if (insertedIds) {
@@ -1939,6 +1975,14 @@ const MapView: React.FC<MapViewProps> = ({
           </button>
         </div>
       )}
+      {visitMergeNotice && (
+        <div
+          role="status"
+          className="absolute left-4 top-4 z-30 max-w-sm rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 shadow-lg dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100"
+        >
+          {visitMergeNotice}
+        </div>
+      )}
       {mapRouteInsertPending &&
         mapRouteInsertPending.duplicateCandidates.length > 0 && (
           <div className="absolute left-4 top-28 z-20 max-w-sm rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
@@ -1962,7 +2006,7 @@ const MapView: React.FC<MapViewProps> = ({
         mapData={mapDataForCanvas}
         mapName={mapName}
         items={filteredItems}
-        executeModeItemIds={routeExecuteModeItemIds}
+        executeModeItemIds={filteredExecuteModeItemIds}
         zoomLevel={zoomLevel}
         isRouteVisible={
           isRouteVisible && (halls.length === 0 || selectedHallId !== "all")
@@ -2019,7 +2063,7 @@ const MapView: React.FC<MapViewProps> = ({
         isOpen={isVisitListOpen}
         onClose={() => setIsVisitListOpen(false)}
         items={filteredItems}
-        executeModeItemIds={routeExecuteModeItemIds}
+        executeModeItemIds={displayRouteVisitItemIds}
         blocks={filteredMapData.blocks}
         onJumpToCell={handleJumpToCell}
       />

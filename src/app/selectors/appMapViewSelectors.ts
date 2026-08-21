@@ -8,6 +8,7 @@ import type {
   MapViewportSettingsStore,
   MapViewportState,
 } from "../../types/map";
+import { normalizeExecutionVisitDay } from "../../utils/visitProjection";
 import type { LayoutMode } from "../../features/app-shell/types";
 import type { UIVisibilitySettings } from "../../hooks/useUIVisibilitySettings";
 import { extractEventDates } from "../../utils/eventDates";
@@ -102,7 +103,8 @@ export const selectHallTotalItemCount = (
 
   return input.items.filter(
     (item) =>
-      item.eventDate === input.activeEventDate &&
+      normalizeExecutionVisitDay(item.eventDate) ===
+        normalizeExecutionVisitDay(input.activeEventDate) &&
       isItemInsideHall(
         item,
         input.hallId,

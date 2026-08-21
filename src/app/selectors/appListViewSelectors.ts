@@ -10,11 +10,59 @@ import {
   getLimitedPurchaseCounts,
   matchesPurchaseStatusFilter,
 } from "../../utils/purchaseQuantity";
+import {
+  findExecutionDayBucketKey,
+  flattenExecutionVisitProjection,
+  normalizeExecutionVisitDay,
+} from "../../utils/visitProjection";
 
 export type AppExecuteModeStore = Readonly<
   Record<string, Readonly<Record<string, readonly string[]>>>
 >;
 export type AppListDayModeStore = Readonly<Record<string, DayModeState>>;
+
+export const selectItemsForExecutionDay = (
+  items: readonly ShoppingItem[],
+  dayName: string,
+): ShoppingItem[] => {
+  const normalizedDayName = normalizeExecutionVisitDay(dayName);
+  return items.filter(
+    (item) => normalizeExecutionVisitDay(item.eventDate) === normalizedDayName,
+  );
+};
+
+export interface MapVisitListItemsSelectorInput {
+  readonly activeEventName: string | null;
+  readonly mapTabName: string | null;
+  readonly executeModeItems: AppExecuteModeStore;
+  readonly items: readonly ShoppingItem[];
+}
+
+export const selectMapVisitListItems = (
+  input: MapVisitListItemsSelectorInput,
+): ShoppingItem[] => {
+  if (!input.activeEventName || !input.mapTabName) return [];
+  const dayMatch = input.mapTabName.match(/^(.+)マップ$/);
+  if (!dayMatch) return [];
+  const dayName = normalizeExecutionVisitDay(dayMatch[1]);
+  const dayItemsById = new Map(
+    selectItemsForExecutionDay(input.items, dayName).map((item) => [
+      item.id,
+      item,
+    ]),
+  );
+  const eventExecuteItems = input.executeModeItems[input.activeEventName] ?? {};
+  const executeDayKey =
+    findExecutionDayBucketKey(Object.keys(eventExecuteItems), dayName) ??
+    dayName;
+  const executeIds = eventExecuteItems[executeDayKey] ?? [];
+  return flattenExecutionVisitProjection(
+    executeIds.flatMap((id) => {
+      const item = dayItemsById.get(id);
+      return item ? [item] : [];
+    }),
+  );
+};
 
 export interface ExecuteColumnItemsSelectorInput {
   readonly activeEventName: string | null;
@@ -31,9 +79,11 @@ export const selectExecuteColumnItems = (
     input.executeModeItems[input.activeEventName]?.[input.activeEventDate] ??
     [];
   const itemsById = new Map(input.items.map((item) => [item.id, item]));
-  return executeIds
-    .map((id) => itemsById.get(id))
-    .filter((item): item is ShoppingItem => item != null);
+  return flattenExecutionVisitProjection(
+    executeIds
+      .map((id) => itemsById.get(id))
+      .filter((item): item is ShoppingItem => item != null),
+  );
 };
 
 export interface BaseFilteredItemsSelectorInput {
