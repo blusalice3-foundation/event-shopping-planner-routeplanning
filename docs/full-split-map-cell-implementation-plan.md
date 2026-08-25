@@ -1,11 +1,11 @@
 # Full Split Map Cell Implementation Plan
 
-- 文書状態: 2026-08-23実装開始可否再レビューの計画内指摘を反映済み。観測HEAD `3e931aa0ff33a138cfe45f895a440a3768d35108`ではpre-I0の`npm run quality`が未通過のためFSMC-I0実装はNo-Goであり、source hygieneと外部前提の両subgateが同一HEADで成功した後に限って着手可、FSMC-I1以降は直前phase Exit通過後に限って着手可
+- 文書状態: 2026-08-25総合レビューの実装開始blockerを反映済み。観測HEAD `fa743f7cad2d61e5a8f3e723dfc751fba225ced2`ではpre-I0の`npm run quality`と外部前提subgateが未通過のためFSMC-I0実装はNo-Goであり、計画修正、pre-I0 hygiene、外部前提のread-only確認だけがGo。両subgateが同一HEADで成功した後に限ってFSMC-I0へ着手可、FSMC-I1以降は直前phase Exit通過後に限って着手可
 - 対象機能: 地図番号セルのa/b完全分割
 - 対象ソース基準: `2eaba922816e8b263c6479e81ab9f265321654b2`（短縮: `2eaba92`、実装code基準。後続のplan-only commitはpre-I0 inventoryで追跡）
 - 固定旧版Aのソース基準: `3db4be011d0f4123aa3953b559280c58f33d026a`（互換試験専用。現行実装の基準に使用しない）
-- 作成日: 2026-08-12、最終判断反映日: 2026-08-23
-- 想定規模: 大規模、初版12～17個の論理PRと後続版
+- 作成日: 2026-08-12、最終判断反映日: 2026-08-25
+- 想定規模: 大規模、初版37～47個の論理PRに加えてpre-I0準備2 commitと後続版。I0は9個の固定WBS bundleに分け、詳細は9章をauthorityとする
 
 ## 1. 目的
 
@@ -20,9 +20,9 @@
 - 経路と番号マーカーを各側の中央へ接続する
 - 通常マップと集中モードの両方で同じ位置解決を使用する
 - 地図再取込とイベント単位Backup V2でも設定を維持する
-- 問題発生時は旧版アプリへ戻し、従来の未分割セルとして開けるようにする
+- 問題発生時はBackup V2で新版へ復旧でき、losslessなV1互換coreを同伴できるsnapshotでは旧版アプリへ戻して従来の未分割セルとして開けるようにする。同伴不能時はV2-onlyであることを出力前後に明示する
 
-初版は、原子的保存、通常マップ、集中モード、経路、イベント単位Backup V2、同時出力する旧版用V1互換core backup、旧版fallbackを主機能とする。これらを安全に成立させるための同一地図内copy、event／map／hall lifecycle、地図再取込・通常編集、dormant／quarantined管理UI、共有訪問projection、ローカル有効化・復旧導線も初版の必須support scopeに含める。完全版XLSX 2.3、multipart、設定単独portable JSON、別日程・別地図への設定コピー、意図的な同一売場再訪は後続版とし、初版のExitやDefinition of Doneへ含めない。
+初版は、原子的保存、通常マップ、集中モード、経路、常に生成可能であることを要求するイベント単位Backup V2、lossless representabilityを満たす場合に同時出力する旧版用V1互換core backup、旧版fallbackを主機能とする。これらを安全に成立させるための同一地図内copy、event／map／hall lifecycle、地図再取込・通常編集、dormant／quarantined管理UI、共有訪問projection、ローカル有効化・復旧導線も初版の必須support scopeに含める。完全版XLSX 2.3、multipart、設定単独portable JSON、別日程・別地図への設定コピー、意図的な同一売場再訪は後続版とし、初版のExitやDefinition of Doneへ含めない。
 
 ### 1.1 レビュー結論と確定判断
 
@@ -37,11 +37,11 @@
 | `PD-05` | スマートフォンでは表示サイズにかかわらず必ずpickerを経由する。pickerはa/b順ではなく画面上の空間順に並べ、「左側 b」「右側 a」等、位置と文字を併記する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `PD-06` | ブロックコピーは解除しない「追加・変更のみ」を既定とし、「完全同期（解除を含む）」を別の明示操作として提供する。どちらも変更previewを必須とする                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `PD-07` | 完了判定はunit、integration、browser、a11y、性能の自動テストで行い、外部証跡、実イベントpilot、managed device receiptは作らない。特定機種の正式保証は表記せず、自動テスト対象と対象外を明記する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `PD-08` | 初版の主機能は原子的保存、通常・集中表示、経路、イベント単位Backup V2、V1互換core同時出力、旧版fallbackとし、安全上不可分な同一地図内copy、lifecycle、再取込・通常編集、retained管理、共有訪問projection、ローカル制御・復旧導線も必須support scopeへ含める。完全版XLSX 2.3、multipart、設定単独portable JSON、別日程・別地図コピー、意図的再訪は後続版へ送る                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `PD-08` | 初版の主機能は原子的保存、通常・集中表示、経路、常に生成可能なイベント単位Backup V2、losslessな場合だけのV1互換core同時出力、条件付き旧版fallbackとし、安全上不可分な同一地図内copy、lifecycle、再取込・通常編集、retained管理、共有訪問projection、ローカル制御・復旧導線も必須support scopeへ含める。完全版XLSX 2.3、multipart、設定単独portable JSON、別日程・別地図コピー、意図的再訪は後続版へ送る                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `PD-09` | イベント削除時は「30日保持」を既定、「今すぐ完全削除」を明示選択とする。保持中は端末内で再関連付けでき、30日後に端末時計が正常な場合だけ対象設定を自動削除する。設定単独ファイル出力は後続版とする                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `PD-10` | 実機receiptや3実イベントpilotを完了条件にせず、fixtureを使うretryなしの自動テストをrelease gateとする                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `PD-11` | 分割セルに`whole`または非対応番号がある場合はa/bへ推測割当てせず、「側未設定」badge、一覧、分割有効化前previewで存在を知らせる                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `PD-12` | Backup V2の出力時は、分割設定を含まない旧版用V1互換core backupも同時に出力し、用途と失われる情報を表示する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `PD-12` | 健全なV2 snapshotはcompanion V1のlossless representabilityにかかわらずBackup V2を必ず生成可能にする。V1互換coreをlosslessに生成できる場合は同じsnapshotから同時出力し、構造上losslessでない場合は理由・旧版fallback不可・V2保管必須を確認させた`structural-v2-only-prepared`、V1／pairのresource上限だけを超える場合は同じ確認を持つ`resource-v2-only-prepared`として出力する。V1のためにV2まで禁止したり、値をdrop／正規化してV1を捏造したりしない                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `PD-13` | 経路connectorは自セルまたは結合セル領域内で安全に接続できる場合だけ描画し、領域外や障害物横断が必要なら`unroutable`とする                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `PD-14` | 同じ`ExecutionVisitIdentity`の商品追加は既存訪問へglobal統合し、raw訪問位置を動かさず、必要な`PhaseVisitIdentity`投影だけを追加して全画面へ同じ結果を反映・通知する。利用者が同じ売場を意図的に複数回訪れる機能は初版対象外とする                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `PD-15` | 1イベントにつき主に編集する端末は1台とし、端末間自動同期・自動mergeを行わない。Backupはpreview後の原子的置換であり、端末全体OFF・イベント別ON／OFFを収録せず、新規復元はOFF、既存イベントへの復元は復元先のローカル状態を維持する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -65,33 +65,49 @@ I0でFSMC専用の一方向導入証跡`FSMC_CAPABILITY_DB_VERSION`（以下`Vca
 
 ### 1.2 実装開始可否レビューの是正決定
 
-次の`RC-*`は2026-08-23レビューで追加したnormativeな是正決定である。既存節へ同じ内容を反映し、`config/fsmc-traceability.json`でowner phase、fixture、test、command、DoDへ一対一に追跡する。本文と`RC-*`が矛盾する場合に一方を優先して実装するのではなく、I0のcross-verifierが矛盾として失敗し、同じPRで本文、schema、manifestを整合させる。
+次の`RC-*`は2026-08-23および2026-08-25レビューで追加したnormativeな是正決定である。既存節へ同じ内容を反映し、各normative IDをrequirement catalogのexact 1 rowとexact 1 owner phaseへ対応させる。fixture、test、command、implementation symbol、document、DoDは重複なしのone-to-many関係とし、enforced requirementでは各必須classを1件以上持たせる。test IDから実行する`requiredCommand`だけをexact 1とする。本文と`RC-*`が矛盾する場合に一方を優先して実装するのではなく、I0のcross-verifierが矛盾として失敗し、同じPRで本文、schema、manifestを整合させる。
 
-| 決定ID  | 確定内容                                                                                                                                                                                                                                                                                                                                                                                                      |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `RC-01` | 最初のI0変更前にclean worktreeで`git diff --check`と、`package.json`が定義する既存`npm run quality`の完全な順序付きcommand graphを省略なしでgreenにした専用pre-I0 commitを作り、そのcommitを`i0StartHeadSha`へ一度だけ固定する。手書きsubset、既知失敗、coverage省略を許さない                                                                                                                                |
-| `RC-02` | `PD-14.C0` inventoryはI0、C1 pure契約はI1、C2 projection／挿入／通知はI7、C3 route／hit-test／cacheはI10が所有する。I2～I6はport／hookと基準挙動のnon-regressionだけを所有し、後続ownerのconformanceを前phase Exitへ要求しない                                                                                                                                                                                |
-| `RC-03` | 初版support scopeに同一地図内copy、lifecycle、再取込・通常編集、retained管理、共有訪問projection、ローカル制御・復旧導線を含め、主機能だけを列挙した短いscope文から必須作業を除外しない                                                                                                                                                                                                                       |
-| `RC-04` | I2～I10のproduction artifactは現行DB5のままとし、採択済み`Vcap`へのmigrationはQA namespace／integration harnessだけで検証する。production `DB_VERSION`を採択済み`Vcap`へ進めるのはI11 release-ready candidateだけとする                                                                                                                                                                                       |
-| `RC-05` | 現行`NavigatorItem`へevent／map／hall責務を混入させず、runtime snapshotから解決済み`ProjectedPhaseVisit`を作るadapterを正式境界にする。`ResolvedMapLocation`、`MapLocationIndex`、projection revision vectorとassociation／hall／split input DTOはI1前にexact readonly型、revision、cardinality、canonical順、mapless／ambiguous表現まで固定する                                                              |
-| `RC-06` | 新しい3×3経路型は`SubcellPathNode`とし、既存`PathNode`と同名にしない。現行`MapVisitListPanel`にはfilter／focus復帰責務がないため、I8で同componentをshellへ拡張し、新しい`ProjectedVisitList`をpure DOM viewとする。callbackは最新projectionを`PhaseVisitIdentityKey`で再解決する                                                                                                                              |
-| `RC-07` | Backup V2 wire DTOをruntime `AppData`／persistence型から独立させる。V1とXLSX 2.2 full restoreをI4の初版compat ownerへ割り当て、URLは共通safe-link policyを通す                                                                                                                                                                                                                                                |
-| `RC-08` | `recovery-required`は行き止まりにせず、trusted core read-only export、診断、in-place reset可能条件、profile reset＋検証済みbackup再取込の明示runbookを提供する。untrusted split rootを自動採用・自動修復しない                                                                                                                                                                                                |
-| `RC-09` | Backupの性能保証、import hard limit、export generation limitを方向別に固定し、UI main threadで全file `arrayBuffer`を作らない。同一origin module Worker、bounded slice、CSP／PWA asset、cancel cleanupを初版要件にする                                                                                                                                                                                         |
-| `RC-10` | 性能runnerはGitHub Actions `ubuntu-24.04`上のrepo-owned OCI image digest固定jobとし、provider、owner、image、cgroupをI0で実在値へ固定する。製品測定は機能jobと分離したscenario/profile shardごとに同じcontainer／browserで直前calibrationし、hash付き全shardをreducerで完全照合する                                                                                                                           |
-| `RC-11` | 固定旧版A artifactの保管・取得・hash・license・serve方法と、既存test membership／coverage／architecture／quality workflowの更新をI0成果物にする。`ApplicationSnapshotCommitPort`と全caller、Backup Worker entry／server／client、`useCanvasViewport.ts`とCanvas callerもchange-surfaceへ列挙し、transitive dependencyを直接importしない                                                                       |
-| `RC-12` | readinessを「code存在・public到達・dispatch認可・commit可能」に分け、future profileを初版gateから分離する。DOM代替は検索・絞込み・virtualization・focus復元、通知は固定`role=status`、Canvasはtoken contrast／forced-colors試験を持つ。画面読み上げ要件はversion付きAT代替oracleでrole、name、description、state、順序、focus、live-region発火を自動検証する                                                  |
-| `RC-13` | V2の`eventSettings` authorityはcapability store内のgoverned IDB rootとし、現行localStorage `blockDetectionSettings`は固定旧版A互換projectionへ降格する。移行・旧版書込み取込・mirrorはdurable bridge journalとbefore／after witnessで再開可能にし、補償rollbackをcommit authorityにしない                                                                                                                     |
-| `RC-14` | `Vcap`はsource履歴だけでなく全配布artifact／release provenance／store manifestをdecision inputにする。guided resetは実profileの全object storeと全削除local keyをcoverage closureで照合し、未知対象をlosslessに退避・復元できない場合は必ず`unsupported-stop`とする                                                                                                                                            |
-| `RC-15` | durable visit stateはgoverned IDB key `durable-visit-state`の`DurableVisitStateRootV1`を唯一のauthorityとし、現在phase＋anchor、phase別保存anchor、完了状態、購入変更anchorを表現する。item IDだけからphase visitを推測せず、base visit順はdenseな`executionVisitOrder`、全phaseはnormal→postponed→late、各phase内はbase順へ固定する                                                                          |
-| `RC-16` | active `(eventInstanceId, mapInstanceId, blockInstanceId, number)`をexact uniqueとし、runtime／全writer／startup／V2で同じinvariantを使う。identity token、tuple、`ReadonlyMap`、checkpoint digestはversion付きbyte canonical contractとgolden fixtureを持つ                                                                                                                                                  |
-| `RC-17` | 現行のimport競合`create-alias`をイベント全体複製とみなさない。初版のイベント全体複製はI3の新command／UIとして全core、eventSettings、map／block／item／visit／split IDをgroup-preserving remapする。通常セル編集と`MapVisitListPanel` shell拡張も既存機能ではなくI6／I8の新規scopeとして見積もる                                                                                                               |
-| `RC-18` | retained再関連付けは候補exact 1件、target未占有、trusted authority、commit直前も同じ候補集合の場合だけ許可し、2件以上からの利用者選択によるactive化は初版に設けない。rekey／挿入、同anchor遷移、connector mask、hit-test、表示競合もpureな決定表へ固定し、自owner番号領域だけをconnector maskで許可する                                                                                                       |
-| `RC-19` | performance required gateはplan→scenario/profile matrix→shard→reducer→required-results finalizerのDAGとする。各shardの静的上限を300分、job timeoutを330分以下とし、別run／別attempt／別shardのsample混在、欠落、重複を拒否する                                                                                                                                                                                |
-| `RC-20` | normative requirementのID集合を`PD-*`、`RC-*`、`DOD-FSMC-*`、`EXIT-FSMC-*`へ限定して全件に安定IDを与え、その他の規則・実装bulletはexact 1件以上のIDへsupporting sourceとして結ぶ。catalog hashをtraceability、test manifest、required-resultsで一致させ、未追跡bulletと初版要件のfuture誤分類をI0 verifierで拒否する                                                                                          |
-| `RC-21` | 最大fixtureは件数だけでなく、100×150 grid、block／merge／obstacle／visit配置、生成recipe、payload／topology／期待root hashをversion付きmanifestへ固定し、OFF referenceとON targetでdata topologyを一致させる                                                                                                                                                                                                  |
-| `RC-22` | 外部前提を`requiredAt`で分離する。pre-I0はrepository／environment admin、package作成・public化権限、Actions／GHCR利用可否、branch gate接続可能性、fork PR token方針だけを確認し、未作成のDockerfile／publisher／package／digestを要求しない。I0 Exitでそれらの実在、最小permission、OCI source labelによるrepository link、exact digest匿名pull、runner qualificationを、release-readyでdriftなしを再確認する |
-| `RC-23` | `split-picker-popup`を通常マップI8／集中モードI9とDesktop direct-hit／Mobile pickerの4 scenarioへ分割し、各entryに単一profileと単一値の`enforcedFromPhase`を持たせる                                                                                                                                                                                                                                          |
+| 決定ID  | 確定内容                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RC-01` | 最初のI0変更前にclean worktreeで`git diff --check`と、`package.json`が定義する既存`npm run quality`の完全な順序付きcommand graphを省略なしでgreenにした専用pre-I0 commitを作り、そのcommitを`i0StartHeadSha`へ一度だけ固定する。手書きsubset、既知失敗、coverage省略を許さない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `RC-02` | `PD-14.C0` inventoryはI0、C1 pure契約はI1、C2 projection／挿入／通知はI7、C3 route／hit-test／cacheはI10が所有する。I2～I6はport／hookと基準挙動のnon-regressionだけを所有し、後続ownerのconformanceを前phase Exitへ要求しない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `RC-03` | 初版support scopeに同一地図内copy、lifecycle、再取込・通常編集、retained管理、共有訪問projection、ローカル制御・復旧導線を含め、主機能だけを列挙した短いscope文から必須作業を除外しない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `RC-04` | I2～I10のproduction artifactは現行DB5のままとし、採択済み`Vcap`へのmigrationはQA namespace／integration harnessだけで検証する。production `DB_VERSION`を採択済み`Vcap`へ進めるのはI11 release-ready candidateだけとする                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `RC-05` | 現行`NavigatorItem`へevent／map／hall責務を混入させず、runtime snapshotから解決済み`ProjectedPhaseVisit`を作るadapterを正式境界にする。`ResolvedMapLocation`、`MapLocationIndex`、projection revision vectorとassociation／hall／split input DTOはI1前にexact readonly型、revision、cardinality、canonical順、mapless／ambiguous表現まで固定する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `RC-06` | 新しい3×3経路型は`SubcellPathNode`とし、既存`PathNode`と同名にしない。現行`MapVisitListPanel`にはfilter／focus復帰責務がないため、I8で同componentをshellへ拡張し、新しい`ProjectedVisitList`をpure DOM viewとする。callbackは最新projectionを`PhaseVisitIdentityKey`で再解決する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `RC-07` | Backup V2 wire DTOをruntime `AppData`／persistence型から独立させる。V1とXLSX 2.2 full restoreをI4の初版compat ownerへ割り当て、URLは共通safe-link policyを通す                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `RC-08` | `recovery-required`は行き止まりにせず、trusted core read-only export、診断、in-place reset可能条件、profile reset＋検証済みbackup再取込の明示runbookを提供する。untrusted split rootを自動採用・自動修復しない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `RC-09` | Backupの性能保証、import hard limit、export generation limitを方向別に固定し、UI main threadで全file `arrayBuffer`を作らない。同一origin module Worker、bounded slice、CSP／PWA asset、cancel cleanupを初版要件にする                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `RC-10` | 性能runnerはGitHub Actions `ubuntu-24.04`上のrepo-owned OCI image digest固定jobとし、provider、owner、image、cgroupをI0で実在値へ固定する。製品測定は機能jobと分離したscenario/profile shardごとに同じcontainer／browserで直前calibrationし、hash付き全shardをreducerで完全照合する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `RC-11` | 固定旧版A artifactの保管・取得・hash・license・serve方法と、既存test membership／coverage／architecture／quality workflowの更新をI0成果物にする。`ApplicationSnapshotCommitPort`と全caller、Backup Worker entry／server／client、`useCanvasViewport.ts`とCanvas callerもchange-surfaceへ列挙し、transitive dependencyを直接importしない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `RC-12` | readinessを「code存在・public到達・dispatch認可・commit可能」に分け、future profileを初版gateから分離する。DOM代替は検索・絞込み・virtualization・focus復元、通知は固定`role=status`、Canvasはtoken contrast／forced-colors試験を持つ。画面読み上げ要件はversion付きAT代替oracleでrole、name、description、state、順序、focus、live-region発火を自動検証する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `RC-13` | V2の`eventSettings` authorityはcapability store内のgoverned IDB rootとし、現行localStorage `blockDetectionSettings`は固定旧版A互換projectionへ降格する。移行・旧版書込み取込・mirrorはdurable bridge journalとbefore／after witnessで再開可能にし、補償rollbackをcommit authorityにしない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `RC-14` | `Vcap`はsource履歴だけでなく全配布artifact／release provenance／store manifestをdecision inputにする。guided resetは実profileの全object storeと全削除local keyをcoverage closureで照合し、未知対象をlosslessに退避・復元できない場合は必ず`unsupported-stop`とする                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `RC-15` | durable visit stateはgoverned IDB key `durable-visit-state`の`DurableVisitStateRootV1`を唯一のauthorityとし、現在phase＋anchor、phase別保存anchor、完了状態、購入変更anchorを表現する。item IDだけからphase visitを推測せず、base visit順はdenseな`executionVisitOrder`、全phaseはnormal→postponed→late、各phase内はbase順へ固定する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `RC-16` | active `(eventInstanceId, mapInstanceId, blockInstanceId, number)`をexact uniqueとし、runtime／全writer／startup／V2で同じinvariantを使う。identity token、tuple、`ReadonlyMap`、checkpoint digestはversion付きbyte canonical contractとgolden fixtureを持つ                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `RC-17` | 現行のimport競合`create-alias`をイベント全体複製とみなさない。初版のイベント全体複製はI3の新command／UIとして全core、eventSettings、map／block／item／visit／split IDをgroup-preserving remapする。通常セル編集と`MapVisitListPanel` shell拡張も既存機能ではなくI6／I8の新規scopeとして見積もる                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `RC-18` | retained再関連付けは候補exact 1件、target未占有、trusted authority、commit直前も同じ候補集合の場合だけ許可し、2件以上からの利用者選択によるactive化は初版に設けない。rekey／挿入、同anchor遷移、connector mask、hit-test、表示競合もpureな決定表へ固定し、自owner番号領域だけをconnector maskで許可する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `RC-19` | performance required gateはplan→scenario/profile matrix→shard→reducer→required-results finalizerのDAGとする。各shardの静的上限を300分、job timeoutを330分以下とし、別run／別attempt／別shardのsample混在、欠落、重複を拒否する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `RC-20` | normative requirementのID集合を`PD-*`、`RC-*`、`DOD-FSMC-*`、`EXIT-FSMC-*`へ限定して全件に安定IDを与え、その他の規則・実装bulletはexact 1件以上のIDへsupporting sourceとして結ぶ。catalog hashをtraceability、test manifest、required-resultsで一致させ、未追跡bulletと初版要件のfuture誤分類をI0 verifierで拒否する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `RC-21` | 最大fixtureは件数だけでなく、100×150 grid、block／merge／obstacle／visit配置、生成recipe、payload／topology／期待root hashをversion付きmanifestへ固定し、OFF referenceとON targetでdata topologyを一致させる                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `RC-22` | 外部前提を`requiredAt`で分離する。pre-I0はrepository／environment admin、package作成・public化権限、Actions／GHCR利用可否、branch gate接続可能性、fork PR token方針だけを確認し、未作成のDockerfile／publisher／package／digestを要求しない。I0 Exitでそれらの実在、最小permission、OCI source labelによるrepository link、exact digest匿名pull、runner qualificationを、release-readyでdriftなしを再確認する                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `RC-23` | `split-picker-popup`を通常マップI8／集中モードI9とDesktop direct-hit／Mobile pickerの4 scenarioへ分割し、各entryに単一profileと単一値の`enforcedFromPhase`を持たせる                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `RC-24` | 重複物理`(row, col)`だけをmap-wide fatalな`map-data-untrusted`とする。重複番号、複数block owner、番号領域重複、merge越境は`ready-with-exclusions`として正規化済み影響領域だけを除外し、無関係なlocation、描画、訪問、経路を継続する。fatalと局所除外を同じresult branchへ潰さない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `RC-25` | map上の一意な物理geometry slotと、whole／a／b／unsupported suffixごとの論理locationを分離する。`26c`／`26d`／`26ab`はitem snapshot由来のcanonical suffix request集合からpure APIで別々の`LocationKey`へ導出し、同じwhole-cell中心へ接続する。lookupの最大2 location前提を廃止し、suffix、item association revision、logical location集合をindex revisionへ拘束する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `RC-26` | 新route inputへ選択hall identity、map identity、canonical polygon、polygon fingerprintを持つdata-only `RoutePathConstraintV1`を追加し、main path、simplification後segment、routing port、全connector、same-cell directを同じinclusive polygon内へ閉じる。constraint fingerprintをcache signatureへ含め、whole-map／別hall／stale polygon間でcacheを再利用しない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `RC-27` | I7で`executionVisitOrder`を唯一のbase順authorityとする共通reorder planner／atomic commandへ、`useMapRouteCommands`のhall順reorderと`useMapVisitListCommands`の手動reorderを移す。raw item ID配列を並べ替えず、hall route settingsとdurable orderを同じ`ExpectedRootVector`・transactionで確定し、UIのdraft／cancelは永続rootを変更しない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `RC-28` | Backup V2は主端末移行と完全復旧の必須artifactであり、healthy V2 snapshotのcompanion V1不能をV2生成blockerにしない。lossless V1がある場合はpair、ない場合は理由digestと旧版fallback不可表示を持つV2-only handoffとし、両分岐でV2 bytes、source SHA、snapshot revision、handoff receiptを再検証する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `RC-29` | `forcedPickerOverride`は端末全体・全event・通常／集中共通のboolean設定とし、canonical `control` rootへ保存する。既定false、authority不明時のeffective値true、入口は設定のアクセシビリティ「常にセル側選択ダイアログを表示」、解除は利用者の明示OFFまたはprofile resetだけとし、viewport／UA変化やevent切替で自動解除せずBackupへ収録しない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `RC-30` | pre-I0 observer、schema、read-only method allowlist、sanitized result verifier、runbookをpre-I0準備commitとしてH候補へ先に置く。source hygieneはclean detached worktreeの`npm ci`、固定Node／npm、quality、実行前後HEAD／status／diffを検証し、外部subgate結果も同じsource SHAへ拘束する。observerや結果形式をI0で初めて作る循環依存を禁止する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `RC-31` | Playwright browser installは全標準commandを`npx playwright install --with-deps <browser>`へ統一する。lockfileのlocal Playwrightを解決し、固定Node 24.19.0／npm 11.19.0で`--dry-run`引数転送testをI0へ置く。npm 11で`--with-deps`をtarget化して失敗する二重`--`形式は使用しない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `RC-32` | traceabilityは「normative ID→catalog row／owner phase」だけexact 1、fixture／test／command／implementation／documentはcanonicalな重複なし配列とする。1 fixture／testが複数requirementを満たすことと、1 requirementが複数fixture／testを持つことを許し、逆向きindexと集合一致をverifierが再計算する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `RC-33` | 初版見積りを37～47論理PR＋pre-I0 2 commitへ改め、I0を9個の依存順WBS bundleへ固定する。1 PRへ複数bundleを畳む場合も各bundleの独立check、review owner、Exit coverageを維持し、巨大な「I0一括PR」または後phaseへのtest先送りを禁止する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `RC-34` | performance matrixは`max-parallel = 12`、最大54 shard、1 shard計算上限300分／job timeout 330分、5 wave、matrix計算上限1,500分／hard-timeout上限1,650分、runner計算上限16,200分／hard-timeout ceiling 17,820分／attemptを明示する。qualificationのhalf-open稼働区間からqueue除外360分以下、観測concurrency 12以上を再計算し、canonical 54 shardを12 laneへ割り当てたprojected 5-waveも360分以下をI0 Exit条件とする。test retry／自動workflow retryは0、schema-validな開始前allowlisted infrastructureだけCI Operator承認後にGitHub Actionsの`Re-run all jobs`でquality、prerequisite、build、functional、WebKit、performance全段、finalizer、gateを同一sourceの新attemptへexact 1回再実行する。最大2 attemptのperformance shard matrix部分だけを3,300 matrix分／35,640 runner分とし、partial rerun、別attempt混在、product failureの再実行合格化を禁止する |
+| `RC-35` | Backup V2 embedded digestは`digest` fieldを除くexact validated objectを`{ domain: "fsmc-app-backup-v2-v1", backupWithoutDigest }`として`esp-json-v1` canonical serializeしたUTF-8 bytesのSHA-256とする。schema／duplicate-property／未知key検証後に計算し、`scope.companionCore`のincluded／unavailable分岐を含む全field mutationを検出する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `RC-36` | build artifact全体hashはmanifest自身を含むarchive byte hashではなく、manifestを除外したcanonical file-tree digestとする。POSIX `/`相対path、全regular fileのbyte SHA-256／length、UTF-16 code-unit path順を固定する。nested directoryは許すがdirectory entry自体は列挙せず、symlink／junction／reparse point／device fileを禁止する。manifestはそのtree digestと自身のschema versionを持つ。別root／timezoneで同値、path／byte差で不一致をI0 fixtureにする                                                                                                                                                                                                                                                                                                                                                                                                |
+| `RC-37` | Pointer FSMは全state×eventのtotal transition tableをI0で固定し、capture取得失敗、non-primary、pointer ID再利用、multi-pointer drain、unmount、lost capture、synthetic click抑止の開始／解除を明示する。全terminalはpointer registry／timer／captureを空にして`idle`へ戻り、未定義eventやcleanup漏れをbrowser/property testで拒否する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `RC-38` | branch gateは既存required contextへFSMCを逆接続せず、既存`quality`を独立required producerのまま維持し、I0 Exit前に`fsmc-required-gate`を一度だけ追加required化する。`quality → FSMC build/test/finalizer → fsmc-required-gate`のacyclic DAGを固定し、phase別context変更、既存qualityへの循環needs、FSMC gate未requiredのI0 Exitを禁止する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `RC-39` | foundation qualityは同一workflow runの既存`quality` jobが`npm ci`＋canonical `npm run quality`を1回だけ実行してresult artifactを生成する唯一のproducerとする。全FSMC build／test／aggregatorはdownload／hash verifyだけを行い、各buildでqualityを再実行しない。package quality graphとworkflow全体のFSMC gateを別result classとして区別する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 現時点の実行可否は次のとおりである。計画書の修正やpre-I0整備はFSMC-I0実装に含めない。
 
@@ -102,7 +118,7 @@ I0でFSMC専用の一方向導入証跡`FSMC_CAPABILITY_DB_VERSION`（以下`Vca
 | FSMC-I0実装                   | No-Go                       |
 | FSMC-I1以降                   | 直前phase Exit達成までNo-Go |
 
-観測HEAD `3e931aa0ff33a138cfe45f895a440a3768d35108`ではworktree clean、`git diff --check`成功、`npm run test:encoding`成功、`npm run format:check`失敗であり、失敗対象は`docs/各フェーズのFormal Exit達成.md`である。外部pre-I0前提のread-only結果はまだ計画内に記録されておらず、成功とは判定しない。この失敗を専用hygiene commitで解消し、clean worktree、`git diff --check`、canonical `npm run quality`を先頭から省略なく完走し、外部pre-I0 subgateも成功した同一HEADだけを`H`／`i0StartHeadSha`へ一度固定する。途中まで成功した後続testや個別commandの成功でcanonical quality失敗を相殺しない。
+観測HEAD `fa743f7cad2d61e5a8f3e723dfc751fba225ced2`ではworktree clean、`git diff --check`成功、Node 24.19.0／npm 11.19.0一致、`npm run test:encoding`成功、`npm run format:check`失敗であり、失敗対象は`docs/各フェーズのFormal Exit達成.md`である。外部pre-I0前提はobserver未実装かつcredential／`gh` CLI不在の現環境で未確認であり、成功とは判定しない。この失敗を専用hygiene commitで解消し、clean detached worktreeの`npm ci`後に実行前後HEAD一致、clean status、`git diff --check`、canonical `npm run quality`を先頭から省略なく完走し、外部pre-I0 subgateも成功した同一HEADだけを`H`／`i0StartHeadSha`へ一度固定する。途中まで成功した後続testや個別commandの成功でcanonical quality失敗を相殺しない。Playwright installは同toolchainで、現行の一重separatorと`npx`形式が`--dry-run`成功、二重`--`形式が`Invalid installation targets`で失敗することを再観測したため、15章は`npx`形式をauthorityとする。
 
 ## 2. 現行実装の確認結果
 
@@ -129,6 +145,7 @@ I0でFSMC専用の一方向導入証跡`FSMC_CAPABILITY_DB_VERSION`（以下`Vca
 - 集中モード位置解決: `src/components/FocusMode.tsx`
 - 経路探索: `src/utils/pathfinding.ts`
 - 経路点: `src/utils/mapRoutePoints.ts`
+- 選択hall経路constraint型／生成／polygon validity／predicate: `src/types/map.ts`、`src/utils/mapRouteMapData.ts`、`src/utils/polygonValidation.ts`、`src/utils/mapRoutePolygon.ts`、`src/components/map/HallDefinitionPanel.tsx`とimport／Backup validator caller
 - 保存Port: `src/app/ports/PersistenceCommandPort.ts`
 - patch-only保存Port、composition adapter、構造的callback caller: `src/app/commands/ApplicationSnapshotCommitPort.ts`、`src/App.tsx`、`src/app/commands/useMapEditorCommands.ts`、`src/app/commands/useShoppingItemMutationCommands.ts`、`src/app/commands/useMapImportCommands.ts`、`src/features/map/domain/mapImportFlow.ts`
 - IndexedDB定義: `src/persistence/db/constants.ts`
@@ -166,6 +183,8 @@ FSMCの地図描画と経路探索はローカルCanvasと`src/utils/pathfinding
 | `26c`、`26d`、`26ab`  | 初版の半セル対象外。a/bへ誤変換しない                 |
 
 番号は表示用原文と識別用正規値を分ける。表示、入力欄、バックアップ上のアイテム番号は可能な限り原文を維持する。地図照合、`SpaceIdentity`、`ExecutionVisitIdentity`、`PhaseVisitIdentity`、索引、経路、再取込照合の番号tokenは`normalizeFsmcNumberTokenV1`だけをauthorityとし、NFKC、全Unicode空白除去、ASCII `A-Z`だけの小文字化をこの順で行う。日程とブロックは5.2の別関数を使い、番号規則を流用しない。数字部分の先頭ゼロ除去は、event内の地図、item、保存済み訪問・順序・進行状態を端末内preflightで検査し、統合前後の異なるidentityが同時に存在しない場合だけ有効にする。`01a`と`1a`等が別identityとして共存する衝突を検出したeventではONへの変更を拒否し、完全legacy identityを維持して対象件数、影響、解決方法を表示する。検査対象payloadや結果を外部送信しない。一方、a/b以外の非対応番号は、基準番号と正規化済み英字suffixをidentity tokenへ残し、`26c`、`26d`、`26ab`を互いに衝突させない。英字suffix後の商品枝番は既存規則を維持し、`26c2`は`26c`と同じunsupported token、`26d2`は`26d`と同じtokenへまとめる。正規化を理由に保存済みitem番号の原文を自動で書き換えない。
+
+非対応suffixはmap cellのraw値から列挙できないため、物理番号領域を表す`MapLocationGeometrySlotV1`と論理locationを分離する。item／association snapshot内の`ParsedSpaceNumber.kind = "unsupported"`から、対象`(blockInstanceId, baseNumber)`ごとの`normalizedSuffix`をUTF-16 code-unit順・重複なしの`logicalLocationRequests`へ集約し、pure `deriveLogicalMapLocationsV1`だけがslotのwhole bounds／中央anchorを共有する別々の`ResolvedMapLocation`を作る。`26c`と`26c2`は同じlocation、`26c`、`26d`、`26ab`は別`LocationKey`とし、item順shuffleでrequest集合、index revision、location配列を変えない。a／b、空文字、unresolved tokenをunsupported requestへ混入させない。
 
 正規化parserは次の順序と正規表現をI0のgolden fixtureで固定する。先にNFKC、前後trim、すべてのUnicode空白除去、ASCII小文字化を行い、`^(\d+)(a|b)(\d*)$`を対応split候補、`^\d+$`をwhole候補、`^(\d+)([a-z]+)(\d*)$`のうちsuffixがa／b以外または複数文字のものをunsupported候補とする。新規UI／CSV／XLSX／Backup入力は先に`FSMC_NUMBER_TOKEN_MAX_UTF8_BYTES`を検査し、超過時はparserや`BigInt`を呼ばずcommand全体を`resource-limit`で拒否する。上限内の数字captureは`BigInt`へ渡す前に、先頭ゼロを線形scanで除いた比較token（全桁0なら`"0"`）を作り、`MAX_SAFE_INTEGER_DECIMAL = "9007199254740991"`との桁数比較、同桁時のASCII辞書順比較を行う。比較tokenが16桁以下かつ上限以下の場合だけ`BigInt`または同等のbounded parseを許し、0なら`unresolved-number / non-positive-base-number`、上限超なら`unresolved-number / unsafe-base-number`、1以上のsafe integerだけを`split-side | whole | unsupported`として返す。既存永続dataに上限超tokenがある場合だけ、巨大`BigInt`化せず`unsafe-base-number`として原文を保持する。負数、小数、指数、記号混入、regex不一致は`unresolved-number / malformed-number`とし、数字や側を推測しない。番号parserは地図を参照せず、`resolveItemMapLocation`がevent、day、hall、block、mapの文脈とparser結果を受けて`ItemSpaceResolution`の`mapped | mapless | legacy-unresolved | ambiguous`を返す。unsupportedの枝番を除いた英字suffixはidentityへ残し、mapがないイベントや一意な物理セルがない商品をmappedへ偽装しない。
 
@@ -215,10 +234,10 @@ previewは`eventInstanceId`、command固有の選択、`C(before)`、計算し�
 - 選択したセルへ4種類の分割または「分割なし」を一括適用できる
 - 選択したcurrent owner＋番号にretained履歴がある場合、通常の新規設定としてactiveを追加せず「保持履歴の再関連付けが必要」と表示してI5の明示previewへ送る。候補exact 1件、target activeなし、map／root authority trusted、commit直前も候補集合と`ExpectedRootVector`が一致する場合だけ、そのretained除去＋active作成を同一transactionで確定する。0件、2件以上、target occupied、stale、untrustedは理由と全候補のlast-known owner／evidenceを表示してwrite 0件とし、2件以上から1件を選ぶactive化UIは初版に設けない
 - 1つの地図内で論理ブロック名は`normalizeFsmcBlockTokenV1`（NFKC、Unicode `White_Space`連続をU+0020へ畳み、前後U+0020除去、ASCII `A-Z`だけ小文字化）の照合キーで一意とする。locale依存case foldや番号用の全空白除去を流用しない。手動の同名追加は既存ブロックの置換previewを経由する。XLSX上の完全に同じ名前の複数領域は現行仕様どおり1つの論理ブロック・複数`cellGroups`として同じ`blockInstanceId`へまとめるが、原文が異なるのに照合キーだけが衝突するブロックはcore map import結果を変えず、分割機能では影響する番号を対象外または`quarantined`として理由を表示する
-- 同じ論理ブロック内に正規化後の同一番号セルが複数ある場合、その重複番号だけを初版対象外とし、同じ地図内の一意な他番号は利用可能とする
+- 同じ論理ブロック内に正規化後の同一番号セルが複数ある場合、その重複番号の全候補領域だけをcanonical `duplicate-number-region` exclusionへ入れて初版対象外とし、同じ地図内の一意な他番号は`ready-with-exclusions` indexから利用可能とする
 - 重複番号を検出した場合はセル選択画面を設けず、保存・コピー・自動継承から除外して理由を表示し、いずれかを推測で選ばない
-- 同じ物理番号領域が複数ブロックに属する、番号領域同士が重なる、または結合セルがブロック境界をまたぐ場合も、影響する領域を保存・コピー・自動継承から除外し、既存entryは`quarantined`へ移す。配列順の先頭ブロックを暗黙に選ばない
-- `DayMapData.cells`に同じ`(row, col)`の物理セルが複数ある場合は配列の先頭／末尾を採用せず、機能状態を問わず、その重複を新規作成するimport・通常編集のafter-imageを全store書込み前に原子的に拒否する。起動時から存在する場合は当該mapをFSMC上`map-data-untrusted`とし、split表示だけをlegacy whole-cell fallbackへ戻す一方、当該mapの経路は生成もcache再利用もせず安全停止し、影響entryを`quarantined`へ移す。異なる`value`／`backgroundColor`を持つ重複セルの並べ替えで表示・経路結果が変わる状態を許さない
+- 同じ物理番号領域が複数ブロックに属する、番号領域同士が重なる、または結合セルがブロック境界をまたぐ場合も、原因に参加する全lookup cell、block、base numberを1個以上持つcanonical exclusionへまとめ、その影響領域だけを保存・コピー・自動継承・split描画・location解決から除外し、既存entryは`quarantined`へ移す。配列順の先頭ブロックを暗黙に選ばず、無関係なslot、訪問、経路は継続する
+- `DayMapData.cells`に同じ`(row, col)`の物理セルが複数ある場合だけをmap-wide fatalとする。配列の先頭／末尾を採用せず、機能状態を問わず、その重複を新規作成するimport・通常編集のafter-imageを全store書込み前に原子的に拒否する。起動時から存在する場合は当該mapをFSMC上`map-data-untrusted`、`index: null`とし、split表示だけをlegacy whole-cell fallbackへ戻す一方、当該mapの経路は生成もcache再利用もせず安全停止し、影響entryを`quarantined`へ移す。異なる`value`／`backgroundColor`を持つ重複セルの並べ替えで表示・経路結果が変わる状態を許さない。他の4理由をこのfatal分岐へ昇格させない
 - ブロック追加、削除、改名、移動、番号セル変更、結合・結合解除を含む通常の地図編集でも、地図再取込と同じ再関連付けplanとpreviewを通し、地図と分割設定を同じ原子的commitで確定する。現行`BlockDefinitionPanel`／commandには番号セル変更、結合・結合解除が存在しないため、I6で新しい`MapCellTopologyEditor`、pure `buildMapTopologyEditPlan`、専用atomic commandを追加する。初版はpreview／取消／commit後に逆操作を新しいpreviewとして行う導線を持ち、未検証の汎用undo stackへ迂回しない
 - 解除しても26a/26bのアイテム番号は変更しない
 - 再設定すると、既存番号から元のa/b側へ戻る
@@ -257,7 +276,7 @@ previewは`eventInstanceId`、command固有の選択、`C(before)`、計算し�
 
 ### 3.6 クリック・タップ
 
-- `PD-05`に従い、表示用の`layoutMode`と操作用の`isSmartphoneSelectionMode`を分離する。pure `resolveSmartphoneSelectionModeV1`は`forcedPickerOverride`、`mobileCapability: true | false | "unknown"`、primary pointer／touch capabilityを入力とする。production `MobileCapabilityPort`はbooleanの`navigator.userAgentData?.mobile`だけをmobile authorityとし、User-Agent文字列、viewport幅、touch有無からmobile値を捏造しない。優先順位はoverrideによるpicker強制、`mobileCapability=true`、`mobileCapability=false`、unknownの順とし、unknownはpointer情報にかかわらず安全側pickerへ倒す。`mobile=false`の狭幅／touch PCは非スマートフォン規則、`mobile=true`はtouch情報が矛盾してもpickerとする。overrideは非スマートフォン強制を持たずBackupへ収録しない。gesture開始時に判定snapshotを固定し、判定入力が途中で変わればgestureをcancelする。I0のtruth tableとI8／I9 browser testで全組合せを固定する
+- `PD-05`に従い、表示用の`layoutMode`と操作用の`isSmartphoneSelectionMode`を分離する。pure `resolveSmartphoneSelectionModeV1`は`forcedPickerOverride`、`mobileCapability: true | false | "unknown"`、primary pointer／touch capabilityを入力とする。`forcedPickerOverride`は`MapCellSplitControlRoot.forceSplitPicker`だけから読み、設定のアクセシビリティにある「常にセル側選択ダイアログを表示」toggleで端末全体へ保存する。全event、通常マップ、集中モードで共通、既定false、Backup非収録、明示OFFまたはprofile resetまで維持し、event／viewport／UA変更で自動解除しない。control authorityを信頼できない場合は保存値を推測せずeffective trueとする。production `MobileCapabilityPort`はbooleanの`navigator.userAgentData?.mobile`だけをmobile authorityとし、User-Agent文字列、viewport幅、touch有無からmobile値を捏造しない。優先順位はoverrideによるpicker強制、`mobileCapability=true`、`mobileCapability=false`、unknownの順とし、unknownはpointer情報にかかわらず安全側pickerへ倒す。`mobile=false`の狭幅／touch PCは非スマートフォン規則、`mobile=true`はtouch情報が矛盾してもpickerとする。overrideは非スマートフォン強制を持たない。gesture開始時に判定snapshotとcontrol revisionを固定し、途中で変わればgestureをcancelして全pointerが離れた次操作から新値を使う。I0のtruth tableとI2永続化、I8／I9 UI・browser testで全組合せを固定する
 - `isSmartphoneSelectionMode=false`では、片側の表示上の最短辺が入力種別ごとの閾値以上で、分割線の曖昧帯外にある場合だけ選択した側を直接開く
 - スマートフォン以外の初期閾値は、マウスでは片側の最短辺12 CSS px、タッチ・ペンでは44 CSS pxとする
 - 閾値と完全一致する場合は直接選択する。スマートフォン以外で閾値未満、分割線の曖昧帯、または候補が複数の場合は選択を変更せず、「拡大してa側またはb側の中央付近を選択してください」と案内する。スマートフォン専用pickerを開かない
@@ -302,6 +321,9 @@ previewは`eventInstanceId`、command固有の選択、`C(before)`、計算し�
 - 後回し、遅参など進行区分が異なる場合は別`PhaseVisitIdentity`として扱うが、「別訪問」は「別のbase挿入位置」を意味しない。各phase内の順序はbase execution順から決定的に派生し、基礎となる`ExecutionVisitIdentity`のraw位置を動かさない
 - migration前は利用者が指定したraw実行商品順の最初の出現をbase execution順のseedとし、migration後はdense `executionVisitOrder`を優先する。phase別の独立した手動順は初版で保存せず、全phaseをnormal→postponed→late、各phase内base execution順で投影する
 - base executionの手動順がない場合だけ、同じ優先度内でa→bを自然順とし、各phase投影もその順序を使用する
+- I7以降の並べ替えintentは`ExecutionVisitIdentityKey`の重複なしexact permutationだけを受けるpure `planExecutionVisitOrderMutationV1`へ集約する。`useMapVisitListCommands.updateOrder`は`ShoppingItem[]`からraw item ID列を即時変更せず、projection上のbase visit ID draftを作り、保存時だけdurable order commandを呼ぶ。取消はdraftだけを破棄する
+- 永続commandは`ExecutionVisitOrderMutationCommandV1`のexact unionとし、通常reorderのstable IDを`fsmc.visits.reorder-execution-order.v1`、hall連動reorderを`fsmc.visits.reorder-by-hall.v1`に固定する。両branchはsource event／day、projection revision、before／after execution visit permutation、raw execution rootのread-only witness、durable root、必要時hall route root、`ExpectedRootVector`、preview digestを持つ。raw execution rootはcommit直前のCAS read対象だがbyte保持するためlogical write participantへ水増しせず、durableとhall routeの実writeだけをparticipant／fenceへexact登録する
+- hall順変更は`useMapRouteCommands.reorderExecuteListByHallOrder`によるraw item配列更新を廃止し、hall route settings after-imageと同じsnapshotからbase visit permutationを作る`planHallRouteAndExecutionOrderMutationV1`へ移す。commitはcoreのhall route root、`durable-visit-state`、metadata／checkpoint／fenceを同じ`ExpectedRootVector`とtransactionでall-old／all-newにし、raw実行商品ID配列と訪問内member相対順をbyte同値で維持する。stale、unknown visit、非全単射、rekey競合、quotaでは双方write 0件とする
 - 同じ`ExecutionVisitIdentity`を意図的に複数の別訪問として作る「再訪」は初版対象外とし、商品追加・編集・復元・経路挿入の全経路で既存訪問へのglobal統合を優先する
 - identity変更を伴う商品編集だけは、変更item IDを変更先identityの既存member末尾へ決定的に移す。変更先の最初のmember位置は動かさず、変更item以外のraw順を維持する
 - 投影済み訪問のroute、hit-test、挿入位置は代表商品IDやmember配列の先頭ではなく`PhaseVisitIdentityKey`で参照する。memberの商品ID列は訪問payloadとし、identityには含めない
@@ -321,6 +343,7 @@ previewは`eventInstanceId`、command固有の選択、`C(before)`、計算し�
 
 ### 3.9 経路
 
+- selected hallの`polygonFingerprint = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-hall-route-polygon-v1", eventInstanceId, mapInstanceId, hallId, hallDefinitionRevision, polygon, boundaryRule })))`とする。selected constraintの`constraintFingerprint`は検証済みpolygon fingerprintを含む自身以外の全fieldを`{ domain: "fsmc-route-path-constraint-v1", constraint }`でhashする。開始頂点／向きだけの差は同値、頂点／hall／revisionの差は別値とする
 - 26aと26bの経路終点と番号マーカーを各半領域の中央へ置く
 - 同じセル内の26a→26bでも、両中心間の短い線を表示する
 - 経路挿入と経路ヒットテストもa/bを区別する
@@ -331,6 +354,7 @@ previewは`eventInstanceId`、command固有の選択、`C(before)`、計算し�
 - 同じanchorを共有する複数訪問は、Canvas上では件数badge付きの1つの位置markerとして描画し、選択後のDOM一覧で優先度・進行区分ごとの別訪問として表示する。現在訪問だけは最前面の状態ringで示し、後描画で他訪問の存在を隠さない
 - 同じanchorを共有する位置marker本体は特定訪問の色で代表させず中立色とし、件数badgeと現在訪問ringを独立layerで描画する
 - DOM訪問一覧の各`PhaseVisitIdentity`に「この訪問の後へ挿入」を設ける。追加対象の`ExecutionVisitIdentity`が存在しない場合だけ、anchor phase visitからbase execution visitを求め、denseな`executionVisitOrder`でその直後へ新identityを挿入して後続orderを1ずつ進める。raw商品IDは既存member相対順を維持して追加し、`[A1, B, A2]`のような非連続memberの「最後のraw index」をbase順authorityにしない。既存execution identityがある場合は、追加対象phaseがまだ存在しなくても指定anchorを無視し、商品を既存base訪問へglobal統合して必要な新phase entryをbase位置へ追加する。「既存訪問へ統合したため、指定位置に新規訪問は作成しませんでした」と通知する。例としてnormalが`A→B`のときに後回しAを「Bの後」へ指定しても、後回しAはnormal Aとは別のphase訪問としてbase A位置へ投影し、Bの後には置かない。成功・取消・競合をstable operation event ID付きで通知し、操作元へfocusを戻す
+- 選択ホールが`all`以外の場合は、route inputへstable event／map／hall ID、hall definition revision、canonical polygon、`polygonFingerprint`を持つ`selected-hall-polygon` constraintを必須にする。現行`HallDefinition`／polygon validationと同じ4頂点以上を維持し、hall不在、4頂点未満、stale revisionは無制約routeへfallbackせず`invalid-route-constraint`として経路を停止する。main pathの全node間segment、simplification後segment、routing port、anchor connector、`same-cell-direct`をinclusive polygon内で検証し、端点だけ内側でも凹polygon外へ出る線を`outside-route-constraint`でunroutableにする。`all`だけが明示的な`whole-map` constraintを使う
 
 ### 3.10 地図再取込と通常編集
 
@@ -523,6 +547,9 @@ type MapLocationIndexRevision = string & {
 type MapLocationIndexLookupKey = string & {
   readonly __brand: "MapLocationIndexLookupKeyV1";
 };
+type MapLocationPhysicalSlotKey = string & {
+  readonly __brand: "MapLocationPhysicalSlotKeyV1";
+};
 type GridCellAddress = {
   row: number;
   col: number;
@@ -641,6 +668,7 @@ type MapCellSplit =
 interface ResolvedMapLocation {
   identity: Extract<SpaceIdentity, { kind: "mapped" }>;
   locationKey: LocationKey;
+  physicalSlotKey: MapLocationPhysicalSlotKey;
   markerStackKey: MarkerStackKey;
   lookupCell: GridCellAddress;
   baseCell: GridCellAddress;
@@ -659,6 +687,49 @@ interface MapLocationIndexCellInputV1 {
   mergedBounds: MapBoundsV1 | null;
 }
 
+interface MapLocationLogicalRequestV1 {
+  blockInstanceId: string;
+  baseNumber: number;
+  normalizedUnsupportedSuffixes: readonly string[];
+}
+
+type MapLocationLogicalSourceItemV1 =
+  | {
+      itemId: string;
+      resolution: "mapped-to-target-map";
+      blockInstanceId: string;
+      parsedNumber:
+        | { kind: "whole"; baseNumber: number }
+        | { kind: "split-side"; baseNumber: number; side: "a" | "b" }
+        | {
+            kind: "unsupported";
+            baseNumber: number;
+            normalizedSuffix: string;
+          };
+    }
+  | {
+      itemId: string;
+      resolution:
+        | "mapped-to-other-map"
+        | "mapless"
+        | "legacy-unresolved"
+        | "no-map-association";
+    };
+
+interface LogicalLocationSourceSnapshotV1 {
+  schemaVersion: 1;
+  eventInstanceId: string;
+  targetMapInstanceId: string;
+  itemRootRevision: ProjectionInputRootRevisionV1;
+  associationRootRevision: ProjectionInputRootRevisionV1;
+  eventItemIds: readonly string[];
+  items: readonly MapLocationLogicalSourceItemV1[];
+  itemSetDigest: string;
+  snapshotDigest: string;
+}
+
+// `eventItemIds`は重複なしのECMAScript UTF-16 code-unit順、`items`も同じ比較による`itemId`順とし、両配列のIDは同じindexで一致するexact bijectionでなければならない。source item／association入力のshuffleでも両配列、`itemSetDigest`、`snapshotDigest`、index revision、論理location集合をbyte同値にする。BMP／astral文字を混在させたopaque item IDの全shuffleをgoldenにし、Unicode code point順やlocale順への差替えを拒否する。
+
 interface MapLocationIndexSplitInputV1 {
   blockInstanceId: string;
   baseNumber: number;
@@ -674,43 +745,82 @@ interface MapLocationIndexBuildInputV1 {
   splitRootRevision: ProjectionInputRootRevisionV1;
   cells: readonly MapLocationIndexCellInputV1[];
   activeSplits: readonly MapLocationIndexSplitInputV1[];
+  logicalLocationSourceSnapshot: Readonly<LogicalLocationSourceSnapshotV1>;
 }
 
-interface MapLocationIndex {
-  schemaVersion: 1;
+interface MapLocationGeometrySlotV1 {
+  physicalSlotKey: MapLocationPhysicalSlotKey;
   eventInstanceId: string;
   mapInstanceId: string;
-  inputRevision: MapLocationIndexRevision;
-  locations: readonly ResolvedMapLocation[];
-  byLocationKey: ReadonlyMap<LocationKey, ResolvedMapLocation>;
-  byBlockNumberKey: ReadonlyMap<
-    MapLocationIndexLookupKey,
-    | readonly [ResolvedMapLocation]
-    | readonly [ResolvedMapLocation, ResolvedMapLocation]
-  >;
-  byLookupCellKey: ReadonlyMap<
-    MapLocationIndexLookupKey,
-    | readonly [ResolvedMapLocation]
-    | readonly [ResolvedMapLocation, ResolvedMapLocation]
-  >;
+  blockInstanceId: string;
+  lookupCells: readonly [GridCellAddress, ...GridCellAddress[]];
+  baseCell: GridCellAddress;
+  baseNumber: number;
+  displayNumber: string;
+  wholeBounds: MapBoundsV1;
+  wholeAnchor: MapPoint;
 }
 
-type MapLocationIndexBuildReason =
-  | "duplicate-physical-cell"
+type MapLocationExclusionReason =
   | "duplicate-number-region"
   | "multiple-block-owners"
   | "overlapping-number-regions"
   | "merge-crosses-block";
 
+interface MapLocationExclusionV1 {
+  exclusionKey: string;
+  reasons: readonly [
+    MapLocationExclusionReason,
+    ...MapLocationExclusionReason[],
+  ];
+  affectedRegionKeys: readonly [
+    MapLocationIndexLookupKey,
+    ...MapLocationIndexLookupKey[],
+  ];
+  blockInstanceIds: readonly string[];
+  baseNumbers: readonly number[];
+  lookupCells: readonly [GridCellAddress, ...GridCellAddress[]];
+}
+
+interface MapLocationIndex<
+  TExclusions extends readonly MapLocationExclusionV1[] =
+    readonly MapLocationExclusionV1[],
+> {
+  schemaVersion: 1;
+  eventInstanceId: string;
+  mapInstanceId: string;
+  inputRevision: MapLocationIndexRevision;
+  physicalSlots: readonly MapLocationGeometrySlotV1[];
+  locations: readonly ResolvedMapLocation[];
+  exclusions: TExclusions;
+  byPhysicalSlotKey: ReadonlyMap<
+    MapLocationPhysicalSlotKey,
+    MapLocationGeometrySlotV1
+  >;
+  byLocationKey: ReadonlyMap<LocationKey, ResolvedMapLocation>;
+  byBlockNumberKey: ReadonlyMap<
+    MapLocationIndexLookupKey,
+    MapLocationGeometrySlotV1
+  >;
+  byLookupCellKey: ReadonlyMap<
+    MapLocationIndexLookupKey,
+    MapLocationGeometrySlotV1
+  >;
+}
+
 type BuildMapLocationIndexResult =
-  | { kind: "ready"; index: MapLocationIndex }
+  | { kind: "ready"; index: MapLocationIndex<readonly []> }
+  | {
+      kind: "ready-with-exclusions";
+      index: MapLocationIndex<
+        readonly [MapLocationExclusionV1, ...MapLocationExclusionV1[]]
+      >;
+    }
   | {
       kind: "map-data-untrusted";
       index: null;
-      reasons: readonly [
-        MapLocationIndexBuildReason,
-        ...MapLocationIndexBuildReason[],
-      ];
+      reasons: readonly ["duplicate-physical-cell"];
+      duplicateLookupCells: readonly [GridCellAddress, ...GridCellAddress[]];
     };
 
 interface SplitBindingEvidenceV1 {
@@ -866,6 +976,7 @@ interface MapCellSplitSettingsRoot {
 interface MapCellSplitControlRoot {
   schemaVersion: 1;
   deviceEnabled: boolean;
+  forceSplitPicker: boolean;
   enabledEventInstanceIds: string[];
 }
 
@@ -874,6 +985,14 @@ type SplitImplementationReadiness =
   | "internal-testing"
   | "release-ready";
 ```
+
+`buildMapLocationIndexV1`は最初に物理cell重複を全mapで検査し、1件でもあれば他の診断を局所除外へ偽装せず`map-data-untrusted`だけを返す。物理cellが一意なら、番号region／owner／overlap／merge関係を配列順に依存しないconnected componentへ正規化し、各不正componentをexact 1 `MapLocationExclusionV1`、残りを`MapLocationGeometrySlotV1`へ写す。各componentの`reasons`は該当する全原因を`duplicate-number-region → multiple-block-owners → overlapping-number-regions → merge-crosses-block`の固定enum順で重複なく保持し、先頭reasonや走査順で1件へ縮退させない。exclusion keyは全reasonsとregion／block／number／lookup cellを拘束し、各配列はcanonical順・重複なし、同じ不正入力とreason発見順のshuffleでbyte同値にする。exclusion 0件だけが`ready`、1件以上は同じindexとbyte一致するnonempty exclusionsを持つ`ready-with-exclusions`である。影響外の`resolveItemMapLocation`、hit-test、list、描画、訪問projection、routeは継続し、除外領域へ解決し得るitemだけをambiguous／unroutable診断へ送る。
+
+`collectLogicalLocationSourceSnapshotV1`は対象eventの全item rootと全map associationを同じread boundaryで読み、`eventItemIds`と`items`をexact bijectionにした`LogicalLocationSourceSnapshotV1`を作る唯一のconstructorである。`mapped-to-target-map`だけがblock／parsed numberを持ち、other-map／mapless／legacy-unresolved／associationなしは明示ignored branchとしてsnapshot completenessへ残す。`eventItemIds`は重複なしの3.3と同じECMAScript UTF-16 code-unit順とし、`itemSetDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-logical-location-item-set-v1", eventInstanceId, eventItemIds })))`、`snapshotDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-logical-location-source-snapshot-v1", snapshotWithoutSnapshotDigest })))`のliteral式で自身以外の全fieldを拘束する。builder callerがpartial item列、独自filter、suffix配列を渡すedgeをarchitecture testで0件にする。
+
+`deriveMapLocationLogicalRequestsV1(sourceSnapshot)`はevent item ID順にtotal走査し、target mapのunsupported分岐だけを`(blockInstanceId, baseNumber)`ごとのcanonical suffix集合へ集約する。source item／`eventItemIds`の欠落・余分・重複、event／map不一致、digest差、mapped targetのblock解決不能、非canonical parser結果、`a | b`をunsupported suffixへ混入した入力はindex 0件のtyped rejectとする。mapless／legacy-unresolved／other-mapをtarget map errorにせず、明示ignored branchとして同じdigestへ保持する。index revisionはitem root revision、association root revision、snapshot digestを全て含む。
+
+`deriveLogicalMapLocationsV1(slot, split, normalizedUnsupportedSuffixes)`は全slotでwholeを必ず生成し、splitありの場合だけa／bを追加し、その後にcanonical unsupported suffixごとのlocationを加える。したがってsplit済み物理slotでも`26`、`26a`、`26b`、`26c`、`26d`、`26ab`は相異なる論理`LocationKey`になり、whole／unsupportedは同じ`wholeBounds`／`wholeAnchor`を共有する。`byBlockNumberKey`／`byLookupCellKey`は論理location配列ではなく一意な物理slotを返し、`byLocationKey`だけが可変個数の論理locationを扱う。index revisionはmap、split、logical-location source item、associationの各revisionと導出済み論理location集合を拘束する。
 
 分割なしはentryを保存しない。非対応番号は分割entryにはならないが、`SpaceSideIdentity`のtokenを含む別の空間・訪問identityとして扱う。maplessは既存の`MAPLESS_HALL_KEY`、日程、一意に解決したhall ID（manual指定または既存hall resolver）もしくは未割当て、block、番号のcanonical tokenから構成し、mapped用の架空IDを発行しない。legacy-unresolvedの`SpaceIdentity`は`canonicalLegacyToken`だけをidentity payloadに持ち、原文と`LegacyResolutionReason`／`AmbiguousResolutionReason`は`ItemSpaceResolution`の表示・診断payloadで維持する。reasonや原文の違いだけで同じ`LocationKey`に複数のstructural identityを作らず、mappedまたはmaplessへ推測変換しない。ただし`missing-manual-hall-reference`では、異なるdangling manual hallを統合しないためvalidated opaque `manualHallId`をowner evidenceとしてcanonical keyへ含める。`canonicalLegacyToken`は`esp-json-v1`で直列化した`["legacy-space-token", 1, eventInstanceId, normalizedDayKey, ["block", normalizedBlockToken] | ["block-missing"] | ["dangling-manual-hall", manualHallId, normalizedBlockToken], ["number", normalizedNumberTokenPreservingLeadingZeros]]`とする。番号tokenはNFKC、Unicode空白除去、ASCII小文字化後も先頭ゼロを維持し、表示原文とhall表示名はcanonical keyへ直接入れない。別blockまたは別dangling `manualHallId`の同じ不正番号を統合せず、`ambiguous`でも候補を選ばずこのlegacy identityを共有訪問projectionへ残す。各unionはそれぞれ`["mapped-space", 1, ...]`、`["mapless-space", 1, ...]`、`["legacy-space", 1, canonicalLegacyToken]`のcanonical JSON tupleから`LocationKey`を生成し、`SpaceIdentity`と`LocationKey`を一対一にする。
 
@@ -887,7 +1006,7 @@ activeと保持中entryの型を分け、activeだけが現在の`mapInstanceId`
 
 `RetainedNumberIdentity`で`number`と`originalNumberToken`を両方持つ場合、I0のexact番号parserでtokenが`split-side | whole | unsupported`のいずれかへ解決し、その`baseNumber`が`number`と一致することをsemantic invariantにする。先頭ゼロやsuffixの原文は一致時だけ保持できる。不一致またはtokenがunresolvedなのに`number`もあるruntime entryは、`evidenceOrigin: "last-active"`なら`invalid-value`としてquarantinedにして再関連付け候補へ使わない。`portable-never-active`にはlast-active evidenceを捏造してquarantinedへ変換せず、root-untrusted安全モードとBackup復旧案内にする。V2入力はどちらもDB更新前にfile全体を拒否する。`originalNumberToken`だけのentryは未解決のまま保持し、数値を推測しない。
 
-端末全体とevent別ON／OFFはsettings payloadから分離し、同じcapability storeのキー`control`に`MapCellSplitControlRoot`として保存する。`enabledEventInstanceIds`は重複なしで上記canonical比較順とし、未掲載eventはOFFとする。event削除時は同じcommitでIDを除去する。Backup V1／V2へ含めない。`SplitImplementationReadiness`はbuild sourceに固定する静的gateであり、永続化、外部service、利用者設定から変更できない。I11最終release candidate PRだけがsource固定値をbuild前に`release-ready`へ変更し、その同一production artifactで全Exitを検証する。gate成功までは配布不能で、verifierがreadinessを実行後に書き換えることも、検証済みsourceから別artifactを作り直すことも禁止する。QA buildだけが明示的なtest overrideを持て、production bundleにoverride command、query parameter、storage keyを含めない。
+端末全体とevent別ON／OFF、および端末全体の`forceSplitPicker`はsettings payloadから分離し、同じcapability storeのキー`control`に`MapCellSplitControlRoot`として保存する。factory defaultは`deviceEnabled = false`、`forceSplitPicker = false`、enabled event 0件とする。`enabledEventInstanceIds`は重複なしで上記canonical比較順とし、未掲載eventはOFFとする。event削除時は同じcommitでIDを除去するが、device preferenceである`forceSplitPicker`は維持する。control rootがuntrusted／未読の場合、split mutationは既存規則どおり停止し、表示済みsplitへのselection policyだけは`forceSplitPicker = true`相当へ倒す。Backup V1／V2へcontrol rootを含めない。`setForceSplitPickerAtomically`はhealthy capabilityでdevice／event OFF中にも利用でき、最新control revisionを再検証してtoggleだけを変更する。`SplitImplementationReadiness`はbuild sourceに固定する静的gateであり、永続化、外部service、利用者設定から変更できない。I11最終release candidate PRだけがsource固定値をbuild前に`release-ready`へ変更し、その同一production artifactで全Exitを検証する。gate成功までは配布不能で、verifierがreadinessを実行後に書き換えることも、検証済みsourceから別artifactを作り直すことも禁止する。QA buildだけが明示的なtest overrideを持て、production bundleにoverride command、query parameter、storage keyを含めない。
 
 entryの保存・コピー・再関連付け・再取込時に、対象ブロック内の正規化番号が一意であることを検証する。行・列は地図指紋と再取込照合の証拠には含めるが、利用者が選択して保存する識別子にはしない。同一ブロック内の重複番号へentryを新規保存せず、同じ地図内の一意な他番号は処理を継続する。
 
@@ -933,6 +1052,8 @@ canonical field、安定sort、文字列正規化、algorithm version、SHA-256�
 
 ### 5.4 経路・訪問ドメイン
 
+- reorder commandの`readOnlyExpectedRoots`はfull `ExpectedStoreRoot`を保つ`expectedRootVector`のうち両witnessが実際に読んだrootとのcanonical exact subsetとする。構造の異なるfull rowをflattened revisionへ直接byte比較せず、各rowへpure `toProjectionInputRootRevisionV1`を適用したcanonical projection集合を、`rootRevisions`／`rootRevision`の同一root集合とexact bijectionかつbyte一致させる。`rawExecutionItemWitness.storeName`は実在authority名`executeModeItems`、`orderedItemIds`はraw membershipとのexact bijection、item／association witnessの2配列は同じsnapshotの全入力とのexact bijectionかつcanonical key順とし、resultがfull read-only rootsと両witnessをbyte同値で返す。item rowの`canonicalPayloadBytes`は同じ`VisitIdentityInputSnapshot.items`行から`itemId`を除いたexact `ExecutionVisitOrderItemInputPayloadV1`を`UTF8(esp-json-v1(payload))`へしたbytes、association rowはmap association／hall definition／hall association／hall remap／split settingsのexact identity DTOをkind付きunion `ExecutionVisitOrderAssociationInputPayloadV1`へ写して同様にserializeしたbytesとする。item `payloadDigest`はexact `{ domain: "fsmc-execution-visit-order-item-input-v1", itemId, canonicalPayloadBytes }`、association `payloadDigest`はexact `{ domain: "fsmc-execution-visit-order-association-input-v1", associationKind, associationKey, canonicalPayloadBytes }`を`esp-json-v1`でcanonical serializeしたUTF-8 bytesのlowercase 64桁SHA-256とする。`membershipDigest`はexact `{ domain: "fsmc-execution-visit-order-item-membership-v1", storeName, rootRevision, orderedItemIds }`、`witnessDigest`はexact `{ domain: "fsmc-execution-visit-order-item-association-witness-v1", rootRevisions, items, associations }`を同様にhashし、自身を入力へ含めない。preview作成時とcommit直前にfresh snapshotから全payload bytes／row digest／outer digestを再構築し、bytesまたはdigestだけの自己申告を採用しない。`ExecutionVisitOrderPreviewDigest`はexact `{ domain: "fsmc-execution-visit-order-preview-v1", command: { commandId, intentKind, eventInstanceId, normalizedDayKey, projectionRevision, beforeExecutionVisitOrder, afterExecutionVisitOrder, expectedRootVector, readOnlyExpectedRoots, rawExecutionItemWitness, itemAndAssociationWitness, hallRouteSettingsAfterImage } }`を同様にhashし、byte payloadは同serializerのlossless byte tagを使う。resultはcommandの`readOnlyExpectedRoots`、両witness、preview digestをbyte同値でechoし、全projection／digest再計算後だけ成功できる。full subsetまたはprojectionの余分／欠落／変換差、item／associationの余分、欠落、別snapshot、架空store名、各witnessのroot／payload／order／digest-only差、item／association domain swap、preview projection各field単独差、別command／hall after-imageのdigest replayを拒否する
+
 経路の論理単位は商品や行・列ではなく共有projectionが返す`PhaseVisitIdentity`とする。
 
 ```ts
@@ -954,6 +1075,33 @@ interface RoutingPort {
   node: SubcellPathNode;
   point: MapPoint;
 }
+
+type RoutePathConstraintFingerprint = string & {
+  readonly __brand: "RoutePathConstraintFingerprintSha256";
+};
+
+type RoutePolygonFingerprint = string & {
+  readonly __brand: "RoutePolygonFingerprintSha256";
+};
+
+type RoutePathConstraintV1 =
+  | {
+      kind: "whole-map";
+      eventInstanceId: string;
+      mapInstanceId: string;
+      constraintFingerprint: RoutePathConstraintFingerprint;
+    }
+  | {
+      kind: "selected-hall-polygon";
+      eventInstanceId: string;
+      mapInstanceId: string;
+      hallId: string;
+      hallDefinitionRevision: ProjectionInputRootRevisionV1;
+      polygon: readonly [MapPoint, MapPoint, MapPoint, MapPoint, ...MapPoint[]];
+      polygonFingerprint: RoutePolygonFingerprint;
+      boundaryRule: "inclusive-v1";
+      constraintFingerprint: RoutePathConstraintFingerprint;
+    };
 
 interface ExecutionVisitIdentity {
   locationKey: LocationKey;
@@ -2635,6 +2783,8 @@ interface ResolvedRouteVisitPoint {
   identity: PhaseVisitIdentity;
   visitId: PhaseVisitIdentityKey;
   locationKey: LocationKey;
+  mapInstanceId: string;
+  routeConstraintFingerprint: RoutePathConstraintFingerprint;
   markerStackKey: MarkerStackKey;
   baseCell: GridCellAddress;
   routingPort: RoutingPort;
@@ -2663,6 +2813,7 @@ interface SplitRouteSegment {
   toVisitId: PhaseVisitIdentityKey;
   insertionAfterVisitId: PhaseVisitIdentityKey;
   geometryKind: "path" | "same-cell-direct" | "coincident-anchor";
+  routeConstraintFingerprint: RoutePathConstraintFingerprint;
   hitTestable: boolean;
   mainPath: SubcellPathNode[];
   connectors: SplitRouteConnector[];
@@ -2679,15 +2830,164 @@ type RouteResolution =
       kind: "unroutable";
       fromVisitId: PhaseVisitIdentityKey;
       toVisitId: PhaseVisitIdentityKey;
-      reason: "no-routing-port" | "path-not-found" | "unsafe-connector";
+      reason:
+        | "no-routing-port"
+        | "path-not-found"
+        | "unsafe-connector"
+        | "invalid-route-constraint"
+        | "outside-route-constraint";
     };
+
+interface SplitRouteBuildInputV1 {
+  projection: PhaseVisitProjectionSnapshot;
+  mapLocationIndexRevision: MapLocationIndexRevision;
+  pathfindingGraphFingerprint: string;
+  routePathConstraint: RoutePathConstraintV1;
+}
+
+interface HallRouteSettingsAfterImageV1 {
+  storeName: "hallRouteSettings";
+  key: string;
+  canonicalPayloadBytes: Uint8Array;
+  payloadDigest: PersistenceDigestDescriptor;
+}
+
+type ExecutionVisitOrderItemMembershipDigest = string & {
+  readonly __brand: "ExecutionVisitOrderItemMembershipDigestSha256";
+};
+
+type ExecutionVisitOrderItemAssociationWitnessDigest = string & {
+  readonly __brand: "ExecutionVisitOrderItemAssociationWitnessDigestSha256";
+};
+
+type ExecutionVisitOrderItemInputPayloadDigest = string & {
+  readonly __brand: "ExecutionVisitOrderItemInputPayloadDigestSha256";
+};
+
+type ExecutionVisitOrderAssociationInputPayloadDigest = string & {
+  readonly __brand: "ExecutionVisitOrderAssociationInputPayloadDigestSha256";
+};
+
+interface ExecutionVisitOrderItemInputPayloadV1 {
+  eventInstanceId: string;
+  normalizedDayKey: NormalizedDayKeyV1;
+  manualHallId: string | null;
+  normalizedBlockToken: NormalizedBlockTokenV1;
+  originalNumber: string;
+  priorityLevel: VisitPriorityLevel;
+}
+
+type ExecutionVisitOrderAssociationInputPayloadV1 =
+  | {
+      associationKind: "map-association";
+      payload: MapAssociationIdentityInputV1;
+    }
+  | {
+      associationKind: "hall-definition";
+      payload: HallDefinitionIdentityInputV1;
+    }
+  | {
+      associationKind: "hall-association";
+      payload: HallAssociationIdentityInputV1;
+    }
+  | { associationKind: "hall-remap"; payload: HallRemapIdentityInputV1 }
+  | {
+      associationKind: "split-settings";
+      payload: MapCellSplitSettingsIdentityInputV1;
+    };
+
+interface ExecutionVisitOrderItemMembershipWitnessV1 {
+  storeName: "executeModeItems";
+  rootRevision: ProjectionInputRootRevisionV1;
+  orderedItemIds: readonly string[];
+  membershipDigest: ExecutionVisitOrderItemMembershipDigest;
+}
+
+interface ExecutionVisitOrderItemAssociationWitnessV1 {
+  rootRevisions: ProjectionInputRevisionVectorV1;
+  items: readonly {
+    itemId: string;
+    canonicalPayloadBytes: Uint8Array;
+    payloadDigest: ExecutionVisitOrderItemInputPayloadDigest;
+  }[];
+  associations: readonly {
+    associationKind: ExecutionVisitOrderAssociationInputPayloadV1["associationKind"];
+    associationKey: string;
+    canonicalPayloadBytes: Uint8Array;
+    payloadDigest: ExecutionVisitOrderAssociationInputPayloadDigest;
+  }[];
+  witnessDigest: ExecutionVisitOrderItemAssociationWitnessDigest;
+}
+
+type ExecutionVisitOrderPreviewDigest = string & {
+  readonly __brand: "ExecutionVisitOrderPreviewDigest";
+};
+
+interface ExecutionVisitOrderCommitBaseV1 {
+  eventInstanceId: string;
+  normalizedDayKey: string;
+  projectionRevision: PhaseVisitProjectionRevision;
+  beforeExecutionVisitOrder: readonly ExecutionVisitIdentityKey[];
+  afterExecutionVisitOrder: readonly ExecutionVisitIdentityKey[];
+  expectedRootVector: ExpectedRootVector;
+  readOnlyExpectedRoots: readonly [ExpectedStoreRoot, ...ExpectedStoreRoot[]];
+  rawExecutionItemWitness: ExecutionVisitOrderItemMembershipWitnessV1;
+  itemAndAssociationWitness: ExecutionVisitOrderItemAssociationWitnessV1;
+  previewDigest: ExecutionVisitOrderPreviewDigest;
+}
+
+type ExecutionVisitOrderMutationCommandV1 =
+  | (ExecutionVisitOrderCommitBaseV1 & {
+      commandId: "fsmc.visits.reorder-execution-order.v1";
+      intentKind: "manual";
+      hallRouteSettingsAfterImage: null;
+    })
+  | (ExecutionVisitOrderCommitBaseV1 & {
+      commandId: "fsmc.visits.reorder-by-hall.v1";
+      intentKind: "hall-route";
+      hallRouteSettingsAfterImage: HallRouteSettingsAfterImageV1;
+    });
+
+interface ExecutionVisitOrderMutationResultBaseV1 {
+  executionVisitOrderAfterImage: readonly ExecutionVisitIdentityKey[];
+  readOnlyExpectedRoots: readonly [ExpectedStoreRoot, ...ExpectedStoreRoot[]];
+  rawExecutionItemWitness: ExecutionVisitOrderItemMembershipWitnessV1;
+  itemAndAssociationWitness: ExecutionVisitOrderItemAssociationWitnessV1;
+  previewDigest: ExecutionVisitOrderPreviewDigest;
+}
+
+type ExecutionVisitOrderMutationResultV1 =
+  | (ExecutionVisitOrderMutationResultBaseV1 & {
+      commandId: "fsmc.visits.reorder-execution-order.v1";
+      intentKind: "manual";
+      hallRouteSettingsAfterImage: null;
+      logicalMutationStoreNames: readonly ["durable-visit-state"];
+      payloadWriteStoreNames: readonly ["durable-visit-state"];
+    })
+  | (ExecutionVisitOrderMutationResultBaseV1 & {
+      commandId: "fsmc.visits.reorder-by-hall.v1";
+      intentKind: "hall-route";
+      hallRouteSettingsAfterImage: HallRouteSettingsAfterImageV1;
+      logicalMutationStoreNames: readonly [
+        "durable-visit-state",
+        "hallRouteSettings",
+      ];
+      payloadWriteStoreNames: readonly [
+        "durable-visit-state",
+        "hallRouteSettings",
+      ];
+    });
 ```
 
 `markerStackKey`は浮動小数文字列の丸めではなく、map／block instance ID、基準番号、物理anchor種別を含むversion付きtupleから生成する。描画markerだけを同じ`markerStackKey`でまとめ、`PhaseVisitIdentity`、経路順、進行状態、hit-test候補を統合しない。route segment、hit-test、挿入anchorの参照は必ずphase visit IDとし、代表item IDや行・列だけへ戻さない。`memberItemIds`は表示・状態変更用payloadであってidentityではないため、先頭memberの削除後もmemberが残る限り同じvisit ID、座標、順序へ再解決する。
 
+`RoutePathConstraintV1`はfunctionを持たないdata-only DTOとし、hall定義の1-based `{ row, col }`頂点をpure adapter `hallVertexToMapPointV1({ row, col }) = { x: col - 0.5, y: row - 0.5 }`で5.1の0-based連続`MapPoint`へexact 1回だけ変換する。直値利用、二重offset、x／y逆転、非finite座標を拒否し、既存Canvas描画と同じ中心座標にする。version付きpure `validateHallPolygonContractV1`をhall editor、import、Backup reader、route DTO生成の唯一のerror-level validity authorityとし、現行`src/utils/polygonValidation.ts`のproduction defaultを固定値で移植する。4頂点以上、末尾の先頭点重複なし、連続重複頂点なし、自己交差なしに加え、1-based頂点へshoelace式`abs(sum) / 2`を適用した有限面積が`area >= 4`であること、`row = 1..maxRow`／`col = 1..maxCol`の各整数cell centerを共有inclusive point predicateへ通してin-bounds covered cellが1件以上あることを必須にする。`minArea` production overrideを廃止し、overlap warningは保存UIへ返すがroute validity errorにはしない。3頂点、面積`< 4`、covered cell 0件をroute層だけで受理せず、全surfaceで同じerror code集合へ写す。頂点数を`N`とし、全`N`個のforward rotationと全`N`個のreverse rotationの計`2N`候補をそれぞれ`esp-json-v1([[x,y], ...])`へserializeし、その文字列をECMAScript UTF-16 code-unit順で比較して最小の候補を唯一のcanonical polygonとする。同じ最小座標が複数ある場合も座標1個だけでtie-breakせず列全体を比較するため、同じpolygonの開始点／向きだけの差は同一になる。`RoutePolygonFingerprint`はこのcanonical polygonを用いて3.3のdomain-separated式から再計算する。凹形状を凸包へ変換しない。`constraintFingerprint`は自身を除くconstraint全fieldを`{ domain: "fsmc-route-path-constraint-v1", constraint }`としてcanonical SHA-256化する。`whole-map`も固定tag、event、mapを含むnon-null fingerprintを持つ。route cache signatureはprojection revision、順序付きvisit ID／location、index revision、`pathfindingGraphFingerprint`、constraint fingerprintを含め、constraintが異なるcacheを再利用しない。開始点／向きの全variant、同じ最小座標が複数ある形、座標`2`対`10`、面積境界`3.999…`／`4`、covered cell 0／1件をgolden fixtureに固定し、文字列化前の数値比較やlocale比較、surface別validatorによる別canonical化／別validityを拒否する。
+
+選択hall routeでは、全routing port／anchorがinclusive polygon内、`mainPath`の各subcell node中心と隣接node間線分、simplification後の各線分、全connectorと`same-cell-direct`の全線分がpolygon内であることを同じpure predicateで検証する。端点だけが内側でも凹部を横切る線、別hall、削除／変更済みhall revision、map不一致は失敗とする。display routeとinsert previewへ同じconstraint objectを渡し、片方だけ無制約にしない。constraint付きrouteもfingerprint込みでcache可能だが、predicateやpolygonをsignature外のclosureとして渡さない。
+
 `PhaseVisitProjectionRevision`はwall clockや配列object identityではなく、app層が同一read snapshotから作る`ProjectionInputRevisionVectorV1`の`esp-json-v1` canonical SHA-256とする。vectorの`rootRevisions`はitem payload／実行順／`durable-visit-state`、event metadata、map association、hall definition／association／remap、split settingsについて、`ExpectedRootVector` subsetの`(storeName, key, payloadDigest descriptor, metadataRevision, checkpointDigest)`をcanonical順で持ち、未commit after-imageを投影する場合だけ`uncommittedAfterImageDigest`をnon-nullにする。`payloadDigest`は現行`PersistenceDigestDescriptor`と同じalgorithm／canonicalization／valueの3 fieldだけを投影し、別型`PersistenceSynchronousFingerprint`の`canonicalLength`を混入させない。valueはlowercase 64桁hexとする。checkpointはnullだけを`absent`、validated checkpoint全体（kind／version／storeName／key／committedRoot／absorbedCandidates／updatedAt）のcanonical SHA-256を`present`へ写す。存在しない`checkpointRevision`文字列や`committedRoot.revision`だけへ縮退せず、同じcommitted rootでも`absorbedCandidates`／`updatedAt`だけが異なるfixtureでrevision差を必須にする。pure `toProjectionInputRootRevisionV1`はobserved rootとcheckpointが同じread boundaryの場合だけ受理する。consumerはsnapshotとrevisionを一体で受け、UI callbackはvisit IDだけを返す。shellは最新snapshotでvisit IDを再解決し、revisionが変わってvisitが消えた場合はmutationを呼ばず常設statusへ通知する。保存commandは最新`ExpectedRootVector`を再検査し、stale projectionをwrite authorityにしない。I0でabsent／present、checkpoint field単独差、root順shuffle、不正descriptorのgoldenを固定し、I1でbuilder／schema／runtime exact一致、I7で同revision同値・1 root差・callback中rekeyのstale testを固定する。
 
-`VisitIdentityInputRevision`は`revisionVector`とitems／実行順／`DurableVisitStateEntryV1`／association／hall／split after-imageのcanonical digestから導出し、全fieldが同じread boundaryに属する場合だけbuilderが受理する。snapshotはexact 1組の`(eventInstanceId, normalizedDayKey)`をscopeとし、`initialization.status = "ready"`のdurable entryと各itemのevent／day fieldは別authorityではなくscope一致を検証するwitnessである。item IDは重複なしで、`items`、`executionOrderItemIds`、`additionalPhaseByItemId`のkey集合をexact一致させる。normal所属は全execution itemへ暗黙に1件、追加phaseの唯一のauthorityはitem ID昇順のtotal tuple配列`additionalPhaseByItemId`とし、各valueは`null | postponed | late`の1値だけなので同じitemのpostponed＋late同時所属を表現不能にする。`executionVisitOrder`は投影前の全`ExecutionVisitIdentityKey`と重複なしのexact bijectionで、配列indexを唯一のdense orderとする。`current`はanchorがnullでもphaseを必須保持し、non-null anchorは指定phaseに実在するitemだけを許す。durable `lastPurchaseChangeAt`はnullまたは指定phaseに実在するnon-null anchor、`savedAnchorItemIdByPhase`はnormal／postponed／lateの明示3 fieldで、non-null itemがそのphaseに属することを必須にする。`isCompleted`はboolean以外を許さない。rootの`entries`は`eventInstanceId`、`normalizedDayKey`のcanonical比較順、scope重複なしとする。公開DTOは上記exact field以外を持たず、runtime component／persistence objectをimportしない。root revision重複・欠落・非canonical順、`cross-event-item`、`cross-day-item`、`duplicate-item-id`、`execution-order-item-set-mismatch`、`durable-phase-item-set-mismatch`、`execution-visit-order-set-mismatch`、`duplicate-execution-visit-order`、`duplicate-durable-visit-scope`、`unknown-phase-anchor-item`、`anchor-item-not-in-phase`、参照不能hall／mapをbuilder入口でtyped errorにし、snapshot混在やphaseを推測補正しない。
+`VisitIdentityInputRevision`は`revisionVector`とitems／実行順／`DurableVisitStateEntryV1`／association／hall／split after-imageのcanonical digestから導出し、全fieldが同じread boundaryに属する場合だけbuilderが受理する。snapshotはexact 1組の`(eventInstanceId, normalizedDayKey)`をscopeとし、`initialization.status = "ready"`のdurable entryと各itemのevent／day fieldは別authorityではなくscope一致を検証するwitnessである。item IDは重複なしで、`items`、`executionOrderItemIds`、`additionalPhaseByItemId`のkey集合をexact一致させる。normal所属は全execution itemへ暗黙に1件、追加phaseの唯一のauthorityはitem ID昇順のtotal tuple配列`additionalPhaseByItemId`とし、各valueは`null | postponed | late`の1値だけなので同じitemのpostponed＋late同時所属を表現不能にする。`executionVisitOrder`は投影前の全`ExecutionVisitIdentityKey`と重複なしのexact bijectionで、配列indexを唯一のdense orderとする。`ExecutionVisitOrderMutationCommandV1`はpreviewとcommitで同じinput/result schemaを使い、before／after permutation、projection、item／association、raw execution item rootをCAS再検査する。raw execution item rootはmembership競合を検出するread-only witnessであり、byte同値のためlogical mutation participant／physical writeへ含めない。manual branchはdurableだけ、hall-route branchはdurableとhall route settingsだけを実write participantへ登録する。`current`はanchorがnullでもphaseを必須保持し、non-null anchorは指定phaseに実在するitemだけを許す。durable `lastPurchaseChangeAt`はnullまたは指定phaseに実在するnon-null anchor、`savedAnchorItemIdByPhase`はnormal／postponed／lateの明示3 fieldで、non-null itemがそのphaseに属することを必須にする。`isCompleted`はboolean以外を許さない。rootの`entries`は`eventInstanceId`、`normalizedDayKey`のcanonical比較順、scope重複なしとする。公開DTOは上記exact field以外を持たず、runtime component／persistence objectをimportしない。root revision重複・欠落・非canonical順、`cross-event-item`、`cross-day-item`、`duplicate-item-id`、`execution-order-item-set-mismatch`、`durable-phase-item-set-mismatch`、`execution-visit-order-set-mismatch`、`duplicate-execution-visit-order`、`duplicate-durable-visit-scope`、`unknown-phase-anchor-item`、`anchor-item-not-in-phase`、参照不能hall／mapをbuilder入口でtyped errorにし、snapshot混在やphaseを推測補正しない。
 
 pure `auditLegacyFocusDayScopesV1({ core, authorityRevisionSubset })`は、物理keyとsemantic raw dayを同じunionへ入れない。まず`eventLists[].eventDate`のexact値をsemantic raw tupleにし、`executeModeItems`の各ordered item IDはcoreでexact 1 itemへ解決してそのitemのexact raw dayへ帰属させる。day-mode keyとempty execution bucket keyは、同じeventのitem raw daysへ`normalizeFsmcDayKeyV1`一致する候補が0件ならその物理key自体をempty-day semantic tupleとして追加し、1件以上なら候補groupのalias observationにだけ使ってphantom raw tupleを追加しない。nonempty execution bucketの物理keyもsemantic tupleにせず、参照itemのraw day集合へstable partitionするinputとする。unknown／duplicate item ID、同じIDの複数bucket所属、event外参照は既存core preflight errorへ止め、collision repairで推測しない。このcanonical semantic domainを正規化して`LegacyFocusDayScopePreflightV1`を返し、`authorityRevisionSubset`は同じ`H0` boundaryのcore rootだけに閉じ、root既定順のcanonical unique配列とし、associationや未発行IDを含めない。`authorityRevisionDigest`はexact `{ domain: "fsmc-legacy-focus-day-authority-revision-v1", authorityRevisionSubset }`を`esp-json-v1` canonical serializeしたlowercase SHA-256とする。collision 0件なら`kind = "collision-free"`、`(eventName, rawDayKey, normalizedDayKey)`のcanonical unique `dayTuples`、`authorityRevisionDigest`、`preflightDigest`を返す。`preflightDigest`は自身を除くexact object `{ kind, authorityRevisionDigest, dayTuples }`を同じ方法でhashし、event ID／proposal／scope／`basisCoreDigest`を含めない。1件以上ならevent名／normalized day順のcanonical nonempty `LegacyFocusDayScopeCollisionWitnessV1`を返し、event instance IDを仮発行せず、capture／`Vcap` versionchange request／seed／default／loss previewを0件にして`capability-adoption-blocked`へ止める。これによりpreflight／collision witnessの全fieldとdigestは宣言されたinputだけから再計算できる。
 
@@ -3828,7 +4128,7 @@ I0のfailure injection stage IDは`after-snapshot-read`、`after-external-baseli
 
 - 既存イベントとBackupから新規復元したイベントのcontrol entryは`enabled=false`を既定とし、利用者が当該端末でイベントごとに明示ONにする。event setting payloadへenabledを重複保存しない
 - 端末全体とevent別状態は`mapCellSplitSettings` storeの`control` rootで管理し、同じprofile内の複数tabではfull observed rootとcheckpointのCASを使う。別端末へ同期せず、Backupにも収録しない
-- registryはartifact purpose、readiness、open result、initializationでexactに分ける。`contracts-only` productionは全FSMC command 0件、`internal-testing` productionはcode存在を許すがpublic registration 0件、non-promotable QAはhealthy QA rootでinternal registryへ`readSplitControl`、`previewSplitEnablement`、`enableSplitForEventAtomically`、`disableSplitForEventAtomically`、`setSplitDeviceEnabledAtomically`を登録できる。release-ready productionの`capability-adoption-blocked`ではtrusted core V1退避、collision診断、`fsmc.repair.legacy-focus-day-scope.v1`だけを登録し、capability DB open／createと通常app writeを0件にする。`migrating`ではmigration診断／V1退避／`fsmc.migrate.durable-visits.v1`だけ、healthy `ready`で初めて通常control 5 commandをpublic registryへ登録する。readyかつOFF中は端末switch、event preview、disableへ到達できるが、セル分割設定・描画・経路等のmutation commandはeffective ONの場合だけ利用できる。`missing`／`repair-required`は6.1 recovery registryだけとする
+- registryはartifact purpose、readiness、open result、initializationでexactに分ける。`contracts-only` productionは全FSMC command 0件、`internal-testing` productionはcode存在を許すがpublic registration 0件、non-promotable QAはhealthy QA rootでinternal registryへ`readSplitControl`、`previewSplitEnablement`、`enableSplitForEventAtomically`、`disableSplitForEventAtomically`、`setSplitDeviceEnabledAtomically`、`setForceSplitPickerAtomically`を登録できる。release-ready productionの`capability-adoption-blocked`ではtrusted core V1退避、collision診断、`fsmc.repair.legacy-focus-day-scope.v1`だけを登録し、capability DB open／createと通常app writeを0件にする。`migrating`ではmigration診断／V1退避／`fsmc.migrate.durable-visits.v1`だけ、healthy `ready`で初めて通常control 6 commandをpublic registryへ登録する。readyかつOFF中は端末switch、event preview、disable、picker preference変更へ到達できるが、セル分割設定・描画・経路等のmutation commandはeffective ONの場合だけ利用できる。`missing`／`repair-required`は6.1 recovery registryだけとする
 - event OFF→ON commandは最新のcore、settings、control、durable visit、metadata、checkpoint、IDB内candidateを同じreadwrite transactionで再読込し、external candidateは6.1のpre／post観測とdurable fenceで拘束して、`C(after) = ∅`、anchor、association、map binding、`DurableVisitInitializationStateV1 = ready`、対象eventの全導出day scopeとdurable entryのexact bijectionを検証する。必要なempty-source metadata anchor、association、event settings、control entryを同じIDB commitで作成・更新するが、ready rootの欠落entryをenable時に黙示作成せず`durable-visit-state-repair-required`、write 0件にする。preview以後のIDB root変更はstaleとして再previewする。commit後のexternal差は、説明可能なlegacy-mutable coreだけなら`committed-legacy-rebase-required`、capability-ownedまたは分類不能なら`committed-recovery-required`とする
 - `buildDurableVisitMigrationPlanV1`は`migrating` rootとlatest coreから`deriveDurableVisitScopesV1`の全scopeをcanonical順に総当たりし、core raw順から`executionVisitOrder`を作る。各scopeに同一processのexact `LegacyFocusSessionSnapshotV1`があればphase／current index、saved 3 index、postponed／late item集合、completion、purchaseの全fieldを検証・変換し、snapshotなしまたはfield不正なら3.8の`defaultDurableVisitEntryV1` field候補、`unresolved-legacy-focus-session-field`、loss previewを作る。preview digestは`basisCoreDigest`、全`legacySessionInputDigest` null／値、全field disposition、after-imageを拘束し、旧session全体が永続sourceではないこと、reload／update／process終了を跨ぐ回収を保証しないことを表示する
 - `src/features/map-cell-split/visits/LegacyFocusSessionFreezePort.ts`をapp-facing Port、`legacyFocusSessionRegistry.ts`を唯一のprocess-local capture authorityとする。現行`FocusMode.tsx`のpassive `onSessionStateChange` effectと`App.tsx`のsemantic同値抑止済みparent copyをauthorityにせず、phase／index／saved／postponed／late／completion／purchaseの全setterを一つのrevisioned registry queueへ通してからUIへpublishする。event rename／delete／invalid-key pruneは同じqueueで`beginLifecycleOperation`を呼び、旧eventのraw day集合から`buildFocusSessionKey`で作ったexact key pair／key集合、registry before／after generation、transition／lease digestをfirst persistence write前に予約する。prefix `startsWith`や`slice`でevent名とdayを分離しない。lease ledgerは`active → completed | aborted`だけを許し、persistence失敗前だけ`abortLifecycleOperation`でregistry旧状態、成功後は同期で失敗不能な`completeLifecycleOperationAfterPersistence`によりregistry after-imageをexact 1回適用してからleaseを解放し、React state publishはauthorityにしない。二重finalize、終端間遷移、旧lease replay、generation／digest不一致を拒否する。freeze requestは進行中active leaseの完了を待つbarrierで、barrier後の新規lease／setterをDB first write前に拒否してtokenをinvalidにする。ack済みrecordは旧writer unmount後もfrozen registryへ保持し、取消／失敗tokenを再利用せず、retryは全record／absenceを再captureして新tokenを発行する
@@ -3848,18 +4148,24 @@ I0のfailure injection stage IDは`after-snapshot-read`、`after-external-baseli
 
 ### 7.1 イベント単位Backup V2とV1互換core
 
+- handoff resultの`expectedArtifactIds`はcanonical role順・重複なしとし、全completed branchは`handedOffArtifactIds = expectedArtifactIds`／`failedArtifactIds = []`、全incomplete branchは両配列が相互排他的なexact partitionでなければならない。V2-onlyの`companionIssuesDigest`はscope、export、prepared artifact、verificationからcompleted／incomplete resultまでbyte一致させる。disposeもpairの2 handle対V2-only／standaloneの1 handleを判別unionで固定し、null digest＋2 handleやnon-null digest＋1 handleを表現不能にする
+- unavailable companionの`issues`は各issueの`esp-json-v1` canonical bytes順、重複なしのnonempty配列とする。`issueKinds`はTypeScript unionの宣言順へ依存せず、version付きliteral `COMPANION_V1_ISSUE_KIND_ORDER_V1`のrank順で`issues[].kind`を重複除去したexact projectionとする。tuple、TypeScript kind union、JSON Schema enumはexact bijectionかつ順序一致でなければならず、新kind追加時のtuple／schema未更新をbuildで拒否する。`issuesDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-companion-v1-issues-v1", reason, issues })))`をscope、export result、prepared artifact、verification、handoffへbyte一致で伝播する。構造reasonへresource issue、resource reasonへ構造issueまたは2件以上のresource issue、issue／kind／reason／digestの単独差を拒否する。issue入力順shuffle、同一kind重複、nested 3 kindの順序、tuple欠落／余分／入替えをI0 goldenへ固定する
 - 初版の分割対応backupをイベント単位V2として追加する
 - schemaVersion、portable参照、active／dormant／quarantinedを含む`mapCellSplitSettings`セクションと、実行訪問順・phase別anchor・completion・購入変更anchorを持つ`durableVisitState`セクションを追加する
 - V1の`data` wire shapeは現行sectionを基準に`AppBackupV1Data`として凍結し、runtimeの`AppData`型を直接参照しない。V1 readerは現行どおり既知必須fieldの型と参照を検証し、現行が受理・保持する未知optional fieldを新たに削除・拒否しない。top-level、data section、eventSettings、`EventMetadata`、item、各nested objectごとの「必須検証／未知保持／未知拒否／export保持」を`config/fsmc-v1-compatibility-matrix.json`と固定旧版A goldenで固定する。`EventMetadata.splitIdentityAnchor`はoptional opaque fieldとして検証するが、他の未知fieldを一律拒否する例外理由にはしない。V2だけが全階層exact schemaと未知key拒否を採用する。対象eventにmatrix上保持必須だが明示V2 DTOへ写せない未知extensionが1件でもあれば`legacy-v1-extension-unrepresentable`、unsafe external URLなら`unsafe-external-url-unrepresentable`、V1が受理し得る非finite／unsafe integer／byte上限超過／shape差なら`v2-strict-scalar-unrepresentable`としてV2／pair生成を停止する。V2 adapterは値を削除・丸め・safe URLへ置換せず、V2へopaque extension bagを捏造しない。同じreadonly snapshotから凍結V1 writerがlegacy core projectionだけをlosslessに証明できる場合に限り、split-capable event全体のbackupではない`trusted-core-only` fallbackとして案内する
-- V2を出力するたび、同じ対象eventのcore dataだけを収録した旧版用V1互換backupも生成する。両bytesを先に自己parse・検証し、V1のfileName、byteLength、SHA-256をV2 `scope.companionCore`へ入れてV2 digestで拘束した後、Worker-owned bounded immutable registryへ`backup-v2`／`companion-v1`のrole、同じnon-null pair digest、byte length／SHA-256付きactive handleとしてstageする。`pair-prepared`はこの2 handleだけを返し、handoff直前にregistryがexact bytesを再hashしてmetadata、role、pair digestを検証する。unknown／finalized handle、bytes差、role／pair差はhandoff attempt 0件とする。handle ledgerは`active → consumed | disposed`の一方向で、両handleを一組でfinalizeし、再利用・片方差替えを拒否する。`BackupPairHandoffResultV1`の`expectedArtifactIds`はV2／V1の順のexact 2件、`handedOffArtifactIds`と`failedArtifactIds`はその重複なしexact partitionで、`incomplete`はfailed nonempty、`completed`だけが両receiptを持つ。各receipt digestはexact `{ domain: "fsmc-backup-artifact-handoff-receipt-v1", pairDigest, artifactId, role, artifactSha256, downstreamReceiptDigest }`のcanonical SHA-256とする。出力画面とファイル名で、V2は新版用で分割設定を含むこと、V1互換coreは旧版用で分割設定を含まないことを明示する。片方の生成・検証・download handoffが失敗した場合は完了扱いにせず、すでに保存された片方をアプリから撤回できないことと同じpairの再生成を案内する。固定旧版A試験はV2が指すexact V1 bytesを復元する
-- export開始時にcore、event metadata、map、association、split settings、durable visit state、canonical `eventSettings`の全参加storeを1個のreadonly IndexedDB transactionで読み、各full root、checkpoint、対象event sliceを含むimmutableな`SplitCapableEventExportSnapshot`を1回だけ作る。transaction開始前後にbridge journalが完了済みであることとlocalStorage互換projection witnessを検査するが、external projectionをbackup payload authorityにしない。V2 objectとV1 core bytesはIDB snapshotだけから生成し、途中でUI state、cache、DB、localStorageを再読込しない。V2変換前に`auditV2CoreRepresentabilityV1`がV1 compatibility matrix上の全保持field、V2 strict scalar／URL／structural rule、全10 section slotをtotal走査する。未知保持extension、unsafe URL、V2 strict scalar違反に加え、duplicate physical cell／ref、cross-section ref不正、order-bearing shape不正、owner relation不正を上記typed issueへ写す。manual hall／hall groupのambiguous ownerは`v2-strict-structural-unrepresentable`の`owner-relation-invalid`とし、候補を補完・統合しない。historical owner tableはmap／blockの親子relationだけを持ち、各retained entryのoptional `lastKnownMapName`を含む`lastKnown*`診断値はentry側でabsent／presentと値をexact保持するため、同owner内の診断差やmap名欠落自体をblockerにしない。rotation／route／viewportのkeyはmapData slotへexact解決できなければ`orphan-map-section-slot`とする。hall definitions／hall routeのkeyは、mapData slotへexact解決できる場合を`owner.kind = "map"`、current `getMaplessKey(rawDayKey)`へexact 1 semantic raw dayから再構成できる場合を`owner.kind = "mapless"`へ写し、どちらでもないorphan keyは`orphan-map-section-slot`、raw `MAPLESS_HALL_KEY`等のevent-wide unscoped ownerが残る場合は`legacy-unscoped-hall-owner-unrepresentable`とする。各issueはfield／section、source path／slot key、payload digest付きcanonical nonempty集合でV2とpairを0件にする。mapless hallをmapData orphanと誤分類せず、orphan／unscoped rowをdrop、synthetic mapData／mapRefへ補完、表示名一致で接続しない。representableな場合だけV1 coreとV2 coreがportable ref化、anchor除去、V1互換matrixが要求する明示transform以外で同値であることをself-testする。readonly transaction失敗、bridge pending／conflict、snapshot内参照不整合では両fileを生成しない。V2 blocker時のstandalone V1 eligibilityは全issue kind／section／violation別に`config/fsmc-v1-fallback-eligibility.json`へ固定し、orphan map sectionは既定でunavailableとする。eligible候補も同snapshotからsource保持必須projection→凍結V1 serialize→current V1 reader→固定旧版A parserを実行し、3 projection digestがbyte一致し、V1 self-validationとresource limitを満たす場合だけ`role = "standalone-v1"`／`pairDigest = null`のimmutable handleを返す。unknown extension、unsafe URL、strict scalar／structural blockerも実際にV1でlossless保持できた場合だけfallback可能で、unsafe URLはraw非clickableのままにする。orphan rotation／viewport等のdrop、正規化、parser差、検証失敗はtyped blocker付き`unavailable`／artifact 0件とし、schema-validというだけでlosslessとみなさない
+- V2を出力するたび、同じ対象eventのcore dataだけを収録した旧版用V1互換backupのlossless生成を試みる。成功時はV1のfileName、byteLength、SHA-256をV2 `scope.companionCore.status = "included"`へ入れ、V2／V1を同じnon-null pair digestのrole別immutable handleとしてstageする。構造上lossless変換不能なら`reason = "not-losslessly-representable"`とresource-limit以外のcanonical issue kind集合、V1 bytesまで生成できたがV1／pair上限だけを超えるなら`reason = "companion-v1-resource-limit"`とexact 1 issue kindを`scope.companionCore.status = "unavailable"`へ入れる。前者は`preparationKind = "structural-v2-only"`、後者は`preparationKind = "resource-v2-only"`の全issue digest付きV2を`pairDigest = null`のsole immutable handleとしてstageし、scope→export→prepared→verification→handoffで同じreason discriminantを保持する。両reason／issueKindsの混在、representability failure後の架空byte見積り、resource-limit branchの構造issueを拒否する。V2 bytesとembedded digestは全分岐で自己parse・再hashし、companion不能をV2生成失敗へ変換しない。各prepared artifactの`selfValidationEvidence`はrole／file metadata／source binding、role別exact parser tuple（V2はcurrent V2 reader、V1はcurrent V1 reader→固定旧版A）、schema receipt、canonical projection receipt tupleを持ち、evidenceのmetadataはartifact common fieldとbyte一致させる。`selfValidationDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-prepared-backup-artifact-self-validation-v1", selfValidationEvidence })))`として自身を除外し、parser／projection順、receipt、source binding、digest-only差を拒否する。handoff直前にregistryがexpected 1件または2件のexact bytes、metadata、role、preparation kind、pair／issues digest、source SHA、source snapshot revision／root vector／snapshot digestを再検証し、`PreparedBackupImmutableBytesWitnessV1`へcanonical role順のartifact ID／handle／declared・recomputed length／SHA／self-validation digest、source binding、pair／issues／warning acknowledgement digestをexactに記録する。`immutableBytesWitnessDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-prepared-backup-immutable-bytes-witness-v1", immutableBytesWitness })))`とし、declaredとrecomputed値、prepared artifact、verification input／resultの全fieldを一致させ、artifact 1件／2件、role順、handle replay、digest-only差を拒否する。unknown／finalized handle、bytes差、role差、reason差はhandoff attempt 0件とする。handle ledgerは`active → consumed | disposed`の一方向とし、expected setを一組でfinalizeする。pairでは片方だけのhandoffを完了扱いにせず同じpair再生成を案内する。V2-onlyではV2 receiptが得られた場合だけreason別の`structural-v2-only-completed | resource-v2-only-completed`とし、旧版fallback不可とV2保管必須の確認を出力前後に表示する。handoff前の`V2OnlyLegacyFallbackWarningAcknowledgementV1`はpreparation kind／reason、V2 artifact ID／SHA、issues digest、固定warning codeをexactに持ち、`acknowledgementDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-v2-only-warning-acknowledgement-v1", acknowledgementWithoutDigest })))`とする。verificationはartifact registryとscopeの実値へ再拘束し、未確認、別artifact／issuesへのack replay、field／digest差を`v2-only-warning-not-acknowledged`／handoff attempt 0件として拒否し、verified／completed／incompleteへ同ack digestをechoする。`BackupArtifactHandoffReceiptV1`はsource binding、preparation kind、pair／issues／warning acknowledgement digest、artifact ID／role／SHA、downstream receipt digestをexactに持ち、`receiptDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-backup-artifact-handoff-receipt-v1", receiptWithoutDigest })))`とする。completed／incomplete resultの`handoffReceipts`はcanonical role順かつ`handedOffArtifactIds`とexact bijection、failed IDsとdisjointにし、pair片側成功はexact 1 receipt、成功0件はempty、completedはexpected全件のreceiptを必須にする。pairDigest nullもtagged値として含め、receipt field／順序／ID partition／digest-only差を拒否する。固定旧版A試験は`included`分岐だけでV2が指すexact V1 bytesを復元する
+- export開始時にcore、event metadata、map、association、split settings、durable visit state、canonical `eventSettings`の全参加storeを1個のreadonly IndexedDB transactionで読み、各full root、checkpoint、対象event sliceを含むimmutableな`SplitCapableEventExportSnapshotV1`を1回だけ作る。`participantRoots`は全参加rootの`rootKey = [storeName, key]`、observed revision root、checkpoint、payload digestを持つnonempty exact集合とし、`esp-json-v1(rootKey)`のECMAScript UTF-16 code-unit順へsortして重複を拒否する。`sourceRootVectorDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-split-capable-event-export-root-vector-v1", participantRoots })))`、`sourceSnapshotRevision = sourceRootVectorDigest`とする。7 source slice digestはraw structured-clone値をundefined／hole／-0等のtag付きlossless encoderでfield別domain hashし、`sourceSnapshotDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-split-capable-event-export-snapshot-v1", snapshotSchemaVersion, sourceSha, sourceEventInstanceId, participantRoots, sourceRootVectorDigest, sourceSnapshotRevision, sourceSliceDigests, bridgeJournalDigest, externalProjectionWitnessDigest })))`とする。transaction中は値と同期digest材料だけをcopyし、完了後にhashしてDBを再読込しない。source SHAはproduction build manifestのfull commit SHAへ一致させ、4 source binding fieldはwire payloadへ収録せずinternal prepared artifact registryだけへ保持する。全prepared role、verification input／result、handoff result／receiptは同じbindingをechoし、pair両role差、root順shuffle、root欠落／重複、BMP／astral key順差、slice 1件だけ別snapshot、digestだけの差替えをhandoff attempt 0件で拒否する。transaction開始前後にbridge journalが完了済みであることとlocalStorage互換projection witnessを検査するが、external projectionをbackup payload authorityにしない。V2 objectとV1 core bytesはIDB snapshotだけから生成し、途中でUI state、cache、DB、localStorageを再読込しない。V2変換前に`auditV2CoreRepresentabilityV1`がV1 compatibility matrix上の全保持field、V2 strict scalar／URL／structural rule、全10 section slotをtotal走査する。未知保持extension、unsafe URL、V2 strict scalar違反に加え、duplicate physical cell／ref、cross-section ref不正、order-bearing shape不正、owner relation不正を上記typed issueへ写す。manual hall／hall groupのambiguous ownerは`v2-strict-structural-unrepresentable`の`owner-relation-invalid`とし、候補を補完・統合しない。historical owner tableはmap／blockの親子relationだけを持ち、各retained entryのoptional `lastKnownMapName`を含む`lastKnown*`診断値はentry側でabsent／presentと値をexact保持するため、同owner内の診断差やmap名欠落自体をblockerにしない。rotation／route／viewportのkeyはmapData slotへexact解決できなければ`orphan-map-section-slot`とする。hall definitions／hall routeのkeyは、mapData slotへexact解決できる場合を`owner.kind = "map"`、current `getMaplessKey(rawDayKey)`へexact 1 semantic raw dayから再構成できる場合を`owner.kind = "mapless"`へ写し、どちらでもないorphan keyは`orphan-map-section-slot`、raw `MAPLESS_HALL_KEY`等のevent-wide unscoped ownerが残る場合は`legacy-unscoped-hall-owner-unrepresentable`とする。各issueはfield／section、source path／slot key、payload digest付きcanonical nonempty集合でV2とpairを0件にする。mapless hallをmapData orphanと誤分類せず、orphan／unscoped rowをdrop、synthetic mapData／mapRefへ補完、表示名一致で接続しない。representableな場合だけV1 coreとV2 coreがportable ref化、anchor除去、V1互換matrixが要求する明示transform以外で同値であることをself-testする。readonly transaction失敗、bridge pending／conflict、snapshot内参照不整合では両fileを生成しない。V2 blocker時のstandalone V1 eligibilityは全issue kind／section／violation別に`config/fsmc-v1-fallback-eligibility.json`へ固定し、orphan map sectionは既定でunavailableとする。eligible候補も同snapshotからsource保持必須projection→凍結V1 serialize→current V1 reader→固定旧版A parserを実行し、3 projection digestがbyte一致し、V1 self-validationとresource limitを満たす場合だけ`role = "standalone-v1"`／`pairDigest = null`のimmutable handleを返す。unknown extension、unsafe URL、strict scalar／structural blockerも実際にV1でlossless保持できた場合だけfallback可能で、unsafe URLはraw非clickableのままにする。orphan rotation／viewport等のdrop、正規化、parser差、検証失敗はtyped blocker付き`unavailable`／artifact 0件とし、schema-validというだけでlosslessとみなさない
 - `auditV2CoreRepresentabilityV1`は明示DTOへのcopyや`JSON.stringify`より前のraw structured-clone snapshotを、own enumerable keyと全array indexについてcycle-safe／boundedに走査する。objectのown-property値`undefined`はJSONでkey消失するため`v2-strict-scalar-unrepresentable`／`invalid-scalar-shape`、arrayのown `undefined`とsparse holeは`null`化を防ぐため前者を同scalar issue、後者を`v2-strict-structural-unrepresentable`／`order-bearing-shape-invalid`、`Object.is(value, -0)`は`0`化を防ぐため`invalid-scalar-shape`へ写す。`Object.hasOwn`とindex presenceを使い、adapter後の欠落やschema-validな`null`／`0`を原値の代用にしない。issueの`rawWitness`はexact tagged unionとし、object own undefinedはproperty key、array own undefined／holeはindex＋array length、negative zeroは専用tag、NaN／±Infinity、unsafe integer、cycle、非JSON structured-clone kindも各専用tag、通常値だけはstrict finite／non-negative-zeroな`json-value` branchへ写す。`valueDigest`はexact `{ domain: "fsmc-v2-raw-representability-witness-v1", issueKind, violation, sourcePath, rawWitness }`を`esp-json-v1` canonical serializeしたlowercase SHA-256とし、raw `undefined`／hole／`-0`自体をJSONへ渡さない。同じpathのobject undefined、array undefined、hole、negative zero、null、0は全て異なるdigestとなり、tag／index／length／path／digest差をschema・semantic検査で拒否する。top-levelから全10 section、settings、split、durableの保持対象leafまでsource pathとlossless raw witnessを持つcanonical issue集合にし、own `undefined`、array `undefined`、hole、`-0`、通常のabsent optional key、explicit `null`、`0`を独立fixtureにする
-- V2 representabilityが成功した後、artifact bytesをstageする前にpure `auditCompanionV1RepresentabilityV1`が同じsnapshotを凍結V1 writer→current V1 reader→固定旧版A parserへ通し、source保持必須projectionのacceptanceと同値性をtotal検査する。`hallVisitLists[].hallId`がresolved normal base以外のpriority／highest／unassigned／unresolved／malformed group tokenである場合と、item `manualHallId`がdanglingである場合はV2 wireでは表現可能でも固定旧版A向けcompanionではlosslessでないため、対応する`CompanionV1RepresentabilityIssueV1`をcanonical nonempty集合で返す。self-validation／固定旧版A parse／projection同値が1件でも失敗した場合は`InitialReleaseAppBackupV2ExportResultV1.kind = "companion-v1-unrepresentable"`、V2 object／V2 artifact／companion artifactをすべて0件にする。初版はV2-only handoff、hall groupのbase化、dangling manual hallのdrop、synthetic hall definition追加を許さない。resolved normalのpositive、priority／highest／unassigned／dangling／malformed HallVisitListとdangling manual hallの固定旧版A negative fixtureをI0で固定し、I4で実Workerへ接続する
+- V2 representabilityが成功した後、artifact bytesをstageする前にpure `auditCompanionV1RepresentabilityV1`が同じsnapshotを凍結V1 writer→current V1 reader→固定旧版A parserへ通し、source保持必須projectionのacceptanceと同値性をtotal検査する。`hallVisitLists[].hallId`がresolved normal base以外のpriority／highest／unassigned／unresolved／malformed group tokenである場合と、item `manualHallId`がdanglingである場合はV2 wireでは表現可能でも固定旧版A向けcompanionではlosslessでないため、対応する`CompanionV1RepresentabilityIssueV1`をcanonical nonempty集合で返す。issue 0件だけを`pair-prepared`、1件以上を`structural-v2-only-prepared`とし、後者も自己検証済みV2 object／artifactを返す。hall groupのbase化、dangling manual hallのdrop、synthetic hall definition追加はどちらでも禁止する。reader／固定旧版A validation由来の4 issue kindはkind別`CompanionV1ValidationFailureWitnessV1`にcandidate実byteLength／SHA、source／reader／fixed-A projection、matrix／archive／backup-limits SHA、bounded failure codeまたはoversize capをexactに保持する。oversize branchは`candidateByteLength > temporarySpoolMaxRawBytes`、他branchは実行したreader／parser結果との一致を必須にし、`witnessDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-companion-v1-validation-failure-witness-v1", kind, witness })))`として自身を除外する。kind／witness分岐差、unknown key、path／digest／config SHAの単独差をschema／semantic fixtureで拒否する。resolved normalのpair positive、priority／highest／unassigned／dangling／malformed HallVisitListとdangling manual hallのV2-only positive、issue順shuffle／digest差negative fixtureをI0で固定し、I4で実Workerへ接続する
+- resource判定のauthorityはestimateでなくcanonical UTF-8 byte streamの実測値とする。Worker内のversion付き`PreparedArtifactByteSinkV1`はcanonical serializerから最大1 MiB chunkだけを受け、safe-integer byteLengthとincremental SHA-256を更新し、retain対象だけをworker-owned temporary spoolへ保存する。`config/fsmc-backup-limits.json`はcompanion／V2各32 MiB、pair 48 MiBとは別に`temporarySpoolMaxRawBytes = 64 MiB`、`exportGenerationTimeoutMs = 300_000`を固定する。V1は32 MiBを超えても64 MiBまでは全exact bytesをtemporary spoolへ保持し、current reader／固定旧版A parse／source projection比較を完了した後だけresource issueへ分類する。64 MiBを超える場合は全文string／単一`Uint8Array`をmaterializeせず全streamのlength／SHAだけを完了し、limit-only resourceへ短絡せず`fixed-legacy-a-oversize-validation-unavailable`の構造issueへ写して`structural-v2-only`にする。これにより固定旧版A不成立をresource reasonで隠さない。V1が32 MiB以内ならretained bytesをpair候補として維持し、32 MiB超ではvalidation後にspoolをdisposeしてからV2を生成する。V2各fixed-point passも同sinkでcount／hashし、最終passだけ32 MiB以内のbytesをretainするため、pair-only超過判定時の最大retained totalは64 MiB以下となる。`companionV1CandidateByteLength`／SHA-256はそのexact stream、`finalV2ByteLength`はresource issueを埋め込んだ最終V2 canonical stream、`pairCandidateByteLength = finalV2ByteLength + companionV1CandidateByteLength`とする。`appliedLimits`はcurrent configのV2／companion 32 MiB、pair 48 MiB、temporary spool 64 MiB、生成timeout 300,000 msと実file SHAへ一致させ、`exceededLimits`はV1 candidateが32 MiB超なら`companion-v1-max`、pair candidateが48 MiB超なら`pair-total-max`をこの順で含むcanonical exact nonempty subsetとする。`limitWitnessDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-companion-v1-resource-limit-witness-v1", companionV1CandidateByteLength, companionV1CandidateSha256, finalV2ByteLength, pairCandidateByteLength, appliedLimits, exceededLimits })))`とし、自身を入力へ含めない。最終V2長の自己参照は、digestを固定長64文字のzero placeholderにしたissueでlength／exceeded setを再計算するbounded 8回のdeterministic fixed-point loop→安定値で実digestへ置換→同じbyteLength／sum／exceeded setを再検証、の順に解く。安定しない、実digest置換後に値が変わる、最終V2実bytesが32 MiBを超える、generation timeout、spool capの実装違反はartifact 0／DB write 0／handoff 0／cleanup後spool 0 byteのtyped `v2-export-failed`とし、resource V2-onlyへ進めない。`V2ExportFailureWitnessV1`はreason別にpassOrdinal 1～8を固定したexact length 8の全pass byteLength／canonical SHA／full `V2FixedPointStateV1`を持つ。各passは次項で定義するordinal非依存の`convergenceStateDigest`とordinal込みの`observationDigest`を持ち、observation byteLengthをstateの`finalV2ByteLength`、canonical SHAをそのpass実bytesへ一致させる。非収束は隣接passの収束用digestが一度も同値でないことを必須にする。digest置換driftは同じpass ordinalのzero-placeholder／substituted full observationを持ち、slot以外のinputを一致させた再serializeでbyteLength、exceeded set、stateまたはcanonical SHAのいずれかが変わった場合だけ成立する。placeholder／実digest置換前後、最終V2実byteLength／SHA、timeoutのelapsed／stage／sink receipt、またはspoolのattempted retained bytes／stage／sink receiptを持ち、全byte／ms値を非負safe integer、全digestをlowercase SHA-256、`appliedLimits`を同じbackup limits実fileの3値＋SHAへ拘束する。timeout／spool witnessの`PreparedArtifactByteSinkReceiptV1`はsource binding、stage／outcome、stream length／SHA、attempted／actual retained bytes、最大chunk／chunk count、spool／timeout値、elapsed、config SHAを持ち、`receiptDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-prepared-artifact-byte-sink-receipt-v1", receiptWithoutDigest })))`とする。全数値を非負safe integer、`chunkMaxRawBytes <= workerSliceBytes`、actual retainedをstream／spool cap以下、config値／SHAとsource bindingをouter resultへ一致させる。V2超過は`finalV2ByteLength > v2ExportMaxRawBytes`、timeoutはouter stage＝receipt stage、receipt outcome `timeout`、outer elapsed＝receipt elapsedかつ`elapsedMs >= exportGenerationTimeoutMs`、spool超過はouter stage＝receipt stage、outcome `temporary-spool-limit-exceeded`、outer attempted retained＝receipt attempted retainedかつ`attemptedRetainedRawBytes > temporarySpoolMaxRawBytes`を必須にし、reasonとwitness branchの不一致、境界未到達、未知keyをexact schemaで拒否する。`failureWitnessDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-v2-export-failure-witness-v1", sourceBinding: { sourceSha, sourceRootVectorDigest, sourceSnapshotRevision, sourceSnapshotDigest }, reason, failureWitness })))`とし、自身を入力へ含めない。早期estimateは確実なlower-bound超過による処理短縮にだけ使え、成功／V2 core blocker／resource branchのauthorityにしない。cancel／timeout／sink errorは全incremental hash state、chunk、temporary spool、未finalize handleをdisposeしてhandoff 0件にする。resource branchでは候補V1をstage／handoffせず、最終V2 artifactの実byteLength、scope issue、issues digest、limit witnessをhandoff直前にも再計算する。V1-only、pair-only、両方超過のlimit直前／一致／+1、V1 temporary spool 64 MiB直前／一致／+1、issue埋込みで境界が反転するcase、候補V1 byte／SHA、config SHA、exceeded order、8-pass非収束、digest置換drift、final V2 +1、timeout／cancel／spool cleanup、reason差替え、各witness field単独差、config SHA差をI0／I4 fixtureで拒否する
+- 前項のfixed-point証跡にある`stateDigest`式とその隣接比較は、ordinal非依存の`convergenceStateDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-v2-fixed-point-convergence-state-v1", state })))`へ置き換える。pass固有の証跡は別に`observationDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-v2-fixed-point-pass-observation-v1", passOrdinal, state, byteLength, canonicalSha256, convergenceStateDigest })))`とし、`passOrdinal`はここだけへ含める。収束は隣接passの`convergenceStateDigest`同値、8-pass非収束は7個の隣接pairがすべて不一致であることをauthorityにし、`observationDigest`を収束比較へ使わない。pass中間の`V2FixedPointStateV1`だけは`exceededLimits = []`を許すが、resource issueへ昇格する`V2FixedPointConvergedResourceStateV1`はcanonical nonempty exceeded tupleと`substituted` slotだけを許す。`V2FixedPointConvergenceResultV1`はempty tuple＋zero slot＋resource issue nullの非resource収束と、nonempty tuple＋substituted slot＋exact resource issueのresource収束を判別し、後者のstateからbyteLength／SHA／pair sum／limits／exceeded tupleをresource issueへexact投影してslot valueを`limitWitnessDigest`へ一致させる。state object自体はwire issueやdigest入力へ重複収録しない。digest置換driftはmapped unionによりexact同一pass `P`、`completedPassCount = P`、同一nonempty exceeded tuple、placeholder／substituted slotだけが異なる2 observationへ閉じる。pass ordinal差、empty resource tuple、state／observation digestの取り違え、convergence result／resource issue projection差をschema／semantic fixtureで拒否する
+- `PreparedArtifactByteSinkReceiptV1`は全6 stageについて`completed | timeout | cancelled | sink-error`を判別し、spool超過だけを2 retention stageへ限定するstage×outcome exact unionとする。timeoutはgeneration／validation／fixed-point／finalizationに加えてcompanion／V2 retention中も`export-generation-timeout`へ写す。cancelはbounded cancellation reason付き`export-cancelled`、sink errorはbounded error code付き`artifact-byte-sink-error`として、いずれも`V2ExportFailedResultV1`のartifact 0／DB write 0／handoff 0／cleanup後spool 0 byte terminalへtotalに写す。outer failureのstage、reason固有field、receiptのoutcome／terminal code／reasonまたはerror codeをexact一致させ、`receiptDigest`はvariant固有fieldを含む`receiptWithoutDigest`全体をhashする。`completed` receiptをfailureへ流用すること、retention timeoutの欠落、非retention spool超過、cancel／sink errorのsilent return、別stage receipt replayを拒否する
+- prepared artifactは`PreparedBackupArtifactCommonV1<Role>`でouter roleと`selfValidationEvidence.role`を`Extract`により型連動させ、V2 artifactへV1 parser tuple、companion／standaloneへV2 parser tupleを組み合わせられなくする。handoffは`BackupArtifactHandoffBindingV1`のpreparation kind×role mapped unionをauthorityとし、pairはV2／companion＋non-null pair digest＋issues／warning null、構造／resource V2-onlyはV2＋null pair digest＋non-null issues／V2-only acknowledgement、standaloneはV1＋null pair／issues＋standalone acknowledgementだけを許す。実downstream成功は同じsource binding、branch binding、artifact ID／SHA／byteLength、attempt ID、channel、downstream ID、accepted length／SHA、完了時刻を持つ`BackupArtifactDownstreamReceiptV1`として返し、`downstreamReceiptDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-backup-artifact-downstream-receipt-v1", downstreamReceiptWithoutDigest })))`とする。outer `BackupArtifactHandoffReceiptV1`はそのreceipt objectを保持し、innerのsource／branch／artifact field、`acceptedByteLength = artifactByteLength`、`acceptedSha256 = artifactSha256`を再検証した後、`receiptDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-backup-artifact-handoff-receipt-v1", receiptWithoutDigest })))`を計算する。inner未検証、kind×role不可能組合せ、pair／issues／ack nullability差、artifact length／hash差、別attempt／source receipt replay、inner／outer digest単独差はhandoff成功へ数えず、completed／incompleteのreceipt partition検証前に拒否する
 - companion auditのtyped集合は前項に加え、`hallOrder[]`のmissing-unresolved／malformed、item-only companionにhall definitionsがない状態のresolved manual hallもそれぞれ`hall-order-token-unrepresentable`／`manual-hall-reference-unrepresentable`へ写す。resolved priority／highestとunassignedのhall-order tokenは固定旧版Aが受理するため誤ってblockしない。resolved normal HallVisitListとfixed-A受理hall-orderのpositive、priority／highest／unassigned／unresolved／malformed HallVisitList、missing／malformed hall-order、dangling manual hall、item-only resolved manual hallのnegative fixtureを固定する
-- `pairDigest`はexact `{ domain: "fsmc-backup-pair-v1", v2: { fileName, byteLength, sha256 }, companionV1: { fileName, byteLength, sha256 } }`を`esp-json-v1` canonical serializeしたlowercase SHA-256とする。V2 bytesはdigest確定済みobject、companion bytesはV2 `scope.companionCore`へ記録したexact bytesを使い、両prepared artifact、verification input、handoff result／receiptのpair digestをbyte一致させる。role順逆転、fileName／length／hashの1 field差、V2の`companionCore`だけ差し替え、pair digestだけ再計算したfixtureをstage前に拒否する
-- `StandaloneV1FallbackResultV1.kind = "prepared"`のlossless claimはV1 compatibility matrixが保持するlegacy core＋event settings projectionだけに閉じ、`coverage = "legacy-core-only"`、固定2件の`excludedRoots`、`recoveryWarning`を必須にする。UIはevent settingsがV1内で保持・復元される一方、split settingsとdurable visit order／phase／anchor／completionはこのartifactから復元不能であり、復元後に分割設定・進行状態の再確認が必要なことをdownload確認前とrecovery previewの双方へ表示する。split／durable rootがnonemptyでもcore＋event settings退避として生成できるが、完全event backup、V2代替、split復元可能とは表記せず、historical-owner等のsplit由来blockerをV1 coreが保持したと主張しない
+- `pairDigest`は`companionCore.status = "included"`の場合だけ、exact `{ domain: "fsmc-backup-pair-v1", v2: { fileName, byteLength, sha256 }, companionV1: { fileName, byteLength, sha256 } }`を`esp-json-v1` canonical serializeしたlowercase SHA-256とする。V2 bytesはdigest確定済みobject、companion bytesはV2 `scope.companionCore`へ記録したexact bytesを使い、両prepared artifact、verification input、handoff result／receiptのpair digestをbyte一致させる。`unavailable`ではpair digestとcompanion handleを必ずnull／absentにし、issues digestをV2 embedded digest、prepared artifact、verification input、handoff resultへbyte一致させる。role順逆転、fileName／length／hashの1 field差、included／unavailable差替え、pair／issues digestだけ再計算したfixtureをstage前に拒否する
+- `StandaloneV1FallbackResultV1.kind = "prepared"`のlossless claimはV1 compatibility matrixが保持するlegacy core＋event settings projectionだけに閉じ、prepared artifact自身へ`coverage = "legacy-core-only"`、固定2件の`excludedRoots`、`recoveryWarning`、compatibility matrix／source／current reader／fixed-A projection digestを必須にする。UIはevent settingsがV1内で保持・復元される一方、split settingsとdurable visit order／phase／anchor／completionはこのartifactから復元不能であり、復元後に分割設定・進行状態の再確認が必要なことをdownload確認前とrecovery previewの双方へ表示する。`verifyPreparedExportForHandoff`は`preparationKind = "standalone-v1"`、role、null pair digest、exact bytes／SHA、4 projection digest、coverage／excluded roots／warning、利用者の`warningAcknowledged = true`をhandoff直前に再検証する。`standaloneWarningAcknowledgementDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-standalone-v1-warning-acknowledgement-v1", artifactId, artifactSha256, coverage, excludedRoots, recoveryWarning })))`をverification／immutable witness／completed・incomplete resultへbyte一致でechoし、別artifactへのreplayとdigest-only差を拒否する。`StandaloneV1FallbackFailureWitnessV1`はkind別にcandidate実byteLength／SHA、bounded reader／parser failure code、source／current／fixed-A projection、matrix／archive／backup-limits SHAまたはresource capをexactに持つ。resource branchは`candidateByteLength > companionV1ExportMaxRawBytes`、他branchは実receiptと一致させ、`witnessDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-standalone-v1-fallback-failure-witness-v1", kind, witness })))`として自身を除外する。kind／witness分岐、field、digest-only差を拒否する。未確認はhandoff attempt 0件、receipt成功だけを`standalone-v1-completed`、失敗を`standalone-v1-incomplete`へ写し、expected／handedOff／failed ID partitionを他branchと同じ規則で返す。split／durable rootがnonemptyでもcore＋event settings退避として生成できるが、完全event backup、V2代替、split復元可能とは表記せず、historical-owner等のsplit由来blockerをV1 coreが保持したと主張しない
 - V2の`data`はscope別exact core unionとして固定し、`full-split`／`core-map`は対象event sliceの`eventLists`、`eventMetadata`、`executeModeItems`、`dayModes`、`mapData`、`mapRotationSettings`、`routeSettings`、`hallDefinitions`、`hallRouteSettings`、`mapViewportSettings`をすべて持つ。`item-only`は`eventLists`だけを持ち、他のdata keyを未知keyとして拒否する。split設定はtop-levelに一度だけ収録する
-- V2 wire typeのtop-level必須keyは`kind`、`version: 2`、`exportedAt`、`scope`、`eventSettings`、`data`、`mapCellSplitSettings`、`durableVisitState`、`digest`とし、全階層で未知keyを拒否する。`scope`は単一`eventRef`、そのeventに属する全地図の`mapRefs`、itemとcurrent／historical ownerを分けたportable reference table `references`、期待section、mapData／split設定の収録有無、件数、`companionCore`を明示する。`eventSettings`と`durableVisitState`はfull-split／core-mapで対象eventのexact slice、item-onlyで`null`とする。item-only restoreは復元元のvisit stateを採用せず、復元先のdurable stateを同じtransition plannerで維持・rekeyする。新規item-only eventは決定的defaultを使う。`mapCellSplitSettings`はfull-split時だけactive／retained entryの判別可能unionを持ち、portable refのdata slot対応を重複保存しない。端末全体OFFとevent enabledはどのsectionにも含めない
+- V2 wire typeのtop-level必須keyは`kind`、`version: 2`、`exportedAt`、`scope`、`eventSettings`、`data`、`mapCellSplitSettings`、`durableVisitState`、`digest`とし、全階層で未知keyを拒否する。`scope`は単一`eventRef`、そのeventに属する全地図の`mapRefs`、itemとcurrent／historical ownerを分けたportable reference table `references`、期待section、mapData／split設定の収録有無、件数、`companionCore: included | unavailable`を明示する。readerは両分岐を受理し、`unavailable`を破損やV2復元不能とみなさない。`eventSettings`と`durableVisitState`はfull-split／core-mapで対象eventのexact slice、item-onlyで`null`とする。item-only restoreは復元元のvisit stateを採用せず、復元先のdurable stateを同じtransition plannerで維持・rekeyする。新規item-only eventは決定的defaultを使う。`mapCellSplitSettings`はfull-split時だけactive／retained entryの判別可能unionを持ち、portable refのdata slot対応を重複保存しない。端末全体OFFとevent enabledはどのsectionにも含めない
 - top-level scalarは`kind = "event-shopping-planner-backup"`、`version = 2`、`exportedAt`は`new Date(value).toISOString() === value`となるUTC millisecond ISO文字列、`digest`は64文字lowercase hexとする。`kind`をV1と共通にしてversionでdispatchし、未知kind／versionと非canonical日時を拒否する。端末時計の未来／過去は表示上警告できるが、日時だけを理由に正しいdigestのfileを拒否しない
 - V1は引き続き読み込む。利用者が選んだUI command種別をauthorityとし、アイテムimportでは設定を維持し、`PD-01`の完全復元では対象範囲の既存設定をpreview後に`legacy-full-restore-without-split-settings`でdormant化する。V1内のmap key欠落や空配列からitem-onlyを推測しない
 - ローカルrevision、checkpoint、`locationKey`、event／map／block instance IDをそのまま出力せず、ファイル内だけで有効なportable参照へ置換する
@@ -3880,7 +4186,7 @@ V1 full restoreと完全版XLSX 2.2 full restoreはI4の初版legacy restore own
 
 item URLはbackup／V1／V2／XLSX／CSV／通常編集に共通の`classifySafeExternalUrl(value, inputPolicy)`を通す。返却は`none | safe(SafeExternalHref) | unsafe-legacy(raw, reason)`の判別可能unionとし、空文字は`none`であってclickable URLではない。clickableにできるのはuserinfoを持たないabsolute `http:`／`https:`だけとする。ASCII control `U+0000..U+001F`／`U+007F`、bidi control `U+061C`／`U+200E`／`U+200F`／`U+202A..U+202E`／`U+2066..U+2069`、未知scheme、`javascript:`、`data:`、`file:`、protocol-relative URL、parse不能値をunsafeとする。`inputPolicy = strict-new`のV2、CSV、新規作成、通常編集はunsafe値をcommit前に操作全体拒否し、V2 exportも既存unsafe値を含む場合はpair生成を止めて修正を案内する。`inputPolicy = legacy-compat`のV1／XLSX 2.2 importと既存profile読込だけは互換のためraw文字列を変更せず`unsafe-legacy`として保存・診断付きplain text表示し、anchorの`href`へ渡さない。選択時warningと後続編集による修正導線を出し、安全値へ推測変換しない。`CellItemsPopup`、`ShoppingItemCard`を含む全URL sinkはbranded `SafeExternalHref`だけを受け、`target="_blank"`時は`rel="noopener noreferrer"`を必須にする。
 
-V2はtop-levelに`digest`を持ち、`digest`自身を除くV2 objectをキー順序固定の`esp-json-v1` canonical JSONへ変換したUTF-8 bytesに対するSHA-256を保存する。export直後、parse直後、preview確定直前に検証する。これは破損検出であり、発行者の真正性や改ざん耐性を保証する署名ではない。V1にはdigestを追加せず、V1の読込互換を維持する。
+V2はtop-levelに`digest`を持つ。raw duplicate-property、UTF-8、resource limit、exact schema、未知keyを先に検証し、`digest`自身だけを除いたexact V2 object（`scope.companionCore`の分岐を含む）を`{ domain: "fsmc-app-backup-v2-v1", backupWithoutDigest }`としてキー順序固定の`esp-json-v1` canonical JSONへ変換したUTF-8 bytesに対するSHA-256を保存する。export直後、parse直後、preview確定直前に再計算する。全top-level／nested field単独差、included↔unavailable差、issue kind／digest差、未知fieldを追加してdigestだけ再計算した入力をgolden／negative fixtureで拒否する。これは破損検出であり、発行者の真正性や改ざん耐性を保証する署名ではない。V1にはdigestを追加せず、V1の読込互換を維持する。
 
 全scopeで必須のportable core reference table `scope.references`と、full-splitだけのsplit entriesを次のexact schemaで固定する。
 
@@ -4542,11 +4848,50 @@ interface EventBackupScopeV2Base {
   scopeKind: "event";
   eventRef: string;
   references: PortableEventReferenceManifestV2;
-  companionCore: {
-    fileName: string;
-    byteLength: number;
-    sha256: string;
-  };
+  companionCore:
+    | {
+        status: "included";
+        fileName: string;
+        byteLength: number;
+        sha256: string;
+      }
+    | {
+        status: "unavailable";
+        reason: "not-losslessly-representable";
+        issueKinds: readonly [
+          Exclude<
+            CompanionV1RepresentabilityIssueV1["kind"],
+            "companion-v1-resource-limit"
+          >,
+          ...Exclude<
+            CompanionV1RepresentabilityIssueV1["kind"],
+            "companion-v1-resource-limit"
+          >[],
+        ];
+        issues: readonly [
+          Exclude<
+            CompanionV1RepresentabilityIssueV1,
+            { kind: "companion-v1-resource-limit" }
+          >,
+          ...Exclude<
+            CompanionV1RepresentabilityIssueV1,
+            { kind: "companion-v1-resource-limit" }
+          >[],
+        ];
+        issuesDigest: string;
+      }
+    | {
+        status: "unavailable";
+        reason: "companion-v1-resource-limit";
+        issueKinds: readonly ["companion-v1-resource-limit"];
+        issues: readonly [
+          Extract<
+            CompanionV1RepresentabilityIssueV1,
+            { kind: "companion-v1-resource-limit" }
+          >,
+        ];
+        issuesDigest: string;
+      };
 }
 
 type EventBackupScopeV2 = EventBackupScopeV2Base &
@@ -4727,6 +5072,59 @@ type V2CoreRepresentabilityIssueV1 =
       valueDigest: string;
     };
 
+type CompanionV1ValidationFailureWitnessV1 =
+  | {
+      kind: "frozen-v1-self-validation-failed";
+      failureCode:
+        | "schema-invalid"
+        | "reference-invalid"
+        | "current-reader-projection-mismatch";
+      candidateByteLength: number;
+      candidateSha256: string;
+      sourceProjectionDigest: string;
+      currentReaderProjectionDigest: string | null;
+      compatibilityMatrixDigest: string;
+      backupLimitsConfigSha256: string;
+    }
+  | {
+      kind: "fixed-legacy-a-parse-failed";
+      failureCode: "fixed-a-parser-rejected" | "fixed-a-parser-timeout";
+      candidateByteLength: number;
+      candidateSha256: string;
+      fixedLegacyAArchiveSha256: string;
+      parserResultDigest: string;
+      backupLimitsConfigSha256: string;
+    }
+  | {
+      kind: "fixed-legacy-a-projection-mismatch";
+      candidateByteLength: number;
+      candidateSha256: string;
+      sourceProjectionDigest: string;
+      fixedLegacyAProjectionDigest: string;
+      mismatchPathSetDigest: string;
+      fixedLegacyAArchiveSha256: string;
+      backupLimitsConfigSha256: string;
+    }
+  | {
+      kind: "fixed-legacy-a-oversize-validation-unavailable";
+      candidateByteLength: number;
+      candidateSha256: string;
+      temporarySpoolMaxRawBytes: number;
+      sourceProjectionDigest: string;
+      fixedLegacyAArchiveSha256: string;
+      backupLimitsConfigSha256: string;
+    };
+
+type CompanionV1ValidationFailureIssueV1 = {
+  [Kind in CompanionV1ValidationFailureWitnessV1["kind"]]: {
+    kind: Kind;
+    witness: Readonly<
+      Extract<CompanionV1ValidationFailureWitnessV1, { kind: Kind }>
+    >;
+    witnessDigest: string;
+  };
+}[CompanionV1ValidationFailureWitnessV1["kind"]];
+
 type CompanionV1RepresentabilityIssueV1 =
   | {
       kind: "hall-visit-group-token-unrepresentable";
@@ -4751,82 +5149,571 @@ type CompanionV1RepresentabilityIssueV1 =
       resolution: "resolved-without-v1-hall-definitions" | "dangling";
       sourceHallIdDigest: string;
     }
+  | CompanionV1ValidationFailureIssueV1
   | {
-      kind:
-        | "frozen-v1-self-validation-failed"
-        | "fixed-legacy-a-parse-failed"
-        | "fixed-legacy-a-projection-mismatch";
-      witnessDigest: string;
+      kind: "companion-v1-resource-limit";
+      companionV1CandidateByteLength: number;
+      companionV1CandidateSha256: string;
+      finalV2ByteLength: number;
+      pairCandidateByteLength: number;
+      appliedLimits: {
+        v2ExportMaxRawBytes: number;
+        companionV1ExportMaxRawBytes: number;
+        pairTotalExportMaxRawBytes: number;
+        temporarySpoolMaxRawBytes: number;
+        exportGenerationTimeoutMs: number;
+        backupLimitsConfigSha256: string;
+      };
+      exceededLimits:
+        | readonly ["companion-v1-max"]
+        | readonly ["pair-total-max"]
+        | readonly ["companion-v1-max", "pair-total-max"];
+      limitWitnessDigest: string;
     };
+
+const COMPANION_V1_ISSUE_KIND_ORDER_V1 = [
+  "hall-visit-group-token-unrepresentable",
+  "hall-order-token-unrepresentable",
+  "manual-hall-reference-unrepresentable",
+  "frozen-v1-self-validation-failed",
+  "fixed-legacy-a-parse-failed",
+  "fixed-legacy-a-projection-mismatch",
+  "fixed-legacy-a-oversize-validation-unavailable",
+  "companion-v1-resource-limit",
+] as const satisfies readonly CompanionV1RepresentabilityIssueV1["kind"][];
 
 declare const preparedArtifactHandleBrandV1: unique symbol;
 type PreparedArtifactHandleV1 = string & {
   readonly [preparedArtifactHandleBrandV1]: true;
 };
 
-interface PreparedBackupArtifactCommonV1 {
+interface SplitCapableEventExportRootWitnessV1 {
+  rootKey: readonly [storeName: string, key: string];
+  observedRevisionRootDigest: string;
+  checkpointDigest: string | null;
+  payloadDigest: string;
+}
+
+type SplitCapableEventExportRootVectorV1 = readonly [
+  Readonly<SplitCapableEventExportRootWitnessV1>,
+  ...Readonly<SplitCapableEventExportRootWitnessV1>[],
+];
+
+interface SplitCapableEventExportSourceSliceDigestsV1 {
+  core: string;
+  eventMetadata: string;
+  map: string;
+  association: string;
+  splitSettings: string;
+  durableVisitState: string;
+  eventSettings: string;
+}
+
+interface SplitCapableEventExportSnapshotV1<SourceSlices> {
+  snapshotSchemaVersion: 1;
+  sourceSha: string;
+  sourceEventInstanceId: string;
+  participantRoots: SplitCapableEventExportRootVectorV1;
+  sourceRootVectorDigest: string;
+  sourceSnapshotRevision: string;
+  sourceSliceDigests: Readonly<SplitCapableEventExportSourceSliceDigestsV1>;
+  bridgeJournalDigest: string;
+  externalProjectionWitnessDigest: string;
+  sourceSlices: Readonly<SourceSlices>;
+  sourceSnapshotDigest: string;
+}
+
+interface BackupSourceSnapshotBindingV1 {
+  sourceSha: string;
+  sourceRootVectorDigest: string;
+  sourceSnapshotRevision: string;
+  sourceSnapshotDigest: string;
+}
+
+type PreparedBackupArtifactRoleV1 =
+  | "backup-v2"
+  | "companion-v1"
+  | "standalone-v1";
+
+interface PreparedBackupArtifactSelfValidationCommonV1 extends BackupSourceSnapshotBindingV1 {
+  schemaVersion: 1;
+  fileName: string;
+  byteLength: number;
+  sha256: string;
+  schemaReceipt: {
+    schemaSha256: string;
+    validatedProjectionDigest: string;
+    status: "passed";
+  };
+}
+
+interface PreparedBackupParseReceiptV1<
+  Parser extends
+    | "backup-v2-current-reader"
+    | "frozen-v1-current-reader"
+    | "fixed-legacy-a-reader",
+> {
+  parser: Parser;
+  parsedPayloadDigest: string;
+  status: "passed";
+}
+
+interface PreparedBackupProjectionReceiptV1<
+  ProjectionKind extends
+    | "v2-self"
+    | "source-preservation"
+    | "current-v1-reader"
+    | "fixed-legacy-a",
+> {
+  projectionKind: ProjectionKind;
+  projectionDigest: string;
+}
+
+type PreparedBackupArtifactSelfValidationEvidenceV1 =
+  | (PreparedBackupArtifactSelfValidationCommonV1 & {
+      role: "backup-v2";
+      parseReceipts: readonly [
+        Readonly<PreparedBackupParseReceiptV1<"backup-v2-current-reader">>,
+      ];
+      projectionReceipts: readonly [
+        Readonly<PreparedBackupProjectionReceiptV1<"v2-self">>,
+      ];
+    })
+  | (PreparedBackupArtifactSelfValidationCommonV1 & {
+      role: "companion-v1";
+      parseReceipts: readonly [
+        Readonly<PreparedBackupParseReceiptV1<"frozen-v1-current-reader">>,
+        Readonly<PreparedBackupParseReceiptV1<"fixed-legacy-a-reader">>,
+      ];
+      projectionReceipts: readonly [
+        Readonly<PreparedBackupProjectionReceiptV1<"source-preservation">>,
+        Readonly<PreparedBackupProjectionReceiptV1<"current-v1-reader">>,
+        Readonly<PreparedBackupProjectionReceiptV1<"fixed-legacy-a">>,
+      ];
+    })
+  | (PreparedBackupArtifactSelfValidationCommonV1 & {
+      role: "standalone-v1";
+      parseReceipts: readonly [
+        Readonly<PreparedBackupParseReceiptV1<"frozen-v1-current-reader">>,
+        Readonly<PreparedBackupParseReceiptV1<"fixed-legacy-a-reader">>,
+      ];
+      projectionReceipts: readonly [
+        Readonly<PreparedBackupProjectionReceiptV1<"source-preservation">>,
+        Readonly<PreparedBackupProjectionReceiptV1<"current-v1-reader">>,
+        Readonly<PreparedBackupProjectionReceiptV1<"fixed-legacy-a">>,
+      ];
+    });
+
+interface PreparedBackupArtifactCommonV1<
+  Role extends PreparedBackupArtifactRoleV1,
+> {
   artifactId: string;
   handle: PreparedArtifactHandleV1;
   fileName: string;
   byteLength: number;
   sha256: string;
+  selfValidationEvidence: Readonly<
+    Extract<PreparedBackupArtifactSelfValidationEvidenceV1, { role: Role }>
+  >;
   selfValidationDigest: string;
+  sourceSha: string;
+  sourceRootVectorDigest: string;
+  sourceSnapshotRevision: string;
+  sourceSnapshotDigest: string;
 }
 
-type PreparedBackupArtifactV1 = PreparedBackupArtifactCommonV1 &
+type PreparedBackupV2ArtifactV1 = PreparedBackupArtifactCommonV1<"backup-v2"> &
   (
     | {
         role: "backup-v2";
+        preparationKind: "pair";
+        companionUnavailableReason: null;
         pairDigest: string;
+        companionIssuesDigest: null;
       }
     | {
-        role: "companion-v1";
-        pairDigest: string;
-      }
-    | {
-        role: "standalone-v1";
+        role: "backup-v2";
+        preparationKind: "structural-v2-only";
+        companionUnavailableReason: "not-losslessly-representable";
         pairDigest: null;
+        companionIssuesDigest: string;
+      }
+    | {
+        role: "backup-v2";
+        preparationKind: "resource-v2-only";
+        companionUnavailableReason: "companion-v1-resource-limit";
+        pairDigest: null;
+        companionIssuesDigest: string;
       }
   );
 
-type PreparedBackupPairVerificationV1 =
-  | {
-      kind: "verified";
+type PreparedBackupArtifactV1 =
+  | PreparedBackupV2ArtifactV1
+  | (PreparedBackupArtifactCommonV1<"companion-v1"> & {
+      role: "companion-v1";
       pairDigest: string;
-      v2Artifact: Readonly<
-        Extract<PreparedBackupArtifactV1, { role: "backup-v2" }>
-      >;
-      companionV1Artifact: Readonly<
-        Extract<PreparedBackupArtifactV1, { role: "companion-v1" }>
-      >;
-      immutableBytesWitnessDigest: string;
+    })
+  | (PreparedBackupArtifactCommonV1<"standalone-v1"> & {
+      role: "standalone-v1";
+      pairDigest: null;
+      coverage: "legacy-core-only";
+      excludedRoots: readonly [
+        "map-cell-split-settings",
+        "durable-visit-state",
+      ];
+      recoveryWarning: "split-settings-and-progress-are-not-restorable";
+      compatibilityMatrixDigest: string;
+      sourcePreservationProjectionDigest: string;
+      currentReaderProjectionDigest: string;
+      fixedLegacyAProjectionDigest: string;
+    });
+
+interface PreparedBackupArtifactByteReceiptV1<
+  Role extends PreparedBackupArtifactRoleV1,
+> extends BackupSourceSnapshotBindingV1 {
+  artifactId: string;
+  handle: PreparedArtifactHandleV1;
+  role: Role;
+  fileName: string;
+  declaredByteLength: number;
+  recomputedByteLength: number;
+  declaredSha256: string;
+  recomputedSha256: string;
+  selfValidationDigest: string;
+}
+
+type PreparedBackupImmutableBytesWitnessV1 =
+  | {
+      preparationKind: "pair";
+      companionUnavailableReason: null;
+      artifacts: readonly [
+        Readonly<PreparedBackupArtifactByteReceiptV1<"backup-v2">>,
+        Readonly<PreparedBackupArtifactByteReceiptV1<"companion-v1">>,
+      ];
+      pairDigest: string;
+      companionIssuesDigest: null;
+      warningAcknowledgementDigest: null;
     }
   | {
-      kind: "rejected";
-      reason:
-        | "unknown-or-inactive-handle"
-        | "handle-role-mismatch"
-        | "pair-digest-mismatch"
-        | "artifact-metadata-mismatch"
-        | "artifact-bytes-mismatch"
-        | "handle-already-finalized";
-      handoffAttempts: 0;
+      preparationKind: "structural-v2-only";
+      companionUnavailableReason: "not-losslessly-representable";
+      artifacts: readonly [
+        Readonly<PreparedBackupArtifactByteReceiptV1<"backup-v2">>,
+      ];
+      pairDigest: null;
+      companionIssuesDigest: string;
+      warningAcknowledgementDigest: string;
+    }
+  | {
+      preparationKind: "resource-v2-only";
+      companionUnavailableReason: "companion-v1-resource-limit";
+      artifacts: readonly [
+        Readonly<PreparedBackupArtifactByteReceiptV1<"backup-v2">>,
+      ];
+      pairDigest: null;
+      companionIssuesDigest: string;
+      warningAcknowledgementDigest: string;
+    }
+  | {
+      preparationKind: "standalone-v1";
+      companionUnavailableReason: null;
+      artifacts: readonly [
+        Readonly<PreparedBackupArtifactByteReceiptV1<"standalone-v1">>,
+      ];
+      pairDigest: null;
+      companionIssuesDigest: null;
+      warningAcknowledgementDigest: string;
     };
 
+type V2OnlyLegacyFallbackWarningAcknowledgementV1 =
+  | {
+      preparationKind: "structural-v2-only";
+      companionUnavailableReason: "not-losslessly-representable";
+      warningCode: "legacy-fallback-unavailable-store-v2";
+      v2ArtifactId: string;
+      v2ArtifactSha256: string;
+      companionIssuesDigest: string;
+      acknowledgementDigest: string;
+    }
+  | {
+      preparationKind: "resource-v2-only";
+      companionUnavailableReason: "companion-v1-resource-limit";
+      warningCode: "legacy-fallback-unavailable-store-v2";
+      v2ArtifactId: string;
+      v2ArtifactSha256: string;
+      companionIssuesDigest: string;
+      acknowledgementDigest: string;
+    };
+
+type PreparedBackupSetVerificationV1 = Readonly<BackupSourceSnapshotBindingV1> &
+  (
+    | {
+        kind: "pair-verified";
+        preparationKind: "pair";
+        companionUnavailableReason: null;
+        pairDigest: string;
+        v2Artifact: Readonly<
+          Extract<PreparedBackupV2ArtifactV1, { preparationKind: "pair" }>
+        >;
+        companionV1Artifact: Readonly<
+          Extract<PreparedBackupArtifactV1, { role: "companion-v1" }>
+        >;
+        immutableBytesWitness: Readonly<
+          Extract<
+            PreparedBackupImmutableBytesWitnessV1,
+            { preparationKind: "pair" }
+          >
+        >;
+        immutableBytesWitnessDigest: string;
+        sourceSha: string;
+        sourceRootVectorDigest: string;
+        sourceSnapshotRevision: string;
+        sourceSnapshotDigest: string;
+      }
+    | {
+        kind: "structural-v2-only-verified";
+        preparationKind: "structural-v2-only";
+        companionUnavailableReason: "not-losslessly-representable";
+        pairDigest: null;
+        v2Artifact: Readonly<
+          Extract<
+            PreparedBackupV2ArtifactV1,
+            { preparationKind: "structural-v2-only" }
+          >
+        >;
+        companionIssuesDigest: string;
+        warningAcknowledgement: Readonly<
+          Extract<
+            V2OnlyLegacyFallbackWarningAcknowledgementV1,
+            { preparationKind: "structural-v2-only" }
+          >
+        >;
+        immutableBytesWitness: Readonly<
+          Extract<
+            PreparedBackupImmutableBytesWitnessV1,
+            { preparationKind: "structural-v2-only" }
+          >
+        >;
+        immutableBytesWitnessDigest: string;
+        sourceSha: string;
+        sourceRootVectorDigest: string;
+        sourceSnapshotRevision: string;
+        sourceSnapshotDigest: string;
+      }
+    | {
+        kind: "resource-v2-only-verified";
+        preparationKind: "resource-v2-only";
+        companionUnavailableReason: "companion-v1-resource-limit";
+        pairDigest: null;
+        v2Artifact: Readonly<
+          Extract<
+            PreparedBackupV2ArtifactV1,
+            { preparationKind: "resource-v2-only" }
+          >
+        >;
+        companionIssuesDigest: string;
+        warningAcknowledgement: Readonly<
+          Extract<
+            V2OnlyLegacyFallbackWarningAcknowledgementV1,
+            { preparationKind: "resource-v2-only" }
+          >
+        >;
+        immutableBytesWitness: Readonly<
+          Extract<
+            PreparedBackupImmutableBytesWitnessV1,
+            { preparationKind: "resource-v2-only" }
+          >
+        >;
+        immutableBytesWitnessDigest: string;
+        sourceSha: string;
+        sourceRootVectorDigest: string;
+        sourceSnapshotRevision: string;
+        sourceSnapshotDigest: string;
+      }
+    | {
+        kind: "standalone-v1-verified";
+        preparationKind: "standalone-v1";
+        companionUnavailableReason: null;
+        pairDigest: null;
+        standaloneV1Artifact: Readonly<
+          Extract<PreparedBackupArtifactV1, { role: "standalone-v1" }>
+        >;
+        coverage: "legacy-core-only";
+        excludedRoots: readonly [
+          "map-cell-split-settings",
+          "durable-visit-state",
+        ];
+        recoveryWarning: "split-settings-and-progress-are-not-restorable";
+        warningAcknowledged: true;
+        standaloneWarningAcknowledgementDigest: string;
+        immutableBytesWitness: Readonly<
+          Extract<
+            PreparedBackupImmutableBytesWitnessV1,
+            { preparationKind: "standalone-v1" }
+          >
+        >;
+        immutableBytesWitnessDigest: string;
+        sourceSha: string;
+        sourceRootVectorDigest: string;
+        sourceSnapshotRevision: string;
+        sourceSnapshotDigest: string;
+      }
+    | {
+        kind: "rejected";
+        reason:
+          | "unknown-or-inactive-handle"
+          | "handle-role-mismatch"
+          | "pair-digest-mismatch"
+          | "artifact-metadata-mismatch"
+          | "artifact-bytes-mismatch"
+          | "handle-already-finalized"
+          | "v2-only-warning-not-acknowledged"
+          | "standalone-warning-not-acknowledged";
+        handoffAttempts: 0;
+      }
+  );
+
 interface PreparedBackupArtifactPortV1 {
-  verifyPreparedPairForHandoff(input: {
-    pairDigest: string;
-    v2Handle: PreparedArtifactHandleV1;
-    companionV1Handle: PreparedArtifactHandleV1;
-  }): Promise<PreparedBackupPairVerificationV1>;
-  handoffVerifiedPair(
-    input: Extract<PreparedBackupPairVerificationV1, { kind: "verified" }>,
-  ): Promise<BackupPairHandoffResultV1>;
-  disposePreparedPair(input: {
-    pairDigest: string;
-    handles: readonly [PreparedArtifactHandleV1, PreparedArtifactHandleV1];
-  }): Promise<void>;
+  verifyPreparedExportForHandoff(
+    input: Readonly<BackupSourceSnapshotBindingV1> &
+      (
+        | {
+            preparationKind: "pair";
+            companionUnavailableReason: null;
+            pairDigest: string;
+            v2Handle: PreparedArtifactHandleV1;
+            companionV1Handle: PreparedArtifactHandleV1;
+          }
+        | {
+            preparationKind: "structural-v2-only";
+            companionUnavailableReason: "not-losslessly-representable";
+            pairDigest: null;
+            v2Handle: PreparedArtifactHandleV1;
+            companionIssuesDigest: string;
+            warningAcknowledgement: Readonly<
+              Extract<
+                V2OnlyLegacyFallbackWarningAcknowledgementV1,
+                { preparationKind: "structural-v2-only" }
+              >
+            >;
+          }
+        | {
+            preparationKind: "resource-v2-only";
+            companionUnavailableReason: "companion-v1-resource-limit";
+            pairDigest: null;
+            v2Handle: PreparedArtifactHandleV1;
+            companionIssuesDigest: string;
+            warningAcknowledgement: Readonly<
+              Extract<
+                V2OnlyLegacyFallbackWarningAcknowledgementV1,
+                { preparationKind: "resource-v2-only" }
+              >
+            >;
+          }
+        | {
+            preparationKind: "standalone-v1";
+            companionUnavailableReason: null;
+            pairDigest: null;
+            standaloneV1Handle: PreparedArtifactHandleV1;
+            coverage: "legacy-core-only";
+            excludedRoots: readonly [
+              "map-cell-split-settings",
+              "durable-visit-state",
+            ];
+            recoveryWarning: "split-settings-and-progress-are-not-restorable";
+            warningAcknowledged: true;
+            standaloneWarningAcknowledgementDigest: string;
+          }
+      ),
+  ): Promise<PreparedBackupSetVerificationV1>;
+  handoffVerifiedExport(
+    input: Exclude<PreparedBackupSetVerificationV1, { kind: "rejected" }>,
+  ): Promise<BackupHandoffResultV1>;
+  disposePreparedExport(
+    input:
+      | {
+          preparationKind: "pair";
+          companionUnavailableReason: null;
+          pairDigest: string;
+          handles: readonly [
+            PreparedArtifactHandleV1,
+            PreparedArtifactHandleV1,
+          ];
+        }
+      | {
+          preparationKind: "structural-v2-only";
+          companionUnavailableReason: "not-losslessly-representable";
+          pairDigest: null;
+          handles: readonly [PreparedArtifactHandleV1];
+        }
+      | {
+          preparationKind: "resource-v2-only";
+          companionUnavailableReason: "companion-v1-resource-limit";
+          pairDigest: null;
+          handles: readonly [PreparedArtifactHandleV1];
+        }
+      | {
+          preparationKind: "standalone-v1";
+          companionUnavailableReason: null;
+          pairDigest: null;
+          handles: readonly [PreparedArtifactHandleV1];
+        },
+  ): Promise<void>;
 }
+
+type StandaloneV1FallbackFailureWitnessV1 =
+  | {
+      kind: "v1-self-validation-failed";
+      failureCode:
+        | "schema-invalid"
+        | "reference-invalid"
+        | "current-reader-projection-mismatch";
+      candidateByteLength: number;
+      candidateSha256: string;
+      sourceProjectionDigest: string;
+      currentReaderProjectionDigest: string | null;
+      compatibilityMatrixDigest: string;
+      backupLimitsConfigSha256: string;
+    }
+  | {
+      kind: "fixed-legacy-a-parse-failed";
+      failureCode: "fixed-a-parser-rejected" | "fixed-a-parser-timeout";
+      candidateByteLength: number;
+      candidateSha256: string;
+      fixedLegacyAArchiveSha256: string;
+      parserResultDigest: string;
+      backupLimitsConfigSha256: string;
+    }
+  | {
+      kind: "source-v1-projection-mismatch";
+      candidateByteLength: number;
+      candidateSha256: string;
+      sourceProjectionDigest: string;
+      currentReaderProjectionDigest: string;
+      fixedLegacyAProjectionDigest: string;
+      mismatchPathSetDigest: string;
+      compatibilityMatrixDigest: string;
+      fixedLegacyAArchiveSha256: string;
+      backupLimitsConfigSha256: string;
+    }
+  | {
+      kind: "v1-resource-limit";
+      candidateByteLength: number;
+      candidateSha256: string;
+      companionV1ExportMaxRawBytes: number;
+      temporarySpoolMaxRawBytes: number;
+      backupLimitsConfigSha256: string;
+    };
+
+type StandaloneV1FallbackFailureBlockerV1 = {
+  [Kind in StandaloneV1FallbackFailureWitnessV1["kind"]]: {
+    kind: Kind;
+    witness: Readonly<
+      Extract<StandaloneV1FallbackFailureWitnessV1, { kind: Kind }>
+    >;
+    witnessDigest: string;
+  };
+}[StandaloneV1FallbackFailureWitnessV1["kind"]];
 
 type StandaloneV1FallbackBlockerV1 =
   | {
@@ -4834,14 +5721,7 @@ type StandaloneV1FallbackBlockerV1 =
       issueKind: V2CoreRepresentabilityIssueV1["kind"];
       section: string | null;
     }
-  | {
-      kind:
-        | "v1-self-validation-failed"
-        | "fixed-legacy-a-parse-failed"
-        | "source-v1-projection-mismatch"
-        | "v1-resource-limit";
-      witnessDigest: string;
-    };
+  | StandaloneV1FallbackFailureBlockerV1;
 
 type StandaloneV1FallbackResultV1 =
   | {
@@ -4868,39 +5748,389 @@ type StandaloneV1FallbackResultV1 =
       ];
     };
 
-type InitialReleaseAppBackupV2ExportResultV1 =
+interface V2ExportFailureLimitAuthorityV1 {
+  v2ExportMaxRawBytes: number;
+  temporarySpoolMaxRawBytes: number;
+  exportGenerationTimeoutMs: number;
+  backupLimitsConfigSha256: string;
+}
+
+type V2FixedPointNonemptyExceededLimitsV1 =
+  | readonly ["companion-v1-max"]
+  | readonly ["pair-total-max"]
+  | readonly ["companion-v1-max", "pair-total-max"];
+
+type V2FixedPointPassExceededLimitsV1 =
+  | readonly []
+  | V2FixedPointNonemptyExceededLimitsV1;
+
+type V2FixedPointDigestSlotV1 =
   | {
-      kind: "pair-prepared";
-      backupV2: InitialReleaseAppBackupV2WriterOutput;
-      v2Artifact: Readonly<
-        Extract<PreparedBackupArtifactV1, { role: "backup-v2" }>
+      kind: "zero-placeholder";
+      value: "0000000000000000000000000000000000000000000000000000000000000000";
+    }
+  | { kind: "substituted"; value: string };
+
+interface V2FixedPointStateV1<
+  ExceededLimits extends V2FixedPointPassExceededLimitsV1 =
+    V2FixedPointPassExceededLimitsV1,
+  DigestSlot extends V2FixedPointDigestSlotV1 = V2FixedPointDigestSlotV1,
+> {
+  companionV1CandidateByteLength: number;
+  companionV1CandidateSha256: string;
+  finalV2ByteLength: number;
+  pairCandidateByteLength: number;
+  appliedLimits: {
+    v2ExportMaxRawBytes: number;
+    companionV1ExportMaxRawBytes: number;
+    pairTotalExportMaxRawBytes: number;
+    temporarySpoolMaxRawBytes: number;
+    exportGenerationTimeoutMs: number;
+    backupLimitsConfigSha256: string;
+  };
+  exceededLimits: ExceededLimits;
+  limitWitnessDigestSlot: DigestSlot;
+}
+
+type V2FixedPointConvergedResourceStateV1 = V2FixedPointStateV1<
+  V2FixedPointNonemptyExceededLimitsV1,
+  Extract<V2FixedPointDigestSlotV1, { kind: "substituted" }>
+>;
+
+type V2FixedPointConvergenceResultV1 =
+  | {
+      kind: "converged-without-resource-issue";
+      state: Readonly<
+        V2FixedPointStateV1<
+          readonly [],
+          Extract<V2FixedPointDigestSlotV1, { kind: "zero-placeholder" }>
+        >
       >;
-      companionV1Artifact: Readonly<
-        Extract<PreparedBackupArtifactV1, { role: "companion-v1" }>
-      >;
-      pairDigest: string;
+      resourceIssue: null;
     }
   | {
-      kind: "v2-unrepresentable";
-      issues: readonly [
-        V2CoreRepresentabilityIssueV1,
-        ...V2CoreRepresentabilityIssueV1[],
-      ];
-      backupV2: null;
-      standaloneV1Fallback: StandaloneV1FallbackResultV1;
-      databaseWrites: 0;
-    }
-  | {
-      kind: "companion-v1-unrepresentable";
-      issues: readonly [
-        CompanionV1RepresentabilityIssueV1,
-        ...CompanionV1RepresentabilityIssueV1[],
-      ];
-      backupV2: null;
-      v2Artifact: null;
-      companionV1Artifact: null;
-      databaseWrites: 0;
+      kind: "converged-resource-issue";
+      state: Readonly<V2FixedPointConvergedResourceStateV1>;
+      resourceIssue: Readonly<
+        Extract<
+          CompanionV1RepresentabilityIssueV1,
+          { kind: "companion-v1-resource-limit" }
+        >
+      >;
     };
+
+type V2FixedPointPassOrdinalV1 = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+
+interface V2FixedPointPassObservationV1<
+  PassOrdinal extends V2FixedPointPassOrdinalV1,
+  ExceededLimits extends V2FixedPointPassExceededLimitsV1 =
+    V2FixedPointPassExceededLimitsV1,
+  DigestSlot extends V2FixedPointDigestSlotV1 = V2FixedPointDigestSlotV1,
+> {
+  passOrdinal: PassOrdinal;
+  state: Readonly<V2FixedPointStateV1<ExceededLimits, DigestSlot>>;
+  byteLength: number;
+  canonicalSha256: string;
+  convergenceStateDigest: string;
+  observationDigest: string;
+}
+
+type V2FixedPointResourceLoopPassObservationV1<
+  PassOrdinal extends V2FixedPointPassOrdinalV1,
+> = V2FixedPointPassObservationV1<
+  PassOrdinal,
+  V2FixedPointNonemptyExceededLimitsV1,
+  Extract<V2FixedPointDigestSlotV1, { kind: "zero-placeholder" }>
+>;
+
+type V2DigestSubstitutionDriftAtPassV1<
+  PassOrdinal extends V2FixedPointPassOrdinalV1,
+  ExceededLimits extends V2FixedPointNonemptyExceededLimitsV1,
+> = {
+  completedPassCount: PassOrdinal;
+  placeholderPass: Readonly<
+    V2FixedPointPassObservationV1<
+      PassOrdinal,
+      ExceededLimits,
+      Extract<V2FixedPointDigestSlotV1, { kind: "zero-placeholder" }>
+    >
+  >;
+  substitutedDigestPass: Readonly<
+    V2FixedPointPassObservationV1<
+      PassOrdinal,
+      ExceededLimits,
+      Extract<V2FixedPointDigestSlotV1, { kind: "substituted" }>
+    >
+  >;
+};
+
+type V2DigestSubstitutionDriftWitnessV1 = {
+  [PassOrdinal in V2FixedPointPassOrdinalV1]:
+    | V2DigestSubstitutionDriftAtPassV1<
+        PassOrdinal,
+        readonly ["companion-v1-max"]
+      >
+    | V2DigestSubstitutionDriftAtPassV1<
+        PassOrdinal,
+        readonly ["pair-total-max"]
+      >
+    | V2DigestSubstitutionDriftAtPassV1<
+        PassOrdinal,
+        readonly ["companion-v1-max", "pair-total-max"]
+      >;
+}[V2FixedPointPassOrdinalV1];
+
+type PreparedArtifactByteSinkStageV1 =
+  | "companion-v1-generation"
+  | "companion-v1-validation"
+  | "companion-v1-retention"
+  | "v2-fixed-point"
+  | "v2-finalization"
+  | "v2-final-retention";
+
+interface PreparedArtifactByteSinkReceiptCommonV1 extends BackupSourceSnapshotBindingV1 {
+  schemaVersion: 1;
+  streamByteLength: number;
+  streamSha256: string;
+  attemptedRetainedRawBytes: number;
+  retainedRawBytes: number;
+  chunkMaxRawBytes: number;
+  observedChunkCount: number;
+  temporarySpoolMaxRawBytes: number;
+  exportGenerationTimeoutMs: number;
+  elapsedMs: number;
+  backupLimitsConfigSha256: string;
+  receiptDigest: string;
+}
+
+type PreparedArtifactByteSinkReceiptV1 = Readonly<
+  PreparedArtifactByteSinkReceiptCommonV1 &
+    (
+      | {
+          stage: PreparedArtifactByteSinkStageV1;
+          outcome: "completed";
+          terminalCode: "completed";
+        }
+      | {
+          stage: PreparedArtifactByteSinkStageV1;
+          outcome: "timeout";
+          terminalCode: "export-generation-timeout";
+        }
+      | {
+          stage: "companion-v1-retention" | "v2-final-retention";
+          outcome: "temporary-spool-limit-exceeded";
+          terminalCode: "temporary-spool-limit-exceeded";
+        }
+      | {
+          stage: PreparedArtifactByteSinkStageV1;
+          outcome: "cancelled";
+          terminalCode: "export-cancelled";
+          cancellationReason:
+            | "user-request"
+            | "worker-shutdown"
+            | "superseded-export";
+        }
+      | {
+          stage: PreparedArtifactByteSinkStageV1;
+          outcome: "sink-error";
+          terminalCode: "artifact-byte-sink-error";
+          sinkErrorCode:
+            | "stream-read-failed"
+            | "hash-update-failed"
+            | "temporary-spool-write-failed"
+            | "temporary-spool-readback-failed"
+            | "temporary-spool-finalize-failed";
+        }
+    )
+>;
+
+type V2ExportFailureWitnessV1 =
+  | {
+      reason: "resource-fixed-point-did-not-converge";
+      appliedLimits: Readonly<V2ExportFailureLimitAuthorityV1>;
+      fixedPointMaxPasses: 8;
+      completedPassCount: 8;
+      passes: readonly [
+        Readonly<V2FixedPointResourceLoopPassObservationV1<1>>,
+        Readonly<V2FixedPointResourceLoopPassObservationV1<2>>,
+        Readonly<V2FixedPointResourceLoopPassObservationV1<3>>,
+        Readonly<V2FixedPointResourceLoopPassObservationV1<4>>,
+        Readonly<V2FixedPointResourceLoopPassObservationV1<5>>,
+        Readonly<V2FixedPointResourceLoopPassObservationV1<6>>,
+        Readonly<V2FixedPointResourceLoopPassObservationV1<7>>,
+        Readonly<V2FixedPointResourceLoopPassObservationV1<8>>,
+      ];
+    }
+  | ({
+      reason: "resource-digest-substitution-drift";
+      appliedLimits: Readonly<V2ExportFailureLimitAuthorityV1>;
+    } & V2DigestSubstitutionDriftWitnessV1)
+  | {
+      reason: "v2-export-max-raw-bytes-exceeded";
+      appliedLimits: Readonly<V2ExportFailureLimitAuthorityV1>;
+      finalV2ByteLength: number;
+      finalV2Sha256: string;
+    }
+  | {
+      reason: "export-generation-timeout";
+      appliedLimits: Readonly<V2ExportFailureLimitAuthorityV1>;
+      elapsedMs: number;
+      stage: PreparedArtifactByteSinkStageV1;
+      sinkReceipt: Readonly<
+        Extract<PreparedArtifactByteSinkReceiptV1, { outcome: "timeout" }>
+      >;
+    }
+  | {
+      reason: "temporary-spool-limit-exceeded";
+      appliedLimits: Readonly<V2ExportFailureLimitAuthorityV1>;
+      attemptedRetainedRawBytes: number;
+      stage: "companion-v1-retention" | "v2-final-retention";
+      sinkReceipt: Readonly<
+        Extract<
+          PreparedArtifactByteSinkReceiptV1,
+          { outcome: "temporary-spool-limit-exceeded" }
+        >
+      >;
+    }
+  | {
+      reason: "export-cancelled";
+      appliedLimits: Readonly<V2ExportFailureLimitAuthorityV1>;
+      stage: PreparedArtifactByteSinkStageV1;
+      cancellationReason:
+        | "user-request"
+        | "worker-shutdown"
+        | "superseded-export";
+      sinkReceipt: Readonly<
+        Extract<PreparedArtifactByteSinkReceiptV1, { outcome: "cancelled" }>
+      >;
+    }
+  | {
+      reason: "artifact-byte-sink-error";
+      appliedLimits: Readonly<V2ExportFailureLimitAuthorityV1>;
+      stage: PreparedArtifactByteSinkStageV1;
+      sinkErrorCode:
+        | "stream-read-failed"
+        | "hash-update-failed"
+        | "temporary-spool-write-failed"
+        | "temporary-spool-readback-failed"
+        | "temporary-spool-finalize-failed";
+      sinkReceipt: Readonly<
+        Extract<PreparedArtifactByteSinkReceiptV1, { outcome: "sink-error" }>
+      >;
+    };
+
+type V2ExportFailedResultV1 = {
+  [Reason in V2ExportFailureWitnessV1["reason"]]: {
+    kind: "v2-export-failed";
+    reason: Reason;
+    failureWitness: Readonly<
+      Extract<V2ExportFailureWitnessV1, { reason: Reason }>
+    >;
+    failureWitnessDigest: string;
+    backupV2: null;
+    standaloneV1Fallback: null;
+    preparedArtifacts: readonly [];
+    databaseWrites: 0;
+    handoffAttempts: 0;
+    temporarySpoolRetainedRawBytesAfterCleanup: 0;
+  };
+}[V2ExportFailureWitnessV1["reason"]];
+
+type InitialReleaseAppBackupV2ExportResultV1 =
+  Readonly<BackupSourceSnapshotBindingV1> &
+    (
+      | {
+          kind: "pair-prepared";
+          preparationKind: "pair";
+          companionUnavailableReason: null;
+          backupV2: InitialReleaseAppBackupV2WriterOutput & {
+            scope: {
+              companionCore: Extract<
+                EventBackupScopeV2Base["companionCore"],
+                { status: "included" }
+              >;
+            };
+          };
+          v2Artifact: Readonly<
+            Extract<PreparedBackupV2ArtifactV1, { preparationKind: "pair" }>
+          >;
+          companionV1Artifact: Readonly<
+            Extract<PreparedBackupArtifactV1, { role: "companion-v1" }>
+          >;
+          pairDigest: string;
+        }
+      | {
+          kind: "structural-v2-only-prepared";
+          preparationKind: "structural-v2-only";
+          companionUnavailableReason: "not-losslessly-representable";
+          backupV2: InitialReleaseAppBackupV2WriterOutput & {
+            scope: {
+              companionCore: Extract<
+                EventBackupScopeV2Base["companionCore"],
+                { reason: "not-losslessly-representable" }
+              >;
+            };
+          };
+          v2Artifact: Readonly<
+            Extract<
+              PreparedBackupV2ArtifactV1,
+              { preparationKind: "structural-v2-only" }
+            >
+          >;
+          companionIssues: readonly [
+            Exclude<
+              CompanionV1RepresentabilityIssueV1,
+              { kind: "companion-v1-resource-limit" }
+            >,
+            ...Exclude<
+              CompanionV1RepresentabilityIssueV1,
+              { kind: "companion-v1-resource-limit" }
+            >[],
+          ];
+          companionIssuesDigest: string;
+          pairDigest: null;
+          requiresLegacyFallbackWarningAcknowledgement: true;
+        }
+      | {
+          kind: "resource-v2-only-prepared";
+          preparationKind: "resource-v2-only";
+          companionUnavailableReason: "companion-v1-resource-limit";
+          backupV2: InitialReleaseAppBackupV2WriterOutput & {
+            scope: {
+              companionCore: Extract<
+                EventBackupScopeV2Base["companionCore"],
+                { reason: "companion-v1-resource-limit" }
+              >;
+            };
+          };
+          v2Artifact: Readonly<
+            Extract<
+              PreparedBackupV2ArtifactV1,
+              { preparationKind: "resource-v2-only" }
+            >
+          >;
+          companionIssues: readonly [
+            Extract<
+              CompanionV1RepresentabilityIssueV1,
+              { kind: "companion-v1-resource-limit" }
+            >,
+          ];
+          companionIssuesDigest: string;
+          pairDigest: null;
+          requiresLegacyFallbackWarningAcknowledgement: true;
+        }
+      | {
+          kind: "v2-unrepresentable";
+          issues: readonly [
+            V2CoreRepresentabilityIssueV1,
+            ...V2CoreRepresentabilityIssueV1[],
+          ];
+          backupV2: null;
+          standaloneV1Fallback: StandaloneV1FallbackResultV1;
+          databaseWrites: 0;
+        }
+      | V2ExportFailedResultV1
+    );
 
 interface ItemOnlyHallMappingCandidateV1 {
   targetHallId: string;
@@ -4997,33 +6227,241 @@ type BackupV2RestorePlanResultV1 =
       databaseWrites: 0;
     };
 
-type BackupPairHandoffResultV1 =
+type BackupArtifactHandoffBindingV1 =
   | {
-      kind: "completed";
-      pairDigest: string;
-      expectedArtifactIds: readonly [string, string];
-      v2HandoffReceiptDigest: string;
-      companionV1HandoffReceiptDigest: string;
+      [Role in "backup-v2" | "companion-v1"]: {
+        preparationKind: "pair";
+        role: Role;
+        pairDigest: string;
+        companionIssuesDigest: null;
+        warningAcknowledgementDigest: null;
+      };
+    }["backup-v2" | "companion-v1"]
+  | {
+      preparationKind: "structural-v2-only";
+      role: "backup-v2";
+      pairDigest: null;
+      companionIssuesDigest: string;
+      warningAcknowledgementDigest: string;
     }
-  | ({
-      kind: "incomplete";
-      pairDigest: string;
-      expectedArtifactIds: readonly [string, string];
-      completionAcknowledged: false;
-      recoveryGuidance: "regenerate-same-pair";
-    } & (
-      | {
-          handedOffArtifactIds: readonly [];
-          failedArtifactIds: readonly [string, string];
-        }
-      | {
-          handedOffArtifactIds: readonly [string];
-          failedArtifactIds: readonly [string];
-        }
-    ));
+  | {
+      preparationKind: "resource-v2-only";
+      role: "backup-v2";
+      pairDigest: null;
+      companionIssuesDigest: string;
+      warningAcknowledgementDigest: string;
+    }
+  | {
+      preparationKind: "standalone-v1";
+      role: "standalone-v1";
+      pairDigest: null;
+      companionIssuesDigest: null;
+      warningAcknowledgementDigest: string;
+    };
+
+type BackupPreparationKindV1 =
+  BackupArtifactHandoffBindingV1["preparationKind"];
+
+type BackupArtifactDownstreamReceiptV1<
+  PreparationKind extends BackupPreparationKindV1,
+  Role extends PreparedBackupArtifactRoleV1,
+> = Readonly<
+  BackupSourceSnapshotBindingV1 &
+    Extract<
+      BackupArtifactHandoffBindingV1,
+      { preparationKind: PreparationKind; role: Role }
+    > & {
+      schemaVersion: 1;
+      handoffAttemptId: string;
+      artifactId: string;
+      artifactSha256: string;
+      artifactByteLength: number;
+      handoffChannel:
+        | "browser-download"
+        | "file-system-access"
+        | "native-share";
+      downstreamReceiptId: string;
+      acceptedByteLength: number;
+      acceptedSha256: string;
+      completedAtEpochMs: number;
+      downstreamReceiptDigest: string;
+    }
+>;
+
+type BackupArtifactHandoffReceiptV1<
+  PreparationKind extends BackupPreparationKindV1,
+  Role extends PreparedBackupArtifactRoleV1,
+> = Readonly<
+  BackupSourceSnapshotBindingV1 &
+    Extract<
+      BackupArtifactHandoffBindingV1,
+      { preparationKind: PreparationKind; role: Role }
+    > & {
+      schemaVersion: 1;
+      artifactId: string;
+      artifactSha256: string;
+      artifactByteLength: number;
+      downstreamReceipt: Readonly<
+        BackupArtifactDownstreamReceiptV1<PreparationKind, Role>
+      >;
+      receiptDigest: string;
+    }
+>;
+
+type BackupHandoffResultV1 = Readonly<BackupSourceSnapshotBindingV1> &
+  (
+    | {
+        kind: "pair-completed";
+        preparationKind: "pair";
+        companionUnavailableReason: null;
+        pairDigest: string;
+        expectedArtifactIds: readonly [string, string];
+        handedOffArtifactIds: readonly [string, string];
+        failedArtifactIds: readonly [];
+        handoffReceipts: readonly [
+          Readonly<BackupArtifactHandoffReceiptV1<"pair", "backup-v2">>,
+          Readonly<BackupArtifactHandoffReceiptV1<"pair", "companion-v1">>,
+        ];
+      }
+    | {
+        kind: "structural-v2-only-completed";
+        preparationKind: "structural-v2-only";
+        companionUnavailableReason: "not-losslessly-representable";
+        pairDigest: null;
+        expectedArtifactIds: readonly [string];
+        handedOffArtifactIds: readonly [string];
+        failedArtifactIds: readonly [];
+        companionIssuesDigest: string;
+        handoffReceipts: readonly [
+          Readonly<
+            BackupArtifactHandoffReceiptV1<"structural-v2-only", "backup-v2">
+          >,
+        ];
+        legacyFallbackAvailable: false;
+        warningAcknowledged: true;
+        warningAcknowledgementDigest: string;
+      }
+    | {
+        kind: "resource-v2-only-completed";
+        preparationKind: "resource-v2-only";
+        companionUnavailableReason: "companion-v1-resource-limit";
+        pairDigest: null;
+        expectedArtifactIds: readonly [string];
+        handedOffArtifactIds: readonly [string];
+        failedArtifactIds: readonly [];
+        companionIssuesDigest: string;
+        handoffReceipts: readonly [
+          Readonly<
+            BackupArtifactHandoffReceiptV1<"resource-v2-only", "backup-v2">
+          >,
+        ];
+        legacyFallbackAvailable: false;
+        warningAcknowledged: true;
+        warningAcknowledgementDigest: string;
+      }
+    | ({
+        kind: "pair-incomplete";
+        preparationKind: "pair";
+        companionUnavailableReason: null;
+        pairDigest: string;
+        expectedArtifactIds: readonly [string, string];
+        completionAcknowledged: false;
+        recoveryGuidance: "regenerate-same-pair";
+      } & (
+        | {
+            handedOffArtifactIds: readonly [];
+            failedArtifactIds: readonly [string, string];
+            handoffReceipts: readonly [];
+          }
+        | {
+            handedOffArtifactIds: readonly [string];
+            failedArtifactIds: readonly [string];
+            handoffReceipts: readonly [
+              Readonly<
+                | BackupArtifactHandoffReceiptV1<"pair", "backup-v2">
+                | BackupArtifactHandoffReceiptV1<"pair", "companion-v1">
+              >,
+            ];
+          }
+      ))
+    | {
+        kind: "structural-v2-only-incomplete";
+        preparationKind: "structural-v2-only";
+        companionUnavailableReason: "not-losslessly-representable";
+        pairDigest: null;
+        expectedArtifactIds: readonly [string];
+        companionIssuesDigest: string;
+        handedOffArtifactIds: readonly [];
+        failedArtifactIds: readonly [string];
+        warningAcknowledged: true;
+        warningAcknowledgementDigest: string;
+        handoffReceipts: readonly [];
+        completionAcknowledged: false;
+        recoveryGuidance: "retry-v2-handoff";
+      }
+    | {
+        kind: "resource-v2-only-incomplete";
+        preparationKind: "resource-v2-only";
+        companionUnavailableReason: "companion-v1-resource-limit";
+        pairDigest: null;
+        expectedArtifactIds: readonly [string];
+        companionIssuesDigest: string;
+        handedOffArtifactIds: readonly [];
+        failedArtifactIds: readonly [string];
+        warningAcknowledged: true;
+        warningAcknowledgementDigest: string;
+        handoffReceipts: readonly [];
+        completionAcknowledged: false;
+        recoveryGuidance: "retry-v2-handoff";
+      }
+    | {
+        kind: "standalone-v1-completed";
+        preparationKind: "standalone-v1";
+        companionUnavailableReason: null;
+        pairDigest: null;
+        expectedArtifactIds: readonly [string];
+        handedOffArtifactIds: readonly [string];
+        failedArtifactIds: readonly [];
+        coverage: "legacy-core-only";
+        excludedRoots: readonly [
+          "map-cell-split-settings",
+          "durable-visit-state",
+        ];
+        recoveryWarning: "split-settings-and-progress-are-not-restorable";
+        warningAcknowledged: true;
+        standaloneWarningAcknowledgementDigest: string;
+        handoffReceipts: readonly [
+          Readonly<
+            BackupArtifactHandoffReceiptV1<"standalone-v1", "standalone-v1">
+          >,
+        ];
+      }
+    | {
+        kind: "standalone-v1-incomplete";
+        preparationKind: "standalone-v1";
+        companionUnavailableReason: null;
+        pairDigest: null;
+        expectedArtifactIds: readonly [string];
+        handedOffArtifactIds: readonly [];
+        failedArtifactIds: readonly [string];
+        coverage: "legacy-core-only";
+        excludedRoots: readonly [
+          "map-cell-split-settings",
+          "durable-visit-state",
+        ];
+        recoveryWarning: "split-settings-and-progress-are-not-restorable";
+        warningAcknowledged: true;
+        standaloneWarningAcknowledgementDigest: string;
+        handoffReceipts: readonly [];
+        completionAcknowledged: false;
+        recoveryGuidance: "retry-standalone-v1-handoff";
+      }
+  );
 ```
 
-初版readerの`scope`は上記3分岐だけを許すexact unionとし、`includesMapData=false, includesSplitSettings=true`や未知`contentKind`はDB更新前に全体拒否する。`expectedSections`は上記の現行V1／wire DTO inventoryから導いた「非`null` sectionだけ」のexact tupleであり、重複、順序違い、宣言した非`null` sectionの欠落、宣言外の非`null` sectionを拒否する。`full-split`／`core-map`の`data`は`AppBackupV2FullEventCoreWireV1`の全10 top-level keyを必須保持する。`eventLists.entries`と`eventMetadata.entries`は対象eventのexact 1 rowを必須にし、metadataの利用者fieldが全て空でもrowを省略しない。metadata wireはlocal-only anchorを持たず、restore plannerがnew destinationへfresh anchorを作り、existing destinationのanchorを維持する。残る8 sectionの`entries`だけが、sourceにevent rowがない`[]`と、rowはあるがdays／maps／owners等が空の`[present-empty-row]`を区別するexact unionであり、absentをempty rowへ、empty rowをabsentへ畳み込まない。full／core restore plannerは各8 sectionについてwireからdesired after-image actionを`entries=[]`ならdestination当該event rowのabsence、`entries=[row]`ならempty rowを含むexact rowのpresenceとして区別する。beforeとdesired after-imageが異なる場合だけdelete／putとlogical participantを同一transaction planへ出し、既に同じabsence／同じrowならphysical write 0件にするが、absentとpresent-emptyを同じafter-imageへ変換しない。present rowだけが実行順、day mode、route／hall／viewportを保持し、`eventSettings`はsole eventRefのexact 1 row、`durableVisitState`はsole eventRefに属する全semantic day entryを持つ。初版production writerのwire戻り型は`InitialReleaseAppBackupV2WriterOutput`だけで、healthyな`map-cell-split-v1` snapshotかつ`DurableVisitInitializationStateV1 = ready`から`full-split`、明示item-only commandから`item-only`だけを生成する。export commandはV2 objectだけを成功値にせず、自己検証済みV2／exact companion V1の両`PreparedBackupArtifactV1`とpair digestが揃った`pair-prepared`だけをhandoffへ渡す。`scope.companionCore`とcompanion artifactのfileName／byteLength／SHA-256はbyte一致を必須にする。片方のhandoffだけ成功した場合も`BackupPairHandoffResultV1.kind = "incomplete"`で完了通知を禁止し、同pair再生成案内を返す。`core-map`は旧・外部生成物との互換reader分岐およびsynthetic golden fixture専用であり、production serialize command／分岐を持たず、runtime persistenceの`core-only`もproducerへ流用しない。`item-only`の`data`は`AppBackupV2ItemOnlyCoreWireV1`だけ、`eventSettings`、`mapCellSplitSettings`、`durableVisitState`はすべて`null`を必須とし、既存復元先のsettingsとdurable visit stateをtransition plannerで維持する。各`*SectionWireV1`はversion付きJSON Schemaから所有する明示DTOで、runtime `AppData`、`ShoppingItem`、persistence rootの`Pick`／`Omit`／intersection、型再exportを禁止する。`snapshotToBackupWireV2`と`backupWireV2ToRestorePlan`だけがruntime境界を変換し、compile-time negative fixtureとarchitecture testでwire moduleからruntime／persistence typeへのimport 0件を検証する。top-levelの3 section key自体はenvelopeの不在sentinelとして常に必須とし、非`null`の場合だけ`expectedSections`へ列挙する。これ以外の`null` sentinelや宣言外keyは許可しない。
+初版readerの`scope`は上記3分岐だけを許すexact unionとし、`includesMapData=false, includesSplitSettings=true`や未知`contentKind`はDB更新前に全体拒否する。`expectedSections`は上記の現行V1／wire DTO inventoryから導いた「非`null` sectionだけ」のexact tupleであり、重複、順序違い、宣言した非`null` sectionの欠落、宣言外の非`null` sectionを拒否する。`full-split`／`core-map`の`data`は`AppBackupV2FullEventCoreWireV1`の全10 top-level keyを必須保持する。`eventLists.entries`と`eventMetadata.entries`は対象eventのexact 1 rowを必須にし、metadataの利用者fieldが全て空でもrowを省略しない。metadata wireはlocal-only anchorを持たず、restore plannerがnew destinationへfresh anchorを作り、existing destinationのanchorを維持する。残る8 sectionの`entries`だけが、sourceにevent rowがない`[]`と、rowはあるがdays／maps／owners等が空の`[present-empty-row]`を区別するexact unionであり、absentをempty rowへ、empty rowをabsentへ畳み込まない。full／core restore plannerは各8 sectionについてwireからdesired after-image actionを`entries=[]`ならdestination当該event rowのabsence、`entries=[row]`ならempty rowを含むexact rowのpresenceとして区別する。beforeとdesired after-imageが異なる場合だけdelete／putとlogical participantを同一transaction planへ出し、既に同じabsence／同じrowならphysical write 0件にするが、absentとpresent-emptyを同じafter-imageへ変換しない。present rowだけが実行順、day mode、route／hall／viewportを保持し、`eventSettings`はsole eventRefのexact 1 row、`durableVisitState`はsole eventRefに属する全semantic day entryを持つ。初版production writerのwire戻り型は`InitialReleaseAppBackupV2WriterOutput`だけで、healthyな`map-cell-split-v1` snapshotかつ`DurableVisitInitializationStateV1 = ready`から`full-split`、明示item-only commandから`item-only`だけを生成する。
+
+export commandはV2 objectだけを成功値にせず、`InitialReleaseAppBackupV2ExportResultV1`の3成功分岐だけをV2 handoffへ渡す。`pair-prepared`は自己検証済みV2、exact companion V1、`preparationKind = "pair"`、non-null pair digest、included metadataのbyte一致を必須にする。`structural-v2-only-prepared`はresource以外のnonempty issue集合と`preparationKind = "structural-v2-only"`、`resource-v2-only-prepared`はexact 1 resource issueと`preparationKind = "resource-v2-only"`を持ち、各scopeのreason／issues／digest、null pair digestと一致させる。V2 core representability failureは`v2-unrepresentable`、fixed-point／digest置換／実byteLength／generation timeout／spool failure／cancel／sink errorは`v2-export-failed`となり、後者はV2／standaloneを含むprepared artifact 0件、DB write 0件である。前者の`standaloneV1Fallback.kind = "prepared"`だけは独立した`standalone-v1` verification／handoffへ渡せる。pairの片側失敗は`pair-incomplete`、V2-only本体失敗はreason別の`structural-v2-only-incomplete | resource-v2-only-incomplete`、standalone本体失敗は`standalone-v1-incomplete`だけを返して完了通知を禁止し、それぞれ同pair再生成、V2 handoff再試行、standalone handoff再試行を案内する。receiptを再検証できた場合だけ対応する`pair-completed | structural-v2-only-completed | resource-v2-only-completed | standalone-v1-completed`とし、全completed branchでhandedOff IDsをexpected IDs、failed IDsをemptyにする。`core-map`は旧・外部生成物との互換reader分岐およびsynthetic golden fixture専用であり、production serialize command／分岐を持たず、runtime persistenceの`core-only`もproducerへ流用しない。`item-only`の`data`は`AppBackupV2ItemOnlyCoreWireV1`だけ、`eventSettings`、`mapCellSplitSettings`、`durableVisitState`はすべて`null`を必須とし、既存復元先のsettingsとdurable visit stateをtransition plannerで維持する。各`*SectionWireV1`はversion付きJSON Schemaから所有する明示DTOで、runtime `AppData`、`ShoppingItem`、persistence rootの`Pick`／`Omit`／intersection、型再exportを禁止する。`snapshotToBackupWireV2`と`backupWireV2ToRestorePlan`だけがruntime境界を変換し、compile-time negative fixtureとarchitecture testでwire moduleからruntime／persistence typeへのimport 0件を検証する。top-levelの3 section key自体はenvelopeの不在sentinelとして常に必須とし、非`null`の場合だけ`expectedSections`へ列挙する。これ以外の`null` sentinelや宣言外keyは許可しない。
 
 `scope.references.events`は全scopeで1件だけとし、`scope.eventRef`と同じ`eventRef`から`dataEventKey`へ対応させる。`scope.references.items`は全scopeで`data.eventLists`の対象event itemとexact bijectionをなし、各`dataItemId`へ一意なportable `itemRef`を割り当てる。`full-split`／`core-map`は、mapData row presentなら`scope.mapRefs = scope.references.maps = data.mapData.entries[0].maps`の全day-map slot、row absentなら3集合ともemptyとし、集合、canonical順、件数を一致させる。`scope.references.blocks`も同梱全mapの全論理block slotと一対一で一致する。rotation／route／viewportの各`mapRef`と、hall definitions／hall routeの`owner.kind = "map"`はこのmapData-derived reference集合へexact 1件解決することを必須にし、orphan mapRef／ownerをreaderでも全体拒否する。`historicalOwners`はcurrent mapDataへ解決しない削除済みownerだけを持ち、parent relationがacyclicで、各retained `historicalOwnerRef`からexact 1行へ解決する。`item-only`はitem referencesを保持する一方で`mapRefs=[]`、referencesのmaps／blocks／historicalOwners空、map／block／historical owner／active／retained／durable visit group件数0、`data.mapData`を含む他の9 data keyなしとする。したがってsplit設定が`null`でも`eventRef`とitemをcore data slotへ一意に解決でき、表示名やobject列挙順を代用しない。複数地図event、複数visit group、削除済みownerを共有する複数retained、残る8 sectionそれぞれのabsent対present-empty、metadata exact 1 present-empty row、各orphan section slotのgolden／negative fixtureを必須にし、地図同梱scopeを単一`mapRef`へ縮退させない。`full`と`multipart` scopeは後続versionで定義し、初版readerは未知scopeとして拒否する。
 
@@ -5125,11 +6563,11 @@ version dispatchは`2.2`以下を分割設定なしのlegacy、`2.3`をこのsch
 
 ### 7.3 保証規模と入力安全制限
 
-自動性能テストの保証規模、import拒否境界、export生成境界を形式・file単位とV2＋V1 pair単位に分ける。I0で`config/fsmc-backup-limits.json` schema version 1へ、`performanceGuaranteedRawBytesPerFile = 32 * 1024 * 1024`、V1／V2 JSON専用`jsonImportHardRawBytesPerFile = 64 * 1024 * 1024`、`v2ExportMaxRawBytes = 32 * 1024 * 1024`、`companionV1ExportMaxRawBytes = 32 * 1024 * 1024`、`pairTotalExportMaxRawBytes = 64 * 1024 * 1024`、`workerSliceBytes = 1 * 1024 * 1024`、nesting 64、JSON token 5,000,000、event 1、map 256、block 8,192、split entry 20,000、item 100,000、1文字列1 MiB（UTF-8）、validation error 100件、1 error 512 Unicode scalar、Worker validation timeout 30秒、cancel確認間隔1秒を整数byteで固定する。XLSX 2.2は既存`config/xlsx-limits.json` schema version 1の`maxCompressedBytes = 33,554,432`、entry 4,096、単一展開entry 64 MiB、総展開256 MiB、圧縮率100等を初版hard limitとし、backup limits側は同fileのpath、schema version、SHA-256を`xlsxImportLimitsRef`として参照して値を複製しない。各形式ではfile byte上限と構造・展開・count上限のうち最初に超えた厳しいlimitを優先する。3.13の保証fixtureはcount境界とV2／V1各実生成bytesの両方が`performanceGuaranteedRawBytesPerFile`以下、かつpair合計が`pairTotalExportMaxRawBytes`以下でなければならず、超える場合はI0を失敗させて製品判断を更新し、保証を黙って縮小しない。値を変える場合は参照先を含むconfig schema version、golden境界fixture、互換影響を同じPRで更新する。
+自動性能テストの保証規模、import拒否境界、export生成境界を形式・file単位とV2＋V1 pair単位に分ける。I0で`config/fsmc-backup-limits.json` schema version 1へ、`performanceGuaranteedRawBytesPerFile = 32 * 1024 * 1024`、V1／V2 JSON専用`jsonImportHardRawBytesPerFile = 64 * 1024 * 1024`、`v2ExportMaxRawBytes = 32 * 1024 * 1024`、`companionV1ExportMaxRawBytes = 32 * 1024 * 1024`、`pairTotalExportMaxRawBytes = 48 * 1024 * 1024`、`temporarySpoolMaxRawBytes = 64 * 1024 * 1024`、`exportGenerationTimeoutMs = 300_000`、`workerSliceBytes = 1 * 1024 * 1024`、nesting 64、JSON token 5,000,000、event 1、map 256、block 8,192、split entry 20,000、item 100,000、1文字列1 MiB（UTF-8）、validation error 100件、1 error 512 Unicode scalar、Worker validation timeout 30秒、cancel確認間隔1秒を整数byteで固定する。pair raw totalはexact `v2CanonicalBytes.byteLength + companionV1Bytes.byteLength`であり、各file 32 MiB以下でも独立に発火できる初版の同時生成／handoff予算として48 MiBへ固定する。manifest、file名、digest文字列はこのraw totalへ含めず別上限を捏造しない。XLSX 2.2は既存`config/xlsx-limits.json` schema version 1の`maxCompressedBytes = 33,554,432`、entry 4,096、単一展開entry 64 MiB、総展開256 MiB、圧縮率100等を初版hard limitとし、backup limits側は同fileのpath、schema version、SHA-256を`xlsxImportLimitsRef`として参照して値を複製しない。各形式ではfile byte上限と構造・展開・count上限のうち最初に超えた厳しいlimitを優先する。3.13の保証fixtureはcount境界とV2／V1各実生成bytesの両方が`performanceGuaranteedRawBytesPerFile`以下、かつpair合計が`pairTotalExportMaxRawBytes`以下でなければならず、超える場合はI0を失敗させて製品判断を更新し、保証を黙って縮小しない。incremental export sink、resource issue、`v2-export-failed` witnessは全てこのconfig実bytesのSHA-256と上記field値へ拘束し、別定数や既定値へのfallbackを禁止する。値を変える場合は参照先を含むconfig schema version、golden境界fixture、互換影響を同じPRで更新する。
 
 - V1／V2 JSON importは選択した各fileが保証規模または32 MiBを超え、64 MiB以下かつ他の全hard limit以下の場合だけ警告付きbest effortでpreviewまで進める。XLSX 2.2にはこの64 MiB best-effort帯を適用せず、compressed 32 MiB以下かつ既存の展開後／entry／sheet／row／cell／圧縮率／時間上限をすべて満たす場合だけpreviewへ進める。複数fileを黙示pairとして合算せず、各fileと明示manifestの関係を別に検証し、自動削除・切捨て・設定解除を行わない
 - V1／V2 JSONの単一fileが64 MiBを超える、XLSX 2.2のcompressed fileが32 MiBを超える、またはいずれかの形式固有hard limitを超える場合はWorkerまたはvalidatorで`resource-limit`として拒否する。境界は各形式で`<=`を受理、該当limitの`+1 byte`／`+1 count`を拒否とする
-- exportは保証countを1件でも超える、V2 canonical bytesが32 MiBを超える、companion V1 bytesが32 MiBを超える、または2 file合計が64 MiBを超える場合はpair生成・downloadを開始しない。best effort export、片方だけ、不完全fileを作らず、event縮小とtrusted core退避を案内する
+- exportは保証countを1件でも超える場合はV2生成・downloadを停止してevent縮小とtrusted core退避を案内し、incremental sinkで測った最終V2 canonical bytesが32 MiBを超える場合、generation timeout、spool cap実装違反、cancel、sink errorはreason別witness付き`v2-export-failed`／prepared artifact 0件とする。V2が両条件内でcompanion V1 bytesの32 MiBまたは2 file raw byteLength合計48 MiBだけを超える場合は、V1／pairを0件、`companion-v1-resource-limit`のexact issue／digestを持つverified V2-onlyをexact 1件生成する。失敗したpairの片方をV2-onlyへ偽装せず、不完全fileを完了扱いにしない
 - `FSMC_NUMBER_TOKEN_MAX_UTF8_BYTES = 1 MiB`をI0 ADRへ固定し、UI、CSV、XLSX、V1／V2の全番号取込で`BigInt`化前に適用する。新規入力・file after-imageの超過は全commit前に`resource-limit`として拒否し、既存永続dataの超過tokenは原文を変更せず`legacy-unresolved / unsafe-base-number`として診断し、経路や自動再関連付けへ使わない
 - backupは`JSON.parse`前のraw byte上限、nesting、総entry、文字列UTF-8 byte、duplicate ref、構造fieldのallowlist、validation error保持数を制限する。利用者入力値であるイベント名・日程名等が`__proto__`、`constructor`、`prototype`であること自体は拒否せず、動的keyは`Map`、null-prototype object、または安全なown-property APIで扱ってprototype chainへ代入しない
 - 初版XLSX 2.2は既存`config/xlsx-limits.json`のcompressed／entry／展開後XML byte、sheet／row／cell数、圧縮率、wall／CPU timeとI4のcancel／heartbeat／peak memoryをすべて適用する。後続XLSX versionも少なくとも同じ制限を継承し、緩和にはversion付き判断を要求する
@@ -5137,10 +6575,10 @@ version dispatchは`2.2`以下を分割設定なしのlegacy、`2.3`をこのsch
 
 初版のevent export preflightで1イベント内地図数、entry数、推定byte数を検査する。I0では上記3種類の境界と3.13の保証件数を固定し、I4で実canonical export bytesを使って次を実装・強制する。
 
-- イベント単位Backup V2とV1互換coreのmap／entry、V2各32 MiB、V1各32 MiB、pair合計64 MiBのexport generation上限
+- イベント単位Backup V2とV1互換coreのmap／entry、V2各32 MiB、V1各32 MiB、pair raw byteLength合計48 MiBのexport generation上限
 - 上限内での自己round-trip保証
 
-初版のeventが保証count、V2／V1各fileの32 MiB上限、またはpair合計64 MiB上限を超える場合は、読めない単一ファイルや不完全ファイルを生成せず、出力を停止して対象eventの縮小方法を案内する。自動分割するmultipartは後続版とする。外部V1／V2 JSON importだけはfileごとに64 MiB以下のbest effort分岐を持ち、XLSX 2.2は既存compressed 32 MiB hard limitを優先し、export停止と混同しない。I4では最大fixtureのself round-tripが上記limitで拒否されないこと、V2単体、V1単体、pair合計、JSON import 64 MiB、XLSX compressed／単一entry／総展開／圧縮率の各境界直前・一致・+1、count境界とbyte境界が逆転するcaseを自動テストする。
+初版のeventが保証countを超える場合は読めないV2や不完全ファイルを生成せず出力を停止して対象eventの縮小方法を案内する。incremental sinkの最終V2実byteLengthが32 MiBを超える場合、300,000 ms timeout、64 MiB temporary spool cap違反、cancel、sink errorはconfig SHAとreason別witnessを持つ`v2-export-failed`／artifact 0件とする。V2が保証count・上限内でcompanion V1の32 MiB上限またはpair raw byteLength合計48 MiB上限だけを超える場合は、V1／pair bytesをhandoffせず`companion-v1-resource-limit`のexact issue／digestを埋めたverified V2-onlyへ進む。自動分割するmultipartは後続版とする。外部V1／V2 JSON importだけはfileごとに64 MiB以下のbest effort分岐を持ち、XLSX 2.2は既存compressed 32 MiB hard limitを優先し、export停止と混同しない。I4では最大fixtureのself round-tripが上記limitで拒否されないこと、V2単体、V1単体、独立に発火するpair合計48 MiB、temporary spool 64 MiB、export generation 300,000 ms、JSON import 64 MiB、XLSX compressed／単一entry／総展開／圧縮率の各境界直前・一致・+1、count境界とbyte境界が逆転するcaseを自動テストする。
 
 ### 7.4 後続版: 設定単独portable JSON
 
@@ -5176,7 +6614,7 @@ version dispatchは`2.2`以下を分割設定なしのlegacy、`2.3`をこのsch
 - 同一整数セルのa→bは、両anchor間が同じ物理セル領域内で安全な場合だけ`mainPath=[]`と`same-cell-direct` connectorを正式なvisit間segmentとして保持し、安全でなければ`unroutable`とする
 - 異なるpriority／phase visitがbyte-identicalなanchorを共有する遷移は`geometryKind="coincident-anchor"`、`mainPath=[]`、`connectors=[]`、`hitTestable=false`のzero-length segmentとしてroute順に保持する。描画線や架空connectorを作らず、to visitへの進行、現在ring、DOM候補、挿入anchor、cache keyからは除去しない
 - hit-testの優先順位はmarker、main path、connectorとし、CSS px toleranceはmarker外周12、main path 8、connector 10へ固定する。同priority内はscreen-space距離、route順、canonical visit IDの順で候補を並べ、exact同順位または同markerの複数visitはDOM候補一覧を表示する。`coincident-anchor` segment自体はhit-testせずmarker候補から選ぶ
-- 経路cacheとsignatureには順序付き`visitId`、`locationKey`、baseCell、anchor、split binding evidence、`pathfindingGraphFingerprint`を含める。`DayMapData.cells`の`value`／`backgroundColor`、map寸法、結合領域、passability rule、3×3解像度、cost定数のいずれかが変われば古い経路を再利用しない。描画px、font色、回転、zoom、pan、DPR値をsnapshotへ保存しない
+- 経路cacheとsignatureには順序付き`visitId`、`locationKey`、baseCell、anchor、split binding evidence、index revision、`pathfindingGraphFingerprint`、non-null `RoutePathConstraintFingerprint`を含める。whole-map、別hall、polygon／hall revision差のcacheを再利用しない。`DayMapData.cells`の`value`／`backgroundColor`、map寸法、結合領域、passability rule、3×3解像度、cost定数のいずれかが変われば古い経路を再利用しない。描画px、font色、回転、zoom、pan、DPR値をsnapshotへ保存しない
 
 ### 8.3 描画overlayの統合
 
@@ -5196,21 +6634,56 @@ panel／picker／popupは明示的な`role="dialog"`または`role="region"`と�
 
 ### 8.4 Pointer gesture state machine
 
-Canvas入力のauthorityはPointer Eventsへ統一し、native TouchEventとReact PointerEventで別々のgesture状態を管理しない。現行のnative touch処理を持つ`src/features/map/canvas/useCanvasViewport.ts`を唯一のstate-machine migration targetとし、通常Canvasの実DOM listener／style終端`src/components/map/MapCanvasPresentation.tsx`、consumer `MapCanvas.tsx`、`FocusModeMapCanvas.tsx`は同hook／adapterから同じgesture snapshotを受ける。状態は`idle`、`tapCandidate`、`dragging`、`multiPointer`、`cancelled`とする。TouchEvent listener、React touch handler、component-local pointer mapの並行authorityはmigration完了時に0件とする。
+Canvas入力のauthorityはPointer Eventsへ統一し、native TouchEventとReact PointerEventで別々のgesture状態を管理しない。現行のnative touch処理を持つ`src/features/map/canvas/useCanvasViewport.ts`を唯一のstate-machine migration targetとし、通常Canvasの実DOM listener／style終端`src/components/map/MapCanvasPresentation.tsx`、consumer `MapCanvas.tsx`、`FocusModeMapCanvas.tsx`は同hook／adapterから同じgesture snapshotを受ける。永続する状態は`idle`、`tapCandidate`、`dragging`、`multiPointer`のexact unionとし、cancelを脱出不能なstateとして保持しない。TouchEvent listener、React touch handler、component-local pointer mapの並行authorityはmigration完了時に0件とする。
 
 - `pointerdown`でpointer captureを取得し、pointer ID、開始client座標、開始時刻、入力種別を記録する
-- Canvasの`touch-action`はgesture ownerが必要とする値をI0 interaction policyへ固定し、browser scroll／pinchとの境界をDesktop touch／Mobile fixtureで検証する。pointer listenerのpassive設定、capture取得／解放、unmount cleanupを明示し、`preventDefault()`をpassive listenerから呼ばない
+- 通常／集中Canvasの実要素はともにinline／stylesheet authorityを一つにしてcomputed `touch-action: none`を必須とし、browser native pan／pinchを発火させずcustom viewport reducerが全gestureを所有する。祖先の別値、`auto`／`manipulation`へのfallback、mode別差を拒否する。listenerは次のexact matrixを`addEventListener` instrumentationで検証し、passive listenerから`preventDefault()`を呼ばない
+
+| DOM event            | passive | `preventDefault()` contract                                        |
+| -------------------- | ------- | ------------------------------------------------------------------ |
+| `wheel`              | `false` | current Canvas targetかつfinite deltaを受理した全eventで必須       |
+| `pointerdown`        | `false` | schema-validなcurrent Canvas inputをnormalizerへ受理した時点で必須 |
+| `pointermove`        | `false` | 同じCanvasのtracked／captured pointerだけ必須。untrackedは不可     |
+| `pointerup`          | `false` | 同じCanvasのtracked pointerだけ必須。untracked／keyboardは不可     |
+| `pointercancel`      | `true`  | 禁止                                                               |
+| `lostpointercapture` | `true`  | 禁止                                                               |
+| `click`              | `false` | `synthetic-click-matching`だけ必須。keyboard／nonmatchingは不可    |
+
 - 2本目のpointerが入った時点で`multiPointer`とし、全pointerが離れるまでtap候補へ戻さない
 - CSS px移動量が入力別drag閾値を超えたら`dragging`とする
-- `pointercancel`、`lostpointercapture`、画面回転、layout切替、visibility喪失では`cancelled`とする
+- `pointercancel`、active captureの予期しない`lostpointercapture`、画面回転、layout切替、visibility喪失はnormalized global cancelへ写し、同じreduce内で全resourceを解放して`idle`へ戻す。正常`pointerup`後にrelease-request witnessと一致する`lostpointercapture`はcapture bookkeepingだけをclearしてtap／synthetic-click guardを維持し、別ID／別targetのstale lostはdispatch 0件のno-opとする
 - tap確定は単一pointerの`tapCandidate`が同じpointer IDの`pointerup`を受けた場合だけ行い、後続synthetic clickで重複実行しない
 - route insert、block selection等の編集modeを先に判定し、通常セルpopupとの優先順位を固定する
+
+I0の`config/fsmc-pointer-transition-table.json`は、各validなstate／active-registry invariantからpure `deriveReachablePointerInputDomainV1`が導くexact reachable `(state, normalizedInput)`集合とexact bijectionのrowを持つ。全stateと全tokenの直積は作らず、到達不能row 0件、reachable pairの欠落／重複0件とする。raw downの正規化優先順位は、(1)既にtrackedのIDなら`duplicate-pointer-id-down`、(2)active pointerが1件以上なら`additional-pointer-down-capture-succeeded | failed`、(3)active 0件かつ`isPrimary=true`なら`primary-pointer-down-capture-succeeded | failed`、(4)それ以外は`non-primary-down-without-active`であり、2本目touchをprimaryと重複分類しない。raw moveは、(1)untracked IDを`non-active-pointer-move`、(2)`multiPointer`かつactive 2件以上でcapture順先頭2 IDのowner pairを動かす入力を`multi-pointer-owner-move`、(3)同状態のowner外IDを`multi-pointer-nonowner-move`、(4)`multiPointer`かつactive exact 1件を`multi-pointer-single-remnant-move`、(5)それ以外のtracked IDを`active-pointer-move-below-threshold | active-pointer-move-over-threshold`へこの順で排他的に写す。raw upは、(1)untracked IDを`non-active-pointer-up`、(2)`multiPointer`で除去後active 0件を`multi-pointer-up-drained`、(3)同exact 1件を`multi-pointer-up-single-remnant`、(4)同2件以上かつ離脱IDがowner pair内なら`multi-pointer-owner-up-rebase`、(5)同2件以上のowner外なら`multi-pointer-nonowner-up`、(6)それ以外のtracked IDを`active-pointer-up`へこの順で排他的に写す。残りのdisjoint inputは`pointer-cancel`、`expected-lost-pointer-capture-after-release`、`unexpected-active-lost-pointer-capture`、`stale-nonactive-lost-pointer-capture`、`visibility-or-layout-cancel`、`synthetic-click-matching | nonmatching`、`unmount`とする。release witnessはexact `{ state: "release-requested", pointerId, captureOrdinal, sequenceOrdinal, canvasTargetInstanceId }`で、normal `pointerup`の`release-capture` effectと同時に1件作る。lost eventが同target／IDのwitnessに一致しcurrent Canvasの`hasPointerCapture(pointerId) = false`ならexpected、active registryの同IDまたはcapture保持中ならunexpected、どちらにも該当しない別ID／別targetならstaleへ排他的に正規化する。normalizerは各valid snapshotの全raw inputをreachable token exact 1件へ写す。state／registry invariant自体が不正ならtableへ入れずpre-table corruption guardが全capture／registry／timer／guardをfail-closed cleanupし、invalid invariantを通常transition rowとして水増ししない。非active moveは座標、threshold、gesture stateを変更しない自己遷移に固定する。unknown raw event、非finite座標、owner pairの旧／新距離を安全に算出できない入力は受け口で`visibility-or-layout-cancel`と同じ即時cleanupへ写し、暗黙defaultを持たない。
+
+`idle`の`primary-pointer-down-capture-succeeded`だけが`tapCandidate`へ入り、primary／additionalのcapture failed、duplicate IDはdispatch 0件で即時`idle` cleanupする。active 0件のnon-primary downとnon-active move／upは唯一の`ignored` branchでregistryを変更しない。`tapCandidate`のthreshold超過は`dragging`、additional capture成功は`multiPointer`、同一ID upだけがtapをexact 1回dispatchする。`dragging`はtapをdispatchしない。DOM `PointerEvent.pointerId`はnormalizer入口から非負safe-integer `number`のまま保持し、文字列化やlexicographic比較をしない。active registryはcapture成功ごとに単調増加する非負safe-integer `captureOrdinal`をexact 1件割り当て、entryを数値tuple `(captureOrdinal, pointerId)`の昇順へ正規化する。`multiPointer`のowner pairはその先頭2件で固定し、同じpointer IDの再登録は`duplicate-pointer-id-down`、ordinal重複／overflow／負数／非整数IDはpre-table corruption guardからfail-closed cleanupする。owner moveは旧／新centroid差と正の有限な旧／新distance比をexact `{ translateCssPx, scaleFactor, centroidCssPx }`へしてviewport transformを1回dispatchする。owner外moveはregistryだけを更新する。`multi-pointer-owner-up-rebase`は残存先頭2件をowner pairへ、`multi-pointer-up-single-remnant`は残存1件をpan baselineへeffect 1回でrebaseし、どちらもtransform 0件、`multi-pointer-nonowner-up`はregistry除去だけ、`multi-pointer-up-drained`だけは`idle` cleanupとする。single-remnant moveはpanをdispatchするがtap候補へ戻さない。pointer cancel、unexpected active lost capture、visibility／layout cancel、unmountはstateを問わず全capture／release witnessを解放し、drainを待たず即時`idle`へcleanupする。normal up後のexpected lostは`clear-release-witness`だけでguardを維持し、stale nonactive lostはstate／registry／guard不変とする。新しいprimary downはcapture前に古いrelease witnessをclearし、同pointer ID再利用でも新capture ordinal／sequence ordinalを発行する。pointer ID `2`／`10`、duplicate、up後のID再利用をowner選択goldenへ固定し、decimal文字列順の`10 < 2`を拒否する。
+
+effectは`capture | record-release-request | release-capture | clear-release-witness | start-drag | dispatch-tap | dispatch-drag | dispatch-viewport-transform | rebase-multi-pointer-owners | suppress-synthetic-click | clear-synthetic-click-guard | clear-registry | clear-timers`の重複なし順序付き列として固定し、各table rowへexact 1列を記録する。`dispatch-viewport-transform`は同一rowの正規化済みtranslation／scale／centroidだけを使い、viewport reducerの固定zoom上下限を1回適用する。tapを所有するCanvasでは後続`click`を同じpointer sequenceのone-shot guardでdispatch 0件にする。`SyntheticClickGuardV1`はexact `{ state: "awaiting-matching-click", sequenceOrdinal, canvasTargetInstanceId, sourcePointerId, sourcePointerType, sourceButton: 0, upClientCssPx: { x, y }, upEventTimeStampMs }`を持ち、全数値はfinite、ordinal／IDは非負safe integer、`-0`は`0`へcanonical化する。raw clickはrequired Chromiumで`PointerEvent`、`isTrusted = true`、`detail = 1`、`button = 0`、guardと同じmounted canvas target／pointer ID／pointer type、各client座標差が0.5 CSS px以下、`0 <= click.timeStamp - upEventTimeStampMs <= 1000`、registry empty、guard ordinalがlast completed sequence ordinalと一致する場合だけ`synthetic-click-matching`とする。keyboard activation（`detail = 0`／pointer ID `-1`）、別target、別button／type／ID、非finite／逆行／1000ms超過、同座標でも別sequenceは`synthetic-click-nonmatching`とする。matching clickは`suppress-synthetic-click, clear-synthetic-click-guard`、nonmatching clickはdispatchせずguard不変、次のprimary downではordinal更新前・capture前にguard clear、unexpected lostを含む全global cancel／unmountでもclearとする一方、expected lost／stale lostではclearしない。合法列`down → up(dispatch tap＋guard＋release witness) → expected lost(clear witness only) → matching click(suppress＋clear guard)`はtap exact 1回／click dispatch 0件とする。timer expiryは使わないためtransition domainへ隠れたtimer inputを追加しない。`idle`へ戻る全terminalはactive pointer registry、capture、timer、pending tap／drag／viewport transformが空であり、normal release直後だけrelease witness exact 1件、guardは`dispatch-tap`直後の`awaiting-matching-click`かemptyの直交exact unionを許す。expected lostはwitnessだけを0件にし、matching clickとの到着順が逆でもtapを再dispatchしない。次のpointer sequence開始前またはunmount後はguardも必ずemptyとし、property testは任意event列の後にglobal cancelまたはunmountを与えて全fieldが即時emptyへ収束することを検証する。
 
 ## 9. 実装フェーズとPR境界
 
 本章の`FSMC-I0`～`FSMC-I11`はFull Split Map Cell初版固有の実装checkpointであり、リポジトリの正式release gateである`P0-RELEASE`～`P8-CLEAN`とは別物とする。文書、PR、issueでは`P0`等の省略名を使用しない。FSMC checkpoint自体を既存の`RELEASE_PHASE_GATES`へ追加せず、初版の全自動テストを既存release workflowの通常checkとして実行する。
 
-各FSMC phaseは複数PRを許し、見積り上は全体で12～17 PRとする。各PRはその時点で追加・変更したunit、integration、browser、schema、fixture、CI設定を同じPRに含め、FSMC-I11まで試験を延期しない。各PRはproductionでsplitを誤公開せず独立してmainへmerge・配布可能でなければならず、前phaseの自動Exit testが未達のまま次phaseを開始しない。外部証跡bundle、remote activation、実イベントpilotは作らない。`config/fsmc-traceability.json`は各requirementに`ownerPhase`、`fixtureIds`、`testIds`、`commands`、`profiles`、`status`、`enforcedFromPhase`、`releaseScope: "initial-release" | "future"`を持ち、各PRで初版対象だけを`planned`→`contract-enforced`→`implementation-enforced`へ更新する。後続版対象は`future`として初版gateの選択集合とplanned残存判定から除外し、初版requirement／PD／DoDを`future`へ分類して回避することをcross-verifierで拒否する。
+各FSMC phaseは複数PRを許し、見積り上は全体で37～47論理PR、これとは別にHへ入るpre-I0準備2 commitとする。各PRはその時点で追加・変更したunit、integration、browser、schema、fixture、CI設定を同じPRに含め、FSMC-I11まで試験を延期しない。各PRはproductionでsplitを誤公開せず独立してmainへmerge・配布可能でなければならず、前phaseの自動Exit testが未達のまま次phaseを開始しない。外部証跡bundle、remote activation、実イベントpilotは作らない。`config/fsmc-traceability.json`は各requirementのexact 1 rowに`ownerPhase`、重複なし`fixtureIds`／`testIds`／`commands`／`profiles`、`status`、`enforcedFromPhase`、`releaseScope: "initial-release" | "future"`を持つ。配列はone-to-manyであり、同じtestが複数requirementを支援する場合は逆向き`requirementIds`に全IDを列挙する。各PRで初版対象だけを`planned`→`contract-enforced`→`implementation-enforced`へ更新する。後続版対象は`future`として初版gateの選択集合とplanned残存判定から除外し、初版requirement／PD／DoDを`future`へ分類して回避することをcross-verifierで拒否する。
+
+PR見積りのauthorityは次表とし、範囲外へ増減する場合は依存、reviewer、Exit coverage、分割不能理由を同じ計画PRで更新する。pre-I0の2件はFSMC phase実装PRへ数えない。
+
+| workstream | 論理PR数 | 主な境界                                              |
+| ---------- | -------- | ----------------------------------------------------- |
+| pre-I0     | 2 commit | hygiene修正、read-only observer／schema／runbook      |
+| I0         | 9        | 下記`I0-01`～`I0-09`固定bundle                        |
+| I1         | 2～3     | identity／geometry／index、visit／route pure contract |
+| I2         | 4～5     | Vcap、CAS／fence、control、recovery                   |
+| I3         | 2～3     | lifecycle、duplicate／delete／retention               |
+| I4         | 4～5     | V2/V1、Worker、restore、handoff                       |
+| I5         | 2～3     | definition／copy、retained UI                         |
+| I6         | 2～3     | reimport、topology edit、atomic plan                  |
+| I7         | 3～4     | migration、projection、共通reorder、writer接続        |
+| I8         | 2        | normal map、DOM shell／a11y                           |
+| I9         | 1～2     | focus mode、gesture parity                            |
+| I10        | 3～4     | route DTO／polygon、connector／cache、hit-test        |
+| I11        | 3～4     | production migration、全gate、release-ready           |
 
 readiness、DB target、公開境界を次に固定する。
 
@@ -5229,29 +6702,82 @@ phase stateは省略記法をschemaへ持ち込まず、`completedThrough`を`"p
 
 readiness／DB modeのlegal組合せもexactに、I0／I1は両progressで`contracts-only`／`core-current`、I2～I10は両progressで`internal-testing`／production `core-current`、I11 `in-progress`は`internal-testing`／production `core-current`、I11 `exit-candidate`だけは`release-ready`／`fsmc-vcap-production`とする。同一phase内の複数PRは`in-progress`のまま進め、skip、逆行、複数authorityを禁止する。I11 final candidateはbuild前にrelease-readyへ変更して同じproduction artifactをI0～I11の全Exit testへ掛け、そのsource／artifact／run hashに一致するterminal proofが成功するまで配布不能とする。`config/fsmc-implementation-state.json`、build constant、artifact manifest、traceability、test manifestの組合せを各PRで相互検証し、artifact manifestの`databaseTargetMode`と実際にopenしたDB version／originが一致しない場合は失敗させる。
 
-FSMCのCI job ID／status名はI0で`fsmc-required-gate`へ固定し、その後phaseやfindingに応じて追加・削除しない。I0は既存branch protectionでrequiredな終端contextをread-only inventoryし、そのworkflow終端jobを`if: always()`＋`needs: [fsmc-required-gate]`相当へ変更して、FSMC jobが成功しない限り既存required contextも成功しない構成を第一選択とする。これならbranch protection外部設定を変更しない。既存required終端contextを機械的に証明できない場合だけ、`config/fsmc-ci-gate.json`にowner `Repository Maintainer`、対象branch、固定context名、one-time setup手順、read-only確認commandを記録し、Repository Maintainerが`fsmc-required-gate`を一度required化するまでI0 Exitを失敗させる。その後の動的変更権限やfinding別contextは作らない。
+FSMCのCI job ID／status名はI0で`fsmc-required-gate`へ固定し、その後phaseやfindingに応じて追加・削除しない。現行`.github/workflows/quality.yml`は既存requiredの`quality` jobと`release-a-rollback` jobだけでFSMC終端aggregatorを持たないため、既存`quality`へFSMC gateを`needs`で逆接続する案は採用しない。`quality` jobをcanonical package qualityの独立した単一producerとして維持し、その成功result artifactをFSMC build／testがdownloadする一方向`quality → FSMC DAG → fsmc-required-gate`へ固定する。`config/fsmc-ci-gate.json`にowner `Repository Maintainer`、対象branch、固定context名、one-time setup手順、read-only確認commandを記録し、I0でjobを構築中はnon-required、I0 Exit候補の同一HEADでRepository Maintainerが`fsmc-required-gate`を一度required化し、branch protection／rulesetを再読してexact contextを証明するまでI0 Exitを失敗させる。既存`quality`もrequiredのまま外さず、その後の動的変更権限やfinding別contextは作らない。`quality`がFSMC gateを待つcycle、同一runで0回または複数回のfoundation quality producer、別run result流用をworkflow topology verifierで拒否する。
 
 aggregatorはsource固定implementation stateからmodeを再計算する。`phaseProgress = in-progress`では`completedThrough`までの全Exitに加え、current phaseで既に`contract-enforced | implementation-enforced`となった`initial-release` test、production artifactのreadiness一致、早期公開経路なし、current-run WebKit safety artifactを検証するが、未完成のcurrent phase Exitは要求しない。`phaseProgress = exit-candidate`ではこれらにcurrent phaseの全Exitを加える。どちらも`releaseScope = future`のtestや`release-ready`を要求せず公開可能とは表示しない。唯一、I11の`exit-candidate`かつ`release-ready` candidateだけは同じjob内で`verify:fsmc:release-readiness`を実行し、I0～I11の全Exitと初版公開条件を要求する。modeの自己申告、workflow input、branch名、query／storageで分岐せず、state／artifact不一致、skip、選択test 0件を失敗させる。
 
 ### FSMC-I0着手前ゲート（phase外）
 
-既存品質失敗はFSMC実装と混ぜず、専用pre-I0 hygiene commitで解消する。pre-I0全体は「source hygiene」と「外部CI前提」の2 subgateからなり、前者のcanonical commandは順に、(1) `git status --porcelain=v1`が空、(2) `git diff --check`成功、(3) `npm run quality`成功、の3段だけとする。`quality`の一部を本文へ再列挙せず、package scriptの再帰展開graphをauthorityにする。skip、waiver、expected failure、既知失敗を許さない。3段成功かつ外部CI前提のread-only確認成功時の同一HEADを基準commit Hとして確定し、その完全commit SHAを`i0StartHeadSha`とする。Hの確定後は追更新せず、plan是正とbaseline cleanupを含む`baselineSourceSha..H`の全差分をinventoryへ収録する。どちらかのsubgateが失敗した状態では最初のI0変更を作らない。
+既存品質失敗はFSMC実装と混ぜず、専用pre-I0 hygiene commitで解消する。次のpre-I0準備commitで、production source／DB／runtime behaviorを変更せず`config/fsmc-pre-i0-observer-command-manifest.json`とschema、`scripts/fsmc/observe-pre-i0-prerequisites.mjs`、`scripts/fsmc/verify-pre-i0-prerequisites-result.mjs`、`docs/runbooks/fsmc-pre-i0-prerequisites.md`、対応npm scriptを先に作る。この準備自体はFSMC-I0ではなくH候補へ含め、observerをI0で初めて作る循環依存を禁止する。
 
-`config/fsmc-pre-i0-baseline.json`とschemaはHには含めず、Hを親に持つ最初のI0 commitで作る。既知となった`i0StartHeadSha = H`、H上のpackage.json／lockfile SHA-256、Node／npm version、`qualityCommand: "npm run quality"`、quality script SHA、再帰展開した順序付き`qualityCommandGraph`、各script本文SHA、graph SHA、3段のexit codeを固定する。したがって設定を含むcommit自身のSHAを同じ設定へ埋め込む自己参照は発生しない。`verify:fsmc:pre-i0-baseline`はrecorded Hの一時detached worktreeで`npm ci`後に同じ3段を再実行し、tracked差分とignore対象外untracked生成も拒否する。本計画採択時に確認された既存`format:check`失敗を専用hygiene commitで解消し、Hを確定するまでFSMC-I0の実装変更を開始可能とは判定しない。
+責任境界は次表へ固定する。repository管理actionのresult／approvalにはrole名と担当者のstable repository loginを記録し、同一人物の兼務は許すがowner空欄と自己申告だけのapprovalは許さない。利用者本人になり得る`Local Recovery Operator`だけは個人識別子やrepository loginを収集せず、利用者確認のscope、confirmation digest、result、実行した管理側role／loginだけをreceiptへ記録する。
 
-外部CI前提subgateは、本節で固定するfieldとread-only確認commandをH候補上で実行する。credential値とcommand出力中のsecretは保存しない。成功結果はHを親に持つ最初のI0 commitで`config/fsmc-ci-prerequisites.json`とschemaへ、確認時点、`requiredAt: pre-I0 | I0-exit | release-ready`、非機密result digestと共に記録する。各stageは次の事実だけを要求し、後段で初めて作るartifactの未作成を前段失敗にしない。
+| role                         | authority／責任                                                          | 必須成果物                    |
+| ---------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
+| `Plan/Architecture Owner`    | PD／RC／WBS、contract変更、I0開始可否                                    | plan decision、ADR approval   |
+| `Source Hygiene Owner`       | H候補作成、detached hygiene、baseline range検査                          | hygiene result、H nomination  |
+| `External Observer Operator` | allowlisted read-only observer実行、機密非保存                           | sanitized external result     |
+| `Repository Maintainer`      | branch ruleset、required context、environment／package管理のone-time操作 | gate／policy verification     |
+| `CI Operator`                | runner image、qualification、infrastructure-only rerun判定               | runner result、rerun approval |
+| `Release Maintainer`         | I11 candidate、配布停止／再開、利用者通知                                | release／incident decision    |
+| `Local Recovery Operator`    | 利用者確認済みBackup／reset scopeだけの復旧                              | recovery preview／receipt     |
+
+pre-I0全体は「source hygiene」と「外部CI前提」の2 subgateからなる。source hygieneのcanonical runnerはH候補SHAを一度読み、同SHAのclean detached worktreeで固定Node 24.19.0／npm 11.19.0を確認して`npm ci`を実行した後、(1) 開始HEAD一致、(2) `git status --porcelain=v1 --untracked-files=all`が空、(3) worktreeの`git diff --check`成功、(4) manifest固定`baselineSourceSha..candidateHeadSha`の`git diff --check`成功、(5) package scriptの再帰展開graphをauthorityにした`npm run quality`成功、(6) 終了HEADが開始値と一致、(7) 終了statusが空、(8) 終了worktree `git diff --check`成功、(9) 同じbaseline rangeの終了`git diff --check`成功とcandidate tree SHA不変、の順で全て検証する。既存`node_modules`を再利用せず、skip、waiver、expected failure、既知失敗を許さない。結果JSONはrepo外の新規一時directoryだけへcreate-newで書き、candidate SHA／tree SHA、`checkedDiffRange`、toolchain、lockfile／script graph hash、各exit、開始／終了status digestを持つ。source hygieneと外部結果が同じ完全SHA／tree SHAを持つ場合だけ基準commit Hを確定し、そのSHAを`i0StartHeadSha`とする。Hの確定後は追更新せず、plan是正とbaseline cleanupを含む`baselineSourceSha..H`の全差分をinventoryへ収録する。どちらかのsubgateが失敗した状態では最初のI0変更を作らない。candidate、script、manifest、toolchainのいずれかを変えた再試行は新attempt IDで両subgateを最初から実行し、過去result、部分成功、同名outputを再利用しない。
+
+`config/fsmc-pre-i0-baseline.json`とschemaはHには含めず、Hを親に持つ最初のI0 commitで作る。既知となった`i0StartHeadSha = H`、Hのtree SHA、`checkedDiffRange`、H上のpackage.json／lockfile SHA-256、Node／npm version、`qualityCommand: "npm run quality"`、quality script SHA、再帰展開した順序付き`qualityCommandGraph`、各script本文SHA、graph SHA、上記9段のexit codeと結果digestを固定する。したがって設定を含むcommit自身のSHAを同じ設定へ埋め込む自己参照は発生しない。`verify:fsmc:pre-i0-baseline`はrecorded Hの一時detached worktreeで同じrunnerとresult verifierを再実行する。本計画採択時に確認された既存`format:check`失敗を専用hygiene commitで解消し、Hを確定するまでFSMC-I0の実装変更を開始可能とは判定しない。
+
+外部CI前提subgateもH候補のclean detached worktreeで実行する。observer toolはGitHub CLI version、API version `2022-11-28`、candidate HEAD／tree開始・終了値、observer manifest／script／verifier SHAを記録し、API methodを`GET`だけへallowlistする。全API呼出しへ`Accept: application/vnd.github+json`と`X-GitHub-Api-Version: 2022-11-28`を固定し、GraphQL／`gh repo view`を使わない。固定manifestは少なくとも`GET /user`、`GET /repos/{owner}/{repo}`、`GET /repos/{owner}/{repo}/actions/permissions`、`GET /repos/{owner}/{repo}/actions/permissions/workflow`、`GET /repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval`、`GET /repos/{owner}/{repo}/environments?per_page=100`、`GET /repos/{owner}/{repo}/branches/{branch}/protection`、`GET /repos/{owner}/{repo}/rulesets?includes_parents=true&per_page=100`、`GET /repos/{owner}/{repo}/rules/branches/{branch}`、`GET /repos/{owner}/{repo}/actions/secrets?per_page=100`、`GET /repos/{owner}/{repo}/actions/variables?per_page=100`、`GET /orgs/{org}/actions/permissions`、`GET /orgs/{org}/actions/permissions/workflow`、`GET /orgs/{org}/packages?package_type=container&per_page=100`をliteral path／queryとして列挙する。一覧childはtyped keyごとに`GET /repos/{owner}/{repo}/environments/{environment_name}`、`GET /repos/{owner}/{repo}/rulesets/{ruleset_id}`、`GET /orgs/{org}/packages/{package_type}/{package_name}`だけを許し、`environment_name | ruleset_id | package_name`を取り違えない。endpoint、query、header、選択field、期待statusは固定IDからだけ構築し、任意URL、mutation option、未宣言queryを受けない。
+
+各endpoint resultは`present | absent-not-yet-required | forbidden | unobservable`のexact unionとする。追加response fieldはallowlisted projection前に捨て、必須選択fieldの欠落・型差だけをschema failureにする。401／403、pagination未完、開始／終了HEAD・tree・clean status差は常に失敗とする。404はmanifestがpre-I0で未作成environment／packageまたは未保護branchへ明示した場合だけ`absent-not-yet-required`、それ以外は失敗とし、認証不足をabsenceへ変換しない。raw response／header、Authorization、token、secret／variable値、自由記述command出力は保存せず、allowlisted projection、HTTP status、observer login／repository permission、checkedAt、endpoint result digestだけをrepo外の一時JSONへ出す。
+
+pre-I0では未作成のenvironment／package／image digest自体を要求しない。`GET /repos/{owner}/{repo}`のprojection `permissions.admin === true`を`repositoryPermission = "admin"`へ正規化し、environment／organization policyのread-only観測と合わせて「作成可能性のproxy」と明示する。実際のenvironment／package作成・public化・repository link・anonymous pullはI0-exitで初めて実証する。read-only情報だけでproxyも証明できなければblockerとし、「作成権限を実行確認済み」と表記しない。成功結果はHを親に持つ最初のI0 commitで`config/fsmc-ci-prerequisites.json`とschemaへ、確認時点、`requiredAt: pre-I0 | I0-exit | release-ready`、非機密result digestと共にimportする。各stageは次の事実だけを要求し、後段で初めて作るartifactの未作成を前段失敗にしない。
+
+H候補で利用者が実行する入口は次の3 commandだけとし、各scriptが上記の詳細command graphをmanifestから展開する。attempt ID付きoutput directoryはrepo外の新規directoryでなければ拒否し、各result fileはcreate-new、3 resultの`candidateHeadSha`／tree SHA／attempt IDをbyte一致させる。
+
+```powershell
+$fsmcCandidateHead = git rev-parse HEAD
+$fsmcPreI0AttemptId = [guid]::NewGuid().ToString("N")
+$fsmcPreI0ResultDirectory = Join-Path ([IO.Path]::GetTempPath()) "fsmc-pre-i0-$fsmcCandidateHead-$fsmcPreI0AttemptId"
+New-Item -ItemType Directory -Path $fsmcPreI0ResultDirectory -ErrorAction Stop | Out-Null
+npm run verify:fsmc:pre-i0-hygiene -- --candidate-head $fsmcCandidateHead --attempt-id $fsmcPreI0AttemptId --output (Join-Path $fsmcPreI0ResultDirectory "hygiene.json")
+npm run observe:fsmc:pre-i0-prerequisites -- --candidate-head $fsmcCandidateHead --attempt-id $fsmcPreI0AttemptId --repository blusalice3-foundation/event-shopping-planner-routeplanning --output (Join-Path $fsmcPreI0ResultDirectory "external.json")
+npm run verify:fsmc:pre-i0-prerequisites-result -- --attempt-id $fsmcPreI0AttemptId --hygiene (Join-Path $fsmcPreI0ResultDirectory "hygiene.json") --external (Join-Path $fsmcPreI0ResultDirectory "external.json")
+```
 
 | `requiredAt`    | 必須確認                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pre-I0`        | repository／default branch、repository／environment admin role、required reviewer environment作成可否、GHCR package作成・public visibility変更・repository link確認権限、GitHub Actions／GHCR利用可否、既存required終端contextへの接続可能性またはone-time設定権限、必要permission名、secret／variableの存在名、fork PR token方針。I0で作るDockerfile、publisher workflow、package、digestの実在は要求しない                                                         |
+| `pre-I0`        | repository／default branch、repository admin role、既存environment／organization policy、repository visibility、Actions／GHCR availabilityから導くrequired-reviewer environment・GHCR package・public visibility・repository link・`fsmc-required-gate`直接required化の作成可能性proxy、必要permission名、secret／variableの存在名、fork PR token方針。I0で作るenvironment、Dockerfile、publisher workflow、package、digestの実在や作成実行済みは要求しない          |
 | `I0-exit`       | repo-owned runner Dockerfile、下記exact path／job／triggerのpublisher、OCI source labelでrepository link済みのpublic GHCR package、publisherだけの`contents: read`／`packages: write`、通常required workflowは`contents: read`かつpackage permission／credentialなし、untrusted PRへのwrite token／secret 0件、publishしたexact OCI digestの匿名pull、consumer jobのliteral `container.options`、runner qualification、固定`fsmc-required-gate`とbranch gateの実接続 |
 | `release-ready` | I0 Exitと同じexact digestをproduction artifactが参照し、publisher permission、consumerのpackage permission／credential不在、package visibility／repository link、fork policy、required context、runner qualificationにdriftがないことをcurrent runで再確認                                                                                                                                                                                                           |
 
-repository／environment admin不在、required reviewer environment作成不能、Actions／GHCR利用不能、package作成・public化・link確認権限なし、required gate接続不能はpre-I0 blockerとし、I0内の実装で迂回しない。`config/fsmc-ci-prerequisites-result.schema.json`はcurrent stage以前の各resultを必須、未来stageを`not-yet-required`とし、未来artifactの欠落を`failed`へ数えない。stage到達後の`unknown`、観測不能、必須事実の欠落は非0終了とする。
+repository admin／policy／visibilityから必要な作成可能性proxyを導けない、Actions／GHCRを観測できない、または`fsmc-required-gate`直接required化のone-time権限proxyを証明できない場合はpre-I0 blockerとし、I0内の実装で迂回しない。pre-I0ではenvironment／package作成不能をread-only観測だけから断定しない。`config/fsmc-ci-prerequisites-result.schema.json`はcurrent stage以前の各resultを必須、未来stageを`not-yet-required`とし、未来artifactの欠落を`failed`へ数えない。stage到達後の`unobservable | forbidden`、必須事実の欠落は非0終了とする。
 
 I0が作るpublisherの唯一のpathは`.github/workflows/fsmc-performance-runner-publish.yml`、workflow `name`は`fsmc-performance-runner-publish`、job IDは`publish-fsmc-performance-runner`、triggerは`workflow_dispatch`だけとする。jobは`github.ref == refs/heads/<recorded-default-branch>`をguardし、required reviewer付きenvironment `fsmc-performance-runner-publish`を使う。`infra/fsmc-perf-runner/Dockerfile`は`org.opencontainers.image.source=https://github.com/blusalice3-foundation/event-shopping-planner-routeplanning`をexact OCI labelとして持つ。image URIは`ghcr.io/blusalice3-foundation/event-shopping-planner-routeplanning-fsmc-perf-runner`、package visibilityは`public`とし、publisher後observerがlabel、linked repository、visibility、digestをGitHub API／manifestから再計算する。moving tagをconsumerへ渡さない。public imageなのでconsumerの`packages` permission、`container.credentials`、pull secretを禁止する。consumerは`.github/workflows/quality.yml`のjob ID `fsmc-performance-shard`だけとし、`permissions: { contents: read }`、`container.image`を同URI＋`@sha256:<digest>`、`container.options`をI0でqualificationした非placeholderの`--cpus`、`--memory`、`--memory-swap`、`--pids-limit` literalへ固定する。workflow literal、`config/fsmc-performance-runner.json`、実cgroup観測の3者差をinfrastructure failureにする。
 
 ### FSMC-I0: 契約・fixture・基準値
+
+- performance capacity evidenceは`qualification-only | product | not-required`のexact unionとする。I0 qualificationは12 intervalと最大54 product-shard宣言、I2以降productは実planの1～54 shard宣言を持つ。I1 `not-required`だけは`jobIntervals=[]`、`declaredShardExpectedMinutes=[]`、`observedMaxConcurrentJobs=null`、`queueExcludedQualificationMinutes=null`、`projectedFiveWaveMinutes=null`を必須にし、空runner集合を成功productへ偽装しない
+- 各`declaredShardExpectedMinutes.expectedMinutes`はconfigの自己申告値ではなく、同じplan内の`setupExpectedMs + calibrationExpectedMs + Σ(warmupRuns × scenarioExpectedMs) + Σ(measuredRuns × (scenarioExpectedMs + cleanupExpectedMs))`をshard keyごとに整数millisecondで加算し、最後に`ceil(totalMs / 60000)`した値とする。`setupExpectedMs`はActions job `started_at`からcheckout／container ready、deadline ledger、`npm ci`、artifact取得／検証、preproduct upload、browser install、runner envelopeまでを含み、calibrationを二重計上しない。全component合計はabsolute product deadlineの300分以下、hard timeoutはreporter予約を含む330分exactとする。expected componentはI0 runner qualification result SHAへ拘束された非負整数、OFF pairはreference→targetの両componentを固定順で合算する。component、qualification result、key集合、runner digestの変更時は全expected minutesと12-lane projectionを再導出し、手入力上書きや実行後durationによる合格化を禁止する
+- performance plan／shard／reduced schemaは`foundationQualityResultSha256`、`sourceSha`、`productionArtifactTreeSha256`、`productionBuildManifestSha256`、条件付きの`qaArtifactTreeSha256`／`qaBuildManifestSha256`をexact名で持つ。QA pairは対象phaseなら両方non-null、非対象なら両方nullとし、全hashをcurrent `ciRun`のdownload済みmanifestへ再計算一致させる。shard resultはさらにplan／budget／runner／OCI／browser／catalog／traceability／test manifest／topology hash、expected／executed key、calibration、warmup、30 measured sample、runner-result SHAを持ち、曖昧な`artifactSha`へ縮退させない
+- qualification／product reduced resultは`jobIntervals: [{ jobId, startedAtEpochMs, completedAtEpochMs }]`、`observedMaxConcurrentJobs`、`queueExcludedQualificationMinutes`、`declaredShardExpectedMinutes: [{ shardId, expectedMinutes }]`、`projectedFiveWaveMinutes`を必須にする。interval authorityはreducerだけが`actions: read`で取得するAPI version `2022-11-28`のpaginated read-only `GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs?per_page=100&page=<n>` projectionとし、current run／attempt、workflow topology hash、matrix job name／shard IDをexact一致させる。APIの`started_at`／`completed_at` RFC 3339を厳密parseしてUTC safe-integer epoch millisecondへ正規化し、source文字列に小数秒3桁があるとは仮定しない。欠落／null／parse不能、別attempt、pagination未完、重複job／shard、API以外のrunner自己時計を拒否する。`startedAtEpochMs <= completedAtEpochMs`、稼働区間はhalf-open `[startedAtEpochMs, completedAtEpochMs)`とし、同時刻eventはendをstartより先に処理したprefix最大値をobserved concurrencyとする。queue時刻は取得・自己申告せず、`queueExcludedQualificationMinutes`は稼働区間unionのmillisecond長だけを合算して最後に`ceil(ms / 60000)`する。branch内の宣言数`N`はqualificationの対象product planまたはI2以降の実planにある1～54件とexact一致させ、canonical shard ID順のindex `i`をlane `i mod 12`へ割り当てる。各laneの宣言expected minutes合計の最大を`projectedFiveWaveMinutes`として再計算し、lane件数は`ceil(N / 12)`以下かつ最大5とする。qualificationはexact 12 interval、observed concurrency 12以上、queue除外qualificationとprojected値は各360分以下、productはexact N intervalとprojected値360分以下を必須にする。I1 `not-required`は前項どおりN=0のempty／null branchであり、この式へ54件を捏造しない
+- 各performance shardのfirst executable stepはdependency-free supervisorを起動し、Actions run-attempt jobs APIのcurrent matrix job `started_at`を唯一の`jobStartedAtEpochMs`へ正規化する。create-new `performance-shard-job-deadline` artifactは`jobStartedAtEpochMs`、`productDeadlineEpochMs = jobStartedAtEpochMs + 300 * 60_000`、`hardDeadlineEpochMs = jobStartedAtEpochMs + 330 * 60_000`、run／attempt／job ID／shard ID／sourceを持ち、upload成功後だけ`npm ci`以降へ進む。supervisorは`npm ci`、artifact download／verify、browser、runner、calibration、製品processの全child process groupを監視し、started時刻から300分を加算し直さずabsolute product deadlineでactive childを終了して後続product stepを禁止する。foundation／plan／production／必要時QA artifactの全hash検証後、browser installより前にcurrent-run `preproduct` lifecycle snapshotをcreate-newしてuploadする。browser／runner envelope／calibration成功後は`started` snapshotへdeadline artifact digest、`preproductCompletedAtEpochMs`、`remainingProductBudgetMs = max(0, productDeadlineEpochMs - preproductCompletedAtEpochMs)`を記録してcreate-new uploadし、そのupload成功かつremaining正値を製品process spawnの必須先行条件にする。独立artifact class `performance-shard-ledger-preproduct | performance-shard-ledger-started | performance-shard-ledger-terminal`は同じdeadline digest、shard／source／run／attempt／plan／artifact hash、UTC millisecond時刻、直前snapshot digestを持ち、上書きや逆行を拒否する。合法系列は`preproduct(productState="not-started") → terminal(productState="not-started", terminalOutcome="preproduct-failed")`、または`preproduct → started(productState="started") → terminal(productState="completed" | "watchdog-terminated")`だけとし、started不在のproduct完了、started後のnot-started terminal、terminal後の追加snapshotを拒否する。absolute 300分deadlineでsupervisorが終了した後、330分hard deadlineまでの予約枠で独立した`if: always()` reporterがterminal snapshotとresultをuploadする。deadline到達前にreporterへ移れない、hard timeout、deadline／ledger／result欠落は常に`failed`であり、started後のdeadline超過、強制終了、watchdog termination、budget超過を`infrastructure-failed`へ変換しない。`preproduct` snapshot取得済み、`started` snapshotなし、sample 0件、always reporterのschema-valid resultが揃い、固定allowlist `browser-install-unavailable | runner-envelope-verification-failed | calibration-runner-envelope-failed`の機械証跡が一致する場合だけinfrastructure候補とする。runner provisioning／container pull／checkout、deadline artifact upload前、`npm ci`／artifact downloadのように`preproduct` snapshotより前に失敗する場合はfail-closedなnon-rerunnable `failed`とする。setup 29／30／31分と299分／300分／300分+1ms、started時刻を後ろへずらす改ざん、watchdog／hard-timeout同着raceをfake-clock fixtureへ固定し、どの場合もproduct deadlineをjob開始+300分、reporter hard deadlineをjob開始+330分から動かさない
+- shardのdeadline step IDは`fsmc-performance-job-deadline`、preproductの3 workflow step IDは`fsmc-performance-browser-install`、`fsmc-performance-runner-envelope`、`fsmc-performance-calibration`へ固定し、各stepは順番にexact 1回、`continue-on-error: false`で動く。topology verifierはdeadline stepをjobのfirst executable stepかつdependency-free standard command／pinned artifact upload、browser stepをliteral `npx playwright install --with-deps chromium`、runner／calibrationを下記standard commandへ一致させる。always reporterはworkflow runtimeの各`steps.<id>.outcome`、固定command hash、deadline／preproduct snapshot、runner／calibrationのbounded typed receiptからfailure codeを再計算する。deadline失敗／欠落はallowlist外failed、browserだけ`failure`で後続`skipped`ならbrowser code、browser `success`＋runner `failure`＋calibration `skipped`ならrunner code、前2件`success`＋calibration `failure`ならcalibration codeだけを許す。複数failure、`cancelled | timed_out | unknown`、先行success不成立、必要receipt欠落、step ID／command差はallowlistへ写さず`failed`にする。started snapshotはdeadline＋3 outcome全て`success`かつreceipt検証後だけ作れる
+- `config/fsmc-performance-rerun-approval.schema.json`はversion 1の`FsmcPerformanceRerunApprovalV1`を所有し、`sourceSha`、同じ`runId`、`priorRunAttempt = 1`、`approvedRunAttempt = 2`、`rerunMode = "all-jobs"`、workflow topology hash、prior reduced／required-results／WebKit safety observation／WebKit promotion result／prior required-gate result SHA-256、canonical nonempty failed shard ID、上記3-codeとevidence digestのexact bijection、prior WebKit observation `passed`、promotion `not-required | passed`、非performance required-results全class pass、prior gate canonical failure reason exact `performance-infrastructure-only`、CI Operator roster SHA-256、workflow runtimeの`triggeringActor`／`triggeredAt`、自身を除くdomain-separated `approvalDigest`を必須にする。別schemaのcurrent-attempt artifact `FsmcPerformanceRerunApprovalResultV1`は、attempt 1の`{ status: "not-required", approval: null, approvalDigest: null }`、attempt 2の`{ status: "approved", approval, approvalDigest }`、またはattempt 2検証失敗の`{ status: "rejected", canonicalReasons, approval: null, approvalDigest: null }`だけを許し、attempt 3以上をschema rejectにする。固定job ID `performance-rerun-preflight`が全attemptで`if: always()`実行され、attempt 1はcurrent artifactをcreate-new、attempt 2だけはexact prior-attempt名のperformance reduced result／required-results／WebKit safety observation／WebKit promotion result／required-gate resultをdownload／実bytes再hashし、GitHub Actions `Re-run all jobs` runtime metadata、current attempt topology、version付きCI Operator rosterと合わせてapprovalをfinalize／verify／uploadする。artifact名は`fsmc-performance-rerun-approval-run-<runId>-attempt-<runAttempt>`とし、同名0／複数を拒否する。actorがrosterのCI Operator、source／run同一、attemptが連続、prior classificationがallowlisted performance infrastructureだけ、prior failed shard／code／evidenceがexact bijection、required-resultsのfoundation／build／functional／CI prerequisite等の非performance classが全pass、WebKit observationが`passed`、promotionが`not-required | passed`かつ両artifactのfailed／safety／infrastructure reason 0件、prior gateのschema-valid canonical failure reason集合がexact `performance-infrastructure-only`の場合だけapprovedとする。これらのSHA、status、空reason集合、gate reasonをapproval payloadと自身を除く`approvalDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-performance-rerun-approval-v1", approvalWithoutDigest })))`へ含める。partial／failed-jobs／matrix rerun、attempt 3、別source／run、actor不明、product／functional／quality／prerequisite failure、WebKit safety failure／infrastructure failure、promotion failure、prior gateの複合／未知reason混入はtyped rejectedでgateを閉じる。job permissionは`actions: read, contents: read`だけとし、topology verifierは`performance-rerun-preflight → performance-plan → all performance shards → reducer → required-results-finalizer → fsmc-required-gate`の一方向needsとstandard commandを固定する。performance plan／reduced result／required-results／gateはcurrent approval result bytesをdownload／verifyし、attempt 1はnull、attempt 2は同じnon-null approval digestへ一致させる。partial rerunでcurrent artifactがない場合もprior artifactで補完せずfail-closedにし、自己申告actorや自由文承認をauthorityにしない
+- `config/fsmc-required-gate-result.schema.json`はversion 1の`FsmcRequiredGateResultV1`を所有し、`ciRun`、source SHA、phase state／readiness、required-results／WebKit safety observation／WebKit promotion／performance rerun approval resultの実bytes SHA-256、workflow topology hash、`status: "passed" | "failed"`、version付き`FSMC_REQUIRED_GATE_FAILURE_REASON_ORDER_V1`順のcanonical failure reasons、`resultDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-required-gate-result-v1", resultWithoutDigest })))`をexactに持つ。reason enumは少なくともfoundation／build／functional／performance-product／CI-prerequisite／WebKit-safety／WebKit-infrastructure／promotion／required-results／rerun-approval／phase-state／artifact欠落を区別する。全inputを再計算してreason 0件だけをpassed、1件以上をfailedとし、performance reducedの開始前3-code infrastructureだけが失敗し他の全inputがpassの場合は唯一のspecial reason exact `performance-infrastructure-only`とする。このreasonは他reasonと共存できず、product timeout／budget／sample failure、WebKitまたは非performance failureを混入できない。gate jobの独立`if: always()` reporterは通常verifierの成否にかかわらずcurrent attempt名`fsmc-required-gate-result-run-<runId>-attempt-<runAttempt>`でcreate-new finalize→verify→uploadし、最後のstatus enforcerだけがverified resultからjob check成功／失敗を決める。欠落／複数／別attempt、reporter起動前失敗、自己申告job outcomeでartifactを省略せず、attempt 2 preflightはattempt 1のsole実bytesを再hashする。
+- functional、performance plan／ledger／shard／reduced、WebKit observation／promotion、required-resultsの全result schemaは同じ`foundationQualityResultSha256`を必須にし、各consumerがdownloadしたcurrent attemptのsole foundation artifact bytesへ再hash一致させる。field欠落、自己申告hash、別attempt foundation、consumer内での`npm run quality`再実行を拒否する
+  I0は次の9 WBS bundleを依存順に実装する。`config/fsmc-i0-wbs.json`は各I0実装bullet／Exitにexact 1 `primaryBundleId`、0件以上のcanonical `dependsOnBundleIds`、review owner、artifact、verification command、production禁止edgeを持たせ、未割当て、複数primary、循環、依存未達、bundle test 0件を拒否する。複数bundleを同じ物理PRへまとめてもこの境界と個別checkを失わない。
+
+| bundle                            | 依存         | 主成果物                                                                                                                                                                          | primary closure       |
+| --------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `I0-01` baseline／inventory       | pre-I0 H     | implementation state、pre-I0 result import、source／toolchain／change-surface inventory                                                                                           | I0-002～004           |
+| `I0-02` domain contract           | I0-01        | 番号、物理slot／論理location、局所exclusion、route polygon、picker／pointer schema・fixture                                                                                       | I0-005、009、013      |
+| `I0-03` persistence contract      | I0-01        | Vcap provenance、DB open、CAS／fence、control、recovery schema・fixture                                                                                                           | I0-005、010           |
+| `I0-04` durable／reorder contract | I0-02、I0-03 | event authority、Focus migration、execution reorder／atomic transition schema・fixture                                                                                            | I0-005、013           |
+| `I0-05` backup contract           | I0-02～04    | V2 pair／V2-only total matrix、V1 compatibility、Worker／URL／resource limit                                                                                                      | I0-005、007           |
+| `I0-06` fixed-A／policy           | I0-01、I0-05 | fixed legacy A、membership／coverage／architecture／dependency policy                                                                                                             | I0-001、007、010      |
+| `I0-07` browser／safety           | I0-02、I0-06 | Chromium／WebKit config、a11y oracle、positive `npx playwright install --with-deps chromium --dry-run` required CLI contractと旧形式negative argument forwarding、safety register | I0-001、005、006、009 |
+| `I0-08` performance／external     | I0-01、I0-02 | runner image、publisher、capacity／wall-clock plan、54-shard reducer、I0-exit observer                                                                                            | I0-008、011           |
+| `I0-09` traceability／gate        | I0-01～08    | catalog、traceability、test manifest、result finalizer、acyclic required gate                                                                                                     | I0-001～013           |
 
 実装:
 
@@ -5270,6 +6796,7 @@ I0が作るpublisherの唯一のpathは`.github/workflows/fsmc-performance-runne
 - `mapData`の物理面は`src/persistence/db/constants.ts::{MAP_DATA_KEY_PREFIX,MAP_DATA_LEGACY_KEY}`と`src/persistence/repositories/mapRepository.ts::{getMapDataEntryKey,parseMapDataEntryKey,readMapEntriesFromStore,materializeMapData,buildMapDataPuts,assertCurrentMapMatchesExpected}`をexact登録する。`mapData:${JSON.stringify([eventName, dayMapName])}` split row、legacy `data` row、同値／不一致併存、known-key cleanup、6-store logical closureをfixture化し、materialized objectだけをCAS authorityにするedgeを0件にする
 - hall／day aliasのprivate surfaceは`src/types/map.ts::MAPLESS_HALL_KEY`、`src/features/map/domain/normalizeHydratedHallState.ts::{normalizeHallDefinitions,normalizeHallRouteSettings,normalizeHydratedHallState}`、`src/features/map/hooks/useMapSelectors.ts::{toHalfWidthDigits,normalizeMapDayToken}`、`src/utils/indexedDB.ts`のcompatibility re-exportをexact登録する。private helperはplanned inventory上のAST anchorとして追跡し、canonical day adapterへの置換前後でdirect caller数、unscoped／embedded mapless absorption、repair成功後normalizer no-opを検証する
 - `config/fsmc-change-surface.json`へbaseline SHAと、各entryの`path`、`symbol`、`layer`、`baselineDirectCallerCount`、`ownerPhase`、`targetApi`、`completionAssertion`を固定する。少なくとも番号parser全caller、`NavigatorItem`／旧visit identity、`MapView`、`MapVisitListPanel`、`FocusModeContainer`／`FocusMode`、item／map／hall mutation commands、event itemOps、map import flow／overlay、Backup command／overlay、pathfinding／route point／hit-test／render／cacheを含める。Focus capture面は`src/types/focus.ts::FocusModeSessionState`、`src/components/focus/hooks/useFocusSessionState.ts::useFocusSessionState`、`src/components/FocusMode.tsx::onSessionStateChange`、`src/features/map/components/FocusModeContainer.tsx`、`src/App.tsx::handleFocusSessionStateChange`とinvalid-key prune effect、`src/app/state/useAppUiState.ts::focusModeSessions`、`src/app/selectors/appMapViewSelectors.ts::buildFocusSessionKey`／`selectCurrentFocusSession`／`selectValidFocusSessionKeys`、`src/app/commands/useEventLifecycleCommands.ts::confirmRename`／`renameFocusModeSessionKeys`／`deleteEvent`／`removeFocusModeSessionByEvent`をexact登録し、planned `src/features/map-cell-split/visits/LegacyFocusSessionFreezePort.ts`／`legacyFocusSessionRegistry.ts`へI7 QA、I11 productionのowner phaseを分ける。patch-only保存は`src/app/commands/ApplicationSnapshotCommitPort.ts`と5 caller file／10 call site、すなわち`src/App.tsx`、`src/app/commands/useMapEditorCommands.ts`、`src/app/commands/useShoppingItemMutationCommands.ts`、`src/app/commands/useMapImportCommands.ts`、`src/features/map/domain/mapImportFlow.ts`をexact登録し、importなしの構造的callback再宣言も数える。gestureは`src/features/map/canvas/useCanvasViewport.ts`、`src/components/map/MapCanvas.tsx`、`src/components/map/MapCanvasPresentation.tsx`、`src/components/FocusModeMapCanvas.tsx`、現行Backupは`src/components/BackupRestoreDialog.tsx`、`src/features/events/backupRestore.ts`、`src/utils/appBackup.ts`、whole-file owner `src/app/commands/useEventTransferCommands.ts`、XLSX Worker参照は`src/xlsx/worker/xlsx.worker.ts`、`workerServer.ts`、`src/xlsx/adapters/workerXlsxExecutionPort.ts`までexact pathで登録する。新規Backup Workerは`src/features/map-cell-split/backup/backup.worker.ts`、`workerServer.ts`、`workerClient.ts`、`workerProtocol.ts`をplanned entryとして登録する。I0はAST symbol／signature inventoryと`rg` fallbackの結果一致を検証し、各owner Exitで旧API production edge 0件または明示legacy allowlistだけを許す
+- route constraint移行面は`src/types/map.ts::RoutePathConstraint`、`src/utils/mapRouteMapData.ts`のselected-hall closure factory、`src/utils/polygonValidation.ts::validateHallPolygon`と`minArea` production override、`src/utils/mapRoutePolygon.ts::isPathAllowed`、`src/components/map/HallDefinitionPanel.tsx`およびimport／Backupの全polygon validator callerをchange-surfaceへexact登録する。I1を共有`validateHallPolygonContractV1`／inclusive predicate、I10を`RoutePathConstraintV1`接続のowner phaseとし、旧closure／predicate caller 0件、全surfaceのerror-level validity集合一致をcompletion assertionにする。fixture-only legacy比較はpath／test ID付きallowlist以外を許さない
 - raw-day repair面は`src/types/item.ts::ShoppingItem.eventDate`／`DayModeState`／`ExecuteModeItems`、`src/types/map.ts::getMaplessKey`／`HallDefinitionsStore`／`HallRouteSettingsStore`、`src/utils/eventDates.ts::extractEventDates`、`src/utils/visitProjection.ts::normalizeExecutionVisitDay`／`findExecutionDayBucketKey`、`src/features/map/domain/normalizeHydratedHallState.ts::normalizeHydratedHallState`、`src/App.tsx::App/useEffect[normalizeHydratedHallState]`をexact登録する。最後の匿名effectは`hallDefinitionsMigratedRef`をAST anchorとし、adoption-blocked gateをref更新前に置く。`useIndexedDbPersistence` autosaveへ到達する迂回をnegative edgeにする
 - legacy map-day association面は`src/features/map/hooks/useMapSelectors.ts::useMapSelectors`の内部`getMapTabForDate`、`src/types/map.ts::MapDataStore`／`MapRotationSettingsStore`／`RouteSettingsStore`／`HallDefinitionsStore`／`HallRouteSettingsStore`／`MapViewportSettingsStore`、`src/features/map/domain/hallOperations.ts::updateMaplessHallDefinitions`／`updateMaplessHallRouteSettings`／`getCombinedHallRouteSettingsForDate`、`src/features/map/domain/mapReimport.ts::buildMapReimportPlan`／`applyMapReimportPlan`、`src/utils/appBackup.ts::getMapEventDate`／`validateItemMapDateReference`をexact登録する。6 storeの`[eventName][dayMapName]` key closureと、mapless用2 storeの`getMaplessKey(rawDay)` closureを別assertionにする
 - raw-day CAS面はplanned `src/features/map-cell-split/visits/LegacyFocusDayScopeRepairPort.ts::LegacyFocusDayScopeRepairPortV1`と、置換対象の`src/app/ports/PersistenceCommandPort.ts::PersistenceSnapshot`／`PersistenceCommandPort.commitApplicationSnapshotAtomically`、`src/persistence/db/atomicRestoreTransaction.ts::APPLICATION_SNAPSHOT_STORE_NAMES`／`commitApplicationSnapshotAtomically`、`src/persistence/adapters/indexedDbPersistenceCommandAdapter.ts::IndexedDbPersistenceCommandDelegate`／`createIndexedDbPersistenceCommandAdapter.commitApplicationSnapshotAtomically`、`src/persistence/facade/indexedDbPersistence.ts::db.commitApplicationSnapshotAtomically`、`src/hooks/useIndexedDbPersistence.ts::PersistedStateValues`／`useIndexedDbPersistence`をexact登録する。scope audit、authority proposal、persisted-authority loader、repair planner／Portもplanned symbolとし、既存after-only full-snapshot commandへのrepair edge 0件をowner Exitで検証する
@@ -5280,27 +6807,32 @@ I0が作るpublisherの唯一のpathは`.github/workflows/fsmc-performance-runne
 - 固定旧版Aは完全source SHA `3db4be011d0f4123aa3953b559280c58f33d026a`のdetached worktreeから一度だけ生成し、`tests/fixtures/fsmc/legacy-a/legacy-a-artifact.zip`を通常Git blobとして直接追跡する。Git LFS、network download、CI再buildを使わず、`.gitignore`の`dist`規則からこのarchiveだけを明示除外する。`manifest.json`へsource／lockfile／toolchain hash、Node／npm、build／start command、archive path／SHA-256／byteLength、展開後全entryの相対path／size／SHA-256、fileCount、provenance、licenseを固定する。verifierはcompressed 32 MiB、expanded 128 MiB、4,096 filesを上限に一時directoryへ展開し、absolute path、`..`、symlink、duplicate、case collisionを拒否してoffline起動smokeを行う。更新には固定旧版A判断の再承認を要求し、候補新版BはCI対象sourceから一度だけbuildする
 - 代表地図、ON／OFF別番号正規化、`01a`／`1a`衝突あり・なし、衝突pair swap／厳密減少／完全解消、safe integer境界、1 MiB数字列を巨大`BigInt`化しない境界、mapless、unresolved、`26`／`26c`／`26d`／`26ab`／`26c2`、retained number／token一致・不一致、active／retained owner overlap、同名block、一意番号、重複・領域競合・merge越境、重複物理`(row, col)`、背景色だけで変わるpathfinding graph、0／45／90度pickerのfixtureを作る
 - `config/fsmc-fixture-topologies.json`とschema、`tests/fixtures/fsmc/max/manifest.json`を作り、最大healthy topologyをgrid 100×150＝15,000 logical number cell、8,192 block（2-cell block 6,808、1-cell block 1,384）、15,000 split setting、30,000 half region、orientation各3,750、400 item／space／execution visit、normal 400＋postponed 200＋late 200＝最大800 phase visit、単一phase route最大400へ固定する。max healthyではmerge region 0、blocked cell 0を明示し、merge／obstacle／partial-lossは別の固定topology IDへ分離する。manifestはgenerator ID／version／source SHA、seed、canonical serialization、寸法、block／merge／obstacle／visitのexact座標recipe、route connectedness、payload SHA、`dataTopologySha256`、期待root SHA／countsを持つ。OFF referenceとON targetは同じdata topology、通常／集中は同じdata topologyでUI start-state hashだけを変え、generator再実行のbyte一致をI0 Exitで検証する
-- `config/fsmc-performance-budgets.json`、runner configに加え、`config/fsmc-performance-shards.json`、plan／shard-result／reduced-resultの各schemaを作る。I0でexact OCI source label付き`infra/fsmc-perf-runner/Dockerfile`、`.github/workflows/fsmc-performance-runner-publish.yml`の`publish-fsmc-performance-runner` job、publicかつrepository-linkedなpackage `ghcr.io/blusalice3-foundation/event-shopping-planner-routeplanning-fsmc-perf-runner`を作成し、publisherだけに`packages: write`を与える。`quality.yml`の`fsmc-performance-shard`は`contents: read`だけで、package permission／credentialなしの匿名pullを行う。publisherはdefault branch guard＋承認environmentの`workflow_dispatch`だけで動き、untrusted PRでは起動不能にする。publisherが出力したexact OCI digestをrunner configへ固定し、consumerの`container.image`と`container.options` literalを同configへexact一致させて匿名pull／qualificationする。keyは`${scenarioId}@${profileId}`、基本1 key／shard、OFF reference→target pairだけを同shard・固定順とし、全62 keyを最大54 shardへ割り当てる。`maxParallel: 12`、`failFast: false`、`computedExecutionLimitMinutes: 300`、workflow `jobTimeoutMinutes: 330`、setup／calibration／browser／scenario／cleanup timeoutを固定し、`calibration + Σ(warmupRuns × scenarioTimeout) + Σ(measuredRuns × (scenarioTimeout + cleanupTimeout)) + setup <= 300分`を静的検証する。各shardは同container／browserで製品sample直前に個別calibrationし、別shard／attempt／runから再利用しない。shard resultはrun ID／attempt、source・artifact SHA、shard／plan／budget／runner config SHA、OCI digest、browser revision、requirement／traceability／manifest／topology hashes、calibration、expected／executed keys、warmup、30 measured sample、runner-result SHAを持つ。reducerは全期待shardをcanonical sortし、欠落・余分・重複・stale hash・別attempt・sample混在・OFF順違反を再計算する。I0は`qualification-only`、I1はrunner集合空の`not-required`、I2以降は`product` reduced resultとする
+- `config/fsmc-performance-budgets.json`、runner configに加え、`config/fsmc-performance-shards.json`、plan／lifecycle-ledger／shard-result／reduced-resultの各schemaを作る。I0でexact OCI source label付き`infra/fsmc-perf-runner/Dockerfile`、`.github/workflows/fsmc-performance-runner-publish.yml`の`publish-fsmc-performance-runner` job、publicかつrepository-linkedなpackage `ghcr.io/blusalice3-foundation/event-shopping-planner-routeplanning-fsmc-perf-runner`を作成し、publisherだけに`packages: write`を与える。`quality.yml`の`fsmc-performance-shard`は`contents: read`だけで、package permission／credentialなしの匿名pullを行う。publisherはdefault branch guard＋承認environmentの`workflow_dispatch`だけで動き、untrusted PRでは起動不能にする。publisherが出力したexact OCI digestをrunner configへ固定し、consumerの`container.image`と`container.options` literalを同configへexact一致させて匿名pull／qualificationする
+- keyは`${scenarioId}@${profileId}`、基本1 key／shard、OFF reference→target pairだけを同shard・固定順とし、全62 keyを最大54 shardへ割り当てる。`maxParallel: 12`、`failFast: false`、`computedExecutionLimitMinutes: 300`、workflow `jobTimeoutMinutes: 330`、setup／calibration／browser／scenario／cleanup timeoutを固定し、`calibration + Σ(warmupRuns × scenarioTimeout) + Σ(measuredRuns × (scenarioTimeout + cleanupTimeout)) + setup <= 300分`を静的検証する。各shardは同container／browserで製品sample直前に個別calibrationし、別shard／attempt／runから再利用しない
+- shard resultは`ciRun`、`sourceSha`、`foundationQualityResultSha256`、`productionArtifactTreeSha256`、`productionBuildManifestSha256`、条件付き`qaArtifactTreeSha256`／`qaBuildManifestSha256`、shard／plan／budget／runner config SHA、OCI digest、browser revision、requirement／traceability／test manifest／topology hashes、lifecycle ledger、calibration、expected／executed keys、warmup、30 measured sample、runner-result SHAをexactに持つ。reducerは全期待shardをcanonical sortし、欠落・余分・重複・stale hash・別attempt・sample混在・OFF順違反を再計算する。I0は`qualification-only`、I1はrunner集合空の`not-required`、I2以降は`product` reduced resultとする
 - `config/fsmc-virtual-list.json`をI0のversion付き契約成果物として追加し、`threshold`、`overscanRows`、`maxMountedRows`、`focusModel: "container-activedescendant"`、component別pattern `definition: "multiselect-listbox-external-toolbar"`、`retained: "single-select-listbox-external-toolbar"`、`projectedVisit: "single-select-listbox-external-toolbar"`、`rowDomIdPrefixes: { definition: "fsmc-definition-row-", retained: "fsmc-retained-row-", projectedVisit: "fsmc-projected-visit-row-" }`、scroll alignmentをnon-nullで固定する。retainedとprojected visitによる同じsingle-select pattern値の共有は意図した正規形として許可し、重複component key、値欠落、未知component、component別prefixの欠落／重複、`grid`／roving focusとの混在、生成後row ID衝突、active row未mountのfixtureをschema／semantic verifierで拒否する。I0ではruntime UIを変更せず、I5がdefinition／retained、I8がprojected visitの実装を所有する
 - `config/fsmc-a11y-oracles.json`とschemaへ、definition／retained／picker／popup／projected visit／route insertの各surfaceについてrole、name、description、state、DOM／AX順、focus order／return、live-region politeness／atomicity／mutation countを固定する。I0はcontract／negative fixtureだけ、I5／I8／I9はsurface実装とrequired Chromium oracle、I11はrelease-ready productionでの全再実行を所有し、axe結果だけで代用しない
 - `config/fsmc-failure-injection.json`へbarrier ID、対象command、fault、commit前後のoracle、owner phaseを、`config/fsmc-test-manifest.json`の全test／scenario entryへtest ID、project、層、`requiredCommand`、`enforcedFromPhase`、`releaseScope: "initial-release" | "future"`を固定する。各test IDはexact 1件の`requiredCommand`を持ち、複数IDが同じsuite commandを共有することは許すが、1 IDの0件／複数command対応、result側だけのcommand、traceabilityの`commands`にない対応を拒否する。traceabilityのrequirement scopeとtest scopeをexact一致させ、初版PD／DoDに必要なtestを`future`へ移す変更を拒否する。failure barrierには`after-vcap-history-source-preflight`、`after-vcap-history-source-reread-before-first-write`、`before-vcap-versionchange-commit`、`after-vcap-versionchange-commit-before-open-success`、`after-legacy-rebase-r0-read`、`after-legacy-rebase-r1-before-first-write`、`before-legacy-rebase-commit`、`after-legacy-rebase-commit-before-r2`、`after-legacy-rebase-r2-before-ui`、`after-durable-visit-state-write`を含める。`config/fsmc-collision-repair-commands.json`へ利用者向け3 command ID、変更可能範囲、owner phase、UI owner、strict-reduction verifierを固定し、内部`fsmc.internal.rebase-legacy-core.v1`がそのallowlistへ入らないことも検証する。future testは`planned`または契約だけを固定した`contract-enforced`であって、初版の選択集合、成功済み、`implementation-enforced`へ入れない
 - `config/fsmc-pre-adoption-repair-commands.json`はexact 1件の`fsmc.repair.legacy-focus-day-scope.v1`、`LegacyFocusDayScopeRepairPortV1`、変更可能core root／nested key、Focus lease、I11 UI ownerを登録する。番号正規化用3 IDの`config/fsmc-collision-repair-commands.json`とは別allowlistとし、相互混入、通常writer／既存full-snapshot commandからのdispatch、未登録participantを拒否する。同commandを`config/fsmc-command-participants.json`、traceability、test manifest、failure injectionへ同じIDでexact登録し、`after-raw-day-repair-preview`、`after-raw-day-repair-lease-before-first-write`、`after-raw-day-repair-core-commit-before-registry-complete`のbarrierを追加する
 - `config/fsmc-failure-injection.json`にはopen handoff用`after-vcap-probe-transaction-complete`、`after-vcap-probe-close-before-upgrade-request`、`on-vcap-upgrade-blocked`、`after-vcap-blocker-close-before-h1`、`after-vcap-upgrade-abort-before-request-error`も登録する。各oracleは自己probe connection 0、upgrade request ordinal exact 1、blocked progress非terminal、同request再開、terminal exact 1、page終了の偽success 0、DB absence時`oldVersion = 0`、success時`request.result` handoff後のreopen 0件を検証する
 - `config/fsmc-safety-findings.json`は`findingId`、source job／engine、`severity: "Critical" | "High"`、`status: "open" | "closed"`、opened／closed commit、`promotion.kind: "engine-agnostic-required" | "webkit-temporary-required"`、test ID、required command、closure test IDをexactに持ち、test ID／required commandをtest manifestの一意な対応と一致させる。test manifestのsafety entryには`enforcedFromPhase`、`status: "planned" | "contract-enforced" | "implementation-enforced"`、`releaseScope: "initial-release" | "future"`、`artifactMode: "pre-release-production-guard" | "release-production-full" | "qa-chromium-only"`を必須にし、初版traceability／DoDに属するIDを`initial-release`、後続版だけのIDを`future`へexact分類する。`requiredSafetyIds(state)`は、pre-releaseなら`releaseScope = initial-release && enforcedFromPhase <= currentPhase && status != planned && artifactMode = pre-release-production-guard`の全ID、release-readyなら`initial-release`かつ`implementation-enforced`の`release-production-full`と`pre-release-production-guard`の全IDを返す。`release-ready`は、全`initial-release` safety entryが`implementation-enforced`で、`releaseScope = initial-release`の`qa-chromium-only`が0件の場合に限りschema-validとする。future safetyは`planned | contract-enforced`かつ`qa-chromium-only`に限定し、全readinessのselected／executed／result、成功済み、`implementation-enforced`へ入れない。I11最終candidateで`release-production-full`へ移すのはinitial-releaseだけとし、future scopeは全readinessのWebKit集合へ入れない。pre-release production guardは選択0件を禁止し、I2～I10およびI11作業中`internal-testing`のsplit機能safetyはnon-promotable QA artifact上の必須Chromiumへ割り当て、到達不能なproduction WebKit testを成功扱いにしない
-- `config/fsmc-webkit-safety-observation.schema.json`は`ciRun`、source SHA、production artifact SHA-256、`selectionMode: "pre-release-production-guard" | "release-production-full"`、implementation-state SHA、test-manifest SHA、Playwright／WebKit version、`requiredSafetyIds(state)`から導出した`manifestSafetyTestIds`、`executedSafetyTestIds`、`{ testId, result: "passed" | "failed" }`のexact結果、`failedSafetyTestIds`、`infrastructureErrors`を共通fieldとしてcanonical unique配列で持つ。全status分岐でresultのtest IDを重複禁止とし、`executedSafetyTestIds = result test IDs ⊆ manifestSafetyTestIds = requiredSafetyIds(state)`、`failedSafetyTestIds = result = "failed"のID集合`を必須にする。future scope／QA-only／未選択IDのresult混入、現在必要IDの欠落、selectionMode／readiness／`ciRun`不一致をschemaとaggregatorで拒否する
+- `config/fsmc-webkit-safety-observation.schema.json`は`ciRun`、source SHA、`productionArtifactTreeSha256`、`productionBuildManifestSha256`、`selectionMode: "pre-release-production-guard" | "release-production-full"`、implementation-state SHA、test-manifest SHA、Playwright／WebKit version、`requiredSafetyIds(state)`から導出した`manifestSafetyTestIds`、`executedSafetyTestIds`、`{ testId, result: "passed" | "failed" }`のexact結果、`failedSafetyTestIds`、`infrastructureErrors`を共通fieldとしてcanonical unique配列で持つ。全status分岐でresultのtest IDを重複禁止とし、`executedSafetyTestIds = result test IDs ⊆ manifestSafetyTestIds = requiredSafetyIds(state)`、`failedSafetyTestIds = result = "failed"のID集合`を必須にする。future scope／QA-only／未選択IDのresult混入、現在必要IDの欠落、selectionMode／readiness／`ciRun`不一致をschemaとaggregatorで拒否する
 - observationのstatusは結果から再計算する。失敗結果が1件以上なら、未実行やinfra errorも併発していても`safety-failed`を最優先し、nonempty `failedSafetyTestIds`と全失敗要因から作る`stableFailureFingerprint`を必須にする。失敗結果0件かつ未実行IDまたはinfra errorが1件以上なら`infrastructure-failed`とし、nonempty `infrastructureErrors`（未実行IDも正規化したerrorとして列挙）とfingerprintを必須にする。全manifest IDを実行し、全結果passed、infra error 0件の場合だけ`passed`とし、failed IDsは空、fingerprintは禁止する。この3分岐以外、矛盾するoverall status、分岐外fieldをschemaとverifierで拒否する。通常表示／a11y失敗は別fieldへ記録し、このstatus unionへ混入させない
-- `config/fsmc-webkit-promotion-result.schema.json`は`ciRun`、source／artifact SHA、safety-findings file SHA-256、選択finding／test ID／required command、実行済みID、`{ testId, command, result }`、failed IDs、infra errorsと`status: "not-required" | "passed" | "failed" | "infrastructure-failed"`のexact unionを持つ。open `webkit-temporary-required`が0件の場合だけselected／executed／results／failed／infraをすべて空、fingerprintなしの`not-required`にできる。1件以上ならselected IDsと各required commandをopen findingおよびtest manifestからexact導出し、全status分岐でresult IDを重複禁止、`executed IDs = result IDs ⊆ selected IDs`、各`result.command = manifest.requiredCommand`、failed IDs＝失敗結果IDsを必須にする。失敗結果ありは`failed`を最優先、失敗結果なしで未実行またはinfraありは`infrastructure-failed`、全selected実行・全pass・infraなしだけ`passed`とし、失敗2分岐だけfingerprintを必須にする。常設`webkit-safety-promotion` jobは0件ならWebKitをinstallせず`not-required`、1件以上なら全昇格testを実行して結果を`if: always()`相当で出力する。schema verifierとrelease aggregatorはstatus／commandを信頼せず集合、manifest mapping、優先順位を再計算し、advisoryで安全事故を検出した現在candidateの結果受渡し、次commitでのrequired昇格、release blockingをこの3契約へ固定する
+- `config/fsmc-webkit-promotion-result.schema.json`は`ciRun`、source SHA、`productionArtifactTreeSha256`、`productionBuildManifestSha256`、safety-findings file SHA-256、選択finding／test ID／required command、実行済みID、`{ testId, command, result }`、failed IDs、infra errorsと`status: "not-required" | "passed" | "failed" | "infrastructure-failed"`のexact unionを持つ。open `webkit-temporary-required`が0件の場合だけselected／executed／results／failed／infraをすべて空、fingerprintなしの`not-required`にできる。1件以上ならselected IDsと各required commandをopen findingおよびtest manifestからexact導出し、全status分岐でresult IDを重複禁止、`executed IDs = result IDs ⊆ selected IDs`、各`result.command = manifest.requiredCommand`、failed IDs＝失敗結果IDsを必須にする。失敗結果ありは`failed`を最優先、失敗結果なしで未実行またはinfraありは`infrastructure-failed`、全selected実行・全pass・infraなしだけ`passed`とし、失敗2分岐だけfingerprintを必須にする。常設`webkit-safety-promotion` jobは0件ならWebKitをinstallせず`not-required`、1件以上なら`npx playwright install --with-deps webkit`後に全昇格testを実行して結果を`if: always()`相当で出力する。schema verifierとrelease aggregatorはstatus／commandを信頼せず集合、manifest mapping、優先順位を再計算し、advisoryで安全事故を検出した現在candidateの結果受渡し、次commitでのrequired昇格、release blockingをこの3契約へ固定する
 - `infrastructureErrors`は`{ code, stage, testId: string | null }`のexact objectだけを許し、version付きJSON Schemaが`code`／`stage` enumを列挙し、message、stack、path、時刻を入れず`(code, stage, testId)`で重複排除・Unicode code point順sortする。`stableFailureFingerprint`はlowercase 64桁hexで、固定property順・空白なしの`{"schemaVersion":1,"artifactKind":...,"status":...,"failedSafetyTestIds":[...],"infrastructureErrors":[...]}`をUTF-8 encodeしたSHA-256とする。failed IDsもUnicode code point順のunique配列とし、observation／promotionで同じ`serializeFailureFingerprintV1` fixtureを共有する。fingerprintは診断上の同一失敗group化だけに使い、release可否、finding close、結果集合の代替authorityにしない
 - FSMC専用required Playwright configにDesktop／Mobile Chromiumの2 projectを、別advisory configにWebKitを作る。requiredはUbuntu 24.04、Node 24.19.0、npm 11.19.0、lockfileのPlaywright／Chromium、workers 1、retries 0、`failOnFlakyTests: true`、`fullyParallel: false`、`trace: "retain-on-failure"`を固定する。Desktopの既定contextは1440×900・DPR 1・`isMobile=false`・mouse・touchなし、Mobileは390×844・DPR 3・`isMobile=true`・touchありとする。さらにDesktop project内の必須manifest testだけが`browser.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1, isMobile: false, hasTouch: true })`という固定`desktop-touch-context`を作り、`touchscreen.tap`で非スマートフォンtouch直接選択を検証する。第3 projectや別性能profileにはせず、default Desktop／Mobileとこの追加contextで選択test 0件を失敗させる
-- 全jobの共通setupは`npm ci`とし、Chromium test runnerだけは加えて`npm exec -- playwright install --with-deps chromium`を必須にする。WebKit jobは11章と15章の専用install契約に従い、build／artifact verifier／aggregatorへ不要なbrowser installを要求しない。run-bound成果物は共通definitionのexact object `ciRun: { runId: decimal-string, runAttempt: integer >= 1 }`を必須にし、production／QA build manifest、required-results、WebKit observation、promotion resultの全てで、workflow runtimeが与えるcurrent run ID／attemptとのexact一致をaggregatorまで再検証する。`config/fsmc-build-artifact-manifest.schema.json`は`schemaVersion`、`ciRun`、`buildPurpose: production | qa`、`databaseTargetMode`、完全source SHA、lockfile SHA-256、readiness、相対output path、canonicalな全file path＋byte SHA-256、artifact全体SHA-256を必須にする。build jobはproduction／QAを別directoryへ1回だけ生成してmanifestと共にcurrent runへuploadし、別jobはcurrent runだけからdownload後に全hash、`ciRun`、source SHA、`buildPurpose`、`databaseTargetMode`、期待readinessを検証してから`*:prebuilt`を実行する。欠落、上書き、別run／別attempt／別source／別purpose／DB target artifactの取り違えを失敗させる
-- `config/fsmc-required-results.schema.json`は`ciRun`、source SHA、implementation-state／test-manifest SHA、`completedThrough`、`currentPhase`、`phaseProgress`、readiness、production artifact SHA-256、`qaArtifactSha256: string | null`、manifestから導出したrequired Exit ID、artifact purpose別selected test／scenario ID、実行済みID、`{ id, command, artifactPurpose: "production" | "qa", result: "passed" | "failed" }`、failed ID、infrastructure error、`status: "passed" | "failed" | "infrastructure-failed"`をexactに持つ。required Exit IDは`in-progress`なら`completedThrough`まで、`exit-candidate`なら`currentPhase`までとし、I11 release-readyだけは全I0～I11とrelease readinessを必須にする。I0／I1／release-ready I11はQA hashをnullかつ全result purposeをproduction、I2～I10と`currentPhase = I11 && readiness = internal-testing`はQA hashを必須にし、production guardはproduction、機能／性能testはQAへexact分類する。selected IDsはtest manifestの`releaseScope = initial-release && enforcedFromPhase <= currentPhase && status != planned`を満たす該当purpose集合とし、全status分岐でresult IDを重複禁止、`executed IDs = result IDs ⊆ selected IDs`、各`result.command = selected manifest entry.requiredCommand`、failed IDs＝failed result IDsを必須にする。失敗resultありを`failed`、失敗0件で未実行またはinfraありを`infrastructure-failed`、全required Exitとselected testを実行・全pass・infra 0件だけを`passed`と再計算し、選択0件、future scope／planned／未選択IDのresult混入、IDに対するcommand欠落／差替え／曖昧対応、自己申告status矛盾を拒否する。各resultが参照するartifact hash、buildPurpose、source、readiness、phase state、`ciRun`、`requiredCommand`をdownload済みmanifestとcurrent workflow runtimeから再計算し、別run／別attempt、stale QA、production／QA取り違え、resultだけのhash／run／command自己申告を拒否する
-- 上記exact artifact schemaを補完し、production／QA build manifestは`foundationQualityResultSha256`を必須とする。finalizerだけが生成するrequired-resultsは同fieldに加え、`functionalResultSha256`、`performanceMode: "qualification-only" | "not-required" | "product"`、`performanceReducedResultSha256`、`fixtureTopologyManifestSha256`、`requirementCatalogSha256`、`traceabilitySha256`、`ciPrerequisitesResultSha256`を必須とする。各fieldをcurrent run／attempt／source／artifactへ拘束し、build manifestへbuild後に生成されるperformance resultを逆参照させない。shardごとのrunner-result SHA mapはreduced result内部だけに持たせ、I0はqualification-only、I1は期待shard／runner集合が空のnot-required、I2以降はmanifestが選ぶproductとする
-- `config/fsmc-foundation-quality-result.schema.json`は共通quality graph／script hash／選択件数／exit／source／toolchain／`ciRun`／statusを持つ。performanceはplan、shard result、reduced resultの3 schemaへ分け、各shardの同一container内calibrationと製品sampleを一体化する。calibration失敗はsample 0件のinfrastructure failure、measured run timeout／budget超過は製品failed、job hard-timeoutやartifact欠落はreducerがmissing shardとしてinfrastructure failureへ再計算し、overall statusの自己申告を信頼しない
-- `config/fsmc-functional-result.schema.json`は`ciRun`、source SHA、`completedThrough`／`currentPhase`／`phaseProgress`／readiness、foundation-quality result SHA、production／QA artifact SHAとpurpose、requirement catalog／traceability／test-manifest SHA、manifestから導出したselected／executed test ID、`{ id, command, artifactPurpose, result }`、failed ID、bounded infrastructure error、`passed | failed | infrastructure-failed`のexact unionを持つ。各functional runnerはtest開始前にcurrent-run ledgerを作り、各test commandの終了を追記する。test processの非0終了、起動前失敗、強制終了で通常finalizeへ到達できなくても、workflowの独立した`if: always()` reporter `finalize:fsmc:functional-result`がledger／job outcomeからschema-validなfailedまたはinfrastructure-failed resultを作る。続くverify／`artifact:fsmc:upload:functional-result`も独立した`if: always()` stepとし、欠落、0 test、未実行、別run／attempt／source／artifact、phase state差、command差替えをsuccessへ変換しない
+- 全jobの共通setupは`npm ci`とし、Chromium test runnerだけは加えて`npx playwright install --with-deps chromium`を必須にする。WebKit jobは11章と15章の`npx playwright install --with-deps webkit`契約に従い、build／artifact verifier／aggregatorへ不要なbrowser installを要求しない。固定Node／npm／lockfile toolchainでrequired command `npm run test:fsmc:playwright-cli-contract`を実行し、そのpositive fixture `npx playwright install --with-deps chromium --dry-run`がexit 0、target `chromium`とflag `--with-deps`をPlaywright CLIへ渡したことをstructured observationで確認する。`npm exec -- playwright install`や`npm exec -- playwright install -- --with-deps`はnegative argument-forwarding fixtureで拒否する。このCLI contractはI0からcanonical `npm run quality` graphのexact 1 named childとして登録し、既存`quality` jobだけが実行してfoundation-quality resultのselected／executed command hashへ含める。別FSMC jobで同commandを再実行したり、quality graph外のadvisory resultで代用したりせず、child 0件／複数、command差、dry-run未実行をquality失敗にする。run-bound成果物は共通definitionのexact object `ciRun: { runId: decimal-string, runAttempt: integer >= 1 }`を必須にし、artifact名を`fsmc-<class>-run-<runId>-attempt-<runAttempt>[-shard-<id>]`へ固定する。consumerはcurrent exact nameを1件だけdownloadし、同名複数を拒否する。旧attempt名はcurrent duplicateへ数えない一方、内容混在・別attempt参照を禁止する。production／QA build manifest、required-results、WebKit observation、promotion resultの全てでworkflow runtimeのcurrent run ID／attemptと一致させる。
+
+- `config/fsmc-build-artifact-manifest.schema.json`は`schemaVersion`、`ciRun`、`buildPurpose: production | qa`、`databaseTargetMode`、完全source SHA、lockfile SHA-256、readiness、相対output path、`files`、`artifactTreeSha256`を必須にする。`files`はmanifest自身`fsmc-build-artifact-manifest.json`のexact 1件だけを除外した全regular fileとexact bijectionの`{ path, byteLength, sha256 }`で、pathはroot相対POSIX `/`、absolute／空segment／`.`／`..`／backslashなし、UTF-16 code-unit順、重複なしとする。nested directory自体は列挙せず、symlink／junction／reparse point／device fileを拒否する。`artifactTreeSha256 = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-build-artifact-file-tree-v1", files })))`とし、manifest bytesは自己参照させず別の`buildManifestSha256`としてdownstream resultが拘束する。build jobはproduction／QAを別directoryへ1回だけ生成してmanifestと共にcurrent runへuploadし、別jobはdownload後にtreeをfilesystemから再構築してtree digestとmanifest bytes SHA、`ciRun`、source、purpose、DB mode、readinessを検証してから`*:prebuilt`を実行する。別root／timezoneの同一treeは同値、path／length／byte／manifest差、欠落、上書き、別run／attempt／source／purposeの取り違えは失敗とする
+- `config/fsmc-required-results.schema.json`は`ciRun`、source SHA、implementation-state／test-manifest SHA、`completedThrough`、`currentPhase`、`phaseProgress`、readiness、`productionArtifactTreeSha256`、`productionBuildManifestSha256`、`qaArtifactTreeSha256: string | null`、`qaBuildManifestSha256: string | null`、manifestから導出したrequired Exit ID、artifact purpose別selected test／scenario ID、実行済みID、`{ id, command, artifactPurpose: "production" | "qa", result: "passed" | "failed" }`、failed ID、infrastructure error、`status: "passed" | "failed" | "infrastructure-failed"`をexactに持つ。required Exit IDは`in-progress`なら`completedThrough`まで、`exit-candidate`なら`currentPhase`までとし、I11 release-readyだけは全I0～I11とrelease readinessを必須にする。I0／I1／release-ready I11はQAのtree／manifest hashを両方nullかつ全result purposeをproduction、I2～I10と`currentPhase = I11 && readiness = internal-testing`はQAの両hashを必須にし、production guardはproduction、機能／性能testはQAへexact分類する。selected IDsはtest manifestの`releaseScope = initial-release && enforcedFromPhase <= currentPhase && status != planned`を満たす該当purpose集合とし、全status分岐でresult IDを重複禁止、`executed IDs = result IDs ⊆ selected IDs`、各`result.command = selected manifest entry.requiredCommand`、failed IDs＝failed result IDsを必須にする。失敗resultありを`failed`、失敗0件で未実行またはinfraありを`infrastructure-failed`、全required Exitとselected testを実行・全pass・infra 0件だけを`passed`と再計算し、選択0件、future scope／planned／未選択IDのresult混入、IDに対するcommand欠落／差替え／曖昧対応、自己申告status矛盾を拒否する。各resultが参照するtree／manifest hash、buildPurpose、source、readiness、phase state、`ciRun`、`requiredCommand`をdownload済みmanifestとcurrent workflow runtimeから再計算し、別run／attempt、stale QA、production／QA取り違え、resultだけのhash／run／command自己申告を拒否する
+- required-resultsはさらに`performanceRerunApprovalResultSha256`と`performanceRerunApprovalDigest: string | null`を必須にし、current attemptのsole approval result実bytesへ前者を再hashする。run attempt 1ではschema-valid `not-required`とnull、attempt 2では`approved`とplan／reduced resultと同じ`FsmcPerformanceRerunApprovalV1.approvalDigest`だけを許す。attempt 2のrejected／欠落／複数／別digest、attempt 1でnon-null、approvalのprior required-results hashが実bytesと不一致ならoverall resultを自己申告statusにかかわらずfailedへ再計算する
+- 上記exact artifact schemaを補完し、production／QA build manifestは`foundationQualityResultSha256`を必須とする。finalizerだけが生成するrequired-resultsは同fieldに加え、`functionalResultSha256`、`performanceMode: "qualification-only" | "not-required" | "product"`、`performanceReducedResultSha256`、`performanceRerunApprovalResultSha256`、`fixtureTopologyManifestSha256`、`requirementCatalogSha256`、`traceabilitySha256`、`ciPrerequisitesResultSha256`を必須とする。各fieldをcurrent run／attempt／source／artifactへ拘束し、build manifestへbuild後に生成されるperformance resultを逆参照させない。shardごとのrunner-result SHA mapはreduced result内部だけに持たせ、I0はqualification-only、I1は期待shard／runner集合が空のnot-required、I2以降はmanifestが選ぶproductとする
+- `config/fsmc-foundation-quality-result.schema.json`は共通quality graph／script hash／選択件数／exit／source／toolchain／`ciRun`／statusを持つ。performanceはplan、job-start absolute deadline、3段階lifecycle snapshot、shard result、reduced resultのschemaへ分け、各shardの同一container内calibrationと製品sampleを一体化する。browser install／runner envelope／calibration失敗はdeadline＋preproduct snapshot、started snapshot不在、sample 0件、固定allowlist証跡、schema-valid reporter resultが揃う場合だけinfrastructure候補、measured run timeout／budget超過／absolute deadline watchdogは製品failedとする。job hard-timeout、deadline／result／snapshot artifact欠落、preproduct前終了は開始前であってもindeterminate failureとして非再実行にし、workflow outcomeだけからallowlist reasonを捏造しない。overall statusの自己申告を信頼しない
+- `config/fsmc-functional-result.schema.json`は`ciRun`、source SHA、`completedThrough`／`currentPhase`／`phaseProgress`／readiness、foundation-quality result SHA、`productionArtifactTreeSha256`／`productionBuildManifestSha256`、`qaArtifactTreeSha256`／`qaBuildManifestSha256`とpurpose、requirement catalog／traceability／test-manifest SHA、manifestから導出したselected／executed test ID、`{ id, command, artifactPurpose, result }`、failed ID、bounded infrastructure error、`passed | failed | infrastructure-failed`のexact unionを持つ。各functional runnerはtest開始前にcurrent-run ledgerを作り、各test commandの終了を追記する。test processの非0終了、起動前失敗、強制終了で通常finalizeへ到達できなくても、workflowの独立した`if: always()` reporter `finalize:fsmc:functional-result`がledger／job outcomeからschema-validなfailedまたはinfrastructure-failed resultを作る。続くverify／`artifact:fsmc:upload:functional-result`も独立した`if: always()` stepとし、欠落、0 test、未実行、別run／attempt／source／artifact、phase state差、command差替えをsuccessへ変換しない
 - `config/fsmc-ci-prerequisites-result.schema.json`は`ciRun`、source SHA、prerequisite config SHA、確認command manifest SHA、`currentRequiredAt`、repository／branch、repository／environment adminとrequired reviewer設定可否、package作成／public化／link確認権限、Actions／GHCR availability、required context接続、publisher／OCI source label／linked repository／visibility／exact image digest匿名pull／runner qualification、実際の最小permission名、consumer package permission／credential不在、fork PR token方針、`pre-I0 | I0-exit | release-ready`ごとの`not-yet-required | passed | failed | infrastructure-failed` result、bounded infrastructure error、`checkedAt`をexactに持ち、credential値、token、secret内容、自由記述command出力を禁止する。verifierはcurrent stage以前の全resultを再計算し、未来stageだけを`not-yet-required`にできる。常設`fsmc-ci-prerequisites` jobはread-only observerを実行し、独立した`if: always()` reporter／verifier／`artifact:fsmc:upload:ci-prerequisites-result`でcurrent-run artifactを必ず生成する。admin／package権限不在、Actions／GHCR／required context不在、到達済みstageのlabel／link／visibility／digest pull／qualification失敗、observer起動前失敗を欠落や前run resultで補わない
 - `config/fsmc-traceability.json`と`verify:fsmc:i0`を実装し、schema、fixture hash、fixed A、test membership、phase ownership、readiness、production override不在を一括検証する。該当test 0件、重複ID、owner不在、`--passWithNoTests`相当を失敗させる
 - `config/test-project-membership.json`、`config/coverage-policy.json`、`config/architecture-policy.json`、dependency usage policy、`.github/workflows/quality.yml`をI0の同じPRで更新し、既存foundation qualityを`fsmc-required-gate`と並列のrequired upstreamとして維持する。新unit／integration／worker／browser testのmembership件数、coverage owner、feature／UIからpersistenceへの禁止edge、Worker assetを機械検証する。FSMC専用commandは0 testやallow-emptyを拒否し、既存一般`test:worker`のallow-empty設定を流用しない。JSON Schema validatorにAjvを使う場合はdirect dependencyへ追加してusage policyを更新し、transitive dependencyの直接importを禁止する
-- 固定job／status `fsmc-required-gate`と`verify:fsmc:phase-gate`を実装し、`contracts-only`／`internal-testing`のmerge判定と`release-ready`の`verify:fsmc:release-readiness`呼出しをsource stateだけで切り替える。既存branch-protected終端contextの`needs`へ接続するか、証明不能時は`config/fsmc-ci-gate.json`のRepository Maintainer one-time setupをI0 Exitまでに完了する。全readiness値、phase境界、state／artifact不一致、`releaseScope = future`のtestをpre-release／release candidateで省略するcaseと、そのresultを初版gateへ混入するnegative caseをcontract testにする
+- 固定job／status `fsmc-required-gate`と`verify:fsmc:phase-gate`を実装し、`contracts-only`／`internal-testing`のmerge判定と`release-ready`の`verify:fsmc:release-readiness`呼出しをsource stateだけで切り替える。既存required `quality`へ逆向き`needs`を追加せず、Repository Maintainerが`config/fsmc-ci-gate.json`のone-time setupで`fsmc-required-gate`自体をI0 Exit候補の同一HEADから直接required化する。全readiness値、phase境界、state／artifact不一致、`releaseScope = future`のtestをpre-release／release candidateで省略するcaseと、そのresultを初版gateへ混入するnegative caseをcontract testにする
 - Critical／High severity、初版／後続版、外部証跡なし、`PD-18`の部分欠損と完全消去の保証境界、advisoryで見つかった安全事故のrequired昇格・解消手順をADRと利用者文書雛形へ固定する
 - `config/fsmc-requirement-catalog.json`とschemaを作り、normative ID集合を全PD／RC／`DOD-FSMC-*`／`EXIT-FSMC-I0-001`形式の全Exitにexact限定する。各entryへ`requirementId`、kind、主`sourceAnchor`、IDを除くstatement SHA-256、parent ID、owner phase、release scope、重複なしnonempty `supportingSourceAnchors`を固定する。章2～15のcode fence／見出し／例示だけの行を除く全table row・list itemはexact 1件以上の`supportingSourceAnchors`へ入れる。ただし7.2の一致するinformative start／end marker間だけはscan対象外とし、marker IDの不一致、入れ子、未閉鎖、7.2外のmarker、marker内anchorのcatalog登録を失敗させる。同じ補足が複数要件を具体化する場合はcanonical ID順で全てへ結び、補足本文を別のIDなしnormative authorityとして扱わない。`config/fsmc-traceability.json`は同じID集合にfixture／test／command／implementation symbol／document／statusを対応させ、test manifest全entryのnonempty `requirementIds`とscopeを一致させる。cross-verifierは未追跡または存在しない補足anchor、ID集合の重複・欠落、statement drift、catalog／traceability／test manifestの集合差、初版requirementのfuture化、enforced requirementのfixture／test／command欠落を拒否する。required-resultsはcatalog／traceability SHA、selected／satisfied requirement ID集合を持ち、release gateがinitial-release集合から再計算する
 - event settings root／bridge／legacy transition、DB version provenance、guided-delete coverage closure、projection root revision、portable historical owner、profile別bootstrap participantの各schema／configをI0成果物へ登録する。failure injectionには既存Vcap／rebase境界に加え、`after-event-settings-idb-commit-before-shadow-write`、`after-event-settings-shadow-write-before-bridge-ack`、`after-destructive-coverage-snapshot`、`before-guided-delete-coverage-recheck`を含める
@@ -5308,17 +6840,19 @@ I0が作るpublisherの唯一のpathは`.github/workflows/fsmc-performance-runne
 Exit:
 
 - **EXIT-FSMC-I0-001** — `npm run verify:fsmc:i0`、production artifact作成後の`npm run verify:fsmc:i0:prebuilt`、`npm run test:fsmc:i0:prebuilt`、固定旧版A hash／起動smokeが成功し、Desktop／Mobile各projectの選択test数が1件以上である
-- **EXIT-FSMC-I0-002** — `verify:fsmc:pre-i0-baseline`がrecorded SHAのdetached worktreeで`npm ci`後にclean status、`git diff --check`、再帰展開graph hashが一致する`npm run quality`の成功を再現し、tracked／untracked生成、skip／waiver／known failureが0件である
+- **EXIT-FSMC-I0-002** — `verify:fsmc:pre-i0-baseline`がrecorded SHA／treeのdetached worktreeで`npm ci`後に開始・終了HEAD／tree／clean status、worktreeとmanifest固定`baselineSourceSha..i0StartHeadSha`の開始・終了`git diff --check`、再帰展開graph hashが一致する`npm run quality`成功の9段を再現する。tracked／untracked生成、range差し替え、skip／waiver／known failure、過去attempt result再利用が0件である
 - **EXIT-FSMC-I0-003** — `config/fsmc-implementation-state.json`の`baselineSourceSha = 2eaba922816e8b263c6479e81ab9f265321654b2`、着手前に一度固定した`i0StartHeadSha`、`completedThrough = "pre-I0"`、`currentPhase = "FSMC-I0"`、`phaseProgress = "exit-candidate"`、`readiness = "contracts-only"`がschemaに合格し、最初のI0 commitの`in-progress`から許可遷移だけで到達する。`baselineSourceSha..i0StartHeadSha`の全変更file、契約影響、既実装FSMC範囲をinventoryへ記録し、I0実装commitを理由にbaselineまたは`i0StartHeadSha`を追更新しない。固定旧版Aとは混同せず、manifestの全hashが一致する
 - **EXIT-FSMC-I0-004** — readinessは`contracts-only`で、production DB、runtime UI、business保存動作を変更せず、production artifactにQA override経路がない
-- **EXIT-FSMC-I0-005** — 全schema／fixture／configがversion付きverifierに合格し、番号・CAS・control・identity・番号collision repair 3 IDとpre-adoption raw-day repair 1 IDの別allowlist・fingerprint・retention・Backup・geometry、event-settings root／bridge、atomic `Vcap` bootstrap、3 capability snapshot、event名基準collision witness付き`capability-adoption-blocked`、unsupported、presence／progress／terminalを含むopen-result契約、null決定表、probe close／same-request／exact-one terminal、proposal→persisted event authority、Focus token／one-shot lifecycle lease ledgerの全正常・不正遷移、raw-day total／injective／closed replacement／cardinality／map 6面／Focus occupancy、3 counterのexact exhaustion reasonと副作用0件、authority別candidate配列、root policy／total historical evidence／logical-root mutationとadministrative fence writeの分離、legacy core／shadow transition、destructive coverage closure、projection checkpoint全体digest、portable historical owner、WebKit safety、functional／CI prerequisite always-run result、shard reducer／required-results finalizerのnegative contract testが実行される
+- **EXIT-FSMC-I0-005** — 全schema／fixture／configがversion付きverifierに合格し、番号・物理slot／可変論理location・局所exclusion対duplicate-physical fatal・selected hall polygon・Pointer全遷移・forced picker・execution reorder、CAS・control・identity・番号collision repair 3 IDとpre-adoption raw-day repair 1 IDの別allowlist・fingerprint・retention・Backup pair／V2-only total matrixとdomain-separated V2 digest・build file-tree digest、event-settings root／bridge、atomic `Vcap` bootstrap、3 capability snapshot、event名基準collision witness付き`capability-adoption-blocked`、unsupported、presence／progress／terminalを含むopen-result契約、null決定表、probe close／same-request／exact-one terminal、proposal→persisted event authority、Focus token／one-shot lifecycle lease ledgerの全正常・不正遷移、raw-day total／injective／closed replacement／cardinality／map 6面／Focus occupancy、3 counterのexact exhaustion reasonと副作用0件、authority別candidate配列、root policy／total historical evidence／logical-root mutationとadministrative fence writeの分離、legacy core／shadow transition、destructive coverage closure、projection checkpoint全体digest、portable historical owner、WebKit safety、functional／CI prerequisite always-run result、shard reducer／required-results finalizerのnegative contract testが実行される
+  I0-005のfixtureは`RoutePolygonFingerprint`の開始点／向き同値と頂点／hall／revision差、active／non-active pointer move、reorder read-only root／item／association witness、Backupのscope→prepared→verification→handoffにわたるpair／構造V2-only／resource V2-only／standalone V1の不可能組合せ、source SHA／snapshot revision／root vector／snapshot digestのpair role差、root順shuffle、BMP／astral key、別slice混在、未acknowledged standalone handoff attempt、`v2-export-failed` 7 reasonのfull fixed-point state／typed sink receipt／source binding／config SHA／field単独差、role別self-validation tuple、immutable bytes witness、handoff receipt objectと0／1／2 receipt partition、issues／receipt digest単独差、build tree／manifest単独差を含む。固定toolchainのrequired Playwright CLI contractもpositive dry-runと旧形式negativeの双方を実行する。
+
 - **EXIT-FSMC-I0-006** — `releaseScope = future`のscenarioは`planned`か契約だけを固定した`contract-enforced`で担当phaseとtest IDを持つが、初版のselected／executed／failed集合、planned残存違反、`implementation-enforced`、成功済みへ混入していない。初版requirement／PD／DoDに紐づくentryは全て`initial-release`である
 - **EXIT-FSMC-I0-007** — 固定旧版AのV1 unknown／anchor保持・欠落matrixと自己動作が実測済みで、旧版Aのhealthy legacy-mutable-core-only更新、candidateの正常吸収／追加と不正消失／差替え、anchor missing／invalid／duplicate、invalid-only／duplicate-only／別event群でのinvalid＋duplicate併発、同一event複合rowのschema／semantic reject、reason順shuffle／重複／witness・digest差、番号衝突、fence／capability破損を区別するrebase／bootstrap fixtureと全barrierがI2／I11へ割り当て済みである。新版Bによるanchor保持、DB fallback、atomic command、Backup V2、UI、性能もI2～I11のExitへ割り当てる
-- **EXIT-FSMC-I0-008** — FSMC性能configの全製品上限、62 scenario-profile key、最大54 shard、OFF pair同居順、300分静的実行上限、330分job timeout、runner provider／immutable image／calibration契約が非nullで、全shard bound検証、synthetic missing／duplicate／stale／別attempt resultを落とすreducer、実runnerのqualification-only calibrationが成功する。最大fixture manifestを再生成してpayload／topology／root hashが一致し、OFF／ONが同じ`dataTopologySha256`である
+- **EXIT-FSMC-I0-008** — FSMC性能configの全製品上限、62 scenario-profile key、最大54 shard、`max-parallel = 12`、OFF pair同居順、1 shard計算上限300分／job timeout 330分が非nullである。54 shardは5 wave、computed wall-clock 1,500分／timeout ceiling 1,650分、runner cap 16,200分／ceiling 17,820分／attemptへ再計算される。I0 qualification-onlyはexact 12 `jobIntervals`をhalf-open UTC millisecond区間としてend-before-startで走査し、queueを除くobserved concurrency 12以上とunion wall-clock 360分以下を実測する。canonical shard IDを12 laneへ割り当てた`declaredShardExpectedMinutes`から`projectedFiveWaveMinutes <= 360`も再計算する。test／automatic workflow retry 0、schema-validな開始前allowlisted infrastructureだけCI Operator承認付き`Re-run all jobs`で全required jobを同一sourceの新attemptへexact 1回再実行し、attempt固有artifact名、最大2 attemptのperformance shard matrix部分だけ3,300 matrix分／35,640 runner分、partial rerun／attempt混在／product failure rerun禁止をschema検証する。Actions job `started_at + 300分`で製品child treeを停止してfailedとし、同じ`started_at + 330分`のhard deadlineまでに独立`if: always()` reporterを完了するabsolute deadline契約、全shard bound、synthetic missing／duplicate／stale／別attempt resultを落とすreducer、runner provider／immutable image／calibrationが成功し、最大fixtureのpayload／topology／root hashとOFF／ON同一`dataTopologySha256`も一致する
 - **EXIT-FSMC-I0-009** — `config/fsmc-virtual-list.json`の全component、listbox pattern、focus model、row ID、scroll／mount契約がschema／negative fixtureに合格し、I0 production artifactにruntime UI変更がない
 - **EXIT-FSMC-I0-010** — `config/fsmc-capability-adoption.json`がsource／fixture／legacy A／authoritative provenance manifestから`adopt-vcap`へ再計算され、commit `81795770cca30c68bb1526f989dcd7ab0af1edb4`の同名DB6／`memberRouteItems`を含むdistributed／unknown conflictが0件である。採択不能ならI0 Exitは失敗のまま代替ADRへ送る。固定旧版A archive、change-surface、quality／membership／coverage／architecture policyも全てgreenである
-- **EXIT-FSMC-I0-011** — `fsmc-required-gate`が`in-progress`では`completedThrough`まで、`exit-candidate`では`currentPhase`までを`phase-gate-passed`にできる一方で公開可能と表示せず、I11 `release-ready` stateでは全I0～I11と`verify:fsmc:release-readiness`なしに成功しない。`fsmc-ci-prerequisites`のrepository／environment admin、required reviewer設定、package作成／public化／link確認権限、checkedAt／read-only command、Actions、exact OCI source label付き`infra/fsmc-perf-runner/Dockerfile`、exact publisher workflow／job／manual trigger／default-branch guard／approval environment、publicかつrepository-linkedなGHCR URI／visibility、publisher-only write permission、consumerのpackage permission／credentialなし匿名pull、`quality.yml` consumer jobのliteral `container.image`／`container.options`、runner qualification、既存required終端context dependencyまたはone-time required設定がI0-exit stageで実在し、context名とbranch protectionをphase／findingごとに変えない
-- **EXIT-FSMC-I0-012** — `PD-01`～`PD-18`、`RC-01`～`RC-23`、全DoD／Exit IDがrequirement catalog、traceability、test manifestで集合一致し、statement hash、owner phase、release scope、fixture、test、command、利用者文書または非対象理由へ追跡できる
+- **EXIT-FSMC-I0-011** — `fsmc-required-gate`が`in-progress`では`completedThrough`まで、`exit-candidate`では`currentPhase`までを`phase-gate-passed`にできる一方で公開可能と表示せず、I11 `release-ready` stateでは全I0～I11と`verify:fsmc:release-readiness`なしに成功しない。`fsmc-ci-prerequisites`のrepository admin、required reviewer設定、package作成／public化／link確認、checkedAt／read-only command、Actions、exact OCI source label付きrunner Dockerfile、exact publisher workflow／job／manual trigger／default-branch guard／approval environment、publicかつrepository-linkedなGHCR URI／visibility、publisher-only write permission、consumerのpackage permission／credentialなし匿名pull、`quality.yml`のliteral container、runner qualificationがI0-exit stageで実在する。既存`quality`をrequiredのまま独立producerとして維持し、同一HEADで`fsmc-required-gate`自体をone-time direct required化したruleset再読結果が一致する。既存終端contextへの逆接続、循環needs、phase／findingごとのcontext変更を拒否する
+- **EXIT-FSMC-I0-012** — `PD-01`～`PD-18`、`RC-01`～`RC-39`、全DoD／Exit IDがrequirement catalog、traceability、test manifestで集合一致し、statement hash、owner phase、release scope、fixture、test、command、利用者文書または非対象理由へ追跡できる
 - **EXIT-FSMC-I0-013** — day preflightの`authorityRevisionSubset`→domain-separated digestとbootstrap source／H0 core／expected／fresh observed subsetのbyte一致、event-wide hall source row→request digest→plan保存request→choice／assignment→receiptの再構築、Focus lifecycle transition／lease digestとtyped acquisition result、拒否時のFocus session record mutationとlease ledger transitionの分離をschema、strict compile fixture、field単独差／ABA／counter exhaustionのnegative fixtureで検証する
 
 ### FSMC-I1: 共通ドメイン
@@ -5328,7 +6862,7 @@ Exit:
 - `spaceNumber.ts`
 - `splitGeometry.ts`
 - `EventEnablePreflightResult`のpure判定と、衝突一覧・原文・修正案を返す副作用なしvalidator。control／DB commandへの接続はI2が所有する
-- `MapLocationIndex`、item resolver、空側対応hit-test、DOM列挙API
+- 物理geometry slotと可変個数のwhole／a／b／unsupported論理locationを分離した`MapLocationIndex`、source item snapshotからunsupported suffix requestをtotal導出するpure API、item resolver、空側対応hit-test、DOM列挙API
 - 通常／集中モード共通viewport adapter
 - `layoutMode`から独立した`isSmartphoneSelectionMode`判定と、`none | single | ambiguous`を入力別閾値へ結ぶinteraction policy
 - mapped／mapless／legacy-unresolvedの`SpaceIdentity`、`ExecutionVisitIdentity`、`PhaseVisitIdentity`、各canonical keyの型・正規化・生成契約
@@ -5338,10 +6872,12 @@ Exit:
 - 1-based `GridCellAddress`、整数`SubcellPathNode`、0-based連続`MapPoint`、結合セルbounds、routing adapter
 - map-level authoritative fingerprint、entry-level block／location fingerprintと通常編集planner
 - `SpaceSideIdentity`、`ResolvedRouteVisitPoint`、`SplitRouteSegment`、`RouteResolution`
+- data-only `RoutePathConstraintV1`、polygon canonicalizer／fingerprint、inclusive point／segment predicate、route cache signature builder。runtime pathfinder接続はI10が所有する
+- `planExecutionVisitOrderMutationV1`と`planHallRouteAndExecutionOrderMutationV1`のpure contract。永続Port／既存command接続はI7が所有する
 - 分割線境界と低表示サイズ判定
 - 表示用原文と識別用番号の分離
-- 同一ブロック内の重複番号と重複物理`(row, col)`を配列順で解決せず対象外／`map-data-untrusted`にするvalidation
-- 重複block ownership、merge越境、重複mergeを対象外にするvalidation
+- 同一ブロック内の重複番号、重複block ownership、番号領域重複、merge越境をconnected component単位のcanonical local exclusionにし、単一componentで2～4原因が併発する場合も全`reasons`を固定enum順で保持して、影響外slotを`ready-with-exclusions`で継続するvalidation。入力／原因発見順shuffle、reason欠落／重複／順序差をnegative fixtureにする
+- 重複物理`(row, col)`だけをmap-wide `map-data-untrusted`にし、local exclusionと同じbranchへ潰さないvalidation
 - event名基準`auditLegacyFocusDayScopesV1`、注入allocator付き`proposeEventAuthorityAssociationsV1`、proposal／persisted association共通の`deriveDurableVisitScopesV1`／`loadPersistedEventAuthorityV1`、`LegacyFocusDayScopeRepairPlanV1` pure planner。DB open、IDB write、process-local Focus registry接続はI2／I7／I11が所有する
 
 Exit:
@@ -5349,8 +6885,8 @@ Exit:
 - **EXIT-FSMC-I1-001** — 4方向、分割なし、全番号パターンのunit testが合格
 - **EXIT-FSMC-I1-002** — 描画とhit-testが同じgeometry結果を使用する
 - **EXIT-FSMC-I1-003** — 回転前後で同じ地図領域を示すproperty testが合格
-- **EXIT-FSMC-I1-004** — preflight衝突0件では`01a`と`1a`が同じlocationへ解決され、衝突ありではpure `EventEnablePreflightResult`が`reject`と衝突原文・修正案を返してlegacy identityを維持する。I1ではruntime enable command成功／失敗を主張しない。`26c`／`26c2`と`26d`／`26ab`は相互に異なるidentityとなり、safe integer外や不正文法を数値化しない
-- **EXIT-FSMC-I1-005** — 商品なしのa/b側をhit-testとDOM列挙の両方で解決でき、`whole`／unsupportedを「側未設定」と列挙し、重複番号・領域競合・merge越境を推測処理しない
+- **EXIT-FSMC-I1-004** — preflight衝突0件では`01a`と`1a`が同じlocationへ解決され、衝突ありではpure `EventEnablePreflightResult`が`reject`と衝突原文・修正案を返してlegacy identityを維持する。I1ではruntime enable command成功／失敗を主張しない。同じsplit済み物理slot上で`26c`と商品枝番`26c2`は同じunsupported suffix `c` locationへ解決し、distinctな論理`LocationKey`集合は`{ 26, 26a, 26b, 26c／26c2, 26d, 26ab }`となる。source item snapshotからこの可変個数集合を導出し、whole／unsupportedだけがwhole-cell anchorを共有する。item／association入力をshuffleしても`eventItemIds`／`items`の同index exact bijection、両digest、index revision、location集合がbyte同値である。safe integer外や不正文法を数値化しない
+- **EXIT-FSMC-I1-005** — 商品なしのa/b側をhit-testとDOM列挙の両方で解決でき、`whole`／unsupportedを「側未設定」と列挙する。重複番号、複数owner、番号領域重複、merge越境があるmapでも影響componentだけをcanonical exclusionにし、無関係なlocation、描画、訪問、route inputを維持する。重複物理`(row, col)`だけは`index = null`のmap-wide fatalとなり、両branchをshuffleしても結果がbyte同値である
 - **EXIT-FSMC-I1-006** — maplessとlegacy-unresolvedを共有訪問projection用identityとして維持し、`MapLocationIndex`、geometry、hit-testへ架空のmap／block／cellを渡さない
 - **EXIT-FSMC-I1-007** — `manualHallId` X→Y、X→未指定、未指定→X、hall削除、hall remap、mapped↔mapless、hall-unassigned↔resolvedが固定transitionへ一致する。stable hall IDの表示名変更では`LocationKey`、訪問順、route signatureを変更せず、dangling manual hallと複数候補を別hallへ推測接続しない
 - **EXIT-FSMC-I1-008** — `ProjectedPhaseVisit`／`ProjectedVisitListRow`は同一`PhaseVisitProjectionSnapshot`から生成され、mapless／legacy-unresolvedを一覧から落とさず`canJumpToMap=false`とする。代表item、row／col、consumer独自番号parseからvisit IDを再構築しない
@@ -5358,6 +6894,9 @@ Exit:
 - **EXIT-FSMC-I1-010** — 狭幅Desktop profileと`desktop-touch-context`は非スマートフォン規則、Mobile Chromium profileは全倍率pickerとなり、mouse／touchの閾値・曖昧帯の直前／一致／直後と0／45／90度のscreen空間順・DOM順・読み上げ順が固定期待値に一致する
 - **EXIT-FSMC-I1-011** — `ProjectionDigestDescriptorV1`が実装の`PersistenceDigestDescriptor`と同じalgorithm／canonicalization／valueの3 fieldだけを持ち、checkpoint nullはabsent、presentは構造全体をdigestする。同committedRootでabsorbedCandidatesまたはupdatedAtだけが違うgolden、root順shuffle、不正descriptorをbuilder／schema／runtimeが同じ結果にする
 - **EXIT-FSMC-I1-012** — event名／raw-day preflightはcollision時にID allocatorを0回、collision-free時も全anchorを先にtotal parseしてからevent集合とexact bijectionのproposalを1回だけ作る。anchor invalid／duplicate tokenの単独、および別event群での併発はcanonical reason集合、event名uniqueな全participant、全観測を拘束するdigest付き`event-authority-adoption-blocked`、同一eventのinvalid＋duplicate複合rowは型／schemaでreject、allocator unavailable／3回衝突はtyped proposal failureとなり、proposal／request／write 0件にする。proposal after-imageとpersisted associationから同じ`ResolvedEventAuthorityV1`／scope／event bases／aggregate digestを再構成し、association missing／extra、anchor missing／invalid／mismatch／duplicateの複合event-local集合、global複合reason、reason順shuffle／重複、witness／digest差、old proposal replayを拒否する。raw-day repair plannerはaffected eventの全semantic domainをtotal／injective／closedに写し、全day-scoped source集合のalias group間exact partition、present source↔assignment exact bijection、day-scoped＋event-wide hallを跨ぐglobal target injectivity、event-wide hall source、map request↔decision 6面、Focus source／target、retirable core absenceとpreserved queue archive integrityを一つのplanへ拘束する。複数event同relative keyを許すpositiveと、同event cross-group duplicate、2 rename→1 target、hall target容量不足、day／event-wide target衝突、zero-member execution partition rowをtyped rejectにする。可変なのは`distinctNormalizedDayScopeCount`／`executionBucketCount`／`hallDefinitionSlotCount`／`hallRouteSlotCount`の4 countだけで各決定式どおり遷移させ、`hallDefinitionEntryCount`／`hallRouteListCount`／`hallRouteItemReferenceCount`、execution reference exact-once、その他のcardinality／payload bytesを維持する。partial指定、many-to-one、domain外occupied target、choice不整合、physical drop／copy、Focus／external ABAをwrite authorityなしのtyped rejectにする
+
+- **EXIT-FSMC-I1-013** — hallの1-based `{ row, col }`をexact `{ x: col - 0.5, y: row - 0.5 }`へ一度だけ変換し、既存utility／Canvasとnew DTOで同じpolygon／point／segment判定になる。`validateHallPolygonContractV1`をhall editor／import／Backup／routeが共有し、4頂点、面積`3.999…`／`4`、in-bounds covered cell 0／1件、自己交差の境界でerror code集合がbyte一致する。whole-map／選択hallのcanonical polygonでpoint、subcell隣接segment、simplification後segment、connector、same-cell directのinclusive predicateが同じ結果を返す。開始頂点／向きだけが異なる同一polygonは同じ`RoutePolygonFingerprint`、頂点／hall／revisionの単独差は別fingerprintとなり、検証済みpolygon fingerprintを含むconstraint fingerprint差でcache signatureが変わる。直値／二重offset／軸逆転、凹polygonを端点だけで横断する線、別map／hall、stale revision、polygon／fingerprint差を拒否する
+- **EXIT-FSMC-I1-014** — execution visitのexact permutationだけを受理するreorder plannerとhall route＋execution order plannerが、raw item ID列／member相対順をbyte同値に保つ。`readOnlyExpectedRoots`はfull expected vectorのexact subsetであり、各full rowを`toProjectionInputRootRevisionV1`へ通したcanonical projectionだけが`executeModeItems` membershipとitem／association witness rootとのexact bijectionになり、resultへfull subsetと両witnessをbyte同値に返す。item／association rowはexact identity DTOのcanonical payload bytesと別domainのbranded digestを持ち、previewとcommitでfresh snapshotから再計算する。両witness digestは固有domainでroot／payload／orderを、自身を除いて拘束する。domain-separated preview digestはcommand ID／intent、scope／revision、before／after order、expected／read-only roots、両witness、nullable hall after-imageの全fieldを拘束し、resultが同値で返す。同値payload、payload 1 field差、canonical bytes差、item／association domain swapを含む各field／order／digest-only差、full subset／projectionの欠落・余分・変換差、item／associationの別snapshot、unknown／duplicate／missing visit、非全単射、stale basisをwrite authorityなしのtyped rejectへ写す
 
 ### FSMC-I2: ローカル制御、DB capabilityと保存基盤
 
@@ -5374,7 +6913,7 @@ Exit:
 - recovery state、6.1.1のdiagnose／trusted-core export port／eligible atomic resetと、実profileの全object store／削除local keyを閉包検査する`DestructiveProfileCoverageV1`。各targetを`backup-covered | reconstructible-internal | uncovered`へexact 1件分類し、unknown／空だが未登録／schema drift／0件・複数coverageは`incomplete | indeterminate`として`unsupported-stop`、delete 0件にする。破壊直前もexclusive connection下でschema／record root／raw witness／inventory digestを再検査し、resume journalへcoverage manifest SHAとclosure digestを保存する。通常V2 restoreとresetを同じcommandにしない
 - 現行CASへの参加と複数タブ競合表示
 - raw-day repair向けにpreview時のexpected full core vectorとexact changed-root集合を受けるCAS primitiveを実装し、`LegacyFocusDayScopeRepairPortV1`へ提供する。現行after-only `commitApplicationSnapshotAtomically`からは到達不能にし、I2ではcontract／integration harnessだけ、I11でpre-adoption commandとproduction UIへ接続する
-- `SplitMapLocalControlPort`、端末全体OFF、event別enabled、同一profile内のcontrol CAS。preview／enable／disableのpublic登録はQAとrelease-readyだけとし、pre-release productionは内部codeが存在してもpublic registry／UIを持たず直接dispatchをwrite 0件で拒否する
+- `SplitMapLocalControlPort`、端末全体OFF、event別enabled、端末共通`forceSplitPicker`、同一profile内のcontrol CAS。`setForceSplitPickerAtomically`はhealthy rootの最新revisionを再検証し、device／event OFF中にもtoggleだけを保存できる。preview／enable／disable／picker preferenceのpublic登録はQAとrelease-readyだけとし、pre-release productionは内部codeが存在してもpublic registry／UIを持たず直接dispatchをwrite 0件で拒否する
 - I0の`NormalizationCollisionRepairPort` allowlist dispatcher。I6／I7がowner commandを`implementation-enforced`にするまでは対応command IDと通常identity writerを`repair-command-not-implemented`で明示拒否し、通常writerを修復経路として代用しない
 - pure `classifyLegacyCoreTransitionV1`と、利用者向けrepair allowlistから独立した内部rebase／event-settings reconcileを実装する。全legacy-mutable core、inventory上の全potential candidate物理store、5 payload root、fenceを同一transactionでlock・再読込し、healthyな旧版差だけについてassociation／status／durable visit transition／canonical event settingsとfence history／baselineを原子的に進める。authority正常な`rebase-required | pending`に限りdevice／event／readiness状態に依存せず実行し、完了までsplitをlegacy fallback／read-onlyとする。recovery-required安全モードでは実行しない
 - 初回event enableに必要な既存event／day-map／block slotへのローカルinstance ID、empty-source metadata anchor、registry associationを一意なcurrent coreから同一transactionでbootstrapする最小経路。I3はこの共通APIを全event lifecycle writerへ拡張する
@@ -5409,6 +6948,8 @@ Exit:
 - **EXIT-FSMC-I2-023** — event-settings migration、IDB commit→shadow前、shadow→ack前の各crashがpendingから冪等再開し、before／target以外のshadowはcanonical rootをrollback・上書きせずconflictとなる。create／rename／delete用root adapterのschema、`logicalRootMutationTuples`、別管理のadministrative fence write集合、ack専用のbyte同値payload＋revision／metadata／checkpoint after-image、generic classifierよりbridgeを先に処理する順序がcontract testに合格する
 - **EXIT-FSMC-I2-024** — destructive coverage snapshot→delete再検査間にunknown store／record／local key／schema driftを追加するfixtureはdelete 0件となり、既知target全件がbackup-coveredまたは証明済みreconstructible-internalのときだけguided resetを許す
 
+- **EXIT-FSMC-I2-025** — control factoryは`forceSplitPicker = false`、利用者toggle後はreload／offline／event切替で同値、明示OFFまたはprofile resetだけで解除される。toggleはdevice／event enabled membership、settings、coreをbyte保持し、stale revision／untrusted rootではwrite 0件となる。Backup V1／V2にfieldがなく、untrusted／未読時のselection policyだけがeffective trueへ倒れる
+
 ### FSMC-I3: イベントIDとライフサイクル
 
 実装:
@@ -5442,9 +6983,9 @@ Exit:
 実装:
 
 - イベント単位Backup V2
-- V1 wire shapeの凍結、V2と同時出力するV1互換core、Backup V1／XLSX 2.2 full restoreの共通legacy restore plannerとdormant preview
+- V1 wire shapeの凍結、V2 representability成功後に同じsnapshotからlossless生成を試みるoptional V1互換core、pair／V2-only handoff、Backup V1／XLSX 2.2 full restoreの共通legacy restore plannerとdormant preview
 - event `scope.references`とruntime snapshotから分離した明示core／durable visit wire DTO、`snapshotToBackupWireV2`、`backupWireV2ToRestorePlan`。wire moduleから`AppData`／persistence型をimportしない
-- 単一eventRef＋全mapRefs、map-level fingerprint、active／retained portable union、companion V1 hash
+- 単一eventRef＋全mapRefs、map-level fingerprint、active／retained portable union、`companionCore`のincluded／unavailable exact unionとpair／issues digest
 - production writerはcanonical `eventSettings`とportable `durableVisitState`を`full-split`の対象event exact sliceとして同じreadonly IDB snapshotから出力し、`item-only`では両方をtop-level `null`にする。reader-only `core-map`はsynthetic fixture／外部入力のnon-null両sectionを検証するが、writer adapterやserialize commandへ接続しない。full／core restoreはfresh item ID remap後にgroup／phase anchorを検証して復元先event instanceへ同一commitで適用し、item-onlyはdestination settings checksumを維持しつつdestination durable stateをtransition plannerでrekeyする
 - retained priorOwner用にcurrent map／block refsとnamespaceを分けた`historicalOwnerRef = o-NNNNNN`と`ownerKind`付きhistorical owner tableを発行する。historical block parentはcurrent `mapRef`またはhistorical map ownerのexact unionとし、current map＋deleted blockをlosslessに表現する。current parentは同じmanifestへ一意に解決できる場合だけ付け、historical owner refごとに必要なfresh local IDを1回発行して外部ref文字列をruntimeへ保存しない
 - `src/features/map-cell-split/backup/backup.worker.ts`、`workerServer.ts`、`workerClient.ts`、`workerProtocol.ts`を実装し、`BackupRestoreDialog.tsx`／`backupRestore.ts`／`appBackup.ts`に加えて、export file生成とJSON `file.text()`／XLSX `file.arrayBuffer()`を現在所有する`src/app/commands/useEventTransferCommands.ts`へclient Portをcomposition注入する。current commandのwhole-file readをWorkerのbounded slice protocolへ置換し、UI／command／`App.tsx`側に別readerを残さない。UTF-8 fatal decode、duplicate-property scanner、非再帰depth／token scanner、same-origin module Worker、bounded slice／error、cancel cleanupを実装し、既存XLSX Workerと同じVite module asset、PWA precache、`worker-src 'self'` CSPへ登録する。`blob:`／`data:` fallbackを作らない
@@ -5452,12 +6993,12 @@ Exit:
 - イベント復元の全置換previewと、アイテムimport時の設定維持
 - portable参照のローカルID remap、端末内ON／OFFの非収録、新規復元OFF、既存復元先状態維持
 - 1主端末、復元先全置換、復元前退避案内、自動同期・自動merge禁止
-- 32 MiB performance保証／file、V1／V2 JSON 64 MiB import hard limit／file、XLSX 2.2 compressed 32 MiB＋既存展開limit、V2 32 MiB・companion V1 32 MiB・pair合計64 MiB export generation limitと過大入力の原子的拒否。JSON import best effort、XLSX hard stop、export pair停止を形式／方向別command結果にする
+- 32 MiB performance保証／file、V1／V2 JSON 64 MiB import hard limit／file、XLSX 2.2 compressed 32 MiB＋既存展開limitを形式別に適用する。exportはincremental canonical UTF-8 sinkで測った最終V2実byteLengthが32 MiB超ならtyped `v2-export-failed`／artifact 0、V2が上限内でcompanion V1実byteLengthが32 MiB超またはpair実byteLength合計が48 MiB超なら`companion-v1-resource-limit`付きV2-onlyとし、V1のためにV2を停止しない。estimateは確実な早期lower-bound stop以外の判定に使わない。`PreparedArtifactByteSinkV1`、temporary spool 64 MiB、generation timeout 300,000 ms、reason別failure witnessは`config/fsmc-backup-limits.json`実bytesのSHAとexact field値へ拘束し、timeout／cancel／sink error後はhash state、chunk、spool、handleを0件へcleanupする。JSON import best effort、XLSX hard stop、pair／V2-only／V2 export failureを方向別command結果にする
 - V1層別互換matrixを維持し、V2だけを全階層exact unknown-key rejectにする
 - Backup V2 digestと未知version／未知scope拒否
 - scope別exact core section tuple、`deriveEventBackupCountsV2`による実payload件数一致、retained `number`／`originalNumberToken`整合、active／retained owner overlap拒否
 - event保証上限超過時は出力を停止し、読めないファイルやmultipartを初版で生成しない
-- 全参加storeの単一readonly transactionから`SplitCapableEventExportSnapshot`を1回だけ作り、V2／V1を同じsnapshotから生成する。export途中のDB再読込、cross-revision pair、V1／V2 coreの不一致を拒否する
+- 全参加storeの単一readonly transactionから`SplitCapableEventExportSnapshot`を1回だけ作る。V2を必ずこのsnapshotから生成し、companionを作れる場合だけV1も同じsnapshotから生成する。export途中のDB再読込、cross-revision pair、included分岐のV1／V2 core不一致、unavailable分岐のcompanion handle混入を拒否する
 - `__proto__`／`constructor`／`prototype`を利用者名として安全にround-tripするdynamic key処理
 - UIは`File.size`だけを検査して`File`をWorkerへ渡し、main threadで`file.arrayBuffer()`／`file.text()`を呼ばない。Workerは1 MiB sliceでstreaming decode／scanし、raw bytes、全文string、DTOの三重保持を避ける
 - `classifySafeExternalUrl`とbranded `SafeExternalHref`をV1／V2／XLSX／CSV／通常編集、`CellItemsPopup`、`ShoppingItemCard`へ適用する。V2／CSV／新規編集のunsafe URLは全拒否、V1／XLSX 2.2／既存profileは`legacy-compat`でraw textを維持して非link表示にする。空文字、control／bidi code point全境界、strict／legacy policyのarchitecture testを持つ
@@ -5468,21 +7009,23 @@ Exit:
 Exit:
 
 - **EXIT-FSMC-I4-001** — V1、XLSX 2.2 full、地図を含むがsplitを含まないV2を読め、map置換では対象の既存split設定をpreview後にdormant化し、V1／XLSX 2.2 item-only importでは維持する
-- **EXIT-FSMC-I4-002** — 複数地図eventのV2で4方向とactive／dormant／quarantined、execution visit order、3 phase anchor、completion、購入変更anchorを往復でき、V2がSHA-256で拘束したexact V1互換coreを固定旧版Aへ復元できる
+- **EXIT-FSMC-I4-002** — 複数地図eventのV2で4方向とactive／dormant／quarantined、execution visit order、3 phase anchor、completion、購入変更anchorを新版へ往復できる。companion losslessなfixtureはV2がSHA-256で拘束したexact V1互換coreを固定旧版Aへ復元でき、companion不能fixtureは同じV2内容を`structural-v2-only-prepared`で新版へ復元できる一方、旧版fallback不可を出力前後に表示する
 - **EXIT-FSMC-I4-003** — 簡易XLSX・CSVに分割設定が含まれない
 - **EXIT-FSMC-I4-004** — mapDataを置換する復元だけが設定を同時に置換またはdormant化し、full／core restoreはportable durable visit、destinationの`DurableVisitEventBasisV1` 4 field、aggregate両digestを同一commitでremapする。existing destinationはlocal event ID／anchorを維持し、新規destinationはfresh ID／anchor／basis exact 1行を作る。item-only importでは設定checksumを維持し、destination durable stateとcore basis digestだけをtransition plannerでlossless rekeyする
 - **EXIT-FSMC-I4-005** — external refをローカルinstance ID／`priorOwner`として採用せず、未解決entryには新しい`dormantEntryId`を発行し、不正参照・hard limit超過をDB更新前に拒否する
 - **EXIT-FSMC-I4-006** — 形式不正は全体拒否し、復元先不一致だけをdormant／quarantinedとして保持する
 - **EXIT-FSMC-I4-007** — V2 digest不一致、未知version、未知scope、local ON／OFF fieldを拒否する
-- **EXIT-FSMC-I4-008** — `full-split` writer→readerは明示wire DTOの対象event全10 core section、event settings、durable visit stateを欠落なくround-tripし、synthetic `core-map`はreader→restore planだけを検証してproduction serializerの戻り、registry、dispatchを0件にする。`eventLists`／`eventMetadata`はexact 1 row、残る8 sectionは各々source absentの`[]`とpresent-emptyの`[row]`を区別してdesired absence／presenceへ復元し、同値after-imageはphysical write 0件にする。`item-only`は`eventLists`以外のdata sectionと3 top-level sectionの非null値を拒否する一方、全scope共通hall descriptor tableでresolved manual hallを検証し、既存destinationのexact／明示mappingだけを許し、新規destinationの対応hallなし、0候補、stale／noninjective choiceをwrite 0件にする。runtime section追加は自動伝播させずadapter exhaustiveness testとschema version判断を要求する。valid map owner／valid mapless ownerをXORで分類し、dual match、orphan slot、event-wide unscoped ownerをtyped blockerにする。HallVisitListとhallOrderはnormal／priority／highest、unassigned、missing-unresolved、malformedをsource順で検証し、manual／visit group／hall-orderの3面で同じdangling baseをgroup-preserving remap、異なるbaseをinjectiveに分離する。ambiguous hall owner、unknown extension、unsafe URL、strict scalar／structural違反はV2／pair 0件とし、eligibility matrixと凍結V1→current reader→固定旧版Aのlegacy-core projectionがbyte一致する場合だけcoverage／excluded roots／warning付きtrusted-core-only fallbackを許す。companion audit不成立は`companion-v1-unrepresentable`でV2を含むartifact 0件とし、V2-onlyを出さない。pairはexact pair digestとrole-specific immutable handleを再hashし、片方だけhandoffした場合はtyped incomplete／完了通知0件／same-pair再生成案内とする。3 reader scopeそれぞれで全7 countを実payloadから再計算し、正しいdigestでも過少・過大自己申告、reference水増し／省略を拒否する。portable durable day集合はnonexecution itemだけの日、standalone empty day、group 0件entryを含めexact bijection、groupと再構築identityもpairwise uniqueなexact bijectionとし、retained number／token、active overlap、anchor／phase不整合を全体拒否する
+- **EXIT-FSMC-I4-008** — `full-split` writer→readerは明示wire DTOの対象event全10 core section、event settings、durable visit stateを欠落なくround-tripし、synthetic `core-map`はreader→restore planだけを検証してproduction serializerの戻り、registry、dispatchを0件にする。`eventLists`／`eventMetadata`はexact 1 row、残る8 sectionは各々source absentの`[]`とpresent-emptyの`[row]`を区別してdesired absence／presenceへ復元し、同値after-imageはphysical write 0件にする。`item-only`は`eventLists`以外のdata sectionと3 top-level sectionの非null値を拒否する一方、全scope共通hall descriptor tableでresolved manual hallを検証し、既存destinationのexact／明示mappingだけを許し、新規destinationの対応hallなし、0候補、stale／noninjective choiceをwrite 0件にする。runtime section追加は自動伝播させずadapter exhaustiveness testとschema version判断を要求する。valid map owner／valid mapless ownerをXORで分類し、dual match、orphan slot、event-wide unscoped ownerをtyped V2 blockerにする。HallVisitListとhallOrderはnormal／priority／highest、unassigned、missing-unresolved、malformedをsource順で検証し、manual／visit group／hall-orderの3面で同じdangling baseをgroup-preserving remap、異なるbaseをinjectiveに分離する。ambiguous hall owner、unknown extension、unsafe URL、strict scalar／structural違反のようなV2 core blockerはV2／pair 0件とし、eligibility matrixと凍結V1→current reader→固定旧版Aのlegacy-core projectionがbyte一致する場合だけcoverage／excluded roots／warning付きtrusted-core-only fallbackを許す。V2 representableだがcompanion auditが不成立の場合はcanonical issue集合／digestを持つ`structural-v2-only-prepared`を生成し、V1／pair handleは0件とする。pairはexact pair digestとrole-specific immutable handleを再hashし、片方だけhandoffした場合はtyped incomplete／完了通知0件／same-pair再生成案内とする。V2-onlyはnull pair digest、issues digest、exact 1 V2 handleを再hashし、V2 receipt成功時だけ完了通知する。3 reader scopeそれぞれで全7 countを実payloadから再計算し、正しいdigestでも過少・過大自己申告、reference水増し／省略を拒否する。portable durable day集合はnonexecution itemだけの日、standalone empty day、group 0件entryを含めexact bijection、groupと再構築identityもpairwise uniqueなexact bijectionとし、retained number／token、active overlap、anchor／phase不整合を全体拒否する
+  I4-008のV2 success matrixはscope→export→prepared artifact→verification→handoffまで`pair | structural-v2-only | resource-v2-only`を同じ判別子で閉じる。V2 core blockerでeligibilityと3 projection digestが成立する場合だけ、別系列の`v2-unrepresentable → standalone-v1 prepared → standalone-v1-verified → standalone-v1-completed | standalone-v1-incomplete`を許し、警告未確認はverification rejected／handoff attempt 0件とする。`v2-export-failed`は7 reasonのexact witness／digestを持つartifact 0件の終端であり、standaloneへ接続しない。pairは2 artifact／non-null pair digest、各V2-onlyは1 V2 artifact／null pair digest／reason相関issuesだけを許す。issueのpath／kind／payload、reason、順序、digest、artifact数、guidanceの各1 field mutationと不可能なcross-combinationを拒否し、失敗結果を`pair-incomplete | structural-v2-only-incomplete | resource-v2-only-incomplete | standalone-v1-incomplete`へ分離し、reason／witness／artifact数／warning acknowledgementのcross-branch交換を拒否する。
+
 - **EXIT-FSMC-I4-009** — fullのcanonical event settingsとportable durable visit stateはwriter→readerをexact round-tripし、reader-only coreは同じ両sectionをrestore planから復元先へexact適用する。item-onlyは既存destination settings checksumを維持してdurable transitionを同一commitし、新規destinationは決定的defaultとなる。V1／XLSX 2.2 full restoreも既存durable stateを一意移送し、要修復値を自動破棄しない。全restoreでcore、association／anchor、entry、basis 4 field、aggregate両digest、fenceがall-old／all-newとなり、reloadで再計算一致する。V1 companionも同じIDB snapshotから生成し、bridge pending／conflict中はpair 0件である
 - **EXIT-FSMC-I4-010** — deleted map、current map＋deleted block、同じmissing owner共有、見た目同一だが別owner、current-linked active overlapのfixtureでhistorical owner同値関係とinjective remapを往復し、owner tableのduplicate／orphan／multi-link、外部owner ref永続化を拒否する。同じ`historicalOwnerRef`を参照する2 entryで`lastKnownMapName`が一方absent・他方present、または両方presentで異値のfixtureをlosslessにround-tripし、entry-local診断値をowner tableの代表値へ集約しない
-- **EXIT-FSMC-I4-011** — 保証上限内かつV2／companion双方がrepresentableな自アプリ出力はprepared pair→handoff→reader→restore planをround-tripし、pair metadata／bytes／digest、10 section presence、portable refs、hall descriptor、durable identityを再検証できる。V2 core blocker、companion V1 blocker、resource上限を判別し、前者はtyped issue＋legacy-core-only fallback eligibility、後二者はV2を含むartifact 0件として具体的理由を表示する。unsafe／structural値のdrop・丸め、V2-only、未検証fallback、超過fileを生成しない
+- **EXIT-FSMC-I4-011** — 保証上限内でV2／companion双方がrepresentableな自アプリ出力はprepared pair→handoff→reader→restore planをround-tripし、pair metadata／bytes／digest、10 section presence、portable refs、hall descriptor、durable identityを再検証できる。V2 core blockerはtyped issue＋legacy-core-only fallback eligibilityを返してV2 0件とし、eligibleかつ凍結V1→current reader→固定旧版Aの3 projectionがbyte一致する場合だけwarning付きstandalone V1をprepared→acknowledgement→verification→handoffへround-tripする。未確認、metadata／projection digest差、receipt失敗はhandoff attemptまたは完了通知0件とする。V2 representableだがcompanion V1 blockerまたはV1／pair resource上限がある場合は値をdrop／丸めず、canonical issue／digest、null pair digest、exact 1 immutable V2 handleを持つV2-only→handoff→reader→restore planをround-tripする。V2 receipt失敗、V2-only警告未確認、issues digest差は完了通知0件とし、超過V1／pairを生成しない。V2最終byte超過、fixed-point非収束／drift、timeout、spool違反、cancel、sink errorはreason別bounded witnessとconfig SHAを再検証して`v2-export-failed`／artifact 0件とし、reason差替え、fixed-point state／sink receipt／source binding／self-validation／immutable witness／handoff receiptのfield・digest差、standalone接続を拒否する
 - **EXIT-FSMC-I4-012** — hall definitionsの`owners[].halls`と各hallのraw `blockNames`はsource順をexact round-tripし、`blockNames`の重複、optional absent、present-emptyを区別する。hall ID重複はtyped structural blocker、reference manifestだけをcanonical sortし、payload halls／blockNamesをsort・dedupeするwriter／readerをgolden差分で拒否する
 - **EXIT-FSMC-I4-013** — clean profileへの新規復元はOFF、既存イベントへの復元は復元先のローカル状態を維持し、両端末の変更をmergeせず選択したV2へ原子的に置換する
-- **EXIT-FSMC-I4-014** — 本phase担当のDesktop／Mobile性能上限を満たし、pair片方のhandoff失敗を完了扱いにしない
+- **EXIT-FSMC-I4-014** — 本phase担当のDesktop／Mobile性能上限を満たし、pair片方、V2-only本体、standalone V1本体のhandoff失敗を完了扱いにしない。`v2-export-failed`は全reasonでhandoff attempt／prepared artifact／残留spool 0件となる
 - **EXIT-FSMC-I4-015** — ON中に衝突を作るimport／restoreはcore、settings、association、controlを一切変更せず、復元先eventをONのまま維持して衝突原文と修正方法を表示する
-- **EXIT-FSMC-I4-016** — 同時writerを挟んでもV1とV2が同一snapshot revisionを表し、明示transform以外のcore差がなく、片方だけを別revisionから再生成しない
+- **EXIT-FSMC-I4-016** — 同時writerを挟んでもV1とV2が同一source SHA／snapshot revision／canonical root vector／snapshot digestを表し、明示transform以外のcore差がなく、片方だけを別revisionから再生成しない。root順shuffle、BMP／astral key順、1 root／sliceだけ別snapshot、prepared／verification／receiptのbinding差をhandoff attempt 0件で拒否する
 - **EXIT-FSMC-I4-017** — XLSX 2.2 full restoreはpreviewどおり既存activeだけを`legacy-full-restore-without-split-settings`でdormant化し、既存retainedのstatus／reason／evidence／IDをbyte同値で維持してcore／association／controlと同一commitになる。item-onlyではmap／split／control checksumが不変である。取消、stale、quota、commit前終了は全旧、commit後終了は全新だけとなる
 - **EXIT-FSMC-I4-018** — `javascript:`、`data:`、`file:`、credential付きURL、control／bidi文字を含むV2／CSV／新規編集はcommit前に全拒否し、同じ値を含むV1／XLSX 2.2／既存profileはraw値を壊さず非linkになる。空文字はURLなしとなり、raw item URLからReact `href`への直接edgeが0件である
 - **EXIT-FSMC-I4-019** — production CSPを`worker-src 'self'`のまま維持し、online／offlineで同一origin Backup Workerを起動できる。success／error／cancel／timeout後のWorker、reader、timer、transaction、Blob URL残留が0件である
@@ -5490,6 +7033,7 @@ Exit:
 - **EXIT-FSMC-I4-021** — owner別hall group codecの全reachable semantic pairで`decodeCurrent(encodeCurrent(pair)) === pair`かつtoken injectiveを満たす入力だけを出力し、reserved 3 token、suffix付き実hall ID単独、`A` priority対`A:priority` normal、`A` highest対`A:highest` normalの衝突はtyped structural blocker／V2・pair 0件にする。historical block parentのcurrent-map／historical-map exact unionでcurrent map＋deleted blockをround-tripし、unknown／ambiguous parentやfresh historical mapへの劣化を拒否する
 - **EXIT-FSMC-I4-022** — raw structured-clone snapshotをDTO変換／JSON serialize前にown-propertyとarray index presenceでtotal走査し、own `undefined`、array `undefined`、sparse hole、`-0`をtyped scalar／structural blockerとしてV2・pair 0件にする。absent optional key、explicit `null`、`0`との取り違え、adapter後だけの検査、黙示key drop／`null`化／`0`化をnegative fixtureで拒否する
 - **EXIT-FSMC-I4-023** — raw representability issueはobject／array undefined、hole、negative zero、non-finite、unsafe integer、cycle、非JSON kind、strict JSON valueのexact tagged witnessを持ち、domain-separated `valueDigest`がpath、tag、index／length、値を拘束する。同じpathのundefined／hole／`-0`／null／0が相異なるdigestとなり、通常JSONで原値を先に失ったwitness、tag差、digest差を拒否する
+- **EXIT-FSMC-I4-024** — V2 embedded digestはschema／duplicate property／未知key検証後、`digest`を除くexact objectを`{ domain: "fsmc-app-backup-v2-v1", backupWithoutDigest }`として`esp-json-v1` canonical serializeしたUTF-8 SHA-256へ再計算する。`companionCore` included／unavailable、issue順、file metadataを含む各単独field差とdigestだけの差替えを拒否する
 
 I0～I10とI11作業中のproduction artifactでは、利用者が分割設定を作成できるUIとenable commandを公開しない。I11最終candidateはbuild前にsourceを`release-ready`へ固定して同UI／commandを含めるが、同一artifactのrequired gate成功までは利用者へ配布しない。
 
@@ -5577,6 +7121,8 @@ Exit:
 - `buildProjectedPhaseVisits`をQA app composition rootへ実装し、`MapView`、`FocusModeContainer`、`FocusMode`、`MapVisitListPanel`、space-navigationへ同一`PhaseVisitProjectionSnapshot`を渡す。`NavigatorItem`、旧`buildVisitIdentity`、代表item、row／colからON時identityを再構築するQA consumerを除去する。production buildではこのcomposition／registry／dispatcherへのedgeを0件とし、I11が同じ実装をproduction compositionへ初めて接続する
 - 同一revisionのcanonical `SpaceIdentity`からだけ`ProjectedVisitResolutionSummary`を生成し、同一execution visit内の全memberでbyte一致を検査する。一致しなければ`inconsistent-resolution-summary`としてprojection全体を拒否し、代表member選択や配列順で解決結果を決めない
 - raw実行商品ID配列をglobal sortせず、非連続な同一`ExecutionVisitIdentity`を配列全体で集約する。legacy初回はraw配列の最初の出現順から重複なし`executionVisitOrder`を生成し、以後はこのordered key arrayをbase訪問順authority、raw配列をmember順authorityにする。全nonempty execution visitとのexact bijectionを保つ
+- `src/app/commands/useMapVisitListCommands.ts::updateOrder`を商品配列置換から`ExecutionVisitIdentityKey`のUI draft＋`planExecutionVisitOrderMutationV1`へ移し、保存時だけ`fsmc.visits.reorder-execution-order.v1`／`commitExecutionVisitOrderAtomicallyV1`でdurable orderを更新する。cancel／panel closeはdraftだけを破棄する
+- `src/app/commands/useMapRouteCommands.ts::reorderExecuteListByHallOrder`を`planHallRouteAndExecutionOrderMutationV1`へ移し、`fsmc.visits.reorder-by-hall.v1`がhall route settings after-imageとdurable `executionVisitOrder`を同じ`ExpectedRootVector`、preview digest、transactionでall-old／all-newにする。raw execution rootをread-only CAS witnessとして再検査するがwrite participantにせず、raw item ID配列と各visit内member相対順をbyte同値に保ち、2 commandの独立したorder authorityを廃止する
 - 日程、ブロック、番号、side、優先度、`manualHallId`、hall definition／association／remap、mapped↔mapless編集でidentityが既存destinationへ変わる場合の、変更itemだけをdestination member末尾へ移す決定的rekey plannerと、item ID対応から現在・保存位置の`PhaseVisitIdentityKey`を再解決する処理
 - normalは全実行商品、後回し・遅参は追加phaseとしてbase順から生成し、1商品が複数phaseへ属せる共有projectionを通常マップ、集中モード、`MapVisitListPanel`／`ProjectedVisitList`、space-navigationへ提供する。I10向けには同じsnapshotを入力portとして公開するが、本phaseでroute conformance成功を主張しない
 - 通常の実行列・候補列と同じ優先度別グループ規則への統一
@@ -5616,6 +7162,9 @@ Exit:
 - **EXIT-FSMC-I7-020** — QA／internal commandで全writer conformanceを検証できる一方、同sourceのproduction artifactはFSMC public handler、navigation、端末／event switch、dispatch authorization、commit authorizationがすべて0件／falseであり、I11前のproduction公開経路がない
 - **EXIT-FSMC-I7-021** — item／day／execution order／number／block／side／priority／manualHall／hall remapを変える全QA writerはtransition後entry、対象eventのbasis 4 field、両aggregateを同じafter-imageから再計算し、logical participant／historical evidence／actual writeへexact一致させる。item import、rekey、delete、orphan visit破棄でold entry＋new basisまたはnew entry＋old basisとなる部分commitを0件にする
 
+- **EXIT-FSMC-I7-022** — 通常訪問一覧のdrag／keyboard reorderは重複なしbase visit exact permutationをdraft表示し、cancel、panel close、staleでは永続root／raw item列を変更しない。保存成功だけがdurable `executionVisitOrder`を一段更新し、reload、通常／集中／一覧／space-navigationで同じ順になる
+- **EXIT-FSMC-I7-023** — hall順変更はhall route settingsとdurable orderを同一commitで更新し、raw item ID配列とmember相対順をbyte保持する。片rootだけstale、unknown／duplicate／missing visit、noninjective hall mapping、quota、commit前終了はall-old、commit後終了はall-newとなり、旧2 commandからraw reorderへのproduction edgeが0件である
+
 ### FSMC-I8: 通常マップ
 
 実装:
@@ -5625,6 +7174,7 @@ Exit:
 - 半領域描画、分割線、正立する条件付きラベル、`LocationPresentationState`
 - スマートフォン常時picker、非スマートフォン入力別閾値direct hit、曖昧時no-op案内
 - 狭幅PCを含む端末判定adapterと利用者override
+- 設定のアクセシビリティに`SplitMapAccessibilitySettingsPanel`を追加し、「常にセル側選択ダイアログを表示」を`setForceSplitPickerAtomically`へ接続する。通常マップだけのlocal stateやevent別設定を作らず、保存中／競合／失敗を常設statusで通知する
 - 共通Pointer gesture state machine
 - `useCanvasViewport.ts`のnative TouchEvent分岐をPointer Events state machineへ置換し、`MapCanvasPresentation.tsx`の実DOM listener／style終端と`MapCanvas.tsx`へpointer capture、`lostpointercapture`、`touch-action`、passive listener、unmount cleanupを単一ownerとして接続する。共有hookを既に使う`FocusModeMapCanvas.tsx`もI8で同gesture regressionを実行し、旧touch handlerとcomponent-local gesture stateを0件にする
 - 側別ポップアップと追加処理
@@ -5642,12 +7192,14 @@ Exit:
 - **EXIT-FSMC-I8-003** — 空側で正しい見出しと事前入力値を表示
 - **EXIT-FSMC-I8-004** — `26`／`26c`だけが存在しても左右クリックがアイテムなしになり、中央badgeとDOM一覧に「側未設定」が表示される
 - **EXIT-FSMC-I8-005** — スマートフォンは最大zoomでもpickerを使用し、非スマートフォンは閾値未満・曖昧帯で選択を変えない
-- **EXIT-FSMC-I8-006** — pan、pinch、pointer cancel、capture喪失、layout切替後にpopupを誤表示しない
+- **EXIT-FSMC-I8-006** — pan、pinch、pointer cancel、unexpected capture喪失、layout切替後にpopupを誤表示せず、正常`up → lostpointercapture → click`ではtap exact 1回、click dispatch 0件となる。expected lostはguardを維持し、unexpected active lostはglobal cleanup、stale別ID lostはno-opとなる
 - **EXIT-FSMC-I8-007** — 本phase担当のDesktop／Mobile p95、main-thread task、memory上限を満たす
 - **EXIT-FSMC-I8-008** — normal Desktop direct 150 ms／Mobile picker 200 msの各scenario-profile keyがreduced resultにexact 1件あり、I9 focus scenarioを前倒し成功扱いにしない
 - **EXIT-FSMC-I8-009** — `MapVisitListPanel` shellがopen／close、filter、focus restoreを維持し、pure `ProjectedVisitList`の選択／挿入callbackが`PhaseVisitIdentityKey`だけを渡す。row／col、代表item、stale location payloadへ縮退しない
 - **EXIT-FSMC-I8-010** — Canvas semantic tokenのlight／dark contrast unit test、forced-colors固定screenshot、非色覚手掛かり、theme変更時再描画が成功し、DOM代替導線と表示状態が一致する
-- **EXIT-FSMC-I8-011** — `useCanvasViewport.ts`、`MapCanvas.tsx`、`MapCanvasPresentation.tsx`、`FocusModeMapCanvas.tsx`でnative TouchEvent／React touch handlerのproduction edgeが0件となり、通常／集中の両Canvasでsingle pointer、2本指、capture取得失敗／喪失、unmount、`touch-action`、passive listenerのfixtureが決定表どおりである。I9まで共有hookの集中モード回帰を延期しない
+- **EXIT-FSMC-I8-011** — `useCanvasViewport.ts`、`MapCanvas.tsx`、`MapCanvasPresentation.tsx`、`FocusModeMapCanvas.tsx`でnative TouchEvent／React touch handlerのproduction edgeが0件となり、通常／集中の両Canvasでsingle pointer、2本指、capture取得失敗／expected・unexpected・stale喪失、unmount、computed `touch-action: none`、wheel／pointerdown／move／up／cancel／lostcapture／clickのexact passive・preventDefault matrixをstyle／listener instrumentationとbrowser property fixtureで検証する。I9まで共有hookの集中モード回帰を延期しない
+
+- **EXIT-FSMC-I8-012** — `forceSplitPicker=false`のDesktopはdirect-hit規則、trueでは画面幅／mouse／touchにかかわらずpickerとなる。toggleは端末全体・全eventへ即時反映し、reload／offline後も維持、stale／失敗時は旧値を表示してwrite 0件、falseへ戻すと次gestureから既定判定へ戻る。Backup export payloadはbyte不変である
 
 ### FSMC-I9: 集中モード
 
@@ -5669,6 +7221,7 @@ Exit:
 - 集中モードの最大fixture描画・操作scenarioを本phaseから強制する
 - `FocusModeSessionState` adapterは`DurableVisitStateRootV1`のcurrent phase付きanchor、phase別saved anchor、completion、durable lastPurchase anchorを共有snapshotへ接続し、phase切替・空phase・rekey・reload後もI7規則どおり復元する。runtime sessionは未commit表示状態だけを持ち、durable fieldの別authorityにならない
 - `split-direct-popup-focus-desktop`と`split-picker-popup-focus-mobile`を別scenario／単一profileで本phaseから強制する
+- I8の同じ`forceSplitPicker` read modelとcontrol revisionを使用し、集中モード専用override、event別override、viewport変化による自動解除を作らない
 
 Exit:
 
@@ -5688,6 +7241,8 @@ Exit:
 - **EXIT-FSMC-I9-014** — `FocusModeMapCanvas.tsx`に独立したtouch authorityがなく、通常マップと同じpointer capture／cancel／multi-pointer oracleを満たし、同じgestureからpopupを二重dispatchしない
 - **EXIT-FSMC-I9-015** — 購入済／後回し／遅参の商品追加と日程・block・number・side・priority・manual hall編集は、identity-bearing after-imageの場合だけ対象event basis 4 fieldと両aggregateを更新し、進行状態だけでidentity inputが不変ならper-event basis digestをbyte保持する。entry transition、basis、aggregate、item coreを同一commitへ入れ、成功通知前にexact writer conformanceを検証する
 
+- **EXIT-FSMC-I9-016** — I8で保存した`forceSplitPicker`が集中モードでも同じgesture boundaryから有効になり、通常／集中切替、event切替、回転、reloadで値とpicker順が一致する。両surfaceの同時表示でもcontrol reader／status notificationが二重authorityにならない
+
 ### FSMC-I10: 経路と訪問集約
 
 実装:
@@ -5700,6 +7255,8 @@ Exit:
 - routable／unroutableの判別可能`RouteResolution`
 - marker／main path／connectorのhit-test優先順位とvisit ID候補
 - `pathfindingGraphFingerprint`を含むcache／signature更新
+- `src/types/map.ts`の旧function closure型`RoutePathConstraint`、`src/utils/mapRouteMapData.ts`のselected-hall closure生成、`src/utils/mapRoutePolygon.ts`のpredicateをexact migration targetにする。data-only `RoutePathConstraintV1`をroute inputの必須値にし、`all`は`whole-map`、選択hallはstable event／map／hall ID、hall definition revision、canonical polygon、fingerprintを持つ`selected-hall-polygon`へ解決する。欠落／stale／不正polygonは無制約へfallbackせずtyped unroutableとし、旧`RoutePathConstraint`／`isPathAllowed` production callerを0件にする
+- pathfinder node間、simplification後main path、routing port、全connector、`same-cell-direct`をI1の同じinclusive polygon predicateで検証し、凹polygon外へ出るsegmentを拒否する。constraint fingerprintをroute cache、hit-test、insert preview signatureへ含める
 - I7の共有projectionを経路順の唯一の入力とし、同じexecution identityのglobal集約とphase別投影を維持
 - route、marker／connector hit-test、挿入anchorを`PhaseVisitIdentityKey`で一貫して参照し、member商品ID列はpayloadとして扱う。座標・順序signatureへmemberの先頭IDや件数を混入させない
 - 異なる優先度を別訪問として保持
@@ -5721,6 +7278,9 @@ Exit:
 - **EXIT-FSMC-I10-010** — `value`、`backgroundColor`、map寸法、結合領域、passability rule、解像度、cost定数の変更で`pathfindingGraphFingerprint`が変わり、古いroute cacheを再利用しない。重複物理`(row, col)`は配列順で解決せず経路を生成しない
 - **EXIT-FSMC-I10-011** — `PD-14.C3`のroute、marker／connector hit-test、cache、route insertion anchorがI7のsnapshotと`PhaseVisitIdentityKey`だけを使用し、member先頭ID、row／col、旧`RouteSegment` production edgeが0件となる
 - **EXIT-FSMC-I10-012** — 本phase担当のDesktop／Mobile p95、main-thread task、memory上限を満たす
+- **EXIT-FSMC-I10-013** — 選択hallの1-based頂点を`{ x: col - 0.5, y: row - 0.5 }`へexact 1回変換した全route node／segment、simplification後segment、routing port、connector、same-cell directがinclusive polygon内にあり、既存utility／Canvasと同じpoint／segment判定になる。直値／二重offset／軸逆転、凹部横断、別hall／map、stale definition、4頂点未満、面積`< 4`、in-bounds covered cell 0件は`invalid-route-constraint | outside-route-constraint`でunroutableとなる。editor／import／Backupでinvalidなpolygonをrouteだけで受理せず、端点内側だけで成功させず、whole-mapへfallbackしない
+- **EXIT-FSMC-I10-014** — `src/types/map.ts`のfunction closure型`RoutePathConstraint`、`src/utils/mapRouteMapData.ts`の旧closure生成、`src/utils/mapRoutePolygon.ts`の旧`isPathAllowed`をdata-only DTO＋共有inclusive predicateへ移行し、旧型／closure／predicateのproduction import／callerが0件である。fixtureだけのlegacy比較は明示allowlistし、route／cache／hit-test／insertへ旧authorityを残さない
+- **EXIT-FSMC-I10-015** — whole-map、hall A、hall B、同hall revision／polygon差でconstraint fingerprintとroute／hit-test／insert-preview cache signatureが変わり、別constraintのcacheを再利用しない。通常マップと集中モードは同じconstraint object、projection revision、`PhaseVisitIdentityKey`を使用する
 
 ### FSMC-I11: 横断E2E、性能、自動release gate
 
@@ -5742,7 +7302,7 @@ Exit:
 - raw-day repair previewは全affected semantic domain、全current-normalizer physical source row、全present sourceのsource-specific auto／user assignments、event-wide unscoped／embedded hall source、source-bound owner request、map request／decisionと6面closure、distinct Focus source／target、external candidate absence、preserved queue archive integrity、expected full core vector、changed-root集合を持つ。materialize-origin profileはreceipt拘束のexternal retirementを完了した新openまでrepair不可とし、retirementのselector途中競合と全selector削除後post-retirement verification競合を区別する。repair attemptはoperation fenceと全旧tab／Worker closure確認の下でinspection時`E0`、first write直前`E1`、IDB＋repair receipt＋Focus commit後`E2`を同期再検査する。E0差はwrite／lease取得0件、取得後のE1差はDB／Focus session record write 0件とledger `active → aborted`にする。E2でoriginal materialization vectorがexact再出現した場合は修復済みIDBをrollbackせず`committed-legacy-external-candidate-blocked`としてrepair receipt chain付きpost-repair retirementだけを許し、vector差、repair receipt欠落、preserved queue第三値は全new IDBを維持した`committed-recovery-required`とする。いずれもsame attempt bootstrapを禁止する。専用CAS＋lifecycle leaseはtotal／injective／closed replacement、全present source↔assignment exact bijection、event-wide source exact-once cleanup、owner request source digest／request／choice／assignment exact bijection、map request↔choice exact bijection、execution reference exact-once、`distinctNormalizedDayScopeCount`／`executionBucketCount`／`hallDefinitionSlotCount`／`hallRouteSlotCount`の宣言済み遷移、`hallDefinitionEntryCount`／`hallRouteListCount`／`hallRouteItemReferenceCount`とその他の保存field／payload bytesのexact維持、`before distinct < raw`かつ`after distinct = raw`、after collision-freeを全て満たす場合だけ宣言rootをcommitする。partial domain、many-to-one、domain外occupied target、choice欠落／余分／候補外、shared reference複数day、partial map rename、hall payload count差、physical drop／copy、Focus ABA、stale、取消ではDB／Focus session record mutation 0件とし、lease取得前はledger 0 transition、取得後はaborted outcomeを要求する。成功後の新attemptだけがbootstrapへ進む
 - raw-day repairのrelease-ready adapterはさらに、全day-scoped source集合のalias group間exact partition、day-scoped＋event-wide hall assignment unionのglobal target injectivity、target occupantのfull source identity、nonempty execution partition row、map owner option／outcome、requested-target→choice-request→loss rows→plan→confirmation→lease→full-plan receiptのdigest chainを再計算する。複数event同relative keyは許す一方、同event cross-group source重複、2 rename→1 target、hall容量不足、day／event-wide target衝突、zero-member row、loss rowまたはreceipt plan欠落をwrite 0件にする
 - 既存profileではpersisted association＋anchorから`ResolvedEventAuthorityV1.entries | rejectedEvents`を再構成する。各resolved eventは`eventBases`のeventName／ID exact 1行とper-event core／authority digestが一致する場合だけscopeを導出する。各rejected eventは保存entry 0件かつ帰属候補0件の場合だけprior basis 0件を許し、保存entry 1件以上なら同一prior event IDのbasis exact 1行を必須にしてbyte不変quarantineへ局所化する。resolved basis 0／複数、rejected basis複数、entryありのrejected basis 0、未知IDへ跨るentry、retired row↔retired basisの非bijection、retired rowのcount／digestと同IDのpossibly-empty entry slice不一致、retired entryのrow帰属0／複数、その他の非局所化差だけを全体`repair-required`とする。zero-entry retired rowはvalidとする。current aggregate authority digestと保存時digestの差だけを全体拒否にせず、domain-separated aggregate、partition digest、全event-local witnessを再計算する。migrationはfreeze barrier、active lifecycle lease完了、latest capture ack、全setter停止、fresh issuance、旧writer unmount後にtoken／record／basisを再検査し、resolved after-image entry、rejected eventのbyte保持entry、persisted retired rows、canonical `eventBases`、両aggregate、root readyだけを一括commitしてtokenをconsumeする。`rejectedEventPartitions`は同じcommitted snapshotから再導出し永続化しない。取消、capture欠落、session ABA、mapping／partition変化、token replay、stale、quota、tab競合、途中終了はmigrating＋public edge 0件を維持しfresh tokenで全resolved scopeを再計画する。ready後のcreate／rename／duplicate／restore／新版deleteと固定旧版A delete rebaseは、対象eventのbasis 4 field、両aggregate、entry、persisted retired rowの宣言済みafter-imageが変わる全場合にdurable rootを参加させ、rejected／retired eventの通常public edge、volatile fallback、event単位部分seed、自動default化を行わない
-- WebKit advisory runnerが通常表示／a11y結果と安全性tag結果を分離し、`if: always()`相当で`fsmc-webkit-safety-observation.json`を出力する。常設`webkit-safety-promotion` jobもregisterに応じた結果artifactを必ず出力する。release-readiness jobは同一source SHA・production artifact SHA-256の両artifact upload完了をDAG dependencyとして待ち、hash検証後に取り込む
+- WebKit advisory runnerが通常表示／a11y結果と安全性tag結果を分離し、`if: always()`相当で`fsmc-webkit-safety-observation.json`を出力する。常設`webkit-safety-promotion` jobもregisterに応じた結果artifactを必ず出力する。release-readiness jobは同一source SHA・`productionArtifactTreeSha256`・`productionBuildManifestSha256`の両artifact upload完了をDAG dependencyとして待ち、hash検証後に取り込む
 
 Exit:
 
@@ -5762,6 +7322,8 @@ Exit:
 - **EXIT-FSMC-I11-014** — advisory WebKitの通常の表示／a11y失敗自体はnonblockingである。ただし安全性tagがデータ消失、a/b混同、誤保存、誤復元を検出した現在candidateはobservationを`safety-failed`として必ずrelease停止し、次commitでstable finding IDを`config/fsmc-safety-findings.json`へ`status: "open"`で登録する。engine非依存に再現できる場合はunit／integration／Chromiumのrequired回帰testへ移し、WebKit固有で再現不能な場合はその最小WebKit回帰testをpromotion kind `webkit-temporary-required`へ昇格し、常設`webkit-safety-promotion` jobが実行する。`verify:fsmc:release-readiness`はcurrent-run observation異常、promotion result欠落／不一致／失敗、open finding、required command未実行、昇格test失敗のいずれかが1件でもあればrelease-readyを拒否し、修正・再現test成功・current-run observation成功・finding close後にだけ通常advisoryへ戻す
 - **EXIT-FSMC-I11-015** — durable initializationの`missing`／`migrating`／`ready`／`repair-required`全分岐、scope 0／1／複数、nonexecution itemだけの日、standalone empty day、true fresh zero-scopeだけのinitial ready、core materialize後／queue-only archive後を含むpresent既存zero-scope／unmapped-onlyのmigratingを検証する。repair evidenceはunparseable root、parsed semantic-invalid root、trusted-localizable root、root-untrusted＋counter-exhausted併発、全reason availability／canonical順／witness digestを網羅する。persisted authorityはevent-localのassociation missing／extra、anchor missing／invalid／token mismatch／token duplicate全6 reasonと複合、global 5 reasonと複合、順shuffle／重複／digest差を拒否する。`eventBases`のbasis 4 fieldと両aggregateを再計算し、resolved scope↔active entry bijection、rejected eventのbyte不変quarantine、retired partition bijection、unaffected ready継続、局所化不能差だけの全体repair-requiredを検証する。`rejectedEventPartitions`はcommitted root＋persisted authorityからpost-deriveする非永続witnessであり、ready root／participant／historical rowへ保存しない。pre-upgrade raw-day collision、bootstrap invalid anchor、duplicate token、別event群での両者併発、同一event複合row schema reject、allocator unavailable／3回衝突を各terminalへexact対応させ、request／DB write 0件にする。raw-day repairは全semantic tupleのtotal／injective／closed mapping、day-scoped sourceのgroup間exact partition、全present source↔assignment、day＋event-wide hallのglobal target injectivity、full target occupant identity、source-specific／event-wide choice、map request↔decision＋6面、nonempty execution partition、Focus CAS、requested target→choice→loss rows→plan→confirmation→lease→full-plan receipt digest chain、E0／E1／E2とqueue integrityを一つのauthorityへ拘束する。可変4 count `distinctNormalizedDayScopeCount`／`executionBucketCount`／`hallDefinitionSlotCount`／`hallRouteSlotCount`だけを各式から再計算し、hall entry／list／item-reference count、execution reference、その他count／payloadを維持する。cross-group duplicate、2 rename→1 target、hall capacity、zero-member row、partial domain、many-to-one、domain外target、choice／loss／receipt不整合、shared reference、map 1～5面、physical drop／copy、Focus ABA、E1差、stale、取消、quotaは旧core／registryを維持し、E2再出現は全new IDB＋定義済みblocked／recoveryへ写す。resolved branchではbootstrap／persisted別authority source witness、proposal／association／anchor after-image、logical partition digest、同一process session全field、freeze／lease／ledger／3 counter、commit前後終了、別tab retryを検証する。ready writer matrixはplain createの決定的default、rename、whole-event duplicateの全durable state lossless remap、V2 full／core restoreのportable remap、V1／XLSX新規fullだけのdefault、既存legacy full／item-onlyのtransition、固定旧版A delete retired化、新版delete除去、empty-split reset再計算を含み、basis 4 field／両aggregate／entries／retired rowのafter-imageが変わる全場合だけdurable rootをparticipantにする。ready commitが保存するのはentries、eventBases、両aggregate、retired rows、root metadata／checkpointと別manifestのfence writeだけで、ready前／rejected／retired eventのpublic edge、volatile fallback、黙示default、scope単位部分seedを0件にする
 - **EXIT-FSMC-I11-016** — release-ready adapterでbootstrapのsource／core／preflight／expected／observed authority subset鎖、event-wide hallのsource digestとplan保存request集合をfull receiptから再計算する。lease取得前拒否はDB／Focus session record／ledger mutation 0件、取得後拒否はDB／Focus session record mutation 0件かつ`none → active → aborted` exact 2 ledger transition、成功は`none → active → completed` exact 2 transitionとし、bare lease、例外だけの失敗、session recordとledgerを一括した曖昧なzero-mutation oracleを許さない
+- **EXIT-FSMC-I11-017** — release-ready production graphをAST／dependency verifierで再走査し、旧function closure型`RoutePathConstraint`、旧selected-hall closure factory、旧`isPathAllowed`のproduction import／callerが0件、`RoutePathConstraintV1`、canonical polygon fingerprint、共有inclusive point／segment predicateだけが通常／集中route、cache、hit-test、insert previewへ到達する
+- **EXIT-FSMC-I11-018** — stopped／resumed incident schemaの全dispositionを検証し、pendingだけがevidence／receipt null、preserved／restored／workaroundはkind一致する実artifact refと再計算済みdisposition digest、unrecoverableはassessmentに加えて独立notification receipt／digestを持つ。artifact kind／reference／byteLength／SHA、disposition／notification digest各1 field差、receipt入替え、resumed pending、未確認restoreをnegative fixtureで拒否する
 
 ## 10. テスト計画
 
@@ -5781,44 +7343,44 @@ A-26を「左a・右b」とし、次を登録する。
 
 訪問fixtureにはraw実行商品ID順`[A1, B, A2]`を置く。raw順を変更せず、normal投影が`[A(A1,A2), B]`となること、A2を後回しにするとnormal Aの位置を維持したままpostponed Aがbase順で追加されること、通常マップ、集中モード、`MapVisitListPanel`／`ProjectedVisitList`、space-navigation、I10 routeが同じ`PhaseVisitProjectionSnapshot`を使うことを固定する。`manualHallId` X→Y／未指定、hall削除／remap、mapped↔mapless、dangling manual hall、複数hall候補、stable hall IDの表示名変更も同じfixture familyへ含める。
 
-別fixtureとして、横長結合セル、縦長結合セル、非連続`cellGroups`、同形状ブロック、不一致ブロック、重複block ownership、merge越境、重複merge、同一`(row, col)`でvalue／backgroundが異なる物理セルを用意する。重複・競合は対応ケースではなく負例fixtureとし、保存・コピー・自動継承・経路生成から安全に除外されることを確認する。背景色だけの通行可否変更で`pathfindingGraphFingerprint`とroute cacheが変わる正例も固定する。
+別fixtureとして、横長結合セル、縦長結合セル、非連続`cellGroups`、同形状ブロック、不一致ブロック、重複block ownership、merge越境、重複merge、同一`(row, col)`でvalue／backgroundが異なる物理セルを用意する。`duplicate-number-region`、`multiple-block-owners`、`overlapping-number-regions`、`merge-crosses-block`は影響regionだけを局所exclusionにして影響外location／routeを継続し、同一connected componentで複数原因が併発するfixtureは全reasonを固定enum順の単一exclusionへ保持する。原因発見順shuffleでもkey／bytesを同値にし、duplicate physical cellだけはmap-wide `map-data-untrusted`として停止する。保存・コピー・自動継承・経路生成がこの境界を越えないことを確認し、背景色だけの通行可否変更で`pathfindingGraphFingerprint`とroute cacheが変わる正例も固定する。
 
-永続化・ファイルfixtureには、`EventMetadata`のないevent、複数map event、利用者名が`__proto__`／`constructor`／`prototype`のdata、V1層別unknown、XLSX 2.2 full／item-only、duplicate JSON property、invalid UTF-8、深さ境界、3 scopeのV2、全scope共通`scope.references`、実payload一致／不一致`counts`、V2＋hash拘束V1、32／64 MiB境界、unsafe URL scheme／control／bidi、Worker cancel／offline、payload／metadata／checkpoint／fallback／candidate identity・authority・physical location・physical content witness・absorption projection／fence historical evidence・全historical row digest・participant digest・全root baseline／storeの部分欠損、同じexternal keyのlone surrogateだけが異なるraw DOMString、historical candidate external digestとbaselineの不一致、通常core traceだけのDB5、split対象traceだけのDB5、`H0`後に旧tabがcore root／candidateを変更するDB5、origin全消去、eligible／ineligible recovery、delete前／後終了、イベント削除D+29／D+30／31日／36日、時計rollback／session jump／24時間再確認を含める。固定旧版A fixtureにはanchor保持改名・通常状態更新、候補の一意な正常吸収／追加、吸収証跡なし消失、同一absorption projectionでlocationが異なる曖昧候補、anchor欠落、同anchor複数化、衝突作成、capability-owned差、fence自己不整合、説明不能なcore差、device／event OFF中rebase、rebase commit前／後終了を含める。ローカル制御fixtureは端末全体OFF、event OFF／ON、自動安全モード、個別entry隔離、別tabによるcontrol revision変更、offline、新規復元OFF、既存復元先状態維持、Backup内の禁止ON／OFF fieldを含める。さらに3.13の保証規模を同時に満たす最大fixtureを用意する。
+永続化・ファイルfixtureには、`EventMetadata`のないevent、複数map event、利用者名が`__proto__`／`constructor`／`prototype`のdata、V1層別unknown、XLSX 2.2 full／item-only、duplicate JSON property、invalid UTF-8、深さ境界、3 scopeのV2、全scope共通`scope.references`、実payload一致／不一致`counts`、V2＋hash拘束V1のpair、companion unavailableのV2-only、32／48／64 MiB境界と300,000 ms export timeout、unsafe URL scheme／control／bidi、Worker cancel／offline、payload／metadata／checkpoint／fallback／candidate identity・authority・physical location・physical content witness・absorption projection／fence historical evidence・全historical row digest・participant digest・全root baseline／storeの部分欠損、同じexternal keyのlone surrogateだけが異なるraw DOMString、historical candidate external digestとbaselineの不一致、通常core traceだけのDB5、split対象traceだけのDB5、`H0`後に旧tabがcore root／candidateを変更するDB5、origin全消去、eligible／ineligible recovery、delete前／後終了、イベント削除D+29／D+30／31日／36日、時計rollback／session jump／24時間再確認を含める。固定旧版A fixtureにはanchor保持改名・通常状態更新、候補の一意な正常吸収／追加、吸収証跡なし消失、同一absorption projectionでlocationが異なる曖昧候補、anchor欠落、同anchor複数化、衝突作成、capability-owned差、fence自己不整合、説明不能なcore差、device／event OFF中rebase、rebase commit前／後終了を含める。ローカル制御fixtureは端末全体OFF、event OFF／ON、自動安全モード、`forceSplitPicker`のfactory default／永続化／再読込、個別entry隔離、別tabによるcontrol revision変更、offline、新規復元OFF、既存復元先状態維持、Backup内の禁止ON／OFF fieldを含める。さらに3.13の保証規模を同時に満たす最大fixtureを用意する。
 
 ### 10.2 必須マトリクス
 
-| 観点              | 必須ケース                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 分割              | なし、左a、右a、上a、下a                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| 番号identity      | 衝突なしpreflightで`01a`／`1a`／`０１ａ`が同一、衝突ありとOFFではlegacy維持、ON中の新規pair・同数pair swapは全拒否、厳密減少・完全解消、BigInt前safe integer／1 MiB境界、mapless／legacy-unresolved、unsupported分離、「側未設定」表示                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| 訪問identity      | 非連続同一execution identityのglobal集約、同側異優先度、異側同優先度、normal＋後回し／遅参、最大400 execution／800 phase、raw手動順、既存identityへの挿入指定無視、manualHallId／hall定義・remap、mapped↔mapless、dangling／複数hall、stable hall表示名変更                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| 形状              | 通常、横長結合、縦長結合、非連続block、番号重複、重複block ownership、merge越境、重複merge、重複物理`(row, col)`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| 回転              | 0°、15°、45°、90°、180°、270°、359°、screen空間・DOM・focus順、a/b・badge文字の正立                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| DPR               | 1、2、3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| 拡大・端末判定    | Mobile Chromiumは全倍率picker、狭幅Desktopは非スマートフォン、入力別閾値・曖昧帯の直前・一致・直後、空間順ラベル、利用者override、アプリ倍率、200%                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| 入力              | mouse、touch、長押し、drag、pinch後の片指継続、Canvas外pointerup、Pointer Cancel、lost capture、画面回転、layout切替                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| 状態              | 空、巡回対象外、未処理、処理済み、後回し、遅参、後回し＋遅参二重指定拒否／既存診断、優先度混在、同側複数件                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| 集中追加          | 購入済、後回し、遅参、実行対象外のみ、空側                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| 編集              | 単一、複数、一括解除、既定の追加・変更のみ、明示的完全同期、コピー先ID維持、retained overlap除外・手動再関連付け、履歴保護、解除preview、非連続block、manual改名・移動・同名置換、取消、保存失敗                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| 再取込・通常編集  | 無関係変更、一意移動、欠落、重複、結合範囲変更、旧版変更検出、休眠・隔離、manualHallId除去／remap、mapped↔mapless、core／split複合digest、片側stale、取消                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| DB互換            | non-creating DB absence observation、target-mode別null決定表、`oldVersion = 0`、現行core DB version、`Vcap - 1`／`Vcap`／supported上限のwitness・互換・partial-loss・不正store、supported上限＋1拒否、現行5／6／7／8 provenance fixture、probe settle／close、exact 1 request、blocked同request再開、terminal exact 1、success connection handoff、fence不整合、legacy rebase、I2～I10 production current／write 0、QA Vcap分離origin、I11 production初回Vcap                                                                                                                                                                                                                                                                                                                                                                                           |
-| ローカル制御      | code存在／public登録／到達／認可／commitのmatrix、端末・event ON／OFF、安全モード、一部event fallback、revision競合、commit直前OFF、再起動、オフライン、Backup非収録、新規復元OFF、既存復元先状態維持、pre-release direct dispatch write 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| entry binding状態 | active、dormant、quarantined、同一map内の混在、number／original token整合・不一致、active／retained overlap拒否、地図では非表示・管理UIでは表示、端末内手動再関連付け、即時削除、retention、初版にportable単独出力なし                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| 複数タブ          | 同一root vector同時編集、先行commit、stale拒否、複合操作rollback、再読込後の再編集                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| PWA世代混在       | 旧SW＋旧tab、新SW waiting、新旧tab同時、自己probe close後のversionchange blocked、非terminal progress、blocker close後の同request再開、blocked中の旧tab writeによるH1 abort、error／abort dedupe、page終了時success 0、request result handoff／再open 0、update blocker                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| 障害注入          | QuotaExceeded、通常commandとlegacy rebaseの全barrierのcommit前／後、browser終了、control変更、network切断、payload／metadata／checkpoint／candidate vector／store欠損・変化、origin／profile完全消去                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| 復元              | V1／XLSX 2.2 fullとmapあり・splitなしV2の休眠preview、legacy durable stateの既存event移送／新規default、両legacy item-only時の設定・destination durable維持、scope別exact 10 core section、eventLists／metadata exact 1と残る8 sectionのabsent／present-empty、event／item／map／block／hall／historical-owner references、全7 counts、複数map、map／mapless XOR、orphan／unscoped拒否、hall owner descriptor、item-only全体単射hall matchingのautomatic／choice／0件・新規event拒否、hall定義順、normal／priority／highest／unassigned／missing／malformed visit group、blockNames absent／present-empty／順序／重複、portable durableのempty day／非execution／group identity exact bijection、V2／companion V1 representability、role別pair digest／registry／incomplete handoff、hash拘束V1、取消、新規／既存、全置換・merge禁止、external ID非採用 |
-| 復旧              | open結果・canonical reason・authority／collision witness・eligibility・backup・connection→runbook exact 1件、raw-day／duplicate-anchor adoption-blockedとallocator failureのrequest／write 0件、trusted-core export、total／injective／closed raw-day mapping、全physical source row＋全present source↔assignment exact partition、source-specific／event-wide hall／map choice、execution bucket count遷移、map 6面、Focus ABA、成功後new attempt bootstrap、event-local rejected durable quarantine、eligible atomic reset、不適格write 0、別tab blocked、delete前／後終了、backup hash再選択、clean profileからV2／V1／XLSX 2.2復元、別origin非削除                                                                                                                                                                                                  |
-| 入力安全          | JSON import各fileの32／64 MiB境界、XLSX compressed 32 MiB＋展開／圧縮率境界、fatal UTF-8、duplicate property、非再帰depth／token、1 MiB数字、総entry、重複ref、retained不整合、未知version／scope／control、unsafe URL、same-origin Worker、cancel cleanup                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| 規模              | 15,000セル、最大8,192ブロック、15,000設定、30,000領域、400アイテム、400売場、400 execution訪問、最大800 phase投影、単一phase経路400、保証境界超過                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| ファイル総量      | performance保証32 MiB／file、JSON import hard 64 MiB／file、XLSX compressed hard 32 MiB＋展開limit、export V2 32 MiB・V1 32 MiB・pair 64 MiB、各境界直前／一致／+1、countとbyte境界の逆転、形式別stop／best effort、V2 digest、未知version拒否                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| 形式              | Backup V1/V2、初版legacy XLSX 2.2 full／item-only。XLSX 2.3、multipart、設定単独JSONが初版に露出しないarchitecture test                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| A11y／DOM         | 15,000行検索・virtualization・keyboard・focus復元、status exact 1回、light／dark token contrast、forced-colors、Canvas以外の全操作                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| 品質統合          | test membership、coverage、architecture、foundation quality、required-results hashのcurrent-run成功。0 test、allow-empty、wire→runtime型、UI→persistence、raw URL→href、blob/data Worker edge拒否                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| 互換              | 旧版A→新版B→旧版A→新版B、anchor保持時のfence rebase、anchor欠落時dormant、重複時quarantined、衝突時effective fallback、capability差の安全モード                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| 経路              | a/b別anchor、安全な同一セルa→b、main path／種別付きconnector、自セル領域内port、unsafe-connector、unroutable、同anchor別phase訪問、共有projection、PhaseVisitIdentityKey基準のhit-test／挿入、先頭member削除、pathfinding graph変更、重複物理cell拒否                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| アクセシビリティ  | DOM詳細、空側追加、同anchor候補、一時移動、Canvasなし経路挿入、DOM／Canvas別focus復帰、結果通知                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| 自動テストprofile | Desktop／Mobile Chromiumの固定viewport、DPR、入力能力、retry 0、固定fixture                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 観点              | 必須ケース                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 分割              | なし、左a、右a、上a、下a                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 番号identity      | 完全な`LogicalLocationSourceSnapshotV1`とitem／association／map／split revision、可変論理location集合、`26c = 26c2`、`26d`／`26ab`分離、衝突なしpreflightで`01a`／`1a`／`０１ａ`が同一、衝突ありとOFFではlegacy維持、ON中の新規pair・同数pair swapは全拒否、厳密減少・完全解消、BigInt前safe integer／1 MiB境界、mapless／legacy-unresolved、unsupported分離、「側未設定」表示                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| 訪問identity      | 非連続同一execution identityのglobal集約、同側異優先度、異側同優先度、normal＋後回し／遅参、最大400 execution／800 phase、manual／hall両reorderのexact permutation、draft cancel、stale read witness、durable `executionVisitOrder`だけの更新、hall routeとのatomic update、raw item ID順／member相対順byte不変、既存identityへの挿入指定無視、manualHallId／hall定義・remap、mapped↔mapless、dangling／複数hall、stable hall表示名変更                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 形状              | 通常、横長結合、縦長結合、非連続block、4種の局所exclusionでは影響外location／route継続、番号重複、重複block ownership、merge越境、重複merge、duplicate physical cellだけはmap-wide fatal                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 回転              | 0°、15°、45°、90°、180°、270°、359°、screen空間・DOM・focus順、a/b・badge文字の正立                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| DPR               | 1、2、3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 拡大・端末判定    | Mobile Chromiumは全倍率picker、狭幅Desktopは非スマートフォン、入力別閾値・曖昧帯の直前・一致・直後、空間順ラベル、persisted `forceSplitPicker`のfactory default／設定変更／再読込／untrusted fallback、アプリ倍率、200%                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 入力              | mouse、touch、長押し、drag、pinch後の片指継続、capture成功／失敗、duplicate pointer ID、additional pointer、Canvas外pointerup、Pointer Cancel、expected release後／unexpected active／stale別ID lost capture、`up→lost→click`／`up→click→lost`、画面回転、layout切替、synthetic click guard、global cancel／unmount後のstate・registry・capture・timer・effect・guard全empty、FSM tableの重複／unreachable／implicit default拒否                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 状態              | 空、巡回対象外、未処理、処理済み、後回し、遅参、後回し＋遅参二重指定拒否／既存診断、優先度混在、同側複数件                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 集中追加          | 購入済、後回し、遅参、実行対象外のみ、空側                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 編集              | 単一、複数、一括解除、既定の追加・変更のみ、明示的完全同期、コピー先ID維持、retained overlap除外・手動再関連付け、履歴保護、解除preview、非連続block、manual改名・移動・同名置換、取消、保存失敗                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 再取込・通常編集  | 無関係変更、一意移動、欠落、重複、結合範囲変更、旧版変更検出、休眠・隔離、manualHallId除去／remap、mapped↔mapless、core／split複合digest、片側stale、取消                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| DB互換            | non-creating DB absence observation、target-mode別null決定表、`oldVersion = 0`、現行core DB version、`Vcap - 1`／`Vcap`／supported上限のwitness・互換・partial-loss・不正store、supported上限＋1拒否、現行5／6／7／8 provenance fixture、probe settle／close、exact 1 request、blocked同request再開、terminal exact 1、success connection handoff、fence不整合、legacy rebase、I2～I10 production current／write 0、QA Vcap分離origin、I11 production初回Vcap                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ローカル制御      | code存在／public登録／到達／認可／commitのmatrix、端末・event ON／OFF、安全モード、一部event fallback、persisted `forceSplitPicker`の既定false・設定画面／通常／集中モード共通判定、revision競合、commit直前OFF、再起動、オフライン、Backup非収録、新規復元OFF、既存復元先状態維持、pre-release direct dispatch write 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| entry binding状態 | active、dormant、quarantined、同一map内の混在、number／original token整合・不一致、active／retained overlap拒否、地図では非表示・管理UIでは表示、端末内手動再関連付け、即時削除、retention、初版にportable単独出力なし                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 複数タブ          | 同一root vector同時編集、先行commit、stale拒否、複合操作rollback、再読込後の再編集                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| PWA世代混在       | 旧SW＋旧tab、新SW waiting、新旧tab同時、自己probe close後のversionchange blocked、非terminal progress、blocker close後の同request再開、blocked中の旧tab writeによるH1 abort、error／abort dedupe、page終了時success 0、request result handoff／再open 0、update blocker                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 障害注入          | QuotaExceeded、通常commandとlegacy rebaseの全barrierのcommit前／後、browser終了、control変更、network切断、payload／metadata／checkpoint／candidate vector／store欠損・変化、origin／profile完全消去                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 復元              | V1／XLSX 2.2 fullとmapあり・splitなしV2の休眠preview、legacy durable stateの既存event移送／新規default、両legacy item-only時の設定・destination durable維持、scope別exact 10 core section、eventLists／metadata exact 1と残る8 sectionのabsent／present-empty、event／item／map／block／hall／historical-owner references、全7 counts、複数map、map／mapless XOR、orphan／unscoped拒否、hall owner descriptor、item-only全体単射hall matchingのautomatic／choice／0件・新規event拒否、hall定義順、normal／priority／highest／unassigned／missing／malformed visit group、blockNames absent／present-empty／順序／重複、portable durableのempty day／非execution／group identity exact bijection、verified pairとverified V2-only、companion V1 representability／resource limit、role別pair digest／registry／incomplete handoff、hash拘束V1、取消、新規／既存、全置換・merge禁止、external ID非採用 |
+| 復旧              | open結果・canonical reason・authority／collision witness・eligibility・backup・connection→runbook exact 1件、raw-day／duplicate-anchor adoption-blockedとallocator failureのrequest／write 0件、trusted-core export、total／injective／closed raw-day mapping、全physical source row＋全present source↔assignment exact partition、source-specific／event-wide hall／map choice、execution bucket count遷移、map 6面、Focus ABA、成功後new attempt bootstrap、event-local rejected durable quarantine、eligible atomic reset、不適格write 0、別tab blocked、delete前／後終了、backup hash再選択、clean profileからV2／V1／XLSX 2.2復元、別origin非削除                                                                                                                                                                                                                                               |
+| 入力安全          | JSON import各fileの32／64 MiB境界、XLSX compressed 32 MiB＋展開／圧縮率境界、fatal UTF-8、duplicate property、非再帰depth／token、1 MiB数字、総entry、重複ref、retained不整合、未知version／scope／control、V2 domain-separated embedded digestのincluded／unavailable各field mutation、issues digest／pair digest差替え、unsafe URL、same-origin Worker、cancel cleanup                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 規模              | 15,000セル、最大8,192ブロック、15,000設定、30,000領域、400アイテム、400売場、400 execution訪問、最大800 phase投影、単一phase経路400、保証境界超過                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ファイル総量      | performance保証32 MiB／file、JSON import hard 64 MiB／file、XLSX compressed hard 32 MiB＋展開limit、export V2自体が32 MiB超なら停止、V2以内でV1 32 MiBまたはpair raw byteLength合計48 MiB超なら`companion-v1-resource-limit`付きV2-only、全上限内ならpair、各境界直前／一致／+1、countとbyte境界の逆転、形式別stop／best effort、V2 digest、未知version拒否                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| 形式              | Backup V1/V2、初版legacy XLSX 2.2 full／item-only。XLSX 2.3、multipart、設定単独JSONが初版に露出しないarchitecture test                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| A11y／DOM         | 15,000行検索・virtualization・keyboard・focus復元、status exact 1回、light／dark token contrast、forced-colors、Canvas以外の全操作                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| 品質統合          | test membership、coverage、architecture、foundation quality、required-results hashのcurrent-run成功。0 test、allow-empty、wire→runtime型、UI→persistence、raw URL→href、blob/data Worker edgeを拒否する。build treeはpath／length／byte／manifest-only差、nested directory列挙、symlink／junction／reparse／deviceを拒否し、別root／timezoneの同一treeを同値にする。quality producer 0回／複数回、逆needs／cycle、direct-required未設定／誤contextを拒否し、固定toolchainのpositive Playwright dry-runと旧形式negativeを実行する                                                                                                                                                                                                                                                                                                                                                                     |
+| 互換              | 旧版A→新版B→旧版A→新版B、anchor保持時のfence rebase、anchor欠落時dormant、重複時quarantined、衝突時effective fallback、capability差の安全モード                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 経路              | a/b別anchor、安全な同一セルa→b、main path／種別付きconnector、自セル領域内port、unsafe-connector、unroutable、同anchor別phase訪問、共有projection、PhaseVisitIdentityKey基準のhit-test／挿入、先頭member削除、selected hall polygonのrouting port／raw・simplified path／全connector／same-cell全線分inclusive検証、invalid／stale constraintのno fallback、constraint fingerprint／index／graph差によるcache分離、重複物理cell拒否                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| アクセシビリティ  | DOM詳細、空側追加、同anchor候補、一時移動、Canvasなし経路挿入、DOM／Canvas別focus復帰、結果通知                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 自動テストprofile | Desktop／Mobile Chromiumの固定viewport、DPR、入力能力、retry 0、固定fixture                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 必須マトリクスは全直積を意味しない。各行についてunit、integration、browser、a11y、性能の担当層をtraceability表へ記録する。a/b分離、原子保存、旧新版同居、ローカルOFF mid-save、Backup置換、訪問global集約はrisk-based必須組合せとし、その他はpairwiseを許可する。各ケースはrequirement ID、fixture、期待値、実行commandを持つ。データ安全性specはCI retryを0とし、初回失敗後のretry成功を合格扱いにしない。実機receiptや外部証跡は要求しない。
 
@@ -5843,8 +7405,8 @@ A-26を「左a・右b」とし、次を登録する。
 17. `26c`／`26c2`は同じexecution訪問、`26d`／`26ab`は別訪問のまま中央anchorの件数badgeへ表示する
 18. 同じanchorの異なる優先度・phaseを中立markerへ重ね、DOM候補一覧で別`PhaseVisitIdentity`として選択できる
 19. 横長結合セルのrouting portと半領域anchorを自セル領域内の安全な点線connectorで接続する。領域外または障害物横断が必要なcaseは`unsafe-connector`で`unroutable`とし、同一セルa→bにも同じ規則を適用する
-20. block改名・移動では設定を維持してevidenceとanchorを原子的に更新し、重複番号・merge越境では対象entryだけをquarantinedにする
-21. pinch後の片指離し、Canvas外pointerup、lost capture、画面回転、layout切替後にpopupが誤って開かない
+20. block改名・移動では設定を維持してevidenceとanchorを原子的に更新する。重複番号、multiple block owner、overlapping number region、merge越境は該当regionだけをexclusion／quarantineにし、影響外locationの表示・hit-test・routeを継続する。duplicate physical cellだけはmap-wide `map-data-untrusted`となる
+21. pointer FSMの導出済み全reachable `(state, normalizedInput)` rowとinvalid-invariant corruption guardを通し、capture成功／失敗、数値pointer ID `2`／`10`、duplicate／再利用、owner pairのcentroid pan／distance pinch、owner外move、owner離脱時rebase、pinch後の片指pan継続、additional pointer drain、Canvas外pointerup、expected release後／unexpected active／stale別ID lost capture、画面回転、layout切替、global cancel、unmountを検証する。viewport transformはexact 1回、tap／popupは0回となり、到達不能／重複rowがない。`dispatch-tap`直後のidleだけsynthetic-click guardはexact sequence／target／pointer／button／座標／timestamp witness付き`awaiting-matching-click`となる。直後のbrowser synthetic clickだけmatching、keyboard click、別target、同座標の別sequence、PointerEvent pointer ID差、1000ms境界超過はnonmatchingにし、matching clickまたは次のprimary downでguardをemptyにする。`down→up→expected lost→matching click`と`down→up→matching click→expected lost`の両順序でtap exact 1回／click dispatch 0件とし、expected lostはrelease witnessだけ、stale lostは何もclearせずguardを維持する。unexpected active lostを含むglobal cancel／unmount後だけstate、active／release registry、capture、timer、pending effect、guardが全てemptyになる遷移列を固定する
 22. イベント削除画面の既定が「30日保持」で「今すぐ完全削除」が別選択であること、D+29の端末内再関連付け、正常時計のD+30対象限定cleanup、時計異常時の延期をfake clockで確認する
 23. 旧版A tabと新版B、SW waiting、versionchange blocked、QuotaExceeded、transaction各段階abort、browser強制終了で部分commitがない。presence absenceではprobeを作らず`oldVersion = 0`、existingではH0 transaction完了後に自己probeをcloseしてからrequest ordinal 1を発行する。external blocker中は同requestがpending、旧tabがcoreを変更した場合はblocker close後のH1で全abortし、error／abortはterminal ordinal 1へdedupeする。successは`request.result` connectionをhandoffし、再open 0件となる
 24. `__proto__`等の利用者名をV2で往復し、不正ref、未知version／scope、hard limit超過、unsafe URL scheme／制御文字／bidi spoofをV2／CSV／新規編集ではDB更新前に拒否する。V1／XLSX 2.2／既存profile由来の同じunsafe URL文字列は`legacy-compat`でraw値を保持してもlink化せず、全href sinkが`SafeExternalHref`以外を拒否する。空文字はURLなしとして受理する
@@ -5854,8 +7416,8 @@ A-26を「左a・右b」とし、次を登録する。
 28. event ON中に商品編集、source switch、既存event bulk add、item import、V1 full import、legacy XLSX 2.2 full import、Backup V2復元、通常地図編集、地図再取込の各操作で`01a`／`1a`衝突を新規作成し、各操作が全store書込み前に拒否され、元data、settings、durable visit state、anchor、association、control ONが維持されることを確認する
 29. mapped、mapless、legacy-unresolvedの商品を同じraw実行列へ置き、共有訪問projectionが全identityを保持する一方、mapless／unresolvedに架空のmap cell、marker、route anchorを作らないことを確認する
 30. payload、metadata、checkpoint、runtime fallback、identity／authority／物理location／物理内容witness／absorption projection付きrecovery candidate vector、capability store、fence historical evidence／全historical row digest／全root baselineの各部分欠損・cross-invariant不一致では自動安全モードとなる。同じexternal key／identity／locationでraw DOMStringをlone surrogate間だけ変更した場合もUTF-16 code unit witness差として検出する。参加rootについてinventoryが列挙する`syncQueue`等の全potential IDB storeをsnapshot時emptyでも同transactionへ含め、別transactionやtransaction内WebCryptoを待たず、candidateのempty→insert、消滅、内容変更をCAS abortする。非参加rootを含むexternal candidateをcommit前またはIDB commit後・post-check前に変更した場合、healthyなlegacy-mutable coreだけならそれぞれwrite 0件の`legacy-rebase-required`または全new IDB rootを維持した`committed-legacy-rebase-required`とし、capability-ownedまたは分類不能な差ならそれぞれwrite 0件のrecovery-requiredまたは全new IDB root＋完全baseline fenceの`committed-recovery-required`とする。別scope commandでfenceを更新しても非参加historical row／baselineを消去せず、再起動でも同じ分類となる。origin／profile全消去では空profile、device OFF、enabled event ID 0件で開始し、消去dataの自動復旧や保持成功を表示しない
-31. 複数map eventのV2とSHA-256で拘束されたV1を同一snapshotから生成し、V2のfull core全sectionとV1 coreが明示transform以外で同値、V2は新版へ、exact V1 bytesは固定旧版Aへ復元できることを確認する。`backup-v2`／`companion-v1`のrole、fileName／byteLength／SHA-256、V2 `companionCore`、domain-separated pair digest、immutable registry bytesをhandoff直前に再検証し、role逆転、片方差替え、stale／finalized handleをhandoff 0件にする。片方だけのdownload handoffはexpected artifact ID集合のtyped `incomplete`で完了通知を禁止し、同pair再生成を案内する。V2-only hall group／order／manual hallをfrozen V1へlossless変換できないfixtureは`companion-v1-unrepresentable`としてV2、V1、pair、handoffを全て0件にする。さらにlegacy XLSX 2.2 full／item-onlyをpreviewし、fullはevent coreを全置換してsplitをdormant化、item-onlyはmap／splitを維持し、いずれもstale／cancel／validation失敗でwrite 0件とする
-32. 経路計算後に`backgroundColor`だけで通行可否を変え、`pathfindingGraphFingerprint`差により古いcacheを破棄して再計算する。同一`(row, col)`の重複cellを作るimport／通常編集はON／OFFとも原子的に拒否し、既存重複cellを並べ替えても一方を採用せず、当該mapの経路を安全に停止する
+31. 複数map eventのV2とSHA-256で拘束されたV1を同一snapshotから生成し、V2のfull core全sectionとV1 coreが明示transform以外で同値、V2は新版へ、exact V1 bytesは固定旧版Aへ復元できることを確認する。`backup-v2`／`companion-v1`のrole、`preparationKind`、fileName／byteLength／SHA-256、V2 `companionCore`、domain-separated pair／issues digest、immutable registry bytesをhandoff直前に再検証し、role逆転、片方差替え、stale／finalized handleをhandoff 0件にする。pair branchで片方だけのdownload handoffはexact 2 artifactの`pair-incomplete`、V2-only本体失敗はreasonと同じ`structural-v2-only-incomplete | resource-v2-only-incomplete`のexact 1 artifactとなり、完了通知を禁止して各専用guidanceだけを返す。V1へlossless変換できないhall group／order／manual hallは構造reason＋resource以外のcanonical issuesと`structural-v2-only`、companion／pairだけがresource limitを超えるfixtureはresource reason＋exact 1 resource issueと`resource-v2-only`にし、scope、export、prepared、verification、handoffのreason／issues／digestを一致させる。両fixtureはV2 exact 1、V1／pair 0、null pair digestのreason別verified V2-onlyを新版へ完全復元する。V2自体がunrepresentableまたは32 MiB超の場合だけV2も0件にする。さらにlegacy XLSX 2.2 full／item-onlyをpreviewし、fullはevent coreを全置換してsplitをdormant化、item-onlyはmap／splitを維持し、いずれもstale／cancel／validation失敗でwrite 0件とする
+32. 経路計算後に`backgroundColor`だけで通行可否を変え、`pathfindingGraphFingerprint`差により古いcacheを破棄して再計算する。selected hallではrouting port、anchor、raw／simplified main path、全connector、same-cell directの全点・全線分を同じinclusive polygon predicateで検証し、別hall、凹部横断、invalid／stale polygonをwhole-mapへfallbackしない。polygonの開始点／向き差は同じ`RoutePolygonFingerprint`、頂点／hall／revision差は別値とし、polygon／fingerprint不一致を拒否する。whole-map／hall／polygon revisionのconstraint fingerprint差でもcacheを分離する。同一`(row, col)`の重複cellを作るimport／通常編集はON／OFFとも原子的に拒否し、既存重複cellを並べ替えても一方を採用せず、当該mapの経路を安全に停止する
 33. 全3 reader scopeで`scope.references`が実event／item／map／block／hall／historical-owner slotとexact bijection、`deriveEventBackupCountsV2`の全7値が実payloadと一致する場合だけ受理する。full-split／synthetic core-mapはeventLists／metadata exact 1 rowと残る8 sectionのabsent対present-empty、実行順、day mode、route／hall／viewport、event settings、durable visit state、複数map、map／mapless owner XOR、hall定義・route owner、hall source順、blockNamesのabsent／present-empty・順序・重複をlosslessに保持する。hall visit groupはnormal／priority／highest／unassigned／missing／malformedの全branchとcontextual 3 faceをround-tripし、orphan／unscoped／dual-match、reserved `undefined` collision、owner／ref／order不正をpreview前に全体拒否する。item-onlyは`eventLists`以外のdata sectionを含めず既存map／split／settings／durable stateを維持・rekeyし、resolved manual hallはsource V2 digest／file SHAへ拘束した全hallRef↔distinct destination Hall IDのtotal injective matchingだけを許す。matching 0件、新規event＋resolved hall、候補衝突、非単射・候補外・別backup choice replayはwrite 0件、unique matchingはautomatic、複数matchingは全graphのchoiceとする。portable durableはcore-derived day scopeとexact bijection、empty durable dayと非execution itemを保持し、再構築group identityもpairwise uniqueなexact bijectionとする。正しいdigestのままsection／counts／referencesだけを水増し・省略する入力も全体拒否し、production writerはfull-split／item-onlyだけ、core-map serialize戻り／command／dispatch 0件とする
 34. device再ON後の衝突fallbackでitem番号修正、map identity修正、current item参照0件の孤立訪問状態破棄をそれぞれpreviewし、strict decreaseだけを原子的に確定する。pair swap、同数置換、新規pair、stale、通常writer経由は全拒否し、完全解消commit後だけ対象eventがeffective ONへ戻る
 35. FSMC DB absenceはopen前のexternal tri-stateで分類する。10 core external keyのいずれかがpresentならbyte-exact materialize後にretirable coreをarchive／closeし、core 10 keyが全absentでpreserved `syncQueue`だけpresentならqueueをbyte-exact archive／closeしてcoreを捏造しない。DB absent、core 10 key全absent、queue absentの3条件が同時成立する場合だけtrue freshとする。通常core metadata／checkpoint／candidateだけのDB5は`core-only`のまま、split対象metadata／checkpoint／candidateだけのDB5は`map-cell-split-recovery-required`となる。導入trace 0件のDB5→`Vcap`では`after-vcap-history-source-preflight`後に旧tabが非fence rootのpayload／metadata／checkpoint／candidateを1件でも変更すると、versionchange内`H1`の同期byte比較で最初のwrite前に旧DBのままabortする。`after-vcap-history-source-reread-before-first-write`後のfault、external `E0/E1`差、transaction内split IDB traceも同じく全abortし、transaction内WebCrypto／別async taskを使わない。DB5→`Vcap`と新規DB 0→`Vcap`をversionchange commit直前でabortすると旧version／storeなし、commit直後から`onsuccess`前で終了すると`data`／`control`／`durable-visit-state`／`event-settings`／`event-settings-bridge`、lossless candidate vector付きtotal historical evidence／全historical row digest／participant digest／全governed root baselineを持つinitial fence、6 capability rootのmetadata／checkpointが全て存在する。既存DBのlegacy rowは`H1`、capability payload rowはfactoryが実際に書いたcanonical after-image、fence rootはhistorical rowなし／baselineのみであり、導入前のabsent capability payload rowを保存したfenceを拒否する。新規DBは全non-fence root writeとevidenceが同じfactory値で一致する。commit後終了は次回起動でinitial fenceと全rootを検証し、差なしは正常、healthy legacy-only差は全new DBからrebase、それ以外の差は全new DB＋fenceのrecovery-requiredとなる。採択済みVcap以上の運用後空store、fence欠落／埋込全historical row digest・participant digest・candidate vector・historical/baseline cross-invariant・root universe・capability-owned baseline不一致は再初期化せず`map-cell-split-recovery-required`となる。このmigration oracleはI2では`databaseTargetMode = fsmc-vcap-qa` artifactだけで実行し、同candidateのproduction artifactがDB5／公開command 0件を維持することも対で検証する。I11 release-readyでは初めて`fsmc-vcap-production` artifactへ同じoracleを再実行する。existing profile participantは5 payload root、fresh profile participantはfactory-written全non-fence rootとactual write log／digest対象へexact一致し、bridge crashはpendingから再開する
@@ -5865,7 +7427,7 @@ A-26を「左a・右b」とし、次を登録する。
 39. recovery-required画面から診断`fsmc.recovery.diagnose.v1`を生成し、trusted coreだけをV1へ退避する。eligible caseは別tab／接続を閉じ、選択済みBackup hashを再照合してsplit stateだけを単一transactionでresetする。ineligible caseはwrite 0件のまま二段階確認付きclean-profile手順へ進み、delete前終了では元profile、delete後終了では空profileとして再開し、別originを削除しない
 40. Backup workerはmain threadでwhole-file `arrayBuffer()`／`text()`を呼ばず、1 MiB以下のsliceでV1／V2 JSONの32 MiB保証境界と64 MiB hard limit、XLSX 2.2のcompressed 32 MiBと展開後limitの直前／一致／+1を判定する。cancel、timeout、malformed UTF-8、worker crash、offline PWA起動後の再実行でWorker、reader、timer、transactionを残さず、`worker-src 'self'`のままblob／data workerを作らない
 41. `CellSplitDefinitionPanel`／retained管理の15,000行で検索、filter、virtualization、container focus＋`aria-activedescendant`によるkeyboard移動、選択、閉じて再表示したfocus復元を完了する。別fixtureの`MapVisitListPanel`／`ProjectedVisitList`は最大800 phase訪問で選択・挿入・focus復元を完了する。両方で処理結果ごとに常設`role=status`領域がexact 1回だけ更新され、light／dark／forced-colorsで非色覚手掛かりを維持する
-42. test membership、coverage、architecture、foundation qualityの各verifierへ0 test、allow-empty、未登録command、wire→runtime型import、UI→persistence import、raw URL→href、blob／data Worker edge、別run／別artifact hashの偽装成功を投入し、個別testがpassedでもrequired gateが必ず拒否する
+42. test membership、coverage、architecture、foundation qualityの各verifierへ0 test、allow-empty、未登録command、wire→runtime型import、UI→persistence import、raw URL→href、blob／data Worker edge、別run／attemptのtree／manifest hash偽装を投入し、個別testがpassedでもrequired gateが必ず拒否する。file treeのpath／length／byte／manifest-only単独差、nested directory entry、symlink／junction／reparse／device、別root／timezone同値を各fixtureで検証する。quality producer 0回／2回、逆needs／cycle、`fsmc-required-gate` direct-required未設定／誤contextを拒否する。固定Node／npm／lockfileで`npm run test:fsmc:playwright-cli-contract`を実行し、`npx playwright install --with-deps chromium --dry-run`だけがexpected browser／flag転送で成功し、旧`npm exec`2形式が失敗する
 43. I11 release-ready productionでDB absent＋10 core external key absent＋preserved queue absentのtrue fresh empty profileだけはevent basis付きready＋entry 0件、core materialize後／queue-only archive後を含むcollision-freeなpresent既存profileはscope 0件／unmapped-onlyでもmigrating＋通常public edge 0件で開始する。raw-day collisionは`capability-adoption-blocked`、invalid／duplicate anchor participantは`event-authority-adoption-blocked`、event ID／anchor token allocator unavailable・3回衝突は`event-authority-proposal-failed`となり、upgrade request／DB／token／default write 0件と各runbookを確認する。raw repairは全semantic raw tupleのtotal／injective／closed mapping、day-scoped sourceのgroup間exact partition、present source↔assignment、day＋event-wide hallのglobal target injectivityとfull target occupant identity、source-specific／event-wide choice、map request↔decision＋6面、nonempty execution partition、Focus CAS、requested target→choice request→loss rows→plan→confirmation→one-shot lease→full-plan receipt digest chain、E0／E1／E2とqueue integrityを一つのauthorityへ拘束する。可変4 count `distinctNormalizedDayScopeCount`／`executionBucketCount`／`hallDefinitionSlotCount`／`hallRouteSlotCount`だけを各決定式から再計算し、hall entry／list／item-reference count、execution reference、その他count／payload bytesを維持する。cross-group duplicate、2 rename→1 target、hall capacity、zero-member row、partial domain、many-to-one、domain外target、choice／plan／loss確認／lease／receipt不整合、shared reference、map 1～5面、physical drop／copy、Focus ABA、E1差、stale／取消／quotaは旧core／registryを維持し、E2再出現は全new IDBを維持した定義済みblocked／recoveryへ写し、成功後のnew attemptだけがbootstrapする。persisted authorityはevent-local association missing／extra、anchor missing／invalid／mismatch／duplicateの6 reasonと複合をcanonical化し、global 5 reasonは全体reject、local rejected eventの既存durable entriesはbyte不変quarantine、unaffected eventはready継続、局所化不能差だけ全体repair-requiredにする。migrationはfreeze request→active lifecycle lease完了→latest capture ack→setter停止→fresh issuance→旧writer unmountを守り、valid session全fieldを移送する。snapshot欠落／field不正／mapping 0・複数／unmapped recordはfield別default／破棄previewと全確認を必須にする。zero-session renameだけempty `keyPairs`を許し、rename／delete persistence→registry lease中freeze、freeze先行拒否、二重finalize／replay、3 counter上限、ABA／同bytes再作成、stale、取消後のfresh issuanceを確認する。commit前終了はmigrating、commit後rootはentries／eventBases／両aggregate／retired rowsだけを保存し、`rejectedEventPartitions`は同じcommitted snapshotからpost-deriveする非永続witnessとする。reload／別tab／Backup V2往復でevent bases、durable order／phase／anchor／completionを復元する
 
 44. Backup hall group codecはowner別reachable semantic pairのleft-inverse／injectivityを検証し、通常unassigned、実hall ID `undefined`／`undefined:priority`／`undefined:highest`、suffix付き実ID単独、`A`＋`A:priority`、`A`＋`A:highest`を区別する。aliasは`hall-group-token-noninjection`でV2／pair 0件とし、current map＋deleted blockはhistorical blockの`current-map` parentでround-trip、unknown／ambiguous parentやhistorical mapへの劣化は全体拒否する
@@ -5875,6 +7437,12 @@ A-26を「左a・右b」とし、次を登録する。
 46. 同じsource pathへobject own undefined、array own undefined、hole、`-0`、null、0を置いたraw witnessを作り、exact tag／index／lengthを含むdomain-separated digestが全て異なることを確認する。通常JSON化後の欠落／null／0からraw witnessを逆算したartifactと、tagまたはdigestだけを差し替えたartifactはV2／pair 0件にする
 
 47. CSV由来event update／source switch、既存event bulk add、item-only／V1 full import、XLSX 2.2の各成功writerで、event ID／anchor保持、basis 4 field、`basisCoreDigest`／`basisEventAuthorityDigest`、durable entriesをafter-imageから再計算し、core／metadata／association／durable／checkpoint／fenceがall-old／all-newになることを確認する。identity-bearing差をdurable participantなしでcommitするfixtureと、identity非変更なのにbyte同値durable rootをputするfixtureを拒否する
+
+48. Desktop Chromiumで自動判定が直接選択となる条件でも、設定画面で`forceSplitPicker`をONにすると通常マップ／集中モードの両方がpickerとなり、reload／offline後も維持される。factory default false、OFFへの復帰、untrusted control rootの安全fallback、Backupにfieldが含まれないことも確認する
+
+49. 訪問一覧のmanual reorderはUI draft中とcancel後に全永続rootをbyte保持し、保存時だけ`fsmc.visits.reorder-execution-order.v1`でdurable `executionVisitOrder`を更新する。hall順reorderは`fsmc.visits.reorder-by-hall.v1`でhall route settingsとdurable orderをall-old／all-newにし、両入口ともraw item ID列とmember相対順をbyte保持する。preview後のraw execution item membership差、片root stale、unknown／duplicate／missing visit、quotaはwrite 0件にする
+
+50. 完全なevent item／association snapshotへtarget-map、other-map、mapless、legacy-unresolved、associationなしを混在させ、`itemSetDigest`／`snapshotDigest`とrevisionを再計算する。target mapだけにwhole／a／b／unsupported logical locationを作り、partial caller、独自filter、suffix配列をarchitecture testで拒否する
 
 ### 10.4 アクセシビリティ試験
 
@@ -5913,6 +7481,8 @@ axe合格をCanvasのキーボード対応や完全なWCAG適合の根拠には�
 
 `ubuntu-24.04`の移動aliasだけでは性能判定に使わない。runner configへ`runnerProvider: "github-actions"`、runner label／class、`executionMode: "container"`、immutableなOCI digest、`architecture: "x64"`、OS／kernel、CPU model allowlist、logical CPU数、cgroup v2 CPU quota、memory limit、swap disabled、job isolation／co-tenancy契約を固定する。`quality.yml`の`fsmc-performance-shard`は同じ値を非placeholderの`container.options: --cpus <literal> --memory <literal> --memory-swap <same-memory-literal> --pids-limit <literal>`として所有し、`container.credentials`を持たない。I0 Exitはpublic packageから実在digestを匿名pullしてDockerfile source hashと対応付けるため、未解決placeholder、moving tagだけ、host直実行、configとworkflow literalの差を受理しない。job開始時にprovider metadata、`/proc/cpuinfo`、`/proc/meminfo`、cgroup CPU／memory、swapを検証し、固定calibration fixtureを同じbrowserで測ってI0固定band内であることを確認する。環境field不一致、取得不能、calibration範囲外はinfrastructure failureとしてsampleを採用せず、製品性能の合否を出さない。上限値とrunner envelopeの変更は別々にdiff・reviewできるようにする。
 
+性能matrixの実行予算はexactに固定する。I0 qualification-onlyは同一run／attempt内のexact 12 shardを`max-parallel: 12`で重複実行し、reducerがcurrent run-attempt jobs APIの`started_at`／`completed_at`から正規化したUTC epoch millisecondのhalf-open区間をend-before-startで走査して最大同時実行数12以上、started→completed区間unionだけのqueue除外wall-clock 360分以下を証明する。productは最大54 shard、Actions job開始から1 shardの計算上限300分、job hard deadline 330分、12並列で5 waveなのでmatrixの計算上限1,500分／hard-timeout上限1,650分、runner消費の計算上限16,200分／hard-timeout ceiling 17,820分を1 attemptの上限とする。canonical shard ID順を12 laneへround-robinし、各lane最大5 shard、宣言expected minutesの最大lane合計を最後に整数分へ切り上げた`projectedFiveWaveMinutes`も360以下にする。test retryと自動workflow retryは0とし、開始前allowlist証跡を持つ`infrastructure-failed`だけをCI Operator承認後のGitHub Actions `Re-run all jobs`でperformance-rerun-preflight、quality、prerequisite、production／QA build、functional、両WebKit、performance plan／全shard／reducer、finalizer、gateまで同一sourceの新attemptへexact 1回再実行する。最大2 attempt、shard単体／failed-jobs／部分matrix rerun、別attempt resultの混在を禁止し、2 attempt合計はperformance shard matrix部分だけで3,300 matrix分／35,640 runner分を上限とする。started後のabsolute deadline watchdog、製品test失敗、budget超過、安全assert失敗、開始状態不明は再実行対象にしない。
+
 5秒操作scenarioでは、連続する各pointer／wheel入力の受付から次のpaintまでを`inputObservation`とし、入力のないidle frameを加えない。各measured runはpan、zoom、rotationを各10 observation以上含み、そのrun内の全inputObservationを昇順にしたnearest-rank p95を`runInputLatencyP95`＝runValueとする。30個のrunInputLatencyP95から求めるscenarioP95が下表のinput-to-next-paint上限を満たし、さらに全30 runの全main-thread task observationが後述の絶対上限を満たす。入力不足を短い高速runとして採用しない。
 
 各scenarioは、timed区間外でfixtureをseedした直後のroot hashを固定し、run後の期待root hashまたはwrite 0件を検証する。scenarioごとにbrowser processを再起動し、同一scenarioのwarmupと30 measured runだけでそのprocessを共有する。各runは新規BrowserContext／page／temporary originから開始し、HTTP cache、IndexedDB、service worker、PWA offline状態はscenario定義どおりにseedする。前runのindex、Worker、transaction、DOM、route cache、download object URLを持ち越した場合はcleanup失敗とする。
@@ -5921,48 +7491,48 @@ axe合格をCanvasのキーボード対応や完全なWCAG適合の根拠には�
 
 OFF比較はexactに、`map-first-render-normal → off-map-first-render-normal`、`map-first-render-focus → off-map-first-render-focus`、`map-interaction-normal → off-map-interaction-normal`、`map-interaction-focus → off-map-interaction-focus`の4組だけを`required=true`とする。referenceは同じ最大fixtureを端末全体OFF・event OFFで開き、targetは同fixtureをhealthy effective ONで開く。他のproduct scenarioと全off-reference自身は`required=false, referenceScenarioId=null`とする。4 referenceも下表の独立scenario、初版manifest entry、絶対上限、適用phaseを持ち、未実行、targetより後の実行、異なるbuild／profile／fixture hash、reference resultの再利用を失敗させる。
 
-| scenario ID／対象                                                             | Desktop Chromium CI p95 | Mobile Chromium emulation CI p95 | 適用開始 |
-| ----------------------------------------------------------------------------- | ----------------------: | -------------------------------: | -------- |
-| `startup-preflight-index`：preflight＋初期索引＋15,000件validation            |                1,500 ms |                         3,000 ms | I2       |
-| `local-control-toggle`：端末／event制御のpreview＋commit                      |                1,000 ms |                         2,000 ms | I2       |
-| `legacy-rebase-commit`：最大fixtureのhealthy legacy差rebase                   |                2,500 ms |                         5,000 ms | I2       |
-| `backup-v2-v1-export`：V2／V1各32 MiB以下・pair 64 MiB以下の生成／handoff     |                5,000 ms |                        10,000 ms | I4       |
-| `backup-v2-parse-preview`：32 MiB以下のV2 worker parse＋validation＋preview   |                5,000 ms |                        10,000 ms | I4       |
-| `backup-v2-restore-commit`：最大fixtureの全置換commit                         |                3,000 ms |                         6,000 ms | I4       |
-| `xlsx22-full-restore`：legacy XLSX 2.2 full parse＋preview＋commit            |                7,500 ms |                        15,000 ms | I4       |
-| `event-enable-preview`：15,000設定の有効化preview                             |                1,500 ms |                         3,000 ms | I5       |
-| `event-enable-commit`：15,000設定の有効化commit                               |                2,500 ms |                         5,000 ms | I5       |
-| `single-split-save`：単一分割設定のvalidation＋commit                         |                  250 ms |                           400 ms | I5       |
-| `copy-preview`：15,000件の追加・変更／完全同期preview                         |                1,500 ms |                         3,000 ms | I5       |
-| `copy-commit`：15,000件copyの原子的commit                                     |                2,500 ms |                         5,000 ms | I5       |
-| `definition-list-first-render`：管理panelの15,000 active行初回virtualized表示 |                  750 ms |                         1,200 ms | I5       |
-| `definition-list-filter-input`：active設定の検索入力から次paint               |                  100 ms |                           150 ms | I5       |
-| `retained-list-first-render`：管理panelの15,000 retained行初回virtualized表示 |                  750 ms |                         1,200 ms | I5       |
-| `retained-list-filter-input`：管理panelの検索入力から次paint                  |                  100 ms |                           150 ms | I5       |
-| `map-reimport-commit`：最大fixtureの複合reimport plan＋commit                 |                3,000 ms |                         6,000 ms | I6       |
-| `visit-rekey-projection`：400商品／最大800 phase投影のrekey＋snapshot再構築   |                  750 ms |                         1,500 ms | I7       |
-| `off-map-first-render-normal`：最大fixtureの通常マップ初回描画、機能OFF       |                1,500 ms |                         2,500 ms | I8       |
-| `map-first-render-normal`：最大fixtureの通常マップ初回描画                    |                1,500 ms |                         2,500 ms | I8       |
-| `projected-visit-list-first-render`：最大800 phase訪問のDOM一覧初回表示       |                  500 ms |                           800 ms | I8       |
-| `projected-visit-list-filter-input`：最大800 phase訪問の検索入力から次paint   |                  100 ms |                           150 ms | I8       |
-| `off-map-first-render-focus`：最大fixtureの集中モード初回描画、機能OFF        |                1,500 ms |                         2,500 ms | I9       |
-| `map-first-render-focus`：最大fixtureの集中モード初回描画                     |                1,500 ms |                         2,500 ms | I9       |
-| `off-map-interaction-normal`：通常マップ5秒操作、機能OFF                      |                  100 ms |                           150 ms | I8       |
-| `map-interaction-normal`：通常マップ5秒操作input-to-next-paint                |                  100 ms |                           150 ms | I8       |
-| `off-map-interaction-focus`：集中モード5秒操作、機能OFF                       |                  100 ms |                           150 ms | I9       |
-| `map-interaction-focus`：集中モード5秒操作input-to-next-paint                 |                  100 ms |                           150 ms | I9       |
-| `split-direct-popup-normal-desktop`：direct half hit→popup paint              |                  150 ms |                                — | I8       |
-| `split-picker-popup-normal-mobile`：cell tap→picker→side選択→popup paint      |                       — |                           200 ms | I8       |
-| `split-direct-popup-focus-desktop`：direct half hit→popup paint               |                  150 ms |                                — | I9       |
-| `split-picker-popup-focus-mobile`：cell tap→picker→side選択→popup paint       |                       — |                           200 ms | I9       |
-| `route-recalculate`：単一phase 400訪問の経路再計算                            |                  750 ms |                         1,500 ms | I10      |
+| scenario ID／対象                                                                   | Desktop Chromium CI p95 | Mobile Chromium emulation CI p95 | 適用開始 |
+| ----------------------------------------------------------------------------------- | ----------------------: | -------------------------------: | -------- |
+| `startup-preflight-index`：preflight＋初期索引＋15,000件validation                  |                1,500 ms |                         3,000 ms | I2       |
+| `local-control-toggle`：端末／event制御のpreview＋commit                            |                1,000 ms |                         2,000 ms | I2       |
+| `legacy-rebase-commit`：最大fixtureのhealthy legacy差rebase                         |                2,500 ms |                         5,000 ms | I2       |
+| `backup-v2-v1-export`：V2／V1各32 MiB以下・pair raw total 48 MiB以下の生成／handoff |                5,000 ms |                        10,000 ms | I4       |
+| `backup-v2-parse-preview`：32 MiB以下のV2 worker parse＋validation＋preview         |                5,000 ms |                        10,000 ms | I4       |
+| `backup-v2-restore-commit`：最大fixtureの全置換commit                               |                3,000 ms |                         6,000 ms | I4       |
+| `xlsx22-full-restore`：legacy XLSX 2.2 full parse＋preview＋commit                  |                7,500 ms |                        15,000 ms | I4       |
+| `event-enable-preview`：15,000設定の有効化preview                                   |                1,500 ms |                         3,000 ms | I5       |
+| `event-enable-commit`：15,000設定の有効化commit                                     |                2,500 ms |                         5,000 ms | I5       |
+| `single-split-save`：単一分割設定のvalidation＋commit                               |                  250 ms |                           400 ms | I5       |
+| `copy-preview`：15,000件の追加・変更／完全同期preview                               |                1,500 ms |                         3,000 ms | I5       |
+| `copy-commit`：15,000件copyの原子的commit                                           |                2,500 ms |                         5,000 ms | I5       |
+| `definition-list-first-render`：管理panelの15,000 active行初回virtualized表示       |                  750 ms |                         1,200 ms | I5       |
+| `definition-list-filter-input`：active設定の検索入力から次paint                     |                  100 ms |                           150 ms | I5       |
+| `retained-list-first-render`：管理panelの15,000 retained行初回virtualized表示       |                  750 ms |                         1,200 ms | I5       |
+| `retained-list-filter-input`：管理panelの検索入力から次paint                        |                  100 ms |                           150 ms | I5       |
+| `map-reimport-commit`：最大fixtureの複合reimport plan＋commit                       |                3,000 ms |                         6,000 ms | I6       |
+| `visit-rekey-projection`：400商品／最大800 phase投影のrekey＋snapshot再構築         |                  750 ms |                         1,500 ms | I7       |
+| `off-map-first-render-normal`：最大fixtureの通常マップ初回描画、機能OFF             |                1,500 ms |                         2,500 ms | I8       |
+| `map-first-render-normal`：最大fixtureの通常マップ初回描画                          |                1,500 ms |                         2,500 ms | I8       |
+| `projected-visit-list-first-render`：最大800 phase訪問のDOM一覧初回表示             |                  500 ms |                           800 ms | I8       |
+| `projected-visit-list-filter-input`：最大800 phase訪問の検索入力から次paint         |                  100 ms |                           150 ms | I8       |
+| `off-map-first-render-focus`：最大fixtureの集中モード初回描画、機能OFF              |                1,500 ms |                         2,500 ms | I9       |
+| `map-first-render-focus`：最大fixtureの集中モード初回描画                           |                1,500 ms |                         2,500 ms | I9       |
+| `off-map-interaction-normal`：通常マップ5秒操作、機能OFF                            |                  100 ms |                           150 ms | I8       |
+| `map-interaction-normal`：通常マップ5秒操作input-to-next-paint                      |                  100 ms |                           150 ms | I8       |
+| `off-map-interaction-focus`：集中モード5秒操作、機能OFF                             |                  100 ms |                           150 ms | I9       |
+| `map-interaction-focus`：集中モード5秒操作input-to-next-paint                       |                  100 ms |                           150 ms | I9       |
+| `split-direct-popup-normal-desktop`：direct half hit→popup paint                    |                  150 ms |                                — | I8       |
+| `split-picker-popup-normal-mobile`：cell tap→picker→side選択→popup paint            |                       — |                           200 ms | I8       |
+| `split-direct-popup-focus-desktop`：direct half hit→popup paint                     |                  150 ms |                                — | I9       |
+| `split-picker-popup-focus-mobile`：cell tap→picker→side選択→popup paint             |                       — |                           200 ms | I9       |
+| `route-recalculate`：単一phase 400訪問の経路再計算                                  |                  750 ms |                         1,500 ms | I10      |
 
 - main thread taskは全measured runで観測した各taskが200ms以下とし、p95へ隠さない。1秒を超える処理は進捗表示と取消を提供する
 - memory metricは固定Ubuntu runner上で、browser-level CDP `SystemInfo.getProcessInfo`が返す同一candidate Chromiumのbrowser、renderer、Worker、utility、GPU各PIDを`memoryObservation`ごとに列挙し、各`/proc/<pid>/smaps_rollup`の`Pss`をbyteへ変換して合算する。各measured runの開始時に全discoverable page／Worker targetの`HeapProfiler.collectGarbage`後のbaselineを取り、scenario中100ms間隔の各PSS合計をmemoryObservationとする。そのrunの最大値との差を`runPeakDelta`、画面終了、Worker／Blob URL／timer／transaction cleanup、30秒待機、再GC後の1観測との差を`runResidualDelta`とする。終了したPIDは次observationで0、新規PIDはその時点から加算し、同じbrowser外のprocessを含めない。CDP field、PID、`smaps_rollup`、PSSのいずれかを取得不能ならRSSやrenderer heapへfallbackせず当該runとscenarioを失敗させる
 - 30個の`runPeakDelta`と`runResidualDelta`をそれぞれ独立にnearest-rank p95へ集約する。peak scenarioP95はDesktop CIで256 MiB、Mobile emulation CIで192 MiB以下、residual scenarioP95は両profileで64 MiB以下とする。MobileはChromium emulation processの指標であり、特定スマートフォンの物理memory保証ではない
 - timeout／cancel後にWorker、timer、Blob URL、transactionを残さない
 - 描画ごとに全商品と全セルを総当たりせず、`MapLocationIndex`を再利用する
-- V1／V2 JSON importは各fileが32 MiBのperformance保証上限を超え64 MiB hard limit以下なら警告付きbest effort、64 MiB超ならparse前に拒否する。XLSX 2.2は`config/xlsx-limits.json`のcompressed 32 MiBと全展開limitをhard stopとして優先し、64 MiB JSON帯を適用しない。exportはV2 32 MiB、companion V1 32 MiB、pair合計64 MiBのいずれかを超える見積り時点でpair生成を開始せず、best effortや片方だけの出力へ進めない。count／V2 byte／V1 byte／pair byte／JSON import byte／XLSX compressed・展開byteの各境界は直前／一致／+1で別testにする
+- V1／V2 JSON importは各fileが32 MiBのperformance保証上限を超え64 MiB hard limit以下なら警告付きbest effort、64 MiB超ならparse前に拒否する。XLSX 2.2は`config/xlsx-limits.json`のcompressed 32 MiBと全展開limitをhard stopとして優先し、64 MiB JSON帯を適用しない。exportはV2自体が32 MiBを超える場合はV2を停止する。V2が上限内でcompanion V1 32 MiBまたはpair raw byteLength合計48 MiBだけを超える場合は`companion-v1-resource-limit`とissues digestを持つverified V2-onlyへ進み、全上限内だけpairを作る。不完全なpair handoffをV2-onlyへ偽装しない。count／V2 byte／V1 byte／pair byte／JSON import byte／XLSX compressed・展開byteの各境界は直前／一致／+1で別testにする
 
 上表のscenario ID、閾値、phase、profile、metricを削除・改名・`planned`へ戻す、または担当phaseより後へ延期する変更は、緩和と同じ`PD-17`変更手続を要する。各manifest entryは単一profileと単一`enforcedFromPhase`だけを持ち、Desktop directはhalf hit→popup paint、Mobile pickerはcell tap→picker paint→side selection→popup paintの固定action sequenceとする。I11で全`releaseScope = initial-release` scenarioをproduction artifactへ再実行し、表にない補助measurementやQAだけの結果で代用しない。
 
@@ -5978,7 +7548,7 @@ OFF比較はexactに、`map-first-render-normal → off-map-first-render-normal`
 - FSMC required configはworkers 1、retries 0、`failOnFlakyTests: true`、`fullyParallel: false`、`trace: "retain-on-failure"`を同時に固定し、flaky successを合格扱いにしない。一般testの既存retry方針を変更せずFSMC専用configで分離する
 - `config/fsmc-test-manifest.json`は`releaseScope = initial-release`かつ`enforcedFromPhase <= currentPhase`で`status != planned`のrequired testをprogressにかかわらず選ぶ。required Exit集合だけを`phaseProgress = in-progress`なら`completedThrough`まで、`exit-candidate`なら`currentPhase`までに分け、選択0件、重複test ID、未登録test、required commandの0件／複数対応、initial-release entryの適用phase以後の`planned`残存を失敗させる。`future` entryは初版gateのselected／executed／failed集合とplanned残存判定へ入れず、scope不一致を失敗させる
 
-常設`fsmc-required-gate`は既存branch-protected終端contextのdependency、またはI0 Exitまでのone-time required設定でmerge gateへ固定し、phaseやfindingに応じて外部設定を追加・削除しない。常設`webkit-safety-promotion` upstream jobはopen `webkit-temporary-required`が0件ならregister hash付き`not-required` resultだけを生成し、1件以上ならWebKitを明示installして全対象testを実行する。対象test 0件、未導入、未実行、失敗はresultを失敗状態にする。aggregatorはI0～I11の毎candidateでproduction build、current phaseで既にenforcedなChromium test、phase結果、advisory observation、promotion resultの完了を`if: always()`相当で待ち、同じsource／production artifact／register hashへ拘束された成果物を必須入力にする。pre-releaseでは`phaseProgress = in-progress`なら`completedThrough`まで、`exit-candidate`なら`currentPhase`までのExitを`verify:fsmc:phase-gate`へ要求し、どちらもcurrent phaseで既にenforcedなtestを全件要求する。I11 `exit-candidate`かつ`release-ready`だけは全条件の`verify:fsmc:release-readiness`を実行する。job skip、artifact欠落、`safety-failed`、`infrastructure-failed`、promotion failure、選択testの未実行、hash不一致ならmerge gateを閉じ、release modeでは`releaseScope = initial-release`の全required test未実行も閉じる。`future` entryの実行結果を初版gateへ混入した場合も閉じる。全jobはテストごとに再buildせず、同一CI runで作成したbuild artifactをhash検証後に再利用する。source-bound証跡bundleやmanaged-device receipt、継続的なbranch protection変更権限は作らない。
+I0 Exit候補の同一HEADでRepository Maintainerが`fsmc-required-gate`自体を一度だけ追加required化し、既存`quality`もrequiredのまま維持する。既存branch-protected終端contextへの逆接続、phase／findingごとのcontext変更、循環needsを禁止する。常設`webkit-safety-promotion` upstream jobはopen `webkit-temporary-required`が0件ならregister hash付き`not-required` resultだけを生成し、1件以上なら`npx playwright install --with-deps webkit`を実行して全対象testをretry 0で実行する。対象test 0件、未導入、未実行、失敗はresultを失敗状態にする。aggregatorはI0～I11の毎candidateでproduction build、current phaseで既にenforcedなChromium test、phase結果、advisory observation、promotion resultの完了を`if: always()`相当で待ち、同じsource／`productionArtifactTreeSha256`／`productionBuildManifestSha256`／register hashへ拘束された成果物を必須入力にする。pre-releaseでは`phaseProgress = in-progress`なら`completedThrough`まで、`exit-candidate`なら`currentPhase`までのExitを`verify:fsmc:phase-gate`へ要求し、どちらもcurrent phaseで既にenforcedなtestを全件要求する。I11 `exit-candidate`かつ`release-ready`だけは全条件の`verify:fsmc:release-readiness`を実行する。job skip、artifact欠落、`safety-failed`、`infrastructure-failed`、promotion failure、選択testの未実行、hash不一致ならmerge gateを閉じ、release modeでは`releaseScope = initial-release`の全required test未実行も閉じる。`future` entryの実行結果を初版gateへ混入した場合も閉じる。全jobはテストごとに再buildせず、同一CI runで作成したbuild artifactをhash検証後に再利用する。source-bound証跡bundleやmanaged-device receipt、継続的なbranch protection変更権限は作らない。
 
 ### advisory CI
 
@@ -5986,7 +7556,7 @@ OFF比較はexactに、`map-first-render-normal → off-map-first-render-normal`
 - `webkit-advisory-a11y`
 - `webkit-advisory-safety-observer`
 
-WebKitは必須Chromium jobと別のscript／jobで明示installし、通常の表示／a11y結果をnonblockingとする。advisory runnerは通常testとmanifestのsafety tagを分離集計し、test processの終了状態にかかわらず`if: always()`相当のreport stepで`fsmc-webkit-safety-observation.json`をuploadする。reportには同一`ciRun`のsource SHA、production artifact SHA-256、selectionMode、implementation-state／manifest SHAを入れ、`requiredSafetyIds(state)`が0件、同導出ID未実行、browser install／起動不能、report不能を`infrastructure-failed`、安全assert失敗を`safety-failed`にする。future scope／QA-only IDはpre-releaseの未実行扱いにせず、導出集合への混入自体をschema違反にする。required gateはこのartifactを待って検証するため、初回安全事故を人手で次commitへ登録するまでの間も公開できない。
+WebKitは必須Chromium jobと別のscript／jobで`npx playwright install --with-deps webkit`を実行し、通常の表示／a11y結果をnonblockingとする。advisory runnerは通常testとmanifestのsafety tagを分離集計し、test processの終了状態にかかわらず`if: always()`相当のreport stepで`fsmc-webkit-safety-observation.json`をuploadする。reportには同一`ciRun`のsource SHA、`productionArtifactTreeSha256`、`productionBuildManifestSha256`、selectionMode、implementation-state／manifest SHAを入れ、`requiredSafetyIds(state)`が0件、同導出ID未実行、browser install／起動不能、report不能を`infrastructure-failed`、安全assert失敗を`safety-failed`にする。future scope／QA-only IDはpre-releaseの未実行扱いにせず、導出集合への混入自体をschema違反にする。required gateはこのartifactを待って検証するため、初回安全事故を人手で次commitへ登録するまでの間も公開できない。
 
 通常表示／a11yの失敗件数やreview状態自体をDoDにしない。通常のtest logや失敗時traceはCIデバッグ用途に限り、製品完了の外部証跡や正式保証に使用しない。advisoryで安全問題を発見した場合はstable finding registerへ追加し、engine-agnostic required回帰testへ移すか、WebKit固有ならその最小回帰testだけを一時requiredへ昇格する。open safety findingまたは昇格test失敗中はrelease gateを閉じ、Chromiumで再現不能という理由だけでnonblockingへ戻さない。WebKit safety observationは現在candidateの既知安全事故を止めるgateであり、WebKit／iPhone全般の正式互換保証を意味しない。
 
@@ -6011,7 +7581,7 @@ severityはFSMC-I0 ADRの固定rubricで判定する。Criticalはアプリが�
 - 26aの操作で26bのアイテムまたは状態が変更される
 - アプリが開始したcommit／import／restore／migration／cleanup、またはrecoverableな部分破損で、分割設定、item、訪問順のいずれかが失われる
 - 回転後に描画・タップ・経路位置が一致しない
-- 同versionアプリが生成し、digest／companion hashが正しく、保証hard limit内にあるBackup V2を同versionへ復元できない、または同じpairのV1互換coreを固定旧版Aへ復元できない。破損、未知version／scope、上限超過を仕様どおり拒否した場合は停止理由にしない
+- 同versionアプリが生成し、embedded digestが正しく保証hard limit内にあるBackup V2を同versionへ復元できない。`companionCore.status = "included"`のpairではcompanion hash／pair digestが正しいV1互換coreを固定旧版Aへ復元できない場合も停止する。`status = "unavailable"`のverified V2-onlyへV1復元を要求せず、破損、未知version／scope、V2自体の上限超過を仕様どおり拒否した場合は停止理由にしない
 - 地図再取込で誤った番号セルへ設定が継承される
 - 同名の別イベントへ休眠設定が誤接続される
 - 優先度が異なる訪問が黙って1訪問へ統合される
@@ -6036,18 +7606,273 @@ severityはFSMC-I0 ADRの固定rubricで判定する。Criticalはアプリが�
 ### 13.1 停止手順
 
 - authorityが正常なら利用者へ端末全体OFFまたは対象event OFFで、`PD-04`で定義したsplit固有部分のlegacy動作（phase時点でimplementation-enforced済みの`PD-14.C2`／`C3`、重複物理cellの新規after-image拒否、`map-data-untrusted`安全判定を含む）へ戻すよう案内する。`recovery-required`ではcontrol writeを案内せず既存の自動安全モードを維持して6.1.1へ進む。どちらも影響versionの配布を停止し、遠隔で既存端末をOFFにできるとは表示しない
-- 問題発生前に作成済みのbackupを形式別に検証して優先する。V2はembedded digestと`companionCore.sha256`、同伴V1はそのSHA-256、standalone V1はschemaと選択時に計算したresume用SHA-256、legacy XLSX 2.2はZIP preflight／version／workbook構造と選択時SHA-256を検証する。選択時SHA-256をV1／XLSX内蔵digestと表現しない。recovery-required発生後に新しく退避できるのは6.1.1の診断がtrustedと分類したcoreから生成するV1だけで、untrusted split rootをBackupへ混入しない。診断情報は利用者が明示的に提供した範囲だけを扱う
+- 問題発生前に作成済みのbackupを形式別に検証して優先する。V2はembedded digestを常に検証し、`companionCore.status = "included"`だけは`companionCore.sha256`、exact V1 bytes、pair digestも検証する。`status = "unavailable"`ではnonempty issues、issues digest、`pairDigest = null`、companion handle不在を検証する。standalone V1はschemaと選択時に計算したresume用SHA-256、legacy XLSX 2.2はZIP preflight／version／workbook構造と選択時SHA-256を検証し、選択時SHA-256をV1／XLSX内蔵digestと表現しない。recovery-required発生後に新しく退避できるのは6.1.1の診断がtrustedと分類したcoreから生成するV1だけで、untrusted split rootをBackupへ混入しない。診断情報は利用者が明示的に提供した範囲だけを扱う
 - 再現fixtureを作成し、修正版が同じ失敗をretryなしの自動テストで防ぐまで再配布しない
 - 影響、回避策、実際に確認できた保持状態、完全profile消去が疑われる場合は保証外であること、Backupからの復旧可否と見込みを推測せず正確に通知する
 - 通常の停止・調査ではDB versionを下げたり、新storeや保存済み分割設定を削除したり、自動修復を実行したりしない。唯一の例外は、利用者が6.1.1の診断結果、退避Backup hash、影響scopeを確認して二段階承認したeligible in-place resetまたはguided clean-profile resetであり、対象外originを削除せず、削除と復元を一つの原子操作と表現しない
 
+停止／再開recordは次のversion付きexact discriminated unionとする。自由文だけのincident、finding／artifact不明、利用者個人識別子、未確認の復旧成功を受理しない。
+
+```ts
+type FsmcIncidentEvidenceArtifactKindV1 =
+  | "preservation-verification"
+  | "restore-verification"
+  | "workaround-verification"
+  | "unrecoverable-assessment"
+  | "user-notification-receipt"
+  | "root-cause-review"
+  | "finding-closure";
+
+type FsmcIncidentScopeBoundEvidenceKindV1 = Exclude<
+  FsmcIncidentEvidenceArtifactKindV1,
+  "root-cause-review" | "finding-closure"
+>;
+
+interface FsmcIncidentScopeRefV1 {
+  schemaVersion: 1;
+  scopeKind:
+    | "profile"
+    | "event-instance"
+    | "map-instance"
+    | "persistence-root"
+    | "backup-artifact";
+  registryReferenceId: string;
+  affectedArtifactBinding: {
+    sourceSha: string;
+    productionArtifactTreeSha256: string;
+    productionBuildManifestSha256: string;
+    ciRun: { runId: string; runAttempt: number };
+  };
+}
+
+interface FsmcIncidentEvidenceArtifactRefV1<
+  TKind extends FsmcIncidentEvidenceArtifactKindV1,
+> {
+  schemaVersion: 1;
+  referenceId: string;
+  artifactKind: TKind;
+  scopeDigest: TKind extends FsmcIncidentScopeBoundEvidenceKindV1
+    ? string
+    : null;
+  byteLength: number;
+  sha256: string;
+}
+
+type FsmcIncidentDispositionEvidenceV1 =
+  | {
+      kind: "preserved";
+      artifact: FsmcIncidentEvidenceArtifactRefV1<"preservation-verification">;
+    }
+  | {
+      kind: "restored";
+      artifact: FsmcIncidentEvidenceArtifactRefV1<"restore-verification">;
+    }
+  | {
+      kind: "preserved-with-workaround";
+      artifact: FsmcIncidentEvidenceArtifactRefV1<"workaround-verification">;
+    }
+  | {
+      kind: "unrecoverable-user-notified";
+      artifact: FsmcIncidentEvidenceArtifactRefV1<"unrecoverable-assessment">;
+    };
+
+interface FsmcIncidentNotificationReceiptV1 {
+  kind: "user-notification-receipt";
+  artifact: FsmcIncidentEvidenceArtifactRefV1<"user-notification-receipt">;
+}
+
+type FsmcIncidentAffectedScopeV1 =
+  | {
+      scopeRef: FsmcIncidentScopeRefV1;
+      scopeDigest: string;
+      dataDisposition: "pending-investigation";
+      dispositionEvidence: null;
+      dispositionEvidenceDigest: null;
+      notificationReceipt: null;
+      notificationReceiptDigest: null;
+    }
+  | {
+      scopeRef: FsmcIncidentScopeRefV1;
+      scopeDigest: string;
+      dataDisposition: "preserved";
+      dispositionEvidence: Extract<
+        FsmcIncidentDispositionEvidenceV1,
+        { kind: "preserved" }
+      >;
+      dispositionEvidenceDigest: string;
+      notificationReceipt: null;
+      notificationReceiptDigest: null;
+    }
+  | {
+      scopeRef: FsmcIncidentScopeRefV1;
+      scopeDigest: string;
+      dataDisposition: "restored";
+      dispositionEvidence: Extract<
+        FsmcIncidentDispositionEvidenceV1,
+        { kind: "restored" }
+      >;
+      dispositionEvidenceDigest: string;
+      notificationReceipt: null;
+      notificationReceiptDigest: null;
+    }
+  | {
+      scopeRef: FsmcIncidentScopeRefV1;
+      scopeDigest: string;
+      dataDisposition: "preserved-with-workaround";
+      dispositionEvidence: Extract<
+        FsmcIncidentDispositionEvidenceV1,
+        { kind: "preserved-with-workaround" }
+      >;
+      dispositionEvidenceDigest: string;
+      notificationReceipt: null;
+      notificationReceiptDigest: null;
+    }
+  | {
+      scopeRef: FsmcIncidentScopeRefV1;
+      scopeDigest: string;
+      dataDisposition: "unrecoverable-user-notified";
+      dispositionEvidence: Extract<
+        FsmcIncidentDispositionEvidenceV1,
+        { kind: "unrecoverable-user-notified" }
+      >;
+      dispositionEvidenceDigest: string;
+      notificationReceipt: FsmcIncidentNotificationReceiptV1;
+      notificationReceiptDigest: string;
+    };
+
+type FsmcIncidentResolvedScopeV1 =
+  | {
+      scopeRef: FsmcIncidentScopeRefV1;
+      scopeDigest: string;
+      dataDisposition: "preserved";
+      dispositionEvidence: Extract<
+        FsmcIncidentDispositionEvidenceV1,
+        { kind: "preserved" }
+      >;
+      dispositionEvidenceDigest: string;
+      notificationReceipt: null;
+      notificationReceiptDigest: null;
+    }
+  | {
+      scopeRef: FsmcIncidentScopeRefV1;
+      scopeDigest: string;
+      dataDisposition: "restored";
+      dispositionEvidence: Extract<
+        FsmcIncidentDispositionEvidenceV1,
+        { kind: "restored" }
+      >;
+      dispositionEvidenceDigest: string;
+      notificationReceipt: null;
+      notificationReceiptDigest: null;
+    }
+  | {
+      scopeRef: FsmcIncidentScopeRefV1;
+      scopeDigest: string;
+      dataDisposition: "preserved-with-workaround";
+      dispositionEvidence: Extract<
+        FsmcIncidentDispositionEvidenceV1,
+        { kind: "preserved-with-workaround" }
+      >;
+      dispositionEvidenceDigest: string;
+      notificationReceipt: null;
+      notificationReceiptDigest: null;
+    }
+  | {
+      scopeRef: FsmcIncidentScopeRefV1;
+      scopeDigest: string;
+      dataDisposition: "unrecoverable-user-notified";
+      dispositionEvidence: Extract<
+        FsmcIncidentDispositionEvidenceV1,
+        { kind: "unrecoverable-user-notified" }
+      >;
+      dispositionEvidenceDigest: string;
+      notificationReceipt: FsmcIncidentNotificationReceiptV1;
+      notificationReceiptDigest: string;
+    };
+
+interface FsmcIncidentRecordBaseV1 {
+  schemaVersion: 1;
+  incidentId: string;
+  findingIds: readonly [string, ...string[]];
+  affectedArtifact: {
+    sourceSha: string;
+    productionArtifactTreeSha256: string;
+    productionBuildManifestSha256: string;
+    ciRun: { runId: string; runAttempt: number };
+  };
+  detectedCiRun: { runId: string; runAttempt: number };
+  affectedVersions: readonly [string, ...string[]];
+  stoppedAt: string;
+  ownerRole: "Release Maintainer";
+  ownerLogin: string;
+}
+
+type FsmcIncidentRecordV1 =
+  | (FsmcIncidentRecordBaseV1 & {
+      status: "stopped";
+      affectedScopes: readonly [
+        FsmcIncidentAffectedScopeV1,
+        ...FsmcIncidentAffectedScopeV1[],
+      ];
+      rootCauseReview: {
+        status: "open";
+        evidenceArtifact: null;
+        evidenceDigest: null;
+      };
+      closedFindingEvidence: readonly [];
+      closureTestIds: readonly [];
+      resumeCandidate: null;
+      resumeApprovedBy: null;
+    })
+  | (FsmcIncidentRecordBaseV1 & {
+      status: "resumed";
+      affectedScopes: readonly [
+        FsmcIncidentResolvedScopeV1,
+        ...FsmcIncidentResolvedScopeV1[],
+      ];
+      rootCauseReview: {
+        status: "completed";
+        evidenceArtifact: FsmcIncidentEvidenceArtifactRefV1<"root-cause-review">;
+        evidenceDigest: string;
+      };
+      closedFindingEvidence: readonly [
+        {
+          findingId: string;
+          evidenceArtifact: FsmcIncidentEvidenceArtifactRefV1<"finding-closure">;
+          evidenceDigest: string;
+        },
+        ...{
+          findingId: string;
+          evidenceArtifact: FsmcIncidentEvidenceArtifactRefV1<"finding-closure">;
+          evidenceDigest: string;
+        }[],
+      ];
+      closureTestIds: readonly [string, ...string[]];
+      resumeCandidate: {
+        sourceSha: string;
+        productionArtifactTreeSha256: string;
+        productionBuildManifestSha256: string;
+        ciRun: { runId: string; runAttempt: number };
+        requiredGateResultSha256: string;
+      };
+      resumeApprovedBy: {
+        role: "Release Maintainer";
+        login: string;
+        approvedAt: string;
+      };
+    });
+```
+
+全ID／version／scopeはcanonical順・重複なしとし、resumed branchでは`closedFindingEvidence.findingId`が`findingIds`とexact bijection、全`closureTestIds`が`resumeCandidate.ciRun`でretry 0成功、required gate resultが同candidateのsource／tree／manifest／runへ再計算一致しなければならない。scopeは個人名、event名、連絡先、自由文を含まない`FsmcIncidentScopeRefV1`を唯一のdescriptorとし、`scopeDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-incident-scope-v1", scopeRef })))`へ固定する。各`scopeRef.affectedArtifactBinding`はrecordの`affectedArtifact`とbyte一致、`registryReferenceId`はkind内でopaque nonempty ID、全scopeは`(scopeKind, registryReferenceId)`順・重複なしとする。evidence artifact refはopaque `referenceId`、固定kind、scope-specific kindでは当該rowとbyte一致する`scopeDigest`、incident-wide root cause／finding kindではnull、非負safe-integer byteLength、lowercase 64桁SHA-256だけを持ち、access-controlled evidence registryの同じmetadataと実bytesをverifierが再hashする。root cause reviewは`rootCauseReview.evidenceDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-incident-root-cause-review-evidence-v1", incidentId, evidenceArtifact: rootCauseReview.evidenceArtifact })))`、finding closureは各行について`evidenceDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-incident-finding-closure-evidence-v1", incidentId, findingId, evidenceArtifact })))`とし、typed artifact refとdigestを必ず対で保持する。`dispositionEvidence.kind`は`dataDisposition`とbyte一致し、`dispositionEvidenceDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-incident-scope-disposition-evidence-v1", incidentId, scopeDigest, dataDisposition, dispositionEvidence })))`として保持／復元／workaround／復旧不能の確認artifactをscopeごとに拘束する。`pending-investigation`だけはevidence／両digest／receiptを全てnullとする。`unrecoverable-user-notified`はさらに`notificationReceiptDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-incident-user-notification-receipt-v1", incidentId, scopeDigest, notificationReceipt })))`を必須にし、assessment evidenceと通知receiptを相互代用しない。他の3 resolved dispositionはnotification receipt／digestをnullとする。stopped branchでclosure、candidate、approvalを先取りせず、resumed branchへ`pending-investigation`、null evidence、未確認の復旧成功を残さない。schema verifierはscope ref／digest、root cause／finding／disposition／notificationの各artifactについてregistry metadataと実bytesを再hashし、scope ref／digest入替え、artifact scope差、artifact kind、reference ID、byteLength、artifact SHA、各digestの単独差、finding間artifact／digest入替え、receipt入替えを拒否する。
+
 ### 13.2 再開条件
 
-- incident記録とroot cause reviewを完了し、事故を再現するfixtureとretryなしの自動回帰testを追加する
-- 修正sourceで必須CI、旧新版同居、failure injection、性能、backup復元が再成功する
-- 影響データの復旧または利用者向け処置を完了する
+- 全`findingIds`をclosedにし、root cause reviewを完了し、事故を再現するfixtureとretryなしの`closureTestIds`を追加する
+- 修正sourceで必須CI、旧新版同居、failure injection、性能、backup復元を再成功させ、`resumeCandidate`の`sourceSha`、`productionArtifactTreeSha256`、`productionBuildManifestSha256`、`ciRun`とbyte一致するcurrent-run `fsmc-required-gate` result／SHA-256へ拘束する。障害対象の`affectedArtifact`と修正版candidateが同じhashであることは要求しない
+- 各影響scopeの`dataDisposition`を確定し、復旧不能時は`unrecoverable-user-notified`を選んで通知事実を記録する。曖昧な「復旧または処置」で再開しない
 - 端末全体OFF、event OFF、制御変更mid-save、Backup新規／既存復元の自動回帰testが成功する
 - 修正版も既存イベントOFFを既定として配布し、停止前のローカルON状態を自動復元しない
+- 上記全条件をRelease Maintainerが再検証し、`resumeApprovedBy`を本人以外の証跡から推測せず明示記録してから配布を再開する
 
 ## 14. Definition of Done
 
@@ -6057,18 +7882,18 @@ severityはFSMC-I0 ADRの固定rubricで判定する。Criticalはアプリが�
 - **DOD-FSMC-002** — `C(S) = ∅`の場合だけ`01a`／`1a`／`０１ａ`が同じ売場へ解決され、衝突時はevent ONを拒否してlegacy identityを維持する。ON中の編集、import、restore、map変更で`C(after) \ C(before)`が非空となる操作は同数pair swapを含め全store書込み前に全拒否し、既存data、settings、control ON、表示原文を失わない。`fsmc.repair.item-numbers.v1`、`fsmc.repair.map-identity.v1`、`fsmc.repair.orphan-visit-state.v1`だけが既存pair集合を厳密減少でき、完全解消後だけ対象eventをeffective ONへ戻す。`26c`／`26c2`、`26d`、`26ab`は非対応番号同士で誤衝突せず、「側未設定」badge、DOM一覧、previewで識別表示される
 - **DOD-FSMC-003** — exact番号grammarと巨大`BigInt`化前のsafe integer境界を満たし、mapped／mapless／legacy-unresolved `SpaceIdentity`を共有訪問projectionが保持する。legacy identityに原文／reasonを混入させず、mapless／unresolvedへ架空のmap／block／cell、marker、route anchorを与えない
 - **DOD-FSMC-004** — 機能OFF時はsplit固有部分が固定した旧版Aと同じ番号identity、未分割表示、whole-cell位置解決、core保存結果になり、ON/OFFで商品番号原文やsplit設定を破壊変更しない。optional `EventMetadata.splitIdentityAnchor`だけを正規化除外したlegacy-core checksumと、それ以外の全core field・raw item原文が一致する。訪問・経路・位置指定の`PD-14`修正、重複物理cellを新規作成するimport／通常編集after-imageの原子的拒否、既存重複の`map-data-untrusted`判定／map単位route停止だけは常時適用する。重複を作らない入力では旧版Aと同じcore保存結果を維持する
-- **DOD-FSMC-005** — item resolver、空側hit-test、DOM列挙が同じ`MapLocationIndex`、viewport adapter、geometryを使用する
-- **DOD-FSMC-006** — 重複block ownership、番号重複、merge越境、重複mergeを配列順で推測せず影響領域を安全に除外・隔離する。重複物理`(row, col)`を新規作成するimport／通常編集は機能状態を問わず全store書込み前に拒否し、起動時から存在する重複は当該mapを`map-data-untrusted`としてsplit表示だけをlegacy whole-cellへ戻し、経路生成・cache再利用をmap単位で安全停止する
+- **DOD-FSMC-005** — item resolver、空側hit-test、DOM列挙が、対象eventの全item／associationを同じread boundaryで集めた`LogicalLocationSourceSnapshotV1`と同じ`MapLocationIndex`、viewport adapter、geometryを使用する。item set／snapshot／map／split revision差で可変なwhole／a／b／unsupported location集合を再構築し、partial item callerや独自suffix配列を許さない
+- **DOD-FSMC-006** — `duplicate-number-region`、`multiple-block-owners`、`overlapping-number-regions`、`merge-crosses-block`を配列順で推測せず影響regionだけの局所exclusionとして安全に除外・隔離し、同じcomponentの複合原因は全件を固定enum順の`reasons`へ保持して、同じmapの影響外location／訪問／描画／routeを継続する。原因順shuffle、欠落、重複、順序差を拒否する。重複物理`(row, col)`だけをmap-wide fatalとし、新規作成するimport／通常編集は機能状態を問わず全store書込み前に拒否する。起動時から存在する重複は当該mapを`map-data-untrusted`としてsplit表示だけをlegacy whole-cellへ戻し、経路生成・cache再利用をmap単位で安全停止する
 - **DOD-FSMC-007** — manual map／block editでmapData、association、binding evidence、entry statusが同じ原子的commitで更新され、commit成功後だけmemory-only route cacheを破棄し、無関係なentryを失効させない。`VisitIdentityInputSnapshot`は`manualHallId`、stable hall定義・所属・remap、map association、mapped↔maplessを単一revisionで読み、manual hall X→Y／未指定、hall削除／remap、dangling／ambiguous、表示名だけの変更を決定済み規則どおりrekeyする。番号セル変更、merge／unmergeは専用editorとpure previewを通り、duplicate cell、normalized collision、ownership／merge overlap、bounds／block越境、lossy mergeをfirst write前に拒否し、keyboardだけで取消まで完了できる
 - **DOD-FSMC-008** — 地図再取込はcore map planとsplit reimport planを同一pre-command snapshotから合成し、双方のdigest、map／association revision、`ExpectedRootVector`を単一preview authorityにする。core／splitの片側だけがstale、取消、quota、commit前終了ではwrite 0件となる。I7以降のQA internal writerとI11 release-ready productionのdurable `ready`後writerだけが、成功時にmapData、association、binding／status、durable現在位置・保存位置・phase stateを同一commitで更新する。I2～I10 productionはDB5／capability write 0を維持し、route cacheは各許可artifactのcommit後だけ破棄する。reimportはsame-instance、raw block名＋番号、normalized token＋番号のtier順でexact 1件だけを採用し、複数候補をrow／colや配列順でtie-breakしない
 - **DOD-FSMC-009** — コピーの既定「追加・変更のみ」は既存分割を解除せず、別操作の「完全同期（解除を含む）」だけが解除する。両方でmode、追加・変更・解除・維持・変更なし・除外のpreview、取消、stale時全abortが機能し、コピー先IDとdormant／quarantined履歴を維持する。同owner＋番号のretainedがあればcopyから除外して明示再関連付けへ送り、active／retained overlapを作らない
-- **DOD-FSMC-010** — `layoutMode`とスマートフォン操作判定が分離され、Mobile Chromium profileでは全分割セルが空間順picker、狭幅Desktopと`desktop-touch-context`を含む`isMobile=false`ではmouse／touch別閾値に従い、閾値未満・曖昧時はno-op案内となる
-- **DOD-FSMC-011** — 通常マップと集中モードが同じPointer gesture state machineを使用し、pan、pinch、cancel、capture喪失、layout切替後の誤tapがない
+- **DOD-FSMC-010** — `layoutMode`とスマートフォン操作判定が分離され、Mobile Chromium profileでは全分割セルが空間順picker、狭幅Desktopと`desktop-touch-context`を含む`isMobile=false`ではmouse／touch別閾値に従い、閾値未満・曖昧時はno-op案内となる。persisted `forceSplitPicker`はfactory default false、設定画面／通常／集中モードの共通authorityであり、ONならDesktopでもpicker、reload／offline後も維持、untrusted rootでは安全fallback、Backupには収録しない
+- **DOD-FSMC-011** — 通常マップと集中モードが同じtotal Pointer gesture state machineを使用し、primary／non-primary、capture成功／失敗、duplicate ID、ID再利用、additional pointer drain、pan、pinch、cancel、capture喪失、layout切替、synthetic clickをdisjoint rowで処理する。global cancel／unmount後はstate、active registry、capture、timer、pending effect、guardが全てemptyとなり、重複row、unreachable row、暗黙default、誤tapがない
 - **DOD-FSMC-012** — a/bの着色、ポップアップ、状態変更が独立し、集中モードの「購入済」と「後回し／遅参」の既存反映規則を維持する
-- **DOD-FSMC-013** — raw実行商品ID配列を並べ替えず、非連続同一`ExecutionVisitIdentity`をglobal集約し、normalと後回し／遅参の`PhaseVisitIdentity`投影を通常マップ、集中モード、`MapVisitListPanel` shell＋pure `ProjectedVisitList`、space-navigation、route／hit-testで同じ`PhaseVisitProjectionSnapshot`から共有する。進行区分・優先度はexact union、1 itemの追加phaseは高々1個とし、既存identityへの位置指定追加はanchorを無視して統合通知し、訪問位置を動かさない。base順は重複なし`executionVisitOrder`、global順はnormal→postponed→lateとし、`durable-visit-state` rootでcurrentはphase付きitem anchor、saved位置は3 phase別anchor、購入変更位置もphase付きitem anchor、空phaseと`isCompleted`をreload／retry／Backup往復後も保持する
+- **DOD-FSMC-013** — raw実行商品ID配列を並べ替えず、非連続同一`ExecutionVisitIdentity`をglobal集約し、normalと後回し／遅参の`PhaseVisitIdentity`投影を通常マップ、集中モード、`MapVisitListPanel` shell＋pure `ProjectedVisitList`、space-navigation、route／hit-testで同じ`PhaseVisitProjectionSnapshot`から共有する。進行区分・優先度はexact union、1 itemの追加phaseは高々1個とし、既存identityへの位置指定追加はanchorを無視して統合通知し、訪問位置を動かさない。base順は重複なしdurable `executionVisitOrder`だけをauthorityとし、manual reorderはdraft／cancelでwrite 0、保存時だけ`fsmc.visits.reorder-execution-order.v1`、hall reorderは`fsmc.visits.reorder-by-hall.v1`でhall route settingsとall-old／all-newにする。両commandはraw execution rootをCAS read witnessにするがwrite participantにせず、raw item ID列とmember相対順をbyte保持する。global順はnormal→postponed→lateとし、`durable-visit-state` rootでcurrentはphase付きitem anchor、saved位置は3 phase別anchor、購入変更位置もphase付きitem anchor、空phaseと`isCompleted`をreload／retry／Backup往復後も保持する
 - **DOD-FSMC-014** — 商品編集でexecution identityが既存destinationへ変わる場合はdestination訪問位置を維持し、変更itemだけをmember末尾へ移して現在・保存位置を新しい`PhaseVisitIdentityKey`へ再解決し、全画面へ同じ結果を反映する。新destinationのsource残存／消滅、複数同anchor、既存destination、利用者insertの全rekey規則でdense ordered key arrayと変更外相対順を維持する
 - **DOD-FSMC-015** — route、hit-test、挿入anchorとDOM panel callbackが`PhaseVisitIdentityKey`を使用し、member商品ID列はpayloadに限定される。先頭member削除後も残存memberがあれば同じvisit ID、座標、順序、route cacheへ再解決され、priority、phase、member件数をDOMで確認できる
-- **DOD-FSMC-016** — main pathと種別付きconnectorが分離され、connectorは自セル・結合セル領域内で安全な場合だけ表示・hit-testできる。領域外または障害物横断が必要な場合は`unsafe-connector`で`unroutable`とし、同一セルa→bにも同じ規則を使う。route signatureは`pathfindingGraphFingerprint`を含み、value／背景色／map寸法／結合領域／algorithm・cost変更で古いcacheを破棄する。connectorの自owner領域mask exemptionをmain pathへ伝播させず、同anchor別visitはcost 0の`coincident-anchor`としてroute順を維持し、線hit targetを作らない
+- **DOD-FSMC-016** — main pathと種別付きconnectorが分離され、connectorは自セル・結合セル領域内で安全な場合だけ表示・hit-testできる。領域外または障害物横断が必要な場合は`unsafe-connector`で`unroutable`とし、同一セルa→bにも同じ規則を使う。selected hallではrouting port／anchor、raw／simplified main path、全connector、same-cell directの全点・全線分を同じinclusive polygon predicateで検証し、invalid／stale constraintをwhole-mapへfallbackしない。canonical polygonと`RoutePolygonFingerprint`をbyte一致で再検証し、開始点／向き差だけを同値、頂点／hall／revision差を別値にする。route signatureはindex revision、`pathfindingGraphFingerprint`、non-null `RoutePathConstraintFingerprint`を含み、whole-map／別hall／polygon revision、value／背景色／map寸法／結合領域／algorithm・cost変更で古いcacheを破棄する。connectorの自owner領域mask exemptionをmain pathへ伝播させず、同anchor別visitはcost 0の`coincident-anchor`としてroute順を維持し、線hit targetを作らない
 - **DOD-FSMC-017** — 同位置複数訪問が中立marker、訪問数badge、現在ringで表示され、番号・a/b・badge文字が全回転角で正立する。`LocationPresentationState` reducerは入力shuffleでbyte同値、mixed statusを代表色へ潰さず、selected／hover／temporary／currentを独立fieldとしてCanvas・DOM・forced-colorsで共有する
 - **DOD-FSMC-018** — Canvasを使わずDOM訪問一覧から詳細、追加、状態変更、一時移動、経路挿入を完了できる。`config/fsmc-a11y-oracles.json`どおりのrole／name／description／state、DOM／Chromium AX順、keyboard focus order／return、常設live regionのpoliteness／atomicity／exact 1 mutationをDesktop／Mobileで自動検証し、axeも独立して成功する
 - **DOD-FSMC-019** — I2ではproduction artifactが`databaseTargetMode = core-current`／現行core DB version／FSMC公開command 0件を維持し、non-promotable QA artifactの`databaseTargetMode = fsmc-vcap-qa`だけがabsence／現行version→採択済み`Vcap`を試験する。I11 release-readyで初めてproduction artifactを`databaseTargetMode = fsmc-vcap-production`へ変え、同じmigration oracleを再実行する。FSMC DB open前に、DB absent＋external core 10 keyのいずれかpresentはbyte-exact core-current materialization→core archive／close、core全absent＋preserved queue presentはqueue-only archive／close、DB absent＋core全absent＋queue absentだけはtrue fresh、というstrict tri-stateを検証する。target-mode別null決定表、existing probe settle／close、exact 1 upgrade request、`onblocked`非terminal／same-request再開、`oldVersion = 0`、error／abort exact-one terminal、no-upgrade probe handoff／upgrade-success same-request handoff／reopen 0、`dbVersion`とexact一致するsplit対象rootへ閉じた`Vcap` witness、event名基準day preflight、collision時ID allocator／proposal／versionchange／capability write 0件、collision-free後のproposal／anchor action／resolved authority、採用直前のsplit導入trace再検証、全非fence root payload／metadata／checkpoint／全potential IDB candidate selectorの`H0/H1` byte-exact CAS、変更しないlegacy rowを`H1`・anchor変更とnew capability rowをfactory after-image・fenceをbaseline-onlyとする合成post-stateのtotal historical evidence／participant digest／全governed root baseline付きinitial fence、commit前／後crash oracle、`Vcap - 1`／`Vcap`／supported上限の空storeを含むpartial-loss安全分岐、supported上限＋1拒否、現行5／6／7／8 provenance fixture、固定manifestの旧版A→候補新版B→固定旧版A→候補新版Bの自動互換試験が成功し、端末情報を外部収集しない。healthy legacy-only差は原子的rebase、bootstrap anchor invalid／duplicateはadoption-blocked、persisted anchor missing／invalid／mismatch／duplicateはevent-local quarantine、capability-owned差／fence自己不整合／説明不能差は安全モードとなる。採択versionは`coreDbVersion < Vcap <= supportedMaximumDbVersion`かつauthoritative release／artifact provenanceから`adopt-vcap`へ再計算され、unknown conflict 0件を要求する。bootstrapはresolved authorityとscopeだけからevent association、必要なanchor、5 payload root＋fenceを作り、materialize／queue-only archive後を含むpresent既存profileはscope 0件／unmapped-onlyでも両basis digest付き`migrating`＋empty entries、strict true fresh zero-scopeだけは同digest付き`ready`＋empty entriesにするdurable root、canonical event settings／pending bridgeを含むactual participant集合と一致する
@@ -6077,18 +7902,20 @@ severityはFSMC-I0 ADRの固定rubricで判定する。Criticalはアプリが�
 - **DOD-FSMC-022** — `(storeName, key)`別のfull `ObservedRevisionRoot`、構造化checkpoint、identity＋物理location＋物理内容witness＋absorption projectionを返すpure collectorの全出力、settings／control／durable visit root、root policy、全非fence rootのtotal historical evidenceとその全行digest、participant digest、全`FSMC_GOVERNED_ROOTS_V1`のexternal baselineを持つfenceを含む`ExpectedRootVector`により、`syncQueue`のjournal／archiveとsnapshot時emptyの全potential storeを含むIDB candidateのstaleは同一transactionを全abortする。external raw DOMStringはlone surrogateも区別するlossless UTF-16 code unit witnessで拘束し、transaction内でWebCrypto／別async taskを待たない。candidate content-only／projection-only差は固定旧版Aのexact transition manifest外ならrecovery-requiredとし、legacy rebaseのparticipant tupleと置換historical rowは`sort(unique(changed legacy roots ∪ actualCapabilityWrites))`にexact一致させる。通常core-only rebaseの`actualCapabilityWrites` baseは`{data, control}`とし、event名、event instance ID、`DurableVisitEventBasisV1`のbasis core／authority digest、`basisCoreDigest`／`basisEventAuthorityDigest`、durable entries、persisted retired rowのいずれかの宣言済みafter-imageが変わるanchor保持rename／delete等では`durable-visit-state`を必ず加え、shadow reconcile併用時だけ専用ack rootを加える。external差はhealthyなlegacy-mutable coreだけならcommit前はwrite 0件のrebase、commit後は全new IDB rootを維持したrebaseとし、capability-ownedまたは分類不能な差はcommit前recovery拒否、commit後`committed-recovery-required`として即時または再起動時に検出する。legacy rebaseも同一transactionで全旧fenceまたは全新fenceだけとなり、別scope commandでも非参加historical row／baselineを失わず、last-write-wins、部分IDB commit、黙示mergeがない。quota・abort・crash・OFF mid-save時も各commandのIDBは全旧または全新だけとなる。`ProjectionDigestDescriptorV1`は実装digestの3 fieldだけ、checkpointは構造全体digestとする。durable visit、event-settings／bridgeを含む`logicalRootMutationTuples`、participant roots、置換historical row、digest対象集合をexact一致させ、fence payload／metadata／checkpointは別のadministrative write manifestへ一致させる
 - **DOD-FSMC-023** — event削除画面は30日保持が既定、即時完全削除が別選択となる。D+29、trusted D+30、31日offline、36日offline、rollback、session jump、24時間再確認が固定clock契約どおりで、`event-deleted`対象以外を削除しない。設定単独出力は初版にない
 - **DOD-FSMC-024** — dormant／quarantinedは地図に表示せず管理UIで理由を表示し、preview付き端末内再関連付けと明示削除が可能で、名前だけで別eventへ再接続しない。retained再関連付けは候補exact 1件、target未占有、trusted mapの場合だけ一段commitし、0／2件以上／staleでは非選択履歴を変更せずwrite 0件となる
-- **DOD-FSMC-025** — Backup wire層は`AppBackupV2FullEventCoreWireV1`、`PortableDurableVisitStateWireV1`、scope別の明示section型だけを公開し、`Pick<AppData, ...>`、runtime domain型、persistence型をimportしない。V1層別互換matrix、event単位V2のcore／split／durable分離、eventLists／metadata exact 1＋残る8 sectionのabsent／present-empty、全scope共通のevent／item／map／block／hall／historical-owner reference exact bijection、実payload由来の全7 `counts`、map-level fingerprint、active／retained union、durable day／group／phase anchor、digestを固定する。hall ownerはmap／mapless XOR、item-only source-map descriptorを区別し、hall source order、normal／priority／highest／unassigned／missing／malformed visit group、manual／visit／orderの3-face dangling remap、raw `blockNames`のoptional absent／present-empty／順序／重複をlosslessに扱う。owner別hall group codecは全reachable pairでleft-inverse／token injectiveを必須にし、reserved 3形、suffix付き実ID単独、`A`と`A:priority`／`A:highest`のaliasをtyped blockerにする。item-only resolved hallはsource V2 digest／artifact SHAへ拘束した全hallRef↔distinct destination Hall IDのglobal total injective matchingだけを許し、0件／新規event／stale／候補外／choice replayをwrite 0件にする。historical ownerはcurrent refと別namespaceでrelationだけを持ち、historical block parentのcurrent-map／historical-map unionでcurrent map＋deleted blockを表現し、entry-local `lastKnown*`のabsent／present／異値を代表値へ集約しない。V2／companion V1の両representabilityを満たす場合だけrole別immutable artifactとpair digestを生成し、V2-only、片方差替え、incomplete handoffの完了通知を禁止する。初版production writerはhealthy `map-cell-split-v1`かつdurable readyからfull-split、明示item-only commandからitem-onlyだけを生成し、core-mapはreader-onlyでserialize／registry／dispatch 0件とする。full／coreのportable dayはcore-derived scope、groupは再構築identityとpairwise unique exact bijection、item-onlyはsettings／durable nullとする
+- **DOD-FSMC-025** — Backup wire層は`AppBackupV2FullEventCoreWireV1`、`PortableDurableVisitStateWireV1`、scope別の明示section型だけを公開し、`Pick<AppData, ...>`、runtime domain型、persistence型をimportしない。V1層別互換matrix、event単位V2のcore／split／durable分離、eventLists／metadata exact 1＋残る8 sectionのabsent／present-empty、全scope共通のevent／item／map／block／hall／historical-owner reference exact bijection、実payload由来の全7 `counts`、map-level fingerprint、active／retained union、durable day／group／phase anchor、digestを固定する。hall ownerはmap／mapless XOR、item-only source-map descriptorを区別し、hall source order、normal／priority／highest／unassigned／missing／malformed visit group、manual／visit／orderの3-face dangling remap、raw `blockNames`のoptional absent／present-empty／順序／重複をlosslessに扱う。owner別hall group codecは全reachable pairでleft-inverse／token injectiveを必須にし、reserved 3形、suffix付き実ID単独、`A`と`A:priority`／`A:highest`のaliasをtyped blockerにする。item-only resolved hallはsource V2 digest／artifact SHAへ拘束した全hallRef↔distinct destination Hall IDのglobal total injective matchingだけを許し、0件／新規event／stale／候補外／choice replayをwrite 0件にする。historical ownerはcurrent refと別namespaceでrelationだけを持ち、historical block parentのcurrent-map／historical-map unionでcurrent map＋deleted blockを表現し、entry-local `lastKnown*`のabsent／present／異値を代表値へ集約しない。V2とcompanion V1の両representability／resource limitを満たす場合は`preparationKind = "pair"`のrole別immutable artifactとpair digestを生成する。V2がrepresentableかつ上限内でcompanionだけがunrepresentableなら構造reason＋resource以外のcanonical issuesと`preparationKind = "structural-v2-only"`、resource limitならresource reason＋exact 1 issueと`preparationKind = "resource-v2-only"`とし、scope→export→prepared→verification→handoffでreason／issues／digestをexact一致させて新版へ復元できる。pair片側失敗は`pair-incomplete`、V2-only本体失敗は同reasonの`structural-v2-only-incomplete | resource-v2-only-incomplete`だけを返す。V2 core blocker時のlosslessなlegacy-core-only退避だけをwarning acknowledgement必須の`standalone-v1` prepared／verified／completed・incompleteへ閉じ、split／durable復元可能と表記しない。V2生成のfixed-point／digest置換／実byte／timeout／spool／cancel／sink error失敗はsource binding、full state／typed sink receiptを持つreason別witness付き`v2-export-failed`／artifact 0件とし、prepared artifactはrole別exact self-validation tupleとimmutable byte witness、handoffはhandedOff IDとexact bijectionのtyped receipt tupleを持ち、相互のartifact数／digest／guidanceを表現不能にする。初版production writerはhealthy `map-cell-split-v1`かつdurable readyからfull-split、明示item-only commandからitem-onlyだけを生成し、core-mapはreader-onlyでserialize／registry／dispatch 0件とする。full／coreのportable dayはcore-derived scope、groupは再構築identityとpairwise unique exact bijection、item-onlyはsettings／durable nullとする
 - **DOD-FSMC-026** — V1、legacy XLSX 2.2 full、地図を含むがsplitを含まないV2では既存split設定をpreview後にdormant化し、V1／XLSX 2.2 item-only importではmap／splitを維持する。event V2はportable execution order、phase別current／saved／purchase anchor、completionを原子的にround-tripし、全形式でcancel／stale／validation失敗はwrite 0件となる。full／core restoreはcanonical event settingsとdurable visit stateを復元先eventへ同一IDB commitで適用し、legacy fullは既存durable stateを一意移送、新規eventだけ決定的default、item-onlyはdestination settings checksumとdurable stateを維持・rekeyする。plain create、anchor保持rename、whole-event duplicate、V2 full／core restore、V1／XLSX新規／既存full、legacy／V2 item-only、固定旧版A delete retired化、新版delete除去、empty-split resetをformat／operation writer matrixで網羅し、event名／ID、basis 4 field、`basisCoreDigest`／`basisEventAuthorityDigest`、entries、retired rowの宣言済みafter-imageが変わる全場合にdurable rootをlogical participantへ加える。各commit後にbasis／aggregateを再計算し、bridge完了前は成功通知しない
-- **DOD-FSMC-027** — importはsame-origin bundled module Workerが1 MiB以下のbounded sliceで処理し、main threadのwhole-file `arrayBuffer()`／`text()`、blob／data Workerを禁止する。PWA precacheと`worker-src 'self'`のoffline起動、cancel／timeout／worker crash cleanupを検証する。performance保証32 MiB／file、V1／V2 JSON import hard 64 MiB／file、XLSX 2.2 compressed hard 32 MiB＋既存展開limit、export V2 32 MiB・V1 32 MiB・pair合計64 MiB、fatal UTF-8、duplicate property、非再帰depth／token、V2 digest、未知version／scope、不正ref、1 MiB超番号tokenをDB更新前に判定し、長大数字を境界比較前に巨大`BigInt`化しない。V2のlocal control fieldも未知keyとして拒否する。V1で現行readerが受理する同名未知fieldは互換matrixどおり保持できるがcontrol authorityへ採用しない。V2／新規編集のunsafe URLは拒否し、V1／XLSX 2.2／既存profileのlegacy unsafe URLはraw保持しても非clickable、href sinkは`SafeExternalHref`だけを受理する。bounded errorとcancel cleanupを守り、`__proto__`等の利用者名を安全に自己round-tripする
+- **DOD-FSMC-027** — importはsame-origin bundled module Workerが1 MiB以下のbounded sliceで処理し、main threadのwhole-file `arrayBuffer()`／`text()`、blob／data Workerを禁止する。PWA precacheと`worker-src 'self'`のoffline起動、cancel／timeout／worker crash cleanupを検証する。performance保証32 MiB／file、V1／V2 JSON import hard 64 MiB／file、XLSX 2.2 compressed hard 32 MiB＋既存展開limit、exportは1 MiB以下chunkのincremental canonical UTF-8 sinkを使い、V2実byteLength 32 MiB、V1 32 MiB、pair 48 MiB、temporary spool 64 MiB、generation timeout 300,000 msを同じconfig SHAへ拘束する。V2超過／timeout／spool違反はreason別witness付きartifact 0、V2以内でV1またはpairだけを超える場合は`companion-v1-resource-limit`付きV2-only、全上限内ならpair、fatal UTF-8、duplicate property、非再帰depth／token、V2 digest、未知version／scope、不正ref、1 MiB超番号tokenをDB更新前に判定し、長大数字を境界比較前に巨大`BigInt`化しない。V2のlocal control fieldも未知keyとして拒否する。V1で現行readerが受理する同名未知fieldは互換matrixどおり保持できるがcontrol authorityへ採用しない。V2／新規編集のunsafe URLは拒否し、V1／XLSX 2.2／既存profileのlegacy unsafe URLはraw保持しても非clickable、href sinkは`SafeExternalHref`だけを受理する。bounded errorとcancel cleanupを守り、`__proto__`等の利用者名を安全に自己round-tripする
+  DOD-FSMC-027のexport境界ではV2自体／event hard limitだけを停止条件とし、companion／pairだけの超過はresource reason＋exact 1 issueの`resource-v2-only`へ進める。構造issueとの混在、pair artifactの片側をV2-onlyとして再分類すること、`pair-incomplete`、`structural-v2-only-incomplete | resource-v2-only-incomplete`、warning必須の`standalone-v1-incomplete`のartifact数／digest／guidance交換、および`v2-export-failed`のreason／bounded witness／config SHA差替えを型・schema・Worker testで拒否する。
+
 - **DOD-FSMC-028** — 端末全体OFF、event OFF、自動安全モードでは`PD-04`で定義したsplit固有部分のlegacy動作となり、オフラインだけではOFFにならない。C2はI7以降、C3はI10以降のQAだけで先行conformanceし、I10以前production edgeは0件、I11 release-ready productionではdurable ready後に初めて両方をON／OFF共通不変条件として登録する。重複物理cellの新規after-image拒否と`map-data-untrusted`安全判定は各該当commandの導入時から常時適用する。authority正常なlegacy rebaseはdevice／event／readinessに依存せず完了し、recovery-required安全モードでは禁止する。device OFF中の編集後に再ONした場合は衝突eventだけをstored enabledのeffective fallback、他eventをONとし、修正完了したeventだけ復帰する。BackupはローカルON／OFFを含めず、新規復元OFF・既存復元先状態維持となる
 - **DOD-FSMC-029** — 端末間同期・自動mergeを行わず、1イベント1主端末とpreview付き全置換、復元前退避案内が利用者向け文書と自動テストで固定される
 - **DOD-FSMC-030** — source固定readinessがI0～I1 `contracts-only`、I2～I10とI11作業中`internal-testing`であり、I11最終candidate PRだけはbuild前に`release-ready`へ変更される。同一production artifactの全Exit／release gate成功後だけ配布でき、verifierはreadinessを書き換えない。production bundleにQA override、query、storage、remote迂回がなく、release-ready前のproductionでは有効化UI／commandへ到達できず、production／QA build manifestの`databaseTargetMode`、`buildPurpose`、readinessと実際のDB target／registryをverifierが一致させる
 - **DOD-FSMC-031** — 必須Desktop／Mobile Chromium CIがworkers 1、retry 0、`failOnFlakyTests`で成功し、`desktop-touch-context`を含むsafety flakyが0件である。release-ready manifestでは全`releaseScope = initial-release` safetyが`implementation-enforced`であり、その集合内の`qa-chromium-only`が0件である。`releaseScope = future`は選択・実行・成功扱いにせず、初版DoDの0件判定へ混ぜない。WebKitの通常表示／a11y結果自体をDoDにしないが、同一`ciRun`／source／production artifactへhash拘束したrelease-ready `requiredSafetyIds(state)`の全ID実行・全結果passed・failed ID／infra error 0件からcurrent-run safety observationが`passed`へ再計算され、open safety findingは0件、promotion resultはregister 0件と集合一致する`not-required`である。open finding中のpromotion `passed`は修正確認の中間状態に限り、findingをclosedへ更新して`not-required`となるまで最終DoDを満たさない。overall statusの自己申告だけを信頼しない
 - **DOD-FSMC-032** — Desktop／Mobile Chromiumの自動browser、PWA、性能テストが成功する。`CellSplitDefinitionPanel`／retained管理の15,000行と`ProjectedVisitList`の最大800行のDOM導線、role／name／description／stateとDOM／AX tree順、常設`role=status`の`operationEventId`別exact 1 mutation、light／dark contrast、forced-colors、200% zoom、container focus＋`aria-activedescendant`のfocus復元を含み、特定screen reader、OS、端末を正式保証済みと表記しない。`MapVisitListPanel`はI8のshellとしてfilter／active／selected／stale／focus returnを所有し、injective row ID、filter 0件、opener消失、同文言別operation eventを正しく扱う
 - **DOD-FSMC-033** — WebKitはadvisory自動test対象だが必須保証対象外であり、iPhone、ペン、OS／実機固有挙動は自動test対象外であることを利用者向け文書へ明記する
-- **DOD-FSMC-034** — 15,000セル、最大8,192 block、15,000設定、30,000半領域、400商品、400売場、400 execution訪問、最大800 phase投影、単一phase経路400の条件を持つ`releaseScope = initial-release`の全performance scenarioが、検証済みrunner envelope上で専用`config/fsmc-performance-budgets.json`の製品上限を満たす。5秒操作中のinput-to-next-paint、全Chromium process PSS memory metric、memory解放条件も満たし、Mobile emulationを実機memory保証と表記しない。100×150のversion付きtopology manifestと同一OFF／ON topology hashを使い、全62 scenario-profile keyを最大54 shard、各300分以下／job 330分以下で実行し、reducerが欠落／重複／stale／別attemptを拒否する
+- **DOD-FSMC-034** — 15,000セル、最大8,192 block、15,000設定、30,000半領域、400商品、400売場、400 execution訪問、最大800 phase投影、単一phase経路400の条件を持つ`releaseScope = initial-release`の全performance scenarioが、検証済みrunner envelope上で専用`config/fsmc-performance-budgets.json`の製品上限を満たす。5秒操作中のinput-to-next-paint、全Chromium process PSS memory metric、memory解放条件も満たし、Mobile emulationを実機memory保証と表記しない。100×150のversion付きtopology manifestと同一OFF／ON topology hashを使い、全62 scenario-profile keyを最大54 shard、`max-parallel: 12`、5 wave、Actions job開始から各300分以下／job hard deadline 330分で実行する。1 attemptは1,500／1,650 matrix分、16,200／17,820 runner分とし、half-open `jobIntervals`、observed concurrency 12以上、queue除外qualification 360分以下、canonical 12-lane projected 5-wave 360分以下をschemaから再計算する。test／automatic workflow retry 0、開始前allowlisted infrastructureだけCI Operator承認付き`Re-run all jobs`を1回許可し、最大2 attemptのperformance shard matrix部分は3,300 matrix分／35,640 runner分とする。current approval resultとjob-start absolute deadline／preproduct／started／terminal ledger chainを含め、reducerがpartial rerun、欠落／重複／stale／別attempt混在、started時刻からのdeadline延長、製品開始後timeoutのinfra偽装を拒否する
 - **DOD-FSMC-035** — PWA新旧世代、旧版／新版同時tab、probe close後blocked、blocked中旧tab write、same-request再開、terminal dedupe、absence `oldVersion = 0`、2種connection handoff、QuotaExceeded、部分root／store欠損、強制終了を試験する。明示reset以外はsplit stateを自動削除せず、durable write前後のretry／reload／別tab／Backup往復でorder、phase、current／saved／purchase anchor、completionを失わない。strict true freshだけをzero-scope ready、materialize／queue-only archive後を含むpresent既存profileをzero-scope／unmapped-onlyでもmigratingにする。persisted authorityはevent-local association missing／extra、anchor missing／invalid／mismatch／duplicateの6 reasonと複合、global 5 reasonと複合をcanonical化し、resolved eventを一括ready、rejected entryをbyte不変quarantine、unaffected eventをready継続、局所化不能差だけ全体repair-requiredにする。retired row↔basisはexact bijection、possibly-empty entry sliceはrowのcount／digestと一致させ、zero-entry retiredを許す。`rejectedEventPartitions`はpost-derived非永続witnessとする。freeze barrier、latest capture、setter停止、fresh issuance、旧writer unmount、zero-session renameだけのempty key pair、rename／delete one-shot lease、二重finalize／replay拒否、3 counter境界を検証する。raw-day collisionはrequest／DB／token／default 0件の`capability-adoption-blocked`とし、target-first inspection、total／injective／closed mapping、day-scoped sourceのgroup間partition、全present source↔assignment、day＋event-wide hallのglobal target injectivity／full occupant、source-specific／event-wide choice、map request＋6面、nonempty execution partition、Focus CAS、requested target→choice→loss rows→plan→confirmation→lease→full-plan receipt chainをcommit直前に再検査する。可変4 count `distinctNormalizedDayScopeCount`／`executionBucketCount`／`hallDefinitionSlotCount`／`hallRouteSlotCount`だけを再計算し、hall entry／list／item-reference、execution reference、その他count／payloadを維持する。cross-group duplicate、2 rename→1 target、capacity不足、zero-member、partial／many-to-one／domain外target、choice／plan／loss／lease／receipt不整合、shared-day、map 1～5面、physical drop・copy、Focus ABA、E1差をwrite 0件で拒否し、E2再出現は全new IDB維持のtyped blocked／recoveryへ写す。invalid／duplicate anchor blockedとallocator failureも専用terminal、request 0件、typed runbookへ一致させる。snapshot／field／mapping不正、unmapped recordはloss previewとexact default／破棄確認、token status／issuance／generation／record digest／absence CASを必須にし、取消／quota retryはfresh issuanceだけを受理する。ack前unmount、ABA、黙示default、ready前／rejected／retired eventのpublic edge、scope単位部分seedを0件にする。profile消去はclean-startと事前Backupを確認し、event-settings bridge、durable write、coverage deleteの各crash／raceも全旧または全新で再開・停止する
-- **DOD-FSMC-036** — test membership、coverage、architecture、dependency usage、foundation quality、functional result、CI prerequisite result、required-resultsの各verifierがcurrent source／artifact／run hashへ拘束され、0 test、allow-empty、未登録command、wire→runtime型、UI→persistence、raw URL→href、blob／data Worker、別run結果流用をnegative fixtureで拒否する。FSMC-I0着手前ゲートとI0～I11の各required gateはwaiver／skipなしで成功する。requirement catalogは7.2のexact informative marker範囲だけを除外し、marker不正や将来メモのnormative登録を拒否する。catalog／traceability／test manifest、foundation result、production／必要時QA manifest、functional result、performance reduced result、CI prerequisite resultをfinalizerがcurrent runのhashで統合し、producerの失敗・起動前終了でもalways-run reporterがfailed／infrastructure-failed artifactを作る。pre-I0 quality graphとActions／GHCR／branch gate前提をwaiverなしで検証する
+- **DOD-FSMC-036** — test membership、coverage、architecture、dependency usage、foundation quality、functional result、CI prerequisite result、required-resultsの各verifierがcurrent source、`productionArtifactTreeSha256`／`productionBuildManifestSha256`、必要時`qaArtifactTreeSha256`／`qaBuildManifestSha256`、run hashへ拘束され、0 test、allow-empty、未登録command、wire→runtime型、UI→persistence、raw URL→href、blob／data Worker、別run結果流用をnegative fixtureで拒否する。file-tree／manifestのpath／length／byte／manifest-only差、nested directory entry、symlink／junction／reparse／deviceを拒否し、別root／timezoneの同一treeを同値にする。pre-I0 9段baseline verifierと外部observer、FSMC-I0～I11の各required gateはwaiver／skipなしで成功する。固定Node／npm／lockfileのrequired CLI contractは`npx playwright install --with-deps chromium --dry-run`のbrowser／flag転送成功と旧`npm exec`2形式の失敗を再現する。既存`quality` jobだけがcurrent runでcanonical `npm run quality`をexact 1回実行してfoundation resultを作り、全FSMC build／testはdownload＋verifyし再実行しない。producer 0回／複数回、逆needs／cycleを拒否する。I0 Exit候補の同一HEADで`fsmc-required-gate`自体を一度だけdirect required化し、既存`quality`もrequiredのまま、未設定／誤contextを拒否する。requirement catalogは7.2のexact informative marker範囲だけを除外し、marker不正や将来メモのnormative登録を拒否する。catalog／traceability／test manifest、foundation result、production／必要時QA manifest、functional result、performance reduced result、CI prerequisite resultをfinalizerがcurrent runのhashで統合し、producerの失敗・起動前終了でもalways-run reporterがfail-closed resultを作る。pre-I0 quality graphとActions／GHCR／branch gate前提をwaiverなしで検証する
 - **DOD-FSMC-037** — remote availability、署名receipt、外部metrics、実event pilot、managed-device収集、source-bound証跡bundleが実装・完了条件・標準commandに存在しない。source固定の`verify:fsmc:release-readiness`は公開安全gateとして必須とする
 - **DOD-FSMC-038** — 完全版XLSX 2.3、multipart、設定単独portable JSON、別日程・別地図コピー、意図的再訪が後続版として初版のUI、command、test gateから分離される
 - **DOD-FSMC-039** — Backupのraw structured-clone snapshotをDTO／JSON化前にown-propertyとarray index presenceで監査し、own／array `undefined`、sparse hole、`-0`をtyped representability blockerへ写す。absent optional、explicit `null`、`0`と区別し、黙示JSON変換後だけを検証したV2／pairを生成しない
@@ -6100,7 +7927,7 @@ severityはFSMC-I0 ADRの固定rubricで判定する。Criticalはアプリが�
 
 リポジトリ指定のNode 24.19.0／npm 11.19.0を使用する。次のFSMC scriptはI0で`package.json`とCIへ追加し、manifestが選ぶtest 0件、`--passWithNoTests`、未実装testの仮成功を拒否する。
 
-以下のphase別blockはjob内payloadの例であり、required workflowの唯一のauthorityは次のDAGとする。`foundation-quality → production／QA build`と常設`fsmc-ci-prerequisites`をcurrent runで開始し、build後にfunctional job、`performance-plan → performance-shard matrix → performance-reducer`、WebKit observation、WebKit promotionへ分岐する。foundation-quality、production／QA manifest、functional result、reduced performance result、CI prerequisite resultを`if: always()`で待つ`required-results-finalizer`だけが`fsmc-required-results.json`を生成し、その後に`fsmc-required-gate`を実行する。shard／functional／prerequisite jobからrequired-resultsを直接生成しない。reporter、全artifact upload、reducer、finalizer、gateは上流失敗時も動く独立した`if: always()` stepとし、hard-timeout shardやjob-level artifact欠落はdownstream verifierがinfrastructure failureへ再計算する。I2～I10とI11 internal-testingだけはnon-promotable QA artifactを機能／製品performanceへ使うが、production artifact、production guard、WebKit系、finalizerを省略しない。
+以下のphase別blockはjob内payloadの例であり、required workflowの唯一のauthorityは次のDAGとする。既存job ID `quality`だけがcanonical `npm run quality`をcurrent runでexact 1回実行する単一foundation-quality producerであり、常設`fsmc-ci-prerequisites`と固定`performance-rerun-preflight`を並行して開始する。全production／QA buildは`needs: quality`で同じfoundation resultをdownload／verifyし、`quality → production／QA build → functional／WebKit`と、`performance-rerun-preflight + production／QA build → performance-plan → shard matrix → reducer`を`required-results-finalizer → fsmc-required-gate`へ合流させる一方向DAGとする。`required-results-finalizer`だけがfoundation-quality、production／QA manifest、functional result、reduced performance result、CI prerequisite result、current performance rerun approval resultのexact 6入力classを`if: always()`で待って`fsmc-required-results.json`を生成する。preflight／shard／functional／prerequisite jobからrequired-resultsを直接生成しない。reporter、全artifact upload、reducer、finalizer、gateは上流失敗時も動く独立した`if: always()` stepとする。performance hard-timeout／deadline・result・snapshot artifact欠落は開始前後を問わずfailedへ再計算し、schema-validなpreproduct／terminal snapshotとallowlist証跡を持つ完了reporter resultだけをinfrastructure候補にする。その他producer欠落もschema固定の起動前infrastructure証跡なしに再実行可能へしない。既存`quality`へFSMC側の`needs`を逆接続せず、I2～I10とI11 internal-testingだけはnon-promotable QA artifactを機能／製品performanceへ使うが、production artifact、production guard、WebKit系、preflight、finalizerを省略しない。
 
 常設CI prerequisite job:
 
@@ -6113,14 +7940,27 @@ npm run verify:fsmc:ci-prerequisites-result
 npm run artifact:fsmc:upload:ci-prerequisites-result
 ```
 
-I0で追加する`run:fsmc:foundation-quality`はcurrent sourceで既存`npm run quality`と同じ再帰展開graphを共通executorで省略なく実行し、graph SHA、各command／script hash、選択test ID／件数、exit、source／toolchain／`ciRun`をresultへ記録する。0 test、allow-empty、前run result、graph差替え、個別失敗をoverall passedにしない。performanceは`plan:fsmc:performance`、`verify:fsmc:performance-plan`、`verify:fsmc:performance-runner:shard`、`test:fsmc:performance:shard:*:prebuilt`、`reduce:fsmc:performance`、`verify:fsmc:performance-reduced-result`へ分離し、`finalize:fsmc:required-results`がfunctional／reduced結果を統合する。calibrationは各shardの製品sample直前に同じcontainer／browserで行い、別runから再利用しない。
+既存`quality` jobは次のsole-producer blockを所有する。`verify:fsmc:foundation-quality-graph`は既存`npm run quality`の再帰展開graphを実行前に固定し、finalizerはgraph SHA、各command／script hash、選択test ID／件数、exit、source／toolchain／`ciRun`をresultへ記録する。0 test、allow-empty、前run result、graph差替え、個別失敗をoverall passedにしない。
+
+```powershell
+npm ci
+npm run verify:fsmc:foundation-quality-graph
+npm run quality
+# 以下3 stepはquality結果にかかわらずworkflowのif: always()で実行
+npm run finalize:fsmc:foundation-quality-result
+npm run verify:fsmc:foundation-quality-result
+npm run artifact:fsmc:upload:foundation-quality-result
+```
+
+performanceは`plan:fsmc:performance`、`verify:fsmc:performance-plan`、`verify:fsmc:performance-runner:shard`、`test:fsmc:performance:shard:*:prebuilt`、`reduce:fsmc:performance`、`verify:fsmc:performance-reduced-result`へ分離し、`finalize:fsmc:required-results`がfunctional／reduced結果を統合する。calibrationは各shardの製品sample直前に同じcontainer／browserで行い、別runから再利用しない。
 
 FSMC-I0 production build job:
 
 ```powershell
 npm ci
-npm run run:fsmc:foundation-quality
-npm run artifact:fsmc:upload:foundation-quality-result
+npm run artifact:fsmc:download:foundation-quality-result
+npm run verify:fsmc:foundation-quality-result
+npm run verify:fsmc:pre-i0-baseline
 npm run verify:fsmc:i0
 npm run build:release-a
 npm run artifact:fsmc:upload:release
@@ -6134,7 +7974,7 @@ npm run artifact:fsmc:download:release
 npm run verify:fsmc:artifact:production
 npm run artifact:fsmc:download:foundation-quality-result
 npm run verify:fsmc:foundation-quality-result
-npm exec -- playwright install --with-deps chromium
+npx playwright install --with-deps chromium
 npm run verify:fsmc:i0:prebuilt
 npm run test:fsmc:i0:prebuilt
 # 以下3 stepはtest結果にかかわらずworkflowのif: always()で実行
@@ -6149,8 +7989,8 @@ FSMC-I1 production build job:
 
 ```powershell
 npm ci
-npm run run:fsmc:foundation-quality
-npm run artifact:fsmc:upload:foundation-quality-result
+npm run artifact:fsmc:download:foundation-quality-result
+npm run verify:fsmc:foundation-quality-result
 npm run verify:fsmc:phase
 npm run build:release-a
 npm run artifact:fsmc:upload:release
@@ -6164,7 +8004,7 @@ npm run artifact:fsmc:download:release
 npm run verify:fsmc:artifact:production
 npm run artifact:fsmc:download:foundation-quality-result
 npm run verify:fsmc:foundation-quality-result
-npm exec -- playwright install --with-deps chromium
+npx playwright install --with-deps chromium
 npm run test:fsmc:production-guard:prebuilt
 npm run test:fsmc:domain
 # 以下3 stepはtest結果にかかわらずworkflowのif: always()で実行
@@ -6179,8 +8019,8 @@ FSMC-I2～I10およびI11作業中`internal-testing` build job:
 
 ```powershell
 npm ci
-npm run run:fsmc:foundation-quality
-npm run artifact:fsmc:upload:foundation-quality-result
+npm run artifact:fsmc:download:foundation-quality-result
+npm run verify:fsmc:foundation-quality-result
 npm run verify:fsmc:phase
 npm run build:release-a
 npm run artifact:fsmc:upload:release
@@ -6198,7 +8038,7 @@ npm run artifact:fsmc:download:foundation-quality-result
 npm run verify:fsmc:foundation-quality-result
 npm run artifact:fsmc:download:qa
 npm run verify:fsmc:artifact:qa
-npm exec -- playwright install --with-deps chromium
+npx playwright install --with-deps chromium
 npm run test:fsmc:production-guard:prebuilt
 npm run test:fsmc:required:qa-prebuilt
 # 以下3 stepはtest結果にかかわらずworkflowのif: always()で実行
@@ -6213,8 +8053,8 @@ I11 production build job:
 
 ```powershell
 npm ci
-npm run run:fsmc:foundation-quality
-npm run artifact:fsmc:upload:foundation-quality-result
+npm run artifact:fsmc:download:foundation-quality-result
+npm run verify:fsmc:foundation-quality-result
 npm run verify:fsmc:phase
 npm run build:release-a
 npm run artifact:fsmc:upload:release
@@ -6228,7 +8068,7 @@ npm run artifact:fsmc:download:release
 npm run verify:fsmc:artifact:production
 npm run artifact:fsmc:download:foundation-quality-result
 npm run verify:fsmc:foundation-quality-result
-npm exec -- playwright install --with-deps chromium
+npx playwright install --with-deps chromium
 npm run test:fsmc:required:prebuilt
 # 以下3 stepはtest結果にかかわらずworkflowのif: always()で実行
 npm run finalize:fsmc:functional-result
@@ -6236,26 +8076,79 @@ npm run verify:fsmc:functional-result
 npm run artifact:fsmc:upload:functional-result
 ```
 
-performance系は上のfunctional jobへ混ぜず、全phaseで次の4段を使う。I0 planはqualification shardだけ、I1 planは期待shard 0件の`not-required`、I2以降は現在phaseまでのproduct keyを生成する。
+performance系は上のfunctional jobへ混ぜず、全phaseでrerun preflight→plan→shard→reducer→required-results finalizerの5段を使う。I0 planは同一run／attemptのexact 12 qualification shard、I1 planは期待shard 0件の`not-required`、I2以降は現在phaseまでのproduct keyを最大54 shardで生成する。matrix strategyは`max-parallel: 12`、workflow自動retry 0、各shard job `timeout-minutes: 330`をliteral固定する。
 
 ```powershell
+# performance-rerun-preflight job（全attempt、if: always()）
+npm ci
+# attempt 1は全prior download／verifyがschema-valid not-required、attempt 2だけexact prior attempt名を取得
+npm run artifact:fsmc:download:prior-attempt-performance-reduced-result
+npm run artifact:fsmc:download:prior-attempt-required-results
+npm run artifact:fsmc:download:prior-attempt-webkit-safety-observation
+npm run artifact:fsmc:download:prior-attempt-webkit-promotion-result
+npm run artifact:fsmc:download:prior-attempt-required-gate-result
+npm run verify:fsmc:prior-attempt-performance-reduced-result
+npm run verify:fsmc:prior-attempt-required-results
+npm run verify:fsmc:prior-attempt-webkit-safety-observation
+npm run verify:fsmc:prior-attempt-webkit-promotion-result
+npm run verify:fsmc:prior-attempt-required-gate-result
+npm run finalize:fsmc:performance-rerun-approval
+npm run verify:fsmc:performance-rerun-approval
+npm run artifact:fsmc:upload:performance-rerun-approval
+
 # performance-plan job
 npm ci
+npm run artifact:fsmc:download:performance-rerun-approval
+npm run verify:fsmc:performance-rerun-approval
+npm run artifact:fsmc:download:foundation-quality-result
+npm run verify:fsmc:foundation-quality-result
 npm run artifact:fsmc:download:release-and-qa-if-required
+npm run verify:fsmc:artifact:production
+npm run verify:fsmc:artifact:qa-if-required
 npm run plan:fsmc:performance
 npm run verify:fsmc:performance-plan
 npm run artifact:fsmc:upload:performance-plan
 
-# performance-shard matrix job（matrix.shardIdごと、timeout-minutes <= 330）
+# performance-shard matrix job（matrix.shardIdごと、max-parallel: 12、timeout-minutes: 330）
+# first executable workflow step ID: fsmc-performance-job-deadline
+# 次のdependency-free script出力をpinned actions/upload-artifact stepでcreate-new uploadしてからnpm ciへ進む
+node scripts/fsmc/begin-performance-shard-deadline.mjs --shard-id $env:FSMC_SHARD_ID --start-supervisor
 npm ci
+npm run artifact:fsmc:download:foundation-quality-result
+npm run verify:fsmc:foundation-quality-result
 npm run artifact:fsmc:download:performance-plan-and-builds
+npm run verify:fsmc:artifact:production
+npm run verify:fsmc:artifact:qa-if-required
+npm run begin:fsmc:performance-shard-ledger -- --shard-id $env:FSMC_SHARD_ID --snapshot preproduct
+npm run verify:fsmc:performance-shard-ledger -- --shard-id $env:FSMC_SHARD_ID --snapshot preproduct
+npm run artifact:fsmc:upload:performance-shard-ledger-preproduct -- --shard-id $env:FSMC_SHARD_ID
+npx playwright install --with-deps chromium
 npm run verify:fsmc:performance-runner:shard -- --shard-id $env:FSMC_SHARD_ID
+npm run calibrate:fsmc:performance:shard:prebuilt -- --shard-id $env:FSMC_SHARD_ID
+npm run mark:fsmc:performance-shard-started -- --shard-id $env:FSMC_SHARD_ID
+npm run verify:fsmc:performance-shard-ledger -- --shard-id $env:FSMC_SHARD_ID --snapshot started
+npm run artifact:fsmc:upload:performance-shard-ledger-started -- --shard-id $env:FSMC_SHARD_ID
 npm run test:fsmc:performance:shard:prebuilt -- --shard-id $env:FSMC_SHARD_ID
+# 以下6 stepは先行stepの結果にかかわらずworkflowの独立したif: always() stepで実行
+npm run finalize:fsmc:performance-shard-ledger -- --shard-id $env:FSMC_SHARD_ID
+npm run verify:fsmc:performance-shard-ledger -- --shard-id $env:FSMC_SHARD_ID --snapshot terminal
+npm run artifact:fsmc:upload:performance-shard-ledger-terminal -- --shard-id $env:FSMC_SHARD_ID
+npm run finalize:fsmc:performance-shard-result -- --shard-id $env:FSMC_SHARD_ID
+npm run verify:fsmc:performance-shard-result -- --shard-id $env:FSMC_SHARD_ID
 npm run artifact:fsmc:upload:performance-shard-result -- --shard-id $env:FSMC_SHARD_ID
 
 # reducer job（if: always()）
 npm ci
+npm run artifact:fsmc:download:performance-rerun-approval
+npm run verify:fsmc:performance-rerun-approval
+npm run artifact:fsmc:download:foundation-quality-result
+npm run verify:fsmc:foundation-quality-result
+npm run artifact:fsmc:download:release-and-qa-if-required
+npm run verify:fsmc:artifact:production
+npm run verify:fsmc:artifact:qa-if-required
 npm run artifact:fsmc:download:performance-plan-and-all-shards
+npm run observe:fsmc:performance-run-attempt-jobs
+npm run verify:fsmc:performance-job-intervals
 npm run reduce:fsmc:performance
 npm run verify:fsmc:performance-reduced-result
 npm run artifact:fsmc:upload:performance-reduced-result
@@ -6263,7 +8156,7 @@ npm run artifact:fsmc:upload:performance-reduced-result
 # required-results-finalizer job（全入力producerをif: always()で待つ）
 npm ci
 # 各download／verifyと末尾3 stepは独立したworkflowのif: always() step。
-# download不能時はcurrent-run missing sentinelを残し、finalizerがinfrastructure-failedへ再計算する
+# download不能時はcurrent-run missing sentinelを残し、欠落を常にfailedへ再計算する
 npm run artifact:fsmc:download:foundation-quality-result
 npm run verify:fsmc:foundation-quality-result
 npm run artifact:fsmc:download:release
@@ -6276,12 +8169,16 @@ npm run artifact:fsmc:download:functional-result
 npm run verify:fsmc:functional-result
 npm run artifact:fsmc:download:performance-reduced-result
 npm run verify:fsmc:performance-reduced-result
+npm run artifact:fsmc:download:performance-rerun-approval
+npm run verify:fsmc:performance-rerun-approval
 npm run finalize:fsmc:required-results
 npm run verify:fsmc:required-results
 npm run artifact:fsmc:upload:required-results
 ```
 
-各shard uploadはtest失敗時も走り、job hard-timeoutでartifact自体がない場合はreducerがexpected shard欠落として失敗する。finalizerはfoundation-quality result、production／必要時QA manifest、functional result、performance reduced result、CI prerequisite resultのexact 5入力classをcurrent run／attemptから取得し、source／artifact purpose／readiness／`completedThrough`／`currentPhase`／`phaseProgress`／catalog／traceability／test manifest／topology hashを再検証する。class欠落、複数artifact、別run／attempt、producer失敗、phase state差、hash差をinfrastructure failureへ再計算し、functional／shard／prerequisite側の自己申告passを採用しない。I0／I1／I11 release-readyではQA manifestを「不要であることを検証したnull」、I2～I10とI11 internal-testingではexact 1件として扱う。
+各shardではfirst executable deadline artifact upload後だけ`npm ci`へ、preproduct snapshot upload後だけbrowser／runner envelope／calibrationへ、started snapshot upload後だけ製品processへ進む。外側supervisorはActions job `started_at + 300分`のabsolute product deadlineでsetupまたはproduct child treeを止め、`started + 300分`へ延長しない。`started_at + 330分`のhard deadlineまでをalways reporter予約枠とし、deadline artifact／preproduct／started／terminal／resultの時刻とdigest chainを再計算する。hard timeout、resultまたは必須artifact欠落は開始前後を問わずfailedとし、preproduct／terminal snapshotとallowlist証跡が揃うschema-validな開始前failure resultだけをinfrastructure-failedへ再計算する。reducerは同じrun／attempt／shardのdeadline artifactと3 lifecycle artifact classから最長の合法digest chainを構成し、同一class複数、startedだけ、terminal predecessor差、started後not-started、別attempt混在を拒否する。shard jobはown jobのAPI `started_at`取得に限定した`permissions: { actions: read, contents: read }`、reducerと`performance-rerun-preflight`も`actions: read, contents: read`を持ち、package permission／credential／write permissionを持たない。`observe:fsmc:performance-run-attempt-jobs`とdeadline scriptはAPI version headerと上記literal attempt endpoint／pagination以外を拒否し、raw responseをartifactへ保存せずallowlisted job ID／started／completed projectionだけを使う。finalizerはfoundation-quality result、production／必要時QA manifest、functional result、performance reduced result、CI prerequisite result、current performance rerun approval resultのexact 6入力classをcurrent run／attemptから取得し、source、`productionArtifactTreeSha256`／`productionBuildManifestSha256`、必要時`qaArtifactTreeSha256`／`qaBuildManifestSha256`、approval digest、artifact purpose／readiness／`completedThrough`／`currentPhase`／`phaseProgress`／catalog／traceability／test manifest／topology hashを再検証する。class欠落、複数artifact、別run／attempt、producer失敗、phase state差、hash差をfail-closedにし、schema-validな開始前allowlist証跡だけをinfrastructure候補へできる。functional／shard／prerequisite側の自己申告passを採用しない。I0／I1／I11 release-readyではQA tree／manifest hashを「不要であることを検証したnull」、I2～I10とI11 internal-testingでは両方exact 1件として扱う。
+
+性能のtest retry／workflow自動retryは0とする。reducerまたはgateがschema-validな開始前allowlist証跡から`infrastructure-failed`へ再計算し、CI Operatorがversion付き承認条件を満たす場合だけ、GitHub Actionsの`Re-run all jobs`でperformance-rerun-preflight、quality、CI prerequisite、production／必要時QA build、functional、advisory／promotion WebKit、performance plan／全shard／reducer、finalizer、gateの全required jobを同一sourceのnew attemptへexact 1回再実行する。attempt 2 preflightがprior performance／required-results／WebKit observation／promotion／required-gate artifacts、runtime、rosterからcurrent approval artifactを新規生成するまで後段は進まない。shard単体／failed-jobs／部分matrix rerun、product failure／budget超過／製品開始後watchdogの再実行合格化、attempt間のresult混在を禁止し、attempt固有artifact名を使う。最大2 attemptのperformance shard matrix部分だけを3,300 matrix分／35,640 runner分へ制限する。
 
 次のadvisory WebKit jobはI11専用ではなく、I0～I11の毎candidateでproduction build jobを待ち、必須Chromium jobと分離する。pre-releaseでは`requiredSafetyIds(state)`の`pre-release-production-guard`だけ、release-readyでは全`releaseScope = initial-release` safetyが`implementation-enforced`かつその集合内の`qa-chromium-only`が0件であることを先に検証し、`release-production-full`を含む全導出IDをproduction artifact上で実行する。`releaseScope = future`は選択・実行・成功扱いにせず、初版の0件判定にも混ぜない。I2～I10およびI11作業中`internal-testing`の`qa-chromium-only`機能safetyを到達不能なproduction WebKitへ渡さない。
 
@@ -6289,7 +8186,9 @@ npm run artifact:fsmc:upload:required-results
 npm ci
 npm run artifact:fsmc:download:release
 npm run verify:fsmc:artifact:production
-npm exec -- playwright install --with-deps webkit
+npm run artifact:fsmc:download:foundation-quality-result
+npm run verify:fsmc:foundation-quality-result
+npx playwright install --with-deps webkit
 npm run run:fsmc:webkit-advisory-observed:prebuilt
 ```
 
@@ -6301,12 +8200,16 @@ npm run run:fsmc:webkit-advisory-observed:prebuilt
 npm ci
 npm run artifact:fsmc:download:release
 npm run verify:fsmc:artifact:production
+npm run artifact:fsmc:download:foundation-quality-result
+npm run verify:fsmc:foundation-quality-result
+# open findingが1件以上のbranchだけで実行。0件branchはinstallせずnot-requiredを生成
+npx playwright install --with-deps webkit
 npm run run:fsmc:webkit-safety-promotion:prebuilt
 ```
 
-`run:fsmc:webkit-safety-promotion:prebuilt`はregister hashとopen `webkit-temporary-required`を検証する。0件ではWebKitをinstallせず`not-required` artifact、1件以上ではWebKitを明示installして選択testをretry 0で全件実行し、`if: always()` wrapperから`passed | failed | infrastructure-failed` artifactをuploadする。空testやjob skipを`not-required`へ偽装しない。
+`run:fsmc:webkit-safety-promotion:prebuilt`はregister hashとopen `webkit-temporary-required`を検証する。0件ではWebKitをinstallせず`not-required` artifact、1件以上では上記exact `npx playwright install --with-deps webkit`後に選択testをretry 0で全件実行し、`if: always()` wrapperから`passed | failed | infrastructure-failed` artifactをuploadする。空testやjob skipを`not-required`へ偽装しない。
 
-固定job／status `fsmc-required-gate` aggregatorはI0～I11の毎candidateでbuild、functional、performance reducer、required-results finalizer、advisory observation、promotionの全jobを`if: always()`相当で待つ。source stateが`contracts-only`／`internal-testing`なら`verify:fsmc:phase-gate`を選び、`phaseProgress = in-progress`では`completedThrough`まで、`exit-candidate`では`currentPhase`までのExitを要求する。I11 `exit-candidate`かつ`release-ready`だけは`verify:fsmc:release-readiness`を選び、どのmodeでも同じstatus名を出す。
+固定job／status `fsmc-required-gate` aggregatorはI0～I11の毎candidateでbuild、functional、performance reducer、required-results finalizer、advisory observation、promotionの全jobを`if: always()`相当で待つ。通常判定後も独立reporterが`FsmcRequiredGateResultV1`を必ず生成し、verified result statusを最終checkへ反映する。source stateが`contracts-only`／`internal-testing`なら`verify:fsmc:phase-gate`を選び、`phaseProgress = in-progress`では`completedThrough`まで、`exit-candidate`では`currentPhase`までのExitを要求する。I11 `exit-candidate`かつ`release-ready`だけは`verify:fsmc:release-readiness`を選び、どのmodeでも同じstatus名を出す。
 
 ```powershell
 npm ci
@@ -6323,6 +8226,8 @@ npm run artifact:fsmc:download:functional-result
 npm run verify:fsmc:functional-result
 npm run artifact:fsmc:download:performance-reduced-result
 npm run verify:fsmc:performance-reduced-result
+npm run artifact:fsmc:download:performance-rerun-approval
+npm run verify:fsmc:performance-rerun-approval
 npm run verify:fsmc:required-results
 npm run artifact:fsmc:download:webkit-safety-observation
 npm run verify:fsmc:webkit-safety-observation
@@ -6330,6 +8235,13 @@ npm run artifact:fsmc:download:webkit-promotion-result
 npm run verify:fsmc:webkit-promotion-result
 npm run verify:fsmc:safety-findings
 npm run verify:fsmc:required-gate
+# 以下4 stepは上の判定成否にかかわらずworkflowの独立`if: always()`で実行
+npm run finalize:fsmc:required-gate-result
+npm run verify:fsmc:required-gate-result
+npm run artifact:fsmc:upload:required-gate-result
+npm run enforce:fsmc:required-gate-result-status
 ```
 
-`test:fsmc:required:qa-prebuilt`はI2～I10およびI11 internal-testingのQA artifactへ、`test:fsmc:required:prebuilt`はI11 release-ready production candidateへ、manifestどおりの機能testだけを実行し、performance sampleを同processへ混ぜない。performance planは同じsource／artifactと現在phaseの`initial-release && enforcedFromPhase <= currentPhase && status != planned`集合から独立に導出する。artifact verifierはproduction／QAのsource、purpose、readiness、DB target、`ciRun`を照合する。performance reduced verifierは期待shard、current attempt、plan／budget／runner／topology／catalog／traceability hashes、各sample、OFF pair順、欠落を再計算する。required-results verifierはfoundation、functional、reduced performance、CI prerequisite、catalog／traceabilityの各hash、selected／executed／satisfied／failed集合、ID→command、statusを再計算する。WebKit observation／promotionとrequired gateの既存安全判定は同じcurrent runへ拘束し、外部activation、実event pilot、実機収集、外部metrics、receipt builderを追加しない。
+`test:fsmc:required:qa-prebuilt`はI2～I10およびI11 internal-testingのQA artifactへ、`test:fsmc:required:prebuilt`はI11 release-ready production candidateへ、manifestどおりの機能testだけを実行し、performance sampleを同processへ混ぜない。performance planは同じsource、artifact tree／build manifest hashと現在phaseの`initial-release && enforcedFromPhase <= currentPhase && status != planned`集合から独立に導出する。artifact verifierはproduction／QAのsource、tree digest、manifest bytes SHA、purpose、readiness、DB target、`ciRun`を照合する。performance reduced verifierは期待shard、current attempt、plan／budget／runner／topology／catalog／traceability hashes、各sample、OFF pair順、欠落を再計算する。required-results verifierはfoundation、functional、reduced performance、CI prerequisite、catalog／traceabilityの各hash、selected／executed／satisfied／failed集合、ID→command、statusを再計算する。WebKit observation／promotionとrequired gateの既存安全判定は同じcurrent runへ拘束し、外部activation、実event pilot、実機収集、外部metrics、receipt builderを追加しない。
+
+I0 Exit候補の同一HEADでRepository Maintainerがbranch rulesetへ`fsmc-required-gate`を一度だけ直接requiredとして追加し、read-only再取得でexact contextを確認する。既存`quality`もrequiredのまま維持し、既存終端contextへの逆接続、phase／finding別context、動的なrequired変更を標準手順へ追加しない。
