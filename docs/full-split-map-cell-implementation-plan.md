@@ -1,11 +1,11 @@
 # Full Split Map Cell Implementation Plan
 
-- 文書状態: 2026-08-25 無課金優先・短時間検証版。FSMC-I0はclean worktreeでローカル基準検証が成功すれば着手できる。AWS、GHCR、Protected Environments、GitHub Actions Artifacts、有料ブラウザ／実機サービスはEntry、Exit、公開、事故復旧、Definition of Doneの前提にしない。GitHub Actionsは公開リポジトリの標準runnerを無課金で利用できる間だけ任意の再確認に使い、課金または容量超過の可能性があればローカル検証へ切り替える
+- 文書状態: 2026-08-25 無課金優先・短時間検証版。実装開始判定はNo-Goであり、既存`docs/各フェーズのFormal Exit達成.md`のPrettier不一致を修正したclean candidateで章15のpre-I0 baseline全commandが成功した時点だけFSMC-I0をGoへ変更できる。既知障害waiverやI0で初めて作るFSMC testによる代替合格は認めない。AWS、GHCR、Protected Environments、GitHub Actions Artifacts、有料ブラウザ／実機サービスはEntry、Exit、公開、事故復旧、Definition of Doneの前提にしない。GitHub Actionsは公開リポジトリの標準runnerを無課金で利用できる間だけ任意の再確認に使い、課金または容量超過の可能性があればローカル検証へ切り替える
 - 対象機能: 地図番号セルのa/b完全分割
 - 対象ソース基準: `2eaba922816e8b263c6479e81ab9f265321654b2`（短縮: `2eaba92`、実装code基準。後続のplan-only commitはpre-I0 inventoryで追跡）
 - 固定旧版Aのソース基準: `3db4be011d0f4123aa3953b559280c58f33d026a`（互換試験専用。現行実装の基準に使用しない）
 - 作成日: 2026-08-12、最終判断反映日: 2026-08-25
-- 想定規模: 大規模。I0～I11の責務境界は維持し、原則1 phase 1 PR、review上必要な場合だけ分割する12～16個の論理PRを目安とする。生成WBS、外部observer、証跡registry用の専用PRは作らない
+- 想定規模: 大規模。I0～I11の責務境界は維持し、I0／I2／I4は後述の依存順3 PR、I11は2 PR、その他phaseは原則1 PRとする19個の論理PRを基準にする。件数自体はExit条件にせず、各分割PRを独立にtest可能にして途中PRからproduction public edgeへ到達させない。生成WBS、外部observer、証跡registry用の専用PRは作らない
 
 ## 0. 以後の計画編集に対する固定方針
 
@@ -48,7 +48,7 @@
 - 地図再取込とイベント単位Backup V2でも設定を維持する
 - 問題発生時はBackup V2で新版へ復旧でき、losslessなV1互換coreを同伴できるsnapshotでは旧版アプリへ戻して従来の未分割セルとして開けるようにする。同伴不能時はV2-onlyであることを出力前後に明示する
 
-初版は、原子的保存、通常マップ、集中モード、経路、常に生成可能であることを要求するイベント単位Backup V2、lossless representabilityを満たす場合に同時出力する旧版用V1互換core backup、旧版fallbackを主機能とする。これらを安全に成立させるための同一地図内copy、event／map／hall lifecycle、地図再取込・通常編集、dormant／quarantined管理UI、共有訪問projection、ローカル有効化・復旧導線も初版の必須support scopeに含める。完全版XLSX 2.3、multipart、設定単独portable JSON、別日程・別地図への設定コピー、意図的な同一売場再訪は後続版とし、初版のExitやDefinition of Doneへ含めない。
+初版は、原子的保存、通常マップ、集中モード、経路、7.1で定義するhealthy V2 snapshotから必ず生成できるイベント単位Backup V2、lossless representabilityを満たす場合に同時出力する旧版用V1互換core backup、旧版fallbackを主機能とする。イベントをeffective ONにする前とON中writerのafter-imageで同じV2 representability preflightを必須にし、healthyでないeventはwrite 0件でON／変更を拒否して修復導線を表示する。これらを安全に成立させるための同一地図内copy、event／map／hall lifecycle、地図再取込・通常編集、dormant／quarantined管理UI、共有訪問projection、ローカル有効化・復旧導線も初版の必須support scopeに含める。完全版XLSX 2.3、multipart、設定単独portable JSON、別日程・別地図への設定コピー、意図的な同一売場再訪は後続版とし、初版のExitやDefinition of Doneへ含めない。
 
 ### 1.1 レビュー結論と確定判断
 
@@ -63,11 +63,11 @@
 | `PD-05` | スマートフォンでは表示サイズにかかわらず必ずpickerを経由する。pickerはa/b順ではなく画面上の空間順に並べ、「左側 b」「右側 a」等、位置と文字を併記する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `PD-06` | ブロックコピーは解除しない「追加・変更のみ」を既定とし、「完全同期（解除を含む）」を別の明示操作として提供する。どちらも変更previewを必須とする                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `PD-07` | 完了判定は変更箇所のunit／integration、有限な安全decisionの到達可能な全組合せ、Chromium baselineと既知engine固有riskに対する無課金local対象regression、最小a11y確認、短時間performance smokeで行う。a/b identity、原子性、stale write 0、OFF／safe mode、Backup／rollbackは異なるtest層で意図的に重ねて確認する。証跡はcommit SHA、実行command、exit code、所要時間のテキスト記録で十分とし、外部registry、cloud保存、複数role approval、利用metrics、第三者receipt、実イベントpilot、managed device receiptを要求しない。特定機種の正式保証は表記せず、対象と対象外を明記する                                                                                                                                                                                                                                                                                                 |
-| `PD-08` | 初版の主機能は原子的保存、通常・集中表示、経路、常に生成可能なイベント単位Backup V2、losslessな場合だけのV1互換core同時出力、条件付き旧版fallbackとし、安全上不可分な同一地図内copy、lifecycle、再取込・通常編集、retained管理、共有訪問projection、ローカル制御・復旧導線も必須support scopeへ含める。完全版XLSX 2.3、multipart、設定単独portable JSON、別日程・別地図コピー、意図的再訪は後続版へ送る                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `PD-08` | 初版の主機能は原子的保存、通常・集中表示、経路、章7.1のV2 eligibilityをeffective ON前／ON中に維持して必ず生成可能にするイベント単位Backup V2、losslessな場合だけのV1互換core同時出力、条件付き旧版fallbackとし、安全上不可分な同一地図内copy、lifecycle、再取込・通常編集、retained管理、共有訪問projection、ローカル制御・復旧導線も必須support scopeへ含める。完全版XLSX 2.3、multipart、設定単独portable JSON、別日程・別地図コピー、意図的再訪は後続版へ送る                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `PD-09` | イベント削除時は「30日保持」を既定、「今すぐ完全削除」を明示選択とする。保持中は端末内で再関連付けでき、30日後に端末時計が正常な場合だけ対象設定を自動削除する。設定単独ファイル出力は後続版とする                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `PD-10` | fixtureを使うretryなしの短時間自動テストをrelease判定にする。有限な安全decisionは高速unit／integrationで到達可能な全組合せを確認し、重要不変条件はowner phaseとI11 releaseで異なる層から重ねて確認する。実機receiptや3実イベントpilot、risk根拠のない全軸browser直積、最大サイズ実fileの反復生成は完了条件にしない。browser固有riskの組合せtestは対象を絞って残す。明白なrunner障害だけ、人が確認して失敗jobまたは同じlocal commandを1回再実行できる                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `PD-11` | 分割セルに`whole`または非対応番号がある場合はa/bへ推測割当てせず、「側未設定」badge、一覧、分割有効化前previewで存在を知らせる                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `PD-12` | 健全なV2 snapshotはcompanion V1のlossless representabilityにかかわらずBackup V2を必ず生成可能にする。V1互換coreをlosslessに生成できる場合は同じsnapshotから同時出力し、構造上losslessでない場合は理由・旧版fallback不可・V2保管必須を確認させた`structural-v2-only-prepared`、V1／pairのresource上限だけを超える場合は同じ確認を持つ`resource-v2-only-prepared`として出力する。V1のためにV2まで禁止したり、値をdrop／正規化してV1を捏造したりしない                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `PD-12` | 健全なV2 snapshotは章7.1の`V2SnapshotHealthDecisionV1.kind = "healthy"`であり、companion V1のlossless representabilityにかかわらずBackup V2を必ず生成可能にする。effective ON前とON中writer after-imageで同じhealth oracleを通し、不適格eventはwrite 0件でON／変更を拒否して修復導線を返す。V1互換coreをlosslessに生成できる場合は同じsnapshotから同時出力し、構造上losslessでない場合は理由・旧版fallback不可・V2保管必須を確認させた`structural-v2-only-prepared`、V1／pairのresource上限だけを超える場合は同じ確認を持つ`resource-v2-only-prepared`として出力する。V1のためにV2まで禁止したり、値をdrop／正規化してV1を捏造したりしない                                                                                                                                                                                                                                     |
 | `PD-13` | 経路connectorは自セルまたは結合セル領域内で安全に接続できる場合だけ描画し、領域外や障害物横断が必要なら`unroutable`とする                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `PD-14` | 同じ`ExecutionVisitIdentity`の商品追加は既存訪問へglobal統合し、raw訪問位置を動かさず、必要な`PhaseVisitIdentity`投影だけを追加して全画面へ同じ結果を反映・通知する。利用者が同じ売場を意図的に複数回訪れる機能は初版対象外とする                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `PD-15` | 1イベントにつき主に編集する端末は1台とし、端末間自動同期・自動mergeを行わない。Backupはpreview後の原子的置換であり、端末全体OFF・イベント別ON／OFFを収録せず、新規復元はOFF、既存イベントへの復元は復元先のローカル状態を維持する                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -81,7 +81,7 @@ FSMC-I0では、後続phaseが共有する契約、代表fixture、短時間test
 - full observed root、checkpoint、candidateの物理locationをIDB transaction内／localStorage externalへ分けたroot別観測vector、全governed rootのbaselineを保持するexternal durable fenceを持つ`(storeName, key)`単位のCAS契約、`onupgradeneeded`内の初期root原子作成、partial-loss snapshot、ローカル発行ID、anchor token、active／dormant／quarantined、30日保持と時計異常、control root、`durable-visit-state` root、衝突時全拒否を固定する。さらに、現行localStorageの`blockDetectionSettings`をcanonical IDB `eventSettings` rootへ移す旧版互換bridge journal、全削除対象のcoverage closure、unknown store／keyのlossless退避不能時stopをexact schema・ADR・golden fixtureへ含める
 - 3.13の最大値を生成できるdeterministic fixture generatorと、小さな日常fixture（300セル、20 block、50分割設定、100 item、100 visit）を分ける。I0必須はgeneratorの件数／hash検証と小fixtureのquick smokeだけとし、最大fixture、shard、calibration、reducerは必須にしない
 - 固定旧版A→候補新版B、旧形式復元、Backup V2＋代表V1互換、通常地図編集、地図再取込、2 tab競合、ローカルOFF切替の代表fixtureを登録する。分岐表と異常境界は高速なunit／integrationへ置き、browserでは章10の代表journeyだけを実行する
-- Playwrightは単一のChromium installを共有し、Desktop／Mobile viewportの代表smokeを合計8件以内で作る。安全性とa11yはこのsmokeまたはcomponent testへ含める。WebKit、Firefox、実機、BrowserStack等は問題再現時の任意確認であり、導入・結果・証跡をExitへ要求しない
+- Playwrightは単一のChromium installを共有するが、Desktop mouse／Desktop touch／Mobile touchをviewportだけの切替ではない別contextにする。Mobile contextは`viewport = 390x844`、`hasTouch = true`、`isMobile = true`、`deviceScaleFactor = 3`を固定し、対象操作をtrusted touch inputで送り`pointerType = "touch"`をassertする。Desktop mouseは`hasTouch = false`、`isMobile = false`、DPR 1、Desktop touchは`hasTouch = true`、`isMobile = false`、DPR 2とする。代表smokeは合計8件を基準とし、安全性とa11yをsmokeまたはcomponent testへ含める。Firefox／WebKitは通常は任意だが、support対象engine固有の既知不具合、標準API差または変更riskを章10.4へ名前付きで登録したcaseだけは該当phaseのrequired gateとし、任意確認へ降格しない。実機、BrowserStack等はExitへ要求しない
 
 基準source `2eaba92`にある`PD-14`の共有訪問projectionは、C0（I0: inventory／fixture）、C1（I1: pure identity／projection契約）、C2（I7: global projection／挿入／通知）、C3（I10: route／hit-test／cache）へ分ける。固定旧版Aはrepository内の小さなfixtureとmanifestで再現し、候補新版Bと必要時のQA buildは同じsourceからローカルで各1回buildする。GitHub Actions artifactへのupload／downloadやrun attempt間の受け渡しは前提にしない。
 
@@ -91,11 +91,11 @@ I0でFSMC専用の一方向導入version `FSMC_CAPABILITY_DB_VERSION`（`Vcap`�
 
 ### 1.2 実装開始可否レビューの是正決定
 
-次の`RC-*`は本計画のnormativeな是正決定である。本文と矛盾した場合は同じPRで本文とtestを揃える。巨大なmachine-readable索引や外部証跡を作らず、章9のphase表と章14のDoD checklistで追跡する。
+次の`RC-*`は本計画のnormativeな是正決定である。本文と矛盾した場合は同じPRで本文とtestを揃える。巨大なmachine-readable索引や外部証跡を作らず、章9のPhase／Requirement traceability表と章14のDoD checklistで追跡する。
 
 | 決定ID  | 確定内容                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `RC-01` | 最初のI0変更前にclean worktreeで`git diff --check`、`npm run test:encoding`、`npm run format:check`、`npm run typecheck`、`npm run lint`、既存unit／integrationを各1回実行する。合計20分を超えた場合は停止し、遅い箇所を分離してから再開する。外部前提を含む`npm run quality`全graphの完走や外部credentialをI0開始条件にしない                                                                                                                                                                                                                                                                                                                                                              |
+| `RC-01` | 最初のI0変更前にclean worktreeで`git diff --check`、`npm run test:encoding`、`npm run format:check`、`npm run typecheck`、`npm run lint`、既存unit／integration／Workerを各1回、unit→integration→Workerの順で実行する。全commandのexit code 0だけを合格とし、既知障害waiverや将来のFSMC対象testで代替しない。合計20分を超えた場合は停止し、遅い箇所を分離してからclean candidateで全列を再開する。外部前提を含む`npm run quality`全graphの完走や外部credentialをI0開始条件にしない                                                                                                                                                                                                          |
 | `RC-02` | `PD-14.C0` inventoryはI0、C1 pure契約はI1、C2 projection／挿入／通知はI7、C3 route／hit-test／cacheはI10が所有する。I2～I6はport／hookと基準挙動のnon-regressionだけを所有し、後続ownerのconformanceを前phase Exitへ要求しない                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `RC-03` | 初版support scopeに同一地図内copy、lifecycle、再取込・通常編集、retained管理、共有訪問projection、ローカル制御・復旧導線を含め、主機能だけを列挙した短いscope文から必須作業を除外しない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `RC-04` | I2～I10のproduction artifactは現行DB5のままとし、採択済み`Vcap`へのmigrationはQA namespace／integration harnessだけで検証する。production `DB_VERSION`を採択済み`Vcap`へ進めるのはI11 release-ready candidateだけとする                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -122,12 +122,12 @@ I0でFSMC専用の一方向導入version `FSMC_CAPABILITY_DB_VERSION`（`Vcap`�
 | `RC-25` | map上の一意な物理geometry slotと、whole／a／b／unsupported suffixごとの論理locationを分離する。`26c`／`26d`／`26ab`はitem snapshot由来のcanonical suffix request集合からpure APIで別々の`LocationKey`へ導出し、同じwhole-cell中心へ接続する。lookupの最大2 location前提を廃止し、suffix、item association revision、logical location集合をindex revisionへ拘束する                                                                                                                                                                                                                                                                                                                          |
 | `RC-26` | 新route inputへ選択hall identity、map identity、canonical polygon、polygon fingerprintを持つdata-only `RoutePathConstraintV1`を追加し、main path、simplification後segment、routing port、全connector、same-cell directを同じinclusive polygon内へ閉じる。constraint fingerprintをcache signatureへ含め、whole-map／別hall／stale polygon間でcacheを再利用しない                                                                                                                                                                                                                                                                                                                             |
 | `RC-27` | I7で`executionVisitOrder`を唯一のbase順authorityとする共通reorder planner／atomic commandへ、`useMapRouteCommands`のhall順reorderと`useMapVisitListCommands`の手動reorderを移す。I7はheadless planner／draft model／atomic command、I8は`VisitListPanel`のpointer／keyboard UIを所有する。normal/base rowだけをreorder可能にし、postponed／lateはbase順から派生する。raw item ID配列を並べ替えず、hall route settingsとdurable orderを同じ`ExpectedRootVector`・transactionで確定し、UIのdraft／cancel／close／staleは永続rootを変更しない                                                                                                                                                  |
-| `RC-28` | Backup V2は主端末移行と完全復旧の必須artifactであり、healthy V2 snapshotのcompanion V1不能をV2生成blockerにしない。lossless V1がある場合はpair、ない場合は理由digestと旧版fallback不可表示を持つV2-only handoffとし、両分岐でV2 bytes、source SHA、snapshot revision、handoff receiptを再検証する                                                                                                                                                                                                                                                                                                                                                                                           |
+| `RC-28` | Backup V2は主端末移行と完全復旧の必須artifactであり、章7.1でhealthy／blocked／operational failureを分離する。effective ON前とON中writer after-imageは同じrepresentability preflightを通し、blocked sourceをONにしない。healthy V2 snapshotのcompanion V1不能はV2生成blockerにせず、lossless V1がある場合はpair、ない場合は理由digestと旧版fallback不可表示を持つV2-only handoffとし、両分岐でV2 bytes、source SHA、snapshot revision、handoff receiptを再検証する                                                                                                                                                                                                                           |
 | `RC-29` | `forcedPickerOverride`は端末全体・全event・通常／集中共通のboolean設定とし、canonical `control` rootへ保存する。既定false、authority不明時のeffective値true、入口は設定のアクセシビリティ「常にセル側選択ダイアログを表示」、解除は利用者の明示OFFまたはprofile resetだけとし、viewport／UA変化やevent切替で自動解除せずBackupへ収録しない                                                                                                                                                                                                                                                                                                                                                  |
 | `RC-30` | pre-I0ではlocal quick baselineと章15のverification record様式だけを用意する。GitHub／AWS observer、credential、API allowlist、外部result schema、resource intent approval、billing approvalは作らない。local commandが同じcandidate SHAで成功すればI0を開始できる                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `RC-31` | baselineのPlaywright Chromiumが未導入の場合だけ`npx playwright install chromium`（Linux CIでOS依存packageも必要な場合は`npx playwright install --with-deps chromium`）を1回実行する。browser installを各job／各phaseで繰り返さない。support対象engine固有の既知不具合または変更riskがある場合は、無課金でlocal実行できるFirefox／WebKitの該当engineだけを1回installして対象regressionをrequiredにできるが、全journey×全engineへ展開しない                                                                                                                                                                                                                                                   |
 | `RC-32` | requirement追跡は章9のphase表にowner、代表test、Exitを1行で記す。fixture／testを複数IDへ再利用でき、巨大なcatalog、generated document、双方向集合一致、artifact hash連鎖を完成条件にしない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `RC-33` | 初版は12～16論理PRを目安に、原則1 phase 1 PRとする。review困難なphaseだけ2 PRへ分け、各PRは変更対象のunit／integrationと必要なbrowser smokeを同梱する。9 WBS bundle、37～47 PR、専用evidence PRは作らない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `RC-33` | 初版は19論理PRを基準とし、I0／I2／I4を依存順の3 PR、I11を2 PR、その他phaseを原則1 PRとする。件数自体をExit条件にせず、各PRは変更対象のunit／integration／Workerと必要なbrowser smokeを同梱し、前半PRはproduction public edgeを増やさない。さらに分割が必要なら責務境界と追加理由をPR前に記録するが、9 WBS bundle、37～47 PR、専用evidence PRは作らない                                                                                                                                                                                                                                                                                                                                      |
 | `RC-34` | 通常PRのrequired testは最大並列2、CI jobの軸直積matrixなし、1 command 10分以下、全体20分以下とする。test data内の有限な安全decision全組合せと、異なる層による重要不変条件の重層確認は維持する。I11だけは既出commandの同一実行を足し直さず、production build、browser／performance、feature-disabled build／smokeを束ねる`test:fsmc:release:quick` 1 commandを20分上限とする。このaggregate内でrelease artifactから重要不変条件を再確認することは意図した防御層であり削らない。自動retryは0、明白なrunner障害だけ人手で同じcommandを1回再実行できる。runner分／billing／capacity approvalは不要とする                                                                                        |
 | `RC-35` | Backup V2 embedded digestは`digest` fieldを除くexact validated objectを`{ domain: "fsmc-app-backup-v2-v1", backupWithoutDigest }`として`esp-json-v1` canonical serializeしたUTF-8 bytesのSHA-256とする。schema／duplicate-property／未知key検証後に計算し、`scope.companionCore`のincluded／unavailable分岐を含む全field mutationを検出する                                                                                                                                                                                                                                                                                                                                                 |
 | `RC-36` | build artifact全体hashはmanifest自身を含むarchive byte hashではなく、manifestを除外したcanonical file-tree digestとする。POSIX `/`相対path、全regular fileのbyte SHA-256／length、UTF-16 code-unit path順を固定する。nested directoryは許すがdirectory entry自体は列挙せず、symlink／junction／reparse point／device fileを禁止する。manifestはそのtree digestと自身のschema versionを持つ。別root／timezoneで同値、path／byte差で不一致をI0 fixtureにする                                                                                                                                                                                                                                  |
@@ -141,19 +141,21 @@ I0でFSMC専用の一方向導入version `FSMC_CAPABILITY_DB_VERSION`（`Vcap`�
 
 現時点の実行可否は次のとおりである。
 
-| 対象                                                       | 判定                             |
-| ---------------------------------------------------------- | -------------------------------- |
-| 計画書修正                                                 | Go                               |
-| pre-I0 local quick baseline                                | Go。失敗時は対象を修正して再実行 |
-| FSMC-I0                                                    | quick baseline成功後Go           |
-| FSMC-I1以降                                                | 直前phaseの小さなExit達成後Go    |
-| AWS／GHCR／Protected Environments／Actions Artifactsの準備 | 不要                             |
+| 対象                                                       | 判定                                      |
+| ---------------------------------------------------------- | ----------------------------------------- |
+| 計画書修正                                                 | Go                                        |
+| pre-I0 local quick baseline                                | 診断実行Go。全列成功までExit未達          |
+| FSMC-I0                                                    | **No-Go**。format是正・全列再成功後だけGo |
+| FSMC-I1以降                                                | 直前phaseの小さなExit達成後Go             |
+| AWS／GHCR／Protected Environments／Actions Artifactsの準備 | 不要                                      |
 
-pre-I0はclean worktreeで`git diff --check`、`npm run test:encoding`、`npm run format:check`、`npm run typecheck`、`npm run lint`、`npm run test:unit`、`npm run test:integration`を各1回実行し、candidate SHA、exit code、所要時間を章15の様式で記録する。合計20分を超えた場合は待ち続けず停止し、遅いsuiteを変更対象testへ分ける。外部credentialやread-only API観測がなくても失敗にしない。
+pre-I0はclean worktreeで`git diff --check`、`npm run test:encoding`、`npm run format:check`、`npm run typecheck`、`npm run lint`、`npm run test:unit`、`npm run test:integration`、`npm run test:worker`を各1回実行し、candidate SHA、exit code、所要時間を章15の様式で記録する。Vitest worker起動競合を避けるためunit／integration／Workerは同じaggregate内でもこの順に直列実行する。全commandのexit code 0が同じclean candidateで揃うことだけを合格とし、既知障害waiver、対象commandの省略、I0で初めて作るtestによる代替を認めない。合計20分を超えた場合は待ち続けず停止し、遅いsuiteを変更対象testへ分けたうえで全列を最初から再実行する。外部credentialやread-only API観測がなくても失敗にしない。
+
+2026-08-25診断ではclean worktree、`git diff --check`、encoding、typecheck、lint、unit（149 files／1,207 tests）、integration（28 files／409 tests）は成功し、`npm run format:check`だけが既存`docs/各フェーズのFormal Exit達成.md`のPrettier不一致で失敗した。したがって現判定はNo-Goである。対象Markdownを専用hygiene commitで整形し、cleanになった次candidateで上記全command（Workerを含む）を再実行して初めてpre-I0 Exitを記録する。診断時にunitとintegrationを並列実行してVitest worker起動が競合した事実は製品failureへ数えないが、直列再実行結果だけをbaseline記録へ採用する。
 
 ### 1.3 実行順と記録の境界
 
-実行順のauthorityは章9のphase表とする。別のgenerated execution index、document registry、WBS JSON、artifact class catalogは作らない。各PR本文にphase、主な変更、実行したcommand、所要時間、結果を記録すればよい。
+実行順のauthorityは章9のPhase一覧とsub-PR表、requirement完了のauthorityは同章のRequirement traceability表とする。別のgenerated execution index、document registry、WBS JSON、artifact class catalogは作らない。各PR本文にphase／sub-PR、対応Requirement ID、主な変更、実行したcommand、所要時間、結果を記録すればよい。
 
 | 実行単位 | Entry                    | 主成果物                                        | 完了確認                           |
 | -------- | ------------------------ | ----------------------------------------------- | ---------------------------------- |
@@ -212,6 +214,10 @@ ADRとrunbookは判断または手順が本文だけでは不明になる場合�
 - Backup command／overlay: `src/app/commands/useEventTransferCommands.ts`、`src/app/state/appOverlayState.ts`
 - Canvas gesture authority／DOM終端: `src/features/map/canvas/useCanvasViewport.ts`、`src/components/map/MapCanvas.tsx`、`src/components/map/MapCanvasPresentation.tsx`、`src/components/FocusModeMapCanvas.tsx`
 - Worker参照実装: `src/xlsx/worker/xlsx.worker.ts`、`src/xlsx/worker/workerServer.ts`、`src/xlsx/adapters/workerXlsxExecutionPort.ts`
+- FSMC QA profileの閉じたallowlist面: `scripts/build-release-vite.mjs`、`scripts/verify-release-a-build.mjs`、`vite.config.ts`、`scripts/lib/release-build-input.mjs`／`.d.mts`、`scripts/build-pwa-recovery-agent.mjs`、`scripts/release-policy.test.mjs`、`scripts/build-pwa-recovery-agent.test.mjs`。`qa-fsmc`は全境界でstandard role／non-promotableに限定し、未知profile拒否を弱めない
+- event rename／delete writerの実authority: `src/app/commands/useEventLifecycleCommands.ts`とtest → `PersistenceCommandPort.ts` → `indexedDbPersistenceCommandAdapter.ts` → `indexedDbPersistence.ts` → `atomicRestoreTransaction.ts`、および`applicationSnapshotOps.ts`。I3でsplit／control／durable visit／event settings／V2 health participant外のwriter edgeを0件にする
+- capability object storeの閉じた変更面: `constants.ts`、`openDatabase.ts`、`transactionCoordinator.ts`、各repository、`atomicRestoreTransaction.ts`、`legacyMigration.ts`、`recoveryAdoption.ts`、`recoverySourceEvidence.ts`、`recoveryRepository.ts`、`persistenceResilience.ts`、facade／adapter／Port、`useIndexedDbPersistence.ts`、`appRuntime.ts`、DB compatibility contractと対応test。`constants.ts`だけを変更面とみなさない
+- FSMC policy面: test project membership、Vitest unit／integration／Worker、architecture policy／baseline、coverage policy／verifier／policy test、`package.json`の`quality`／`quality:local`。`src/features/map-cell-split/`を未分類subsystemにしない
 
 FSMCの地図描画と経路探索はローカルCanvasと`src/utils/pathfinding.ts`の3×3 A\*を使用し、Mapbox、Google Maps、MapLibre、Leaflet等の外部地図・経路APIやAPI keyを追加しない。実装、テスト、公開、事故復旧はAWS、GHCR、外部browser／device farmへ依存しない。必要な検証はrepository内fixtureとローカルNodeを基本に、Chromium baseline、および既知engine固有riskがある場合の無課金local Firefox／WebKit対象regressionで完結させる。
 
@@ -1094,7 +1100,7 @@ interface MapCellSplitSettingsRoot {
 interface MapCellSplitControlRoot {
   schemaVersion: 1;
   deviceEnabled: boolean;
-  forceSplitPicker: boolean;
+  forcedPickerOverride: boolean;
   enabledEventInstanceIds: EventInstanceIdV1[];
 }
 
@@ -1132,7 +1138,7 @@ activeと保持中entryの型を分け、activeだけが現在の`mapInstanceId`
 
 `RetainedNumberIdentity`で`number`と`originalNumberToken`を両方持つ場合、I0のexact番号parserでtokenが`split-side | whole | unsupported`のいずれかへ解決し、その`baseNumber`が`number`と一致することをsemantic invariantにする。先頭ゼロやsuffixの原文は一致時だけ保持できる。不一致またはtokenがunresolvedなのに`number`もあるruntime entryは、`evidenceOrigin: "last-active"`なら`invalid-value`としてquarantinedにして再関連付け候補へ使わない。`portable-never-active`にはlast-active evidenceを捏造してquarantinedへ変換せず、root-untrusted安全モードとBackup復旧案内にする。V2入力はどちらもDB更新前にfile全体を拒否する。`originalNumberToken`だけのentryは未解決のまま保持し、数値を推測しない。
 
-端末全体とevent別ON／OFF、および端末全体の`forceSplitPicker`はsettings payloadから分離し、同じcapability storeのキー`control`に`MapCellSplitControlRoot`として保存する。factory defaultは`deviceEnabled = false`、`forceSplitPicker = false`、enabled event 0件とする。`enabledEventInstanceIds`は重複なしで上記canonical比較順とし、未掲載eventはOFFとする。event削除時は同じcommitでIDを除去するが、device preferenceである`forceSplitPicker`は維持する。control rootがuntrusted／未読の場合、split mutationは既存規則どおり停止し、表示済みsplitへのselection policyだけは`forceSplitPicker = true`相当へ倒す。Backup V1／V2へcontrol rootを含めない。`setForceSplitPickerAtomically`はhealthy capabilityでdevice／event OFF中にも利用でき、最新control revisionを再検証してtoggleだけを変更する。`SplitImplementationReadiness`はbuild sourceに固定する静的gateであり、永続化、外部service、利用者設定から変更できない。I11最終release candidate PRだけがsource固定値をbuild前に`release-ready`へ変更し、その同一production artifactで章10の代表release quickとI11 Exitを検証する。前phaseの詳細分岐はowner phaseのunit／integration結果を維持し、I11で全件再実行しない。gate成功までは配布不能で、verifierがreadinessを実行後に書き換えることも、検証済みsourceから別artifactを作り直すことも禁止する。QA buildだけが明示的なtest overrideを持て、production bundleにoverride command、query parameter、storage keyを含めない。
+端末全体とevent別ON／OFF、および端末全体の`forcedPickerOverride`はsettings payloadから分離し、同じcapability storeのキー`control`に`MapCellSplitControlRoot`として保存する。factory defaultは`deviceEnabled = false`、`forcedPickerOverride = false`、enabled event 0件とする。`enabledEventInstanceIds`は重複なしで上記canonical比較順とし、未掲載eventはOFFとする。event削除時は同じcommitでIDを除去するが、device preferenceである`forcedPickerOverride`は維持する。control rootがuntrusted／未読の場合、split mutationは既存規則どおり停止し、表示済みsplitへのselection policyだけは`forcedPickerOverride = true`相当へ倒す。Backup V1／V2へcontrol rootを含めない。`setForcedPickerOverrideAtomically`はhealthy capabilityでdevice／event OFF中にも利用でき、最新control revisionを再検証してtoggleだけを変更する。旧名`forceSplitPicker`と旧setter名はschema、runtime、fixture、command registryのいずれでもaliasとして受理せず、I0のnegative goldenで未知field／未知commandとして拒否する。`SplitImplementationReadiness`はbuild sourceに固定する静的gateであり、永続化、外部service、利用者設定から変更できない。I11最終release candidate PRだけがsource固定値をbuild前に`release-ready`へ変更し、その同一production artifactで章10の代表release quickとI11 Exitを検証する。前phaseの詳細分岐はowner phaseのunit／integration結果を維持し、I11で全件再実行しない。gate成功までは配布不能で、verifierがreadinessを実行後に書き換えることも、検証済みsourceから別artifactを作り直すことも禁止する。QA buildだけが明示的なtest overrideを持て、production bundleにoverride command、query parameter、storage keyを含めない。
 
 entryの保存・コピー・再関連付け・再取込時に、対象ブロック内の正規化番号が一意であることを検証する。行・列は地図指紋と再取込照合の証拠には含めるが、利用者が選択して保存する識別子にはしない。同一ブロック内の重複番号へentryを新規保存せず、同じ地図内の一意な他番号は処理を継続する。
 
@@ -4343,9 +4349,11 @@ I0のfailure injection stage IDは`after-snapshot-read`、`after-external-baseli
 
 端末全体のローカルOFF、イベント単位enabled、build固定の`SplitImplementationReadiness`、DB／root schema／association authority検証失敗時の自動安全モードを`SplitMapLocalControlPort`で一元判定する。優先順位は自動安全モード、readiness不足、端末全体OFF、event OFF、ONの順とし、すべての条件を満たす場合だけsplit mutationを許可する。readinessを満たすのは`release-ready` production、または`internal-testing`かつcompile-time overrideを持つnon-promotable QA artifactだけで、`contracts-only`と`internal-testing` productionは不足とする。外部availability service、署名receipt、TTL、remote kill switch、外部metricsを導入しない。
 
+eventのeffective ON判定には章7.1の`V2SnapshotHealthDecisionV1.kind = "healthy"`も必須入力とする。I0は`V2EnablementEligibilityPort`、result union、issue digestを固定し、I2では実Backup Workerが未接続ならcontract fakeだけで分岐を検証してruntime adapter未登録を`unavailable`／write 0件にする。I4で実Workerを接続した後だけQA eventをeffective ONにできる。device OFF中のlegacy writerは許可するが次回ONでfresh preflightし、effective ON中に外部旧版writeを検出した場合はstored membershipを変えず`v2-backup-repair-required`のevent単位legacy fallbackへ移す。`setSplitDeviceEnabledAtomically(true)`は保存済みenabled eventを全件再監査し、unhealthy eventだけをfallbackにしてdevice flag自体は既存collision契約と同様に確定できる。
+
 - 既存イベントとBackupから新規復元したイベントのcontrol entryは`enabled=false`を既定とし、利用者が当該端末でイベントごとに明示ONにする。event setting payloadへenabledを重複保存しない
 - 端末全体とevent別状態は`mapCellSplitSettings` storeの`control` rootで管理し、同じprofile内の複数tabではfull observed rootとcheckpointのCASを使う。別端末へ同期せず、Backupにも収録しない
-- registryはartifact purpose、readiness、open result、initializationでexactに分ける。`contracts-only` productionは全FSMC command 0件、`internal-testing` productionはcode存在を許すがpublic registration 0件、non-promotable QAはhealthy QA rootでinternal registryへ`readSplitControl`、`previewSplitEnablement`、`enableSplitForEventAtomically`、`disableSplitForEventAtomically`、`setSplitDeviceEnabledAtomically`、`setForceSplitPickerAtomically`を登録できる。release-ready productionの`capability-adoption-blocked`ではtrusted core V1退避、collision診断、`fsmc.repair.legacy-focus-day-scope.v1`だけを登録し、capability DB open／createと通常app writeを0件にする。`migrating`ではmigration診断／V1退避／`fsmc.migrate.durable-visits.v1`だけ、healthy `ready`で初めて通常control 6 commandをpublic registryへ登録する。readyかつOFF中は端末switch、event preview、disable、picker preference変更へ到達できるが、セル分割設定・描画・経路等のmutation commandはeffective ONの場合だけ利用できる。`missing`／`repair-required`は6.1 recovery registryだけとする
+- registryはartifact purpose、readiness、open result、initializationでexactに分ける。`contracts-only` productionは全FSMC command 0件、`internal-testing` productionはcode存在を許すがpublic registration 0件、non-promotable QAはhealthy QA rootでinternal registryへ`readSplitControl`、`previewSplitEnablement`、`enableSplitForEventAtomically`、`disableSplitForEventAtomically`、`setSplitDeviceEnabledAtomically`、`setForcedPickerOverrideAtomically`を登録できる。release-ready productionの`capability-adoption-blocked`ではtrusted core V1退避、collision診断、`fsmc.repair.legacy-focus-day-scope.v1`だけを登録し、capability DB open／createと通常app writeを0件にする。`migrating`ではmigration診断／V1退避／`fsmc.migrate.durable-visits.v1`だけ、healthy `ready`で初めて通常control 6 commandをpublic registryへ登録する。readyかつOFF中は端末switch、event preview、disable、picker preference変更へ到達できるが、セル分割設定・描画・経路等のmutation commandはeffective ONの場合だけ利用できる。`missing`／`repair-required`は6.1 recovery registryだけとする
 - event OFF→ON commandは最新のcore、settings、control、durable visit、metadata、checkpoint、IDB内candidateを同じreadwrite transactionで再読込し、external candidateは6.1のpre／post観測とdurable fenceで拘束して、`C(after) = ∅`、anchor、association、map binding、`DurableVisitInitializationStateV1 = ready`、対象eventの全導出day scopeとdurable entryのexact bijectionを検証する。必要なempty-source metadata anchor、association、event settings、control entryを同じIDB commitで作成・更新するが、ready rootの欠落entryをenable時に黙示作成せず`durable-visit-state-repair-required`、write 0件にする。preview以後のIDB root変更はstaleとして再previewする。commit後のexternal差は、説明可能なlegacy-mutable coreだけなら`committed-legacy-rebase-required`、capability-ownedまたは分類不能なら`committed-recovery-required`とする
 - `buildDurableVisitMigrationPlanV1`は`migrating` rootとlatest coreから`deriveDurableVisitScopesV1`の全scopeをcanonical順に総当たりし、core raw順から`executionVisitOrder`を作る。各scopeに同一processのexact `LegacyFocusSessionSnapshotV1`があればphase／current index、saved 3 index、postponed／late item集合、completion、purchaseの全fieldを検証・変換し、snapshotなしまたはfield不正なら3.8の`defaultDurableVisitEntryV1` field候補、`unresolved-legacy-focus-session-field`、loss previewを作る。preview digestは`basisCoreDigest`、全`legacySessionInputDigest` null／値、全field disposition、after-imageを拘束し、旧session全体が永続sourceではないこと、reload／update／process終了を跨ぐ回収を保証しないことを表示する
 - `src/features/map-cell-split/visits/LegacyFocusSessionFreezePort.ts`をapp-facing Port、`legacyFocusSessionRegistry.ts`を唯一のprocess-local capture authorityとする。現行`FocusMode.tsx`のpassive `onSessionStateChange` effectと`App.tsx`のsemantic同値抑止済みparent copyをauthorityにせず、phase／index／saved／postponed／late／completion／purchaseの全setterを一つのrevisioned registry queueへ通してからUIへpublishする。event rename／delete／invalid-key pruneは同じqueueで`beginLifecycleOperation`を呼び、旧eventのraw day集合から`buildFocusSessionKey`で作ったexact key pair／key集合、registry before／after generation、transition／lease digestをfirst persistence write前に予約する。prefix `startsWith`や`slice`でevent名とdayを分離しない。lease ledgerは`active → completed | aborted`だけを許し、persistence失敗前だけ`abortLifecycleOperation`でregistry旧状態、成功後は同期で失敗不能な`completeLifecycleOperationAfterPersistence`によりregistry after-imageをexact 1回適用してからleaseを解放し、React state publishはauthorityにしない。二重finalize、終端間遷移、旧lease replay、generation／digest不一致を拒否する。freeze requestは進行中active leaseの完了を待つbarrierで、barrier後の新規lease／setterをDB first write前に拒否してtokenをinvalidにする。ack済みrecordは旧writer unmount後もfrozen registryへ保持し、取消／失敗tokenを再利用せず、retryは全record／absenceを再captureして新tokenを発行する
@@ -4365,6 +4373,12 @@ I0のfailure injection stage IDは`after-snapshot-read`、`after-external-baseli
 
 ### 7.1 イベント単位Backup V2とV1互換core
 
+- 本書の`healthy V2 snapshot`は、単一readonly transaction boundaryで同一revisionに凍結した対象eventのcore、association、event settings、split settings、durable visit state、metadata／checkpoint／fenceがtrustedで相互一致し、event settings bridge journal完了、`DurableVisitInitializationStateV1 = ready`であり、participant root／slice digestを再検証したsnapshotだけを候補にする。その候補を`auditV2CoreRepresentabilityV1`が未知保持extension、unsafe URL、strict scalar、owner relation、参照、順序、件数、byte hard limitを含む全slotについてtotal走査してissue 0件を返すことまで必須とする。`V2SnapshotHealthDecisionV1`は`{ kind: "healthy"; sourceSnapshotDigest; v2ObjectDigest; canonicalByteLength } | { kind: "v2-representability-repair-required"; sourceSnapshotDigest; issues; issuesDigest; repairActions }`のexact unionとし、companion V1の不能は後者へ入れない。`healthy` receiptは同じserializerをbounded discard sinkへ通してschema、embedded digest、current reader、source projection、再parse、byte lengthまで自己検証して初めて発行し、単なるruntime rootのschema-validをhealthyと呼ばない
+- enablement用の`V2EnablementEligibilityResultV1`は`{ kind: "eligible"; health: Extract<V2SnapshotHealthDecisionV1, { kind: "healthy" }>; eligibilityDigest } | { kind: "blocked"; health: Extract<V2SnapshotHealthDecisionV1, { kind: "v2-representability-repair-required" }>; eligibilityDigest } | { kind: "unavailable"; reason: "authority-not-ready" | "adapter-not-registered" | "snapshot-read-failed" | "preflight-timeout" | "cancelled" | "stale" }`のexact unionとする。semantic／hard-limit issueだけを`blocked`、snapshotを評価できないoperational状態を`unavailable`へ写し、後者へ架空issue／repair actionを付けない。preview resultは表示用でありcommit authorityにしない
+- `previewSplitEnablement`と`enableSplitForEventAtomically`はI0で固定する同じ`evaluateV2EnablementEligibilityV1`を使う。event effective ON前にfresh full snapshotから`eligible` receiptを作り、commit直前に全root revisionと`sourceSnapshotDigest`を再検証する。`blocked`はcanonical issue一覧と修復導線、`unavailable`はreason別の待機／再試行案内を返し、どちらもcontrol、core、settings、durable rootを含むwriteを0件にしてeventをeffective ONにしない。`setSplitDeviceEnabledAtomically(true)`もstored enabled eventごとに同じ判定を行い、不適格eventはstored membershipを勝手に削除せずevent単位legacy fallbackへ置く。これにより「healthy V2は必ず生成可能」と`v2-unrepresentable`は、前者がON可能なsource invariant、後者が既存OFF／legacy sourceの診断分岐として両立する
+- effective ON中にcore、item、URL、hall、map、association、event settings、split settings、durable visit stateを変更する全writerは、after-imageの同じhealth decisionとroot vectorをfirst write前に検証する。healthyを壊すafter-imageは操作全体を拒否し、旧状態とstored ONを維持する。event rename／delete／duplicateの実authorityである`useEventLifecycleCommands.ts`、通常編集、CSV／XLSX import、V1／V2 restore、地図再取込、normalization repairを例外にせず、各command plannerのparticipant manifestとarchitecture testで漏れ0件にする。deleteは対象eventを同commitで消すため削除後の残存event集合、duplicate／restoreは新eventのafter-imageを検証する
+- 修復導線はissue kindから固定する。unsafe URLはsafe-link policyを通る利用者明示編集、normalization／map／hall／orphan visit問題は`NormalizationCollisionRepairPort`または該当I5～I7 preview command、未知保持extension／strict legacy shapeはraw値をdropせずtrusted V1退避、対応versionでの再取込またはguided profile reset eligibility診断へ送る。自動削除、unsafe URLの空文字化、unknown extensionのopaque捨て、V2を捏造するnormalizationを禁止する。I0 goldenはhealthy pair、healthy V2-only、未知extension、unsafe URL、object／array `undefined`、sparse hole、`-0`、nonfinite／unsafe integer、owner relation、hard-limit直前／一致／+1、issue順shuffle、旧名fieldをnegativeにし、明示DTOでlosslessな`legacy-optional-shape`をpositiveに固定する。I2のON preflightとI4のWorker exporterが同じdecision／digestを返すことをcontract testする
+- 「V2を必ず生成可能」はhealthy snapshotからcanonical V2 object／bytesを決定的に生成できる意味であり、利用者取消、sink I/O、端末容量、Worker強制終了等のoperational handoff failureを成功扱いにする意味ではない。これらは`v2-export-failed`／incomplete receiptとしてartifact完了通知を禁止し、sourceをunhealthyへ再分類しない。反対に`v2-unrepresentable`はoperational failureへ丸めず、effective ONを許さない上記repair-required decisionと同じissue digestを返す
 - handoff resultの`expectedArtifactIds`はcanonical role順・重複なしとし、全completed branchは`handedOffArtifactIds = expectedArtifactIds`／`failedArtifactIds = []`、全incomplete branchは両配列が相互排他的なexact partitionでなければならない。V2-onlyの`companionIssuesDigest`はscope、export、prepared artifact、verificationからcompleted／incomplete resultまでbyte一致させる。disposeもpairの2 handle対V2-only／standaloneの1 handleを判別unionで固定し、null digest＋2 handleやnon-null digest＋1 handleを表現不能にする
 - unavailable companionの`issues`は各issueの`esp-json-v1` canonical bytes順、重複なしのnonempty配列とする。`issueKinds`はTypeScript unionの宣言順へ依存せず、version付きliteral `COMPANION_V1_ISSUE_KIND_ORDER_V1`のrank順で`issues[].kind`を重複除去したexact projectionとする。tuple、TypeScript kind union、JSON Schema enumはexact bijectionかつ順序一致でなければならず、新kind追加時のtuple／schema未更新をbuildで拒否する。`issuesDigest = SHA-256(UTF8(esp-json-v1({ domain: "fsmc-companion-v1-issues-v1", reason, issues })))`をscope、export result、prepared artifact、verification、handoffへbyte一致で伝播する。構造reasonへresource issue、resource reasonへ構造issueまたは2件以上のresource issue、issue／kind／reason／digestの単独差を拒否する。issue入力順shuffle、同一kind重複、nested 3 kindの順序、tuple欠落／余分／入替えをI0 goldenへ固定する
 - 初版の分割対応backupをイベント単位V2として追加する
@@ -6937,7 +6951,7 @@ effectは`capture | record-release-request | release-capture | clear-release-wit
 
 ## 9. 実装フェーズとPR境界
 
-I0～I11の責務境界は、DB移行や公開時期を安全に管理するため維持する。ただし、各phaseを巨大なCI DAG、artifact upload、外部approvalへ結び付けない。原則1 phase 1 PR、reviewが難しいphaseだけ2 PRへ分け、全体12～16論理PRを目安とする。
+I0～I11の責務境界は、DB移行や公開時期を安全に管理するため維持する。ただし、各phaseを巨大なCI DAG、artifact upload、外部approvalへ結び付けない。I0／I2／I4は下表の依存順3 PR、I11は2 PR、その他phaseは原則1 PRとする19論理PRを基準にし、件数自体ではなく全sub-PRの結合gate成功後にだけphase Exitを記録する。
 
 全phaseに共通する規則は次のとおりである。
 
@@ -6949,119 +6963,240 @@ I0～I11の責務境界は、DB移行や公開時期を安全に管理するた�
 - 通常PRは1 command 10分、全体20分を超えた場合に停止する。I11は既出commandの同一実行を足し直さず全automated gateとproduction／feature-disabled buildを束ねたrelease quick 1 commandを20分、同じ結果を使うmanual checkを追加5分までとする。重要不変条件をunit／integration／release artifactから重ねて確認することは維持する
 - 既存機能のデータ消失、a/b混同、部分commit、安全モード不成立を検出した場合は時間短縮を理由にtestを削除しない
 
+| Phase | PR-A（production public edge 0件）                                             | PR-B                                                             | PR-C／phase Exitの結合条件                                                                    |
+| ----- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| I0    | I0-A: change-surface、membership／architecture／coverage、QA allowlist closure | I0-B: type／schema、golden fixture                               | I0-C: quick／Worker／browser-context／performance runner。A/B contractを検証して全I0 gate成功 |
+| I2    | I2-A: `Vcap` preflight、open progress、`onblocked`／versionchange              | I2-B: QA store manifest、repository、CAS transaction             | I2-C: local control、V2 enablement Port、recovery／2-tab。DB matrixとfallback成功             |
+| I4    | I4-A: V2／V1 DTO、representability、serializer／reader                         | I4-B: Worker、limit、CSP／PWA、handoff                           | I4-C: atomic restore、V1／XLSX compatibility、cleanup／UI。全I4 gate成功                      |
+| I11   | I11-A: durable visit freeze／migration、全writer cutover、release rehearsal    | I11-B: production `Vcap`／readiness公開、rollback build／runbook | 同じcandidate sourceからrelease quickとmanual check成功                                       |
+
+各先行PRは後続PR用の型または内部adapterを追加できるが、未実装を成功扱いにするstub、production query flag、storage override、公開commandを置かない。sub-PRをさらに分ける場合は変更面、依存、単独test、production非到達性をPR作成前に本節へ追記する。
+
 ### FSMC-I0着手前ゲート（phase外）
 
-章15のpre-I0 commandをclean worktreeで各1回実行する。既知のrepository全体問題がFSMC変更と無関係である場合は、issueまたはPRへcommandと失敗箇所を記録し、FSMC対象testが成功していることをreviewerが確認すれば開始できる。AWS、GitHub admin API、package registry、billing情報、credentialは観測しない。
+章15のpre-I0 commandをclean worktreeで各1回実行し、同じcandidate SHAで全exit code 0の場合だけI0へ進む。既知のrepository全体問題、FSMCと無関係なfailure、reviewer承認、I0で初めて作るFSMC対象testのいずれもwaiverにしない。2026-08-25時点では`npm run format:check`が既存`docs/各フェーズのFormal Exit達成.md`で失敗しているためNo-Goであり、同fileの整形後にunit→integration→Workerを含む全baselineを直列で再実行する。AWS、GitHub admin API、package registry、billing情報、credentialは観測しない。
 
 ### Phase一覧
 
-| Phase | 主な実装                                                   | 必須の短時間確認                                             | Exit                |
-| ----- | ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------- |
-| I0    | domain契約、代表fixture、test script、Vcap判断             | encoding、typecheck、fixture unit、quick script自体の0件拒否 | `EXIT-FSMC-I0-001`  |
-| I1    | identity、geometry、位置index、pointer／visit pure reducer | changed-area unit、bounded property test                     | `EXIT-FSMC-I1-001`  |
-| I2    | DB capability、CAS、local control、安全mode                | representative DB integration、stale時write 0                | `EXIT-FSMC-I2-001`  |
-| I3    | event／map／hall lifecycle、whole-event duplicate          | create／rename／delete／duplicate代表integration             | `EXIT-FSMC-I3-001`  |
-| I4    | Backup V2、V1互換core、restore                             | small V2／V1／XLSX、injected limit／timeout、atomic restore  | `EXIT-FSMC-I4-001`  |
-| I5    | split設定UI、copy、preview                                 | unit＋Desktop／Mobile代表smoke                               | `EXIT-FSMC-I5-001`  |
-| I6    | 地図再取込、通常編集、retained管理                         | 一意継承、曖昧時隔離、stale時write 0                         | `EXIT-FSMC-I6-001`  |
-| I7    | shared visit projection、reorder、notification             | projection unit、atomic reorder integration                  | `EXIT-FSMC-I7-001`  |
-| I8    | 通常map shell、hit-test、DOM代替                           | Desktop direct／Mobile picker smoke、a11y                    | `EXIT-FSMC-I8-001`  |
-| I9    | 集中mode                                                   | I8共通adapterの代表smoke                                     | `EXIT-FSMC-I9-001`  |
-| I10   | route、connector、cache                                    | route correctness＋代表performance smoke                     | `EXIT-FSMC-I10-001` |
-| I11   | production Vcap、公開、local rollback                      | `fsmc-release-quick`、build、rollback-disabled smoke         | `EXIT-FSMC-I11-001` |
+| Phase | 主な実装                                                                           | 必須の短時間確認                                                                                        | Exit                |
+| ----- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------- |
+| I0    | domain／control／V2 health契約、代表fixture、change-surface、test script、Vcap判断 | encoding、typecheck、unit／integration／Worker、membership／architecture／coverage policy、QA allowlist | `EXIT-FSMC-I0-001`  |
+| I1    | identity、geometry、位置index、pointer／visit pure reducer                         | changed-area unit、bounded property test                                                                | `EXIT-FSMC-I1-001`  |
+| I2    | DB capability、new store、CAS、local control、V2 ON preflight、安全mode            | DB／`onblocked` integration、fake eligibility decision、runtime ON 0、stale時write 0                    | `EXIT-FSMC-I2-001`  |
+| I3    | event／map／hall lifecycle、whole-event duplicate、writer participant化            | create／rename／delete／duplicate、V2 after-image guard                                                 | `EXIT-FSMC-I3-001`  |
+| I4    | Backup V2、V1互換core、Worker、CSP／PWA、restore                                   | `test:worker`、small V2／V1／XLSX、limit／timeout、atomic restore                                       | `EXIT-FSMC-I4-001`  |
+| I5    | split設定UI、copy、preview、guided profile reset                                   | true touch context、reset eligible／blocked、stale時write 0                                             | `EXIT-FSMC-I5-001`  |
+| I6    | 地図再取込、通常編集、retained管理、map identity repair                            | 一意継承、曖昧隔離、repair、V2 guard、stale時write 0                                                    | `EXIT-FSMC-I6-001`  |
+| I7    | shared visit projection、reorder、notification、item／orphan repair                | projection unit、atomic reorder／repair integration                                                     | `EXIT-FSMC-I7-001`  |
+| I8    | 通常map shell、hit-test、DOM代替、通常Canvas Pointer authority                     | true touch、200% zoom／forced-colors、architecture、a11y                                                | `EXIT-FSMC-I8-001`  |
+| I9    | 集中mode、Focus Canvas Pointer authority                                           | 集中mode touch／pointer cancel、legacy Touch authority 0件                                              | `EXIT-FSMC-I9-001`  |
+| I10   | route、connector、cache                                                            | route correctness＋relative／absolute performance sentinel                                              | `EXIT-FSMC-I10-001` |
+| I11   | durable visit migration、production Vcap、公開、local rollback                     | `fsmc-release-quick`、blocked upgrade、rollback-disabled smoke                                          | `EXIT-FSMC-I11-001` |
+
+### Requirement ID → Phase／test／Exit traceability
+
+この表を`RC-*`の実行authorityとする。`Q` = `npm run test:fsmc:quick`、`B` = `npm run test:fsmc:browser:smoke`、`P` = `npm run test:fsmc:performance:smoke`、`R` = `npm run test:fsmc:release:quick`、`W` = FSMC Worker project、`POL` = `verify:test-project-membership`＋`verify:architecture`＋`verify:coverage-policy`＋`test:coverage-policy`である。Formal Exit欄の`I<n>`は必ず同じ番号の`EXIT-FSMC-I<n>-001`を意味し、「各owner Exit」もowner欄に列挙した全phaseの同名Exitを指す。複数phaseのrequirementは最初のphaseがcontract owner、後続phaseがruntime ownerであり、表の全Exitを満たすまでrequirement完了にしない。
+
+| Requirement | owner phase        | 変更面／成果物                                                                | 代表test                                                         | Formal Exit        |
+| ----------- | ------------------ | ----------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------ |
+| `RC-01`     | pre-I0             | clean baseline、waiver禁止、直列pool、verification record                     | diff／encoding／format／typecheck／lint／unit→integration→Worker | pre-I0 gate        |
+| `RC-02`     | I0／I1／I7／I10    | PD-14 C0 inventory／C1 pure契約／C2 projection・通知／C3 route・cache         | 各phase Q、I10 P                                                 | I0／I1／I7／I10    |
+| `RC-03`     | I0、I2～I10        | local control、lifecycle、Backup、copy、reimport、retained、visit、map、route | 各owner Q、UI B、route P                                         | I2～I10            |
+| `RC-04`     | I2／I11            | QA `Vcap` migrationとI11だけのproduction DB version更新                       | DB version matrix、R                                             | I2／I11            |
+| `RC-05`     | I0／I1／I7         | readonly DTO、location index、projection adapter／revision                    | schema negative、pure／projection unit                           | I0／I1／I7         |
+| `RC-06`     | I1／I8／I10        | `SubcellPathNode`、実VisitList shell、dead shell廃止、route型                 | Q、B、route unit／P                                              | I1／I8／I10        |
+| `RC-07`     | I0／I4             | 独立V2 wire DTO、V1／XLSX restore、safe-link                                  | schema、round-trip、unsafe URL                                   | I0／I4             |
+| `RC-08`     | I2／I5／I11        | recovery診断、in-place／guided profile reset、runbook                         | recovery integration、B journey 7、R                             | I2／I5／I11        |
+| `RC-09`     | I0／I4／I11        | input／output limit、Worker、bounded slice、CSP／PWA、cancel                  | W、limit Q、CSP verifier、release smoke                          | I0／I4／I11        |
+| `RC-10`     | I0／I10／I11       | performance harnessと6 scenario                                               | Pのrelative＋absolute sentinel、R                                | I0／I10／I11       |
+| `RC-11`     | I0                 | 固定旧版A、全change-surface、QA allowlist、membership／coverage／architecture | Q＋W＋POL＋QA build verifier                                     | I0                 |
+| `RC-12`     | I0／I8／I9／I11    | readiness、DOM代替、status／alert、AT oracle、Canvas a11y                     | Q、200%／forced-colors B、R                                      | I0／I8／I9／I11    |
+| `RC-13`     | I2／I3／I4         | canonical eventSettings、bridge journal、lifecycle／Backup participant        | bridge crash、writer mapping、Backup integration                 | I2／I3／I4         |
+| `RC-14`     | I0／I2／I5／I11    | `Vcap`採択、coverage-verified reset、production migration                     | DB compatibility、reset integration／B、R                        | I0／I2／I5／I11    |
+| `RC-15`     | I0／I2／I7／I11    | durable root／store、projection／reorder、durable migration                   | schema、DB、atomic reorder、R migration                          | I0／I2／I7／I11    |
+| `RC-16`     | I0／I1／I3／I4／I6 | stable ID／slot locator、全writer、V2、reimport transition                    | canonical golden、lifecycle／restore／reimport                   | 各owner Exit       |
+| `RC-17`     | I3／I6／I8         | whole-event duplicate、通常地図編集、VisitList shell移行                      | duplicate／edit integration、B                                   | I3／I6／I8         |
+| `RC-18`     | I1／I5～I8／I10    | retained再関連付け、rekey／insert、hit-test、connector                        | decision table、reimport、B、route Q／P                          | 各owner Exit       |
+| `RC-19`     | I0／I10／I11       | 6 scenario、timeout、比較／絶対sentinel                                       | P、R                                                             | I0／I10／I11       |
+| `RC-20`     | plan／全phase      | 本traceability表と参照review                                                  | Markdown review＋各phase command                                 | 各phase Exit       |
+| `RC-21`     | I0                 | deterministic最大generatorとsmall fixture                                     | count／seed／hash unit                                           | I0                 |
+| `RC-22`     | I0／I11            | 外部service非依存、local-only gate／rollback                                  | Q構成test、R                                                     | I0／I11            |
+| `RC-23`     | I0／I8／I9         | 通常／集中×Desktop direct／Mobile pickerの4 manifest row                      | Bの4 named scenario                                              | I0／I8／I9         |
+| `RC-24`     | I1／I6／I8／I10    | fatal physical duplicateと局所exclusion分離                                   | geometry unit、4 reimport、B、route                              | I1／I6／I8／I10    |
+| `RC-25`     | I1／I7／I8／I10    | physical slotとwhole／a／b／unsupported location、revision                    | 26c／d／ab、projection、B、route                                 | I1／I7／I8／I10    |
+| `RC-26`     | I1／I10            | `RoutePathConstraintV1`、polygon-bound path／cache                            | constraint unit、route correctness／P                            | I1／I10            |
+| `RC-27`     | I7／I8             | 共通reorder planner／atomic command、pointer／keyboard UI                     | planner／stale integration、B                                    | I7／I8             |
+| `RC-28`     | I0／I2／I4         | healthy V2、ON preflight、pair／2種V2-only、receipt                           | health golden、fake enable integration、W／handoff mutation      | I0／I2／I4         |
+| `RC-29`     | I0／I2／I5／I8／I9 | `forcedPickerOverride` schema／control／UI／両map                             | schema negative、toggle reload、3 selection B                    | I0／I2／I5／I8／I9 |
+| `RC-30`     | pre-I0／I0         | local baselineとverification recordだけ                                       | pre-I0 command、runner unit                                      | pre-I0／I0         |
+| `RC-31`     | I0＋risk owner     | Chromium共有install、名前付きrequired engine regression                       | config unit、対象B                                               | I0＋対象phase      |
+| `RC-32`     | plan／全phase      | 本表の1行1Requirement追跡                                                     | Markdown review                                                  | 各phase Exit       |
+| `RC-33`     | 全phase            | 19 PR基準、I0／I2／I4の依存順3 PR、I11の2 PR                                  | 各PR Q＋UI／browser影響時B＋性能影響時P                          | 各phase Exit       |
+| `RC-34`     | I0／I11            | quick／release aggregate、直列pool、timeout、retry 0                          | orchestration unit、R                                            | I0／I11            |
+| `RC-35`     | I0／I4             | V2 digest schema／canonical bytes                                             | field mutation／digest negative                                  | I0／I4             |
+| `RC-36`     | I0／I11            | manifest除外canonical file-tree digest                                        | root／timezone同値、path／byte差、reparse拒否                    | I0／I11            |
+| `RC-37`     | I0／I1／I8／I9     | Pointer table／reducer、通常／Focus DOM authority                             | table＋bounded property、true-touch B、architecture              | I0／I1／I8／I9     |
+| `RC-38`     | I0                 | local `fsmc-quick`と任意single CI check                                       | Q、workflowを置く場合のstatic test                               | I0                 |
+| `RC-39`     | I0／I11            | suite重複防止、同一job build→smoke、record                                    | runner unit、R                                                   | I0／I11            |
+| `RC-40`     | I0／I11            | 任意CI single job／timeout／matrixなし                                        | workflow static testまたはlocal record、R                        | I0／I11            |
+| `RC-41`     | I11                | 小さな事故記録、停止／再開runbook                                             | failure drill、5分manual、R                                      | I11                |
+| `RC-42`     | I1／I2／I10        | semantic revision、CAS非代用、cache signature                                 | non-location edit unit、stale integration、route cache           | I1／I2／I10        |
+| `RC-43`     | I11                | production migration、Backup、feature-disabled rollback                       | R＋rollback-disabled smoke                                       | I11                |
+
+#### Product decision traceability
+
+| Requirement | owner phase            | supporting RC              | 変更面／成果物                                              | 代表test                                           | Formal Exit            |
+| ----------- | ---------------------- | -------------------------- | ----------------------------------------------------------- | -------------------------------------------------- | ---------------------- |
+| `PD-01`     | I4                     | RC-07／RC-08               | legacy full restore時のactive→dormant、preview              | V1／XLSX full restore integration                  | I4                     |
+| `PD-02`     | I0／I1／I2／I6／I7     | RC-16／RC-28               | 番号正規化、ON preflight、map／item／orphan repair          | collision golden、enable／repair integration       | I0／I1／I2／I6／I7     |
+| `PD-03`     | I2／I11                | RC-03／RC-04／RC-22        | local control、安全mode、production公開                     | control／DB integration、R                         | I2／I11                |
+| `PD-04`     | I2／I7／I10／I11       | RC-02／RC-04／RC-43        | OFF fallback、C2／C3、release-ready registration            | phase-aware Q、route P、R                          | I2／I7／I10／I11       |
+| `PD-05`     | I1／I8／I9             | RC-23／RC-29／RC-37        | selection resolver、通常／集中picker                        | resolver table、3 context B                        | I1／I8／I9             |
+| `PD-06`     | I5                     | RC-03／RC-18               | additive／full-sync copy planner、preview                   | copy unit／integration／B                          | I5                     |
+| `PD-07`     | I0／各変更phase／I11   | RC-10／RC-19／RC-31／RC-34 | test policy、risk gate、verification record                 | Q／W／POL／B／P／R                                 | I0～I11                |
+| `PD-08`     | I2～I10／I11           | RC-03／RC-07／RC-28        | 初版主機能＋不可分support scope                             | 各owner Q、UI B、Backup W、route P、R              | I2～I11                |
+| `PD-09`     | I3／I6                 | RC-03／RC-16               | event delete retention、retained管理／再関連付け            | clock／delete／relink integration                  | I3／I6                 |
+| `PD-10`     | I0／I11                | RC-01／RC-34／RC-39        | retryなしquick／release aggregate                           | runner orchestration unit、Q、R                    | I0／I11                |
+| `PD-11`     | I1／I5／I8／I9         | RC-18／RC-25               | whole／unsupported identity、preview、badge／list           | identity unit、UI B                                | I1／I5／I8／I9         |
+| `PD-12`     | I0／I2／I4             | RC-28／RC-35               | V2 health／eligibility、pair／V2-only、digest               | health golden、fake enable、W／handoff             | I0／I2／I4             |
+| `PD-13`     | I1／I10                | RC-18／RC-26               | connector mask、polygon-bound route                         | connector decision table、route correctness        | I1／I10                |
+| `PD-14`     | I0／I1／I7／I10        | RC-02／RC-05／RC-27／RC-42 | C0 inventory、C1 identity、C2 projection、C3 route／cache   | inventory／pure／projection／cache Q、P            | I0／I1／I7／I10        |
+| `PD-15`     | I2／I4                 | RC-13／RC-29               | local controlのBackup除外、restore先local state維持         | schema negative、restore integration               | I2／I4                 |
+| `PD-16`     | I0／I2／I3／I4／I6／I7 | RC-16／RC-17／RC-18／RC-28 | collision oracle、全identity writer guard、3 repair command | pair-set unit、writer／restore／repair integration | I0／I2／I3／I4／I6／I7 |
+| `PD-17`     | I0／I10／I11           | RC-10／RC-19／RC-21        | performance fixture、relative／absolute sentinel            | generator unit、P、R                               | I0／I10／I11           |
+| `PD-18`     | I2／I5／I11            | RC-08／RC-14／RC-43        | corruption recovery、guided reset、停止／復旧runbook        | recovery integration、reset B、R                   | I2／I5／I11            |
+
+特にguided profile resetはI5、`fsmc.repair.map-identity.v1`はI6、`fsmc.repair.item-numbers.v1`／`fsmc.repair.orphan-visit-state.v1`はI7、durable visit migrationはI11、Pointer Eventsのpure contract／通常Canvas／Focus CanvasはI1／I8／I9、event lifecycle writer participant化はI3のFormal Exitに必ず現れるため、短いPhase表だけを根拠に省略しない。
 
 ### FSMC-I0: 契約・fixture・短時間test基盤
 
 - FSMCの型、schema、stable ID、Vcap decisionをrepository内で固定する
-- non-promotableな`build:qa:fsmc`と、`test:fsmc:quick`、`test:fsmc:browser:smoke`、`test:fsmc:performance:smoke`、`test:fsmc:release:quick`を追加する。I0では4 scriptの構文、対象0件拒否、引数伝播を静的／unitで検証し、release-ready production buildを必要とする`test:fsmc:release:quick`自体は実行しない
-- quick scriptは対象testが0件なら失敗し、同じsuiteを同じ引数で無目的に二重実行しない。unitとintegrationが同じ重要不変条件を異なるfailure signalで確認する重層testは維持する
+- `MapCellSplitControlRoot.forcedPickerOverride`、`V2SnapshotHealthDecisionV1`、`V2EnablementEligibilityPort`、issue→repair option、旧field拒否をtype／JSON Schema／goldenで固定する。I2はfake Port、I4は実Worker adapterを所有し、未登録adapterを成功扱いにしない
+- non-promotableな`build:qa:fsmc`と、`test:fsmc:quick`、`test:fsmc:browser:smoke`、`test:fsmc:performance:smoke`、`test:fsmc:release:quick`を追加する。I0では4 test scriptの構文、対象0件拒否、引数伝播を静的／unitで検証し、release-ready production buildを必要とする`test:fsmc:release:quick`自体は実行しない
+- quick scriptはmanifestのunit→integration→Worker projectを同一process poolで並列起動せず、この順に各1回実行する。各required projectの対象testが0件なら失敗し、`--passWithNoTests`を付けない。unitとintegrationが同じ重要不変条件を異なるfailure signalで確認する重層testは維持する
 - 日常fixtureと最大fixture generatorを分け、required testは日常fixtureだけを展開する
-- PlaywrightはChromium 1 installを共有し、Desktop／Mobile viewportを同じbrowserで順に実行する
+- PlaywrightはChromium 1 installを共有するが、Desktop mouse／Desktop touch／Mobile touchを別contextにし、Mobileは`hasTouch = true`、`isMobile = true`、DPR 3、trusted touch入力と`pointerType = "touch"` assertionを固定する。viewportだけの切替をMobile証跡にしない
 
-**EXIT-FSMC-I0-001** — repository内だけでfixture、4本のtest scriptの静的／unit contract、QA build profileを検証でき、`test:fsmc:quick`が10分以内、browserを含むI0確認が20分以内に完了する。`test:fsmc:release:quick`の実行成功はI11だけの条件とし、外部service、credential、artifact uploadを0件とする。
+I0-Aは次のchange-surface inventoryをpath単位でfixture化し、実装中にpath追加・renameがあれば同じPRで更新する。
+
+| 面                               | I0で固定するrepo-relative path（存在区分もfixture field）                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | owner／必須確認                                                                                                                   |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `--qa-profile fsmc`              | `scripts/build-release-vite.mjs`、`scripts/verify-release-a-build.mjs`、`vite.config.ts`、`scripts/lib/release-build-input.mjs`、`scripts/lib/release-build-input.d.mts`、`scripts/build-pwa-recovery-agent.mjs`、`scripts/release-policy.test.mjs`、`scripts/build-pwa-recovery-agent.test.mjs`                                                                                                                                                                                                                            | I0-A。5拒否境界のallowlist、`qa-fsmc` non-promotable identity、production拒否をunit＋build verifierで確認                         |
+| new object store／DB open        | `src/persistence/db/constants.ts`、`src/persistence/db/openDatabase.ts`、`src/persistence/db/transactionCoordinator.ts`、`src/persistence/repositories/recordRepository.ts`、`src/persistence/repositories/controlRepository.ts`、`src/persistence/repositories/applicationDataRepository.ts`、`src/persistence/repositories/mapRepository.ts`                                                                                                                                                                              | I2-A/B。DB5 productionで未作成、QA／I11 `Vcap`でだけ作成、`onblocked`／versionchange／all-old-or-all-new integration              |
+| repository／DB compatibility     | `src/persistence/repositories/eventRepository.ts`、`src/persistence/repositories/settingsRepository.ts`、`src/persistence/repositories/syncQueueRepository.ts`、`src/persistence/repositories/repositoryContracts.test.ts`、`config/db-compatibility-contract.json`、`scripts/verify-db-compatibility-contract.mjs`、`scripts/lib/db-compatibility-authority.mjs`、`src/utils/indexedDB.versionCompatibility.integration.test.ts`                                                                                           | I0-Aで全pathを分類し、I2／I11でstore参加有無、DB5／`Vcap`、upgrade／downgrade／unknown-futureを検証                               |
+| transaction／migration／recovery | `src/persistence/db/atomicRestoreTransaction.ts`、`src/persistence/migration/legacyMigration.ts`、`src/persistence/recovery/recoveryAdoption.ts`、`src/persistence/recovery/recoverySourceEvidence.ts`、`src/persistence/recovery/recoveryRepository.ts`、`src/utils/persistenceResilience.ts`、`src/persistence/facade/indexedDbPersistence.ts`、`src/persistence/adapters/indexedDbPersistenceCommandAdapter.ts`、`src/hooks/useIndexedDbPersistence.ts`、`src/app/composition/appRuntime.ts`                             | I2／I4／I11。participant manifest、crash／stale／quota、recovery coverage                                                         |
+| lifecycle writer                 | `src/app/commands/useEventLifecycleCommands.ts`、`src/app/commands/useEventLifecycleCommands.test.tsx`、`src/app/commands/useEventUpdateCommands.ts`、`src/app/commands/useEventUpdateCommands.test.tsx`、`src/app/ports/PersistenceCommandPort.ts`、`src/persistence/adapters/indexedDbPersistenceCommandAdapter.ts`、`src/persistence/facade/indexedDbPersistence.ts`、`src/persistence/db/atomicRestoreTransaction.ts`、`src/persistence/repositories/applicationSnapshotOps.ts`、`src/App.tsx`                          | I3。rename／delete／create／update／duplicateでassociation、control、event settings、durable、V2 healthを同一commit participant化 |
+| Backup Worker                    | `src/features/map-cell-split/backup/fsmcBackup.worker.ts`（new）、`src/features/map-cell-split/backup/fsmcBackupWorkerServer.ts`（new）、`src/features/map-cell-split/backup/fsmcBackupWorkerClient.ts`（new）、`src/features/map-cell-split/backup/fsmcBackupWorkerServer.worker.test.ts`（new）、`vite.config.ts`、`scripts/build-pwa-recovery-agent.mjs`                                                                                                                                                                 | I0 contract／I4実装。Worker project、CSP verifier、PWA precache／offline build smoke                                              |
+| Canvas input                     | `src/features/map/canvas/useCanvasViewport.ts`、`src/components/map/MapCanvasPresentation.tsx`、`src/components/map/MapCanvas.tsx`、`src/components/FocusModeMapCanvas.tsx`                                                                                                                                                                                                                                                                                                                                                 | I1 reducer、I8通常、I9集中。Pointer Events authorityとlegacy touch handler 0件architecture test                                   |
+| policy／coverage                 | `config/test-project-membership.json`、`vitest.unit.config.ts`、`vitest.integration.config.ts`、`vitest.worker.config.ts`、`config/architecture-policy.json`、`config/architecture-baseline.json`、`config/coverage-policy.json`、`scripts/verify-test-project-membership.mjs`、`scripts/verify-architecture.mjs`、`scripts/verify-coverage-policy.mjs`、`scripts/coverage-policy/coverage-policy.test.mjs`、`package.json`                                                                                                 | I0-A。`src/features/map-cell-split/`を専用subsystemへ登録し、membership／architecture／coverage policyの4 verifierをquickで実行   |
+| FSMC runner／browser registry    | `scripts/fsmc/run-quick.mjs`（new）、`scripts/fsmc/run-quick.test.mjs`（new）、`scripts/fsmc/run-browser-smoke.mjs`（new）、`scripts/fsmc/run-browser-smoke.test.mjs`（new）、`scripts/fsmc/run-performance-smoke.mjs`（new）、`scripts/fsmc/run-performance-smoke.test.mjs`（new）、`scripts/fsmc/run-release-quick.mjs`（new）、`scripts/fsmc/run-release-quick.test.mjs`（new）、`playwright.fsmc.config.ts`（new）、`config/fsmc-browser-risk-regressions.json`（new）、`config/fsmc-performance-sentinels.json`（new） | I0-C。直列lane、3 context、required engine case閉包、sentinel、timeout／失敗伝播をrunner unitで固定                               |
+
+capability storeはI2～I10 productionの無条件`Object.values(STORES)`集合へ追加しない。QA namespace用store manifest、DB version別required-store manifest、recovery participant manifestを分離し、I11のproduction `DB_VERSION = Vcap`と同じ最終candidateで初めてproduction required-store集合へ加える。上表とDB compatibility contractの各repo-relative pathを`existing | new`と`change | test-only | proven-unaffected`のexact 1分類へ置き、filesystem存在状態と宣言が一致しないpath、basename、glob、未分類をI0 Exitで拒否する。これにより定数追加だけでDB5にstore作成／必須検査が波及したり、新storeがrecovery対象へ暗黙追加される一方でatomic restore participantから漏れたりする状態を禁止する。
+
+`config/coverage-policy.json`には`id = "map-cell-split"`、`vitestGlobs = ["src/features/map-cell-split/**/*.{ts,tsx}"]`、`changedScope.prefixes = ["src/features/map-cell-split/"]`、subsystem branches 75／functions 80／lines 85／statements 85、changed-code branches 80／lines 85、`requiredFromExit = "EXIT-FSMC-I0-001"`をI0で追加する。Worker側scriptはnode coverageまたは既存Worker coverage laneへ明示列挙し、未計測にしない。`scripts/verify-coverage-policy.mjs`のmandatory subsystem集合とpolicy testも同時更新する。新規FSMC testがunit／integration／Workerのexact 1 project membershipを持つこと、architecture allowlistとbaseline更新が同じchangeを説明すること、`quality`／`quality:local`からpolicy verifierが外れないことを静的testする。
+
+**EXIT-FSMC-I0-001** — repository内だけでtype／schema／golden、change-surface inventory、4本のtest script、QA build profileの5拒否境界、unit／integration／Worker membership、architecture、`map-cell-split` coverage policyを検証できる。`test:fsmc:quick`はunit→integration→Workerと4 policy verifierを直列で各1回実行し、各lane 0件を拒否して10分以内、Desktop mouse／Desktop touch／Mobile touchの3独立context（各hasTouch、isMobile、DPR、touch入力時の受信pointerTypeをassert）を含むI0確認全体が20分以内に完了する。`test:fsmc:release:quick`の実行成功はI11だけの条件とし、外部service、credential、artifact uploadを0件とする。
 
 ### FSMC-I1: 共通domain
 
 - parser、`LocationKey`、geometry、split orientation、semantic revisionをpure moduleとして実装する
 - decision tableはunit test、順序不変性は固定seed・最大100 caseのbounded property testで確認する
 - 回転、DPR、状態の全reachable logicはunitで確認し、browserはpairwiseをbaselineに固有riskのある組合せを追加する。raw全軸の無条件直積を既定にしない
+- Pointer Eventsのnormalized input、`idle | tapCandidate | dragging | multiPointer` reducer、capture／cancel／lost capture／multi-pointer drainのtotal transition tableをpure contractとして実装する。I1はDOM listenerを切り替えず、通常Canvas移行をI8、Focus Canvas移行と旧TouchEvent authority 0件確認をI9が所有する
 
-**EXIT-FSMC-I1-001** — whole／a／b／unsupported、衝突、回転代表、pointer cancel、visit集約が高速unit testで成功し、既存whole-cell動作が変わらない。
+**EXIT-FSMC-I1-001** — whole／a／b／unsupported、衝突、回転代表、Pointer FSMの全reachable row／cancel／capture failure、visit集約が高速unit testで成功し、既存whole-cell動作が変わらない。DOM authority移行はI8／I9 Exitまで未達として明記する。
 
 ### FSMC-I2: 保存基盤とlocal control
 
 - `Vcap` preflight、governed root、CAS、local OFF／event ON、automatic safe modeを実装する
+- 現行`DATABASE_OPEN_BLOCKED_TIMEOUT_MS`／`IndexedDBOpenBlockedError`を成功可否のauthorityから外し、既存`indexedDB.resilience.integration.test.ts`のtimeout期待をpending progress／same-request resume期待へ更新する。旧error classを診断互換で残す場合も新FSMC open pathからの生成0件をarchitecture testする
 - DBなし、現行version、`Vcap - 1`、`Vcap`、supported超過、partial lossをintegrationで確認する
 - 2 tabは「先行commit成功、後行write 0」の代表1ケースをbrowserまたはintegrationで確認する
+- `openDatabase.ts`の`onblocked`と既存connectionの`versionchange`を明示progress stateとして実装する。`onblocked`は5秒等のterminal rejectへ変換せず同じopen request／Promiseをpendingに保ち、別request、transaction、repair write、成功UIを開始しない。blocking tabを閉じる案内を出し、blocker close後に同じrequestが`onupgradeneeded`／`onsuccess`へ進むこと、`onerror`とversionchange `onabort`の連続通知をattempt ledgerでterminal exact 1件へdedupeすることを2 connection fake-IDB integrationで確認する。page離脱時は後着resultを無視してconnectionを閉じるが、自動DB deleteや偽cancel成功を表示しない
+- `V2EnablementEligibilityPort`のfake adapterでhealthy、unknown extension、unsafe URL、strict scalar、limit、unavailable、staleを確認し、eligibleだけevent effective ON、blocked／unavailableは全root write 0、device ONでは該当eventだけlegacy fallbackとする。実Worker接続前のQA runtimeはevent ON不可とする
 
-**EXIT-FSMC-I2-001** — all-old／all-new、stale時write 0、unsupported DBの安全拒否、OFF時のlegacy動作が代表fixtureで成功する。
+**EXIT-FSMC-I2-001** — all-old／all-new、`onblocked`中pending／write 0／request 1件、blocker close後の同request resume、error／abort terminal dedupe、stale時write 0、unsupported DBの安全拒否、OFF時のlegacy動作が代表fixtureで成功する。V2 enablementはcontract fake harness内のdecision／commit simulationに限り、eligibleだけmembership追加をsimulateし、unknown extension／unsafe URL／strict scalar／limit／adapter unavailableは全root write 0、複数enabled eventでは不適格eventだけのfallbackを確認する。I2 production／通常QA runtimeはeligibility adapter未登録、effective ON 0件をarchitecture／build testで固定し、実Worker接続後のruntime ONはI4 Exitが所有する。
 
 ### FSMC-I3: lifecycle
 
 - event／map／hall／blockのstable identityと、create／rename／delete／duplicateのatomic commandを実装する
+- `config/fsmc-command-participants.json`へ`useEventLifecycleCommands.ts`のrename／delete連鎖、create／update／importの`useEventUpdateCommands.ts`とpatch caller、whole-event duplicateを別writer IDで列挙し、現行import `create-alias`をwhole-event duplicateへ誤分類しない。manifest row欠落、余分、旧signature callerをarchitecture testで拒否する
 - 全writer種別から共通plannerへのmappingと全reachable after-image branchはtable-driven unit testで網羅する。物理store pathが同じwriterは代表commandのintegrationを共有し、異なるtransaction／bridge／recovery pathは各1件以上のintegrationを残す。writer名×同一障害点の無差別直積は作らない
+- rename／deleteの実authorityである`useEventLifecycleCommands.ts`をwriter inventoryへ含め、`PersistenceCommandPort`、indexed DB adapter／facade、application snapshot operationまで同じplanner receiptを伝播する。ready profileではcore、association、control membership、event settings、durable visit、metadata／checkpoint／fence、V2 after-image healthを同じparticipant manifestへ含め、旧signatureからの直接writeをarchitecture testで0件にする
+- I3のV2 after-image participant integrationはI2のcontract fakeでeligible／blocked／unavailableを注入し、production／通常QA runtimeのeligibility adapter未登録を維持する。I4の実Worker接続前にeventをeffective ONへするtest overrideやpublic edgeを追加しない
 
-**EXIT-FSMC-I3-001** — rename、delete＋retained、whole-event duplicate、失敗時write 0が成功し、別eventへ設定を誤接続しない。
+**EXIT-FSMC-I3-001** — rename、delete＋retained、whole-event duplicate、失敗時write 0が成功し、別eventへ設定を誤接続しない。`useEventLifecycleCommands.ts`を含む全lifecycle writerがparticipant manifestへ列挙され、V2-unhealthy after-image、durable participant欠落、旧direct writeを拒否する。
 
 ### FSMC-I4: Backup V2／V1互換
 
-- V2を常に生成可能にし、losslessな場合だけV1互換coreを同じsnapshotから作る
+- `V2SnapshotHealthDecisionV1.kind = "healthy"`のsnapshotからV2を必ず生成し、companion V1不能だけではV2を停止しない。OFF／legacyのunhealthy snapshotは同じissue digestを持つ`v2-unrepresentable`と修復導線を返し、effective ON eventで同分岐へ到達した場合はinvariant breachとして安全fallbackにする
 - byte上限、timeout、spool、cancelは注入可能なlimit／fake clock／fake sinkで小さく再現する
 - 実32～64 MiB fileや300秒待機はrequired testにしない
+- Backup Workerを同一origin module assetとしてVite graphとPWA precacheへ登録し、CSP `worker-src 'self'`で起動できること、offline precacheからreaderを開始できること、cancel／timeoutでWorker・reader・timer・Blob URL 0件になることをWorker testとprebuilt browser smokeで確認する。`blob:`／`data:`／remote Workerは拒否する
+- artifact verifierはhashed Worker asset URLがVite manifestと`dist/sw.js`のprecache manifestにexact 1件存在すること、online load後にcontextをofflineへして同assetからWorkerを起動できることを検証する。I4変更時の`test:fsmc:quick`は`npm run verify:csp-policy`と対象PWA／Worker artifact verifierも1回実行する
 
-**EXIT-FSMC-I4-001** — small V2 round-trip、代表V1 pair、V1／XLSX 2.2 full restoreのsmall fixture各1件、V2-only理由、invalid UTF-8／unsafe URL拒否、restore原子性、cleanupが10分以内に成功する。
+**EXIT-FSMC-I4-001** — `test:worker`、small healthy V2 round-trip、代表V1 pair、companion不能でも成功するV2-only、V1／XLSX 2.2 full restoreのsmall fixture各1件、unknown extension／unsafe URL／strict scalar／byte境界のV2-ineligible negative、invalid UTF-8、restore原子性、cleanupが10分以内に成功する。QA buildでWorker URLがmanifest／PWA precacheに存在し、CSP下・offlineで起動し、cancel後resource 0件である。
 
 ### FSMC-I5: split設定UIとcopy
 
 - 単一編集、追加・変更のみcopy、明示的完全同期、preview、retained除外を実装する
 - browserはDesktop direct、Mobile picker、copy preview、保存reloadの4 journeyをbaselineにし、copy／保存／staleのbrowser固有risk組合せは10分枠内のparameter caseとして残す
+- I2 recovery eligibilityを利用するguided profile reset UIを実装し、known store／localStorage coverage closure、選択Backup hash、全tab／Worker／DB connection close、resume journal、二段階確認、復元結果を表示する。unknown store／key、被覆不足、blocked connection、staleではdelete 0件とし、profile reset完了後の`forcedPickerOverride`はfactory default falseに戻す
+- ON blocker UIはunknown extension、unsafe URL、strict scalar、owner／ref、count／byte limitをnon-clickable source pathとissue digestで表示し、remain OFF、trusted V1退避、owner別repair、eligible再preflightの選択肢を示す。自動drop／clearを選ばない
 
-**EXIT-FSMC-I5-001** — a/bを別々に保存でき、copy先identityを維持し、取消／stale／保存失敗時にwrite 0となる。
+**EXIT-FSMC-I5-001** — a/bを別々に保存でき、copy先identityを維持し、Desktop directと別Mobile touch contextのpickerが成功し、取消／stale／保存失敗時にwrite 0となる。guided profile resetはcoverage-complete＋unblockedだけ完了し、unknown target／被覆不足／blocked／取消はdelete 0件、resume後restoreとcontrol defaultを確認する。V2 blockerはunsafe URLをclickableにせずremain OFF／退避／修復へ到達できる。
 
 ### FSMC-I6: 地図再取込と通常編集
 
 - 一意継承だけactiveを維持し、欠落／曖昧はdormant／quarantinedへ移す
 - 正常、一意移動、曖昧、duplicate physical cellの4代表をintegrationで確認する
+- `fsmc.repair.map-identity.v1`を`NormalizationCollisionRepairPort`の唯一のmap修復入口として実装し、preview済みblock ownership／番号cell／merge、association、settings、durable visit、route cache、V2 after-image healthを同一commitへ含める。通常edit／reimportもhealthyを壊すafter-imageをfirst write前に拒否し、取消／stale／quotaでは全rootを旧状態に保つ
 
-**EXIT-FSMC-I6-001** — 無関係な変更で設定を失わず、危険なmapだけを安全停止し、影響外mapの利用を継続できる。
+**EXIT-FSMC-I6-001** — 無関係な変更で設定を失わず、危険なmapだけを安全停止し、影響外mapの利用を継続できる。map identity repairはallowlisted commandだけ成功し、修復後V2 preflightがhealthyになったeventだけeffective ONへ復帰し、取消／stale／unhealthy after-imageはwrite 0となる。
 
 ### FSMC-I7: visit projectionとreorder
 
 - `ExecutionVisitIdentity`のglobal集約、phase projection、headless reorder、atomic commitを実装する
 - raw item順shuffle、既存visitへの挿入、stale callbackをunit／integrationで確認する
+- `fsmc.repair.item-numbers.v1`と`fsmc.repair.orphan-visit-state.v1`を同じ`NormalizationCollisionRepairPort`へ接続し、前者はitem番号と全導出identity／order／progress、後者はcurrent item参照0件を再検証した選択済みorphan stateだけを変更する。repair after-imageもdurable rootとV2 healthを同一commitで検証する
 
-**EXIT-FSMC-I7-001** — 通常／postponed／lateが同じprojectionを使い、取消／stale時にdurable orderを変更しない。
+**EXIT-FSMC-I7-001** — 通常／postponed／lateが同じprojectionを使い、item-number／orphan-visit repairがallowlist、参照0件、V2 healthyを満たす場合だけ原子的に成功し、取消／stale／quota／不適格時にdurable orderと全rootを変更しない。
 
 ### FSMC-I8: 通常map
 
 - 共通位置indexで描画、hit-test、popup、DOM代替、訪問一覧を接続する
 - Chromium Desktop 1件、Mobile picker 1件、keyboard／focus 1件、axe 1件を代表smokeにする
+- `useCanvasViewport.ts`と`MapCanvasPresentation.tsx`／`MapCanvas.tsx`をI1のPointer reducerへ移し、通常Canvasのnative TouchEvent／React touch handler／component-local pointer mapを0件にする。Mobile smokeはtrue-touch contextと`pointerType = "touch"`でtap、drag、multi-pointer、cancelを確認する
+- 200% page zoomと`forced-colors: active`を名前付きrequired a11y caseにし、a/b label、分割境界、selected／visited stateが色だけに依存せず、DOM代替のrole／name／description／focus順とCanvas hit-testが一致することを確認する
 
-**EXIT-FSMC-I8-001** — a/b片側更新、Mobile picker、DOM代替、role／name／focus、OFF fallbackが代表smokeで成功する。
+**EXIT-FSMC-I8-001** — a/b片側更新、true-touch Mobile picker、Pointer cancel／multi-pointer、DOM代替、role／name／focus、200% zoom、forced-colors、OFF fallbackが代表smokeで成功する。architecture testで通常Canvasの並行TouchEvent authority 0件を確認する。
 
 ### FSMC-I9: 集中mode
 
 - I8と同じ位置解決、picker、announcement、訪問projectionを集中modeへ接続する
 - I8と同じbinary／fixture／assertionをそのまま再実行するだけのjourneyは共有するが、集中mode固有surfaceからa/b identity、picker、announcement、追加を独立確認するtestは重複に見えても残す。固有baselineは2件とし、回帰riskがあれば対象caseを追加する
+- `FocusModeMapCanvas.tsx`を同じPointer reducer／gesture snapshotへ移し、Focus固有split pane、rotation、unmount／lost captureを確認する。I9完了時点で通常／集中のnative TouchEvent、React touch handler、component-local pointer authorityをrepository全体で0件にする
 
-**EXIT-FSMC-I9-001** — 集中modeでa/bを混同せず、空側追加と既存visit集約が成功する。
+**EXIT-FSMC-I9-001** — 集中modeでa/bを混同せず、true-touch picker、空側追加、既存visit集約、rotation中cancelが成功し、architecture testで全Canvasの並行TouchEvent authority 0件を確認する。
 
 ### FSMC-I10: routeとvisit集約
 
 - 3×3 subcell route、polygon constraint、connector、cache signatureを実装する
 - correctnessは小fixture、性能は100 visitまでの代表fixtureで確認する
 - 400 visit最大routeは必要時の手動1回とし、毎PR／Desktop／Mobile二重測定を行わない
+- performance smokeはtimeoutだけを合格条件にせず、章10.5の同一invocation base/candidate比較とabsolute median／max sentinelを全6 scenarioで満たすことを要求する
 
-**EXIT-FSMC-I10-001** — a/b anchor、same-cell、障害物、unroutable、cache invalidationが成功し、代表performance smoke全体が5分以内に終わる。
+**EXIT-FSMC-I10-001** — a/b anchor、same-cell、障害物、unroutable、cache invalidationが成功し、代表performance smoke全体が5分以内に終わるだけでなく、6 scenarioすべてでrelative limitとabsolute median／max sentinelを満たす。
 
 ### FSMC-I11: release-readyとlocal rollback
 
+- `fsmc.migrate.durable-visits.v1`でlegacy focus registryをfreeze／captureし、全resolved scope、default／loss確認、event basis、settings／control／metadata／checkpoint／fenceを1 commitで`ready`へ移す。取消、stale、scope collision、token replay、quotaでは`migrating`を維持してwrite 0件とし、ready後に全lifecycle／item／import／restore writerがdurable root participantであることをarchitecture testする
 - production buildで`Vcap` migrationとsplit公開edgeを初めて有効にする
-- representative A→B migration、unsupported version安全拒否、Backup round-trip、OFF fallbackをrelease quickへ含める
+- representative A→B migration、durable visit migration、`onblocked` upgrade、unsupported version安全拒否、V2-ineligible eventがeffective ONにならないこと、Backup round-trip、OFF fallbackをrelease quickへ含める
 - `npm run build:containment`等のfeature-disabled buildをlocalで作り、既移行profileを開いてsplit mutationが公開されないことを1 smokeで確認する
 - GHCR、AWS registry、anonymous pull、protected approval、168時間観測を要求しない
 
-**EXIT-FSMC-I11-001** — `test:fsmc:release:quick`、production build、feature-disabled rollback smokeが合計20分以内に成功し、利用者向けBackup／停止／復旧手順が更新される。
+**EXIT-FSMC-I11-001** — durable visit freeze／全scope migrationとready witness、`onblocked`中all-old、unblock後all-new、`test:fsmc:release:quick`、production build、V2-ineligible ON拒否、feature-disabled rollback smokeが合計20分以内に成功し、利用者向けBackup／停止／復旧手順が更新される。rollbackはDB downgradeを行わず、durable rootを保持する。
 
 ## 10. テスト計画
 
@@ -7073,6 +7208,8 @@ I0～I11の責務境界は、DB移行や公開時期を安全に管理するた�
 | -------------------------- | ----------------------------- | ------------------------------------------------- | ---------- |
 | changed-area unit          | 各PR                          | pure logic、schema、全reachable decision row      | 3分／5分   |
 | representative integration | 保存・DB・Backup・route変更PR | all-old／all-new、stale write 0、small round-trip | 5分／10分  |
+| Worker project             | I0、Backup Worker変更PR、I4   | protocol、UTF-8 fatal、limit、cancel／cleanup     | 3分／5分   |
+| policy verifier            | I0、inventory／policy変更PR   | membership、architecture、coverage config／test   | 2分／5分   |
 | browser smoke              | UI変更PR、I11                 | Chromium基本8件＋engine／状態risk対象case         | 5分／10分  |
 | performance smoke          | 性能影響PR、I10、I11          | 6 scenario、warm-up 1＋計測3                      | 3分／5分   |
 | release quick              | I11だけ                       | 上記の代表集合＋build／rollback smoke             | 15分／20分 |
@@ -7103,7 +7240,7 @@ I0～I11の責務境界は、DB移行や公開時期を安全に管理するた�
 
 ### 10.4 Chromium／a11y smoke
 
-必須browserのbaselineはローカルChromium 1 engineで、Desktop 1280×720とMobile 390×844 viewportを同じinstallから使う。次の8 journeyを基本集合とし、browser固有の安全riskが見つかった場合は既存journeyのparameter化または10分上限内の対象smokeとして組合せcaseを追加できる。件数目安だけを理由に必要なcaseを削らない。
+必須browserのbaselineはローカルChromium 1 installを共有するが、viewport変更だけで端末能力を表現せず、少なくとも次の独立BrowserContextを固定する。Desktop mouseは1280×720、DPR 1、`isMobile = false`、`hasTouch = false`、Desktop touchは1280×720、DPR 2、`isMobile = false`、`hasTouch = true`、Mobile touchは390×844、DPR 3、`isMobile = true`、`hasTouch = true`とする。touch journeyは`page.touchscreen.tap()`または同等のtrusted touch inputを使い、app側test traceで受信`PointerEvent.pointerType === "touch"`をassertする。Mobile pickerをviewport幅だけで成功扱いにせず、Desktop touchが自動的にMobile pickerへ誤分類されないこともselection resolverの代表caseにする。次の8 journeyを基本集合とし、browser固有の安全riskが見つかった場合は既存journeyのparameter化または10分上限内の対象smokeとして組合せcaseを追加できる。件数目安だけを理由に必要なcaseを削らない。
 
 1. Desktopでa/bを別々に開き、aだけ更新する
 2. Mobile pickerで空間順ラベルからbを選ぶ
@@ -7114,13 +7251,29 @@ I0～I11の責務境界は、DB移行や公開時期を安全に管理するた�
 7. recovery正常resetと不適格時write 0を、同じsetupを再利用する代表2件で確認する
 8. route正常とunroutable、DOM代替のkeyboard／focus／axe critical・serious 0
 
-通常変更ではChromium以外を無条件に全journeyへ掛けない。一方、support対象engineの既知不具合、標準API差、変更箇所に固有のriskがある場合は、無課金でlocal実行できるFirefox／WebKitの該当caseを名前付きregressionとしてrequired gateへ残せる。全engine matrixではなくriskとcaseを1対1で記録し、同じ10分枠へ収める。iPhone実機、BrowserStack、有料実機farmは要求しない。
+I8の200% zoomはDPR変更で代用せず、page-scale harnessがeffective scale 2.0をassertしてからCanvas label／境界、picker、DOM代替、focusを確認する。forced colorsは`page.emulateMedia({ forcedColors: "active" })`相当で有効化し、色以外のlabel／境界／state表現をassertする。portrait／landscapeは該当risk journeyだけ別contextにし、全journeyとの直積にしない。
+
+通常変更ではChromium以外を無条件に全journeyへ掛けない。一方、support対象engineの既知不具合、標準API差、変更箇所に固有のriskがある場合は、engine、unique case ID、risk固有test tag、risk、owner phase、削除条件を`config/fsmc-browser-risk-regressions.json`へ同じPRで登録し、無課金でlocal実行できるFirefox／WebKitの該当caseだけをrequired gateへ昇格する。全required caseのtitleは共通`@fsmc-smoke`とregistryのrisk固有tagを両方持つ。`run-browser-smoke.mjs`は実行前のPlaywright list結果についてactive registry entryと`(engine, case ID, risk tag)`がexact bijectionであること、実行後のmachine-readable resultについて各entryがexact 1回passedであることを検証し、grep除外、重複、未install、skip、結果欠落、unexpected projectを失敗させる。entry 0件なら追加engineをinstallしない。名前付きcase成功は当該riskだけの確認でありengine全体の正式保証ではない。全engine matrixではなくriskとcaseを1対1で記録し、同じ10分枠へ収める。iPhone実機、BrowserStack、有料実機farmは要求しない。
 
 ### 10.5 短時間performance smoke
 
-測定対象はstartup、single split save、map first render、map interaction、100 visit route、small Backupの6件をbaselineとする。各scenarioはwarm-up 1回と計測3回だけ実行し、中央値と最大値をconsoleへ出す。性能riskのある変更は対象parameterまたは比較oracleを5分枠へ追加し、6件という数だけを理由に回帰caseを削らない。精密な機種間比較や正式SLAではなく、同じ開発環境で明らかな退行を検出するためのsentinelである。
+測定対象はstartup、single split save、map first render、map interaction、100 visit route、small Backupの6件をbaselineとする。`config/fsmc-performance-sentinels.json`はscenarioごとにfixture／action digest、feature-disabledまたはwhole-cellのcontrol case、absolute median／max ceiling、`candidateMedian / controlMedian` ceiling、jitter allowanceを必須にし、欠落、0、非finite、未知scenario、candidate測定後の閾値緩和をverifierで拒否する。runnerは同一machine／browser install／process orchestratorでcontrolとcandidateを各warm-up 1回後に交互に3回だけ測定し、中央値と最大値、environment digestをconsoleへ出す。candidateは(1) `candidateMedian <= max(controlMedian * 1.25, controlMedian + jitterAllowance)`、(2) absolute median以下、(3) candidate maxがabsolute max以下、の3条件をすべて満たす。45秒／5分はhang停止用であり、時間内終了だけを性能成功にしない。
+
+初期sentinelは次を上限とし、I0でschema／missing拒否、各scenario owner PRの変更前にcontrol測定とcalibration recordをcommitする。閾値は同じcandidate結果を見て緩めず、環境差で成立しない場合はfixture／timer boundaryを先に直す。
+
+| scenario          | absolute median | absolute max | ratio | jitter allowance |
+| ----------------- | --------------- | ------------ | ----- | ---------------- |
+| startup           | 8,000 ms        | 12,000 ms    | 1.25  | 150 ms           |
+| single split save | 1,000 ms        | 2,000 ms     | 1.25  | 30 ms            |
+| map first render  | 3,000 ms        | 5,000 ms     | 1.25  | 75 ms            |
+| map interaction   | 300 ms          | 600 ms       | 1.25  | 15 ms            |
+| 100 visit route   | 4,000 ms        | 7,000 ms     | 1.25  | 75 ms            |
+| small Backup      | 6,000 ms        | 10,000 ms    | 1.25  | 150 ms           |
+
+性能riskのある変更は対象parameterまたは比較oracleを5分枠へ追加し、6件という数だけを理由に回帰caseを削らない。精密な機種間比較や正式SLAではなく、同じ開発環境で明らかな退行を検出するためのsentinelである。
 
 - 各scenario 45秒、全体5分でtimeoutする
+- timeout前でもrelative／absolute sentinelのいずれか1件を超えたら失敗し、warningだけで成功にしない
 - memory PSS polling、100ms sampling、30秒cleanup待機、browser processの毎回再起動を行わない
 - 最大fixture、400 visit、32 MiB Backupは性能関連変更または公開候補で必要な場合だけlocal手動1回とする
 - 手動最大測定をしていない場合、最大規模の応答時間を対外保証しない
@@ -7213,17 +7366,17 @@ GitHub Actionsを使う場合は、public repositoryの標準runnerが無課金�
 ## 14. Definition of Done
 
 - **DOD-FSMC-001** — whole／a／b／unsupported identityが共通位置indexで一貫し、a/bを混同しない
-- **DOD-FSMC-002** — 保存、migration、restore、copy、reimportがall-old／all-newで、stale時write 0となる
+- **DOD-FSMC-002** — 保存、event lifecycle、durable visit migration、restore、copy、reimport、normalization repairが全participantでall-old／all-newとなり、`onblocked`／stale／cancel／quota時write 0となる
 - **DOD-FSMC-003** — OFF／safe modeでlegacy動作へ戻り、保存済みsplit設定を壊さない
-- **DOD-FSMC-004** — Backup V2 small round-trip、lossless時の代表V1 pair、V1／XLSX 2.2 full restoreのsmall fixture各1件が成功し、V2-only理由を確認できる
-- **DOD-FSMC-005** — 通常map、集中mode、route、Mobile picker、DOM代替が代表fixtureで動作する
-- **DOD-FSMC-006** — keyboard、role、name、focus、status／alert、axe critical・serious 0を代表画面で確認する
-- **DOD-FSMC-007** — changed-area unit／integrationで到達可能な安全decisionの全組合せが成功し、a/b identity、原子性、stale write 0、OFF／safe mode、Backup／rollbackを必要な異種test層で重ねて確認したうえで、Chromium baseline、既知engine固有riskの無課金local対象regression、performance smokeが章10のtimebox内で成功する
+- **DOD-FSMC-004** — effective ON前／ON中のV2 health preflight、healthy V2 small round-trip、lossless時の代表V1 pair、V2-only、V1／XLSX 2.2 full restoreのsmall fixture各1件が成功する。unknown extension／unsafe URL／strict scalar／limitはwrite 0でONを拒否し、Workerがsame-origin CSP／PWA precache／offline起動／cancel cleanupを満たす
+- **DOD-FSMC-005** — 通常map、集中mode、route、Desktop mouse／Desktop touch／Mobile true-touch picker、DOM代替が代表fixtureで動作し、全Canvasの旧TouchEvent並行authorityが0件である
+- **DOD-FSMC-006** — keyboard、role、name、focus、status／alert、200% page zoom、forced-colors、axe critical・serious 0を代表画面で確認する
+- **DOD-FSMC-007** — changed-area unit／integration／Workerで到達可能な安全decisionの全組合せが成功し、membership／architecture／coverage policyも成功する。a/b identity、原子性、stale write 0、OFF／safe mode、Backup／rollbackを必要な異種test層で重ねて確認したうえで、Chromium baseline、registry上requiredなengine固有regression、6 scenarioのrelative／absolute performance sentinelが章10のtimebox内で成功する
 - **DOD-FSMC-008** — 最大値は設計上限として記載し、未測定の最大規模応答時間を保証しない
-- **DOD-FSMC-009** — production buildとfeature-disabled rollback buildをlocalで起動確認できる
+- **DOD-FSMC-009** — durable visit migration ready、production `Vcap` buildとfeature-disabled rollback buildをlocalで起動確認でき、rollbackはDB downgradeせずsplit mutationを停止してBackup／復旧導線を残す
 - **DOD-FSMC-010** — FSMCのためにAWS、S3、KMS、CloudTrail、Budgets、GHCR、Protected Environments、Actions Artifacts、有料browser／device serviceを新規契約・作成・live qualificationした件数が0件であり、既存外部基盤の有料tierを新たに要求しない
 - **DOD-FSMC-011** — verification recordにcandidate SHA、command、exit code、durationがあり、外部証跡hash連鎖や複数role approvalを要求しない
-- **DOD-FSMC-012** — 利用者向けにBackup、local ON／OFF、停止、復旧、保証対象外を説明する
+- **DOD-FSMC-012** — 利用者向けにBackup、local ON／OFF、V2 blocker別修復、guided profile reset、停止、復旧、保証対象外を説明する
 - **DOD-FSMC-013** — UTF-8（BOMなし）と既存LFを維持し、U+FFFD、意図しない`?`増加、改行だけの大量差分がない
 - **DOD-FSMC-014** — 完全版XLSX 2.3、multipart、設定単独portable JSON等の後続版予約を初版phase、test、Exitへ混入させない
 
@@ -7236,14 +7389,18 @@ I0で次のFSMC専用scriptを`package.json`へ追加する。各scriptは対象
   "scripts": {
     "build:qa:fsmc": "node scripts/build-release-vite.mjs --qa-profile fsmc && node scripts/verify-release-a-build.mjs --allow-nonpromotable-qa",
     "test:fsmc:quick": "node scripts/fsmc/run-quick.mjs --timeout-ms 600000",
-    "test:fsmc:browser:smoke": "npm run build:qa:fsmc && playwright test --config=playwright.fsmc.config.ts --grep @fsmc-smoke --workers=1 --retries=0",
+    "test:fsmc:browser:smoke": "npm run build:qa:fsmc && node scripts/fsmc/run-browser-smoke.mjs --grep-tag @fsmc-smoke --workers 1 --retries 0",
     "test:fsmc:performance:smoke": "node scripts/fsmc/run-performance-smoke.mjs --samples 3 --timeout-ms 300000",
     "test:fsmc:release:quick": "node scripts/fsmc/run-release-quick.mjs --timeout-ms 1200000"
   }
 }
 ```
 
-I0で`vitest.fsmc.config.ts`とmanifestへ対象unit／integration／style fileを明示し、`run-quick.mjs`が対象fileのPrettier／ESLintとVitestを各1回実行する。対象0件は失敗させ、`--passWithNoTests`を付けない。`build:qa:fsmc`はI2～I10のproduction public edgeを変えず、FSMC導線だけをlocal test harnessへ公開するnon-promotable QA buildとする。`playwright.fsmc.config.ts`は既定で単一Chromium project、Desktop／Mobile viewportをtest内で順に切替、`workers = 1`、`retries = 0`、local outputだけを固定する。章10.4の名前付きengine regressionが存在する場合だけ、該当tagを無課金local Firefox／WebKit projectで選択実行できる構成を追加し、既定の全journey matrixへ含めない。通常のbrowser smokeはQA buildを1回作ってVite previewへ渡す。`run-release-quick.mjs`だけはencoding、typecheck、quick test、release-ready production build 1回、prebuilt browser smoke、performance smoke、feature-disabled build／smokeを20分deadline内で各1回実行し、別commandの結果を足し直さない。I0はこのrelease scriptの構文、command順、timeout伝播、子process失敗伝播をunit testし、production buildを含むaggregate実行はI11まで行わない。
+I0でFSMC manifestへ対象style、unit、integration、`.worker.test.ts`を明示し、第四の重複Vitest projectを作らず既存unit／integration／Worker projectへ各testをexact 1回所属させる。`run-quick.mjs`は対象fileのPrettier／ESLint、`verify:test-project-membership`、`verify:architecture`、`verify:coverage-policy`、`test:coverage-policy`、対象unit→integration→Workerをこの順で各1回実行し、Vitest poolを相互に並列起動しない。各required laneの対象0件を失敗させ、`--passWithNoTests`を付けない。現行`test:worker`の`--passWithNoTests`とWorker projectのempty許可もI0-Cで廃止する。
+
+`build:qa:fsmc`はI2～I10のproduction public edgeを変えず、FSMC導線だけをlocal test harnessへ公開するnon-promotable QA buildとする。I0-Aは`build-release-vite.mjs`、`verify-release-a-build.mjs`、`vite.config.ts`、`release-build-input.mjs`／`.d.mts`、`build-pwa-recovery-agent.mjs`の全allowlistと`release-policy.test.mjs`／`build-pwa-recovery-agent.test.mjs`を同時更新し、未知profile拒否を弱めない。artifactから`qa-fsmc`、standard role、non-promotable、production public edge 0件を再検証する。
+
+`playwright.fsmc.config.ts`は既定で単一Chromium install、Desktop mouse／Desktop touch／Mobile touchの独立context、`workers = 1`、`retries = 0`、local outputだけを固定する。touch testはtrusted inputと受信`pointerType`をassertする。`run-browser-smoke.mjs`は共通`@fsmc-smoke`を外さず、章10.4のactive registry entryが存在する場合だけrisk固有tagと該当Firefox／WebKit projectを追加してlist／resultのbijectionを検証し、required caseをgrep外へ置けないようにする。既定の全journey matrixへ追加engineを含めない。通常のbrowser smokeはQA buildを1回作ってVite previewへ渡す。`run-release-quick.mjs`だけはencoding、typecheck、quick test、release-ready production build 1回、prebuilt browser smoke、performance smoke、feature-disabled build／smokeを20分deadline内で各1回実行し、別commandの結果を足し直さない。I0は両runnerのregistry closure、構文、command順、timeout伝播、子process失敗伝播をunit testし、production buildを含むaggregate実行はI11まで行わない。
 
 ### pre-I0
 
@@ -7257,9 +7414,10 @@ npm run typecheck
 npm run lint
 npm run test:unit
 npm run test:integration
+npm run test:worker
 ```
 
-合計20分を超えたら停止し、遅いsuite名と経過時間を記録する。外部observerやcredential確認は行わない。
+unit→integration→Workerは上記順で直列実行し、同時にVitest poolを起動しない。合計20分を超えたら停止し、遅いsuite名と経過時間を記録したうえで、分離後のclean candidateに対して全列を最初から再実行する。外部observerやcredential確認は行わない。既知failureのwaiverや将来追加するFSMC testによる代替合格は認めない。
 
 ### 通常PR
 
