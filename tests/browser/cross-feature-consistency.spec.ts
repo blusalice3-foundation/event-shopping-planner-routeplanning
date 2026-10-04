@@ -662,3 +662,734 @@ test("block definition waits for renewed approval after another tab changes prio
   });
   await other.close();
 });
+
+async function updatePurchaseInOtherTab(page: Page) {
+  await page.goto("/");
+  await page.getByText(eventName, { exact: true }).click();
+  await editMemo(page, "新しいメモ");
+  const dialog = page.getByRole("dialog", { name: "アイテム編集" });
+  await dialog
+    .getByRole("textbox", { name: "購入金額", exact: true })
+    .fill("900");
+  await dialog
+    .getByRole("combobox", { name: "数量", exact: true })
+    .selectOption("2");
+  await dialog
+    .getByRole("combobox", { name: "購入状態", exact: true })
+    .selectOption("Purchased");
+  await dialog.getByRole("button", { name: "保存", exact: true }).click();
+  await expect
+    .poll(() => stored(page, "eventLists"))
+    .toMatchObject({
+      [eventName]: expect.arrayContaining([
+        expect.objectContaining({
+          id: "1",
+          purchaseStatus: "Purchased",
+          price: 900,
+          quantity: 2,
+          remarks: "新しいメモ",
+        }),
+      ]),
+    });
+}
+
+for (const origin of ["visit panel", "map item edit"] as const) {
+  test(`${origin} priority change preserves newer purchases after saving and reload`, async ({
+    page,
+    context,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    const source = mapBackup();
+    source.data.eventLists[eventName] = source.data.eventLists[eventName].map(
+      (value) => ({ ...value, priorityLevel: "none" }),
+    );
+    await restore(page, source);
+    await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+    if (origin === "visit panel") {
+      await page.getByTitle("リスト表示に切り替え", { exact: true }).hover();
+      await page.mouse.down();
+      const openPanel = page.getByRole("button", {
+        name: "📍 訪問リスト",
+        exact: true,
+      });
+      await expect(openPanel).toBeVisible();
+      await page.mouse.up();
+      await openPanel.click();
+    } else {
+      // At 100% zoom and the initial zero offset, A-1 is row 2 / column 2.
+      await page.locator("canvas").click({ position: { x: 42, y: 42 } });
+      const popup = page.getByRole("dialog", { name: "A-1のアイテム一覧" });
+      await expect(popup).toBeVisible();
+      const card = popup
+        .getByText("サークル1", { exact: true })
+        .locator('xpath=ancestor::div[contains(@class,"cursor-pointer")][1]');
+      await card.dispatchEvent("pointerdown", {
+        button: 0,
+        isPrimary: true,
+        pointerType: "mouse",
+      });
+      await expect(
+        page.getByRole("button", { name: "✏️ 編集", exact: true }),
+      ).toBeVisible();
+      await card.dispatchEvent("pointerup", {
+        button: 0,
+        isPrimary: true,
+        pointerType: "mouse",
+      });
+      await page.getByRole("button", { name: "✏️ 編集", exact: true }).click();
+    }
+    const other = await context.newPage();
+    await updatePurchaseInOtherTab(other);
+    if (origin === "visit panel") {
+      await page.getByTitle("優先度を変更", { exact: true }).first().click();
+      await page.getByRole("button", { name: "最優先", exact: true }).click();
+    } else {
+      const editor = page.getByRole("dialog", { name: "アイテム編集" });
+      await editor
+        .getByRole("combobox", { name: "優先度", exact: true })
+        .selectOption("highest");
+      await editor.getByRole("button", { name: "保存", exact: true }).click();
+    }
+    const preserved = {
+      id: "1",
+      purchaseStatus: "Purchased",
+      price: 900,
+      quantity: 2,
+      remarks: "新しいメモ",
+      priorityLevel: "highest",
+    };
+    await expect
+      .poll(() => stored(page, "eventLists"))
+      .toMatchObject({
+        [eventName]: expect.arrayContaining([
+          expect.objectContaining(preserved),
+        ]),
+      });
+    await page.reload();
+    await expect(
+      page.locator('input[aria-label="バックアップファイルを選択"]'),
+    ).toBeAttached();
+    await page.getByText(eventName, { exact: true }).click();
+    await editMemo(page, "新しいメモ");
+    const editor = page.getByRole("dialog", { name: "アイテム編集" });
+    await expect(
+      editor.getByRole("textbox", { name: "購入金額", exact: true }),
+    ).toHaveValue("900");
+    await expect(
+      editor.getByRole("combobox", { name: "数量", exact: true }),
+    ).toHaveValue("2");
+    await expect(
+      editor.getByRole("combobox", { name: "購入状態", exact: true }),
+    ).toHaveValue("Purchased");
+    await expect(
+      editor.getByRole("combobox", { name: "優先度", exact: true }),
+    ).toHaveValue("highest");
+    await editor
+      .getByRole("button", { name: "キャンセル", exact: true })
+      .click();
+    expect(await stored(page, "eventLists")).toMatchObject({
+      [eventName]: expect.arrayContaining([expect.objectContaining(preserved)]),
+    });
+    expect(errors).toEqual([]);
+    await other.close();
+  });
+}
+
+async function openMapItemEditor(page: Page) {
+  await page.locator("canvas").click({ position: { x: 42, y: 42 } });
+  const popup = page.getByRole("dialog", { name: "A-1のアイテム一覧" });
+  await expect(popup).toBeVisible();
+  const card = popup
+    .getByText("サークル1", { exact: true })
+    .locator('xpath=ancestor::div[contains(@class,"cursor-pointer")][1]');
+  await card.dispatchEvent("pointerdown", {
+    button: 0,
+    isPrimary: true,
+    pointerType: "mouse",
+  });
+  await expect(
+    page.getByRole("button", { name: "✏️ 編集", exact: true }),
+  ).toBeVisible();
+  await card.dispatchEvent("pointerup", {
+    button: 0,
+    isPrimary: true,
+    pointerType: "mouse",
+  });
+  await page.getByRole("button", { name: "✏️ 編集", exact: true }).click();
+  return page.getByRole("dialog", { name: "アイテム編集" });
+}
+
+for (const origin of ["visit panel", "map item edit"] as const) {
+  test(`${origin} priority change retains the purchase accepted while its save is pending`, async ({
+    page,
+  }) => {
+    const source = mapBackup();
+    source.data.eventLists[eventName] = source.data.eventLists[eventName].map(
+      (value) => ({ ...value, priorityLevel: "none" }),
+    );
+    await restore(page, source);
+    await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+    const editor = await openMapItemEditor(page);
+    await editor
+      .getByRole("textbox", { name: "直接入力", exact: true })
+      .fill("900");
+    await editor
+      .getByRole("combobox", { name: "数量", exact: true })
+      .selectOption("2");
+    await editor
+      .getByRole("combobox", { name: "購入状態", exact: true })
+      .selectOption("Purchased");
+    await editor
+      .getByRole("textbox", { name: "利用者メモ", exact: true })
+      .fill("新しいメモ");
+    // Delay delivery of the first atomic transaction's completion so the screen
+    // still contains its previous values when the priority intent is accepted.
+    await page.evaluate(() => {
+      const descriptor = Object.getOwnPropertyDescriptor(
+        IDBTransaction.prototype,
+        "oncomplete",
+      )!;
+      const gate = { ready: false, release: () => {} };
+      (
+        window as typeof window & { __consistencyWriteGate: typeof gate }
+      ).__consistencyWriteGate = gate;
+      let intercepted = false;
+      Object.defineProperty(IDBTransaction.prototype, "oncomplete", {
+        ...descriptor,
+        set(this: IDBTransaction, handler: IDBTransaction["oncomplete"]) {
+          if (
+            !intercepted &&
+            this.mode === "readwrite" &&
+            this.objectStoreNames.contains("eventLists")
+          ) {
+            intercepted = true;
+            descriptor.set!.call(this, (event: Event) => {
+              gate.ready = true;
+              gate.release = () => {
+                Object.defineProperty(
+                  IDBTransaction.prototype,
+                  "oncomplete",
+                  descriptor,
+                );
+                handler?.call(this, event);
+              };
+            });
+          } else descriptor.set!.call(this, handler);
+        },
+      });
+    });
+    await editor.getByRole("button", { name: "保存", exact: true }).click();
+    await expect(editor).toBeHidden();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (
+              window as typeof window & {
+                __consistencyWriteGate: { ready: boolean };
+              }
+            ).__consistencyWriteGate.ready,
+        ),
+      )
+      .toBe(true);
+    await page
+      .getByRole("button", { name: "A-1のアイテム一覧を閉じる", exact: true })
+      .click();
+    if (origin === "visit panel") {
+      await page.getByTitle("リスト表示に切り替え", { exact: true }).hover();
+      await page.mouse.down();
+      const openPanel = page.getByRole("button", {
+        name: "📍 訪問リスト",
+        exact: true,
+      });
+      await expect(openPanel).toBeVisible();
+      await page.mouse.up();
+      await openPanel.click();
+      await page.getByTitle("優先度を変更", { exact: true }).first().click();
+      await page.getByRole("button", { name: "最優先", exact: true }).click();
+    } else {
+      const priorityEditor = await openMapItemEditor(page);
+      await priorityEditor
+        .getByRole("combobox", { name: "優先度", exact: true })
+        .selectOption("highest");
+      await priorityEditor
+        .getByRole("button", { name: "保存", exact: true })
+        .click();
+    }
+    await page.evaluate(() =>
+      (
+        window as typeof window & {
+          __consistencyWriteGate: { release(): void };
+        }
+      ).__consistencyWriteGate.release(),
+    );
+    const preserved = {
+      id: "1",
+      purchaseStatus: "Purchased",
+      price: 900,
+      quantity: 2,
+      remarks: "新しいメモ",
+      priorityLevel: "highest",
+    };
+    await expect
+      .poll(() => stored(page, "eventLists"))
+      .toMatchObject({
+        [eventName]: expect.arrayContaining([
+          expect.objectContaining(preserved),
+        ]),
+      });
+    await page.reload();
+    await expect(
+      page.locator('input[aria-label="バックアップファイルを選択"]'),
+    ).toBeAttached();
+    expect(await stored(page, "eventLists")).toMatchObject({
+      [eventName]: expect.arrayContaining([expect.objectContaining(preserved)]),
+    });
+  });
+}
+
+for (const kind of ["detailed", "simple"] as const) {
+  test(`renaming a ${kind} hall preserves mixed order in every map and after reload`, async ({
+    page,
+  }) => {
+    const source = migrateLegacyConsistency(mapBackup().data).data;
+    source.hallDefinitions[eventName]["__mapless__:1日目"] = [
+      {
+        id: "simple",
+        name: "簡易ホール",
+        vertices: [],
+        blockNames: ["A"],
+      },
+    ];
+    const simpleRef = {
+      kind: "simple" as const,
+      dayKey: "1日目",
+      hallId: "simple",
+    };
+    for (const [mapKey, context] of Object.entries(
+      source.eventConsistency[eventName].days["1日目"].maps,
+    )) {
+      const mapRef = { kind: "map" as const, mapKey, hallId: "hall" };
+      context.assignments = { "1": simpleRef, "2": mapRef };
+      context.hallOrder = [
+        { hall: simpleRef, priority: "none" },
+        { hall: mapRef, priority: "none" },
+        { hall: null, priority: "highest" },
+      ];
+      context.hallVisitLists = [
+        { group: context.hallOrder[0], itemIds: ["1"] },
+        { group: context.hallOrder[1], itemIds: ["2"] },
+      ];
+    }
+    await restore(page, createAppBackup(source));
+    await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+    await page.getByTitle("リスト表示に切り替え", { exact: true }).hover();
+    await page.mouse.down();
+    const openHalls = page.getByRole("button", {
+      name: "🏛️ ホール定義",
+      exact: true,
+    });
+    await expect(openHalls).toBeVisible();
+    await page.mouse.up();
+    await openHalls.click();
+    const editor = page.getByRole("dialog", { name: "ホール定義エリア設定" });
+    await editor
+      .getByRole("button")
+      .filter({ hasText: kind === "detailed" ? "東館" : "簡易ホール" })
+      .click();
+    await editor.getByPlaceholder("例: 東1ホール").fill("変更後のホール名");
+    await editor.getByRole("button", { name: "保存", exact: true }).click();
+    await editor.getByRole("button", { name: "適用", exact: true }).click();
+    const confirm = page.getByRole("button", {
+      name: "確認して保存",
+      exact: true,
+    });
+    await expect(confirm).toBeVisible();
+    await confirm.click();
+    const key = kind === "detailed" ? "1日目マップ" : "__mapless__:1日目";
+    await expect
+      .poll(() => stored(page, "hallDefinitions"))
+      .toMatchObject({
+        [eventName]: {
+          [key]: [expect.objectContaining({ name: "変更後のホール名" })],
+        },
+      });
+    const check = async () => {
+      const saved = (await stored(
+        page,
+        "eventConsistency",
+      )) as EventConsistencyStore;
+      for (const [mapKey, context] of Object.entries(
+        source.eventConsistency[eventName].days["1日目"].maps,
+      )) {
+        expect(saved[eventName].days["1日目"].maps[mapKey].hallOrder).toEqual(
+          context.hallOrder,
+        );
+        expect(
+          saved[eventName].days["1日目"].maps[mapKey].hallVisitLists,
+        ).toEqual(context.hallVisitLists);
+      }
+      expect(saved[eventName].days["2日目"]).toEqual(
+        source.eventConsistency[eventName].days["2日目"],
+      );
+    };
+    await check();
+    await page.reload();
+    await expect(
+      page.locator('input[aria-label="バックアップファイルを選択"]'),
+    ).toBeAttached();
+    await check();
+  });
+}
+
+test.describe("spreadsheet and save-conflict connections", () => {
+  test.use({ serviceWorkers: "block" });
+  for (const kind of ["items-only", "source-switch"] as const) {
+    test(`spreadsheet ${kind} opens review after CSV success and persists the reviewed update`, async ({
+      page,
+    }) => {
+      const source = backup([item("1")]);
+      Object.assign(source.data.eventLists[eventName][0], {
+        source: "spreadsheet",
+      });
+      const metadata = {
+        spreadsheetUrl:
+          "https://docs.google.com/spreadsheets/d/consistency-source",
+        spreadsheetSheetName: "一覧",
+        lastImportDate: "2026-10-04",
+      };
+      if (kind === "items-only")
+        Object.assign(source.data.eventMetadata, { [eventName]: metadata });
+      const cells = Array<string>(27).fill("");
+      cells[12] = "サークル1";
+      cells[13] = "1日目";
+      cells[14] = "A";
+      cells[15] = "1";
+      cells[16] = "新刊1";
+      cells[17] = "800";
+      cells[22] = "更新後のシート備考";
+      cells[26] = "1";
+      await page.route("**/api/google-sheets-csv", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "text/csv; charset=utf-8",
+          body: `${Array<string>(27).fill("header").join(",")}\n${cells.join(",")}\n`,
+        }),
+      );
+      await restore(page, source);
+      await page.reload();
+      await page.getByRole("button", { name: "メニュー", exact: true }).click();
+      await page
+        .getByRole("button", { name: "🔄 アイテム更新", exact: true })
+        .click();
+      if (kind === "source-switch") {
+        await page
+          .getByRole("textbox", { name: "スプレッドシートURL", exact: true })
+          .fill(metadata.spreadsheetUrl);
+        await page
+          .getByRole("textbox", { name: "シート名（オプション）", exact: true })
+          .fill(metadata.spreadsheetSheetName);
+        await page.getByRole("button", { name: "更新", exact: true }).click();
+      }
+      const heading = page.getByRole("heading", {
+        name: "アイテム更新の確認",
+        exact: true,
+      });
+      await expect(heading).toBeVisible();
+      expect(await stored(page, "eventLists")).toMatchObject({
+        [eventName]: [expect.objectContaining({ price: 500 })],
+      });
+      await page
+        .getByRole("button", {
+          name: kind === "items-only" ? "更新を実行" : "更新元を切り替えて更新",
+          exact: true,
+        })
+        .click();
+      await expect(heading).toBeHidden();
+      await expect
+        .poll(() => stored(page, "eventLists"))
+        .toMatchObject({
+          [eventName]: [
+            expect.objectContaining({
+              catalogPrice: 800,
+              sheetRemarks: "更新後のシート備考",
+            }),
+          ],
+        });
+      expect(await stored(page, "eventMetadata")).toMatchObject({
+        [eventName]: {
+          spreadsheetUrl: metadata.spreadsheetUrl,
+          spreadsheetSheetName: "一覧",
+        },
+      });
+      await page.reload();
+      expect(await stored(page, "eventLists")).toMatchObject({
+        [eventName]: [
+          expect.objectContaining({
+            catalogPrice: 800,
+            sheetRemarks: "更新後のシート備考",
+          }),
+        ],
+      });
+    });
+  }
+
+  async function forceThreeSnapshotConflicts(page: Page) {
+    await page.evaluate((name) => {
+      const original = IDBObjectStore.prototype.get;
+      let remaining = 3;
+      const state = { count: 0 };
+      Object.assign(window, { __forcedConsistencyConflicts: state });
+      IDBObjectStore.prototype.get = function (key) {
+        const request = original.call(this, key);
+        if (
+          remaining > 0 &&
+          this.name === "eventLists" &&
+          key === "data" &&
+          this.transaction.mode === "readwrite" &&
+          this.transaction.objectStoreNames.contains("eventConsistency")
+        ) {
+          remaining--;
+          request.addEventListener(
+            "success",
+            () => {
+              // Change only the transaction's CAS observation; no corrupt value is written to the DB.
+              const value = structuredClone(request.result) as Record<
+                string,
+                Array<Record<string, unknown>>
+              >;
+              value[name][0].remarks = `concurrent writer ${++state.count}`;
+              Object.defineProperty(request, "result", { value });
+            },
+            { once: true },
+          );
+          if (remaining === 0) IDBObjectStore.prototype.get = original;
+        }
+        return request;
+      };
+    }, eventName);
+  }
+
+  async function forceSnapshotAbort(page: Page) {
+    await page.evaluate(() => {
+      const original = IDBObjectStore.prototype.put;
+      const state = { count: 0 };
+      Object.assign(window, { __forcedConsistencyConflicts: state });
+      IDBObjectStore.prototype.put = function (
+        ...args: Parameters<typeof original>
+      ) {
+        if (
+          this.transaction.mode === "readwrite" &&
+          this.transaction.objectStoreNames.contains("eventConsistency")
+        ) {
+          state.count++;
+          IDBObjectStore.prototype.put = original;
+          throw new DOMException("購入記録の書き込み失敗", "AbortError");
+        }
+        return original.apply(this, args);
+      };
+    });
+  }
+  for (const [failure, action] of [
+    ["conflicts", "retry"],
+    ["conflicts", "discard"],
+    ["abort", "retry"],
+    ["abort", "discard"],
+  ] as const) {
+    test(`save ${failure} retains accepted purchase, JSON backup and explicit ${action}`, async ({
+      page,
+    }) => {
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      await restore(page, backup([item("1")]));
+      const before = await stored(page, "eventLists");
+      await editMemo(page, "競合中の購入メモ");
+      const editor = page.getByRole("dialog", { name: "アイテム編集" });
+      await editor
+        .getByRole("textbox", { name: "購入金額", exact: true })
+        .fill("900");
+      await editor
+        .getByRole("combobox", { name: "数量", exact: true })
+        .selectOption("2");
+      await editor
+        .getByRole("combobox", { name: "購入状態", exact: true })
+        .selectOption("Purchased");
+      if (failure === "conflicts") await forceThreeSnapshotConflicts(page);
+      else await forceSnapshotAbort(page);
+      await editor.getByRole("button", { name: "保存", exact: true }).click();
+      await expect(editor).toBeVisible();
+      const conflict = page
+        .getByRole("alert")
+        .filter({ hasText: "件の操作を未保存のまま保留しています" });
+      await expect(conflict).toBeVisible();
+      expect(await stored(page, "eventLists")).toEqual(before);
+      expect(
+        await page.evaluate(
+          () =>
+            (
+              window as typeof window & {
+                __forcedConsistencyConflicts: { count: number };
+              }
+            ).__forcedConsistencyConflicts.count,
+        ),
+      ).toBe(failure === "conflicts" ? 3 : 1);
+      const downloading = page.waitForEvent("download");
+      await conflict
+        .getByRole("button", { name: "JSONバックアップを保存", exact: true })
+        .click();
+      const download = await downloading;
+      const stream = await download.createReadStream();
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
+      const exported = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+      const purchased = {
+        purchaseStatus: "Purchased",
+        price: 900,
+        quantity: 2,
+        remarks: "競合中の購入メモ",
+      };
+      expect(exported.data.eventLists[eventName][0]).toMatchObject(purchased);
+      await expect(
+        editor.getByRole("textbox", { name: "購入金額", exact: true }),
+      ).toHaveValue("900");
+      await expect(
+        editor.getByRole("combobox", { name: "数量", exact: true }),
+      ).toHaveValue("2");
+      await expect(
+        editor.getByRole("combobox", { name: "購入状態", exact: true }),
+      ).toHaveValue("Purchased");
+      if (action === "retry") {
+        await conflict
+          .getByRole("button", { name: "保留中の保存を再試行", exact: true })
+          .click();
+        await expect
+          .poll(() => stored(page, "eventLists"))
+          .toMatchObject({ [eventName]: [expect.objectContaining(purchased)] });
+      } else {
+        await conflict
+          .getByRole("button", { name: "保留中の操作を取り消す", exact: true })
+          .click();
+        expect(await stored(page, "eventLists")).toEqual(before);
+        await editor
+          .getByRole("button", { name: "キャンセル", exact: true })
+          .click();
+      }
+      await expect(editor).toBeHidden();
+      await expect(conflict).toBeHidden();
+      await page.reload();
+      await expect(
+        page.locator('input[aria-label="バックアップファイルを選択"]'),
+      ).toBeAttached();
+      if (action === "retry") {
+        expect(await stored(page, "eventLists")).toMatchObject({
+          [eventName]: [expect.objectContaining(purchased)],
+        });
+      } else {
+        expect(await stored(page, "eventLists")).toEqual(before);
+      }
+      expect(errors).toEqual([]);
+    });
+  }
+});
+
+test("day merge choices change the adopted order, mode, map and destination and survive reload", async ({
+  page,
+}) => {
+  const source = migrateLegacyConsistency(mapBackup().data).data;
+  const days = source.eventConsistency[eventName].days;
+  const originalDay = structuredClone(days["1日目"]);
+  originalDay.selectedMapKey = "1日目マップ";
+  days["1日目"] = originalDay;
+  days[" 1日目　"] = {
+    ...structuredClone(originalDay),
+    selectedMapKey: "１日目マップ",
+  };
+  source.executeModeItems[eventName][" 1日目　"] = ["2", "1"];
+  source.dayModes[eventName][" 1日目　"] = "execute";
+  await restore(page, createAppBackup(source));
+  const beforeItems = await stored(page, "eventLists");
+  const review = page.getByRole("button", {
+    name: "統合内容を確認",
+    exact: true,
+  });
+  await review.click();
+  const dialog = page.getByRole("dialog", { name: /1日目 の保存先を統合/ });
+  const select = async (name: string | RegExp, value: string) => {
+    const selector = dialog.getByRole("combobox", { name });
+    await selector.selectOption(value);
+    await expect(selector).toHaveValue(value);
+  };
+  await select("統合先の日付表記", " 1日目　");
+  await select(/実行列の順序/, " 1日目　");
+  await select("統合後の表示モード", "execute");
+  await select("統合後の利用マップ", JSON.stringify("１日目マップ"));
+  expect(await stored(page, "executeModeItems")).toEqual(
+    source.executeModeItems,
+  );
+  expect(await stored(page, "eventLists")).toEqual(beforeItems);
+  await dialog.getByRole("button", { name: "取消", exact: true }).click();
+  expect(await stored(page, "executeModeItems")).toEqual(
+    source.executeModeItems,
+  );
+  await review.click();
+  await select("統合先の日付表記", " 1日目　");
+  await select(/実行列の順序/, " 1日目　");
+  await select("統合後の表示モード", "execute");
+  await select("統合後の利用マップ", JSON.stringify("１日目マップ"));
+  await dialog
+    .getByRole("button", { name: "確認して保存", exact: true })
+    .click();
+  await expect(dialog).toBeHidden();
+  const check = async () => {
+    expect(await stored(page, "executeModeItems")).toEqual({
+      [eventName]: { " 1日目　": ["2", "1"], "2日目": ["3"] },
+    });
+    expect(await stored(page, "dayModes")).toEqual({
+      [eventName]: { " 1日目　": "execute", "2日目": "edit" },
+    });
+    const merged = (await stored(
+      page,
+      "eventConsistency",
+    )) as EventConsistencyStore;
+    expect(Object.keys(merged[eventName].days)).not.toContain("1日目");
+    expect(merged[eventName].days[" 1日目　"].selectedMapKey).toBe(
+      "１日目マップ",
+    );
+    expect(await stored(page, "eventLists")).toEqual(beforeItems);
+  };
+  await check();
+  await page.reload();
+  await expect(
+    page.locator('input[aria-label="バックアップファイルを選択"]'),
+  ).toBeAttached();
+  await check();
+});
+
+test("priority text inside a hall ID keeps the hall name in the map order dialog", async ({
+  page,
+}) => {
+  const source = mapBackup();
+  for (const halls of Object.values(source.data.hallDefinitions[eventName])) {
+    halls[0].id = "west:priority";
+    halls[0].name = "西館";
+  }
+  for (const settings of Object.values(
+    source.data.hallRouteSettings[eventName],
+  )) {
+    settings.hallOrder = ["west:priority:priority"];
+    settings.hallVisitLists[0].hallId = "west:priority:priority";
+  }
+  const data = migrateLegacyConsistency(source.data).data;
+  for (const shoppingItem of data.eventLists[eventName])
+    if ((shoppingItem as { eventDate: string }).eventDate === "1日目")
+      Object.assign(shoppingItem, { priorityLevel: "priority" });
+  await restore(page, createAppBackup(data));
+  await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+  await page.getByTitle("ホール順を編集", { exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "ホール間移動順序" });
+  await expect(dialog.getByText("西館優先", { exact: true })).toBeVisible();
+  await expect(
+    dialog.getByText("ホール未定義優先", { exact: true }),
+  ).toHaveCount(0);
+});

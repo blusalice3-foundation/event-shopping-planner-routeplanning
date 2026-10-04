@@ -1,4 +1,4 @@
-import { getHallIdForItem } from "../../utils/hallGrouping";
+import { getHallIdForItem, parseGroupId } from "../../utils/hallGrouping";
 import React, {
   useState,
   useCallback,
@@ -335,29 +335,6 @@ const MapView: React.FC<MapViewProps> = ({
     [mapData, halls, items],
   );
 
-  const parseGroupId = useCallback(
-    (
-      groupId: string | null,
-    ): { hallId: string | null; priority: "none" | "priority" | "highest" } => {
-      if (groupId === null) return { hallId: null, priority: "none" };
-      if (groupId === "undefined:highest")
-        return { hallId: null, priority: "highest" };
-      if (groupId === "undefined:priority")
-        return { hallId: null, priority: "priority" };
-      if (groupId.endsWith(":highest")) {
-        return { hallId: groupId.replace(":highest", ""), priority: "highest" };
-      }
-      if (groupId.endsWith(":priority")) {
-        return {
-          hallId: groupId.replace(":priority", ""),
-          priority: "priority",
-        };
-      }
-      return { hallId: groupId, priority: "none" };
-    },
-    [],
-  );
-
   const getItemCountInHall = useCallback(
     (groupId: string): number => {
       const { hallId, priority } = parseGroupId(groupId);
@@ -376,7 +353,7 @@ const MapView: React.FC<MapViewProps> = ({
         return itemPriority === priority;
       }).length;
     },
-    [executeModeItemIds, itemsById, getItemHallId, isItemInHall, parseGroupId],
+    [executeModeItemIds, itemsById, getItemHallId, isItemInHall],
   );
 
   const getHallTotalExecuteCount = useCallback(

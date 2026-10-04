@@ -936,3 +936,69 @@ describe("useShoppingItemMutationCommands", () => {
     expect(harness.spies.confirmItemDelete).not.toHaveBeenCalled();
   });
 });
+
+it.each(["rendered item", "form baseline"] as const)(
+  "keeps newer purchase fields when changing only priority from a %s",
+  (baseline) => {
+    const original = item("editing", {
+      price: 500,
+      remarks: "元のメモ",
+      priorityLevel: "none",
+    });
+    const purchase = {
+      purchaseStatus: "Purchased" as const,
+      price: 900,
+      quantity: 2,
+      remarks: "新しいメモ",
+    };
+    const latest = { ...original, ...purchase };
+    const rendered = baseline === "form baseline" ? latest : original;
+    const h = createHarness({
+      eventLists: { [EVENT]: [rendered] },
+      items: [rendered],
+    });
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(h.ports),
+    );
+    h.stores.eventLists = { [EVENT]: [latest] };
+    h.refs.eventListsRef.current = h.stores.eventLists;
+    act(() => {
+      const changed = { ...original, priorityLevel: "highest" as const };
+      if (baseline === "form baseline")
+        result.current.updateItem(changed, original);
+      else result.current.updateItem(changed);
+    });
+    expect(h.stores.eventLists[EVENT][0]).toMatchObject({
+      ...purchase,
+      priorityLevel: "highest",
+    });
+  },
+);
+
+it("applies explicitly edited purchase fields while preserving other newer fields", () => {
+  const original = item("editing", { price: 500, remarks: "元のメモ" });
+  const latest = {
+    ...original,
+    purchaseStatus: "Purchased" as const,
+    price: 900,
+    quantity: 2,
+    remarks: "新しいメモ",
+  };
+  const h = createHarness({
+    eventLists: { [EVENT]: [latest] },
+    items: [latest],
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  act(() => {
+    result.current.updateItem(
+      { ...original, price: 800, remarks: "編集したメモ" },
+      original,
+    );
+  });
+  expect(h.stores.eventLists[EVENT][0]).toMatchObject({
+    purchaseStatus: "Purchased",
+    price: 800,
+    quantity: 2,
+    remarks: "編集したメモ",
+  });
+});

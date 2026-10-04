@@ -1,3 +1,4 @@
+import type { ApplicationSnapshotCommitContext } from "../../../app/commands/ApplicationSnapshotCommitPort";
 import { interpretLegacyGroup } from "./context";
 import { preserveDayBucketKeys } from "./dayBuckets";
 import { resolveSimpleKey } from "./context";
@@ -218,7 +219,7 @@ export function confirmChangedFieldConflicts(
     },
   };
 }
-export interface MutationContext {
+export interface MutationContext extends ApplicationSnapshotCommitContext {
   eventName: string | null;
   day: string;
   mapKey?: string | null;
@@ -343,74 +344,82 @@ export function planProjectedMutation(
         beforeProjection.routeSettings[eventName],
       );
     if (!changedRoutes) continue;
-    const day = input.day;
-    const targetDay = ensureDayConsistency(event, day, [
-      next.executeModeItems[eventName],
-      next.dayModes[eventName],
-    ]);
+    const routeDays = (key: string) =>
+      input.routeDays?.[eventName]?.[key] ?? [input.day];
+    const routeDay = (day: string) =>
+      ensureDayConsistency(event, day, [
+        next.executeModeItems[eventName],
+        next.dayModes[eventName],
+      ]);
     for (const [key, raw] of Object.entries(
       patch.hallRouteSettings?.[eventName] ?? {},
     )) {
       if (equal(raw, beforeProjection.hallRouteSettings[eventName]?.[key]))
         continue;
-      const mapKey = key.startsWith(`${MAPLESS_HALL_KEY}:`) ? null : key;
-      const target = ensureVisitContext(targetDay, mapKey);
-      const settings = raw as HallRouteSettings;
-      const decodeGroup = (id: string) => {
-        const decoded = decodeHallGroup(id);
-        if (decoded) return decoded;
-        const candidates = interpretLegacyGroup(
-          id,
-          getContextHalls(
-            next.hallDefinitions[eventName] as Record<string, HallDefinition[]>,
-            day,
-            mapKey,
-          ),
-        );
-        return candidates.length === 1 ? candidates[0] : null;
-      };
-      target.hallOrder = settings.hallOrder.map((id) => {
-        const group = decodeGroup(id);
-        if (!group) throw new Error("巡回先の保存元を確認してください。");
-        return group;
-      });
-      const previousLists = target.hallVisitLists;
-      const decodedLists = settings.hallVisitLists.map((list) => {
-        const group = decodeGroup(list.hallId);
-        if (!group) throw new Error("訪問先の保存元を確認してください。");
-        return { group, itemIds: [...list.itemIds] };
-      });
-      // Reserve unchanged lists first, including lists moved within one group.
-      // Match remaining split lists in group order; never reuse another list's metadata.
-      const used = new Set<number>();
-      const matches = decodedLists.map((list) => {
-        const index = previousLists.findIndex(
-          (old, index) =>
-            !used.has(index) &&
-            hallGroupKey(old.group) === hallGroupKey(list.group) &&
-            equal(old.itemIds, list.itemIds),
-        );
-        if (index >= 0) used.add(index);
-        return index;
-      });
-      target.hallVisitLists = decodedLists.map((list, index) => {
-        const oldIndex =
-          matches[index] >= 0
-            ? matches[index]
-            : previousLists.findIndex(
-                (old, index) =>
-                  !used.has(index) &&
-                  hallGroupKey(old.group) === hallGroupKey(list.group),
-              );
-        if (oldIndex >= 0) used.add(oldIndex);
-        const old = previousLists[oldIndex];
-        return {
-          ...list,
-          ...(old?.legacyHallId !== undefined
-            ? { legacyHallId: old.legacyHallId }
-            : {}),
+      for (const day of routeDays(key)) {
+        const targetDay = routeDay(day);
+        const mapKey = key.startsWith(`${MAPLESS_HALL_KEY}:`) ? null : key;
+        const target = ensureVisitContext(targetDay, mapKey);
+        const settings = raw as HallRouteSettings;
+        const decodeGroup = (id: string) => {
+          const decoded = decodeHallGroup(id);
+          if (decoded) return decoded;
+          const candidates = interpretLegacyGroup(
+            id,
+            getContextHalls(
+              next.hallDefinitions[eventName] as Record<
+                string,
+                HallDefinition[]
+              >,
+              day,
+              mapKey,
+            ),
+          );
+          return candidates.length === 1 ? candidates[0] : null;
         };
-      });
+        target.hallOrder = settings.hallOrder.map((id) => {
+          const group = decodeGroup(id);
+          if (!group) throw new Error("巡回先の保存元を確認してください。");
+          return group;
+        });
+        const previousLists = target.hallVisitLists;
+        const decodedLists = settings.hallVisitLists.map((list) => {
+          const group = decodeGroup(list.hallId);
+          if (!group) throw new Error("訪問先の保存元を確認してください。");
+          return { group, itemIds: [...list.itemIds] };
+        });
+        // Reserve unchanged lists first, including lists moved within one group.
+        // Match remaining split lists in group order; never reuse another list's metadata.
+        const used = new Set<number>();
+        const matches = decodedLists.map((list) => {
+          const index = previousLists.findIndex(
+            (old, index) =>
+              !used.has(index) &&
+              hallGroupKey(old.group) === hallGroupKey(list.group) &&
+              equal(old.itemIds, list.itemIds),
+          );
+          if (index >= 0) used.add(index);
+          return index;
+        });
+        target.hallVisitLists = decodedLists.map((list, index) => {
+          const oldIndex =
+            matches[index] >= 0
+              ? matches[index]
+              : previousLists.findIndex(
+                  (old, index) =>
+                    !used.has(index) &&
+                    hallGroupKey(old.group) === hallGroupKey(list.group),
+                );
+          if (oldIndex >= 0) used.add(oldIndex);
+          const old = previousLists[oldIndex];
+          return {
+            ...list,
+            ...(old?.legacyHallId !== undefined
+              ? { legacyHallId: old.legacyHallId }
+              : {}),
+          };
+        });
+      }
     }
     if (patch.hallRouteSettings) {
       for (const key of Object.keys(
@@ -422,12 +431,14 @@ export function planProjectedMutation(
             key,
           )
         ) {
-          const context = ensureVisitContext(
-            targetDay,
-            key.startsWith(`${MAPLESS_HALL_KEY}:`) ? null : key,
-          );
-          context.hallOrder = [];
-          context.hallVisitLists = [];
+          for (const day of routeDays(key)) {
+            const context = ensureVisitContext(
+              routeDay(day),
+              key.startsWith(`${MAPLESS_HALL_KEY}:`) ? null : key,
+            );
+            context.hallOrder = [];
+            context.hallVisitLists = [];
+          }
         }
     }
     if (patch.routeSettings) {
@@ -440,15 +451,17 @@ export function planProjectedMutation(
             key,
           )
         )
-          ensureVisitContext(targetDay, key).route = null;
+          for (const day of routeDays(key))
+            ensureVisitContext(routeDay(day), key).route = null;
     }
     for (const [mapKey, raw] of Object.entries(
       patch.routeSettings?.[eventName] ?? {},
     )) {
       if (!equal(raw, beforeProjection.routeSettings[eventName]?.[mapKey]))
-        ensureVisitContext(targetDay, mapKey).route = structuredClone(
-          raw as RouteSettings,
-        );
+        for (const day of routeDays(mapKey))
+          ensureVisitContext(routeDay(day), mapKey).route = structuredClone(
+            raw as RouteSettings,
+          );
     }
   }
   for (const [eventName, rawItems] of Object.entries(next.eventLists)) {

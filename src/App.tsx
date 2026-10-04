@@ -132,6 +132,11 @@ const App: React.FC = () => {
     activeEventName,
     activeTab,
   );
+  const conflictRetryButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (application.retryableFailures.length)
+      conflictRetryButtonRef.current?.focus();
+  }, [application.retryableFailures]);
   const {
     eventLists,
     eventMetadata,
@@ -1111,6 +1116,7 @@ const App: React.FC = () => {
   } = useEventUpdateCommands({
     state: {
       eventLists,
+      getEventGeneration: application.coordinator.generation,
       eventMetadata,
       pendingDuplicateEvent,
       pendingEventUpdate,
@@ -1795,6 +1801,24 @@ const App: React.FC = () => {
         >
           <section className="bg-white dark:bg-slate-800 rounded p-5 max-w-3xl w-full max-h-[85vh] overflow-auto">
             <h2 className="text-lg font-bold">{confirmation.title}</h2>
+            {confirmation.choices?.map((choice) => (
+              <label key={choice.id} className="block my-3 text-sm">
+                <span className="block font-medium mb-1">{choice.label}</span>
+                <select
+                  className="w-full rounded border p-2 bg-white text-slate-900 dark:bg-slate-700 dark:text-slate-100"
+                  value={choice.value}
+                  onChange={(event) =>
+                    application.choose(token, choice.id, event.target.value)
+                  }
+                >
+                  {choice.options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
             {confirmation.details.map((detail, index) => (
               <pre
                 key={index}
@@ -1804,9 +1828,15 @@ const App: React.FC = () => {
               </pre>
             ))}
             <div className="flex gap-3">
-              <button onClick={() => application.cancel(token)}>取消</button>
+              <button
+                disabled={application.isUpdatingChoices}
+                onClick={() => application.cancel(token)}
+              >
+                取消
+              </button>
               <button
                 className="bg-blue-600 text-white rounded px-4 py-2"
+                disabled={application.isUpdatingChoices}
                 onClick={() => application.confirm(token)}
               >
                 確認して保存
@@ -1825,6 +1855,31 @@ const App: React.FC = () => {
           </ul>
           <button onClick={dismissMigrationNotices}>確認しました</button>
         </section>
+      )}
+      {application.retryableFailures.length > 0 && (
+        <div
+          role="alert"
+          className="fixed bottom-4 left-4 right-4 z-[22000] bg-amber-100 text-amber-950 p-3 rounded shadow-lg"
+        >
+          保存に失敗しました。{application.retryableFailures.length}
+          件の操作を未保存のまま保留しています。
+          <button
+            ref={conflictRetryButtonRef}
+            onClick={application.retryPending}
+            className="ml-4 underline"
+          >
+            保留中の保存を再試行
+          </button>
+          <button onClick={handleBackupExport} className="ml-4 underline">
+            JSONバックアップを保存
+          </button>
+          <button
+            onClick={application.discardPending}
+            className="ml-4 underline"
+          >
+            保留中の操作を取り消す
+          </button>
+        </div>
       )}
       {application.failure && (
         <div role="alert" className="bg-red-100 text-red-900 p-3">
@@ -1868,8 +1923,14 @@ const App: React.FC = () => {
                 void application
                   .request({
                     events: [activeEventName],
-                    plan: (snapshot) =>
-                      planDayMerge(snapshot, activeEventName, day),
+                    plan: (snapshot, choices) =>
+                      planDayMerge(
+                        snapshot,
+                        activeEventName,
+                        day,
+                        undefined,
+                        choices,
+                      ),
                   })
                   .catch(() => {});
               }}
@@ -2368,6 +2429,22 @@ const App: React.FC = () => {
               if (!activeEventName) return;
               await application.request({
                 events: [activeEventName],
+                retainOnConflict:
+                  selection.kind === "unchanged" &&
+                  (baseline.priorityLevel ?? "none") ===
+                    (edited.priorityLevel ?? "none") &&
+                  (
+                    [
+                      "eventDate",
+                      "block",
+                      "number",
+                      "circle",
+                      "manualHallId",
+                    ] as const
+                  ).every(
+                    (field) =>
+                      (baseline[field] ?? "") === (edited[field] ?? ""),
+                  ),
                 plan: (snapshot) =>
                   planItemEdit(
                     snapshot,
@@ -2510,7 +2587,13 @@ const App: React.FC = () => {
         />
       )}
       <PersistenceStatusIndicator
-        status={application.pendingCount ? "saving" : persistenceStatus}
+        status={
+          application.retryableFailures.length
+            ? "unsaved"
+            : application.pendingCount
+              ? "saving"
+              : persistenceStatus
+        }
         legacyCleanupStatus={legacyCleanupStatus}
         showRoutineStatus={uiVisibilitySettings.showPersistenceStatus}
         failedStores={failedStores}

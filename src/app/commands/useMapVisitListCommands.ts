@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef } from "react";
-import type { MutationPlan } from "./applicationMutationCoordinator";
+import type {
+  MutationPlan,
+  MutationChoices,
+} from "./applicationMutationCoordinator";
 import { planDayModeToggle } from "../../features/consistency/domain/dayMode";
 import type { ApplicationMutationPort } from "../ports/ApplicationMutationPort";
 import {
@@ -182,7 +185,10 @@ export const useMapVisitListCommands = ({
     (
       ids: readonly string[],
       dirty: boolean,
-      transition?: (snapshot: PersistenceSnapshot) => MutationPlan,
+      transition?: (
+        snapshot: PersistenceSnapshot,
+        choices?: MutationChoices,
+      ) => MutationPlan,
     ): Promise<void> => {
       const value = session.current;
       if (!valid(value)) return Promise.resolve();
@@ -190,11 +196,11 @@ export const useMapVisitListCommands = ({
       const task = requestMutation({
         events: [value.event],
         expectedGenerations: { [value.event]: value.generation },
-        plan: (snapshot) => {
+        plan: (snapshot, choices) => {
           if (!valid(value) || session.current !== value)
             throw new Error("訪問リストの操作は終了しています。");
           // Resolve duplicate target-day settings before projecting the source order.
-          const transitionPlan = transition?.(snapshot);
+          const transitionPlan = transition?.(snapshot, choices);
           snapshot = transitionPlan?.snapshot ?? snapshot;
           const dayKey = existingDayKey(
             snapshot.executeModeItems[value.event],
@@ -385,7 +391,8 @@ export const useMapVisitListCommands = ({
       void requestMutation({
         events: [event],
         expectedGenerations: { [event]: generation },
-        plan: (snapshot) => planDayModeToggle(snapshot, event, tab),
+        plan: (snapshot, choices) =>
+          planDayModeToggle(snapshot, event, tab, choices),
       })
         .then(() => {
           if (
@@ -425,15 +432,15 @@ export const useMapVisitListCommands = ({
           await writes.current;
           if (!valid(value) || session.current !== value) return;
           if (discard) {
-            await applyOrder(value.baseline, false, (snapshot) =>
-              planDayModeToggle(snapshot, value.event, modeTab),
+            await applyOrder(value.baseline, false, (snapshot, choices) =>
+              planDayModeToggle(snapshot, value.event, modeTab, choices),
             );
           } else {
             await requestMutation({
               events: [value.event],
               expectedGenerations: { [value.event]: value.generation },
-              plan: (snapshot) =>
-                planDayModeToggle(snapshot, value.event, modeTab),
+              plan: (snapshot, choices) =>
+                planDayModeToggle(snapshot, value.event, modeTab, choices),
             });
             if (!valid(value) || session.current !== value) return;
             await saveChanges();

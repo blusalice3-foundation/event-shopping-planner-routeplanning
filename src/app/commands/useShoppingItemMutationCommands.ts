@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { applyChangedFields } from "../../features/consistency/domain/mutations";
 import type { AppNavigationCommands } from "../navigation";
 import type {
   DayModeState,
@@ -131,7 +132,7 @@ export interface ShoppingItemMutationCommands {
     newItemsData: BulkAddItemInput[],
     metadata?: BulkAddMetadata,
   ): boolean;
-  updateItem(updatedItem: ShoppingItem): void;
+  updateItem(updatedItem: ShoppingItem, baseline?: ShoppingItem): void;
   moveItem(
     dragId: string,
     hoverId: string,
@@ -424,16 +425,29 @@ export const useShoppingItemMutationCommands = ({
   );
 
   const updateItem = useCallback(
-    (updatedItem: ShoppingItem) => {
+    (updatedItem: ShoppingItem, baseline?: ShoppingItem) => {
       if (!activeEventName) return;
       const currentMode = dayModes[activeEventName]?.[activeEventDate];
       const currentItems = eventListsRef.current[activeEventName] || [];
       const currentItem = currentItems.find(
         (candidate) => candidate.id === updatedItem.id,
       );
+      if (!currentItem) return;
+      const renderedItem =
+        baseline ??
+        eventLists[activeEventName]?.find(
+          (candidate) => candidate.id === updatedItem.id,
+        );
+      const intendedItem = renderedItem
+        ? (applyChangedFields(
+            renderedItem,
+            updatedItem,
+            currentItem,
+          ) as ShoppingItem)
+        : updatedItem;
       const result = computeUpdateItem(
         currentItems,
-        updatedItem,
+        intendedItem,
         currentMode as ViewMode | undefined,
         currentItem?.protectionLevel,
         currentItem?.source,
@@ -486,6 +500,7 @@ export const useShoppingItemMutationCommands = ({
       activeEventDate,
       activeEventName,
       dayModes,
+      eventLists,
       eventListsRef,
       executeModeItemsRef,
       notify,

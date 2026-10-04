@@ -16,7 +16,15 @@ export function semanticSignature(value: unknown): string {
         : entry;
   return JSON.stringify(canonical(value));
 }
+export type MutationChoices = Readonly<Record<string, string>>;
+export interface MutationChoice {
+  id: string;
+  label: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+}
 export interface MutationConfirmation {
+  choices?: MutationChoice[];
   title: string;
   details: string[];
   comparison: unknown;
@@ -30,7 +38,9 @@ export interface MutationIntent {
   id: string;
   events: string[];
   expectedGenerations?: Record<string, number>;
-  plan(snapshot: PersistenceSnapshot): MutationPlan;
+  /** Keep ordinary accepted edits visible after persistence failures or exhausted CAS retries. */
+  retainOnConflict?: boolean;
+  plan(snapshot: PersistenceSnapshot, choices?: MutationChoices): MutationPlan;
 }
 export interface ConfirmationToken {
   readonly operationId: string;
@@ -62,6 +72,7 @@ export class CommittedStateApplyError extends Error {
 }
 export interface MutationCoordinatorPorts {
   readCurrent(): PersistenceSnapshot;
+  readExportCurrent?(): PersistenceSnapshot;
   drain(): Promise<void>;
   readDurable(): Promise<ApplicationSnapshotRead>;
   commit(snapshot: PersistenceSnapshot, expectedRoots: object): Promise<void>;
@@ -79,7 +90,13 @@ export function createApplicationMutationCoordinator(
   const generations = new Map<string, number>();
   const pending = new Map<
     string,
-    { intent: MutationIntent; generation: string; token?: ConfirmationToken }
+    {
+      intent: MutationIntent;
+      generation: string;
+      token?: ConfirmationToken;
+      choices: Record<string, string>;
+      confirmation?: MutationConfirmation;
+    }
   >();
   const completed = new Set<string>();
   const generation = (events: string[]) =>
@@ -122,7 +139,10 @@ export function createApplicationMutationCoordinator(
         return { status: "expired" };
       // drain persisted every earlier accepted single-store intent. The coherent
       // read now includes other tabs; apply this intent to exactly those roots.
-      const plan = operation.intent.plan(structuredClone(read.snapshot));
+      const plan = operation.intent.plan(
+        structuredClone(read.snapshot),
+        operation.choices,
+      );
       if (plan.confirmation) {
         const signature = semanticSignature(plan.confirmation.comparison);
         if (!confirmation || confirmation.signature !== signature) {
@@ -133,6 +153,7 @@ export function createApplicationMutationCoordinator(
             sequence: ++sequence,
           };
           operation.token = token;
+          operation.confirmation = plan.confirmation;
           return {
             status: "confirmation-required",
             token,
@@ -190,9 +211,49 @@ export function createApplicationMutationCoordinator(
       if (!pending.has(intent.id) && !completed.has(intent.id))
         pending.set(intent.id, {
           intent,
+          choices: {},
           generation: generation(intent.events),
         });
       return enqueue(() => execute(intent.id));
+    },
+    retry(operationId: string): Promise<MutationResult> {
+      return enqueue(() => execute(operationId));
+    },
+    discard(operationId: string): void {
+      pending.delete(operationId);
+    },
+    choose(
+      token: ConfirmationToken,
+      choiceId: string,
+      value: string,
+    ): Promise<MutationResult> {
+      return enqueue(() => {
+        const operation = pending.get(token.operationId);
+        if (
+          !operation ||
+          operation.generation !== generation(operation.intent.events)
+        )
+          return { status: "expired" };
+        const choice = operation.confirmation?.choices?.find(
+          (entry) => entry.id === choiceId,
+        );
+        if (
+          token.generation !== operation.generation ||
+          !choice?.options.some((option) => option.value === value)
+        ) {
+          return operation.token && operation.confirmation
+            ? {
+                status: "confirmation-required",
+                token: operation.token,
+                confirmation: operation.confirmation,
+              }
+            : { status: "expired" };
+        }
+        operation.choices = { ...operation.choices, [choiceId]: value };
+        // Rapid choices may come from the previous preview of this same operation.
+        // Apply the selection to the latest data and renew the token; never write.
+        return execute(token.operationId);
+      });
     },
     confirm(token: ConfirmationToken): Promise<MutationResult> {
       return enqueue(() => execute(token.operationId, token));
@@ -206,6 +267,8 @@ export function createApplicationMutationCoordinator(
     // Wait for earlier mutations, then preserve the accepted in-memory values.
     // Export is read-only and must remain available when persistence fails.
     readExportSnapshot: (): Promise<PersistenceSnapshot> =>
-      enqueue(() => structuredClone(ports.readCurrent())),
+      enqueue(() =>
+        structuredClone((ports.readExportCurrent ?? ports.readCurrent)()),
+      ),
   };
 }

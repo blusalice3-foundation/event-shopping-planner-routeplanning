@@ -4,6 +4,7 @@ import { fireEvent, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { HallDefinition, HallRouteSettings } from "../../types/map";
 import HallOrderPanel from "./HallOrderPanel";
+import { encodeHallRef } from "../../features/consistency/domain/projection";
 
 const halls: HallDefinition[] = [
   {
@@ -103,4 +104,32 @@ describe("HallOrderPanel badge contrast", () => {
     view.rerender(renderPanel(false));
     expect(opener).toHaveFocus();
   });
+});
+
+it.each([
+  "west:priority",
+  "west:highest",
+  encodeHallRef({
+    kind: "map",
+    mapKey: "西マップ:priority",
+    hallId: "west:priority",
+  }),
+  encodeHallRef({ kind: "simple", dayKey: "1日目", hallId: "west:highest" }),
+])("displays the original hall name and group counts for %s", (id) => {
+  const view = render(
+    <HallOrderPanel
+      isOpen
+      onClose={vi.fn()}
+      halls={[{ id, name: "西館", vertices: [], blockNames: ["A"] }]}
+      hallRouteSettings={{
+        hallOrder: [`${id}:priority`, `${id}:highest`],
+        hallVisitLists: [],
+      }}
+      onUpdateHallRouteSettings={vi.fn()}
+      getItemCountInHall={() => 2}
+    />,
+  );
+  expect(view.getByText("西館優先")).toBeInTheDocument();
+  expect(view.getByText("西館最優先")).toBeInTheDocument();
+  expect(view.queryByText("ホール未定義優先")).not.toBeInTheDocument();
 });

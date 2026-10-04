@@ -200,3 +200,35 @@ describe("hallOperations regressions", () => {
     });
   });
 });
+
+it.each(["west:priority", "west:highest", "west:priority:highest"])(
+  "keeps hall ID %s through splitting, remapping and counting",
+  (id) => {
+    const settings = {
+      hallOrder: [`${id}:priority`, `${id}:highest`],
+      hallVisitLists: [{ hallId: `${id}:priority`, itemIds: ["one"] }],
+    };
+    const split = splitGlobalHallRouteSettings({
+      settings,
+      mapHallIds: new Set([id]),
+      maplessHallIds: new Set(),
+      hasMapTab: true,
+    });
+    expect(split.mapSettings).toEqual(settings);
+    expect(split.maplessSettings.hallOrder).toEqual([]);
+    expect(
+      remapHallRouteSettings(settings, new Map([[id, "next:priority"]])),
+    ).toEqual({
+      hallOrder: ["next:priority:priority", "next:priority:highest"],
+      hallVisitLists: [{ hallId: "next:priority:priority", itemIds: ["one"] }],
+    });
+    expect(
+      getGlobalHallItemCount({
+        groupId: `${id}:priority`,
+        executeIds: ["one"],
+        items: [makeItem("one", "A", "priority")],
+        getItemHallId: () => id,
+      }),
+    ).toBe(1);
+  },
+);

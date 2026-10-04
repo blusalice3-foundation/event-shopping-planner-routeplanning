@@ -25,11 +25,13 @@ export type PendingEventUpdate =
       kind: "items-only";
       eventName: string;
       diff: EventUpdateDiff;
+      eventGeneration?: number;
     }
   | {
       kind: "source-switch";
       eventName: string;
       diff: EventUpdateDiff;
+      eventGeneration?: number;
       nextSource: SpreadsheetSource;
     };
 
@@ -38,6 +40,26 @@ export type EventUpdateCommitState = {
   eventMetadata: Record<string, EventMetadata>;
   executeModeItems: Record<string, ExecuteModeItems>;
 };
+
+/** Projections may allocate new arrays and items without changing their values. */
+export function eventUpdateItemsMatch(
+  current: ShoppingItem[] | undefined,
+  base: ShoppingItem[] | null,
+): boolean {
+  return (
+    !!current &&
+    !!base &&
+    current.length === base.length &&
+    current.every((item, index) => {
+      const previous = base[index];
+      const fields = new Set([
+        ...Object.keys(item),
+        ...Object.keys(previous),
+      ]) as Set<keyof ShoppingItem>;
+      return [...fields].every((field) => item[field] === previous[field]);
+    })
+  );
+}
 
 export function applyPendingEventUpdate({
   state,
@@ -51,7 +73,7 @@ export function applyPendingEventUpdate({
   options: EventUpdateApplyOptions;
 }): EventUpdateCommitState | null {
   const currentItems = state.eventLists[pending.eventName];
-  if (!currentItems || currentItems !== baseItems) {
+  if (!currentItems || !eventUpdateItemsMatch(currentItems, baseItems)) {
     return null;
   }
 

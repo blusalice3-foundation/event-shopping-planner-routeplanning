@@ -1,9 +1,7 @@
+import { parseGroupId } from "../../utils/hallGrouping";
 import React, { useState, useCallback } from "react";
 import { HallDefinition, HallRouteSettings } from "../../types/map";
 import { useModalDialogBehavior } from "../../hooks/useModalDialogBehavior";
-
-// 優先度レベルの型
-type PriorityLevel = "none" | "priority" | "highest";
 
 interface HallOrderPanelProps {
   isOpen: boolean;
@@ -14,25 +12,6 @@ interface HallOrderPanelProps {
   getItemCountInHall: (hallId: string) => number;
   onReorderExecuteList?: (hallOrder: string[]) => void; // 実行列並び替えコールバック
 }
-
-// グループIDからホールIDと優先度を分離するヘルパー
-const parseGroupId = (
-  groupId: string | null,
-): { hallId: string | null; priority: PriorityLevel } => {
-  if (groupId === null) return { hallId: null, priority: "none" };
-  if (groupId === "undefined") return { hallId: null, priority: "none" };
-  if (groupId === "undefined:highest")
-    return { hallId: null, priority: "highest" };
-  if (groupId === "undefined:priority")
-    return { hallId: null, priority: "priority" };
-  if (groupId.endsWith(":highest")) {
-    return { hallId: groupId.replace(":highest", ""), priority: "highest" };
-  }
-  if (groupId.endsWith(":priority")) {
-    return { hallId: groupId.replace(":priority", ""), priority: "priority" };
-  }
-  return { hallId: groupId, priority: "none" };
-};
 
 // グループの表示名を取得
 const getGroupDisplayName = (

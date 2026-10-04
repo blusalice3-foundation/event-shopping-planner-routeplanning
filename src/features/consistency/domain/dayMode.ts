@@ -1,5 +1,8 @@
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
-import type { MutationPlan } from "../../../app/commands/applicationMutationCoordinator";
+import type {
+  MutationPlan,
+  MutationChoices,
+} from "../../../app/commands/applicationMutationCoordinator";
 import { existingDayKey } from "./context";
 import { planDayMerge } from "./dayMerge";
 
@@ -8,14 +11,24 @@ export function planDayModeToggle(
   source: PersistenceSnapshot,
   eventName: string,
   day: string,
+  choices: MutationChoices = {},
 ): MutationPlan {
   if (!source.eventLists[eventName])
     throw new Error("イベントが見つかりません。");
-  const merged = planDayMerge(source, eventName, day);
+  const { mode: selectedMode, ...otherChoices } = choices;
+  const initial = planDayMerge(source, eventName, day, undefined, otherChoices);
+  const key = existingDayKey(initial.snapshot.dayModes[eventName], day) ?? day;
+  const before = initial.snapshot.dayModes[eventName]?.[key];
+  const mode =
+    selectedMode === "edit" || selectedMode === "execute"
+      ? selectedMode
+      : before === "execute"
+        ? "edit"
+        : "execute";
+  const merged = initial.confirmation
+    ? planDayMerge(source, eventName, day, undefined, { ...otherChoices, mode })
+    : initial;
   const next = merged.snapshot;
-  const key = existingDayKey(next.dayModes[eventName], day) ?? day;
-  const before = next.dayModes[eventName]?.[key];
-  const mode = before === "execute" ? "edit" : "execute";
   next.dayModes[eventName] = { ...next.dayModes[eventName], [key]: mode };
   return {
     ...merged,

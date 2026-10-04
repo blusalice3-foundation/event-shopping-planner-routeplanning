@@ -275,13 +275,13 @@ describe("useEventUpdateCommands", () => {
     expect(committed).toEqual([
       { kind: "items-only", eventName: EVENT, diff: secondDiff },
     ]);
-    expect(harness.refs.pendingEventUpdateBaseItemsRef.current).toBe(
+    expect(harness.refs.pendingEventUpdateBaseItemsRef.current).toEqual(
       harness.ports.state.eventLists[EVENT],
     );
     expect(harness.refs.eventUpdatePreviewEpochRef.current).toBe(2);
   });
 
-  it("rejects a preview when the target list identity changes in flight", async () => {
+  it("rejects a preview when the target list content changes in flight", async () => {
     const pending = deferred<EventUpdateDiff>();
     updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockReturnValueOnce(
       pending.promise,
@@ -294,7 +294,7 @@ describe("useEventUpdateCommands", () => {
       request = result.current.handleUpdateEvent(EVENT);
     });
     harness.refs.eventListsRef.current = {
-      [EVENT]: [...harness.ports.state.eventLists[EVENT]],
+      [EVENT]: [item("keep", { title: "取得中の変更" })],
     };
     await act(async () => {
       pending.resolve(diff());
@@ -473,7 +473,7 @@ describe("useEventUpdateCommands", () => {
         sheetName: "切替先",
       },
     });
-    expect(harness.refs.pendingEventUpdateBaseItemsRef.current).toBe(
+    expect(harness.refs.pendingEventUpdateBaseItemsRef.current).toEqual(
       harness.ports.state.eventLists[EVENT],
     );
   });
@@ -580,4 +580,119 @@ describe("useEventUpdateCommands", () => {
     expect(harness.refs.eventUpdatePreviewEpochRef.current).toBe(1);
     expect(harness.spies.closeEventOverlay).toHaveBeenCalledTimes(2);
   });
+});
+
+it("previews and confirms against separately projected but equal latest items", async () => {
+  const harness = createHarness();
+  harness.refs.eventListsRef.current = structuredClone(
+    harness.stores.eventLists,
+  );
+  updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockResolvedValueOnce(
+    diff({ itemsToDelete: [harness.stores.eventLists[EVENT][1]] }),
+  );
+  const { result, rerender } = renderHook(() =>
+    useEventUpdateCommands(harness.ports),
+  );
+  await act(() => result.current.handleUpdateEvent(EVENT));
+  expect(harness.spies.openEventUpdate).toHaveBeenCalledOnce();
+  Object.assign(harness.ports.state, {
+    pendingEventUpdate: harness.stores.pendingEventUpdate,
+  });
+  // A fresh projection during confirmation must not expire equal contents.
+  harness.refs.eventListsRef.current = structuredClone(
+    harness.stores.eventLists,
+  );
+  rerender();
+  await act(() => result.current.handleConfirmUpdate({}));
+  expect(harness.spies.commitEventUpdateState).toHaveBeenCalledOnce();
+  expect(harness.stores.eventLists[EVENT].map(({ id }) => id)).toEqual([
+    "keep",
+  ]);
+  expect(harness.spies.notify).toHaveBeenCalledWith("アイテムを更新しました。");
+});
+
+it("accepts a fresh equal projection while CSV is loading", async () => {
+  const harness = createHarness();
+  const preview = deferred<EventUpdateDiff>();
+  updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockReturnValueOnce(
+    preview.promise,
+  );
+  const { result } = renderHook(() => useEventUpdateCommands(harness.ports));
+  let loading!: Promise<void>;
+  act(() => {
+    loading = result.current.handleUpdateEvent(EVENT);
+  });
+  harness.refs.eventListsRef.current = structuredClone(
+    harness.stores.eventLists,
+  );
+  await act(async () => {
+    preview.resolve(diff());
+    await loading;
+  });
+  expect(harness.spies.openEventUpdate).toHaveBeenCalledOnce();
+});
+
+it.each(["loading", "confirmation"] as const)(
+  "expires an equal same-name replacement during %s using event generation",
+  async (phase) => {
+    const harness = createHarness();
+    let generation = 0;
+    Object.assign(harness.ports.state, {
+      getEventGeneration: () => generation,
+    });
+    const preview = deferred<EventUpdateDiff>();
+    updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockReturnValueOnce(
+      preview.promise,
+    );
+    const { result, rerender } = renderHook(() =>
+      useEventUpdateCommands(harness.ports),
+    );
+    let loading!: Promise<void>;
+    act(() => {
+      loading = result.current.handleUpdateEvent(EVENT);
+    });
+    if (phase === "loading") generation++;
+    await act(async () => {
+      preview.resolve(diff());
+      await loading;
+    });
+    if (phase === "loading") {
+      expect(harness.spies.openEventUpdate).not.toHaveBeenCalled();
+    } else {
+      expect(harness.stores.pendingEventUpdate).toMatchObject({
+        eventGeneration: 0,
+      });
+      Object.assign(harness.ports.state, {
+        pendingEventUpdate: harness.stores.pendingEventUpdate,
+      });
+      generation++;
+      rerender();
+      await act(() => result.current.handleConfirmUpdate({}));
+      expect(harness.spies.commitEventUpdateState).not.toHaveBeenCalled();
+    }
+  },
+);
+
+it("uses accepted latest contents and freezes them before loading the CSV", async () => {
+  const harness = createHarness();
+  const latest = [item("latest", { remarks: "受け付け済みの変更" })];
+  harness.refs.eventListsRef.current = { [EVENT]: latest };
+  const preview = deferred<EventUpdateDiff>();
+  updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockReturnValueOnce(
+    preview.promise,
+  );
+  const { result } = renderHook(() => useEventUpdateCommands(harness.ports));
+  let loading!: Promise<void>;
+  act(() => {
+    loading = result.current.handleUpdateEvent(EVENT);
+  });
+  expect(
+    updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mock.calls.at(-1)?.[0],
+  ).toEqual(latest);
+  latest[0].remarks = "取得中の変更";
+  await act(async () => {
+    preview.resolve(diff());
+    await loading;
+  });
+  expect(harness.spies.openEventUpdate).not.toHaveBeenCalled();
 });

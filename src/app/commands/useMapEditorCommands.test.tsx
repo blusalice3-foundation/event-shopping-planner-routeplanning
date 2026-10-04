@@ -347,6 +347,13 @@ const createHarness = (options: HarnessOptions = {}) => {
   const areItemsInSameHallGroup =
     options.areItemsInSameHallGroup ?? (() => true);
 
+  const commitApplicationSnapshotPatch = vi.fn<
+    MapEditorCommandPorts["persistence"]["commitApplicationSnapshotPatch"]
+  >(async (patch) => {
+    Object.assign(stores, patch);
+    executeModeItemsRef.current = stores.executeModeItems;
+  });
+
   const createPorts = (): MapEditorCommandPorts => ({
     state: {
       activeEventName,
@@ -379,7 +386,7 @@ const createHarness = (options: HarnessOptions = {}) => {
     },
     effects: { notify, selectionEventTarget },
     persistence: {
-      commitApplicationSnapshotPatch: vi.fn(async () => undefined),
+      commitApplicationSnapshotPatch,
     },
   });
 
@@ -388,6 +395,7 @@ const createHarness = (options: HarnessOptions = {}) => {
     createPorts,
     selectionEventTarget,
     spies: {
+      commitApplicationSnapshotPatch,
       setMapData,
       setHallDefinitions,
       setHallRouteSettings,
@@ -631,8 +639,10 @@ describe("useMapEditorCommands", () => {
       harness.stores.eventLists[EVENT].find(({ id }) => id === "a1")
         ?.priorityLevel,
     ).toBe("highest");
-    expect(harness.spies.setHallRouteSettings).toHaveBeenCalledTimes(1);
-    expect(harness.spies.updateExecuteModeItems).toHaveBeenCalledTimes(1);
+    expect(harness.spies.commitApplicationSnapshotPatch).toHaveBeenCalledOnce();
+    expect(harness.spies.setEventLists).not.toHaveBeenCalled();
+    expect(harness.spies.setHallRouteSettings).not.toHaveBeenCalled();
+    expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
     expect(harness.spies.notify).toHaveBeenCalledWith(
       "同じ訪問先の商品として追加しました。訪問順は変更していません。",
     );
@@ -647,7 +657,7 @@ describe("useMapEditorCommands", () => {
       ),
     );
     expect(harness.spies.setEventLists).not.toHaveBeenCalled();
-    expect(harness.spies.updateExecuteModeItems).toHaveBeenCalledTimes(1);
+    expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
     expect(harness.spies.notify).toHaveBeenCalledTimes(1);
   });
 
@@ -688,7 +698,7 @@ describe("useMapEditorCommands", () => {
     expect(
       harness.stores.hallRouteSettings[EVENT][getMaplessKey(DAY)],
     ).toBeDefined();
-    expect(harness.spies.updateExecuteModeItems).toHaveBeenCalledTimes(1);
+    expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
   });
 
   it("notifies once after an edit-origin priority change merges into an existing visit", async () => {
@@ -744,8 +754,9 @@ describe("useMapEditorCommands", () => {
 
     await act(() => result.current.handleUpdateHalls([polygon, manual]));
 
-    expect(harness.spies.setHallDefinitions).toHaveBeenCalledTimes(1);
-    expect(harness.spies.setHallRouteSettings).toHaveBeenCalledTimes(1);
+    expect(harness.spies.setHallDefinitions).not.toHaveBeenCalled();
+    expect(harness.spies.commitApplicationSnapshotPatch).toHaveBeenCalledOnce();
+    expect(harness.spies.setHallRouteSettings).not.toHaveBeenCalled();
     expect(harness.stores.hallDefinitions[EVENT][MAP]).toEqual([
       expect.not.objectContaining({ blockNames: expect.anything() }),
     ]);

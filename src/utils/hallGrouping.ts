@@ -23,16 +23,21 @@ export function parseGroupId(groupId: string | null): {
   hallId: string | null;
   priority: PriorityLevel;
 } {
-  if (groupId === null) return { hallId: null, priority: "none" };
+  if (
+    groupId === null ||
+    groupId === "undefined" ||
+    groupId === "undefined:none"
+  )
+    return { hallId: null, priority: "none" };
   if (groupId === "undefined:highest")
     return { hallId: null, priority: "highest" };
   if (groupId === "undefined:priority")
     return { hallId: null, priority: "priority" };
   if (groupId.endsWith(":highest")) {
-    return { hallId: groupId.replace(":highest", ""), priority: "highest" };
+    return { hallId: groupId.slice(0, -8), priority: "highest" };
   }
   if (groupId.endsWith(":priority")) {
-    return { hallId: groupId.replace(":priority", ""), priority: "priority" };
+    return { hallId: groupId.slice(0, -9), priority: "priority" };
   }
   return { hallId: groupId, priority: "none" };
 }

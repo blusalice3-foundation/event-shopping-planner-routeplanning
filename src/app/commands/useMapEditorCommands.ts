@@ -238,7 +238,6 @@ export const useMapEditorCommands = ({
   } = state;
   const {
     setMapData,
-    setHallDefinitions,
     setHallRouteSettings,
     setEventLists,
     updateExecuteModeItems,
@@ -629,9 +628,6 @@ export const useMapEditorCommands = ({
       } catch {
         return;
       }
-      setEventLists(() => nextEventLists);
-      setHallRouteSettings(() => nextHallRouteSettings);
-      updateExecuteModeItems(() => nextExecuteModeItems);
       if (repositionResult.placement === "merged-into-existing-visit") {
         notify(EXECUTION_VISIT_MERGE_NOTICE);
       }
@@ -646,9 +642,6 @@ export const useMapEditorCommands = ({
       items,
       mapData,
       notify,
-      setEventLists,
-      setHallRouteSettings,
-      updateExecuteModeItems,
       visitListPanelMapTab,
     ],
   );
@@ -719,9 +712,6 @@ export const useMapEditorCommands = ({
       } catch {
         return;
       }
-      setEventLists(() => nextEventLists);
-      setHallRouteSettings(() => nextHallRouteSettings);
-      updateExecuteModeItems(() => nextExecuteModeItems);
       if (repositionResult.placement === "merged-into-existing-visit") {
         notify(EXECUTION_VISIT_MERGE_NOTICE);
       }
@@ -737,9 +727,6 @@ export const useMapEditorCommands = ({
       hallRouteSettings,
       mapData,
       notify,
-      setEventLists,
-      setHallRouteSettings,
-      updateExecuteModeItems,
     ],
   );
 
@@ -861,8 +848,6 @@ export const useMapEditorCommands = ({
       } catch {
         return;
       }
-      setHallDefinitions(() => nextHallDefinitions);
-      setHallRouteSettings(() => nextHallRouteSettings);
     },
     [
       activeEventDate,
@@ -872,8 +857,6 @@ export const useMapEditorCommands = ({
       hallDefinitions,
       hallRouteSettings,
       isMapTab,
-      setHallDefinitions,
-      setHallRouteSettings,
     ],
   );
 
@@ -902,8 +885,6 @@ export const useMapEditorCommands = ({
       } catch {
         return;
       }
-      setHallDefinitions(() => nextHallDefinitions);
-      setHallRouteSettings(() => nextHallRouteSettings);
     },
     [
       activeEventDate,
@@ -911,8 +892,6 @@ export const useMapEditorCommands = ({
       commitApplicationSnapshotPatch,
       hallDefinitions,
       hallRouteSettings,
-      setHallDefinitions,
-      setHallRouteSettings,
     ],
   );
 
@@ -959,15 +938,23 @@ export const useMapEditorCommands = ({
         return updated;
       })();
       try {
-        await commitApplicationSnapshotPatch({
-          hallDefinitions: nextHallDefinitions,
-          hallRouteSettings: nextHallRouteSettings,
-        });
+        await commitApplicationSnapshotPatch(
+          {
+            hallDefinitions: nextHallDefinitions,
+            hallRouteSettings: nextHallRouteSettings,
+          },
+          undefined,
+          {
+            routeDays: {
+              [activeEventName]: Object.fromEntries(
+                targetDates.map((date) => [getMaplessKey(date), [date]]),
+              ),
+            },
+          },
+        );
       } catch {
         return;
       }
-      setHallDefinitions(() => nextHallDefinitions);
-      setHallRouteSettings(() => nextHallRouteSettings);
     },
     [
       activeEventDate,
@@ -975,8 +962,6 @@ export const useMapEditorCommands = ({
       commitApplicationSnapshotPatch,
       hallDefinitions,
       hallRouteSettings,
-      setHallDefinitions,
-      setHallRouteSettings,
     ],
   );
 
@@ -992,6 +977,9 @@ export const useMapEditorCommands = ({
         const targetMapTab = getMapTabForDate(date);
         if (targetMapTab) targetMapTabsByDate.set(date, targetMapTab);
       }
+      const routeDays: Record<string, string[]> = {};
+      for (const [date, mapKey] of targetMapTabsByDate)
+        (routeDays[mapKey] ??= []).push(date);
       const clonedByDate = cloneHallsForDates(
         sourceHalls,
         Array.from(targetMapTabsByDate.keys()),
@@ -1028,15 +1016,17 @@ export const useMapEditorCommands = ({
         return updated;
       })();
       try {
-        await commitApplicationSnapshotPatch({
-          hallDefinitions: nextHallDefinitions,
-          hallRouteSettings: nextHallRouteSettings,
-        });
+        await commitApplicationSnapshotPatch(
+          {
+            hallDefinitions: nextHallDefinitions,
+            hallRouteSettings: nextHallRouteSettings,
+          },
+          undefined,
+          { routeDays: { [activeEventName]: routeDays } },
+        );
       } catch {
         return;
       }
-      setHallDefinitions(() => nextHallDefinitions);
-      setHallRouteSettings(() => nextHallRouteSettings);
     },
     [
       activeEventName,
@@ -1046,8 +1036,6 @@ export const useMapEditorCommands = ({
       hallDefinitions,
       hallRouteSettings,
       isMapTab,
-      setHallDefinitions,
-      setHallRouteSettings,
     ],
   );
 

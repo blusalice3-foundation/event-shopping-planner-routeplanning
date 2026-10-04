@@ -785,3 +785,280 @@ it("preserves a concurrently changed item order when only a field was edited", (
     item("A", { remarks: "今回のメモ", price: 900 }),
   ]);
 });
+
+function selectableDayMergeSource(): PersistenceSnapshot {
+  const source = snapshot();
+  source.eventLists.event.push(
+    item("C", { purchaseStatus: "Purchased", price: 900, quantity: 2 }),
+  );
+  source.executeModeItems.event = {
+    "1日目": ["A", "B"],
+    " 1日目　": ["B", "A", "C"],
+  };
+  source.dayModes.event = {
+    "1日目": "edit",
+    " 1日目　": "execute",
+    "2日目": "edit",
+  };
+  const map = { maxRow: 3, maxCol: 3, cells: [], mergedCells: [], blocks: [] };
+  source.mapData.event = {
+    "1日目マップ": map,
+    "１日目マップ": structuredClone(map),
+  };
+  const group = (priority: "none" | "highest") => ({ hall: null, priority });
+  const context = (reverse: boolean) => ({
+    ...createVisitContext(),
+    hallOrder: reverse
+      ? [group("highest"), group("none")]
+      : [group("none"), group("highest")],
+    hallVisitLists: [
+      { group: group("none"), itemIds: reverse ? ["B", "A", "C"] : ["A", "B"] },
+    ],
+    route: {
+      isRouteVisible: !reverse,
+      visitOrder: (reverse ? ["B", "A", "C"] : ["A", "B"]).map((id, order) => ({
+        row: 1,
+        col: id.charCodeAt(0) - 64,
+        blockName: "A",
+        number: id.charCodeAt(0) - 64,
+        itemIds: [id],
+        order,
+      })),
+    },
+  });
+  source.eventConsistency.event.days = {
+    "1日目": {
+      ...createDayConsistency(),
+      selectedMapKey: "1日目マップ",
+      maps: { "1日目マップ": context(false) },
+    },
+    " 1日目　": {
+      ...createDayConsistency(),
+      selectedMapKey: "１日目マップ",
+      maps: {
+        "1日目マップ": context(true),
+        "１日目マップ": createVisitContext(),
+      },
+    },
+    "2日目": createDayConsistency(),
+  };
+  return source;
+}
+
+describe("selectable day merge results (R19/R22/R28)", () => {
+  it("lets each saved order, mode, map and destination be chosen independently without losing records", () => {
+    const source = selectableDayMergeSource();
+    const original = structuredClone(source);
+    const choices = {
+      destination: " 1日目　",
+      executeOrder: " 1日目　",
+      mode: "edit",
+      selectedMap: JSON.stringify("１日目マップ"),
+      'hallOrder:"1日目マップ"': " 1日目　",
+      'hallVisitLists:"1日目マップ"': " 1日目　",
+      'route:"1日目マップ"': " 1日目　",
+    };
+    const plan = planDayMerge(source, "event", "1日目", undefined, choices);
+    expect(plan.confirmation!.choices!.map((choice) => choice.id)).toEqual(
+      expect.arrayContaining(Object.keys(choices)),
+    );
+    for (const choice of plan.confirmation!.choices!)
+      expect(choice.value).toBe(choices[choice.id as keyof typeof choices]);
+    expect(plan.snapshot.executeModeItems.event).toEqual({
+      " 1日目　": ["B", "A", "C"],
+    });
+    expect(plan.snapshot.dayModes.event).toEqual({
+      " 1日目　": "edit",
+      "2日目": "edit",
+    });
+    const day = plan.snapshot.eventConsistency.event.days[" 1日目　"];
+    expect(day.selectedMapKey).toBe("１日目マップ");
+    expect(
+      day.maps["1日目マップ"].hallOrder.map((group) => group.priority),
+    ).toEqual(["highest", "none"]);
+    expect(
+      day.maps["1日目マップ"].hallVisitLists.map((list) => list.itemIds),
+    ).toEqual([
+      ["B", "A", "C"],
+      ["A", "B"],
+    ]);
+    expect(day.maps["1日目マップ"].route).toMatchObject({
+      isRouteVisible: false,
+      visitOrder: [
+        { itemIds: ["B"], order: 0 },
+        { itemIds: ["A"], order: 1 },
+        { itemIds: ["C"], order: 2 },
+      ],
+    });
+    expect(plan.snapshot.eventLists).toEqual(original.eventLists);
+    expect(plan.snapshot.eventConsistency.event.days["2日目"]).toEqual(
+      original.eventConsistency.event.days["2日目"],
+    );
+    expect(source).toEqual(original);
+    expect(duplicateEventDays(plan.snapshot, "event")).toEqual([]);
+    valid(plan.snapshot);
+    const restored = parseAppBackup(
+      serializeAppBackup(createAppBackup(plan.snapshot)),
+    );
+    expect(restored.ok).toBe(true);
+    if (restored.ok)
+      expect(restored.data.eventConsistency).toEqual(
+        plan.snapshot.eventConsistency,
+      );
+    expect(planDayMerge(plan.snapshot, "event", "1日目").snapshot).toEqual(
+      plan.snapshot,
+    );
+  });
+
+  it("keeps source-only items when another source order is adopted", () => {
+    const source = selectableDayMergeSource();
+    const plan = planDayMerge(source, "event", "1日目", undefined, {
+      executeOrder: "1日目",
+    });
+    expect(plan.snapshot.executeModeItems.event["1日目"]).toEqual([
+      "A",
+      "B",
+      "C",
+    ]);
+    expect(plan.snapshot.eventLists).toEqual(source.eventLists);
+  });
+
+  it("uses the chosen final mode when merging during a day-tab long press", () => {
+    const source = selectableDayMergeSource();
+    const plan = planDayModeToggle(source, "event", "1日目", {
+      mode: "edit",
+      executeOrder: " 1日目　",
+    });
+    expect(plan.snapshot.dayModes.event["1日目"]).toBe("edit");
+    expect(plan.snapshot.executeModeItems.event["1日目"]).toEqual([
+      "B",
+      "A",
+      "C",
+    ]);
+    expect(
+      plan.confirmation?.choices?.find((choice) => choice.id === "mode")?.value,
+    ).toBe("edit");
+    valid(plan.snapshot);
+  });
+
+  it("recalculates choices on the queue, preserves purchase updates and reconfirms changed source orders", async () => {
+    let durable = selectableDayMergeSource();
+    let current = structuredClone(durable);
+    let writes = 0;
+    const coordinator = createApplicationMutationCoordinator({
+      readCurrent: () => current,
+      drain: async () => {},
+      readDurable: async () => ({
+        snapshot: structuredClone(durable),
+        expectedRoots: {},
+        consistencyMissing: false,
+      }),
+      commit: async (value) => {
+        writes++;
+        durable = structuredClone(value);
+      },
+      apply: (value) => {
+        current = value;
+      },
+    });
+    const first = await coordinator.request({
+      id: "merge-choice",
+      events: ["event"],
+      plan: (value, choices) =>
+        planDayMerge(value, "event", "1日目", undefined, choices),
+    });
+    if (first.status !== "confirmation-required")
+      throw new Error("Expected merge preview");
+    let selected = await coordinator.choose(
+      first.token,
+      "executeOrder",
+      " 1日目　",
+    );
+    if (selected.status !== "confirmation-required")
+      throw new Error("Expected chosen preview");
+    expect(selected.token).not.toBe(first.token);
+    expect(writes).toBe(0);
+    expect(current).toEqual(durable);
+    // Two selections can be queued from the same render without losing either.
+    selected = await coordinator.choose(first.token, "mode", "execute");
+    if (selected.status !== "confirmation-required")
+      throw new Error("Expected chosen mode preview");
+    expect(
+      selected.confirmation.choices?.find((choice) => choice.id === "mode")
+        ?.value,
+    ).toBe("execute");
+    expect(
+      selected.confirmation.choices?.find(
+        (choice) => choice.id === "executeOrder",
+      )?.value,
+    ).toBe(" 1日目　");
+    expect(await coordinator.choose(selected.token, "mode", "invalid")).toEqual(
+      selected,
+    );
+    durable.executeModeItems.event[" 1日目　"] = ["C", "B", "A"];
+    const renewed = await coordinator.confirm(selected.token);
+    if (renewed.status !== "confirmation-required")
+      throw new Error("Expected renewed preview");
+    expect(
+      renewed.confirmation.choices?.find(
+        (choice) => choice.id === "executeOrder",
+      )?.value,
+    ).toBe(" 1日目　");
+    expect(writes).toBe(0);
+    (durable.eventLists.event[0] as ShoppingItem).remarks = "最新の購入メモ";
+    (durable.eventLists.event[0] as ShoppingItem).price = 1500;
+    const committed = await coordinator.confirm(renewed.token);
+    expect(committed.status).toBe("committed");
+    expect(writes).toBe(1);
+    expect(current.executeModeItems.event["1日目"]).toEqual(["C", "B", "A"]);
+    expect(current.eventLists.event[0]).toMatchObject({
+      remarks: "最新の購入メモ",
+      price: 1500,
+    });
+  });
+
+  it.each(["cancel", "failure"])(
+    "keeps both source keys and settings on %s after a choice",
+    async (action) => {
+      const source = selectableDayMergeSource();
+      let current = source;
+      const coordinator = createApplicationMutationCoordinator({
+        readCurrent: () => current,
+        drain: async () => {},
+        readDurable: async () => ({
+          snapshot: structuredClone(source),
+          expectedRoots: {},
+          consistencyMissing: false,
+        }),
+        commit: async () => {
+          throw new Error("write aborted");
+        },
+        apply: (value) => {
+          current = value;
+        },
+      });
+      const first = await coordinator.request({
+        id: "merge",
+        events: ["event"],
+        plan: (value, choices) =>
+          planDayMerge(value, "event", "1日目", undefined, choices),
+      });
+      if (first.status !== "confirmation-required")
+        throw new Error("Expected merge preview");
+      const selected = await coordinator.choose(
+        first.token,
+        "executeOrder",
+        " 1日目　",
+      );
+      if (selected.status !== "confirmation-required")
+        throw new Error("Expected chosen preview");
+      if (action === "cancel") coordinator.cancel(selected.token);
+      else
+        await expect(coordinator.confirm(selected.token)).rejects.toThrow(
+          "write aborted",
+        );
+      expect(current).toBe(source);
+      expect(await coordinator.readExportSnapshot()).toEqual(source);
+    },
+  );
+});

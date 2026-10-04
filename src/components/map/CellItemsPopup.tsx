@@ -48,7 +48,7 @@ interface CellItemsPopupProps {
   onRemoveFromVisitList: (itemId: string) => void;
   onBatchAddToVisitList?: (itemIds: string[]) => void;
   onBatchRemoveFromVisitList?: (itemIds: string[]) => void;
-  onUpdateItem?: (item: ShoppingItem) => void;
+  onUpdateItem?: (item: ShoppingItem, baseline?: ShoppingItem) => void;
   onDeleteItem?: (itemId: string) => void;
   onAddItem?: (
     item: Omit<ShoppingItem, "id"> & { purchaseStatus?: PurchaseStatus },
@@ -133,6 +133,7 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
   const popupRef = useRef<HTMLDivElement>(null);
   const [longPressItem, setLongPressItem] = useState<ShoppingItem | null>(null);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
+  const editingOriginalItemRef = useRef<ShoppingItem | null>(null);
   const [editingQuantityText, setEditingQuantityText] = useState("1");
   const [quantityError, setQuantityError] = useState<string | null>(null);
   const [addQuantityError, setAddQuantityError] = useState<string | null>(null);
@@ -430,6 +431,7 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
 
   const handleEdit = () => {
     if (longPressItem) {
+      editingOriginalItemRef.current = { ...longPressItem };
       setEditingItem({ ...longPressItem });
       setEditingQuantityText(String(getPlannedQuantity(longPressItem)));
       setQuantityError(null);
@@ -456,11 +458,14 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
         setQuantityError(toPlannedQuantityMessage(quantityValidation.error));
         return;
       }
-      const originalItem = items.find((i) => i.id === editingItem.id);
+      const originalItem =
+        editingOriginalItemRef.current ??
+        items.find((i) => i.id === editingItem.id);
       const originalPriority = originalItem?.priorityLevel || "none";
       const newPriority = editingItem.priorityLevel || "none";
       onUpdateItem(
         clearLimitedPurchase({ ...editingItem, quantity: parsedQuantity! }),
+        originalItem,
       );
       if (newPriority !== originalPriority && onUpdateItemPriority) {
         onUpdateItemPriority(editingItem.id, newPriority);
