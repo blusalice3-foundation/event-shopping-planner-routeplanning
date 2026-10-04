@@ -1,3 +1,4 @@
+import type { EventConsistencyStore } from "../../src/types/consistency";
 import { expect, test, type Page } from "@playwright/test";
 
 const eventName = "整合性検証";
@@ -132,4 +133,177 @@ test("search brings an initially unmounted item into view and repeats after anot
   await page.getByPlaceholder("検索...").fill("サークル110");
   await page.getByRole("button", { name: "次を検索", exact: true }).click();
   await expect(page.locator('[data-item-id="110"]')).toBeInViewport();
+});
+
+const mapBackup = () => {
+  const source = backup([item("1"), item("2"), item("3", "2日目")]);
+  const map = {
+    cells: [],
+    mergedCells: [],
+    maxRow: 6,
+    maxCol: 6,
+    blocks: [
+      {
+        name: "A",
+        startRow: 1,
+        startCol: 1,
+        endRow: 5,
+        endCol: 5,
+        numberCells: [
+          { row: 2, col: 2, value: 1 },
+          { row: 3, col: 2, value: 2 },
+        ],
+      },
+    ],
+  };
+  const hall = {
+    id: "hall",
+    name: "東館",
+    vertices: [
+      { row: 1, col: 1 },
+      { row: 1, col: 5 },
+      { row: 5, col: 5 },
+      { row: 5, col: 1 },
+    ],
+  };
+  const settings = {
+    hallOrder: ["hall"],
+    hallVisitLists: [{ hallId: "hall", itemIds: ["1", "2"] }],
+  };
+  return {
+    ...source,
+    data: {
+      ...source.data,
+      mapData: { [eventName]: { "1日目マップ": map, "１日目マップ": map } },
+      hallDefinitions: {
+        [eventName]: { "1日目マップ": [hall], "１日目マップ": [hall] },
+      },
+      hallRouteSettings: {
+        [eventName]: { "1日目マップ": settings, "１日目マップ": settings },
+      },
+    },
+  };
+};
+async function reorderVisitList(page: Page) {
+  await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+  await page.getByTitle("リスト表示に切り替え", { exact: true }).hover();
+  await page.mouse.down();
+  const openPanel = page.getByRole("button", {
+    name: "📍 訪問リスト",
+    exact: true,
+  });
+  await expect(openPanel).toBeVisible();
+  await page.mouse.up();
+  await openPanel.click();
+  const rows = page.locator("[data-drag-item]");
+  await expect(rows).toHaveCount(2);
+  const transfer = await page.evaluateHandle(() => new DataTransfer());
+  await rows.nth(1).dispatchEvent("dragstart", { dataTransfer: transfer });
+  await rows.nth(0).dispatchEvent("dragover", { dataTransfer: transfer });
+  await rows.nth(0).dispatchEvent("drop", { dataTransfer: transfer });
+  await transfer.dispose();
+  await expect
+    .poll(() => stored(page, "executeModeItems"))
+    .toMatchObject({
+      [eventName]: { "1日目": ["2", "1"], "2日目": ["3"] },
+    });
+}
+for (const choice of ["保存して確定", "キャンセル（破棄）"] as const) {
+  test(`map selection waits for the visit transition answer: ${choice}`, async ({
+    page,
+  }) => {
+    await restore(page, mapBackup());
+    await reorderVisitList(page);
+    const before = await stored(page, "eventConsistency");
+    const itemsBefore = await stored(page, "eventLists");
+    const selector = page.getByRole("combobox", { name: "利用するマップ" });
+    await expect(selector).toHaveValue("1日目マップ");
+    await selector.selectOption("１日目マップ");
+    await expect(
+      page.getByText("変更を保存しますか？", { exact: true }),
+    ).toBeVisible();
+    expect(await stored(page, "eventConsistency")).toEqual(before);
+    await expect(selector).toHaveValue("1日目マップ");
+    await page.getByRole("button", { name: choice, exact: true }).click();
+    await expect
+      .poll(() => stored(page, "eventConsistency"))
+      .toMatchObject({
+        [eventName]: { days: { "1日目": { selectedMapKey: "１日目マップ" } } },
+      });
+    await expect(selector).toHaveValue("１日目マップ");
+    const after = (await stored(
+      page,
+      "eventConsistency",
+    )) as EventConsistencyStore;
+    const original = before as EventConsistencyStore;
+    for (const mapKey of ["1日目マップ", "１日目マップ"]) {
+      const context = after[eventName].days["1日目"].maps[mapKey];
+      const previous = original[eventName].days["1日目"].maps[mapKey];
+      expect(context.assignments).toEqual(previous.assignments);
+      expect(context.hallOrder).toEqual(previous.hallOrder);
+      expect(context.hallVisitLists.map((list) => list.legacyHallId)).toEqual(
+        previous.hallVisitLists.map((list) => list.legacyHallId),
+      );
+      expect(context.hallVisitLists[0].itemIds).toEqual(
+        choice === "保存して確定" ? ["2", "1"] : ["1", "2"],
+      );
+    }
+    expect(after[eventName].days["2日目"]).toEqual(
+      original[eventName].days["2日目"],
+    );
+    expect(await stored(page, "eventLists")).toEqual(itemsBefore);
+    expect(await stored(page, "executeModeItems")).toMatchObject({
+      [eventName]: {
+        "1日目": choice === "保存して確定" ? ["2", "1"] : ["1", "2"],
+        "2日目": ["3"],
+      },
+    });
+    await page.reload();
+    await expect(
+      page.locator('input[aria-label="バックアップファイルを選択"]'),
+    ).toBeAttached();
+    expect(await stored(page, "eventConsistency")).toMatchObject({
+      [eventName]: { days: { "1日目": { selectedMapKey: "１日目マップ" } } },
+    });
+  });
+}
+test("a migrated database starts when legacy localStorage reads fail", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await restore(page);
+  const before = await stored(page, "eventConsistency");
+  await page.addInitScript(() => {
+    const legacy = new Set([
+      "eventShoppingLists",
+      "eventLists",
+      "eventMetadata",
+      "executeModeItems",
+      "dayModes",
+      "mapData",
+      "mapRotationSettings",
+      "routeSettings",
+      "hallDefinitions",
+      "hallRouteSettings",
+      "mapViewportSettings",
+      "blockDetectionSettings",
+      "syncQueue",
+    ]);
+    const getItem = Storage.prototype.getItem;
+    Storage.prototype.getItem = function (key) {
+      if (legacy.has(key)) throw new Error("legacy storage unavailable");
+      return getItem.call(this, key);
+    };
+  });
+  await page.reload();
+  await expect(
+    page.locator('input[aria-label="バックアップファイルを選択"]'),
+  ).toBeAttached();
+  await page.getByText(eventName, { exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: eventName, exact: true }),
+  ).toBeVisible();
+  expect(await stored(page, "eventConsistency")).toEqual(before);
+  expect(errors).toEqual([]);
 });

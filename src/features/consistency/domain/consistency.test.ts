@@ -149,12 +149,34 @@ describe("consistency context contract (R12–R25, R31, R35, R38)", () => {
     value.blocks.reverse();
     expect(resolveLocation(value, item("A")).status).toBe("ambiguous");
   });
-  it("does not select the first duplicate number within one block", () => {
+  it("keeps the existing row-then-column rule for duplicate numbers within each block", () => {
     const value = map();
-    value.blocks[0].numberCells.push({ row: 2, col: 2, value: 1 });
-    expect(resolveLocation(value, item("A")).status).toBe("resolved");
-    value.blocks[0].numberCells.push({ row: 7, col: 7, value: 1 });
-    expect(resolveLocation(value, item("A")).status).toBe("ambiguous");
+    const cells = [
+      { row: 7, col: 1, value: 1 },
+      { row: 2, col: 2, value: 1 },
+      { row: 2, col: 1, value: 1 },
+      { row: 2, col: 1, value: 1 },
+      { row: 1, col: 1, value: 2 },
+    ];
+    for (const numberCells of [cells, [...cells].reverse()]) {
+      value.blocks[0].numberCells = numberCells;
+      expect(resolveLocation(value, item("A"))).toMatchObject({
+        status: "resolved",
+        location: { cell: { row: 2, col: 1 }, numberValue: 1 },
+      });
+      value.blocks[1] = {
+        ...value.blocks[0],
+        name: "Ａ",
+        numberCells: [
+          { row: 7, col: 7, value: 1 },
+          { row: 2, col: 1, value: 1 },
+        ],
+      };
+      expect(resolveLocation(value, item("A")).status).toBe("resolved");
+      value.blocks[1].numberCells = [{ row: 7, col: 7, value: 1 }];
+      expect(resolveLocation(value, item("A")).status).toBe("ambiguous");
+      value.blocks.pop();
+    }
   });
   it("keeps exact case precedence and only unique case fallback", () => {
     const value = map();

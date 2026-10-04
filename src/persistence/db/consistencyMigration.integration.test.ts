@@ -84,6 +84,24 @@ describe("consistency migration transaction", () => {
       (await app.readApplicationSnapshot()).snapshot.eventMetadata.event,
     ).toEqual({ updated: true });
   });
+  it("does not read inaccessible legacy localStorage after migration is complete", async () => {
+    const app = await migrate();
+    const getItem = vi
+      .spyOn(Storage.prototype, "getItem")
+      .mockImplementation(() => {
+        throw new Error("legacy storage unavailable");
+      });
+    const { inspectConsistencyUpgrade } = await import("./consistencyUpgrade");
+    await expect(inspectConsistencyUpgrade()).resolves.toBeNull();
+    const { db } = await import("../facade/indexedDbPersistence");
+    await expect(db.migrateFromLocalStorage()).resolves.toMatchObject({
+      status: "cleanup-pending",
+      dataMigrationStatus: "not-needed",
+      cleanupStatus: "deferred",
+    });
+    expect(getItem).not.toHaveBeenCalled();
+    expect((await app.readApplicationSnapshot()).snapshot).toEqual(app.value);
+  });
   it("rolls back payloads and archive when the journal cannot be written", async () => {
     const original = IDBObjectStore.prototype.put;
     vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(function (
@@ -109,6 +127,32 @@ describe("consistency migration transaction", () => {
       name: "PersistenceConflict",
       recoveryBundle: expect.any(Object),
     });
+    expect(await raw(STORES.SYNC_QUEUE, CONSISTENCY_ARCHIVE_KEY)).toEqual({
+      tampered: true,
+    });
+  });
+  it("keeps malformed completed migration evidence in recovery without consulting legacy storage", async () => {
+    await migrate();
+    await raw(STORES.SYNC_QUEUE, CONSISTENCY_ARCHIVE_KEY, {
+      value: { tampered: true },
+    });
+    const getItem = vi
+      .spyOn(Storage.prototype, "getItem")
+      .mockImplementation(() => {
+        throw new Error("legacy storage unavailable");
+      });
+    const { db } = await import("../facade/indexedDbPersistence");
+    const result = await db.migrateFromLocalStorage();
+    expect(result.status).toBe("recovery-required");
+    if (result.status === "recovery-required")
+      expect(result.recoveryBundle.candidates).toContainEqual(
+        expect.objectContaining({
+          storeName: STORES.SYNC_QUEUE,
+          key: CONSISTENCY_ARCHIVE_KEY,
+          payload: { tampered: true },
+        }),
+      );
+    expect(getItem).not.toHaveBeenCalled();
     expect(await raw(STORES.SYNC_QUEUE, CONSISTENCY_ARCHIVE_KEY)).toEqual({
       tampered: true,
     });
@@ -183,6 +227,31 @@ describe("pre-upgrade boundary", () => {
       name: "VersionError",
     });
     current.resetDatabaseConnection();
+  });
+  it("refuses to upgrade an old database when legacy storage cannot be read", async () => {
+    const request = factory.open(DB_NAME, 7);
+    const old = await new Promise<IDBDatabase>((resolve, reject) => {
+      request.onupgradeneeded = () =>
+        request.result.createObjectStore(STORES.EVENT_LISTS);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new Error("legacy storage unavailable");
+      });
+      const { inspectConsistencyUpgrade } =
+        await import("./consistencyUpgrade");
+      await expect(inspectConsistencyUpgrade()).rejects.toThrow(
+        "legacy storage unavailable",
+      );
+      expect(old.version).toBe(7);
+      expect(old.objectStoreNames.contains(STORES.EVENT_CONSISTENCY)).toBe(
+        false,
+      );
+    } finally {
+      old.close();
+    }
   });
   it("archives original store keys and local settings before changing the database version", async () => {
     const oldConnection = await new Promise<IDBDatabase>((resolve, reject) => {

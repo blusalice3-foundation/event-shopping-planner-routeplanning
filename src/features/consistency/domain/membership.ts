@@ -9,6 +9,7 @@ import {
   normalizeBaseSpaceNumber,
   normalizeSpaceBlock,
 } from "../../space-navigation/domain/visitIdentity";
+import { findRouteLookupNumberCell } from "../../../utils/mapRoutingSignature";
 import { isPointInPolygonInclusive } from "../../../utils/mapRoutePolygon";
 import {
   hallRefKey,
@@ -52,14 +53,14 @@ export function resolveLocation(
   const numberValue = Number(numberText);
   const cells = new Map<string, ResolvedCell>();
   for (const block of resolveBlocks(map, item.block)) {
-    for (const cell of block.numberCells) {
-      if (cell.value === numberValue)
-        cells.set(JSON.stringify([cell.row, cell.col]), {
-          block,
-          cell: { row: cell.row, col: cell.col },
-          numberValue,
-        });
-    }
+    // Preserve the established rule inside a block before comparing distinct blocks.
+    const cell = findRouteLookupNumberCell(block, numberValue);
+    if (cell)
+      cells.set(JSON.stringify([cell.row, cell.col]), {
+        block,
+        cell: { row: cell.row, col: cell.col },
+        numberValue,
+      });
   }
   const candidates = [...cells.values()];
   return candidates.length === 1

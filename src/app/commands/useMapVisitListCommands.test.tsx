@@ -271,6 +271,67 @@ describe("visit list commands share one session and successful save baseline", (
     );
     expect(changeMode).toHaveBeenCalledOnce();
   });
+  it("waits for an in-flight reorder before running the map-selection callback", async () => {
+    const h = harness();
+    h.open();
+    const implementation = vi
+      .mocked(h.ports.requestMutation)
+      .getMockImplementation()!;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.mocked(h.ports.requestMutation).mockImplementationOnce(
+      async (intent) => {
+        await gate;
+        return implementation(intent);
+      },
+    );
+    let update!: Promise<void>;
+    act(() => {
+      update = h.result.current.updateOrder([item("A"), item("B"), item("C")]);
+    });
+    const selectMap = vi.fn();
+    act(() => {
+      expect(h.result.current.requestTabChange("1日目", selectMap)).toBe(
+        "confirmation",
+      );
+    });
+    h.rerender();
+    expect(selectMap).not.toHaveBeenCalled();
+    expect(h.ids()).toEqual(["B", "A", "C"]);
+    await act(async () => {
+      release();
+      await update;
+    });
+    h.rerender();
+    expect(selectMap).not.toHaveBeenCalled();
+    await act(() => h.result.current.confirmPendingTransition());
+    expect(h.ids()).toEqual(["A", "B", "C"]);
+    expect(selectMap).toHaveBeenCalledOnce();
+  });
+  it("does not run the map-selection callback when discarding the source order fails", async () => {
+    const h = harness();
+    h.open();
+    await h.update(["A", "B", "C"]);
+    const selectMap = vi.fn();
+    act(() => {
+      h.result.current.requestTabChange("1日目", selectMap);
+    });
+    h.rerender();
+    vi.mocked(h.ports.requestMutation).mockRejectedValueOnce(
+      new Error("abort"),
+    );
+    await expect(
+      act(() => h.result.current.discardPendingTransition()),
+    ).rejects.toThrow("abort");
+    expect(selectMap).not.toHaveBeenCalled();
+    expect(h.ports.navigation.navigateToTab).not.toHaveBeenCalled();
+    expect(h.state.panelOpen).toBe(true);
+    expect(h.state.hasUnsavedChanges).toBe(true);
+    expect(h.state.originalOrder).toEqual(["B", "A", "C"]);
+    expect(h.ids()).toEqual(["A", "B", "C"]);
+  });
   it("restores the baseline before discard completes navigation", async () => {
     const h = harness();
     h.open();

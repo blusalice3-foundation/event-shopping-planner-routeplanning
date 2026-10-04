@@ -121,10 +121,25 @@ export function planDayMerge(
       ...group,
       hall: remapRef(group.hall),
     }));
-    context.hallVisitLists = context.hallVisitLists.map((list) => ({
-      ...list,
-      group: { ...list.group, hall: remapRef(list.group.hall) },
-    }));
+    context.hallVisitLists = context.hallVisitLists.map((list) => {
+      const previous = list.group.hall;
+      const hall = remapRef(previous);
+      let legacyHallId = list.legacyHallId;
+      if (previous && hall && legacyHallId !== undefined) {
+        // Use the resolved source and group, never guess by splitting a literal ID.
+        if (legacyHallId === previous.hallId) legacyHallId = hall.hallId;
+        else if (
+          list.group.priority !== "none" &&
+          legacyHallId === `${previous.hallId}:${list.group.priority}`
+        )
+          legacyHallId = `${hall.hallId}:${list.group.priority}`;
+      }
+      return {
+        ...list,
+        group: { ...list.group, hall },
+        ...(legacyHallId !== undefined ? { legacyHallId } : {}),
+      };
+    });
   }
   const execute = next.executeModeItems[name] ?? {};
   const executeKeys = sortedKeys(execute, preferredKey);

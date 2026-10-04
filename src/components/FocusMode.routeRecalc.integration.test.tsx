@@ -153,9 +153,49 @@ describe("FocusMode route recalculation cache", () => {
     expect(new Set(visitPoints?.map((point) => point.itemId)).size).toBe(3);
   });
 
-  it("omits an ambiguous number cell and restores it when the duplicate is removed", () => {
+  it("uses the existing route cell inside a block regardless of duplicate-number order", () => {
     const map = makeMap();
-    map.blocks[0].numberCells.push({ row: 9, col: 9, value: 2 });
+    map.blocks[0].numberCells.unshift(
+      { row: 9, col: 1, value: 2 },
+      { row: 2, col: 3, value: 2 },
+    );
+    const { rerender } = renderFocusMode({ map });
+    expect(
+      mockedGenerateRouteSegmentsStrict.mock.calls.at(-1)?.[1],
+    ).toMatchObject([
+      { row: 1, col: 1 },
+      { row: 2, col: 2 },
+    ]);
+    const reversed = structuredClone(map);
+    reversed.blocks[0].numberCells.reverse();
+    rerender(
+      <FocusMode
+        {...minimalProps({
+          items: [
+            makeItem({ id: "item-1", number: "01a" }),
+            makeItem({ id: "item-2", number: "02a" }),
+          ],
+          executeModeItemIds: ["item-1", "item-2"],
+        })}
+        mapData={{ Day1マップ: reversed }}
+        hallDefinitions={halls}
+        hallOrder={["hall-1"]}
+      />,
+    );
+    expect(
+      mockedGenerateRouteSegmentsStrict.mock.calls.at(-1)?.[1],
+    ).toMatchObject([
+      { row: 1, col: 1 },
+      { row: 2, col: 2 },
+    ]);
+  });
+  it("omits distinct locations across duplicate blocks and restores the route when the duplicate block is removed", () => {
+    const map = makeMap();
+    map.blocks.push({
+      ...map.blocks[0],
+      name: "Ａ",
+      numberCells: [{ row: 9, col: 9, value: 2 }],
+    });
     const third = makeItem({ id: "item-3", number: "03a" });
     const items = [
       makeItem({ id: "item-1" }),

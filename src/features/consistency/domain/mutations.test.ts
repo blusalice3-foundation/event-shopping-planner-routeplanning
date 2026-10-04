@@ -14,6 +14,11 @@ import {
   validateSnapshotReferences,
   validateSnapshotStructure,
 } from "../../../utils/appBackup";
+import {
+  createAppBackup,
+  parseAppBackup,
+  serializeAppBackup,
+} from "../../../utils/appBackup";
 const item = (id: string, patch: Partial<ShoppingItem> = {}): ShoppingItem => ({
   id,
   circle: id,
@@ -172,6 +177,122 @@ describe("confirmed day merge", () => {
     expect(plan.snapshot.eventLists).toEqual(source.eventLists);
     valid(plan.snapshot);
   });
+  it.each([
+    { hallId: "hall", priority: "none", legacy: "hall", expected: "hall~2" },
+    {
+      hallId: "hall",
+      priority: "priority",
+      legacy: "hall:priority",
+      expected: "hall~2:priority",
+    },
+    {
+      hallId: "hall",
+      priority: "highest",
+      legacy: "hall:highest",
+      expected: "hall~2:highest",
+    },
+    {
+      hallId: "hall:priority",
+      priority: "none",
+      legacy: "hall:priority",
+      expected: "hall:priority~2",
+    },
+    {
+      hallId: "hall:priority",
+      priority: "highest",
+      legacy: "hall:priority:highest",
+      expected: "hall:priority~2:highest",
+    },
+    {
+      hallId: "hall",
+      priority: "priority",
+      legacy: "hall:custom",
+      expected: "hall:custom",
+    },
+  ] as const)(
+    "remaps legacy group $legacy as $expected together with its sourced hall",
+    ({ hallId, priority, legacy, expected }) => {
+      const source = snapshot();
+      source.hallDefinitions.event = {
+        "__mapless__:1日目": [
+          { id: hallId, name: "東", blockNames: ["A"], vertices: [] },
+        ],
+        "__mapless__: 1日目　": [
+          { id: hallId, name: "西", blockNames: ["B"], vertices: [] },
+        ],
+      };
+      const context = source.eventConsistency.event.days[" 1日目　"].mapless!;
+      const group = {
+        hall: { kind: "simple" as const, dayKey: " 1日目　", hallId },
+        priority,
+      };
+      context.assignments.A = group.hall;
+      context.hallOrder = [group, { hall: null, priority }];
+      context.hallVisitLists = [
+        { group, legacyHallId: legacy, itemIds: ["A"] },
+        {
+          group: { hall: null, priority },
+          legacyHallId: `undefined:${priority}`,
+          itemIds: ["B"],
+        },
+      ];
+      source.mapData.event = {
+        "1日目マップ": {
+          cells: [],
+          mergedCells: [],
+          blocks: [],
+          maxRow: 1,
+          maxCol: 1,
+        },
+      };
+      source.hallDefinitions.event["1日目マップ"] = [
+        { id: hallId, name: "別マップのホール", vertices: [] },
+      ];
+      const mapContext = structuredClone(context);
+      const mapGroup = {
+        ...group,
+        hall: { kind: "map" as const, mapKey: "1日目マップ", hallId },
+      };
+      mapContext.assignments = { A: mapGroup.hall };
+      mapContext.hallOrder = [mapGroup];
+      mapContext.hallVisitLists = [
+        { group: mapGroup, legacyHallId: legacy, itemIds: ["A"] },
+      ];
+      source.eventConsistency.event.days[" 1日目　"].maps["1日目マップ"] =
+        mapContext;
+      const original = structuredClone(source);
+      const plan = planDayMerge(source, "event", "1日目");
+      const merged = plan.snapshot.eventConsistency.event.days["1日目"];
+      expect(merged.mapless!.hallVisitLists[0]).toMatchObject({
+        group: {
+          hall: { kind: "simple", dayKey: "1日目", hallId: `${hallId}~2` },
+          priority,
+        },
+        legacyHallId: expected,
+        itemIds: ["A"],
+      });
+      expect(merged.mapless!.hallOrder[0]).toEqual(
+        merged.mapless!.hallVisitLists[0].group,
+      );
+      expect(merged.mapless!.assignments.A).toEqual(
+        merged.mapless!.hallOrder[0].hall,
+      );
+      expect(merged.mapless!.hallVisitLists[1]).toEqual(
+        context.hallVisitLists[1],
+      );
+      expect(merged.maps["1日目マップ"]).toEqual(mapContext);
+      expect(source).toEqual(original);
+      const restored = parseAppBackup(
+        serializeAppBackup(createAppBackup(plan.snapshot)),
+      );
+      expect(restored.ok).toBe(true);
+      if (restored.ok)
+        expect(restored.data.eventConsistency.event.days["1日目"]).toEqual(
+          merged,
+        );
+      valid(plan.snapshot);
+    },
+  );
   it("does not reselect a third assignment after a three-way conflict", () => {
     const source = snapshot();
     source.eventConsistency.event.days = {};

@@ -1891,32 +1891,34 @@ const App: React.FC = () => {
               onChange={(event) => {
                 const key = event.target.value;
                 if (!key) return;
-                void application
-                  .request({
-                    events: [activeEventName],
-                    plan: (snapshot) => {
-                      const day = ensureDayConsistency(
-                        snapshot.eventConsistency[activeEventName],
-                        activeEventDate,
-                        [
-                          snapshot.executeModeItems[activeEventName],
-                          snapshot.dayModes[activeEventName],
-                        ],
-                      );
-                      const found = resolveDayMap(
-                        snapshot.mapData[
-                          activeEventName
-                        ] as MapDataStore[string],
-                        activeEventDate,
-                        key,
-                      );
-                      if (found.status !== "resolved")
-                        throw new Error("選択したマップが見つかりません。");
-                      day.selectedMapKey = key;
-                      return { snapshot };
-                    },
-                  })
-                  .catch(() => {});
+                requestVisitListTabChange(activeTab, () => {
+                  void application
+                    .request({
+                      events: [activeEventName],
+                      plan: (snapshot) => {
+                        const day = ensureDayConsistency(
+                          snapshot.eventConsistency[activeEventName],
+                          activeEventDate,
+                          [
+                            snapshot.executeModeItems[activeEventName],
+                            snapshot.dayModes[activeEventName],
+                          ],
+                        );
+                        const found = resolveDayMap(
+                          snapshot.mapData[
+                            activeEventName
+                          ] as MapDataStore[string],
+                          activeEventDate,
+                          key,
+                        );
+                        if (found.status !== "resolved")
+                          throw new Error("選択したマップが見つかりません。");
+                        day.selectedMapKey = key;
+                        return { snapshot };
+                      },
+                    })
+                    .catch(() => {});
+                });
               }}
             >
               <option value="">選択が必要です</option>

@@ -29,6 +29,8 @@ export async function inspectConsistencyUpgrade(): Promise<ConsistencyUpgradeArc
     };
   });
   try {
+    // The current format uses IndexedDB; leftover legacy preferences are archival only.
+    if (database && database.version >= DB_VERSION) return null;
     const legacyKeys = [
       "eventShoppingLists",
       "eventLists",
@@ -50,10 +52,7 @@ export async function inspectConsistencyUpgrade(): Promise<ConsistencyUpgradeArc
         return value === null ? [] : [[key, value]];
       }),
     );
-    if (database && database.version >= DB_VERSION) {
-      database.close();
-      return null;
-    }
+
     if (!database && !Object.keys(local).length) return null;
     const archive: ConsistencyUpgradeArchive = {
       kind: "event-shopping-planner-pre-upgrade",
