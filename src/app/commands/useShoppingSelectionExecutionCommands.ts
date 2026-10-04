@@ -85,7 +85,7 @@ export interface ShoppingSelectionExecutionCommandPorts {
 }
 
 export interface ShoppingSelectionExecutionCommands {
-  toggleMode(): void;
+  toggleMode(day?: string): void;
   setViewMode(mode: ViewMode, scrollToItemId?: string): void;
   selectItem(
     itemId: string,
@@ -160,7 +160,7 @@ export const useShoppingSelectionExecutionCommands = ({
     updateExecuteModeItems,
     updateItem,
   } = actions;
-  const { notify, scheduleCenteredItemScroll } = effects;
+  const { scheduleCenteredItemScroll } = effects;
 
   const executeSpaceGroupOrderRef = useRef<readonly string[]>([]);
   const executeColumnItemsRef =
@@ -187,40 +187,30 @@ export const useShoppingSelectionExecutionCommands = ({
     sortState,
   ]);
 
-  const toggleMode = useCallback(() => {
-    if (!activeEventName) return;
-    if (!activeEventDate) {
-      notify(
-        "参加日タブが選択されていないため、表示モードを切り替えできません。",
-      );
-      return;
-    }
-
-    const currentModeValue = dayModes[activeEventName]?.[activeEventDate];
-    if (!currentModeValue) {
-      notify("表示モードが未設定のため、表示モードを切り替えできません。");
-      return;
-    }
-    const nextMode: ViewMode = currentModeValue === "edit" ? "execute" : "edit";
-    setDayModes((current) => ({
-      ...current,
-      [activeEventName]: {
-        ...(current[activeEventName] || {}),
-        [activeEventDate]: nextMode,
-      },
-    }));
-    clearSelection();
-    setCandidateNumberSortDirection(null);
-  }, [
-    activeEventDate,
-    activeEventName,
-    clearSelection,
-    dayModes,
-    notify,
-    setCandidateNumberSortDirection,
-    setDayModes,
-  ]);
-
+  const toggleMode = useCallback(
+    (targetDay = activeEventDate) => {
+      if (!activeEventName || !targetDay) return;
+      setDayModes((current) => {
+        const mode = current[activeEventName]?.[targetDay];
+        return {
+          ...current,
+          [activeEventName]: {
+            ...current[activeEventName],
+            [targetDay]: mode === "execute" ? "edit" : "execute",
+          },
+        };
+      });
+      clearSelection();
+      setCandidateNumberSortDirection(null);
+    },
+    [
+      activeEventName,
+      activeEventDate,
+      setDayModes,
+      clearSelection,
+      setCandidateNumberSortDirection,
+    ],
+  );
   const setViewMode = useCallback(
     (mode: ViewMode, scrollToItemId?: string) => {
       if (!activeEventName) return;

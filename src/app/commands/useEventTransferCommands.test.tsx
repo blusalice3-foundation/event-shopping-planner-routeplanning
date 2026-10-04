@@ -1,3 +1,4 @@
+import { createEventConsistency } from "../../types/consistency";
 // @vitest-environment jsdom
 
 import { act, renderHook } from "@testing-library/react";
@@ -37,9 +38,18 @@ const emptySnapshot = () => ({
   hallDefinitions: {},
   hallRouteSettings: {},
   mapViewportSettings: {},
+  eventConsistency: {},
 });
 
 const createPersistenceCommands = (): PersistenceCommandPort => ({
+  inspectConsistencyUpgrade: vi.fn(async () => null),
+  bindApplicationSettings: vi.fn(() => () => {}),
+  readApplicationSnapshot: vi.fn(async () => ({
+    snapshot: emptySnapshot(),
+    expectedRoots: {},
+    consistencyMissing: false,
+  })),
+  saveEventConsistency: vi.fn(async () => {}),
   loadPreference: vi.fn(() => null),
   savePreference: vi.fn(),
   readBlockDetectionSettings: vi.fn(() => null),
@@ -70,16 +80,19 @@ const createPersistenceCommands = (): PersistenceCommandPort => ({
 
 const createBackup = (items: ShoppingItem[] = [eventItem]): AppBackupV1 => ({
   kind: "event-shopping-planner-backup",
-  version: 1,
+  version: 2,
   exportedAt: "2026-08-09T00:00:00.000Z",
-  eventSettings: {
-    blockDetectionSettings: {
-      source: structuredClone(DEFAULT_BLOCK_DETECTION_SETTINGS),
-    },
-  },
   data: {
     ...emptySnapshot(),
     eventLists: { source: items },
+    eventConsistency: {
+      source: {
+        ...createEventConsistency(),
+        blockDetectionSettings: structuredClone(
+          DEFAULT_BLOCK_DETECTION_SETTINGS,
+        ),
+      },
+    },
   },
 });
 
@@ -87,7 +100,32 @@ const createPorts = (
   overrides: Partial<EventTransferCommandPorts> = {},
 ): EventTransferCommandPorts => {
   const persistenceCommands = createPersistenceCommands();
-  return {
+  const ports: EventTransferCommandPorts = {
+    requestMutation: vi.fn(
+      async (intent) =>
+        (
+          await intent.plan(
+            structuredClone(
+              Object.fromEntries(
+                Object.keys(emptySnapshot()).map((key) => [
+                  key,
+                  ports[key as keyof EventTransferCommandPorts],
+                ]),
+              ) as ReturnType<typeof emptySnapshot>,
+            ),
+          )
+        ).snapshot,
+    ),
+    readExportSnapshot: vi.fn(async () =>
+      structuredClone(
+        Object.fromEntries(
+          Object.keys(emptySnapshot()).map((key) => [
+            key,
+            ports[key as keyof EventTransferCommandPorts],
+          ]),
+        ) as ReturnType<typeof emptySnapshot>,
+      ),
+    ),
     appRuntime: {
       persistenceCommands,
       xlsxCommands: {
@@ -126,6 +164,7 @@ const createPorts = (
     setMapViewportSettings: vi.fn(),
     ...overrides,
   };
+  return ports;
 };
 
 describe("useEventTransferCommands", () => {
@@ -149,19 +188,13 @@ describe("useEventTransferCommands", () => {
       await result.current.handleBackupRestore("source", "target");
     });
 
-    expect(
-      ports.appRuntime.persistenceCommands
-        .restoreAppDataWithBlockDetectionSettings,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({
-        eventLists: { target: [eventItem] },
-      }),
-      "target",
+    expect(ports.requestMutation).toHaveBeenCalledOnce();
+    const saved = await vi.mocked(ports.requestMutation).mock.results[0].value;
+    expect(saved.eventLists).toEqual({ target: [eventItem] });
+    expect(saved.eventConsistency.target.blockDetectionSettings).toEqual(
       settings,
     );
-    expect(ports.setEventLists).toHaveBeenCalledWith({
-      target: [eventItem],
-    });
+    expect(ports.setEventLists).not.toHaveBeenCalled();
     expect(ports.navigationCommands.openEvent).toHaveBeenCalledWith(
       "target",
       "1日目",
@@ -191,10 +224,7 @@ describe("useEventTransferCommands", () => {
       await result.current.handleBackupRestore("source", "large-import");
     });
 
-    expect(
-      ports.appRuntime.persistenceCommands
-        .restoreAppDataWithBlockDetectionSettings,
-    ).toHaveBeenCalledOnce();
+    expect(ports.requestMutation).toHaveBeenCalledOnce();
     expect(ports.navigationCommands.openEvent).not.toHaveBeenCalled();
     expect(ports.navigationCommands.showEventList).toHaveBeenCalledOnce();
     expect(alertSpy).toHaveBeenCalledWith(
@@ -267,7 +297,7 @@ describe("useEventTransferCommands", () => {
     const { result } = renderHook(() => useEventTransferCommands(ports));
 
     let operation!: Promise<void>;
-    act(() => {
+    await act(async () => {
       operation = result.current.handleConfirmExport({
         includeItems: true,
         includeLayoutInfo: false,

@@ -69,7 +69,6 @@ const makeMap = (overrides: Partial<DayMapData> = {}): DayMapData => ({
         { row: 1, col: 1, value: 1 },
         { row: 2, col: 2, value: 2 },
         { row: 3, col: 3, value: 3 },
-        { row: 9, col: 9, value: 2 },
       ],
     },
     {
@@ -152,6 +151,35 @@ describe("FocusMode route recalculation cache", () => {
       expect.stringContaining("postponed"),
     ]);
     expect(new Set(visitPoints?.map((point) => point.itemId)).size).toBe(3);
+  });
+
+  it("omits an ambiguous number cell and restores it when the duplicate is removed", () => {
+    const map = makeMap();
+    map.blocks[0].numberCells.push({ row: 9, col: 9, value: 2 });
+    const third = makeItem({ id: "item-3", number: "03a" });
+    const items = [
+      makeItem({ id: "item-1" }),
+      makeItem({ id: "item-2", number: "02a" }),
+      third,
+    ];
+    const { rerender } = renderFocusMode({ map, items });
+    expect(
+      mockedGenerateRouteSegmentsStrict.mock.calls.at(-1)?.[1],
+    ).toHaveLength(2);
+    rerender(
+      <FocusMode
+        {...minimalProps({
+          items,
+          executeModeItemIds: items.map((item) => item.id),
+        })}
+        mapData={{ Day1マップ: makeMap() }}
+        hallDefinitions={halls}
+        hallOrder={["hall-1"]}
+      />,
+    );
+    expect(
+      mockedGenerateRouteSegmentsStrict.mock.calls.at(-1)?.[1],
+    ).toHaveLength(3);
   });
 
   it("resolves the canonical map key for padded raw event dates", () => {

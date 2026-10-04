@@ -1,8 +1,7 @@
 import React from "react";
 import { ShoppingItem } from "../../types/item";
 import { BlockDefinition } from "../../types/map";
-import { extractNumberFromItemNumber } from "../../xlsx/domain/itemNumber";
-import { findRouteLookupNumberCell } from "../../utils/mapRoutingSignature";
+import { resolveLocation } from "../../features/consistency/domain/membership";
 import { projectItemsToExecutionVisits } from "../../utils/visitProjection";
 import {
   normalizeBaseSpaceNumber,
@@ -49,18 +48,12 @@ const MapVisitListPanel: React.FC<MapVisitListPanelProps> = ({
     visits.forEach((visit, visitIndex) => {
       const item = visit.items[0];
 
-      // 該当するブロックを探す
-      const block = blocks.find((b) => b.name === item.block);
-      if (!block) return;
-
-      // ナンバーの数値部分を抽出
-      const numStr = extractNumberFromItemNumber(item.number);
-      if (!numStr) return;
-      const numValue = parseInt(numStr, 10);
-
-      // ブロック内の該当する数値セルを探す
-      const numberCell = findRouteLookupNumberCell(block, numValue);
-      if (!numberCell) return;
+      const location = resolveLocation(
+        { blocks, cells: [], mergedCells: [], maxRow: 0, maxCol: 0 },
+        item,
+      );
+      if (location.status !== "resolved") return;
+      const numberCell = location.location.cell;
 
       cells.push({
         key: visit.key,

@@ -12,11 +12,8 @@ import { normalizeExecutionVisitDay } from "../../utils/visitProjection";
 import type { LayoutMode } from "../../features/app-shell/types";
 import type { UIVisibilitySettings } from "../../hooks/useUIVisibilitySettings";
 import { extractEventDates } from "../../utils/eventDates";
-import {
-  resolveHallByBlockName,
-  resolveManualHallId,
-} from "../../utils/hallFallback";
-import { isPointInPolygonInclusive } from "../../utils/mapRoutePolygon";
+import { getHallIdForItem } from "../../utils/hallGrouping";
+import { resolveDayKey } from "../../features/consistency/domain/context";
 import { getSpaceKey } from "../../utils/spaceGrouping";
 
 export type AppDayModeStore = Readonly<Record<string, DayModeState>>;
@@ -42,22 +39,9 @@ const isItemInsideHall = (
   hallId: string,
   mapData: DayMapData,
   halls: readonly HallDefinition[],
-): boolean => {
-  const block = mapData.blocks.find(
-    (candidate) => candidate.name === item.block,
-  );
-  if (!block) return false;
-
-  const centerRow = (block.startRow + block.endRow) / 2;
-  const centerCol = (block.startCol + block.endCol) / 2;
-
-  return halls.some(
-    (hall) =>
-      hall.id === hallId &&
-      hall.vertices.length >= 4 &&
-      isPointInPolygonInclusive(centerRow, centerCol, hall.vertices),
-  );
-};
+  allItems: readonly ShoppingItem[],
+): boolean =>
+  getHallIdForItem(item, mapData, [...halls], [...allItems]) === hallId;
 
 export const selectHallExecuteCount = (
   input: HallCountSelectorInput,
@@ -71,9 +55,11 @@ export const selectHallExecuteCount = (
     return 0;
   }
 
-  const executeIds =
-    input.executeModeItems[input.activeEventName]?.[input.activeEventDate] ??
-    [];
+  const days = input.executeModeItems[input.activeEventName];
+  const day = resolveDayKey(days, input.activeEventDate);
+  const executeIds = [
+    ...new Set(day.status === "resolved" ? days[day.key] : []),
+  ];
 
   return executeIds.filter((itemId) => {
     const item = input.items.find((candidate) => candidate.id === itemId);
@@ -84,6 +70,7 @@ export const selectHallExecuteCount = (
         input.hallId,
         input.currentMapData!,
         input.currentHalls,
+        input.items,
       )
     );
   }).length;
@@ -110,6 +97,7 @@ export const selectHallTotalItemCount = (
         input.hallId,
         input.currentMapData!,
         input.currentHalls,
+        input.items,
       ),
   ).length;
 };
@@ -118,36 +106,18 @@ export interface ItemHallSelectorInput {
   readonly item: ShoppingItem;
   readonly halls: readonly HallDefinition[];
   readonly mapData: DayMapData | null;
+  readonly allItems?: readonly ShoppingItem[];
 }
 
 export const selectItemHallId = (
   input: ItemHallSelectorInput,
 ): string | null => {
-  const halls = [...input.halls];
-  if (halls.length === 0) return null;
-
-  const manualHallId = resolveManualHallId(input.item.manualHallId, halls);
-  if (manualHallId) return manualHallId;
-
-  if (input.mapData) {
-    const block = input.mapData.blocks.find(
-      (candidate) => candidate.name === input.item.block,
-    );
-    if (block) {
-      const centerRow = (block.startRow + block.endRow) / 2;
-      const centerCol = (block.startCol + block.endCol) / 2;
-      for (const hall of halls) {
-        if (
-          hall.vertices.length >= 4 &&
-          isPointInPolygonInclusive(centerRow, centerCol, hall.vertices)
-        ) {
-          return hall.id;
-        }
-      }
-    }
-  }
-
-  return resolveHallByBlockName(input.item.block, halls);
+  return getHallIdForItem(
+    input.item,
+    input.mapData,
+    [...input.halls],
+    input.allItems ? [...input.allItems] : undefined,
+  );
 };
 
 export interface HallRelationshipSelectorInput {
@@ -170,11 +140,13 @@ const selectHallRelationship = (
     item: firstItem,
     halls: input.halls,
     mapData: input.mapData,
+    allItems: input.items,
   });
   const secondHallId = selectItemHallId({
     item: secondItem,
     halls: input.halls,
     mapData: input.mapData,
+    allItems: input.items,
   });
   if (firstHallId === null || secondHallId === null) return true;
 

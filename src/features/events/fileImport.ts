@@ -1,3 +1,6 @@
+import type { ConsistencyChange } from "../consistency/domain/migration";
+import type { EventConsistencyV1 } from "../../types/consistency";
+import { createAppBackup } from "../../utils/appBackup";
 import type {
   DayModeState,
   EventMetadata,
@@ -19,6 +22,7 @@ import type { EventWorkbookImportResult } from "../../xlsx/domain/eventWorkbook"
 import { expandEventMapDataFromStorage } from "../../utils/mapDataPersistence";
 
 export type ImportedEventData = {
+  eventConsistency?: EventConsistencyV1;
   eventName: string;
   items: ShoppingItem[];
   metadata: EventMetadata | null;
@@ -35,6 +39,7 @@ export type ImportedEventData = {
 };
 
 export type XlsxEventRestoreSource = {
+  notices: ConsistencyChange[];
   data: AppData;
   blockDetectionSettings: BlockDetectionSettingsStore;
 };
@@ -51,21 +56,11 @@ export function toImportedEventData(
   const hallDefinitions = hasEntries(result.hallDefinitions)
     ? (result.hallDefinitions as HallDefinitionsStore[string])
     : null;
-  const unresolvedManualHallCount =
-    hallDefinitions === null
-      ? result.items.filter((item) => item.manualHallId !== undefined).length
-      : 0;
-  const items =
-    unresolvedManualHallCount > 0
-      ? result.items.map((item) => {
-          const nextItem = { ...item };
-          delete nextItem.manualHallId;
-          return nextItem;
-        })
-      : result.items;
+  const items = result.items;
 
   return {
     eventName: result.eventName,
+    eventConsistency: result.eventConsistency,
     items,
     metadata: result.metadata ?? null,
     executeModeItems: hasEntries(result.layoutInfo?.executeModeItems)
@@ -91,13 +86,7 @@ export function toImportedEventData(
       ? (result.hallRouteSettings as HallRouteSettingsStore[string])
       : null,
     blockDetectionSettings: result.blockDetectionSettings ?? null,
-    errors:
-      unresolvedManualHallCount > 0
-        ? [
-            ...result.errors,
-            `会場定義が含まれていないため、${unresolvedManualHallCount}件の手動ホール設定を解除しました。`,
-          ]
-        : result.errors,
+    errors: result.errors,
   };
 }
 
@@ -113,8 +102,11 @@ export function buildXlsxEventRestoreSource(
 ): XlsxEventRestoreSource {
   const eventName = imported.eventName;
 
-  return {
-    data: {
+  const backup = createAppBackup(
+    {
+      ...(imported.eventConsistency
+        ? { eventConsistency: { [eventName]: imported.eventConsistency } }
+        : {}),
       eventLists: eventSection(eventName, imported.items),
       eventMetadata: eventSection(eventName, imported.metadata),
       executeModeItems: eventSection(eventName, imported.executeModeItems),
@@ -135,6 +127,17 @@ export function buildXlsxEventRestoreSource(
         imported.mapViewportSettings,
       ),
     },
+    new Date(),
+    {
+      blockDetectionSettings: eventSection(
+        eventName,
+        imported.blockDetectionSettings,
+      ),
+    },
+  );
+  return {
+    data: backup.data,
+    notices: backup.notices ?? [],
     blockDetectionSettings: eventSection(
       eventName,
       imported.blockDetectionSettings,

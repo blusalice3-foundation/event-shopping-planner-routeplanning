@@ -33,7 +33,7 @@ const shoppingItem = (
   id,
   circle: `サークル${id}`,
   eventDate,
-  block: "A",
+  block: manualHallId,
   number: "1",
   title: `商品${id}`,
   price: 1000,
@@ -47,7 +47,7 @@ const hall = (id: string): HallDefinition => ({
   id,
   name: id,
   vertices: [],
-  blockNames: [],
+  blockNames: [id],
 });
 
 const dayMap = (sheetName: string): DayMapData => ({
@@ -315,7 +315,7 @@ describe("useMapRouteCommands", () => {
     );
   });
 
-  it("splits a reviewed global order into map and mapless stores", () => {
+  it("keeps a reviewed mixed hall order in one context", () => {
     const harness = createHarness();
     const settings: HallRouteSettings = {
       hallOrder: [MAPLESS_HALL, MAP_HALL, "undefined"],
@@ -329,22 +329,16 @@ describe("useMapRouteCommands", () => {
 
     act(() => result.current.updateGlobalHallRouteSettings(settings));
 
-    expect(harness.stores.hallRouteSettings[EVENT][MAP_ONE]).toEqual({
-      hallOrder: [MAP_HALL, "undefined"],
-      hallVisitLists: [{ hallId: MAP_HALL, itemIds: ["one"] }],
-    });
+    expect(harness.stores.hallRouteSettings[EVENT][MAP_ONE]).toEqual(settings);
     expect(
       harness.stores.hallRouteSettings[EVENT][getMaplessKey(DAY_ONE)],
-    ).toEqual({
-      hallOrder: [MAPLESS_HALL],
-      hallVisitLists: [{ hallId: MAPLESS_HALL, itemIds: ["two"] }],
-    });
+    ).toEqual(maplessRouteSettings());
     expect(harness.stores.hallRouteSettings[EVENT].preserved).toBe(
       harness.ports.state.hallRouteSettings[EVENT].preserved,
     );
   });
 
-  it("reorders the execute list through hall and saved visit ordering", () => {
+  it("reorders hall groups while retaining the latest execution order", () => {
     const harness = createHarness();
     const { result } = renderHook(() => useMapRouteCommands(harness.ports));
 
@@ -354,8 +348,8 @@ describe("useMapRouteCommands", () => {
 
     expect(harness.stores.executeModeItems[EVENT][DAY_ONE]).toEqual([
       "two",
-      "three",
       "one",
+      "three",
     ]);
     expect(harness.stores.executeModeItems[OTHER_EVENT][DAY_ONE]).toEqual([
       "other",

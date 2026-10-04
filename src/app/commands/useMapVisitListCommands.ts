@@ -1,4 +1,16 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import type { ApplicationMutationPort } from "../ports/ApplicationMutationPort";
+import {
+  existingDayKey,
+  getContextHalls,
+  getDayConsistency,
+  hallGroupKey,
+  resolveDayMap,
+} from "../../features/consistency/domain/context";
+import { createMembershipResolver } from "../../features/consistency/domain/membership";
+import { applyVisitHistory } from "../../features/consistency/domain/visitHistory";
+import { planProjectedMutation } from "../../features/consistency/domain/mutations";
+import type { DayMapData, HallDefinition } from "../../types/map";
 import type { ActiveTab } from "../../features/app-shell/types";
 import type { ShoppingItem } from "../../types/item";
 import type { PersistenceSnapshot } from "../ports/PersistenceCommandPort";
@@ -9,6 +21,7 @@ type ExecuteModeItemsUpdater = (
 ) => ExecuteModeItemsStore;
 
 export interface MapVisitListStatePort {
+  readonly generation?: number;
   readonly activeEventName: string | null;
   readonly activeEventDate: string;
   readonly isMapTab: boolean;
@@ -36,7 +49,11 @@ export interface MapVisitListNavigationPort {
   navigateToTab(tab: ActiveTab): void;
 }
 
-export interface MapVisitListCommandPorts {
+export interface MapVisitListCommandPorts extends Pick<
+  ApplicationMutationPort,
+  "requestMutation"
+> {
+  readonly readCurrentSnapshot?: () => PersistenceSnapshot;
   readonly state: MapVisitListStatePort;
   readonly actions: MapVisitListActionPort;
   readonly navigation: MapVisitListNavigationPort;
@@ -49,240 +66,275 @@ export type MapVisitListTransitionResult =
 
 export interface MapVisitListCommands {
   openPanel(mapTab: string): void;
-  updateOrder(items: readonly ShoppingItem[]): void;
-  saveChanges(): void;
-  discardChanges(): void;
+  updateOrder(items: readonly ShoppingItem[]): Promise<void>;
+  saveChanges(): Promise<void>;
+  discardChanges(): Promise<void>;
   requestClose(): MapVisitListTransitionResult;
-  requestTabChange(tab: ActiveTab): MapVisitListTransitionResult;
-  confirmPendingTransition(): void;
-  discardPendingTransition(): void;
+  requestTabChange(
+    tab: ActiveTab,
+    afterTransition?: () => void,
+  ): MapVisitListTransitionResult;
+  confirmPendingTransition(): Promise<void>;
+  discardPendingTransition(): Promise<void>;
 }
 
-const getMapTabDay = (mapTab: string | null): string | null => {
-  if (!mapTab) return null;
-  const match = mapTab.match(/^(.+)マップ$/);
-  return match?.[1] || null;
-};
-
-const replaceKnownIdsPreservingUnknownSlots = (
-  currentItemIds: readonly string[],
-  reorderedKnownItemIds: readonly string[],
-): string[] => {
-  const reorderedKnownIdSet = new Set(reorderedKnownItemIds);
-  let nextKnownIndex = 0;
-  const nextItemIds = currentItemIds.map((currentItemId) => {
-    if (!reorderedKnownIdSet.has(currentItemId)) return currentItemId;
-    return reorderedKnownItemIds[nextKnownIndex++] ?? currentItemId;
-  });
-
-  if (nextKnownIndex < reorderedKnownItemIds.length) {
-    nextItemIds.push(...reorderedKnownItemIds.slice(nextKnownIndex));
-  }
-  return nextItemIds;
-};
-
-/**
- * Owns the optimistic visit-list transaction.
- *
- * updateExecuteModeItems is the application committed-state port monitored by
- * useIndexedDbPersistence. Save accepts the optimistic value; discard applies
- * one compensating committed update. Calling PersistenceCommandPort directly
- * here would create a second writer outside that coordinator.
- */
+interface VisitSession {
+  event: string;
+  day: string;
+  map: string;
+  generation: number;
+  baseline: string[];
+  latest: string[];
+}
 export const useMapVisitListCommands = ({
   state,
   actions,
   navigation,
+  requestMutation,
+  readCurrentSnapshot,
 }: MapVisitListCommandPorts): MapVisitListCommands => {
-  const {
-    activeEventName,
-    activeEventDate,
-    isMapTab,
-    currentMapTabName,
-    executeModeItems,
-    panelOpen,
-    panelMapTab,
-    hasUnsavedChanges,
-    originalOrder,
-    confirmDialogOpen,
-    pendingTabChange,
-  } = state;
-  const {
-    updateExecuteModeItems,
-    openPanel: openPanelOverlay,
-    setUnsaved,
-    requestConfirmClose,
-    closePanel,
-    confirmClose,
-    discardClose,
-  } = actions;
-  const { navigateToTab } = navigation;
-
+  const current = useRef(state);
+  current.current = state;
+  const session = useRef<VisitSession | null>(null);
+  const writes = useRef<Promise<unknown>>(Promise.resolve());
+  const pendingWrites = useRef(0);
+  const afterTransition = useRef<(() => void) | undefined>(undefined);
+  const valid = useCallback(
+    (value: VisitSession | null): value is VisitSession =>
+      !!value &&
+      value.event === current.current.activeEventName &&
+      value.generation === (current.current.generation ?? 0),
+    [],
+  );
   const openPanel = useCallback(
-    (mapTab: string) => {
-      if (!activeEventName) return;
-      const dayName = getMapTabDay(mapTab);
-      if (!dayName) return;
-
-      const executeIds = executeModeItems[activeEventName]?.[dayName] || [];
-      openPanelOverlay(mapTab, executeIds);
+    (map: string) => {
+      const value = current.current;
+      if (
+        !value.activeEventName ||
+        !value.activeEventDate ||
+        map !== value.currentMapTabName
+      )
+        return;
+      const days = value.executeModeItems[value.activeEventName] ?? {};
+      const day =
+        existingDayKey(days, value.activeEventDate) ?? value.activeEventDate;
+      const ids = [...(days[day] ?? [])];
+      session.current = {
+        event: value.activeEventName,
+        day,
+        map,
+        generation: value.generation ?? 0,
+        baseline: ids,
+        latest: ids,
+      };
+      afterTransition.current = undefined;
+      actions.openPanel(map, ids);
     },
-    [activeEventName, executeModeItems, openPanelOverlay],
+    [actions],
   );
-
   useEffect(() => {
+    const value = session.current;
+    if (!state.panelOpen) {
+      session.current = null;
+      afterTransition.current = undefined;
+      return;
+    }
+    if (value && !valid(value)) {
+      session.current = null;
+      afterTransition.current = undefined;
+      actions.closePanel();
+      return;
+    }
+    if (!value) return;
     if (
-      !panelOpen ||
-      !isMapTab ||
-      !activeEventName ||
-      !currentMapTabName ||
-      panelMapTab === currentMapTabName
+      (state.activeEventDate !== value.day &&
+        existingDayKey({ [value.day]: true }, state.activeEventDate) ===
+          undefined) ||
+      state.currentMapTabName !== value.map
     ) {
-      return;
+      if (state.hasUnsavedChanges || pendingWrites.current > 0) {
+        if (!state.confirmDialogOpen)
+          actions.requestConfirmClose(state.activeEventDate);
+      } else if (state.currentMapTabName) openPanel(state.currentMapTabName);
     }
-
-    if (hasUnsavedChanges) {
-      if (!confirmDialogOpen) {
-        requestConfirmClose(activeEventDate || null);
-      }
-      return;
-    }
-
-    if (!activeEventDate) return;
-    const executeIds =
-      executeModeItems[activeEventName]?.[activeEventDate] || [];
-    closePanel();
-    openPanelOverlay(currentMapTabName, executeIds);
   }, [
-    activeEventDate,
-    activeEventName,
-    confirmDialogOpen,
-    currentMapTabName,
-    executeModeItems,
-    hasUnsavedChanges,
-    isMapTab,
-    panelMapTab,
-    panelOpen,
-    closePanel,
-    openPanelOverlay,
-    requestConfirmClose,
+    state.panelOpen,
+    state.activeEventName,
+    state.activeEventDate,
+    state.currentMapTabName,
+    state.generation,
+    state.hasUnsavedChanges,
+    state.confirmDialogOpen,
+    actions,
+    openPanel,
+    valid,
   ]);
-
-  const updateOrder = useCallback(
-    (items: readonly ShoppingItem[]) => {
-      if (!activeEventName) return;
-      const dayName = getMapTabDay(panelMapTab);
-      if (!dayName) return;
-      const itemIds = items.map((item) => item.id);
-
-      updateExecuteModeItems((current) => {
-        const currentDayItemIds = current[activeEventName]?.[dayName] || [];
-        return {
-          ...current,
-          [activeEventName]: {
-            ...current[activeEventName],
-            [dayName]: replaceKnownIdsPreservingUnknownSlots(
-              currentDayItemIds,
-              itemIds,
-            ),
-          },
-        };
+  const applyOrder = useCallback(
+    (ids: readonly string[], dirty: boolean): Promise<void> => {
+      const value = session.current;
+      if (!valid(value)) return Promise.resolve();
+      pendingWrites.current += 1;
+      const task = requestMutation({
+        events: [value.event],
+        expectedGenerations: { [value.event]: value.generation },
+        plan: (snapshot) => {
+          if (!valid(value) || session.current !== value)
+            throw new Error("訪問リストの操作は終了しています。");
+          const dayKey = existingDayKey(
+            snapshot.executeModeItems[value.event],
+            value.day,
+          );
+          if (!dayKey) return { snapshot };
+          const items = snapshot.eventLists[value.event] as ShoppingItem[];
+          const day = getDayConsistency(
+            snapshot.eventConsistency[value.event],
+            dayKey,
+          );
+          const maps = snapshot.mapData[value.event] as
+            | Record<string, DayMapData>
+            | undefined;
+          const map = resolveDayMap(maps, dayKey, value.map);
+          const context = day?.maps[value.map];
+          const halls = getContextHalls(
+            snapshot.hallDefinitions[value.event] as Record<
+              string,
+              HallDefinition[]
+            >,
+            dayKey,
+            value.map,
+          );
+          const resolve = createMembershipResolver({
+            items,
+            day: dayKey,
+            map,
+            context,
+            halls,
+          });
+          const order = applyVisitHistory(
+            snapshot.executeModeItems[value.event][dayKey],
+            ids,
+            items,
+            (item) =>
+              hallGroupKey({
+                hall: resolve(item).hall,
+                priority: item.priorityLevel ?? "none",
+              }),
+          );
+          return planProjectedMutation(
+            snapshot,
+            {
+              executeModeItems: {
+                ...snapshot.executeModeItems,
+                [value.event]: {
+                  ...snapshot.executeModeItems[value.event],
+                  [dayKey]: order,
+                },
+              },
+            },
+            {
+              eventName: value.event,
+              day: dayKey,
+              mapKey: value.map,
+              confirm: false,
+            },
+          );
+        },
+      }).then((snapshot) => {
+        if (!valid(value) || session.current !== value) return;
+        const day = existingDayKey(
+          snapshot.executeModeItems[value.event],
+          value.day,
+        );
+        value.latest = day
+          ? [...snapshot.executeModeItems[value.event][day]]
+          : [];
+        actions.setUnsaved(dirty);
       });
-      setUnsaved(true);
+      const settled = task.finally(() => {
+        pendingWrites.current -= 1;
+      });
+      writes.current = settled;
+      return settled;
     },
-    [activeEventName, panelMapTab, setUnsaved, updateExecuteModeItems],
+    [requestMutation, valid, actions],
   );
-
-  const saveChanges = useCallback(() => {
-    if (!panelOpen) return;
-    setUnsaved(false);
-  }, [panelOpen, setUnsaved]);
-
-  const discardChanges = useCallback(() => {
-    if (!panelOpen || !activeEventName) return;
-    const dayName = getMapTabDay(panelMapTab);
-    if (!dayName) return;
-
-    updateExecuteModeItems((current) => ({
-      ...current,
-      [activeEventName]: {
-        ...current[activeEventName],
-        [dayName]: [...originalOrder],
-      },
-    }));
-    setUnsaved(false);
-  }, [
-    activeEventName,
-    originalOrder,
-    panelMapTab,
-    panelOpen,
-    setUnsaved,
-    updateExecuteModeItems,
-  ]);
-
+  const updateOrder = useCallback(
+    (items: readonly ShoppingItem[]) =>
+      applyOrder(
+        items.map((item) => item.id),
+        true,
+      ),
+    [applyOrder],
+  );
+  const saveChanges = useCallback(async () => {
+    await writes.current;
+    const value = session.current;
+    if (!valid(value)) return;
+    const currentSnapshot = readCurrentSnapshot?.();
+    const currentDay = currentSnapshot
+      ? existingDayKey(currentSnapshot.executeModeItems[value.event], value.day)
+      : undefined;
+    if (currentSnapshot && currentDay)
+      value.latest = [
+        ...currentSnapshot.executeModeItems[value.event][currentDay],
+      ];
+    value.baseline = [...value.latest];
+    actions.openPanel(value.map, value.baseline);
+    actions.setUnsaved(false);
+  }, [valid, actions, readCurrentSnapshot]);
+  const discardChanges = useCallback(async () => {
+    await writes.current;
+    const value = session.current;
+    if (!valid(value)) return;
+    await applyOrder(value.baseline, false);
+  }, [valid, applyOrder]);
   const requestClose = useCallback((): MapVisitListTransitionResult => {
-    if (!panelOpen || confirmDialogOpen) return "ignored";
-    if (hasUnsavedChanges) {
-      requestConfirmClose(null);
+    if (!current.current.panelOpen || current.current.confirmDialogOpen)
+      return "ignored";
+    if (current.current.hasUnsavedChanges || pendingWrites.current > 0) {
+      actions.requestConfirmClose(null);
       return "confirmation";
     }
-    closePanel();
+    session.current = null;
+    actions.closePanel();
     return "navigated";
-  }, [
-    confirmDialogOpen,
-    hasUnsavedChanges,
-    panelOpen,
-    closePanel,
-    requestConfirmClose,
-  ]);
-
+  }, [actions]);
   const requestTabChange = useCallback(
-    (tab: ActiveTab): MapVisitListTransitionResult => {
-      if (confirmDialogOpen) return "ignored";
-      if (panelOpen && hasUnsavedChanges) {
-        requestConfirmClose(tab);
+    (tab: ActiveTab, after?: () => void): MapVisitListTransitionResult => {
+      if (current.current.confirmDialogOpen) return "ignored";
+      if (
+        current.current.panelOpen &&
+        (current.current.hasUnsavedChanges || pendingWrites.current > 0)
+      ) {
+        afterTransition.current = after;
+        actions.requestConfirmClose(tab);
         return "confirmation";
       }
-      if (panelOpen) closePanel();
-      navigateToTab(tab);
+      session.current = null;
+      if (current.current.panelOpen) actions.closePanel();
+      navigation.navigateToTab(tab);
+      after?.();
       return "navigated";
     },
-    [
-      confirmDialogOpen,
-      hasUnsavedChanges,
-      navigateToTab,
-      panelOpen,
-      closePanel,
-      requestConfirmClose,
-    ],
+    [actions, navigation],
   );
-
-  const confirmPendingTransition = useCallback(() => {
-    if (!confirmDialogOpen) return;
-    saveChanges();
-    confirmClose();
-    if (pendingTabChange !== null) navigateToTab(pendingTabChange);
-  }, [
-    confirmClose,
-    confirmDialogOpen,
-    navigateToTab,
-    pendingTabChange,
-    saveChanges,
-  ]);
-
-  const discardPendingTransition = useCallback(() => {
-    if (!confirmDialogOpen) return;
-    discardChanges();
-    discardClose();
-    if (pendingTabChange !== null) navigateToTab(pendingTabChange);
-  }, [
-    confirmDialogOpen,
-    discardChanges,
-    discardClose,
-    navigateToTab,
-    pendingTabChange,
-  ]);
-
+  const finishTransition = useCallback(
+    async (discard: boolean) => {
+      if (!current.current.confirmDialogOpen || !valid(session.current)) return;
+      const tab = current.current.pendingTabChange;
+      const callback = afterTransition.current;
+      if (discard) await discardChanges();
+      else await saveChanges();
+      if (!valid(session.current)) return;
+      session.current = null;
+      afterTransition.current = undefined;
+      if (discard) actions.discardClose();
+      else actions.confirmClose();
+      if (tab !== null) navigation.navigateToTab(tab);
+      callback?.();
+    },
+    [valid, discardChanges, saveChanges, actions, navigation],
+  );
   return {
     openPanel,
     updateOrder,
@@ -290,7 +342,7 @@ export const useMapVisitListCommands = ({
     discardChanges,
     requestClose,
     requestTabChange,
-    confirmPendingTransition,
-    discardPendingTransition,
+    confirmPendingTransition: () => finishTransition(false),
+    discardPendingTransition: () => finishTransition(true),
   };
 };

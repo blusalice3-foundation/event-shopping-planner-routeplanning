@@ -1,3 +1,5 @@
+import { validateEventConsistency } from "../../types/consistencyValidation";
+import { parseContentManifest } from "../domain/consistencyWorkbook";
 import type {
   ExportSnapshot,
   XlsxImportKind,
@@ -9,12 +11,12 @@ import {
   type BlockDetectionSettings,
 } from "../../types/map";
 
-export const XLSX_WORKER_PROTOCOL_VERSION = 1 as const;
+export const XLSX_WORKER_PROTOCOL_VERSION = 2 as const;
 
 export type XlsxWorkerRequest =
   | {
       type: "XLSX_IMPORT_REQUEST";
-      protocolVersion: 1;
+      protocolVersion: 2;
       requestId: string;
       kind: "event-import";
       input: ArrayBuffer;
@@ -22,7 +24,7 @@ export type XlsxWorkerRequest =
     }
   | {
       type: "XLSX_IMPORT_REQUEST";
-      protocolVersion: 1;
+      protocolVersion: 2;
       requestId: string;
       kind: "map-preview" | "map-import";
       input: ArrayBuffer;
@@ -31,7 +33,7 @@ export type XlsxWorkerRequest =
     }
   | {
       type: "XLSX_EXPORT_REQUEST";
-      protocolVersion: 1;
+      protocolVersion: 2;
       requestId: string;
       kind: "export";
       snapshot: ExportSnapshot;
@@ -39,7 +41,7 @@ export type XlsxWorkerRequest =
 
 export type XlsxWorkerCancel = {
   type: "XLSX_CANCEL_REQUEST";
-  protocolVersion: 1;
+  protocolVersion: 2;
   requestId: string;
 };
 
@@ -58,28 +60,28 @@ export type XlsxWorkerErrorCode =
 export type XlsxWorkerResponse =
   | {
       type: "XLSX_PROGRESS";
-      protocolVersion: 1;
+      protocolVersion: 2;
       requestId: string;
       kind: XlsxImportKind | "export";
       progress: XlsxProgress;
     }
   | {
       type: "XLSX_IMPORT_RESULT";
-      protocolVersion: 1;
+      protocolVersion: 2;
       requestId: string;
       kind: XlsxImportKind;
       result: XlsxImportResult;
     }
   | {
       type: "XLSX_EXPORT_RESULT";
-      protocolVersion: 1;
+      protocolVersion: 2;
       requestId: string;
       kind: "export";
       bytes: Uint8Array;
     }
   | {
       type: "XLSX_ERROR";
-      protocolVersion: 1;
+      protocolVersion: 2;
       requestId: string;
       kind: XlsxImportKind | "export" | "unknown";
       errorCode: XlsxWorkerErrorCode;
@@ -146,13 +148,14 @@ const isExportOptions = (value: unknown): boolean =>
     "includeRouteInfo",
     "format",
   ]) &&
-  typeof value.includeItems === "boolean" &&
+  value.includeItems === true &&
   typeof value.includeLayoutInfo === "boolean" &&
   typeof value.includeMapData === "boolean" &&
   typeof value.includeRouteInfo === "boolean" &&
   (value.format === "full" || value.format === "simple");
 
 const EXPORT_ADDITIONAL_DATA_KEYS = [
+  "eventConsistency",
   "metadata",
   "executeModeItems",
   "dayModes",
@@ -165,12 +168,26 @@ const EXPORT_ADDITIONAL_DATA_KEYS = [
   "blockDetectionSettings",
 ] as const;
 
+const validConsistency = (value: unknown): boolean =>
+  value === undefined || validateEventConsistency(value).length === 0;
+const validManifest = (value: unknown): boolean => {
+  if (value === undefined) return true;
+  try {
+    parseContentManifest(value);
+    return true;
+  } catch {
+    return false;
+  }
+};
 const isExportAdditionalData = (value: unknown): boolean =>
   isRecord(value) &&
   allowedKeys(value, EXPORT_ADDITIONAL_DATA_KEYS, []) &&
+  validConsistency(value.eventConsistency) &&
   Object.values(value).every((entry) => entry === undefined || isRecord(entry));
 
 const EVENT_RESULT_KEYS = [
+  "eventConsistency",
+  "contentManifest",
   "success",
   "eventName",
   "items",
@@ -197,6 +214,14 @@ const isEventImportValue = (value: unknown): boolean =>
     "errors",
   ]) &&
   typeof value.success === "boolean" &&
+  validConsistency(
+    value.eventConsistency === undefined
+      ? undefined
+      : { event: value.eventConsistency },
+  ) &&
+  validManifest(value.contentManifest) &&
+  (value.contentManifest === undefined ||
+    value.eventConsistency !== undefined) &&
   typeof value.eventName === "string" &&
   isRecordArray(value.items) &&
   isStringArray(value.errors) &&
@@ -300,7 +325,7 @@ export const parseXlsxWorkerRequest = (
       "options",
       "additionalData",
     ]) &&
-    value.snapshot.schemaVersion === 1 &&
+    value.snapshot.schemaVersion === 2 &&
     typeof value.snapshot.eventName === "string" &&
     value.snapshot.eventName.length > 0 &&
     isRecordArray(value.snapshot.items) &&

@@ -1,3 +1,18 @@
+import {
+  createWorkbookSource,
+  selectWorkbookContent,
+  encodeConsistencyRows,
+  decodeConsistencyRows,
+  parseContentManifest,
+  validateWorkbookManifest,
+  type ConsistencyChunkRow,
+  type ContentManifest,
+} from "../domain/consistencyWorkbook";
+import {
+  validateSnapshotStructure,
+  validateSnapshotReferences,
+} from "../../utils/appBackup";
+import type { PersistenceSnapshot } from "../../app/ports/PersistenceCommandPort";
 /**
  * エクスポート/インポート ユーティリティ
  * IndexedDBのデータをxlsxファイルにエクスポート/インポート
@@ -52,7 +67,7 @@ export interface ExportData {
   blockDetectionSettings?: BlockDetectionSettings;
 }
 
-const EXPORT_VERSION = "2.2";
+const EXPORT_VERSION = "3.0";
 const WORKBOOK_CREATOR = "Event Shopping Planner";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -160,6 +175,16 @@ export async function exportToXlsx(
   options: ExportOptions,
   additionalData: EventWorkbookAdditionalData,
 ): Promise<Blob> {
+  const selected = selectWorkbookContent(
+    createWorkbookSource(eventName, items, additionalData),
+    eventName,
+    options,
+  );
+  items = selected.snapshot.eventLists[eventName] as ShoppingItem[];
+  additionalData = {
+    ...selected.snapshot,
+    metadata: selected.snapshot.eventMetadata[eventName] as EventMetadata,
+  } as EventWorkbookAdditionalData;
   const workbook = new ExcelJS.Workbook();
   workbook.creator = WORKBOOK_CREATOR;
   workbook.created = new Date();
@@ -206,7 +231,7 @@ export async function exportToXlsx(
       priorityLevel: item.priorityLevel || "none",
       protectionLevel: item.protectionLevel || "",
       source: item.source || "",
-      manualHallId: item.manualHallId || "",
+      manualHallId: "",
       limitedPurchasedQuantity:
         item.purchaseStatus === "LimitedPurchase"
           ? (item.limitedPurchasedQuantity ?? "")
@@ -245,6 +270,15 @@ export async function exportToXlsx(
     metaSheet.addRow({ key: "version", value: EXPORT_VERSION });
     metaSheet.addRow({ key: "exportDate", value: new Date().toISOString() });
     metaSheet.addRow({ key: "eventName", value: eventName });
+    metaSheet.addRow({ key: "consistencySchemaVersion", value: 1 });
+    const manifestJson = JSON.stringify(selected.manifest);
+    if (manifestJson.length > 30000)
+      throw new Error("出力設定の一覧がExcelのセル上限を超えています。");
+    metaSheet.addRow({ key: "contentManifest", value: manifestJson });
+    metaSheet.addRow({
+      key: "eventMetadata",
+      value: JSON.stringify(additionalData.metadata ?? null),
+    });
 
     if (additionalData.metadata) {
       metaSheet.addRow({
@@ -270,10 +304,6 @@ export async function exportToXlsx(
         [
           "mapViewportSettings",
           additionalData.mapViewportSettings?.[eventName],
-        ],
-        [
-          "blockDetectionSettings",
-          additionalData.blockDetectionSettings?.[eventName],
         ],
       ] as const;
 
@@ -321,8 +351,8 @@ export async function exportToXlsx(
 
   // 4. マップデータシート
   if (options.includeMapData && options.format === "full") {
-    const eventMapData = additionalData.mapData?.[eventName];
-    if (eventMapData) {
+    const eventMapData = additionalData.mapData?.[eventName] ?? {};
+    {
       const mapSheet = workbook.addWorksheet("マップデータ");
       mapSheet.columns = [
         { header: "マップ名", key: "mapName", width: 20 },
@@ -349,18 +379,6 @@ export async function exportToXlsx(
       { header: "データ", key: "data", width: 200 },
     ];
 
-    // ルート設定
-    const eventRouteSettings = additionalData.routeSettings?.[eventName];
-    if (eventRouteSettings) {
-      Object.entries(eventRouteSettings).forEach(([mapName, data]) => {
-        routeSheet.addRow({
-          type: "routeSettings",
-          mapName,
-          data: JSON.stringify(data),
-        });
-      });
-    }
-
     // ホール定義
     const eventHallDefinitions = additionalData.hallDefinitions?.[eventName];
     if (eventHallDefinitions) {
@@ -373,22 +391,36 @@ export async function exportToXlsx(
       });
     }
 
-    // ホールルート設定
-    const eventHallRouteSettings =
-      additionalData.hallRouteSettings?.[eventName];
-    if (eventHallRouteSettings) {
-      Object.entries(eventHallRouteSettings).forEach(([mapName, data]) => {
-        routeSheet.addRow({
-          type: "hallRouteSettings",
-          mapName,
-          data: JSON.stringify(data),
-        });
-      });
-    }
-
     routeSheet.getRow(1).font = { bold: true };
   }
 
+  if (options.format === "full") {
+    const sheet = workbook.addWorksheet("関連設定");
+    sheet.columns = [
+      "種別",
+      "日付キー",
+      "文脈種別",
+      "実在マップキー",
+      "レコードID",
+      "分割番号",
+      "総分割数",
+      "JSON本文",
+    ].map((header) => ({ header, width: header === "JSON本文" ? 100 : 22 }));
+    for (const row of encodeConsistencyRows(
+      selected.snapshot.eventConsistency[eventName],
+    ).rows)
+      sheet.addRow([
+        row.kind,
+        row.dayKey,
+        row.context,
+        row.mapKey,
+        row.recordId,
+        row.part,
+        row.totalParts,
+        row.json,
+      ]);
+    sheet.getRow(1).font = { bold: true };
+  }
   // Blobとして出力
   const buffer = await workbook.xlsx.writeBuffer();
   return new Blob([buffer], {
@@ -422,10 +454,56 @@ export async function importFromXlsx(
         if (rowNumber === 1) return;
         const key = String(row.getCell(1).value || "");
         const value = String(row.getCell(2).value || "");
+        if (key && metaMap.has(key))
+          throw new Error("メタデータのキーが重複しています。");
         if (key) metaMap.set(key, value);
       });
     }
 
+    const version = metaMap.get("version");
+    const isNew = version === EXPORT_VERSION;
+    if (
+      version !== undefined &&
+      !["1.0", "2.0", "2.1", "2.2", EXPORT_VERSION].includes(version)
+    )
+      throw new Error("未対応のExcelバージョンです。");
+    if (
+      !isNew &&
+      (workbook.getWorksheet("関連設定") ||
+        metaMap.has("consistencySchemaVersion") ||
+        metaMap.has("contentManifest"))
+    )
+      throw new Error("新形式の宣言とバージョンが一致しません。");
+    let manifest: ContentManifest | undefined;
+    if (isNew) {
+      if (metaMap.get("consistencySchemaVersion") !== "1")
+        throw new Error("未対応の関連設定スキーマです。");
+      manifest = parseContentManifest(
+        JSON.parse(metaMap.get("contentManifest") ?? "null"),
+      );
+      const required = [
+        "アイテムデータ",
+        "メタデータ",
+        "関連設定",
+        ...(manifest.options.includeLayoutInfo ? ["配置情報"] : []),
+        ...(manifest.options.includeMapData ? ["マップデータ"] : []),
+        ...(manifest.options.includeRouteInfo ? ["ルート情報"] : []),
+      ];
+      if (
+        JSON.stringify(required) !== JSON.stringify(manifest.requiredSheets) ||
+        required.some((name) => !workbook.getWorksheet(name))
+      )
+        throw new Error(
+          `contentManifestで宣言されたシートがありません: ${manifest.requiredSheets.filter((name) => !workbook.getWorksheet(name)).join("、")}`,
+        );
+      for (const [name, enabled] of [
+        ["配置情報", manifest.options.includeLayoutInfo],
+        ["マップデータ", manifest.options.includeMapData],
+        ["ルート情報", manifest.options.includeRouteInfo],
+      ] as const)
+        if (!enabled && workbook.getWorksheet(name))
+          throw new Error("省略したシートが混在しています。");
+    }
     // 1. アイテムデータシートを読み込み
     const itemsSheet = workbook.getWorksheet("アイテムデータ");
     if (!itemsSheet) {
@@ -452,9 +530,12 @@ export async function importFromXlsx(
     }
     const hasSheetDerivedColumns =
       hasCatalogPriceColumn && hasSheetRemarksColumn;
-    if (!hasSheetDerivedColumns && metaMap.get("version") === EXPORT_VERSION) {
+    if (
+      !hasSheetDerivedColumns &&
+      ["2.2", EXPORT_VERSION].includes(metaMap.get("version") ?? "")
+    ) {
       result.errors.push(
-        `バージョン${EXPORT_VERSION}の完全版に「カタログ価格」または「シート備考」がありません。ファイルが破損している可能性があります。`,
+        `バージョン${metaMap.get("version")}の完全版に「カタログ価格」または「シート備考」がありません。ファイルが破損している可能性があります。`,
       );
       return result;
     }
@@ -870,10 +951,94 @@ export async function importFromXlsx(
       }
     }
 
-    result.success = true;
-  } catch {
+    if (isNew && manifest) {
+      const sheet = workbook.getWorksheet("関連設定")!;
+      const headers = [
+        "種別",
+        "日付キー",
+        "文脈種別",
+        "実在マップキー",
+        "レコードID",
+        "分割番号",
+        "総分割数",
+        "JSON本文",
+      ];
+      if (
+        headers.some(
+          (header, index) =>
+            sheet.getRow(1).getCell(index + 1).value !== header,
+        )
+      )
+        throw new Error("関連設定の列が不正です。");
+      const rows: ConsistencyChunkRow[] = [];
+      sheet.eachRow((row, index) => {
+        if (index === 1) return;
+        const values = Array.from(
+          { length: 8 },
+          (_, column) => row.getCell(column + 1).value ?? "",
+        );
+        if (
+          ![...values.slice(0, 5), values[7]].every(
+            (value) => typeof value === "string",
+          ) ||
+          !Number.isSafeInteger(values[5]) ||
+          !Number.isSafeInteger(values[6])
+        )
+          throw new Error("関連設定の分割行の型が不正です。");
+        rows.push({
+          kind: values[0],
+          dayKey: values[1],
+          context: values[2],
+          mapKey: values[3],
+          recordId: values[4],
+          part: values[5],
+          totalParts: values[6],
+          json: values[7],
+        } as ConsistencyChunkRow);
+      });
+      result.eventConsistency = decodeConsistencyRows(rows, manifest);
+      result.contentManifest = manifest;
+      const metadata = JSON.parse(metaMap.get("eventMetadata") ?? "null");
+      if (metadata !== null) result.metadata = metadata;
+      else delete result.metadata;
+      if (
+        result.routeSettings ||
+        result.hallRouteSettings ||
+        result.blockDetectionSettings ||
+        result.items.some((item) => item.manualHallId !== undefined)
+      )
+        throw new Error("新形式に旧巡回設定が重複しています。");
+      const name = result.eventName;
+      const one = (value: unknown) =>
+        value === undefined ? {} : { [name]: value };
+      const snapshot = {
+        eventLists: { [name]: result.items },
+        eventMetadata: one(result.metadata),
+        executeModeItems: one(result.layoutInfo?.executeModeItems),
+        dayModes: one(result.layoutInfo?.dayModes),
+        mapData: one(result.mapData),
+        mapRotationSettings: one(result.mapRotationSettings),
+        mapViewportSettings: one(result.mapViewportSettings),
+        hallDefinitions: one(result.hallDefinitions),
+        hallRouteSettings: {},
+        routeSettings: {},
+        eventConsistency: { [name]: result.eventConsistency },
+      } as PersistenceSnapshot;
+      const errors = [
+        ...validateSnapshotStructure(snapshot),
+        ...validateSnapshotReferences(snapshot),
+      ];
+      if (errors.length) throw new Error(errors.join("\n"));
+      validateWorkbookManifest(snapshot, name, manifest);
+    }
+    result.success = result.errors.length === 0;
+  } catch (error) {
     console.error("Spreadsheet import failed (spreadsheet-import-failed).");
-    result.errors.push("インポートエラー: ファイルを解析できませんでした");
+    result.errors.push(
+      error instanceof Error
+        ? error.message
+        : "インポートエラー: ファイルを解析できませんでした",
+    );
   }
 
   return result;

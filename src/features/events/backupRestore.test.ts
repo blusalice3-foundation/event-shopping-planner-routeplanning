@@ -1,3 +1,4 @@
+import { createEventConsistency } from "../../types/consistency";
 import { describe, expect, it } from "vitest";
 import type { AppData } from "../../app/ports/PersistenceCommandPort";
 import { buildEventRestoreData } from "./backupRestore";
@@ -13,10 +14,12 @@ const APP_DATA_SECTIONS = [
   "hallDefinitions",
   "hallRouteSettings",
   "mapViewportSettings",
+  "eventConsistency",
 ] as const satisfies readonly (keyof AppData)[];
 
 function emptyAppData(): AppData {
   return {
+    eventConsistency: {},
     eventLists: {},
     eventMetadata: {},
     executeModeItems: {},
@@ -32,6 +35,7 @@ function emptyAppData(): AppData {
 
 function makeEventData(eventName: string, label: string): AppData {
   return {
+    eventConsistency: { [eventName]: createEventConsistency() },
     eventLists: {
       [eventName]: [
         {

@@ -32,6 +32,7 @@ export const selectItemsForExecutionDay = (
 };
 
 export interface MapVisitListItemsSelectorInput {
+  readonly dayName: string;
   readonly activeEventName: string | null;
   readonly mapTabName: string | null;
   readonly executeModeItems: AppExecuteModeStore;
@@ -42,9 +43,7 @@ export const selectMapVisitListItems = (
   input: MapVisitListItemsSelectorInput,
 ): ShoppingItem[] => {
   if (!input.activeEventName || !input.mapTabName) return [];
-  const dayMatch = input.mapTabName.match(/^(.+)マップ$/);
-  if (!dayMatch) return [];
-  const dayName = normalizeExecutionVisitDay(dayMatch[1]);
+  const dayName = normalizeExecutionVisitDay(input.dayName);
   const dayItemsById = new Map(
     selectItemsForExecutionDay(input.items, dayName).map((item) => [
       item.id,

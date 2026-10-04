@@ -1,3 +1,4 @@
+import { assertEventConsistency } from "../../types/consistencyValidation";
 /**
  * IndexedDB persistence compatibility facade.
  *
@@ -9,9 +10,9 @@ import type { AppData } from "../../app/ports/PersistenceCommandPort";
 import type { MapDataStore } from "../../types/map";
 import type { StartupRecoveryCandidate } from "../../utils/persistenceResilience";
 import type { LoadResult } from "../contracts/persistence";
-import { STORES, type StoreName } from "../db/constants";
-import { PersistenceConflictError } from "../db/errors";
+import { STORES } from "../db/constants";
 import {
+  readApplicationSnapshot,
   commitApplicationSnapshotAtomically,
   restoreAppDataAtomically,
 } from "../db/atomicRestoreTransaction";
@@ -52,25 +53,6 @@ export type {
 } from "../contracts/persistence";
 export type { RecoveryCandidateAdoptionResult } from "../recovery/recoveryAdoption";
 
-const resolveLoadResultData = <T extends Record<string, unknown>>(
-  storeName: StoreName,
-  result: LoadResult<T>,
-): T => {
-  if (result.status === "ok" && result.data) {
-    return result.data;
-  }
-
-  if (result.status === "error" || result.status === "conflict") {
-    console.error(`Failed to load ${storeName}.`);
-    throw (
-      result.error ??
-      new PersistenceConflictError(`Failed to resolve ${storeName}.`)
-    );
-  }
-
-  return {} as T;
-};
-
 const eventRepository = createEventRepository(applicationRecordOperations);
 const settingsRepository = createSettingsRepository(
   applicationRecordOperations,
@@ -82,6 +64,18 @@ const syncQueueRepository = createSyncQueueRepository(
 // 公開API
 export const db = {
   STORES,
+  readApplicationSnapshot,
+  saveEventConsistency(data: AppData["eventConsistency"]): Promise<void> {
+    assertEventConsistency(data);
+    return applicationRecordOperations.save(
+      STORES.EVENT_CONSISTENCY,
+      "data",
+      data,
+    );
+  },
+  loadEventConsistency(): Promise<LoadResult<AppData["eventConsistency"]>> {
+    return applicationRecordOperations.load(STORES.EVENT_CONSISTENCY, "data");
+  },
 
   async adoptRecoveryCandidate(
     candidate: StartupRecoveryCandidate,
@@ -230,63 +224,7 @@ export const db = {
 
   // 全データを取得（エクスポート用）
   async getAllAppData(): Promise<AppData> {
-    const [
-      eventListsResult,
-      eventMetadataResult,
-      executeModeItemsResult,
-      dayModesResult,
-      mapDataResult,
-      mapRotationSettingsResult,
-      routeSettingsResult,
-      hallDefinitionsResult,
-      hallRouteSettingsResult,
-      mapViewportSettingsResult,
-    ] = await Promise.all([
-      db.loadEventLists(),
-      db.loadEventMetadata(),
-      db.loadExecuteModeItems(),
-      db.loadDayModes(),
-      db.loadMapData(),
-      db.loadMapRotationSettings(),
-      db.loadRouteSettings(),
-      db.loadHallDefinitions(),
-      db.loadHallRouteSettings(),
-      db.loadMapViewportSettings(),
-    ]);
-
-    return {
-      eventLists: resolveLoadResultData(STORES.EVENT_LISTS, eventListsResult),
-      eventMetadata: resolveLoadResultData(
-        STORES.EVENT_METADATA,
-        eventMetadataResult,
-      ),
-      executeModeItems: resolveLoadResultData(
-        STORES.EXECUTE_MODE_ITEMS,
-        executeModeItemsResult,
-      ),
-      dayModes: resolveLoadResultData(STORES.DAY_MODES, dayModesResult),
-      mapData: resolveLoadResultData(STORES.MAP_DATA, mapDataResult),
-      mapRotationSettings: resolveLoadResultData(
-        STORES.MAP_ROTATION_SETTINGS,
-        mapRotationSettingsResult,
-      ),
-      routeSettings: resolveLoadResultData(
-        STORES.ROUTE_SETTINGS,
-        routeSettingsResult,
-      ),
-      hallDefinitions: resolveLoadResultData(
-        STORES.HALL_DEFINITIONS,
-        hallDefinitionsResult,
-      ),
-      hallRouteSettings: resolveLoadResultData(
-        STORES.HALL_ROUTE_SETTINGS,
-        hallRouteSettingsResult,
-      ),
-      mapViewportSettings: resolveLoadResultData(
-        STORES.MAP_VIEWPORT_SETTINGS,
-        mapViewportSettingsResult,
-      ),
-    };
+    return (await readApplicationSnapshot()).snapshot;
   },
 
   // バックアップから全アプリデータを単一トランザクションで復元

@@ -36,6 +36,7 @@ const createValues = (): PersistedStateValues => ({
   hallDefinitions: {},
   hallRouteSettings: {},
   mapViewportSettings: {},
+  eventConsistency: {},
 });
 
 const createSetters = (): PersistedSetters => ({
@@ -49,6 +50,7 @@ const createSetters = (): PersistedSetters => ({
   setHallDefinitions: vi.fn(),
   setHallRouteSettings: vi.fn(),
   setMapViewportSettings: vi.fn(),
+  setEventConsistency: vi.fn(),
 });
 
 beforeEach(() => {
@@ -82,6 +84,7 @@ describe("useIndexedDbPersistence with real IndexedDB", () => {
     };
     const legacyRaw = JSON.stringify(legacyMetadata);
 
+    await db.saveEventLists({ "Release A IDBイベント": [] });
     await db.saveEventMetadata(idbMetadata);
     localStorage.setItem("eventMetadata", legacyRaw);
 

@@ -1,3 +1,4 @@
+import ConsistencyUpgradeGate from "./components/ConsistencyUpgradeGate";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
@@ -18,11 +19,13 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <SpaceNavigatorProvider
-      settingsPersistence={appRuntime.persistenceCommands}
-    >
-      <App />
-      <SpaceNavigatorHost />
-    </SpaceNavigatorProvider>
+    <ConsistencyUpgradeGate>
+      <SpaceNavigatorProvider
+        settingsPersistence={appRuntime.persistenceCommands}
+      >
+        <App />
+        <SpaceNavigatorHost />
+      </SpaceNavigatorProvider>
+    </ConsistencyUpgradeGate>
   </React.StrictMode>,
 );

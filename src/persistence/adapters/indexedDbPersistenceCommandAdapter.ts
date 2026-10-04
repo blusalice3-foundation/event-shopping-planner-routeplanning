@@ -1,238 +1,157 @@
+import { inspectConsistencyUpgrade } from "../db/consistencyUpgrade";
 import type {
   PersistenceCommandPort,
-  PersistenceMigrationCommandResult,
   PersistenceSnapshot,
+  PreferencePersistencePort,
 } from "../../app/ports/PersistenceCommandPort";
-import { PersistenceSettingsRollbackError } from "../../app/ports/PersistenceCommandPort";
 import type {
   BlockDetectionSettings,
   BlockDetectionSettingsStore,
 } from "../../types/map";
-import type { StartupRecoveryCandidate } from "../../utils/persistenceResilience";
+import { createEventConsistency } from "../../types/consistency";
 import {
-  BlockDetectionSettingsRollbackError,
-  loadBlockDetectionSettings,
-  readBlockDetectionSettingsStoreForBackup as readBlockDetectionSettingsForBackup,
-  removeBlockDetectionSettingsForEvent,
-  renameBlockDetectionSettingsForEvent,
-  runWithBlockDetectionSettingsRestore,
-  saveBlockDetectionSettings,
-} from "../../utils/blockDetectionSettingsStorage";
+  removeEventFromApplicationSnapshot,
+  renameEventInApplicationSnapshot,
+} from "../repositories/applicationSnapshotOps";
 import { db } from "../facade/indexedDbPersistence";
 
-export interface IndexedDbPersistenceCommandDelegate {
-  migrateFromLocalStorage(): Promise<PersistenceMigrationCommandResult>;
-  adoptRecoveryCandidate(candidate: StartupRecoveryCandidate): Promise<unknown>;
-  saveEventLists: PersistenceCommandPort["saveEventLists"];
-  saveEventMetadata: PersistenceCommandPort["saveEventMetadata"];
-  saveExecuteModeItems: PersistenceCommandPort["saveExecuteModeItems"];
-  saveDayModes: PersistenceCommandPort["saveDayModes"];
-  saveMapDataChanges: PersistenceCommandPort["saveMapDataChanges"];
-  saveMapRotationSettings: PersistenceCommandPort["saveMapRotationSettings"];
-  saveRouteSettings: PersistenceCommandPort["saveRouteSettings"];
-  saveHallDefinitions: PersistenceCommandPort["saveHallDefinitions"];
-  saveHallRouteSettings: PersistenceCommandPort["saveHallRouteSettings"];
-  saveMapViewportSettings: PersistenceCommandPort["saveMapViewportSettings"];
-  restoreAppDataAtomically(snapshot: PersistenceSnapshot): Promise<void>;
-  commitApplicationSnapshotAtomically(
-    snapshot: PersistenceSnapshot,
-  ): Promise<void>;
-  deleteEventAtomically(
-    snapshot: PersistenceSnapshot,
-    eventName: string,
-  ): Promise<void>;
-  renameEventAtomically(
-    snapshot: PersistenceSnapshot,
-    oldEventName: string,
-    newEventName: string,
-  ): Promise<void>;
-}
-
-export interface AuxiliaryPersistenceCommandDelegate {
-  loadPreference(key: string): string | null;
-  savePreference(key: string, value: string): void;
-  readBlockDetectionSettings(eventName: string): BlockDetectionSettings | null;
-  readBlockDetectionSettingsForBackup(
+export type IndexedDbPersistenceCommandDelegate = Pick<
+  PersistenceCommandPort,
+  | "migrateFromLocalStorage"
+  | "saveEventLists"
+  | "saveEventMetadata"
+  | "saveExecuteModeItems"
+  | "saveDayModes"
+  | "saveMapDataChanges"
+  | "saveMapRotationSettings"
+  | "saveRouteSettings"
+  | "saveHallDefinitions"
+  | "saveHallRouteSettings"
+  | "saveMapViewportSettings"
+  | "saveEventConsistency"
+  | "readApplicationSnapshot"
+  | "restoreAppDataAtomically"
+  | "commitApplicationSnapshotAtomically"
+  | "deleteEventAtomically"
+  | "renameEventAtomically"
+> & {
+  adoptRecoveryCandidate(
+    candidate: Parameters<PersistenceCommandPort["adoptRecoveryCandidate"]>[0],
+  ): Promise<unknown>;
+};
+/** Retained as a compatibility type for embedders. Event settings use IndexedDB. */
+export interface AuxiliaryPersistenceCommandDelegate extends PreferencePersistencePort {
+  readBlockDetectionSettings?(eventName: string): BlockDetectionSettings | null;
+  readBlockDetectionSettingsForBackup?(
     eventNames: readonly string[],
   ): BlockDetectionSettingsStore;
-  saveBlockDetectionSettings(
+  saveBlockDetectionSettings?(
     eventName: string,
     settings: BlockDetectionSettings,
   ): void;
-  removeBlockDetectionSettingsForEvent(eventName: string): void;
-  renameBlockDetectionSettingsForEvent(
+  removeBlockDetectionSettingsForEvent?(eventName: string): void;
+  renameBlockDetectionSettingsForEvent?(
     oldEventName: string,
     newEventName: string,
   ): void;
-  runWithBlockDetectionSettingsRestore<T>(
+  runWithBlockDetectionSettingsRestore?<T>(
     eventName: string,
     settings: BlockDetectionSettings | null,
     commit: () => Promise<T>,
   ): Promise<T>;
 }
-
-const browserAuxiliaryPersistenceCommands: AuxiliaryPersistenceCommandDelegate =
-  {
-    loadPreference(key): string | null {
-      return typeof window === "undefined"
-        ? null
-        : window.localStorage.getItem(key);
-    },
-    savePreference(key, value): void {
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(key, value);
-      }
-    },
-    readBlockDetectionSettings: loadBlockDetectionSettings,
-    readBlockDetectionSettingsForBackup,
-    saveBlockDetectionSettings,
-    removeBlockDetectionSettingsForEvent,
-    renameBlockDetectionSettingsForEvent,
-    runWithBlockDetectionSettingsRestore,
-  };
-
-export const createIndexedDbPersistenceCommandAdapter = (
+const browserPreferences: PreferencePersistencePort = {
+  loadPreference: (key) =>
+    typeof window === "undefined" ? null : window.localStorage.getItem(key),
+  savePreference: (key, value) => {
+    if (typeof window !== "undefined") window.localStorage.setItem(key, value);
+  },
+};
+export function createIndexedDbPersistenceCommandAdapter(
   delegate: IndexedDbPersistenceCommandDelegate = db,
-  auxiliary: AuxiliaryPersistenceCommandDelegate = browserAuxiliaryPersistenceCommands,
-): PersistenceCommandPort => ({
-  loadPreference(key): string | null {
-    return auxiliary.loadPreference(key);
-  },
-  savePreference(key, value): void {
-    auxiliary.savePreference(key, value);
-  },
-  readBlockDetectionSettings(eventName): BlockDetectionSettings | null {
-    return auxiliary.readBlockDetectionSettings(eventName);
-  },
-  readBlockDetectionSettingsForBackup(eventNames) {
-    return auxiliary.readBlockDetectionSettingsForBackup(eventNames);
-  },
-  saveBlockDetectionSettings(eventName, settings): void {
-    auxiliary.saveBlockDetectionSettings(eventName, settings);
-  },
-  removeBlockDetectionSettingsForEvent(eventName): void {
-    auxiliary.removeBlockDetectionSettingsForEvent(eventName);
-  },
-  renameBlockDetectionSettingsForEvent(oldEventName, newEventName): void {
-    auxiliary.renameBlockDetectionSettingsForEvent(oldEventName, newEventName);
-  },
-  migrateFromLocalStorage(): Promise<PersistenceMigrationCommandResult> {
-    return delegate.migrateFromLocalStorage();
-  },
-  async adoptRecoveryCandidate(
-    candidate: StartupRecoveryCandidate,
-  ): Promise<void> {
-    await delegate.adoptRecoveryCandidate(candidate);
-  },
-  saveEventLists(value): Promise<void> {
-    return delegate.saveEventLists(value);
-  },
-  saveEventMetadata(value): Promise<void> {
-    return delegate.saveEventMetadata(value);
-  },
-  saveExecuteModeItems(value): Promise<void> {
-    return delegate.saveExecuteModeItems(value);
-  },
-  saveDayModes(value): Promise<void> {
-    return delegate.saveDayModes(value);
-  },
-  saveMapDataChanges(previousValue, value): Promise<void> {
-    return delegate.saveMapDataChanges(previousValue, value);
-  },
-  saveMapRotationSettings(value): Promise<void> {
-    return delegate.saveMapRotationSettings(value);
-  },
-  saveRouteSettings(value): Promise<void> {
-    return delegate.saveRouteSettings(value);
-  },
-  saveHallDefinitions(value): Promise<void> {
-    return delegate.saveHallDefinitions(value);
-  },
-  saveHallRouteSettings(value): Promise<void> {
-    return delegate.saveHallRouteSettings(value);
-  },
-  saveMapViewportSettings(value): Promise<void> {
-    return delegate.saveMapViewportSettings(value);
-  },
-  restoreAppDataAtomically(snapshot): Promise<void> {
-    return delegate.restoreAppDataAtomically(snapshot);
-  },
-  commitApplicationSnapshotAtomically(snapshot): Promise<void> {
-    return delegate.commitApplicationSnapshotAtomically(snapshot);
-  },
-  async deleteEventAtomically(snapshot, eventName): Promise<void> {
-    try {
-      await auxiliary.runWithBlockDetectionSettingsRestore(
-        eventName,
-        null,
-        () => delegate.deleteEventAtomically(snapshot, eventName),
-      );
-    } catch (error) {
-      if (error instanceof BlockDetectionSettingsRollbackError) {
-        throw new PersistenceSettingsRollbackError(
-          error.originalError,
-          error.rollbackError,
-        );
+  auxiliary: AuxiliaryPersistenceCommandDelegate = browserPreferences,
+): PersistenceCommandPort {
+  let access:
+    | Parameters<PersistenceCommandPort["bindApplicationSettings"]>[0]
+    | null = null;
+  let observed: PersistenceSnapshot | null = null;
+  const read = () => access?.read() ?? observed;
+  const commit: PersistenceCommandPort["commitApplicationSnapshotAtomically"] =
+    async (snapshot, options) => {
+      await delegate.commitApplicationSnapshotAtomically(snapshot, options);
+      observed = structuredClone(snapshot);
+    };
+  return {
+    inspectConsistencyUpgrade,
+    loadPreference: (key) => auxiliary.loadPreference(key),
+    savePreference: (key, value) => auxiliary.savePreference(key, value),
+    bindApplicationSettings(next) {
+      access = next;
+      return () => {
+        if (access === next) access = null;
+      };
+    },
+    async readApplicationSnapshot() {
+      const result = await delegate.readApplicationSnapshot();
+      observed = result.snapshot;
+      return result;
+    },
+    readBlockDetectionSettings: (eventName) =>
+      structuredClone(
+        read()?.eventConsistency[eventName]?.blockDetectionSettings ?? null,
+      ),
+    readBlockDetectionSettingsForBackup(eventNames) {
+      const settings: BlockDetectionSettingsStore = {};
+      for (const eventName of eventNames) {
+        const value =
+          read()?.eventConsistency[eventName]?.blockDetectionSettings;
+        if (value)
+          Object.defineProperty(settings, eventName, {
+            value: structuredClone(value),
+            enumerable: true,
+          });
       }
-      throw error;
-    }
-  },
-  async renameEventAtomically(
-    snapshot,
-    oldEventName,
-    newEventName,
-  ): Promise<void> {
-    const oldSettings = auxiliary.readBlockDetectionSettings(oldEventName);
-    if (auxiliary.readBlockDetectionSettings(newEventName) !== null) {
-      throw new Error(
-        `Block detection settings already exist for ${newEventName}.`,
-      );
-    }
-    try {
-      await auxiliary.runWithBlockDetectionSettingsRestore(
-        oldEventName,
-        null,
-        () =>
-          auxiliary.runWithBlockDetectionSettingsRestore(
-            newEventName,
-            oldSettings,
-            () =>
-              delegate.renameEventAtomically(
-                snapshot,
-                oldEventName,
-                newEventName,
-              ),
-          ),
-      );
-    } catch (error) {
-      if (error instanceof BlockDetectionSettingsRollbackError) {
-        throw new PersistenceSettingsRollbackError(
-          error.originalError,
-          error.rollbackError,
-        );
-      }
-      throw error;
-    }
-  },
-  async restoreAppDataWithBlockDetectionSettings(
-    snapshot,
-    eventName,
-    settings,
-  ): Promise<void> {
-    try {
-      await auxiliary.runWithBlockDetectionSettingsRestore(
-        eventName,
-        settings,
-        () => delegate.restoreAppDataAtomically(snapshot),
-      );
-    } catch (error) {
-      if (error instanceof BlockDetectionSettingsRollbackError) {
-        throw new PersistenceSettingsRollbackError(
-          error.originalError,
-          error.rollbackError,
-        );
-      }
-      throw error;
-    }
-  },
-});
+      return settings;
+    },
+    async saveBlockDetectionSettings(eventName, settings) {
+      if (!access) throw new Error("設定の保存処理が初期化されていません。");
+      await access.save(eventName, settings);
+    },
+    removeBlockDetectionSettingsForEvent() {
+      throw new Error("設定はイベントと同じ操作で削除してください。");
+    },
+    renameBlockDetectionSettingsForEvent() {
+      throw new Error("設定はイベントと同じ操作で改名してください。");
+    },
+    migrateFromLocalStorage: () => delegate.migrateFromLocalStorage(),
+    async adoptRecoveryCandidate(candidate) {
+      await delegate.adoptRecoveryCandidate(candidate);
+    },
+    saveEventLists: (value) => delegate.saveEventLists(value),
+    saveEventMetadata: (value) => delegate.saveEventMetadata(value),
+    saveExecuteModeItems: (value) => delegate.saveExecuteModeItems(value),
+    saveDayModes: (value) => delegate.saveDayModes(value),
+    saveMapDataChanges: (previous, value) =>
+      delegate.saveMapDataChanges(previous, value),
+    saveMapRotationSettings: (value) => delegate.saveMapRotationSettings(value),
+    saveRouteSettings: (value) => delegate.saveRouteSettings(value),
+    saveHallDefinitions: (value) => delegate.saveHallDefinitions(value),
+    saveHallRouteSettings: (value) => delegate.saveHallRouteSettings(value),
+    saveMapViewportSettings: (value) => delegate.saveMapViewportSettings(value),
+    saveEventConsistency: (value) => delegate.saveEventConsistency(value),
+    commitApplicationSnapshotAtomically: commit,
+    restoreAppDataAtomically: commit,
+    deleteEventAtomically: (snapshot, eventName) =>
+      commit(removeEventFromApplicationSnapshot(snapshot, eventName)),
+    renameEventAtomically: (snapshot, oldName, newName) =>
+      commit(renameEventInApplicationSnapshot(snapshot, oldName, newName)),
+    restoreAppDataWithBlockDetectionSettings(snapshot, eventName, settings) {
+      const next = structuredClone(snapshot);
+      next.eventConsistency ??= {};
+      next.eventConsistency[eventName] ??= createEventConsistency();
+      next.eventConsistency[eventName].blockDetectionSettings =
+        structuredClone(settings);
+      return commit(next);
+    },
+  };
+}

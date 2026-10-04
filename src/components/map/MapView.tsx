@@ -1,3 +1,4 @@
+import { getHallIdForItem } from "../../utils/hallGrouping";
 import React, {
   useState,
   useCallback,
@@ -21,10 +22,6 @@ import HallOrderPanel from "./HallOrderPanel";
 import InsertPositionDialog, { InsertPosition } from "./InsertPositionDialog";
 import type { SmartInsertMode } from "../../features/app-shell/types";
 import { extractNumberFromItemNumber } from "../../xlsx/domain/itemNumber";
-import {
-  resolveHallByBlockName,
-  resolveManualHallId,
-} from "../../utils/hallFallback";
 import {
   buildMapRouteExecuteItemIds,
   buildMapRouteVisitItemIds,
@@ -100,6 +97,7 @@ type MapRouteInsertPendingState = {
 interface MapViewProps {
   mapData: DayMapData;
   mapName: string;
+  eventDate?: string;
   items: ShoppingItem[];
   executeModeItemIds: string[];
   routeHallOrder?: string[];
@@ -172,6 +170,7 @@ interface MapViewProps {
 const MapView: React.FC<MapViewProps> = ({
   mapData,
   mapName,
+  eventDate,
   items,
   executeModeItemIds,
   routeHallOrder,
@@ -311,120 +310,16 @@ const MapView: React.FC<MapViewProps> = ({
     return indexedItems;
   }, [items]);
   const mapDayName = useMemo(
-    () => extractDayNameFromMapName(mapName),
-    [mapName],
-  );
-
-  const getHallIdsByCellPosition = useCallback(
-    (row: number, col: number): string[] => {
-      const ids: string[] = [];
-      for (const hall of halls) {
-        if (
-          hall.vertices.length >= 4 &&
-          isPointInPolygon(row, col, hall.vertices)
-        ) {
-          ids.push(hall.id);
-        }
-      }
-      return ids;
-    },
-    [halls],
-  );
-
-  const getCandidateBlocksForItem = useCallback(
-    (itemBlockName: string): BlockDefinition[] => {
-      if (!itemBlockName) return [];
-
-      const exactMatches = mapData.blocks.filter(
-        (block) => block.name === itemBlockName,
-      );
-      if (exactMatches.length > 0) {
-        return exactMatches;
-      }
-
-      const normalizedBlockName = itemBlockName.toLowerCase();
-      return mapData.blocks.filter(
-        (block) => block.name.toLowerCase() === normalizedBlockName,
-      );
-    },
-    [mapData.blocks],
+    () => normalizeDisplayText(eventDate ?? extractDayNameFromMapName(mapName)),
+    [mapName, eventDate],
   );
 
   const getHallCandidatesForItem = useCallback(
     (item: ShoppingItem): Set<string> => {
-      const hallIds = new Set<string>();
-
-      const manual = resolveManualHallId(item.manualHallId, halls);
-      if (manual) {
-        hallIds.add(manual);
-        return hallIds;
-      }
-
-      const itemBlockName = item.block?.trim() || "";
-      const candidateBlocks = getCandidateBlocksForItem(itemBlockName);
-      if (candidateBlocks.length === 0) {
-        const fallback = resolveHallByBlockName(item.block, halls);
-        if (fallback) hallIds.add(fallback);
-        return hallIds;
-      }
-
-      const numStr = extractNumberFromItemNumber(item.number);
-      if (numStr) {
-        const numValue = parseInt(numStr, 10);
-        candidateBlocks.forEach((block) => {
-          block.numberCells.forEach((numberCell) => {
-            if (numberCell.value !== numValue) return;
-            const matchedHallIds = getHallIdsByCellPosition(
-              numberCell.row,
-              numberCell.col,
-            );
-            matchedHallIds.forEach((matchedHallId) =>
-              hallIds.add(matchedHallId),
-            );
-          });
-        });
-      }
-
-      if (hallIds.size > 0) {
-        return hallIds;
-      }
-
-      const blockHallIds = new Set<string>();
-      candidateBlocks.forEach((block) => {
-        block.numberCells.forEach((numberCell) => {
-          const matchedHallIds = getHallIdsByCellPosition(
-            numberCell.row,
-            numberCell.col,
-          );
-          matchedHallIds.forEach((matchedHallId) =>
-            blockHallIds.add(matchedHallId),
-          );
-        });
-
-        if (blockHallIds.size === 1) {
-          blockHallIds.forEach((hallId) => hallIds.add(hallId));
-        }
-      });
-
-      if (hallIds.size > 0) {
-        return hallIds;
-      }
-
-      candidateBlocks.forEach((block) => {
-        const centerRow = (block.startRow + block.endRow) / 2;
-        const centerCol = (block.startCol + block.endCol) / 2;
-        const matchedHallIds = getHallIdsByCellPosition(centerRow, centerCol);
-        matchedHallIds.forEach((matchedHallId) => hallIds.add(matchedHallId));
-      });
-
-      if (hallIds.size === 0) {
-        const fallback = resolveHallByBlockName(item.block, halls);
-        if (fallback) hallIds.add(fallback);
-      }
-
-      return hallIds;
+      const hallId = getHallIdForItem(item, mapData, halls, items);
+      return new Set(hallId === null ? [] : [hallId]);
     },
-    [getCandidateBlocksForItem, getHallIdsByCellPosition, halls],
+    [mapData, halls, items],
   );
 
   const isItemInHall = useCallback(
@@ -435,21 +330,9 @@ const MapView: React.FC<MapViewProps> = ({
   );
 
   const getItemHallId = useCallback(
-    (item: ShoppingItem): string | null => {
-      const hallCandidates = getHallCandidatesForItem(item);
-      if (hallCandidates.size === 1) {
-        return Array.from(hallCandidates)[0];
-      }
-      if (
-        hallCandidates.size > 1 &&
-        selectedHallId !== "all" &&
-        hallCandidates.has(selectedHallId)
-      ) {
-        return selectedHallId;
-      }
-      return null;
-    },
-    [getHallCandidatesForItem, selectedHallId],
+    (item: ShoppingItem): string | null =>
+      getHallIdForItem(item, mapData, halls, items),
+    [mapData, halls, items],
   );
 
   const parseGroupId = useCallback(
@@ -2005,6 +1888,7 @@ const MapView: React.FC<MapViewProps> = ({
       <MapCanvas
         mapData={mapDataForCanvas}
         mapName={mapName}
+        eventDate={mapDayName}
         items={filteredItems}
         executeModeItemIds={filteredExecuteModeItemIds}
         zoomLevel={zoomLevel}

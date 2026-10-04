@@ -1,3 +1,4 @@
+import { createEventConsistency } from "../../types/consistency";
 import { describe, expect, it } from "vitest";
 import type { AppData } from "../../app/ports/PersistenceCommandPort";
 import type { ShoppingItem } from "../../types/item";
@@ -17,9 +18,7 @@ const APP_DATA_SECTIONS = [
   "dayModes",
   "mapData",
   "mapRotationSettings",
-  "routeSettings",
   "hallDefinitions",
-  "hallRouteSettings",
   "mapViewportSettings",
 ] as const satisfies readonly (keyof AppData)[];
 
@@ -95,6 +94,7 @@ const completeImport = (): ImportedEventData => ({
 });
 
 const currentEventData = (eventName: string): AppData => ({
+  eventConsistency: { [eventName]: createEventConsistency() },
   eventLists: { [eventName]: [{ id: "old-item" }] },
   eventMetadata: { [eventName]: { old: true } },
   executeModeItems: { [eventName]: { "1日目": ["old-item"] } },
@@ -123,9 +123,9 @@ describe("buildXlsxEventRestoreSource", () => {
     expect(source.data.mapViewportSettings[imported.eventName]).toEqual(
       imported.mapViewportSettings,
     );
-    expect(source.blockDetectionSettings[imported.eventName]).toEqual(
-      DEFAULT_BLOCK_DETECTION_SETTINGS,
-    );
+    expect(
+      source.data.eventConsistency[imported.eventName].blockDetectionSettings,
+    ).toEqual(DEFAULT_BLOCK_DETECTION_SETTINGS);
   });
 
   it("leaves missing XLSX sections absent so same-name restore removes stale data", () => {
@@ -161,12 +161,16 @@ describe("buildXlsxEventRestoreSource", () => {
     expect(restored.eventLists[eventName]).toEqual([item]);
     expect(validation.ok).toBe(true);
     for (const sectionName of APP_DATA_SECTIONS.slice(1)) {
-      expect(restored[sectionName]).not.toHaveProperty(eventName);
+      expect(restored[sectionName][eventName] ?? {}).toEqual({});
     }
-    expect(source.blockDetectionSettings).not.toHaveProperty(eventName);
+    expect(
+      source.data.eventConsistency[eventName].blockDetectionSettings,
+    ).toBeNull();
+    expect(restored.routeSettings).not.toHaveProperty(eventName);
+    expect(restored.hallRouteSettings).not.toHaveProperty(eventName);
   });
 
-  it("accepts an XLSX manual hall ID when hall definitions were not exported", () => {
+  it("reports removal of a missing legacy hall reference without changing item data", () => {
     const imported = toImportedEventData({
       success: true,
       eventName: "復元イベント",
@@ -189,8 +193,11 @@ describe("buildXlsxEventRestoreSource", () => {
     expect(
       validation.data.eventLists[imported.eventName][0],
     ).not.toHaveProperty("manualHallId");
-    expect(imported.errors).toContain(
-      "会場定義が含まれていないため、1件の手動ホール設定を解除しました。",
+    expect(source.notices).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ message: expect.stringContaining("hall-1") }),
+      ]),
     );
+    expect(validation.data.eventLists[imported.eventName][0]).toEqual(item);
   });
 });

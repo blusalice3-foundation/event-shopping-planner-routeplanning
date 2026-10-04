@@ -1,3 +1,4 @@
+import { isCompleteHallOrder } from "../../consistency/domain/projection";
 import type {
   DayMapData,
   HallDefinition,
@@ -7,10 +8,7 @@ import type {
 } from "../../../types/map";
 import type { ShoppingItem } from "../../../types/item";
 import { getMaplessKey } from "../../../types/map";
-import {
-  resolveHallByBlockName,
-  resolveManualHallId,
-} from "../../../utils/hallFallback";
+import { getHallIdForItem } from "../../../utils/hallGrouping";
 import { coalesceExecutionVisitItemIdsForExplicitReorder } from "../../../utils/visitProjection";
 
 type PriorityLevel = "none" | "priority" | "highest";
@@ -326,78 +324,21 @@ export const getGlobalHallItemCount = ({
   }).length;
 };
 
-const isPointInPolygon = (
-  row: number,
-  col: number,
-  vertices: { row: number; col: number }[],
-): boolean => {
-  if (vertices.length < 3) return false;
-  let inside = false;
-  for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
-    const xi = vertices[i].col;
-    const yi = vertices[i].row;
-    const xj = vertices[j].col;
-    const yj = vertices[j].row;
-    if (
-      yi > row !== yj > row &&
-      col < ((xj - xi) * (row - yi)) / (yj - yi) + xi
-    ) {
-      inside = !inside;
-    }
-  }
-  return inside;
-};
-
 export const resolveItemHallGroupId = ({
   item,
   halls,
   mapData,
+  allItems,
 }: {
   item: ShoppingItem | undefined;
   halls: HallDefinition[];
   mapData: DayMapData | undefined;
+  allItems?: ShoppingItem[];
 }): string => {
   if (!item) return "undefined";
-
-  let hallId: string | null = null;
-  const manual = resolveManualHallId(item.manualHallId, halls);
-  if (manual) {
-    hallId = manual;
-  } else if (mapData) {
-    const blockName = item.block?.trim() || "";
-    let block = mapData.blocks.find(
-      (candidate) => candidate.name === blockName,
-    );
-    if (!block) {
-      const candidates = mapData.blocks.filter(
-        (candidate) => candidate.name.toLowerCase() === blockName.toLowerCase(),
-      );
-      if (candidates.length === 1) {
-        block = candidates[0];
-      }
-    }
-    if (block) {
-      const centerRow = (block.startRow + block.endRow) / 2;
-      const centerCol = (block.startCol + block.endCol) / 2;
-      for (const hall of halls) {
-        if (
-          hall.vertices.length >= 4 &&
-          isPointInPolygon(centerRow, centerCol, hall.vertices)
-        ) {
-          hallId = hall.id;
-          break;
-        }
-      }
-    }
-  }
-
-  if (hallId === null) {
-    hallId = resolveHallByBlockName(item.block, halls);
-  }
-
   return buildHallGroupId(
-    hallId,
-    (item.priorityLevel || "none") as PriorityLevel,
+    getHallIdForItem(item, mapData ?? null, halls, allItems),
+    item.priorityLevel ?? "none",
   );
 };
 
@@ -407,7 +348,6 @@ export const reorderExecuteIdsByHallOrder = ({
   items,
   halls,
   mapData,
-  hallRouteSettings,
 }: {
   hallOrder: string[];
   dayItems: string[];
@@ -422,6 +362,7 @@ export const reorderExecuteIdsByHallOrder = ({
   dayItems.forEach((itemId) => {
     const groupId = resolveItemHallGroupId({
       item: itemsMap.get(itemId),
+      allItems: items,
       halls,
       mapData,
     });
@@ -431,22 +372,8 @@ export const reorderExecuteIdsByHallOrder = ({
     itemsByGroup.get(groupId)!.add(itemId);
   });
 
-  const visitOrderMap = new Map<string, number>();
-  hallRouteSettings.hallVisitLists.forEach((list) => {
-    list.itemIds.forEach((itemId, index) => {
-      visitOrderMap.set(itemId, index);
-    });
-  });
-
   const sortItemsInGroup = (itemIds: Set<string>): string[] =>
-    Array.from(itemIds).sort((a, b) => {
-      const orderA = visitOrderMap.get(a);
-      const orderB = visitOrderMap.get(b);
-      if (orderA !== undefined && orderB !== undefined) return orderA - orderB;
-      if (orderA !== undefined) return -1;
-      if (orderB !== undefined) return 1;
-      return dayItems.indexOf(a) - dayItems.indexOf(b);
-    });
+    Array.from(itemIds);
 
   const reorderedItems: string[] = [];
   hallOrder.forEach((groupId) => {
@@ -470,10 +397,10 @@ export const reorderExecuteIdsByHallOrder = ({
 };
 
 export const getCombinedHallRouteSettingsForDate = ({
+  hallRouteSettings,
   eventName,
   dayName,
   mapTabName,
-  hallRouteSettings,
 }: {
   eventName: string;
   dayName: string;
@@ -485,6 +412,9 @@ export const getCombinedHallRouteSettingsForDate = ({
     ? hallRouteSettings[eventName]?.[mapTabName]
     : undefined;
   const maplessSettings = hallRouteSettings[eventName]?.[maplessKey];
+  if (isCompleteHallOrder(mapSettings)) return mapSettings!;
+  if (!mapTabName && isCompleteHallOrder(maplessSettings))
+    return maplessSettings!;
 
   return {
     hallOrder: [

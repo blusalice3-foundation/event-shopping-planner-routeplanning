@@ -101,7 +101,7 @@ describe("hallOperations regressions", () => {
     ]);
   });
 
-  it("reorders execute ids by hall priority groups and visit-list order", () => {
+  it("reorders hall priority groups while preserving current execution order", () => {
     const items = [
       makeItem("a-normal", "A"),
       makeItem("a-priority-2", "A", "priority"),
@@ -127,8 +127,8 @@ describe("hallOperations regressions", () => {
     });
 
     expect(result).toEqual([
-      "a-priority-1",
       "a-priority-2",
+      "a-priority-1",
       "b-normal",
       "a-normal",
     ]);

@@ -1,4 +1,9 @@
 import type {
+  EventConsistencyStore,
+  EventConsistencyV1,
+} from "../../types/consistency";
+import type { ContentManifest } from "./consistencyWorkbook";
+import type {
   DayModeState,
   EventMetadata,
   ExecuteModeItems,
@@ -28,6 +33,8 @@ export interface LegacySheetFieldFallback {
 }
 
 export interface EventWorkbookImportResult {
+  eventConsistency?: EventConsistencyV1;
+  contentManifest?: ContentManifest;
   success: boolean;
   eventName: string;
   items: ShoppingItem[];
@@ -49,6 +56,7 @@ export interface EventWorkbookImportResult {
 }
 
 export type EventWorkbookAdditionalData = {
+  eventConsistency?: EventConsistencyStore;
   metadata?: EventMetadata;
   executeModeItems?: Record<string, ExecuteModeItems>;
   dayModes?: Record<string, DayModeState>;
@@ -62,7 +70,7 @@ export type EventWorkbookAdditionalData = {
 };
 
 export type EventWorkbookExportSnapshot = Readonly<{
-  schemaVersion: 1;
+  schemaVersion: 2;
   eventName: string;
   items: ShoppingItem[];
   options: ExportOptions;
@@ -75,7 +83,7 @@ export const buildEventWorkbookExportSnapshot = (
   options: ExportOptions,
   additionalData: EventWorkbookAdditionalData,
 ): EventWorkbookExportSnapshot => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   eventName,
   items,
   options,

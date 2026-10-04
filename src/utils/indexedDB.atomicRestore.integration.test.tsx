@@ -1,9 +1,11 @@
+import { createEventConsistency } from "../types/consistency";
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DayMapData } from "../types/map";
 import { db, type AppData } from "./indexedDB";
 
 const RESTORE_STORE_NAMES = [
+  db.STORES.EVENT_CONSISTENCY,
   db.STORES.EVENT_LISTS,
   db.STORES.EVENT_METADATA,
   db.STORES.EXECUTE_MODE_ITEMS,
@@ -64,6 +66,7 @@ function makeAppData(marker: string): AppData {
   const eventName = `${marker}イベント`;
 
   return {
+    eventConsistency: { [eventName]: createEventConsistency() },
     eventLists: {
       [eventName]: [{ id: `${marker}-item`, title: `${marker}頒布物` }],
     },

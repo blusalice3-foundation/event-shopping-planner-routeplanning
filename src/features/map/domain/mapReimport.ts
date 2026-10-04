@@ -27,6 +27,8 @@ export interface MapReimportTarget {
   mapTabName: string;
   mapData: DayMapData;
   initialAngle: number;
+  targetCandidates?: string[];
+  targetChoiceRequired?: boolean;
 }
 
 export interface MapReimportImpact {
@@ -58,6 +60,7 @@ export interface MapReimportPlan {
 
 export interface MapReimportOptions {
   preserveMaplessHalls: boolean;
+  targetMapKeys?: Record<string, string>;
 }
 
 const clonePlainValue = <T>(value: T): T => {
@@ -116,7 +119,7 @@ const validateTargets = (
   const eventDates = new Set<string>();
   targets.forEach((target) => {
     const eventDate = target.eventDate.trim();
-    const mapTabName = target.mapTabName.trim();
+    const mapTabName = target.mapTabName;
     if (!eventDate || !mapTabName) {
       throw new Error("取り込み先の日付またはマップ名が空です。");
     }
@@ -158,7 +161,7 @@ export const buildMapReimportPlan = ({
   const eventItems = state.eventLists[eventName];
   const plannedTargets = targets.map((target): PlannedMapReimportTarget => {
     const eventDate = target.eventDate.trim();
-    const mapTabName = target.mapTabName.trim();
+    const mapTabName = target.mapTabName;
     const maplessKey = getMaplessKey(eventDate);
     const oldMapHallIds = unique(
       (state.hallDefinitions[eventName]?.[mapTabName] || []).map(
@@ -178,12 +181,15 @@ export const buildMapReimportPlan = ({
     return {
       eventDate,
       mapTabName,
+      targetCandidates: target.targetCandidates,
+      targetChoiceRequired: target.targetChoiceRequired,
       mapData: clonePlainValue(target.mapData),
       initialAngle: normalizeRotationAngle(target.initialAngle),
       maplessKey,
       oldMapHallIds,
       oldMaplessHallIds,
       requiresConfirmation:
+        target.targetChoiceRequired === true ||
         hasOwnDayKey(state.mapData, eventName, mapTabName) ||
         hasOwnDayKey(state.mapRotationSettings, eventName, mapTabName) ||
         hasOwnDayKey(state.routeSettings, eventName, mapTabName) ||

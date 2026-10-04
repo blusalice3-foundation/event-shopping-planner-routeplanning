@@ -1,3 +1,6 @@
+import type { ApplicationMutationPort } from "../ports/ApplicationMutationPort";
+import type { EventConsistencyStore } from "../../types/consistency";
+import { planEventRestore } from "../../features/consistency/domain/eventMutations";
 import {
   useCallback,
   useEffect,
@@ -22,11 +25,7 @@ import type {
   MapViewportSettingsStore,
   RouteSettingsStore,
 } from "../../types/map";
-import {
-  PersistenceSettingsRollbackError,
-  type PersistenceCommandPort,
-  type PersistenceSnapshot,
-} from "../ports/PersistenceCommandPort";
+import { type PersistenceCommandPort } from "../ports/PersistenceCommandPort";
 import type { AppNavigationCommands } from "../navigation";
 import type { PendingXlsxRestoreCompletion } from "../state/appOverlayTypes";
 import type { XlsxOperationOverlayActivity } from "../state/appOverlayState";
@@ -45,7 +44,6 @@ import {
   exportStartupRecoveryBundle,
   type PersistenceRecoveryExportResult,
 } from "../../utils/persistenceRecoveryExport";
-import { buildEventRestoreData } from "../../features/events/backupRestore";
 import {
   buildEventExportFile,
   hasExportableItems,
@@ -72,7 +70,8 @@ export interface EventTransferRuntime {
   readonly downloadXlsx: (bytes: Uint8Array, fileName: string) => void;
 }
 
-export interface EventTransferCommandPorts {
+export interface EventTransferCommandPorts extends ApplicationMutationPort {
+  eventConsistency: EventConsistencyStore;
   appRuntime: EventTransferRuntime;
   eventLists: Record<string, ShoppingItem[]>;
   eventMetadata: Record<string, EventMetadata>;
@@ -149,24 +148,16 @@ const isAbortError = (error: unknown): boolean =>
     : error instanceof Error && error.name === "AbortError";
 
 export const useEventTransferCommands = ({
+  requestMutation,
+  readExportSnapshot,
   appRuntime,
   eventLists,
-  eventMetadata,
-  executeModeItems,
-  dayModes,
-  mapData,
-  mapRotationSettings,
-  routeSettings,
-  hallDefinitions,
-  hallRouteSettings,
-  mapViewportSettings,
   startupState,
   exportEventName,
   pendingBackup,
   pendingXlsxRestoreCompletion,
   navigationCommands,
   clearSelection,
-  runExclusiveRestore,
   openExport,
   confirmEventOverlay,
   openBackupRestore,
@@ -174,16 +165,6 @@ export const useEventTransferCommands = ({
   startXlsxOperation,
   updateXlsxOperation,
   clearXlsxOperation,
-  setEventLists,
-  setEventMetadata,
-  setExecuteModeItemsCommitted,
-  setDayModes,
-  setMapData,
-  setMapRotationSettings,
-  setRouteSettings,
-  setHallDefinitions,
-  setHallRouteSettings,
-  setMapViewportSettings,
 }: EventTransferCommandPorts): EventTransferCommands => {
   const backupFileInputRef = useRef<HTMLInputElement>(null);
   const xlsxOperationRef = useRef<ActiveXlsxOperation | null>(null);
@@ -215,42 +196,10 @@ export const useEventTransferCommands = ({
     [eventLists, openExport],
   );
 
-  const buildCurrentAppData = useCallback(
-    (): PersistenceSnapshot => ({
-      eventLists,
-      eventMetadata,
-      executeModeItems,
-      dayModes,
-      mapData,
-      mapRotationSettings,
-      routeSettings,
-      hallDefinitions,
-      hallRouteSettings,
-      mapViewportSettings,
-    }),
-    [
-      dayModes,
-      eventLists,
-      eventMetadata,
-      executeModeItems,
-      hallDefinitions,
-      hallRouteSettings,
-      mapData,
-      mapRotationSettings,
-      mapViewportSettings,
-      routeSettings,
-    ],
-  );
-
-  const handleBackupExport = useCallback(() => {
+  const handleBackupExport = useCallback(async () => {
     try {
-      const currentData = buildCurrentAppData();
-      const backup = createAppBackup(currentData, new Date(), {
-        blockDetectionSettings:
-          appRuntime.persistenceCommands.readBlockDetectionSettingsForBackup(
-            Object.keys(currentData.eventLists),
-          ),
-      });
+      const currentData = await readExportSnapshot();
+      const backup = createAppBackup(currentData, new Date());
       const blob = new Blob([serializeAppBackup(backup)], {
         type: "application/json;charset=utf-8",
       });
@@ -262,7 +211,7 @@ export const useEventTransferCommands = ({
         "バックアップを完全に保存できなかったため、ファイルを作成しませんでした。現在のデータは変更されていません。",
       );
     }
-  }, [appRuntime.persistenceCommands, buildCurrentAppData]);
+  }, [readExportSnapshot]);
 
   const handlePersistenceRecoveryExport =
     useCallback((): PersistenceRecoveryExportResult => {
@@ -324,69 +273,24 @@ export const useEventTransferCommands = ({
         throw new Error("復元するバックアップをもう一度選んでください。");
       }
 
-      const currentData = buildCurrentAppData();
+      const currentData = await readExportSnapshot();
       const isUpdate = Object.prototype.hasOwnProperty.call(
         currentData.eventLists,
         targetEventName,
       );
-      const nextData = buildEventRestoreData(
-        currentData,
-        pendingBackup.data,
-        sourceEventName,
-        targetEventName,
-      );
-      const restoredValues: PersistedStateValues = {
-        eventLists: nextData.eventLists as Record<string, ShoppingItem[]>,
-        eventMetadata: nextData.eventMetadata as Record<string, EventMetadata>,
-        executeModeItems: nextData.executeModeItems as Record<
-          string,
-          ExecuteModeItems
-        >,
-        dayModes: nextData.dayModes as Record<string, DayModeState>,
-        mapData: nextData.mapData as MapDataStore,
-        mapRotationSettings:
-          nextData.mapRotationSettings as MapRotationSettingsStore,
-        routeSettings: nextData.routeSettings as RouteSettingsStore,
-        hallDefinitions: nextData.hallDefinitions as HallDefinitionsStore,
-        hallRouteSettings: nextData.hallRouteSettings as HallRouteSettingsStore,
-        mapViewportSettings:
-          nextData.mapViewportSettings as MapViewportSettingsStore,
-      };
-
-      try {
-        const restoredBlockDetectionSettings =
-          pendingBackup.eventSettings.blockDetectionSettings[sourceEventName] ??
-          null;
-        await runExclusiveRestore(restoredValues, () =>
-          appRuntime.persistenceCommands.restoreAppDataWithBlockDetectionSettings(
-            nextData,
+      const nextData = await requestMutation({
+        events: [targetEventName],
+        plan: (snapshot) =>
+          planEventRestore(
+            snapshot,
+            pendingBackup.data,
+            sourceEventName,
             targetEventName,
-            restoredBlockDetectionSettings,
+            pendingBackup.notices?.map(
+              (change) => `${change.path}: ${change.message}`,
+            ),
           ),
-        );
-      } catch (error) {
-        console.error("Atomic backup restore failed (atomic-restore-failed).");
-        if (error instanceof PersistenceSettingsRollbackError) {
-          throw new Error(
-            "イベント本体は復元前のままですが、マップのブロック検出設定だけ元に戻せなかった可能性があります。次回のマップ取り込み前に検出設定を確認してください。",
-          );
-        }
-        throw new Error(
-          "復元を完了できませんでした。現在のデータは変更されていません。",
-        );
-      }
-
-      setEventLists(restoredValues.eventLists);
-      setEventMetadata(restoredValues.eventMetadata);
-      setExecuteModeItemsCommitted(restoredValues.executeModeItems);
-      setDayModes(restoredValues.dayModes);
-      setMapData(restoredValues.mapData);
-      setMapRotationSettings(restoredValues.mapRotationSettings);
-      setRouteSettings(restoredValues.routeSettings);
-      setHallDefinitions(restoredValues.hallDefinitions);
-      setHallRouteSettings(restoredValues.hallRouteSettings);
-      setMapViewportSettings(restoredValues.mapViewportSettings);
-
+      });
       const restoredItems = nextData.eventLists[
         targetEventName
       ] as ShoppingItem[];
@@ -423,22 +327,11 @@ export const useEventTransferCommands = ({
     },
     [
       pendingBackup,
-      appRuntime.persistenceCommands,
-      buildCurrentAppData,
-      setEventLists,
-      setEventMetadata,
-      setExecuteModeItemsCommitted,
-      setDayModes,
-      setHallDefinitions,
-      setHallRouteSettings,
-      setMapData,
-      setMapRotationSettings,
-      setMapViewportSettings,
-      setRouteSettings,
+      requestMutation,
+      readExportSnapshot,
       clearSelection,
       confirmBackupRestore,
       pendingXlsxRestoreCompletion,
-      runExclusiveRestore,
       navigationCommands,
     ],
   );
@@ -447,7 +340,10 @@ export const useEventTransferCommands = ({
     async (options: ExportOptions) => {
       if (!exportEventName) return;
 
-      const itemsToExport = eventLists[exportEventName];
+      const exportSnapshot = await readExportSnapshot();
+      const itemsToExport = exportSnapshot.eventLists[
+        exportEventName
+      ] as ShoppingItem[];
       if (!hasExportableItems(itemsToExport)) {
         return;
       }
@@ -473,22 +369,18 @@ export const useEventTransferCommands = ({
           exportEventName,
           itemsToExport,
           options,
-          eventMetadata[exportEventName],
+          exportSnapshot.eventMetadata[exportEventName] as EventMetadata,
           {
-            executeModeItems,
-            dayModes,
-            mapData,
-            mapRotationSettings,
-            mapViewportSettings,
-            routeSettings,
-            hallDefinitions,
-            hallRouteSettings,
-            blockDetectionSettings:
-              options.format === "full" && options.includeMapData
-                ? appRuntime.persistenceCommands.readBlockDetectionSettingsForBackup(
-                    [exportEventName],
-                  )
-                : {},
+            ...(exportSnapshot as unknown as PersistedStateValues),
+            blockDetectionSettings: exportSnapshot.eventConsistency[
+              exportEventName
+            ]?.blockDetectionSettings
+              ? {
+                  [exportEventName]:
+                    exportSnapshot.eventConsistency[exportEventName]
+                      .blockDetectionSettings!,
+                }
+              : {},
           },
           new Date(),
           (_requestId, progress) => {
@@ -514,18 +406,9 @@ export const useEventTransferCommands = ({
     },
     [
       exportEventName,
-      eventLists,
+      readExportSnapshot,
       clearXlsxOperation,
       confirmEventOverlay,
-      eventMetadata,
-      executeModeItems,
-      dayModes,
-      mapData,
-      mapRotationSettings,
-      mapViewportSettings,
-      routeSettings,
-      hallDefinitions,
-      hallRouteSettings,
       appRuntime,
       startXlsxOperation,
       updateXlsxOperation,
@@ -678,10 +561,19 @@ export const useEventTransferCommands = ({
           return;
         }
 
-        openBackupRestore(validation.backup, {
-          errors: importedData.errors,
-          itemCount: importedData.items.length,
-        });
+        openBackupRestore(
+          {
+            ...validation.backup,
+            notices: [
+              ...restoreSource.notices,
+              ...(validation.backup.notices ?? []),
+            ],
+          },
+          {
+            errors: importedData.errors,
+            itemCount: importedData.items.length,
+          },
+        );
       } catch (error) {
         if (isAbortError(error)) return;
         console.error("Item import failed (item-import-failed).");

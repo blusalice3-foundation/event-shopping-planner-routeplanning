@@ -252,7 +252,7 @@ describe("useShoppingSelectionExecutionCommands", () => {
     expect(harness.spies.notify).not.toHaveBeenCalled();
   });
 
-  it("rejects mode toggles without a day or configured mode", () => {
+  it("rejects missing contexts and initializes an unconfigured day mode", () => {
     const noDay = createHarness({ activeEventDate: "" });
     const missingMode = createHarness({ dayModes: { [EVENT]: {} } });
     const noEvent = createHarness({ activeEventName: null });
@@ -272,15 +272,11 @@ describe("useShoppingSelectionExecutionCommands", () => {
       noEventHook.result.current.toggleMode();
     });
 
-    expect(noDay.spies.notify).toHaveBeenCalledWith(
-      "参加日タブが選択されていないため、表示モードを切り替えできません。",
-    );
-    expect(missingMode.spies.notify).toHaveBeenCalledWith(
-      "表示モードが未設定のため、表示モードを切り替えできません。",
-    );
+    expect(noDay.spies.notify).not.toHaveBeenCalled();
+    expect(missingMode.spies.notify).not.toHaveBeenCalled();
     expect(noEvent.spies.notify).not.toHaveBeenCalled();
     expect(noDay.spies.setDayModes).not.toHaveBeenCalled();
-    expect(missingMode.spies.setDayModes).not.toHaveBeenCalled();
+    expect(missingMode.spies.setDayModes).toHaveBeenCalledOnce();
     expect(noEvent.spies.setDayModes).not.toHaveBeenCalled();
   });
 

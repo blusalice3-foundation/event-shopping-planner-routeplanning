@@ -160,6 +160,7 @@ describe("ItemEditDialog accessibility", () => {
 
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({ eventDate: "2日目", price: 1200, quantity: 2 }),
+      { kind: "unchanged" },
     );
   });
 

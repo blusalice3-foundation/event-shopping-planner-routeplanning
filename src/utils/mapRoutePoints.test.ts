@@ -101,6 +101,12 @@ const halls: HallDefinition[] = [
   },
 ];
 
+const uniqueMap = (): DayMapData => {
+  const value = makeMap();
+  value.blocks.splice(1, 1);
+  return value;
+};
+
 describe("resolveMapRoutePoints", () => {
   it("keeps item id order, route snapshot order, metadata, and labels", () => {
     const items = [
@@ -111,7 +117,7 @@ describe("resolveMapRoutePoints", () => {
     const result = resolveMapRoutePoints({
       itemIds: ["a-1", "a-2"],
       items,
-      mapData: makeMap(),
+      mapData: uniqueMap(),
       hallDefinitions: halls,
       dayName: " Day1 ",
       selectedHallId: "hall-a",
@@ -132,7 +138,7 @@ describe("resolveMapRoutePoints", () => {
     });
   });
 
-  it("treats all-hall duplicate route cell candidates as hall unresolved", () => {
+  it("omits unresolved locations from the route and reports them", () => {
     const result = resolveMapRoutePoints({
       itemIds: ["item-1"],
       items: [
@@ -149,11 +155,11 @@ describe("resolveMapRoutePoints", () => {
       selectedHallId: "all",
     });
 
-    expect(result.routePoints[0].hallId).toBeNull();
-    expect(result.routePoints[0].groupKey).toBe("undefined:priority");
+    expect(result.routePoints).toEqual([]);
+    expect(result.missingItemIds).toEqual(["item-1"]);
   });
 
-  it("uses selected hall to disambiguate duplicate route cell candidates", () => {
+  it("does not let a display filter resolve ambiguous locations", () => {
     const result = resolveMapRoutePoints({
       itemIds: ["item-1"],
       items: [makeItem({ id: "item-1", block: "A", number: "1a" })],
@@ -163,11 +169,17 @@ describe("resolveMapRoutePoints", () => {
       selectedHallId: "hall-a2",
     });
 
-    expect(result.routePoints[0].hallId).toBe("hall-a2");
+    expect(result.routePoints).toEqual([]);
+    expect(result.missingItemIds).toEqual(["item-1"]);
   });
 
   it("keeps valid manual hall as the group and excludes mismatched manual hall in selected hall mode", () => {
-    const mapData = makeMap();
+    const mapData = uniqueMap();
+    const compatibleHalls = halls.map((hall) =>
+      hall.id === "manual-hall"
+        ? { ...hall, vertices: halls[0].vertices }
+        : hall,
+    );
     const manualItem = makeItem({
       id: "manual",
       manualHallId: "manual-hall",
@@ -179,7 +191,7 @@ describe("resolveMapRoutePoints", () => {
         itemIds: ["manual"],
         items: [manualItem],
         mapData,
-        hallDefinitions: halls,
+        hallDefinitions: compatibleHalls,
         dayName: "Day1",
         selectedHallId: "all",
         respectManualHallMismatch: true,
@@ -190,7 +202,7 @@ describe("resolveMapRoutePoints", () => {
       itemIds: ["manual"],
       items: [manualItem],
       mapData,
-      hallDefinitions: halls,
+      hallDefinitions: compatibleHalls,
       dayName: "Day1",
       selectedHallId: "hall-a",
       respectManualHallMismatch: true,

@@ -239,7 +239,15 @@ const createHarness = (options: HarnessOptions = {}) => {
     selectors: { areItemsInSameHall, areItemsInSameHallGroup },
     alerts: { notify },
     persistence: {
-      commitApplicationSnapshotPatch: vi.fn(async () => undefined),
+      commitApplicationSnapshotPatch: vi.fn<
+        NonNullable<
+          ShoppingItemMutationCommandPorts["persistence"]
+        >["commitApplicationSnapshotPatch"]
+      >(async (patch) => {
+        Object.assign(stores, patch);
+        eventListsRef.current = stores.eventLists;
+        executeModeItemsRef.current = stores.executeModeItems;
+      }),
     },
   };
 
@@ -367,7 +375,10 @@ describe("useShoppingItemMutationCommands", () => {
     expect(harness.stores.executeModeItems["layout-event"][DAY]).toEqual([
       storedItems[0].id,
     ]);
-    expect(harness.spies.updateExecuteModeItems).toHaveBeenCalledOnce();
+    expect(
+      harness.ports.persistence!.commitApplicationSnapshotPatch,
+    ).toHaveBeenCalledOnce();
+    expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
     expect(harness.spies.notify).toHaveBeenCalledOnce();
     expect(harness.spies.notify).toHaveBeenCalledWith(
       "2 items imported into a new event.",

@@ -1,3 +1,4 @@
+import { createEventConsistency } from "../types/consistency";
 // @vitest-environment jsdom
 
 import {
@@ -23,8 +24,8 @@ import legacyMapJournalV1EmptyEventFixture from "../test/fixtures/legacy-map-jou
 import legacyMapJournalV1ProtoDayFixture from "../test/fixtures/legacy-map-journal-v1-proto-day-d2389a0.json";
 
 const DATABASE_NAME = "EventShoppingPlannerDB";
-const CURRENT_DATABASE_VERSION = 5;
-const UNSUPPORTED_DATABASE_VERSION = 8;
+const CURRENT_DATABASE_VERSION = 8;
+const UNSUPPORTED_DATABASE_VERSION = 9;
 const DATA_KEY = "data";
 const LEGACY_MIGRATION_JOURNAL_KEY =
   "__esp_internal__:migration:v1:legacy-local-storage";
@@ -36,6 +37,7 @@ const LEGACY_MIGRATION_RESOLUTION_KEY_PREFIX =
   "__esp_internal__:migration-resolution:v1:";
 
 const REQUIRED_STORES = [
+  "eventConsistency",
   "eventLists",
   "eventMetadata",
   "executeModeItems",
@@ -86,6 +88,7 @@ function makeAppData(marker: string): AppData {
   const dayMapName = "1日目マップ";
 
   return {
+    eventConsistency: { [eventName]: createEventConsistency() },
     eventLists: {
       [eventName]: [{ id: `${marker}-item`, title: `${marker}頒布物` }],
     },
@@ -6918,7 +6921,7 @@ describe("db runtime fallback resilience", () => {
     expect(localStorage.length).toBe(0);
   });
 
-  it("rejects a normal store save against v8 without writing any localStorage fallback", async () => {
+  it("rejects a normal store save against v9 without writing any localStorage fallback", async () => {
     await seedDatabase(UNSUPPORTED_DATABASE_VERSION);
     const db = await importFreshDb();
     vi.spyOn(console, "warn").mockImplementation(() => {});

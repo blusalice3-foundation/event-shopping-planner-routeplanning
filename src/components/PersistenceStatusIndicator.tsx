@@ -17,6 +17,7 @@ interface PersistenceStatusIndicatorProps {
 }
 
 const STORE_LABELS: Record<PersistedStoreName, string> = {
+  eventConsistency: "所属・巡回の関連設定",
   eventLists: "イベントリスト",
   eventMetadata: "イベント情報",
   executeModeItems: "実行リスト",

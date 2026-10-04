@@ -1,3 +1,6 @@
+import type { HallSelectionIntent } from "../types/consistency";
+import type { ItemMembershipPreview } from "../features/consistency/domain/itemEdit";
+import { decodeHallRef } from "../features/consistency/domain/projection";
 import React, { useState, useCallback, useId, useMemo } from "react";
 import type { ShoppingItem, PurchaseStatus } from "../types/item";
 import type { HallDefinition } from "../types/map";
@@ -22,7 +25,14 @@ import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
 
 interface ItemEditDialogProps {
   item: ShoppingItem;
-  onSave: (updatedItem: ShoppingItem) => void;
+  onSave: (
+    updatedItem: ShoppingItem,
+    selection: HallSelectionIntent,
+  ) => void | Promise<void>;
+  previewMembership?: (
+    item: ShoppingItem,
+    selection: HallSelectionIntent,
+  ) => ItemMembershipPreview;
   onClose: () => void;
   allItems?: ShoppingItem[];
   halls?: HallDefinition[];
@@ -54,6 +64,7 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
   allItems = [],
   halls = [],
   onPriorityChange,
+  previewMembership,
 }) => {
   const fieldIdPrefix = useId();
   const dialogTitleId = `${fieldIdPrefix}-title`;
@@ -111,14 +122,52 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
     onEscape: onClose,
   });
 
-  // 現在のブロックが属するホール候補（blockNamesに含まれているホール）
-  const blockHallCandidates = useMemo(
-    () => findHallsByBlockName(form.block, halls),
-    [form.block, halls],
+  const [selectionIntent, setSelectionIntent] = useState<HallSelectionIntent>({
+    kind: "unchanged",
+  });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const preview = useMemo(
+    () =>
+      previewMembership?.(
+        {
+          ...item,
+          eventDate: form.eventDate,
+          block: form.block,
+          number: form.number,
+          priorityLevel: form.priorityLevel,
+        },
+        selectionIntent,
+      ),
+    [
+      previewMembership,
+      item,
+      form.eventDate,
+      form.block,
+      form.number,
+      form.priorityLevel,
+      selectionIntent,
+    ],
   );
-  // 複数ホール所属ブロックの場合にホール選択UIを表示
-  const showHallSelector = blockHallCandidates.length > 1;
-
+  const blockHallCandidates =
+    preview?.halls ?? findHallsByBlockName(form.block, halls);
+  const showHallSelector =
+    blockHallCandidates.length > 0 || !!form.manualHallId;
+  const save = useCallback(
+    (updated: ShoppingItem) => {
+      if (saving) return;
+      setSaving(true);
+      setSaveError(null);
+      void Promise.resolve(onSave(updated, selectionIntent))
+        .catch((error) => {
+          setSaveError(
+            error instanceof Error ? error.message : "保存に失敗しました。",
+          );
+        })
+        .finally(() => setSaving(false));
+    },
+    [onSave, selectionIntent, saving],
+  );
   const formInputClass =
     "w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white";
   const labelClass =
@@ -178,14 +227,14 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
           setLimitedError(toLimitedPurchaseMessage(plannedValidation.error));
           return;
         }
-        onSave(applyLimitedPurchase(baseItem, { planned: planned! }));
+        save(applyLimitedPurchase(baseItem, { planned: planned! }));
         return;
       }
 
       const actual = parseDecimalIntegerInput(limitedActualText);
       const validation = validateLimitedPurchaseQuantities(actual, planned);
       if (validation.ok) {
-        onSave(
+        save(
           applyLimitedPurchase(baseItem, {
             actual: actual!,
             planned: planned!,
@@ -205,7 +254,7 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
               "全て購入できているので「購入済」にします。よろしいですか？",
             )
           ) {
-            onSave(applyPurchasedFromLimitedInput(baseItem, planned));
+            save(applyPurchasedFromLimitedInput(baseItem, planned));
           }
           return;
         }
@@ -224,10 +273,10 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
       quantity: parseInt(form.quantity, 10) || 1,
       purchaseStatus: form.purchaseStatus as PurchaseStatus,
     });
-    onSave(updatedItem);
+    save(updatedItem);
     // priority 変更の反映は onSave 経由（handleUpdateItem + hallOrder 更新を App 側で統合）に一本化。
     // 旧 onPriorityChange による二重 setEventLists は race condition の原因だったため廃止。
-  }, [form, item, limitedActualText, limitedPlannedText, onSave]);
+  }, [form, item, limitedActualText, limitedPlannedText, save]);
 
   const circleSuggestions = useMemo(
     () => [...new Set(allItems.map((i) => i.circle).filter(Boolean))],
@@ -237,7 +286,9 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
   return (
     <div
       className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={onClose}
+      onClick={() => {
+        if (!saving) onClose();
+      }}
     >
       <div
         ref={dialogRef}
@@ -504,20 +555,40 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
               {limitedError}
             </p>
           )}
+          {preview && (
+            <section aria-live="polite" className="text-sm p-3 border rounded">
+              <p>{preview.status}</p>
+              {preview.details.map((detail, index) => (
+                <p key={index}>{detail}</p>
+              ))}
+            </section>
+          )}
+          {saveError && (
+            <p role="alert" className="text-red-600">
+              {saveError}
+            </p>
+          )}
           {showHallSelector && (
             <div className="border border-amber-200 dark:border-amber-700/50 bg-amber-50/50 dark:bg-amber-900/20 rounded-lg p-3">
               <label htmlFor={fieldIds.manualHall} className={labelClass}>
                 ホール設定
                 <span className="ml-2 text-xs font-normal text-amber-700 dark:text-amber-400">
-                  （ブロック「{form.block}」は複数ホールに所属）
+                  （同じセル・スペースの品目へ共有）
                 </span>
               </label>
               <select
                 id={fieldIds.manualHall}
                 value={form.manualHallId}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, manualHallId: e.target.value }))
-                }
+                onChange={(e) => {
+                  const hall = decodeHallRef(e.target.value);
+                  setSelectionIntent(
+                    hall ? { kind: "select", hall } : { kind: "automatic" },
+                  );
+                  setForm((prev) => ({
+                    ...prev,
+                    manualHallId: e.target.value,
+                  }));
+                }}
                 className={formInputClass}
               >
                 <option value="">
@@ -530,7 +601,7 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
                 ))}
               </select>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                このブロックが属するホールを選択してください
+                候補列を含む共有先すべてに選択・解除を適用します
               </p>
             </div>
           )}
@@ -623,7 +694,9 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
         <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex gap-2">
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              if (!saving) onClose();
+            }}
             className="flex-1 py-2 px-4 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition-colors"
           >
             キャンセル
@@ -631,7 +704,7 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
           <button
             type="button"
             onClick={handleSave}
-            disabled={!form.circle.trim()}
+            disabled={saving || !form.circle.trim()}
             className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded-lg font-medium transition-colors"
           >
             保存
@@ -642,7 +715,7 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
           onFix={() => setExcessConfirm(null)}
           onConvertToPurchased={() => {
             if (!excessConfirm) return;
-            onSave(
+            save(
               applyPurchasedFromLimitedInput(
                 excessConfirm.item,
                 excessConfirm.planned,

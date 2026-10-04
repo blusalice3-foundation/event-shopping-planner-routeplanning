@@ -264,8 +264,6 @@ export const useShoppingItemMutationCommands = ({
   } = state;
   const {
     setEventLists,
-    setEventMetadata,
-    setDayModes,
     updateExecuteModeItems,
     setRecentlyChangedItemIds,
     openDuplicateEvent,
@@ -352,10 +350,6 @@ export const useShoppingItemMutationCommands = ({
         );
         return;
       }
-      setEventLists(() => nextEventLists);
-      setEventMetadata(() => nextEventMetadata);
-      updateExecuteModeItems(() => nextExecuteModeItems);
-      setDayModes(() => nextDayModes);
 
       const uiPlan = buildBulkAddUiPlan(
         eventName,
@@ -381,10 +375,6 @@ export const useShoppingItemMutationCommands = ({
       commitApplicationSnapshotPatch,
       navigation,
       notify,
-      setDayModes,
-      setEventLists,
-      setEventMetadata,
-      updateExecuteModeItems,
     ],
   );
 

@@ -1,3 +1,6 @@
+import type { HallSelectionIntent } from "../../../types/consistency";
+import type { ItemMembershipPreview } from "../../consistency/domain/itemEdit";
+import { applyChangedFields } from "../../consistency/domain/mutations";
 import React from "react";
 import DeleteConfirmationModal from "../../../components/DeleteConfirmationModal";
 import { ItemEditDialog } from "../../../components/ItemEditDialog";
@@ -64,6 +67,16 @@ type MapImportDialogProps = React.ComponentProps<typeof MapImportDialog>;
 
 type AppOverlayLayerFields = {
   items: ShoppingItem[];
+  saveItemEdit?: (
+    baseline: ShoppingItem,
+    edited: ShoppingItem,
+    selection: HallSelectionIntent,
+  ) => Promise<void>;
+  previewItemEdit?: (
+    baseline: ShoppingItem,
+    edited: ShoppingItem,
+    selection: HallSelectionIntent,
+  ) => ItemMembershipPreview;
   getHallsForDate: (eventDate: string) => HallDefinition[];
   handleUpdateItem: (item: ShoppingItem) => void;
   handleUpdateHallOrderForPriorityChangeFromEdit: (
@@ -79,6 +92,7 @@ type AppOverlayLayerFields = {
   onShowEventList: () => void;
   handleConfirmRename: EventRenameDialogProps["onConfirm"];
   handleConfirmExport: ExportOptionsDialogProps["onExport"];
+  previewEventExport?: ExportOptionsDialogProps["previewManifest"];
   mapData: MapDataStore;
   currentMapData: BlockDefinitionPanelProps["mapData"] | null;
   handleUpdateBlocks: BlockDefinitionPanelProps["onUpdateBlocks"];
@@ -210,10 +224,13 @@ export type AppOverlayLayerActions = {
     | "handleConfirmUpdate"
     | "handleUpdateHallOrderForPriorityChangeFromEdit"
     | "handleUpdateItem"
+    | "saveItemEdit"
+    | "previewItemEdit"
   >;
   readonly event: Pick<
     AppOverlayLayerFields,
     | "handleConfirmExport"
+    | "previewEventExport"
     | "handleConfirmRename"
     | "handleUrlUpdate"
     | "onShowEventList"
@@ -315,11 +332,13 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       handleCancelUpdate,
       handleConfirmDelete,
       handleConfirmUpdate,
-      handleUpdateHallOrderForPriorityChangeFromEdit,
       handleUpdateItem,
+      saveItemEdit,
+      previewItemEdit,
     },
     event: {
       handleConfirmExport,
+      previewEventExport,
       handleConfirmRename,
       handleUrlUpdate,
       onShowEventList,
@@ -384,6 +403,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
     hallDefinitionMode,
     pendingVertexSelection,
     visitListPanelOpen,
+    visitListPanelMapTab,
     visitListHasUnsavedChanges,
     showVisitListConfirmDialog,
     vertexSelectionMode,
@@ -406,32 +426,27 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
           item={editDialogItem}
           allItems={items}
           halls={getHallsForDate(editDialogItem.eventDate)}
-          onSave={(updatedItem) => {
-            const prevPriority = (editDialogItem.priorityLevel || "none") as
-              | "none"
-              | "priority"
-              | "highest";
-            const nextPriority = (updatedItem.priorityLevel || "none") as
-              | "none"
-              | "priority"
-              | "highest";
-            handleUpdateItem(updatedItem);
-            if (prevPriority !== nextPriority) {
-              handleUpdateHallOrderForPriorityChangeFromEdit(
-                updatedItem.id,
-                nextPriority,
-                prevPriority,
+          previewMembership={
+            previewItemEdit
+              ? (edited, intent) =>
+                  previewItemEdit(editDialogItem, edited, intent)
+              : undefined
+          }
+          onSave={async (updatedItem, intent) => {
+            if (saveItemEdit)
+              await saveItemEdit(editDialogItem, updatedItem, intent);
+            else {
+              const latest = items.find((item) => item.id === updatedItem.id);
+              if (!latest) return;
+              handleUpdateItem(
+                applyChangedFields(
+                  editDialogItem,
+                  updatedItem,
+                  latest,
+                ) as ShoppingItem,
               );
             }
             itemOverlayCommands.confirm();
-            setTimeout(() => {
-              const element = document.querySelector(
-                `[data-item-id="${updatedItem.id}"]`,
-              );
-              if (element) {
-                element.scrollIntoView({ behavior: "smooth", block: "center" });
-              }
-            }, 100);
           }}
           onPriorityChange={() => {
             /* no-op: priority 変更は onSave 内で統合処理済み */
@@ -503,6 +518,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
           isOpen={showExportOptions}
           onClose={eventOverlayCommands.close}
           onExport={handleConfirmExport}
+          previewManifest={previewEventExport}
           hasMapData={
             !!(
               exportEventName &&
@@ -635,6 +651,11 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
 
       {visitListPanelOpen && currentMapData && (
         <VisitListPanel
+          key={JSON.stringify([
+            activeEventName,
+            activeEventDate,
+            visitListPanelMapTab,
+          ])}
           isOpen={visitListPanelOpen}
           onClose={handleVisitListClose}
           items={visitListItems}

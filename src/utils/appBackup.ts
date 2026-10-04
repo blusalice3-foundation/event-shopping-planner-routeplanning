@@ -1,10 +1,21 @@
+import { normalizeExecutionVisitDay } from "./visitProjection";
+import {
+  migrateLegacyConsistency,
+  type LegacySnapshot,
+  type ConsistencyChange,
+} from "../features/consistency/domain/migration";
+import { validateEventConsistency } from "../features/consistency/domain/validation";
+import {
+  reconcileConsistencyReferences,
+  validateConsistencyReferences,
+} from "../features/consistency/domain/references";
 import { ItemSources, ProtectionLevels, PurchaseStatuses } from "../types/item";
 import type { BlockDetectionSettingsStore } from "../types/map";
 import type { AppData } from "../app/ports/PersistenceCommandPort";
 import { validateLimitedPurchaseQuantities } from "./purchaseQuantity";
 
 export const APP_BACKUP_KIND = "event-shopping-planner-backup" as const;
-export const APP_BACKUP_VERSION = 1 as const;
+export const APP_BACKUP_VERSION = 2 as const;
 
 export const APP_BACKUP_SECTION_KEYS = [
   "eventLists",
@@ -17,13 +28,14 @@ export const APP_BACKUP_SECTION_KEYS = [
   "hallDefinitions",
   "hallRouteSettings",
   "mapViewportSettings",
+  "eventConsistency",
 ] as const satisfies readonly (keyof AppData)[];
 
 export interface AppBackupV1 {
   kind: typeof APP_BACKUP_KIND;
   version: typeof APP_BACKUP_VERSION;
   exportedAt: string;
-  eventSettings: AppBackupEventSettings;
+  notices?: ConsistencyChange[];
   data: AppData;
 }
 
@@ -645,15 +657,17 @@ const getSections = (
   errors: string[],
 ): Partial<Record<SectionKey, UnknownRecord>> => {
   const sections: Partial<Record<SectionKey, UnknownRecord>> = {};
-  APP_BACKUP_SECTION_KEYS.forEach((key) => {
-    const path = `data.${key}`;
-    if (!hasOwn(data, key)) {
-      addError(errors, path, "必須セクションがありません");
-      return;
-    }
-    const section = requireRecord(data[key], path, errors);
-    if (section) sections[key] = section;
-  });
+  APP_BACKUP_SECTION_KEYS.filter((key) => key !== "eventConsistency").forEach(
+    (key) => {
+      const path = `data.${key}`;
+      if (!hasOwn(data, key)) {
+        addError(errors, path, "必須セクションがありません");
+        return;
+      }
+      const section = requireRecord(data[key], path, errors);
+      if (section) sections[key] = section;
+    },
+  );
   return sections;
 };
 
@@ -1084,7 +1098,11 @@ const parseHallGroupId = (groupId: string): string | null => {
   return groupId;
 };
 
-const validateAppData = (data: UnknownRecord, errors: string[]): void => {
+const validateAppData = (
+  data: UnknownRecord,
+  errors: string[],
+  referenceErrors: string[] = errors,
+): void => {
   const sections = getSections(data, errors);
   const knownEvents = new Set<string>();
   const itemIdsByEvent = new Map<string, Set<string>>();
@@ -1130,7 +1148,12 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
   if (sections.eventMetadata) {
     Object.entries(sections.eventMetadata).forEach(
       ([eventName, rawMetadata]) => {
-        validateKnownEvent("eventMetadata", eventName, knownEvents, errors);
+        validateKnownEvent(
+          "eventMetadata",
+          eventName,
+          knownEvents,
+          referenceErrors,
+        );
         const metadataPath = `data.eventMetadata.${eventName}`;
         const metadata = requireRecord(rawMetadata, metadataPath, errors);
         if (!metadata) return;
@@ -1146,7 +1169,12 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
   if (sections.executeModeItems) {
     Object.entries(sections.executeModeItems).forEach(
       ([eventName, rawItemsByDate]) => {
-        validateKnownEvent("executeModeItems", eventName, knownEvents, errors);
+        validateKnownEvent(
+          "executeModeItems",
+          eventName,
+          knownEvents,
+          referenceErrors,
+        );
         const eventPath = `data.executeModeItems.${eventName}`;
         const itemsByDate = requireRecord(rawItemsByDate, eventPath, errors);
         if (!itemsByDate) return;
@@ -1161,17 +1189,18 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
                 itemId,
                 itemPath,
                 itemIdsByEvent,
-                errors,
+                referenceErrors,
               );
               const referencedDate = itemDatesByEvent
                 .get(eventName)
                 ?.get(itemId);
               if (
                 referencedDate !== undefined &&
-                referencedDate !== eventDate
+                normalizeExecutionVisitDay(referencedDate) !==
+                  normalizeExecutionVisitDay(eventDate)
               ) {
                 addError(
-                  errors,
+                  referenceErrors,
                   itemPath,
                   `品目ID「${itemId}」の日付「${referencedDate}」と一致しません`,
                 );
@@ -1185,7 +1214,7 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
 
   if (sections.dayModes) {
     Object.entries(sections.dayModes).forEach(([eventName, rawModesByDate]) => {
-      validateKnownEvent("dayModes", eventName, knownEvents, errors);
+      validateKnownEvent("dayModes", eventName, knownEvents, referenceErrors);
       const eventPath = `data.dayModes.${eventName}`;
       const modesByDate = requireRecord(rawModesByDate, eventPath, errors);
       if (!modesByDate) return;
@@ -1203,7 +1232,7 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
 
   if (sections.mapData) {
     Object.entries(sections.mapData).forEach(([eventName, rawMapsByName]) => {
-      validateKnownEvent("mapData", eventName, knownEvents, errors);
+      validateKnownEvent("mapData", eventName, knownEvents, referenceErrors);
       const eventPath = `data.mapData.${eventName}`;
       const mapsByName = requireRecord(rawMapsByName, eventPath, errors);
       if (!mapsByName) return;
@@ -1230,7 +1259,7 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
           "mapRotationSettings",
           eventName,
           knownEvents,
-          errors,
+          referenceErrors,
         );
         const eventPath = `data.mapRotationSettings.${eventName}`;
         const settingsByMap = requireRecord(
@@ -1257,7 +1286,7 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
           "mapViewportSettings",
           eventName,
           knownEvents,
-          errors,
+          referenceErrors,
         );
         const eventPath = `data.mapViewportSettings.${eventName}`;
         const settingsByMap = requireRecord(
@@ -1280,7 +1309,12 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
   if (sections.routeSettings) {
     Object.entries(sections.routeSettings).forEach(
       ([eventName, rawSettingsByMap]) => {
-        validateKnownEvent("routeSettings", eventName, knownEvents, errors);
+        validateKnownEvent(
+          "routeSettings",
+          eventName,
+          knownEvents,
+          referenceErrors,
+        );
         const eventPath = `data.routeSettings.${eventName}`;
         const settingsByMap = requireRecord(
           rawSettingsByMap,
@@ -1295,7 +1329,7 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
             eventName,
             mapName,
             mapNamesByEvent,
-            errors,
+            referenceErrors,
           );
           const settings = requireRecord(rawSettings, settingPath, errors);
           if (!settings) return;
@@ -1329,7 +1363,7 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
                   itemId,
                   itemPath,
                   itemIdsByEvent,
-                  errors,
+                  referenceErrors,
                 );
                 validateItemMapDateReference(
                   eventName,
@@ -1337,7 +1371,7 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
                   itemId,
                   itemPath,
                   itemDatesByEvent,
-                  errors,
+                  referenceErrors,
                 );
               },
             );
@@ -1351,7 +1385,12 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
   if (sections.hallDefinitions) {
     Object.entries(sections.hallDefinitions).forEach(
       ([eventName, rawDefinitionsByMap]) => {
-        validateKnownEvent("hallDefinitions", eventName, knownEvents, errors);
+        validateKnownEvent(
+          "hallDefinitions",
+          eventName,
+          knownEvents,
+          referenceErrors,
+        );
         const eventPath = `data.hallDefinitions.${eventName}`;
         const definitionsByMap = requireRecord(
           rawDefinitionsByMap,
@@ -1374,7 +1413,7 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
                 eventName,
                 mapName,
                 mapNamesByEvent,
-                errors,
+                referenceErrors,
               );
             }
             const definitions = requireArray(rawDefinitions, mapPath, errors);
@@ -1451,7 +1490,12 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
   if (sections.hallRouteSettings) {
     Object.entries(sections.hallRouteSettings).forEach(
       ([eventName, rawSettingsByMap]) => {
-        validateKnownEvent("hallRouteSettings", eventName, knownEvents, errors);
+        validateKnownEvent(
+          "hallRouteSettings",
+          eventName,
+          knownEvents,
+          referenceErrors,
+        );
         const eventPath = `data.hallRouteSettings.${eventName}`;
         const settingsByMap = requireRecord(
           rawSettingsByMap,
@@ -1476,7 +1520,7 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
               const hallId = parseHallGroupId(groupId);
               if (hallId !== null && !knownHallIds.has(hallId)) {
                 addError(
-                  errors,
+                  referenceErrors,
                   groupPath,
                   `存在しない会場ID「${hallId}」を参照しています`,
                 );
@@ -1505,9 +1549,13 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
               errors,
               true,
             );
-            if (hallId !== undefined && !knownHallIds.has(hallId)) {
+            if (
+              hallId !== undefined &&
+              parseHallGroupId(hallId) !== null &&
+              !knownHallIds.has(parseHallGroupId(hallId)!)
+            ) {
               addError(
-                errors,
+                referenceErrors,
                 `${visitListPath}.hallId`,
                 `存在しない会場ID「${hallId}」を参照しています`,
               );
@@ -1523,7 +1571,7 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
                   itemId,
                   itemPath,
                   itemIdsByEvent,
-                  errors,
+                  referenceErrors,
                 );
                 validateItemMapDateReference(
                   eventName,
@@ -1531,7 +1579,7 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
                   itemId,
                   itemPath,
                   itemDatesByEvent,
-                  errors,
+                  referenceErrors,
                 );
               },
             );
@@ -1549,7 +1597,7 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
       }
       if (!hallIdsByMap) {
         addError(
-          errors,
+          referenceErrors,
           `${item.path}.manualHallId`,
           `存在しない会場ID「${item.manualHallId}」を参照しています`,
         );
@@ -1561,7 +1609,10 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
       hallIdsByMap.forEach((hallIds, mapName) => {
         if (
           mapName === MAPLESS_HALL_KEY ||
-          mapName === `${MAPLESS_HALL_KEY}:${item.eventDate}` ||
+          (mapName.startsWith(`${MAPLESS_HALL_KEY}:`) &&
+            normalizeExecutionVisitDay(
+              mapName.slice(MAPLESS_HALL_KEY.length + 1),
+            ) === normalizeExecutionVisitDay(item.eventDate!)) ||
           (!mapName.startsWith(`${MAPLESS_HALL_KEY}:`) &&
             normalizeMapDayToken(mapName) === normalizedDate)
         ) {
@@ -1570,7 +1621,7 @@ const validateAppData = (data: UnknownRecord, errors: string[]): void => {
       });
       if (!availableHallIds.has(item.manualHallId)) {
         addError(
-          errors,
+          referenceErrors,
           `${item.path}.manualHallId`,
           `品目の日付に存在しない会場ID「${item.manualHallId}」を参照しています`,
         );
@@ -1625,79 +1676,128 @@ const normalizeAppDataForBackup = (data: AppData): AppData => {
   };
 };
 
+/** Structural validation must run before any reference can be removed. */
+export function validateSnapshotStructure(data: unknown, v2 = true): string[] {
+  const errors: string[] = [];
+  if (!isRecord(data)) return ["data: オブジェクトである必要があります"];
+  validateAppData(data, errors, []);
+  if (v2) errors.push(...validateEventConsistency(data.eventConsistency));
+  return errors;
+}
+export function validateSnapshotReferences(data: AppData): string[] {
+  const errors: string[] = [];
+  validateAppData(data as unknown as UnknownRecord, [], errors);
+  errors.push(...validateConsistencyReferences(data));
+  return errors;
+}
 export function createAppBackup(
-  data: AppData,
+  data: AppData | LegacySnapshot,
   exportedAt: Date = new Date(),
-  eventSettings: AppBackupEventSettings = {
-    blockDetectionSettings: {},
-  },
+  eventSettings: AppBackupEventSettings = { blockDetectionSettings: {} },
 ): AppBackupV1 {
+  // JSON omits optional undefined fields; validate exactly that representation.
+  const source = JSON.parse(JSON.stringify(data)) as AppData | LegacySnapshot;
+  const errors = validateSnapshotStructure(
+    source,
+    Object.prototype.hasOwnProperty.call(source, "eventConsistency"),
+  );
+  if (errors.length) throw new Error(errors.join("\n"));
+  const migration = migrateLegacyConsistency(
+    source,
+    eventSettings.blockDetectionSettings,
+  );
+  const repaired = reconcileConsistencyReferences(migration.data);
+  const normalized = normalizeAppDataForBackup(repaired.data);
+  const referenceErrors = validateSnapshotReferences(normalized);
+  if (referenceErrors.length) throw new Error(referenceErrors.join("\n"));
   return {
     kind: APP_BACKUP_KIND,
     version: APP_BACKUP_VERSION,
     exportedAt: exportedAt.toISOString(),
-    eventSettings,
-    data: normalizeAppDataForBackup(data),
+    data: normalized,
+    notices: [...migration.changes, ...repaired.changes],
   };
 }
-
 export function serializeAppBackup(backup: AppBackupV1): string {
-  return JSON.stringify(backup, null, 2);
+  const source = JSON.stringify(
+    {
+      kind: backup.kind,
+      version: backup.version,
+      exportedAt: backup.exportedAt,
+      data: backup.data,
+    },
+    null,
+    2,
+  );
+  const finalData = (JSON.parse(source) as AppBackupV1).data;
+  const finalErrors = [
+    ...validateSnapshotStructure(finalData),
+    ...validateSnapshotReferences(finalData),
+  ];
+  if (finalErrors.length) throw new Error(finalErrors.join("\n"));
+  const checked = parseAppBackup(source);
+  if (!checked.ok) throw new Error(checked.errors.join("\n"));
+  return source;
 }
-
 export function parseAppBackup(source: unknown): AppBackupParseResult {
   let parsed = source;
   if (typeof source === "string") {
     try {
       parsed = JSON.parse(source) as unknown;
     } catch {
-      return {
-        ok: false,
-        data: null,
-        errors: ["$: JSONとして読み込めません"],
-      };
+      return { ok: false, data: null, errors: ["$: JSONとして読み込めません"] };
     }
   }
-
   const errors: string[] = [];
   const root = requireRecord(parsed, "$", errors);
   if (!root) return { ok: false, data: null, errors };
-
-  if (root.kind !== APP_BACKUP_KIND) {
+  if (root.kind !== APP_BACKUP_KIND)
     addError(errors, "kind", "未知のバックアップ形式です");
-  }
-  if (root.version !== APP_BACKUP_VERSION) {
+  if (root.version !== 1 && root.version !== 2)
     addError(errors, "version", "未対応のバックアップバージョンです");
-  }
-  if (!isCanonicalIsoDate(root.exportedAt)) {
+  if (!isCanonicalIsoDate(root.exportedAt))
     addError(errors, "exportedAt", "ISO形式の日時である必要があります");
-  }
-
   const data = requireRecord(root.data, "data", errors);
-  if (data) validateAppData(data, errors);
-  const eventLists =
-    data && isRecord(data.eventLists) ? data.eventLists : ({} as UnknownRecord);
-  validateEventSettings(
-    root.eventSettings,
-    new Set(Object.keys(eventLists)),
-    errors,
-  );
-
-  if (errors.length > 0) return { ok: false, data: null, errors };
-
-  const rawBackup = root as unknown as AppBackupV1;
-  const normalizedData = normalizeAppDataForBackup(rawBackup.data);
-  const backup =
-    normalizedData === rawBackup.data
-      ? rawBackup
-      : {
-          ...rawBackup,
-          data: normalizedData,
-        };
-  return {
-    ok: true,
-    backup,
-    data: backup.data,
-    errors: [],
-  };
+  if (data) errors.push(...validateSnapshotStructure(data, root.version === 2));
+  if (root.version === 1 && root.eventSettings !== undefined)
+    validateEventSettings(
+      root.eventSettings,
+      new Set(
+        Object.keys(data && isRecord(data.eventLists) ? data.eventLists : {}),
+      ),
+      errors,
+    );
+  if (errors.length || !data) return { ok: false, data: null, errors };
+  try {
+    const migration = migrateLegacyConsistency(
+      data as unknown as AppData,
+      root.version === 1
+        ? ((root.eventSettings as AppBackupEventSettings | undefined)
+            ?.blockDetectionSettings ?? {})
+        : {},
+    );
+    const repaired = reconcileConsistencyReferences(migration.data);
+    const normalized = normalizeAppDataForBackup(repaired.data);
+    errors.push(
+      ...validateSnapshotStructure(normalized),
+      ...validateSnapshotReferences(normalized),
+    );
+    if (errors.length) return { ok: false, data: null, errors };
+    const backup: AppBackupV1 = {
+      kind: APP_BACKUP_KIND,
+      version: APP_BACKUP_VERSION,
+      exportedAt: root.exportedAt as string,
+      data: normalized,
+      notices: [...migration.changes, ...repaired.changes],
+    };
+    return { ok: true, backup, data: normalized, errors: [] };
+  } catch (error) {
+    return {
+      ok: false,
+      data: null,
+      errors: [
+        error instanceof Error ? error.message : "バックアップを検証できません",
+      ],
+    };
+  }
 }

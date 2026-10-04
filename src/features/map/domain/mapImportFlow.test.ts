@@ -150,7 +150,7 @@ describe("map import flow", () => {
     expect(state).toEqual(before);
   });
 
-  it("applies state and saves settings exactly once after commit", async () => {
+  it("commits the complete patch once before completing navigation", async () => {
     const state = createState();
     const preparedImport = prepareImport(state, ["1日目"], ["3日目"]);
     const effects = createCommitEffects();
@@ -164,12 +164,6 @@ describe("map import flow", () => {
 
     expect(effects.setEventLists).not.toHaveBeenCalled();
     for (const effect of [
-      effects.setMapData,
-      effects.setMapRotationSettings,
-      effects.setRouteSettings,
-      effects.setHallDefinitions,
-      effects.setHallRouteSettings,
-      effects.setMapViewportSettings,
       effects.commitApplicationSnapshotPatch,
       effects.activateTarget,
       effects.finishImport,
@@ -177,7 +171,9 @@ describe("map import flow", () => {
     ]) {
       expect(effect).toHaveBeenCalledTimes(1);
     }
-    expect(effects.setMapData.mock.calls[0][0]).toMatchObject({
+    expect(
+      effects.commitApplicationSnapshotPatch.mock.calls[0][0].mapData,
+    ).toMatchObject({
       対象イベント: {
         "1日目マップ": {
           sheetName: "新しい1日目",
@@ -191,7 +187,7 @@ describe("map import flow", () => {
     );
     expect(effects.activateTarget).toHaveBeenCalledWith(
       "対象イベント",
-      "1日目マップ",
+      "1日目",
     );
     expect(effects.notify).toHaveBeenCalledWith(
       "1件のマップタブを取り込みました。\n3日目はないので取り込みしませんでした",
@@ -239,7 +235,9 @@ describe("map import flow", () => {
     });
 
     expect(effects.setEventLists).not.toHaveBeenCalled();
-    expect(effects.setHallDefinitions.mock.calls[0][0]).toMatchObject({
+    expect(
+      effects.commitApplicationSnapshotPatch.mock.calls[0][0].hallDefinitions,
+    ).toMatchObject({
       対象イベント: {
         "__mapless__:1日目": [
           {
@@ -248,7 +246,9 @@ describe("map import flow", () => {
         ],
       },
     });
-    expect(effects.setHallRouteSettings.mock.calls[0][0]).toMatchObject({
+    expect(
+      effects.commitApplicationSnapshotPatch.mock.calls[0][0].hallRouteSettings,
+    ).toMatchObject({
       対象イベント: {
         "__mapless__:1日目": {
           hallOrder: ["mapless-hall"],
@@ -288,9 +288,10 @@ describe("map import flow", () => {
       effects,
     });
 
-    expect(effects.setEventLists).toHaveBeenCalledTimes(1);
+    expect(effects.setEventLists).not.toHaveBeenCalled();
     expect(
-      effects.setEventLists.mock.calls[0][0].対象イベント[0],
+      effects.commitApplicationSnapshotPatch.mock.calls[0][0].eventLists!
+        .対象イベント[0],
     ).not.toHaveProperty("manualHallId");
     expect(effects.commitApplicationSnapshotPatch).toHaveBeenCalledTimes(1);
   });

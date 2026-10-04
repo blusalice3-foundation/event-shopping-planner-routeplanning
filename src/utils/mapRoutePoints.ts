@@ -64,7 +64,9 @@ export function resolveMapRoutePoints(
       !isManualHallCompatibleForMapRoute({
         item,
         hallDefinitions: params.hallDefinitions,
+        allItems: params.items,
         selectedHallId,
+        dayMapData: params.mapData,
       })
     ) {
       missingItemIds.push(itemId);
@@ -86,6 +88,7 @@ export function resolveMapRoutePoints(
       item,
       dayMapData: params.mapData,
       hallDefinitions: params.hallDefinitions,
+      allItems: params.items,
       selectedHallId,
       resolvedRouteCell: resolved,
       resolvedRouteCellCandidates: resolvedCandidates,

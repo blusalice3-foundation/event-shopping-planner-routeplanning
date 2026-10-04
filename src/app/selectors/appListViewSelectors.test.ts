@@ -59,6 +59,7 @@ describe("appListViewSelectors", () => {
       selectMapVisitListItems({
         activeEventName: "event",
         mapTabName: "1日目マップ",
+        dayName: "1日目",
         executeModeItems: { event: { "1日目": ["a1", "b", "a2"] } },
         items,
       }).map(({ id }) => id),

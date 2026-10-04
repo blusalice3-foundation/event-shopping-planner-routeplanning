@@ -1,3 +1,4 @@
+import { createEventConsistency } from "../../types/consistency";
 import { describe, expect, it } from "vitest";
 import type { PersistenceSnapshot } from "../../app/ports/PersistenceCommandPort";
 import {
@@ -7,6 +8,7 @@ import {
 } from "./applicationSnapshotOps";
 
 const createSnapshot = (): PersistenceSnapshot => ({
+  eventConsistency: { source: createEventConsistency() },
   eventLists: { source: [{ id: "item" }] },
   eventMetadata: { source: { imported: true } },
   executeModeItems: { source: { day: ["item"] } },
@@ -20,7 +22,7 @@ const createSnapshot = (): PersistenceSnapshot => ({
 });
 
 describe("application snapshot event operations", () => {
-  it("removes an event from all ten stores without mutating the source", () => {
+  it("removes an event from all eleven stores without mutating the source", () => {
     const source = createSnapshot();
     const next = removeEventFromApplicationSnapshot(source, "source");
 
@@ -30,7 +32,7 @@ describe("application snapshot event operations", () => {
     expect(source.eventLists.source).toHaveLength(1);
   });
 
-  it("renames an event across all ten stores without mutating the source", () => {
+  it("renames an event across all eleven stores without mutating the source", () => {
     const source = createSnapshot();
     const next = renameEventInApplicationSnapshot(source, "source", "target");
 

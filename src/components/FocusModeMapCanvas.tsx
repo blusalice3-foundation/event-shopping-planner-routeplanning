@@ -1,3 +1,9 @@
+import { normalizeExecutionVisitDay } from "../utils/visitProjection";
+import { resolveLocation } from "../features/consistency/domain/membership";
+import {
+  collectFocusCellItems,
+  summarizeFocusCell,
+} from "../features/map/domain/focusCellState";
 import React, { useRef, useEffect, useCallback, useMemo } from "react";
 import {
   DayMapData,
@@ -19,13 +25,7 @@ import {
   rotatePointAroundCenter,
   useCanvasViewport,
 } from "../features/map/canvas/useCanvasViewport";
-import { extractNumberFromItemNumber } from "../xlsx/domain/itemNumber";
-import { findRouteLookupNumberCell } from "../utils/mapRoutingSignature";
-import {
-  buildSpaceKey,
-  normalizeBaseSpaceNumber,
-  normalizeSpaceBlock,
-} from "../features/space-navigation/domain/visitIdentity";
+import { buildSpaceKey } from "../features/space-navigation/domain/visitIdentity";
 import {
   findAllCrossingsIndexed,
   buildCrossingLookup,
@@ -40,6 +40,7 @@ import RouteDiagnosticsOverlay from "./map/RouteDiagnosticsOverlay";
 interface FocusModeMapCanvasProps {
   mapData: DayMapData;
   mapName: string;
+  eventDate?: string;
   items: ShoppingItem[];
   executeModeItemIds: string[];
   zoomLevel: number;
@@ -244,8 +245,9 @@ const resolveMapTextColorForTheme = (
 const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
   mapData,
   mapName,
+  eventDate,
   items,
-  executeModeItemIds: _executeModeItemIds,
+  executeModeItemIds,
   zoomLevel,
   selectedHall,
   currentVisitKey,
@@ -359,9 +361,13 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
 
   const dayName = useMemo(() => {
     const dayMatch = mapName.match(/^(.+)マップ$/);
-    return dayMatch ? dayMatch[1].trim() : "";
-  }, [mapName]);
+    return normalizeExecutionVisitDay(eventDate ?? dayMatch?.[1] ?? "");
+  }, [mapName, eventDate]);
 
+  const cellItems = useMemo(
+    () => collectFocusCellItems(items, executeModeItemIds, dayName, mapData),
+    [items, executeModeItemIds, dayName, mapData],
+  );
   const cellStates = useMemo(() => {
     const states = new Map<
       string,
@@ -383,94 +389,20 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       }
     >();
 
-    if (!dayName) return states;
-
-    items.forEach((item) => {
-      const itemEventDate = item.eventDate?.trim() || "";
-      if (itemEventDate !== dayName) return;
-
-      const itemBlockName = normalizeSpaceBlock(item.block || "");
-      let block = mapData.blocks.find(
-        (candidate) => normalizeSpaceBlock(candidate.name) === itemBlockName,
-      );
-      if (!block) {
-        const candidates = mapData.blocks.filter(
-          (candidate) =>
-            normalizeSpaceBlock(candidate.name).toLowerCase() ===
-            itemBlockName.toLowerCase(),
-        );
-        if (candidates.length === 1) {
-          block = candidates[0];
-        }
-      }
-      if (!block) return;
-
-      const numStr = extractNumberFromItemNumber(
-        normalizeBaseSpaceNumber(item.number),
-      );
-      if (!numStr) return;
-
-      const num = parseInt(numStr, 10);
-      const cell = findRouteLookupNumberCell(block, num);
-      if (!cell) return;
-
-      const key = `${cell.row}-${cell.col}`;
-      const visitKey = getVisitKey(item);
-      const existing = states.get(key) || {
-        hasItems: false,
-        items: [],
-        visitKeys: new Set<string>(),
+    for (const [key, members] of cellItems.execution) {
+      const state = {
+        ...summarizeFocusCell(members),
+        items: members,
+        visitKeys: new Set(members.map(getVisitKey)),
         isCurrentPosition: false,
         isTemporaryPosition: false,
         isNextDestination: false,
         isPreviousPosition: false,
-        allNone: true,
-        allProcessed: true,
-        hasPostponed: false,
-        hasLate: false,
-        allPostponed: true,
-        allLate: true,
-        isVisited: false,
       };
+      states.set(key, state);
+    }
 
-      existing.hasItems = true;
-      existing.items.push(item);
-      existing.visitKeys.add(visitKey);
-
-      if (item.purchaseStatus === "None") {
-        existing.allProcessed = false;
-      } else {
-        existing.allNone = false;
-      }
-      if (item.purchaseStatus === "Postpone") {
-        existing.hasPostponed = true;
-      } else {
-        existing.allPostponed = false;
-      }
-      if (item.purchaseStatus === "Late") {
-        existing.hasLate = true;
-      } else {
-        existing.allLate = false;
-      }
-
-      states.set(key, existing);
-    });
-
-    states.forEach((state, _key) => {
-      const hasFinalStatus = state.items.some(
-        (item) =>
-          item.purchaseStatus === "Purchased" ||
-          item.purchaseStatus === "SoldOut" ||
-          item.purchaseStatus === "Absent",
-      );
-      const onlyPostponedOrLate = state.items.every(
-        (item) =>
-          item.purchaseStatus === "Postpone" || item.purchaseStatus === "Late",
-      );
-      state.isVisited =
-        !state.allNone &&
-        (hasFinalStatus || (!state.allNone && !onlyPostponedOrLate));
-
+    states.forEach((state) => {
       const positionFlags = resolveFocusMapCellPositionFlags(
         state.visitKeys,
         positionKeys,
@@ -486,14 +418,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     });
 
     return states;
-  }, [
-    mapData.blocks,
-    items,
-    dayName,
-    positionKeys,
-    nextVisitKey,
-    prevVisitKey,
-  ]);
+  }, [cellItems, positionKeys, nextVisitKey, prevVisitKey]);
 
   const officialCellCoords = useMemo(() => {
     for (const [key, state] of cellStates.entries()) {
@@ -1852,6 +1777,24 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       batcher.flush(ctx);
     }
 
+    if (!isRotationInteracting) {
+      cellItems.candidates.forEach((members, key) => {
+        const [row, col] = key.split("-").map(Number);
+        if (!isCellVisible(row, col, 1, 1)) return;
+        ctx.save();
+        ctx.font = "bold " + Math.max(8, cellSize * 0.27) + "px sans-serif";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "bottom";
+        ctx.fillStyle = isDarkMode ? "#c4b5fd" : "#6d28d9";
+        drawUprightText(
+          "候補" + members.length,
+          col * cellSize - 1,
+          row * cellSize - 1,
+        );
+        ctx.restore();
+      });
+    }
+
     // ラベルを描画する。
     if (!isRotationInteracting) {
       cellLabels.forEach((label, key) => {
@@ -1989,6 +1932,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     mapData,
     cellSize,
     cellStates,
+    cellItems,
     cellLabels,
     numberCellSet,
     mergedCellsMap,
@@ -2247,16 +2191,14 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
 
         if (foundNumber !== null) {
           const matchingItems = items.filter((item) => {
-            if (
-              normalizeSpaceBlock(item.block) !==
-              normalizeSpaceBlock(block.name)
-            )
+            if (normalizeExecutionVisitDay(item.eventDate) !== dayName)
               return false;
-            const numStr = extractNumberFromItemNumber(
-              normalizeBaseSpaceNumber(item.number),
+            const location = resolveLocation(mapData, item);
+            return (
+              location.status === "resolved" &&
+              location.location.cell.row === resolvedRow &&
+              location.location.cell.col === resolvedCol
             );
-            const numValue = numStr ? parseInt(numStr, 10) : 0;
-            return numValue === foundNumber;
           });
           onCellClick(block.name, foundNumber, matchingItems);
         }
@@ -2270,6 +2212,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       isCellInBlock,
       cellsMap,
       items,
+      dayName,
       toMapCoordinates,
     ],
   );
@@ -2429,6 +2372,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     >
       <canvas
         ref={canvasRef}
+        aria-label="フォーカスマップ。候補の件数と実行列の訪問状態を表示"
         onClick={handleClick}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

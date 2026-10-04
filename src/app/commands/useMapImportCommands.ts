@@ -1,3 +1,11 @@
+import type { EventConsistencyStore } from "../../types/consistency";
+import type { ApplicationMutationPort } from "../ports/ApplicationMutationPort";
+import {
+  getDayConsistency,
+  resolveDayMap,
+  normalizeMapDay,
+} from "../../features/consistency/domain/context";
+import { planMapReimport } from "../../features/consistency/domain/mapReimport";
 import { useCallback } from "react";
 import type { ChangeEvent } from "react";
 import type { ShoppingItem } from "../../types/item";
@@ -28,6 +36,7 @@ export interface MapImportFileInputPort {
 }
 
 export interface MapImportStatePort extends MapReimportState {
+  readonly eventConsistency?: EventConsistencyStore;
   readonly pendingEventName: string;
   readonly pendingReimport: PreparedMapImport | null;
   readonly mapViewActive: boolean;
@@ -49,6 +58,7 @@ export interface MapImportActionPort {
 }
 
 export interface MapImportSettingsPort {
+  requestMutation?: ApplicationMutationPort["requestMutation"];
   commitApplicationSnapshotPatch(
     patch: Pick<
       MapReimportState,
@@ -98,16 +108,6 @@ export interface MapImportCommands {
   closeImport(): void;
 }
 
-const toHalfWidthDigits = (value: string): string =>
-  value.replace(/[０-９]/g, (char) =>
-    String.fromCharCode(char.charCodeAt(0) - 0xfee0),
-  );
-
-const normalizeMapDayToken = (value: string): string =>
-  toHalfWidthDigits(value)
-    .replace(/[ \u3000]/g, "")
-    .replace(/マップ$/, "");
-
 export const useMapImportCommands = ({
   fileInput,
   state,
@@ -143,7 +143,7 @@ export const useMapImportCommands = ({
     cancelReimport: cancelReimportOverlay,
     confirmReimport: confirmReimportOverlay,
   } = actions;
-  const { commitApplicationSnapshotPatch } = settings;
+  const { commitApplicationSnapshotPatch, requestMutation } = settings;
   const { openEvent } = navigation;
   const { notify, reportDiagnostic } = effects;
 
@@ -183,6 +183,28 @@ export const useMapImportCommands = ({
       options: MapReimportOptions,
     ): Promise<void> => {
       try {
+        if (requestMutation) {
+          const name = preparedImport.plan.eventName;
+          await requestMutation({
+            events: [name],
+            plan: (snapshot) =>
+              planMapReimport(
+                snapshot,
+                name,
+                preparedImport.plan.targets,
+                options,
+                preparedImport.settings,
+              ),
+          });
+          const first = preparedImport.plan.targets[0];
+          if (first)
+            openEvent(name, first.eventDate, mapViewActive ? "map" : "list");
+          finishImport();
+          notify(
+            `${preparedImport.plan.targets.length}件のマップを取り込みました。`,
+          );
+          return;
+        }
         await commitPreparedMapImport({
           state: {
             eventLists,
@@ -216,14 +238,19 @@ export const useMapImportCommands = ({
             notify,
           },
         });
-      } catch {
-        notify("マップを保存できませんでした。表示内容は変更されていません。");
+      } catch (error) {
+        notify(
+          error instanceof Error
+            ? error.message
+            : "マップを保存できませんでした。",
+        );
       }
     },
     [
       eventLists,
       executeModeItems,
       commitApplicationSnapshotPatch,
+      requestMutation,
       finishImport,
       hallDefinitions,
       hallRouteSettings,
@@ -252,43 +279,66 @@ export const useMapImportCommands = ({
     ): Promise<void> => {
       if (!pendingEventName) return;
 
-      const eventDates = extractEventDates(eventLists[pendingEventName] || []);
-      const skippedDays = new Set<string>();
-      const targets = Object.entries(parsedData).flatMap(
-        ([mapName, dayMapData]) => {
-          const normalizedMapDay = normalizeMapDayToken(mapName);
-          const eventDate = eventDates.find(
-            (candidate) => normalizeMapDayToken(candidate) === normalizedMapDay,
-          );
-          if (!eventDate) {
-            skippedDays.add(normalizedMapDay || mapName);
-            return [];
-          }
-          return [
-            {
-              eventDate,
-              mapTabName: `${eventDate}マップ`,
-              mapData: dayMapData,
-              initialAngle: initialAngles[mapName] ?? 0,
-            },
-          ];
-        },
-      );
-
-      if (targets.length === 0) {
-        const skippedMessages = Array.from(skippedDays)
-          .sort((a, b) => a.localeCompare(b, "ja"))
-          .map((dayName) => `${dayName}はないので取り込みしませんでした`);
-        notify(
-          skippedMessages.length > 0
-            ? skippedMessages.join("\n")
-            : "取り込める対象日のマップがありません。",
-        );
-        closeImportDialog();
-        return;
-      }
-
       try {
+        const eventDates = extractEventDates(
+          eventLists[pendingEventName] || [],
+        );
+        const skippedDays = new Set<string>();
+        const targets = Object.entries(parsedData).flatMap(
+          ([mapName, dayMapData]) => {
+            const normalizedMapDay = normalizeMapDay(mapName);
+            const candidateDays = eventDates.filter(
+              (candidate) => normalizeMapDay(candidate) === normalizedMapDay,
+            );
+            const eventDate =
+              candidateDays.find(
+                (day) => `${day}マップ` === mapName || day === mapName,
+              ) ?? (candidateDays.length === 1 ? candidateDays[0] : undefined);
+            if (!eventDate && candidateDays.length > 1)
+              throw new Error(
+                `「${mapName}」に対応する日付が複数あります。取り込み元のシート名を実際の日付と一致させてください。`,
+              );
+            if (!eventDate) {
+              skippedDays.add(normalizedMapDay || mapName);
+              return [];
+            }
+            const resolved = resolveDayMap(
+              mapData[pendingEventName],
+              eventDate,
+              getDayConsistency(
+                state.eventConsistency?.[pendingEventName],
+                eventDate,
+              )?.selectedMapKey,
+            );
+            return [
+              {
+                eventDate,
+                mapTabName:
+                  resolved.status === "resolved"
+                    ? resolved.key
+                    : `${eventDate}マップ`,
+                targetCandidates: resolved.candidates,
+                targetChoiceRequired: resolved.status === "selection-required",
+                mapData: dayMapData,
+                initialAngle: initialAngles[mapName] ?? 0,
+              },
+            ];
+          },
+        );
+
+        if (targets.length === 0) {
+          const skippedMessages = Array.from(skippedDays)
+            .sort((a, b) => a.localeCompare(b, "ja"))
+            .map((dayName) => `${dayName}はないので取り込みしませんでした`);
+          notify(
+            skippedMessages.length > 0
+              ? skippedMessages.join("\n")
+              : "取り込める対象日のマップがありません。",
+          );
+          closeImportDialog();
+          return;
+        }
+
         const preparedImport: PreparedMapImport = {
           plan: buildMapReimportPlan({
             state: {
@@ -313,9 +363,13 @@ export const useMapImportCommands = ({
           },
           commit: commitImport,
         });
-      } catch {
+      } catch (error) {
         reportDiagnostic("Map reimport planning failed (map-plan-failed).");
-        notify("マップを取り込む準備に失敗しました。");
+        notify(
+          error instanceof Error
+            ? error.message
+            : "マップを取り込む準備に失敗しました。",
+        );
       }
     },
     [
@@ -329,6 +383,7 @@ export const useMapImportCommands = ({
       mapViewportSettings,
       notify,
       pendingEventName,
+      state.eventConsistency,
       reportDiagnostic,
       closeImportDialog,
       requestReimport,

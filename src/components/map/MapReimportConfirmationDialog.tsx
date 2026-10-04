@@ -8,7 +8,7 @@ export interface MapReimportConfirmationDialogProps {
   isOpen: boolean;
   plan: MapReimportPlan | null;
   onCancel: () => void;
-  onConfirm: (options: MapReimportOptions) => void;
+  onConfirm: (options: MapReimportOptions) => void | Promise<void>;
 }
 
 const countLabel = (count: number, unit: string): string =>
@@ -21,9 +21,17 @@ export default function MapReimportConfirmationDialog({
   onConfirm,
 }: MapReimportConfirmationDialogProps) {
   const [preserveMaplessHalls, setPreserveMaplessHalls] = useState(true);
+  const [targetMapKeys, setTargetMapKeys] = useState<Record<string, string>>(
+    {},
+  );
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (isOpen) setPreserveMaplessHalls(true);
+    if (isOpen) {
+      setPreserveMaplessHalls(true);
+      setTargetMapKeys({});
+      setBusy(false);
+    }
   }, [isOpen]);
 
   if (!isOpen || !plan) return null;
@@ -35,7 +43,7 @@ export default function MapReimportConfirmationDialog({
       role="presentation"
       className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/[0.55] p-4"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onCancel();
+        if (event.target === event.currentTarget && !busy) onCancel();
       }}
     >
       <section
@@ -50,7 +58,7 @@ export default function MapReimportConfirmationDialog({
 
         <p className="mb-3 leading-[1.7]">
           新しいマップに入れ替えると、古い地図上の位置を使う設定はそのまま使えません。
-          買い物リスト、購入状態、実行順、経路線の表示ON/OFF、別の日・別のイベントは残ります。
+          同じマップを使う全日付の所属と巡回情報を再判定します。次の画面で最新の影響範囲を確認します。
         </p>
 
         <div className="mb-4 rounded-lg bg-gray-100 p-3">
@@ -59,6 +67,27 @@ export default function MapReimportConfirmationDialog({
             {plan.targets.map((target) => (
               <li key={`${target.eventDate}:${target.mapTabName}`}>
                 {target.eventDate}（{target.mapTabName}）
+                {target.targetChoiceRequired && (
+                  <label className="block">
+                    更新先のマップ
+                    <select
+                      aria-label={`${target.eventDate}の更新先マップ`}
+                      disabled={busy}
+                      value={targetMapKeys[target.eventDate] ?? ""}
+                      onChange={(event) =>
+                        setTargetMapKeys((current) => ({
+                          ...current,
+                          [target.eventDate]: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">選択してください</option>
+                      {target.targetCandidates?.map((key) => (
+                        <option key={key}>{key}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
               </li>
             ))}
           </ul>
@@ -97,6 +126,7 @@ export default function MapReimportConfirmationDialog({
           <input
             type="checkbox"
             checked={preserveMaplessHalls}
+            disabled={busy}
             onChange={(event) =>
               setPreserveMaplessHalls(event.currentTarget.checked)
             }
@@ -118,20 +148,33 @@ export default function MapReimportConfirmationDialog({
             {countLabel(impact.maplessHallDefinitionCount, "件")}、手動割り当て
             {countLabel(impact.maplessManualAssignmentCount, "件")}、巡回設定
             {countLabel(impact.maplessHallRouteDayCount, "日分")}
-            が追加で初期化されます。
+            が追加で初期化されます。共有する簡易ホールへの変更は、その日付の別マップにも反映されます。
           </div>
         )}
 
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onCancel}>
+          <button type="button" disabled={busy} onClick={onCancel}>
             キャンセル
           </button>
           <button
             type="button"
-            onClick={() => onConfirm({ preserveMaplessHalls })}
+            disabled={
+              busy ||
+              plan.targets.some(
+                (target) =>
+                  target.targetChoiceRequired &&
+                  !targetMapKeys[target.eventDate],
+              )
+            }
+            onClick={() => {
+              setBusy(true);
+              void Promise.resolve(
+                onConfirm({ preserveMaplessHalls, targetMapKeys }),
+              ).finally(() => setBusy(false));
+            }}
             className="rounded-md border-0 bg-amber-700 px-3.5 py-2 font-bold text-white"
           >
-            理解してマップを入れ替える
+            影響範囲を確認する
           </button>
         </div>
       </section>

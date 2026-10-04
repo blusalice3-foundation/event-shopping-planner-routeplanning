@@ -67,7 +67,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
       queueMicrotask(() => {
         worker.emitMessage({
           type: "XLSX_PROGRESS",
-          protocolVersion: 1,
+          protocolVersion: 2,
           requestId: request.requestId,
           kind: request.kind,
           progress: {
@@ -78,7 +78,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
         });
         worker.emitMessage({
           type: "XLSX_IMPORT_RESULT",
-          protocolVersion: 1,
+          protocolVersion: 2,
           requestId: request.requestId,
           kind: request.kind,
           result: {
@@ -93,7 +93,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
         });
         worker.emitMessage({
           type: "XLSX_IMPORT_RESULT",
-          protocolVersion: 1,
+          protocolVersion: 2,
           requestId: request.requestId,
           kind: request.kind,
           result: {
@@ -140,7 +140,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
       queueMicrotask(() =>
         worker.emitMessage({
           type: "XLSX_IMPORT_RESULT",
-          protocolVersion: 1,
+          protocolVersion: 2,
           requestId: request.requestId,
           kind: "map-import",
           result: {
@@ -187,13 +187,13 @@ describe("WorkerXlsxExecutionPort protocol", () => {
     controller.abort();
     expect(worker.sent[1].message).toEqual({
       type: "XLSX_CANCEL_REQUEST",
-      protocolVersion: 1,
+      protocolVersion: 2,
       requestId: REQUEST_ID,
     });
 
     worker.emitMessage({
       type: "XLSX_IMPORT_RESULT",
-      protocolVersion: 1,
+      protocolVersion: 2,
       requestId: REQUEST_ID,
       kind: "map-import",
       result: {
@@ -203,7 +203,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
     });
     worker.emitMessage({
       type: "XLSX_ERROR",
-      protocolVersion: 1,
+      protocolVersion: 2,
       requestId: REQUEST_ID,
       kind: "map-import",
       errorCode: "ABORTED",
@@ -218,7 +218,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
     });
     const promise = port.exportWorkbook(
       {
-        schemaVersion: 1,
+        schemaVersion: 2,
         eventName: "event",
         items: [],
         options: {
@@ -260,12 +260,12 @@ describe("WorkerXlsxExecutionPort protocol", () => {
     await vi.advanceTimersByTimeAsync(25);
     expect(worker.sent[1].message).toEqual({
       type: "XLSX_CANCEL_REQUEST",
-      protocolVersion: 1,
+      protocolVersion: 2,
       requestId: REQUEST_ID,
     });
     worker.emitMessage({
       type: "XLSX_IMPORT_RESULT",
-      protocolVersion: 1,
+      protocolVersion: 2,
       requestId: REQUEST_ID,
       kind: "event-import",
       result: {
@@ -280,7 +280,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
     });
     worker.emitMessage({
       type: "XLSX_ERROR",
-      protocolVersion: 1,
+      protocolVersion: 2,
       requestId: REQUEST_ID,
       kind: "event-import",
       errorCode: "ABORTED",
@@ -313,7 +313,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
     await expect(
       port.exportWorkbook(
         {
-          schemaVersion: 1,
+          schemaVersion: 2,
           eventName: "event",
           items: [],
           options: {
@@ -426,7 +426,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
     );
     const second = port.exportWorkbook(
       {
-        schemaVersion: 1,
+        schemaVersion: 2,
         eventName: "event",
         items: [],
         options: {
@@ -460,7 +460,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
       queueMicrotask(() => {
         worker.emitMessage({
           type: "XLSX_ERROR",
-          protocolVersion: 1,
+          protocolVersion: 2,
           requestId: request.requestId,
           kind: request.kind,
           errorCode: "RESOURCE_LIMIT",
@@ -492,7 +492,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
       queueMicrotask(() => {
         worker.emitMessage({
           type: "XLSX_EXPORT_RESULT",
-          protocolVersion: 1,
+          protocolVersion: 2,
           requestId: request.requestId,
           kind: "export",
           bytes,
@@ -505,7 +505,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
 
     const result = await port.exportWorkbook(
       {
-        schemaVersion: 1,
+        schemaVersion: 2,
         eventName: "event",
         items: [],
         options: {
@@ -590,7 +590,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
       queueMicrotask(() => {
         worker.emitMessage({
           type: "XLSX_EXPORT_RESULT",
-          protocolVersion: 1,
+          protocolVersion: 2,
           requestId: request.requestId,
           kind: "export",
           bytes: new Uint8Array([7]),
@@ -604,7 +604,7 @@ describe("WorkerXlsxExecutionPort protocol", () => {
     await expect(
       port.exportWorkbook(
         {
-          schemaVersion: 1,
+          schemaVersion: 2,
           eventName: "event",
           items: [],
           options: {

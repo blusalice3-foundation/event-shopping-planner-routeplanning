@@ -1,3 +1,4 @@
+import ExcelJS from "exceljs";
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ShoppingItem } from "../types/item";
@@ -46,7 +47,7 @@ async function loadStoredMapData(): Promise<MapDataStore> {
 
 async function openRawDatabase(): Promise<IDBDatabase> {
   return await new Promise((resolve, reject) => {
-    const request = indexedDB.open("EventShoppingPlannerDB", 5);
+    const request = indexedDB.open("EventShoppingPlannerDB", 8);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
   });
@@ -494,12 +495,28 @@ describe("db.saveMapDataChanges", () => {
       {
         mapData: {
           [eventName]: {
-            "1日目マップ": legacyDayMap,
+            "1日目マップ": makeDayMap("A"),
           },
         },
       },
     );
-    const exportBuffer = await readBlobAsArrayBuffer(blob);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(await readBlobAsArrayBuffer(blob));
+    workbook.getWorksheet("メタデータ")!.eachRow((row) => {
+      if (row.getCell(1).value === "version") row.getCell(2).value = "2.2";
+      if (
+        ["consistencySchemaVersion", "contentManifest"].includes(
+          String(row.getCell(1).value),
+        )
+      ) {
+        row.getCell(1).value = null;
+        row.getCell(2).value = null;
+      }
+    });
+    workbook.removeWorksheet("関連設定");
+    workbook.getWorksheet("マップデータ")!.getCell(2, 2).value =
+      JSON.stringify(legacyDayMap);
+    const exportBuffer = await workbook.xlsx.writeBuffer();
     const file = {
       name: "legacy-full-export.xlsx",
       arrayBuffer: async () => exportBuffer,

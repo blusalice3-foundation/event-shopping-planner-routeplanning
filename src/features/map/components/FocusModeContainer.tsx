@@ -1,3 +1,8 @@
+import {
+  resolveDayKey,
+  resolveDayMap,
+  resolveSimpleKey,
+} from "../../consistency/domain/context";
 import React, { useEffect, useMemo, useRef } from "react";
 import FocusMode from "../../../components/FocusMode";
 import { buildMergedHallRouteSettings } from "../../../utils/mergedHallRouteSettings";
@@ -36,6 +41,7 @@ type FocusModeContainerProps = {
   items: ShoppingItem[];
   executeModeItems: Record<string, ExecuteModeItems>;
   mapData: MapDataStore;
+  resolvedMapKey?: string | null;
   hallDefinitions: HallDefinitionsStore;
   hallRouteSettings: HallRouteSettingsStore;
   onUpdateItem: (item: ShoppingItem) => void;
@@ -69,6 +75,7 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
   items,
   executeModeItems,
   mapData,
+  resolvedMapKey,
   hallDefinitions,
   hallRouteSettings,
   onUpdateItem,
@@ -101,7 +108,9 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
   // 実行列に含まれるアイテムID
   const executeModeItemIds = useMemo(() => {
     if (!activeEventName) return [];
-    return executeModeItems[activeEventName]?.[currentDay] || [];
+    const record = executeModeItems[activeEventName];
+    const day = resolveDayKey(record, currentDay);
+    return day.status === "resolved" ? record[day.key] : [];
   }, [executeModeItems, activeEventName, currentDay]);
 
   const executeModeItemIdsSignature = useMemo(() => {
@@ -158,11 +167,14 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
     return relevantItems;
   }, [focusRouteItemsSignature, items, stableExecuteModeItemIds]);
 
-  // マップタブ名（イベント日付 + "マップ"）
-  const mapTabName = useMemo(
-    () => (currentDay ? `${currentDay}マップ` : null),
-    [currentDay],
-  );
+  const mapTabName = useMemo(() => {
+    if (resolvedMapKey !== undefined) return resolvedMapKey;
+    const result = resolveDayMap(
+      activeEventName ? mapData[activeEventName] : undefined,
+      currentDay,
+    );
+    return result.status === "resolved" ? result.key : null;
+  }, [resolvedMapKey, activeEventName, mapData, currentDay]);
 
   // 当該マップが存在するか
   const hasMapTab = useMemo(() => {
@@ -219,8 +231,16 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
   ]);
 
   const maplessKey = useMemo(() => {
-    return currentDay ? getMaplessKey(currentDay) : null;
-  }, [currentDay]);
+    const result = resolveSimpleKey(
+      activeEventName ? hallDefinitions[activeEventName] : undefined,
+      currentDay,
+    );
+    return result.status === "resolved"
+      ? result.key
+      : result.status === "missing" && currentDay
+        ? getMaplessKey(currentDay)
+        : null;
+  }, [currentDay, activeEventName, hallDefinitions]);
 
   // マップ定義 + mapless ホール定義を統合した情報
   const activeHallDefinitionsStoreRef = useRef<{
@@ -344,8 +364,10 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
 
   // FocusMode に渡す mapData（イベント別の分岐を吸収）
   const focusMapData = useMemo(() => {
-    return activeEventMapData;
-  }, [activeEventMapData]);
+    return mapTabName && activeDayMapData
+      ? { [mapTabName]: activeDayMapData }
+      : {};
+  }, [mapTabName, activeDayMapData]);
 
   useEffect(() => {
     onMapVisibilityChange?.(false);

@@ -1,3 +1,5 @@
+import { resolveDayMap } from "../features/consistency/domain/context";
+import { resolveLocation } from "../features/consistency/domain/membership";
 import React, {
   useState,
   useMemo,
@@ -60,15 +62,14 @@ import { resolveResumeChoice } from "./focus/resumeChoice";
 import { useAutoSkipEmptyVisit } from "./focus/hooks/useAutoSkipEmptyVisit";
 import { useFocusSessionState } from "./focus/hooks/useFocusSessionState";
 import { useResumeFlow } from "./focus/hooks/useResumeFlow";
-import { extractNumberFromItemNumber } from "../xlsx/domain/itemNumber";
 import {
   buildItemRoutingSignature,
+  getHallIdForItem,
   sortItemsByHallOrder,
 } from "../utils/hallGrouping";
 import {
   buildDayMapPathfindingSignature,
   buildDayMapVisitLookupSignature,
-  findRouteLookupNumberCell,
 } from "../utils/mapRoutingSignature";
 import { buildHallDefinitionsRoutingSignature } from "../utils/hallRoutingSignature";
 import {
@@ -182,19 +183,8 @@ const resolveFocusDayMapKey = (
   maps: { [dayMapName: string]: DayMapData } | undefined,
   eventDate: string,
 ): string | null => {
-  if (!maps) return null;
-  const exactKey = `${eventDate}マップ`;
-  if (maps[exactKey]) return exactKey;
-  const normalizedEventDate = normalizeExecutionVisitDay(eventDate);
-  return (
-    Object.keys(maps).find((mapName) => {
-      const dayMatch = mapName.match(/^(.+)マップ$/);
-      return (
-        dayMatch !== null &&
-        normalizeExecutionVisitDay(dayMatch[1]) === normalizedEventDate
-      );
-    }) ?? null
-  );
+  const result = resolveDayMap(maps, eventDate);
+  return result.status === "resolved" ? result.key : null;
 };
 const resolveFocusDayMapData = (
   maps: { [dayMapName: string]: DayMapData } | undefined,
@@ -1146,11 +1136,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
   // 現在のマップ名
   const currentMapName = useMemo(() => {
     if (!currentVisit || currentVisit.items.length === 0) return null;
-    const eventDate = currentVisit.items[0].eventDate;
-    return (
-      resolveFocusDayMapKey(mapData, eventDate) ??
-      `${normalizeExecutionVisitDay(eventDate)}マップ`
-    );
+    return resolveFocusDayMapKey(mapData, currentVisit.items[0].eventDate);
   }, [currentVisit, mapData]);
   // 現在のマップデータ
   const currentMapData = useMemo(() => {
@@ -1217,38 +1203,18 @@ const FocusMode: React.FC<FocusModeProps> = ({
     return currentMapData;
   }, [currentMapData, currentMapName, currentRouteMapDataSignature]);
 
-  // マップ用のdayName（マップ名からサフィックスを除去）
-  const mapDayName = useMemo(() => {
-    if (!currentMapName) return "";
-    const dayMatch = currentMapName.match(/^(.+)マップ$/);
-    return dayMatch ? normalizeExecutionVisitDay(dayMatch[1]) : "";
-  }, [currentMapName]);
+  const mapDayName = normalizeExecutionVisitDay(
+    currentVisit?.items[0]?.eventDate ?? "",
+  );
   const executionVisitCellMap = useMemo(() => {
     const map = new Map<string, { row: number; col: number; key: string }>();
     if (!mapDayName || !currentVisitLookupMapData) return map;
     routePositionItems.forEach((item) => {
       const itemEventDate = normalizeExecutionVisitDay(item.eventDate || "");
       if (itemEventDate !== mapDayName) return;
-      const itemBlockName = normalizeSpaceBlock(item.block || "");
-      let block = currentVisitLookupMapData.blocks.find(
-        (candidate) => normalizeSpaceBlock(candidate.name) === itemBlockName,
-      );
-      if (!block) {
-        const candidates = currentVisitLookupMapData.blocks.filter(
-          (candidate) =>
-            normalizeSpaceBlock(candidate.name).toLowerCase() ===
-            itemBlockName.toLowerCase(),
-        );
-        if (candidates.length === 1) block = candidates[0];
-      }
-      if (!block) return;
-      const numStr = extractNumberFromItemNumber(
-        normalizeBaseSpaceNumber(item.number),
-      );
-      if (!numStr) return;
-      const num = parseInt(numStr, 10);
-      const cell = findRouteLookupNumberCell(block, num);
-      if (!cell) return;
+      const location = resolveLocation(currentVisitLookupMapData, item);
+      if (location.status !== "resolved") return;
+      const cell = location.location.cell;
       const visitKey = getVisitKey(item);
       if (!map.has(visitKey)) {
         map.set(visitKey, {
@@ -1384,44 +1350,16 @@ const FocusMode: React.FC<FocusModeProps> = ({
     [missingRouteItemIds, precomputedRouteCalculation, routePositionItems],
   );
   const followHall = useMemo(() => {
-    if (
-      !hallDefinitions ||
-      hallDefinitions.length === 0 ||
-      !currentVisit ||
-      !currentMapData
-    )
-      return null;
-    const currentItem = currentVisit.items[0];
-    if (!currentItem) return null;
-    const block = currentMapData.blocks.find(
-      (b) => b.name === currentItem.block,
+    const currentItem = currentVisit?.items[0];
+    if (!hallDefinitions || !currentItem) return null;
+    const hallId = getHallIdForItem(
+      currentItem,
+      currentMapData,
+      hallDefinitions,
+      items,
     );
-    if (!block) return null;
-    const numStr = currentItem.number.match(/^(\d+)/)?.[1];
-    if (!numStr) return null;
-    const num = parseInt(numStr, 10);
-    const cell = findRouteLookupNumberCell(block, num);
-    if (!cell) return null;
-    for (const hall of hallDefinitions) {
-      if (hall.vertices.length < 3) continue;
-      let inside = false;
-      const vertices = hall.vertices;
-      for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
-        const xi = vertices[i].col,
-          yi = vertices[i].row;
-        const xj = vertices[j].col,
-          yj = vertices[j].row;
-        if (
-          yi > cell.row !== yj > cell.row &&
-          cell.col < ((xj - xi) * (cell.row - yi)) / (yj - yi) + xi
-        ) {
-          inside = !inside;
-        }
-      }
-      if (inside) return hall;
-    }
-    return null;
-  }, [hallDefinitions, currentVisit, currentMapData]);
+    return hallDefinitions.find((hall) => hall.id === hallId) ?? null;
+  }, [hallDefinitions, currentVisit, currentMapData, items]);
   // 選択されたホール
   const selectedHall = useMemo(() => {
     if (selectedHallId === "follow") {

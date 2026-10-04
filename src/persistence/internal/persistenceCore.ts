@@ -1,3 +1,4 @@
+import { validateEventConsistency } from "../../types/consistencyValidation";
 /**
  * IndexedDB persistence engine.
  *
@@ -550,6 +551,27 @@ export async function validatePersistenceSnapshot<T>(
               ? snapshot.metadata.revision
               : null,
             snapshot.metadata,
+          ),
+        ],
+      ),
+    };
+  }
+
+  if (
+    storeName === STORES.EVENT_CONSISTENCY &&
+    validateEventConsistency(snapshot.payload).length > 0
+  ) {
+    return {
+      conflict: createConflictLoadResult(
+        "関連設定の型・構造が不正です。元のデータを保全しています。",
+        storeName,
+        [
+          createRecoveryCandidate(
+            "indexedDB",
+            storeName,
+            key,
+            null,
+            snapshot.payload,
           ),
         ],
       ),

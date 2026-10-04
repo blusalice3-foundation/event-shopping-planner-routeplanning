@@ -174,7 +174,7 @@ describe("buildMapRouteExecuteItemIds", () => {
         executeModeItemIds: items.map((item) => item.id),
         items,
         mapData: makeMap(),
-        hallDefinitions: halls,
+        hallDefinitions: [{ ...halls[0], vertices: [] }],
         hallOrder: ["hall-a:priority", "hall-a"],
         dayName: "Day1",
       }),

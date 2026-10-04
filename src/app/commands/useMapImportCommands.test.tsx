@@ -163,7 +163,11 @@ const createHarness = (stateOverrides: Partial<MapImportStatePort> = {}) => {
     stores.pendingFile = null;
     stores.pendingEventName = "";
   });
-  const commitApplicationSnapshotPatch = vi.fn(async () => undefined);
+  const commitApplicationSnapshotPatch = vi.fn<
+    MapImportCommandPorts["settings"]["commitApplicationSnapshotPatch"]
+  >(async (patch) => {
+    Object.assign(stores, patch);
+  });
   const openEvent = vi.fn();
   const notify = vi.fn();
   const reportDiagnostic = vi.fn();
@@ -272,7 +276,7 @@ describe("useMapImportCommands", () => {
       expect.any(Object),
       { eventName: EVENT, settings },
     );
-    expect(harness.spies.openEvent).toHaveBeenCalledWith(EVENT, MAP_TAB, "map");
+    expect(harness.spies.openEvent).toHaveBeenCalledWith(EVENT, DAY, "map");
     expect(harness.stores.pendingReimport).toBeNull();
     expect(harness.stores.dialogOpen).toBe(false);
     expect(harness.stores.pendingFile).toBeNull();
@@ -346,11 +350,7 @@ describe("useMapImportCommands", () => {
       "replacement",
     );
     expect(harness.spies.commitApplicationSnapshotPatch).toHaveBeenCalledOnce();
-    expect(harness.spies.openEvent).toHaveBeenCalledWith(
-      EVENT,
-      MAP_TAB,
-      "list",
-    );
+    expect(harness.spies.openEvent).toHaveBeenCalledWith(EVENT, DAY, "list");
     expect(harness.stores.pendingReimport).toBeNull();
   });
 
@@ -373,7 +373,7 @@ describe("useMapImportCommands", () => {
       "Map reimport planning failed (map-plan-failed).",
     );
     expect(harness.spies.notify).toHaveBeenCalledWith(
-      "マップを取り込む準備に失敗しました。",
+      "「1日目マップ」には有効なブロックがないため取り込めません。",
     );
   });
 
