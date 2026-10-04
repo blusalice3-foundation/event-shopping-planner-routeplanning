@@ -1291,6 +1291,156 @@ test.describe("spreadsheet and save-conflict connections", () => {
       expect(errors).toEqual([]);
     });
   }
+
+  for (const operation of ["rename", "restore"] as const) {
+    test(`failed purchase survives a subsequent ${operation} and its current values are confirmed`, async ({
+      page,
+    }) => {
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      const source = backup([item("1")]);
+      await restore(page, source);
+      const before = await stored(page, "eventLists");
+      const row = page.locator('[data-item-id="1"]');
+      const pending = page
+        .getByRole("alert")
+        .filter({ hasText: "件の操作を未保存のまま保留しています" });
+      await forceSnapshotAbort(page);
+      await row
+        .getByRole("combobox", { name: "購入金額", exact: true })
+        .selectOption("900");
+      await expect(pending).toContainText("1件の操作");
+      await row
+        .getByRole("combobox", { name: "購入予定数量", exact: true })
+        .selectOption("2");
+      await expect(pending).toContainText("2件の操作");
+      await row
+        .getByRole("button", {
+          name: "Current status: 未購入. Click to change.",
+          exact: true,
+        })
+        .click();
+      await expect(pending).toContainText("3件の操作");
+      const renamed = eventName + "改名後";
+      const openOperation = async () => {
+        if (operation === "rename") {
+          await page
+            .getByRole("button", { name: "イベント一覧", exact: true })
+            .click();
+          await page
+            .getByRole("button", { name: "メニュー", exact: true })
+            .click();
+          await page.getByRole("button", { name: /名称変更/ }).click();
+          await page.getByLabel("新しい即売会名").fill(renamed);
+          await page.getByRole("button", { name: "変更", exact: true }).click();
+        } else {
+          await page
+            .locator('input[aria-label="バックアップファイルを選択"]')
+            .setInputFiles({
+              name: "pending-restore.json",
+              mimeType: "application/json",
+              buffer: Buffer.from(JSON.stringify(source), "utf8"),
+            });
+          const outer = page.getByRole("dialog", {
+            name: "バックアップからイベントを復元",
+          });
+          await outer.getByRole("radio", { name: /同名で置換/ }).check();
+          await outer
+            .getByRole("button", { name: "置換して復元", exact: true })
+            .click();
+        }
+      };
+      await openOperation();
+      const review = page.getByRole("dialog", {
+        name:
+          operation === "rename"
+            ? "イベント名を変更"
+            : `「${eventName}」の復元内容を確認`,
+      });
+      await expect(review).toBeVisible();
+      if (operation === "restore") {
+        await expect(review).toContainText('"purchaseStatus": "Purchased"');
+        await expect(review).toContainText('"price": 900');
+        await expect(review).toContainText('"quantity": 2');
+        await expect(review).toContainText("ユーザー登録");
+      }
+      await review
+        .getByRole("button", { name: "確認して保存", exact: true })
+        .click();
+      await expect(review).toBeHidden();
+      await expect(pending).toContainText("3件の操作");
+      expect(await stored(page, "eventLists")).toEqual(before);
+      if (operation === "restore") {
+        await page
+          .getByRole("dialog", { name: "バックアップからイベントを復元" })
+          .getByRole("button", { name: "キャンセル", exact: true })
+          .click();
+      } else {
+        await page
+          .getByRole("button", { name: "キャンセル", exact: true })
+          .click();
+      }
+      const downloading = page.waitForEvent("download");
+      await pending
+        .getByRole("button", { name: "JSONバックアップを保存", exact: true })
+        .click();
+      const download = await downloading;
+      const stream = await download.createReadStream();
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
+      const purchased = {
+        purchaseStatus: "Purchased",
+        price: 900,
+        quantity: 2,
+        remarks: "ユーザー登録",
+      };
+      expect(
+        JSON.parse(Buffer.concat(chunks).toString("utf8")).data.eventLists[
+          eventName
+        ][0],
+      ).toMatchObject(purchased);
+      await pending
+        .getByRole("button", { name: "保留中の保存を再試行", exact: true })
+        .click();
+      await expect(pending).toBeHidden();
+      await expect
+        .poll(() => stored(page, "eventLists"))
+        .toMatchObject({
+          [eventName]: [expect.objectContaining(purchased)],
+        });
+      if (operation === "rename") {
+        // The first attempt left us on the event list.
+        await page
+          .getByRole("button", { name: "メニュー", exact: true })
+          .click();
+        await page.getByRole("button", { name: /名称変更/ }).click();
+        await page.getByLabel("新しい即売会名").fill(renamed);
+        await page.getByRole("button", { name: "変更", exact: true }).click();
+      } else await openOperation();
+      await expect(review).toBeVisible();
+      await review
+        .getByRole("button", { name: "確認して保存", exact: true })
+        .click();
+      await expect(review).toBeHidden();
+      await expect
+        .poll(() => stored(page, "eventLists"))
+        .toMatchObject(
+          operation === "rename"
+            ? { [renamed]: [expect.objectContaining(purchased)] }
+            : before,
+        );
+      await page.reload();
+      await expect(
+        page.locator('input[aria-label="バックアップファイルを選択"]'),
+      ).toBeAttached();
+      expect(await stored(page, "eventLists")).toMatchObject(
+        operation === "rename"
+          ? { [renamed]: [expect.objectContaining(purchased)] }
+          : before,
+      );
+      expect(errors).toEqual([]);
+    });
+  }
 });
 
 test("day merge choices change the adopted order, mode, map and destination and survive reload", async ({

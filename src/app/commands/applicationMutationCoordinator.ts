@@ -62,6 +62,12 @@ export class MutationConflictError extends Error {
     this.name = "MutationConflict";
   }
 }
+export class PendingAcceptedMutationError extends Error {
+  constructor() {
+    super("未保存で保留中の操作を再試行または取り消してから保存してください。");
+    this.name = "PendingAcceptedMutation";
+  }
+}
 export class CommittedStateApplyError extends Error {
   constructor(readonly cause: unknown) {
     super(
@@ -73,6 +79,12 @@ export class CommittedStateApplyError extends Error {
 export interface MutationCoordinatorPorts {
   readCurrent(): PersistenceSnapshot;
   readExportCurrent?(): PersistenceSnapshot;
+  /** Overlay accepted, unsaved edits for planning; durable roots remain unchanged. */
+  readMutationCurrent?(
+    durable: PersistenceSnapshot,
+    operationId: string,
+  ): PersistenceSnapshot;
+  hasPendingAcceptedChanges?(operationId: string): boolean;
   drain(): Promise<void>;
   readDurable(): Promise<ApplicationSnapshotRead>;
   commit(snapshot: PersistenceSnapshot, expectedRoots: object): Promise<void>;
@@ -137,10 +149,11 @@ export function createApplicationMutationCoordinator(
       const read = await ports.readDurable();
       if (operation.generation !== generation(operation.intent.events))
         return { status: "expired" };
-      // drain persisted every earlier accepted single-store intent. The coherent
-      // read now includes other tabs; apply this intent to exactly those roots.
+      // Planning includes retained edits as well as the latest other-tab values.
+      // They may be previewed, but must be saved or discarded before this commit.
+      const current = structuredClone(read.snapshot);
       const plan = operation.intent.plan(
-        structuredClone(read.snapshot),
+        ports.readMutationCurrent?.(current, id) ?? current,
         operation.choices,
       );
       if (plan.confirmation) {
@@ -161,6 +174,8 @@ export function createApplicationMutationCoordinator(
           };
         }
       }
+      if (ports.hasPendingAcceptedChanges?.(id))
+        throw new PendingAcceptedMutationError();
       try {
         await ports.commit(plan.snapshot, read.expectedRoots);
       } catch (error) {

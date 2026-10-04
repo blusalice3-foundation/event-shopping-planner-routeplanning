@@ -7,6 +7,11 @@ import type {
 } from "../ports/PersistenceCommandPort";
 import { createEventConsistency } from "../../types/consistency";
 import {
+  planEventDelete,
+  planEventRename,
+  planEventRestore,
+} from "../../features/consistency/domain/eventMutations";
+import {
   emptyApplicationSnapshot,
   useApplicationSnapshot,
 } from "./useApplicationSnapshot";
@@ -434,14 +439,17 @@ it.each([
   },
 );
 
-it("expires a suspended edit when its event is replaced and never retries it into the new event", async () => {
+it("expires a suspended atomic intent when its event is replaced and never retries it into the new event", async () => {
   const h = harness();
   h.commit
     .mockRejectedValueOnce(repeatedConflict())
     .mockRejectedValueOnce(repeatedConflict())
     .mockRejectedValueOnce(repeatedConflict());
-  act(() =>
-    h.result.current.setters.setDayModes({ event: { "1日目": "execute" } }),
+  act(
+    () =>
+      void h.result.current
+        .commitPatch({ dayModes: { event: { "1日目": "execute" } } })
+        .catch(() => {}),
   );
   await waitFor(() => expect(h.commit).toHaveBeenCalledTimes(3));
   await act(async () => {
@@ -457,7 +465,7 @@ it("expires a suspended edit when its event is replaced and never retries it int
   expect(h.commit).toHaveBeenCalledTimes(4);
 });
 
-it("keeps a newer confirmed edit visible while an older conflicting edit remains suspended", async () => {
+it("retains successive accepted edits in order and never saves ahead of a failed edit", async () => {
   const h = harness();
   h.commit
     .mockRejectedValueOnce(repeatedConflict())
@@ -466,16 +474,19 @@ it("keeps a newer confirmed edit visible while an older conflicting edit remains
   act(() =>
     h.result.current.setters.setDayModes({ event: { "1日目": "execute" } }),
   );
-  await waitFor(() => expect(h.commit).toHaveBeenCalledTimes(3));
+  await waitFor(() =>
+    expect(h.result.current.retryableFailures).toHaveLength(1),
+  );
   act(() =>
     h.result.current.setters.setDayModes({ event: { "1日目": "focus" } }),
   );
-  await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
-  await act(async () => {
-    h.result.current.confirm(h.result.current.confirmations[0].token);
-    await h.result.current.coordinator.enqueue(() => undefined);
-  });
-  expect(h.result.current.pendingCount).toBe(1);
+  await waitFor(() =>
+    expect(h.result.current.retryableFailures).toHaveLength(2),
+  );
+  expect(h.result.current.pendingCount).toBe(2);
+  expect(h.commit).toHaveBeenCalledTimes(3);
+  expect(h.durable().dayModes).toEqual({});
+  expect(h.result.current.confirmations).toEqual([]);
   expect(h.result.current.values.dayModes).toEqual({
     event: { "1日目": "focus" },
   });
@@ -489,17 +500,19 @@ it("keeps a newer confirmed edit visible while an older conflicting edit remains
     h.result.current.retryPending();
     await h.result.current.coordinator.enqueue(() => undefined);
   });
-  expect(h.result.current.confirmations).toHaveLength(1);
-  expect(h.commit).toHaveBeenCalledTimes(4);
-  await act(() =>
-    h.result.current.cancel(h.result.current.confirmations[0].token),
-  );
+  await waitFor(() => expect(h.result.current.pendingCount).toBe(0));
+  expect(h.commit).toHaveBeenCalledTimes(5);
+  expect(h.commit.mock.calls[3][0].dayModes).toEqual({
+    event: { "1日目": "execute" },
+  });
+  expect(h.commit.mock.calls[4][0].dayModes).toEqual({
+    event: { "1日目": "focus" },
+  });
   expect(h.result.current.values.dayModes).toEqual({
     event: { "1日目": "focus" },
   });
-  expect(h.result.current.pendingCount).toBe(0);
+  expect(h.durable().dayModes).toEqual({ event: { "1日目": "focus" } });
 });
-
 it.each([
   { error: repeatedConflict(), attempts: 3 },
   { error: new Error("write aborted"), attempts: 1 },
@@ -621,3 +634,338 @@ it("holds confirmation actions until an asynchronous choice has a current previe
   });
   expect(h.durable().dayModes.event["1日目"]).toBe("execute");
 });
+
+const purchase = {
+  id: "purchase",
+  circle: "サークル",
+  eventDate: "1日目",
+  block: "A",
+  number: "1",
+  title: "新刊",
+  price: 500,
+  quantity: 1,
+  purchaseStatus: "None" as const,
+  remarks: "ユーザー登録",
+};
+const acceptedPurchase = {
+  ...purchase,
+  purchaseStatus: "Purchased" as const,
+  price: 900,
+  quantity: 2,
+};
+const lifecyclePlans = {
+  rename: (snapshot: PersistenceSnapshot) =>
+    planEventRename(snapshot, "event", "renamed"),
+  delete: (snapshot: PersistenceSnapshot) => planEventDelete(snapshot, "event"),
+  restore: (snapshot: PersistenceSnapshot) =>
+    planEventRestore(
+      snapshot,
+      {
+        ...emptyApplicationSnapshot(),
+        eventLists: { event: [purchase] },
+        eventConsistency: { event: createEventConsistency() },
+      },
+      "event",
+      "event",
+    ),
+};
+
+it.each(
+  (["setter", "command"] as const).flatMap((origin) =>
+    (["abort", "quota", "conflicts"] as const).flatMap((failure) =>
+      (["rename", "delete", "restore"] as const).map((operation) => ({
+        origin,
+        failure,
+        operation,
+      })),
+    ),
+  ),
+)(
+  "preserves a failed $origin purchase after $failure when $operation is confirmed",
+  async ({ origin, failure, operation }) => {
+    const h = harness();
+    h.durable().eventLists.event = [purchase];
+    act(() =>
+      h.result.current.hydrationSetters.setEventLists({ event: [purchase] }),
+    );
+    const attempts = failure === "conflicts" ? 3 : 1;
+    const error =
+      failure === "conflicts"
+        ? repeatedConflict()
+        : new DOMException(
+            "購入記録の保存失敗",
+            failure === "quota" ? "QuotaExceededError" : "AbortError",
+          );
+    for (let i = 0; i < attempts; i++) h.commit.mockRejectedValueOnce(error);
+    act(() => {
+      if (origin === "setter")
+        h.result.current.setters.setEventLists({ event: [acceptedPurchase] });
+      else
+        void h.result.current
+          .request({
+            events: ["event"],
+            retainOnConflict: true,
+            plan: (snapshot) => {
+              snapshot.eventLists.event = [acceptedPurchase];
+              return { snapshot };
+            },
+          })
+          .catch(() => {});
+    });
+    await waitFor(() =>
+      expect(h.result.current.retryableFailures).toHaveLength(1),
+    );
+    expect(h.commit).toHaveBeenCalledTimes(attempts);
+    const purchaseId = h.result.current.retryableFailures[0];
+    let outcome!: Promise<unknown>;
+    act(() => {
+      outcome = h.result.current
+        .request({
+          events: ["event"],
+          plan: lifecyclePlans[operation],
+        })
+        .catch((error: unknown) => error);
+    });
+    await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+    const preview = h.result.current.confirmations[0];
+    if (operation !== "rename") {
+      expect(JSON.stringify(preview.confirmation.comparison)).toContain(
+        '"price":900',
+      );
+      expect(preview.confirmation.details.join("\n")).toContain(
+        '"purchaseStatus": "Purchased"',
+      );
+      expect(preview.confirmation.details.join("\n")).toContain(
+        '"quantity": 2',
+      );
+    }
+    await act(async () => {
+      h.result.current.confirm(preview.token);
+      expect(await outcome).toMatchObject({ name: "PendingAcceptedMutation" });
+    });
+    expect(h.commit).toHaveBeenCalledTimes(attempts);
+    expect(h.result.current.retryableFailures).toEqual([purchaseId]);
+    expect(h.result.current.pendingCount).toBe(1);
+    expect(h.result.current.coordinator.generation("event")).toBe(0);
+    expect(h.result.current.raw.eventLists).toEqual({ event: [purchase] });
+    expect(h.durable().eventLists).toEqual({ event: [purchase] });
+    expect(h.result.current.values.eventLists.event[0]).toEqual(
+      acceptedPurchase,
+    );
+    expect(
+      (await h.result.current.coordinator.readExportSnapshot()).eventLists
+        .event[0],
+    ).toEqual(acceptedPurchase);
+    await expect(h.result.current.flush()).rejects.toThrow("再試行");
+    const unload = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(unload);
+    expect(unload.defaultPrevented).toBe(true);
+    h.durable().eventLists.other = [];
+    h.durable().eventConsistency.other = createEventConsistency();
+    h.durable().eventMetadata.other = {
+      spreadsheetSheetName: "",
+      lastImportDate: "",
+      spreadsheetUrl: "https://example.com/other",
+    };
+    await act(async () => {
+      h.result.current.retryPending();
+      await h.result.current.coordinator.enqueue(() => undefined);
+    });
+    await waitFor(() => expect(h.result.current.pendingCount).toBe(0));
+    expect(h.durable().eventLists.event[0]).toEqual(acceptedPurchase);
+    let completed!: Promise<PersistenceSnapshot>;
+    act(() => {
+      completed = h.result.current.request({
+        events: ["event"],
+        plan: lifecyclePlans[operation],
+      });
+    });
+    await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+    await act(async () => {
+      h.result.current.confirm(h.result.current.confirmations[0].token);
+      await completed;
+    });
+    expect(h.result.current.pendingCount).toBe(0);
+    expect(h.result.current.coordinator.generation("event")).toBe(1);
+    expect(h.durable().eventMetadata.other).toEqual({
+      spreadsheetSheetName: "",
+      lastImportDate: "",
+      spreadsheetUrl: "https://example.com/other",
+    });
+    if (operation === "rename")
+      expect(h.durable().eventLists).toEqual({
+        renamed: [acceptedPurchase],
+        other: [],
+      });
+    if (operation === "delete")
+      expect(h.durable().eventLists).toEqual({ other: [] });
+    if (operation === "restore")
+      expect(h.durable().eventLists).toEqual({ event: [purchase], other: [] });
+    h.unmount();
+  },
+);
+
+async function holdPurchase() {
+  const h = harness();
+  h.durable().eventLists.event = [purchase];
+  act(() =>
+    h.result.current.hydrationSetters.setEventLists({ event: [purchase] }),
+  );
+  h.commit.mockRejectedValueOnce(new Error("購入記録の保存失敗"));
+  act(() =>
+    h.result.current.setters.setEventLists({ event: [acceptedPurchase] }),
+  );
+  await waitFor(() =>
+    expect(h.result.current.retryableFailures).toHaveLength(1),
+  );
+  return h;
+}
+
+it.each(["same event", "other event"])(
+  "blocks an unconfirmed atomic write in %s while an accepted purchase is unsaved",
+  async (target) => {
+    const h = await holdPurchase();
+    const name = target === "same event" ? "event" : "other";
+    if (name === "other") {
+      h.durable().eventLists.other = [];
+      h.durable().eventConsistency.other = createEventConsistency();
+    }
+    await act(async () => {
+      await expect(
+        h.result.current.commitPatch({
+          dayModes: { [name]: { "1日目": "execute" } },
+        }),
+      ).rejects.toMatchObject({ name: "PendingAcceptedMutation" });
+    });
+    expect(h.commit).toHaveBeenCalledOnce();
+    expect(h.durable().dayModes).toEqual({});
+    expect(h.result.current.values.eventLists.event[0]).toEqual(
+      acceptedPurchase,
+    );
+    expect(h.result.current.retryableFailures).toHaveLength(1);
+    expect(h.result.current.pendingCount).toBe(1);
+    await act(() => h.result.current.discardPending());
+    expect(h.result.current.values.eventLists.event[0]).toEqual(purchase);
+    await act(async () => {
+      await h.result.current.commitPatch({
+        dayModes: { [name]: { "1日目": "execute" } },
+      });
+    });
+    expect(h.durable().eventLists.event[0]).toEqual(purchase);
+    expect(h.durable().dayModes[name]).toEqual({ "1日目": "execute" });
+    h.unmount();
+  },
+);
+
+it("renews restore current values after another unsaved purchase and preserves them on cancellation (R39)", async () => {
+  const h = await holdPurchase();
+  act(() => {
+    void h.result.current
+      .request({ events: ["event"], plan: lifecyclePlans.restore })
+      .catch(() => {});
+  });
+  await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+  const token = h.result.current.confirmations[0].token;
+  const newest = {
+    ...acceptedPurchase,
+    price: 1000,
+    quantity: 3,
+    remarks: "エラーが発生しました",
+  };
+  act(() => h.result.current.setters.setEventLists({ event: [newest] }));
+  await waitFor(() =>
+    expect(h.result.current.retryableFailures).toHaveLength(2),
+  );
+  await act(async () => {
+    h.result.current.confirm(token);
+    await h.result.current.coordinator.enqueue(() => undefined);
+  });
+  expect(h.result.current.confirmations).toHaveLength(1);
+  const renewed = h.result.current.confirmations[0];
+  expect(renewed.token).not.toBe(token);
+  expect(JSON.stringify(renewed.confirmation.comparison)).toContain(
+    '"price":1000',
+  );
+  expect(renewed.confirmation.details.join("\n")).toContain(
+    "エラーが発生しました",
+  );
+  expect(h.commit).toHaveBeenCalledOnce();
+  await act(() => h.result.current.cancel(renewed.token));
+  expect(h.result.current.pendingCount).toBe(2);
+  expect(h.result.current.values.eventLists.event[0]).toEqual(newest);
+  expect(
+    (await h.result.current.coordinator.readExportSnapshot()).eventLists
+      .event[0],
+  ).toEqual(newest);
+  await act(async () => {
+    h.result.current.retryPending();
+    await h.result.current.coordinator.enqueue(() => undefined);
+  });
+  await waitFor(() => expect(h.result.current.pendingCount).toBe(0));
+  expect(h.durable().eventLists.event[0]).toEqual(newest);
+  expect(h.result.current.coordinator.generation("event")).toBe(0);
+  h.unmount();
+});
+
+it("renews a restore confirmation after explicit discard removes its unsaved current values", async () => {
+  const h = await holdPurchase();
+  let completed!: Promise<PersistenceSnapshot>;
+  act(() => {
+    completed = h.result.current.request({
+      events: ["event"],
+      plan: lifecyclePlans.restore,
+    });
+  });
+  await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+  const token = h.result.current.confirmations[0].token;
+  await act(() => h.result.current.discardPending());
+  await act(async () => {
+    h.result.current.confirm(token);
+    await h.result.current.coordinator.enqueue(() => undefined);
+  });
+  const renewed = h.result.current.confirmations[0];
+  expect(renewed.token).not.toBe(token);
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(JSON.stringify(renewed.confirmation.comparison)).toContain(
+    '"price":500',
+  );
+  await act(async () => {
+    h.result.current.confirm(renewed.token);
+    await completed;
+  });
+  expect(h.result.current.pendingCount).toBe(0);
+  expect(h.durable().eventLists.event[0]).toEqual(purchase);
+  h.unmount();
+});
+
+it.each([false, true])(
+  "queues a same-turn setter ahead of lifecycle preview when its save fails=%s",
+  async (fails) => {
+    const h = harness();
+    h.durable().eventLists.event = [purchase];
+    act(() =>
+      h.result.current.hydrationSetters.setEventLists({ event: [purchase] }),
+    );
+    if (fails) h.commit.mockRejectedValueOnce(new Error("購入記録の保存失敗"));
+    act(() => {
+      h.result.current.setters.setEventLists({ event: [acceptedPurchase] });
+      void h.result.current
+        .request({ events: ["event"], plan: lifecyclePlans.restore })
+        .catch(() => {});
+    });
+    await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+    expect(h.commit).toHaveBeenCalledOnce();
+    expect(
+      JSON.stringify(h.result.current.confirmations[0].confirmation.comparison),
+    ).toContain('"price":900');
+    await act(() =>
+      h.result.current.cancel(h.result.current.confirmations[0].token),
+    );
+    expect(h.result.current.values.eventLists.event[0]).toEqual(
+      acceptedPurchase,
+    );
+    expect(h.result.current.pendingCount).toBe(fails ? 1 : 0);
+    if (fails) await act(() => h.result.current.discardPending());
+    h.unmount();
+  },
+);

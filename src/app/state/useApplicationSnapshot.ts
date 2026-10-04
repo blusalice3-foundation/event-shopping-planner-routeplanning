@@ -144,6 +144,7 @@ export function useApplicationSnapshot(
   const sequence = useRef(0);
   const renderedGenerations = useRef<Record<string, number>>({});
   const draft = useRef<Batch | null>(null);
+  const flushDraftRef = useRef(() => {});
   const submitted = useRef<Batch[]>([]);
   const previewRef = useRef<PersistenceSnapshot>(raw);
   const suspended = useRef(new Set<string>());
@@ -152,6 +153,10 @@ export function useApplicationSnapshot(
     [],
   );
   const [retryableFailures, setRetryableFailures] = useState<string[]>([]);
+  const precedingBatches = useCallback((id: string) => {
+    const index = submitted.current.findIndex((batch) => batch.id === id);
+    return index < 0 ? submitted.current : submitted.current.slice(0, index);
+  }, []);
   const readAcceptedSnapshot = useCallback(
     () =>
       applyAcceptedBatches(rawRef.current, submitted.current, retained.current),
@@ -168,6 +173,14 @@ export function useApplicationSnapshot(
       createApplicationMutationCoordinator({
         readCurrent: () => rawRef.current,
         readExportCurrent: readAcceptedSnapshot,
+        readMutationCurrent: (snapshot, id) =>
+          applyAcceptedBatches(
+            snapshot,
+            precedingBatches(id),
+            retained.current,
+          ),
+        hasPendingAcceptedChanges: (id) =>
+          precedingBatches(id).some((batch) => retained.current.has(batch.id)),
         drain: () => handlers.current.drain(),
         readDurable: () => persistence.readApplicationSnapshot(),
         commit: async (snapshot, expectedRoots) => {
@@ -205,7 +218,7 @@ export function useApplicationSnapshot(
           setPendingCount(resolvers.current.size);
         },
       }),
-    [persistence, readAcceptedSnapshot, releasePending],
+    [persistence, precedingBatches, readAcceptedSnapshot, releasePending],
   );
   renderedGenerations.current = Object.fromEntries(
     [
@@ -326,6 +339,8 @@ export function useApplicationSnapshot(
     (
       intent: Omit<MutationIntent, "id"> & { id?: string },
     ): Promise<PersistenceSnapshot> => {
+      // A setter accepted in this turn must enter the queue before this command.
+      flushDraftRef.current();
       const id = intent.id ?? `application:${++sequence.current}`;
       const acceptedContext = { ...contextRef.current };
       const result = new Promise<PersistenceSnapshot>((resolve, reject) => {
@@ -411,6 +426,7 @@ export function useApplicationSnapshot(
     draft.current = null;
     void submitBatch(batch).catch(() => {});
   }, [submitBatch]);
+  flushDraftRef.current = flushDraft;
   const setters = useMemo(
     () =>
       Object.fromEntries(
