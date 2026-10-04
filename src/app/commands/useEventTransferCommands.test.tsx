@@ -1,4 +1,13 @@
-import { createEventConsistency } from "../../types/consistency";
+import {
+  createEventConsistency,
+  createDayConsistency,
+  createVisitContext,
+} from "../../types/consistency";
+import {
+  exportToXlsx,
+  importFromXlsx,
+} from "../../xlsx/engine/eventWorkbookEngine";
+import type { ExportOptions } from "../../types/export";
 // @vitest-environment jsdom
 
 import { act, renderHook } from "@testing-library/react";
@@ -168,11 +177,11 @@ const createPorts = (
 };
 
 describe("useEventTransferCommands", () => {
-  it("opens export options only for an event with exportable items", () => {
+  it("opens export options only for an event with exportable items", async () => {
     const ports = createPorts({ eventLists: { event: [eventItem] } });
     const { result } = renderHook(() => useEventTransferCommands(ports));
 
-    act(() => result.current.handleExportEvent("event"));
+    await act(() => result.current.handleExportEvent("event"));
 
     expect(ports.openExport).toHaveBeenCalledWith("event");
   });
@@ -296,6 +305,7 @@ describe("useEventTransferCommands", () => {
     );
     const { result } = renderHook(() => useEventTransferCommands(ports));
 
+    await act(() => result.current.handleExportEvent("event"));
     let operation!: Promise<void>;
     await act(async () => {
       operation = result.current.handleConfirmExport({
@@ -349,4 +359,148 @@ describe("useEventTransferCommands", () => {
     });
     expect(ports.updateXlsxOperation).toHaveBeenCalledTimes(updateCount);
   });
+});
+
+it.each([
+  ...Array.from(
+    { length: 8 },
+    (_, bits): ExportOptions => ({
+      includeItems: true,
+      includeLayoutInfo: !!(bits & 1),
+      includeMapData: !!(bits & 2),
+      includeRouteInfo: !!(bits & 4),
+      format: "full",
+    }),
+  ),
+  {
+    includeItems: true,
+    includeLayoutInfo: false,
+    includeMapData: false,
+    includeRouteInfo: false,
+    format: "simple",
+  } satisfies ExportOptions,
+])(
+  "uses the preview snapshot for the exported workbook with options %j",
+  async (options) => {
+    const ports = createPorts({
+      exportEventName: "event",
+      eventLists: { event: [{ ...eventItem, remarks: "表示時のメモ" }] },
+      eventConsistency: { event: createEventConsistency() },
+    });
+    let exportedBytes!: Uint8Array;
+    ports.appRuntime.xlsxCommands.exportWorkbook = vi.fn(async (value) => {
+      const blob = await exportToXlsx(
+        value.eventName,
+        value.items,
+        value.options,
+        value.additionalData,
+      );
+      return new Uint8Array(await blob.arrayBuffer());
+    });
+    vi.mocked(ports.appRuntime.downloadXlsx).mockImplementation((bytes) => {
+      exportedBytes = bytes;
+    });
+    const { result } = renderHook(() => useEventTransferCommands(ports));
+    await act(() => result.current.handleExportEvent("event"));
+    const preview = result.current.previewEventExport(options);
+    // Another accepted save completes after the options were displayed.
+    ports.hallDefinitions.event = {
+      "__mapless__:1日目": [
+        { id: "hall", name: "東", blockNames: ["A"], vertices: [] },
+      ],
+    };
+    ports.eventConsistency.event.days["1日目"] = {
+      ...createDayConsistency(),
+      mapless: {
+        ...createVisitContext(),
+        assignments: {
+          "item-1": { kind: "simple", dayKey: "1日目", hallId: "hall" },
+        },
+      },
+    };
+    ports.eventLists.event[0].remarks = "後から更新したメモ";
+    await act(() => result.current.handleConfirmExport(options));
+    expect(ports.readExportSnapshot).toHaveBeenCalledOnce();
+    expect(result.current.previewEventExport(options)).toEqual(preview);
+    const workbook = await importFromXlsx(
+      new File([new Uint8Array(exportedBytes)], "event.xlsx"),
+    );
+    expect(workbook.success).toBe(true);
+    expect(workbook.items[0].remarks).toBe("表示時のメモ");
+    if (options.format === "full")
+      expect(workbook.contentManifest).toEqual(preview);
+    expect(
+      preview.omissions.find((entry) => entry.section === "maplessAssignments"),
+    ).toBeUndefined();
+  },
+);
+it("waits for earlier saves before opening the preview, including its actual omission count", async () => {
+  const ports = createPorts({
+    exportEventName: "event",
+    eventLists: { event: [eventItem] },
+    eventConsistency: { event: createEventConsistency() },
+  });
+  const read = vi.mocked(ports.readExportSnapshot).getMockImplementation()!;
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  vi.mocked(ports.readExportSnapshot).mockImplementation(async () => {
+    await gate;
+    return read();
+  });
+  const { result } = renderHook(() => useEventTransferCommands(ports));
+  let pending!: Promise<void>;
+  act(() => {
+    pending = result.current.handleExportEvent("event");
+  });
+  expect(ports.openExport).not.toHaveBeenCalled();
+  ports.hallDefinitions.event = {
+    "__mapless__:1日目": [
+      { id: "hall", name: "東", blockNames: ["A"], vertices: [] },
+    ],
+  };
+  ports.eventConsistency.event.days["1日目"] = {
+    ...createDayConsistency(),
+    mapless: {
+      ...createVisitContext(),
+      assignments: {
+        "item-1": { kind: "simple", dayKey: "1日目", hallId: "hall" },
+      },
+    },
+  };
+  await act(async () => {
+    release();
+    await pending;
+  });
+  const options: ExportOptions = {
+    includeItems: true,
+    includeLayoutInfo: false,
+    includeMapData: false,
+    includeRouteInfo: false,
+    format: "full",
+  };
+  expect(result.current.previewEventExport(options).omissions).toContainEqual(
+    expect.objectContaining({ section: "maplessAssignments", count: 1 }),
+  );
+  expect(ports.openExport).toHaveBeenCalledOnce();
+});
+it("uses a fresh snapshot when reopening the export settings", async () => {
+  const ports = createPorts({
+    exportEventName: "event",
+    eventLists: { event: [eventItem] },
+  });
+  const { result } = renderHook(() => useEventTransferCommands(ports));
+  await act(() => result.current.handleExportEvent("event"));
+  ports.eventLists.event.push({ ...eventItem, id: "item-2" });
+  await act(() => result.current.handleExportEvent("event"));
+  expect(
+    result.current.previewEventExport({
+      includeItems: true,
+      includeLayoutInfo: false,
+      includeMapData: false,
+      includeRouteInfo: false,
+      format: "full",
+    }).sections.items.count,
+  ).toBe(2);
 });

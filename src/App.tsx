@@ -1,6 +1,5 @@
 import { LegacyConsistencyReview } from "./components/LegacyConsistencyReview";
 import { planLegacyResolution } from "./features/consistency/domain/legacyResolution";
-import { selectEventExportContent } from "./features/events/exportFlow";
 import {
   planItemEdit,
   previewItemEdit,
@@ -788,7 +787,6 @@ const App: React.FC = () => {
     }, 100);
   }, []);
   const {
-    toggleMode: handleToggleMode,
     setViewMode: handleSetViewMode,
     selectItem: handleSelectItem,
     selectSpaceGroup: handleSelectSpaceGroupForRange,
@@ -1035,6 +1033,7 @@ const App: React.FC = () => {
     backupFileInputRef,
     cancelXlsxOperation,
     handleExportEvent,
+    previewEventExport,
     handleBackupExport,
     handlePersistenceRecoveryExport,
     handleBackupRestoreRequest,
@@ -1297,6 +1296,7 @@ const App: React.FC = () => {
     discardChanges: handleVisitListCancel,
     requestClose: handleVisitListClose,
     requestTabChange: requestVisitListTabChange,
+    requestDayModeChange: requestVisitListDayModeChange,
     confirmPendingTransition: handleVisitListDialogConfirm,
     discardPendingTransition: handleVisitListDialogCancel,
   } = useMapVisitListCommands({
@@ -1455,7 +1455,7 @@ const App: React.FC = () => {
       requestVisitListTabChange(tab);
     },
     longPress: (tab) => {
-      requestVisitListTabChange(tab, () => handleToggleMode(tab));
+      requestVisitListDayModeChange(tab);
     },
   };
   const TabButton = useMemo<
@@ -2392,14 +2392,7 @@ const App: React.FC = () => {
           },
           event: {
             handleConfirmExport,
-            previewEventExport: exportEventName
-              ? (options) =>
-                  selectEventExportContent(
-                    application.raw,
-                    exportEventName,
-                    options,
-                  ).manifest
-              : undefined,
+            previewEventExport,
             handleConfirmRename,
             handleUrlUpdate,
             onShowEventList: navigationCommands.showEventList,

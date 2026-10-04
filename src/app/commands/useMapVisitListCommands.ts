@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
+import type { MutationPlan } from "./applicationMutationCoordinator";
+import { planDayModeToggle } from "../../features/consistency/domain/dayMode";
 import type { ApplicationMutationPort } from "../ports/ApplicationMutationPort";
 import {
   existingDayKey,
@@ -62,7 +64,8 @@ export interface MapVisitListCommandPorts extends Pick<
 export type MapVisitListTransitionResult =
   | "ignored"
   | "confirmation"
-  | "navigated";
+  | "navigated"
+  | "pending";
 
 export interface MapVisitListCommands {
   openPanel(mapTab: string): void;
@@ -74,6 +77,7 @@ export interface MapVisitListCommands {
     tab: ActiveTab,
     afterTransition?: () => void,
   ): MapVisitListTransitionResult;
+  requestDayModeChange(tab: ActiveTab): MapVisitListTransitionResult;
   confirmPendingTransition(): Promise<void>;
   discardPendingTransition(): Promise<void>;
 }
@@ -98,6 +102,8 @@ export const useMapVisitListCommands = ({
   const session = useRef<VisitSession | null>(null);
   const writes = useRef<Promise<unknown>>(Promise.resolve());
   const pendingWrites = useRef(0);
+  const pendingModeChange = useRef<ActiveTab | null>(null);
+  const transitioning = useRef(false);
   const afterTransition = useRef<(() => void) | undefined>(undefined);
   const valid = useCallback(
     (value: VisitSession | null): value is VisitSession =>
@@ -128,6 +134,7 @@ export const useMapVisitListCommands = ({
         latest: ids,
       };
       afterTransition.current = undefined;
+      pendingModeChange.current = null;
       actions.openPanel(map, ids);
     },
     [actions],
@@ -136,11 +143,13 @@ export const useMapVisitListCommands = ({
     const value = session.current;
     if (!state.panelOpen) {
       session.current = null;
+      pendingModeChange.current = null;
       afterTransition.current = undefined;
       return;
     }
     if (value && !valid(value)) {
       session.current = null;
+      pendingModeChange.current = null;
       afterTransition.current = undefined;
       actions.closePanel();
       return;
@@ -170,7 +179,11 @@ export const useMapVisitListCommands = ({
     valid,
   ]);
   const applyOrder = useCallback(
-    (ids: readonly string[], dirty: boolean): Promise<void> => {
+    (
+      ids: readonly string[],
+      dirty: boolean,
+      transition?: (snapshot: PersistenceSnapshot) => MutationPlan,
+    ): Promise<void> => {
       const value = session.current;
       if (!valid(value)) return Promise.resolve();
       pendingWrites.current += 1;
@@ -180,11 +193,14 @@ export const useMapVisitListCommands = ({
         plan: (snapshot) => {
           if (!valid(value) || session.current !== value)
             throw new Error("訪問リストの操作は終了しています。");
+          // Resolve duplicate target-day settings before projecting the source order.
+          const transitionPlan = transition?.(snapshot);
+          snapshot = transitionPlan?.snapshot ?? snapshot;
           const dayKey = existingDayKey(
             snapshot.executeModeItems[value.event],
             value.day,
           );
-          if (!dayKey) return { snapshot };
+          if (!dayKey) return transitionPlan ?? { snapshot };
           const items = snapshot.eventLists[value.event] as ShoppingItem[];
           const day = getDayConsistency(
             snapshot.eventConsistency[value.event],
@@ -220,7 +236,7 @@ export const useMapVisitListCommands = ({
                 priority: item.priorityLevel ?? "none",
               }),
           );
-          return planProjectedMutation(
+          const orderPlan = planProjectedMutation(
             snapshot,
             {
               executeModeItems: {
@@ -238,6 +254,25 @@ export const useMapVisitListCommands = ({
               confirm: false,
             },
           );
+          if (!transitionPlan?.confirmation) return orderPlan;
+          const beforeOrder = snapshot.executeModeItems[value.event][dayKey];
+          const afterOrder =
+            orderPlan.snapshot.executeModeItems[value.event][dayKey];
+          return {
+            ...orderPlan,
+            confirmation: {
+              ...transitionPlan.confirmation,
+              details: [
+                ...transitionPlan.confirmation.details,
+                `${value.day} の訪問順: ${JSON.stringify(beforeOrder)} → ${JSON.stringify(afterOrder)}`,
+              ],
+              comparison: {
+                transition: transitionPlan.confirmation.comparison,
+                beforeOrder,
+                afterOrder,
+              },
+            },
+          };
         },
       }).then((snapshot) => {
         if (!valid(value) || session.current !== value) return;
@@ -289,9 +324,15 @@ export const useMapVisitListCommands = ({
     await applyOrder(value.baseline, false);
   }, [valid, applyOrder]);
   const requestClose = useCallback((): MapVisitListTransitionResult => {
-    if (!current.current.panelOpen || current.current.confirmDialogOpen)
+    if (
+      !current.current.panelOpen ||
+      current.current.confirmDialogOpen ||
+      transitioning.current
+    )
       return "ignored";
     if (current.current.hasUnsavedChanges || pendingWrites.current > 0) {
+      pendingModeChange.current = null;
+      afterTransition.current = undefined;
       actions.requestConfirmClose(null);
       return "confirmation";
     }
@@ -301,11 +342,13 @@ export const useMapVisitListCommands = ({
   }, [actions]);
   const requestTabChange = useCallback(
     (tab: ActiveTab, after?: () => void): MapVisitListTransitionResult => {
-      if (current.current.confirmDialogOpen) return "ignored";
+      if (current.current.confirmDialogOpen || transitioning.current)
+        return "ignored";
       if (
         current.current.panelOpen &&
         (current.current.hasUnsavedChanges || pendingWrites.current > 0)
       ) {
+        pendingModeChange.current = null;
         afterTransition.current = after;
         actions.requestConfirmClose(tab);
         return "confirmation";
@@ -318,22 +361,106 @@ export const useMapVisitListCommands = ({
     },
     [actions, navigation],
   );
+  const requestDayModeChange = useCallback(
+    (tab: ActiveTab): MapVisitListTransitionResult => {
+      const state = current.current;
+      if (
+        !state.activeEventName ||
+        state.confirmDialogOpen ||
+        transitioning.current
+      )
+        return "ignored";
+      if (
+        state.panelOpen &&
+        (state.hasUnsavedChanges || pendingWrites.current > 0)
+      ) {
+        pendingModeChange.current = tab;
+        afterTransition.current = undefined;
+        actions.requestConfirmClose(tab);
+        return "confirmation";
+      }
+      const event = state.activeEventName;
+      const generation = state.generation ?? 0;
+      transitioning.current = true;
+      void requestMutation({
+        events: [event],
+        expectedGenerations: { [event]: generation },
+        plan: (snapshot) => planDayModeToggle(snapshot, event, tab),
+      })
+        .then(() => {
+          if (
+            current.current.activeEventName !== event ||
+            (current.current.generation ?? 0) !== generation
+          )
+            return;
+          session.current = null;
+          if (current.current.panelOpen) actions.closePanel();
+          navigation.navigateToTab(tab);
+        })
+        .catch(() => {
+          // The application mutation port presents cancellation or persistence errors.
+        })
+        .finally(() => {
+          transitioning.current = false;
+        });
+      return "pending";
+    },
+    [requestMutation, actions, navigation],
+  );
   const finishTransition = useCallback(
     async (discard: boolean) => {
-      if (!current.current.confirmDialogOpen || !valid(session.current)) return;
+      if (
+        !current.current.confirmDialogOpen ||
+        !valid(session.current) ||
+        transitioning.current
+      )
+        return;
+      const value = session.current;
       const tab = current.current.pendingTabChange;
       const callback = afterTransition.current;
-      if (discard) await discardChanges();
-      else await saveChanges();
-      if (!valid(session.current)) return;
+      const modeTab = pendingModeChange.current;
+      transitioning.current = true;
+      try {
+        if (modeTab !== null) {
+          await writes.current;
+          if (!valid(value) || session.current !== value) return;
+          if (discard) {
+            await applyOrder(value.baseline, false, (snapshot) =>
+              planDayModeToggle(snapshot, value.event, modeTab),
+            );
+          } else {
+            await requestMutation({
+              events: [value.event],
+              expectedGenerations: { [value.event]: value.generation },
+              plan: (snapshot) =>
+                planDayModeToggle(snapshot, value.event, modeTab),
+            });
+            if (!valid(value) || session.current !== value) return;
+            await saveChanges();
+          }
+        } else if (discard) await discardChanges();
+        else await saveChanges();
+      } finally {
+        transitioning.current = false;
+      }
+      if (!valid(value) || session.current !== value) return;
       session.current = null;
+      pendingModeChange.current = null;
       afterTransition.current = undefined;
       if (discard) actions.discardClose();
       else actions.confirmClose();
       if (tab !== null) navigation.navigateToTab(tab);
       callback?.();
     },
-    [valid, discardChanges, saveChanges, actions, navigation],
+    [
+      valid,
+      discardChanges,
+      saveChanges,
+      applyOrder,
+      requestMutation,
+      actions,
+      navigation,
+    ],
   );
   return {
     openPanel,
@@ -342,6 +469,7 @@ export const useMapVisitListCommands = ({
     discardChanges,
     requestClose,
     requestTabChange,
+    requestDayModeChange,
     confirmPendingTransition: () => finishTransition(false),
     discardPendingTransition: () => finishTransition(true),
   };

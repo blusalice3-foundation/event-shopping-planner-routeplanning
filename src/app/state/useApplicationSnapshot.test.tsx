@@ -128,3 +128,36 @@ it("exports current memory through the application port even when draining saves
   expect(drain).not.toHaveBeenCalled();
   expect(h.commit).not.toHaveBeenCalled();
 });
+
+it("confirms a same-field conflict from ordinary setters without replacing unrelated settings", async () => {
+  const h = harness();
+  h.durable().dayModes.event = { "1日目": "edit", "2日目": "execute" };
+  act(() => {
+    h.result.current.hydrationSetters.setDayModes({
+      event: { "1日目": "edit", "2日目": "execute" },
+    });
+  });
+  // Another tab changes the same day after the render used by the setter.
+  h.durable().dayModes.event["1日目"] = "focus";
+  act(() => {
+    h.result.current.setters.setDayModes((current) => ({
+      event: { ...current.event, "1日目": "execute" },
+    }));
+  });
+  await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+  expect(h.commit).not.toHaveBeenCalled();
+  expect(h.result.current.raw.dayModes.event["1日目"]).toBe("edit");
+  expect(h.result.current.confirmations[0].confirmation.title).toBe(
+    "競合する更新を確認",
+  );
+  h.durable().dayModes.event["2日目"] = "edit";
+  await act(async () => {
+    h.result.current.confirm(h.result.current.confirmations[0].token);
+    await h.result.current.coordinator.enqueue(() => undefined);
+  });
+  await waitFor(() => expect(h.result.current.pendingCount).toBe(0));
+  expect(h.result.current.raw.dayModes.event).toEqual({
+    "1日目": "execute",
+    "2日目": "edit",
+  });
+});

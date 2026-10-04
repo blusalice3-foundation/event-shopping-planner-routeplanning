@@ -379,3 +379,162 @@ describe("visit list commands share one session and successful save baseline", (
     expect(h.state.pendingTabChange).toBeNull();
   });
 });
+
+describe("long-press mode changes finish before navigation", () => {
+  it("waits for the mode commit and ignores a duplicate press while saving", async () => {
+    const h = harness();
+    const implementation = vi
+      .mocked(h.ports.requestMutation)
+      .getMockImplementation()!;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.mocked(h.ports.requestMutation).mockImplementationOnce(
+      async (intent) => {
+        await gate;
+        return implementation(intent);
+      },
+    );
+    act(() => {
+      expect(h.result.current.requestDayModeChange("2日目")).toBe("pending");
+      expect(h.result.current.requestDayModeChange("2日目")).toBe("ignored");
+      expect(h.result.current.requestTabChange("1日目")).toBe("ignored");
+    });
+    expect(h.ports.navigation.navigateToTab).not.toHaveBeenCalled();
+    expect(h.snapshot().dayModes).toEqual({});
+    await act(async () => {
+      release();
+      await gate;
+    });
+    expect(h.snapshot().dayModes.event).toEqual({ "2日目": "execute" });
+    expect(h.ports.navigation.navigateToTab).toHaveBeenCalledExactlyOnceWith(
+      "2日目",
+    );
+  });
+  it("preserves the current tab and open visit panel after a failed mode save", async () => {
+    const h = harness();
+    h.open();
+    vi.mocked(h.ports.requestMutation).mockRejectedValueOnce(
+      new Error("abort"),
+    );
+    await act(async () => {
+      h.result.current.requestDayModeChange("2日目");
+    });
+    expect(h.state.panelOpen).toBe(true);
+    expect(h.actions.closePanel).not.toHaveBeenCalled();
+    expect(h.ports.navigation.navigateToTab).not.toHaveBeenCalled();
+    expect(h.snapshot().dayModes).toEqual({});
+  });
+  it.each(["confirm", "discard"])(
+    "keeps order and cancel baseline when the %s transition mode save fails",
+    async (choice) => {
+      const h = harness();
+      h.open();
+      await h.update(["A", "B", "C"]);
+      act(() => {
+        h.result.current.requestDayModeChange("2日目");
+      });
+      h.rerender();
+      const before = structuredClone(h.snapshot());
+      vi.mocked(h.ports.requestMutation).mockRejectedValueOnce(
+        new Error("abort"),
+      );
+      await expect(
+        act(() =>
+          choice === "confirm"
+            ? h.result.current.confirmPendingTransition()
+            : h.result.current.discardPendingTransition(),
+        ),
+      ).rejects.toThrow("abort");
+      expect(h.snapshot()).toEqual(before);
+      expect(h.state.originalOrder).toEqual(["B", "A", "C"]);
+      expect(h.state.hasUnsavedChanges).toBe(true);
+      expect(h.state.confirmDialogOpen).toBe(true);
+      expect(h.ports.navigation.navigateToTab).not.toHaveBeenCalled();
+    },
+  );
+  it("commits discard and the target mode together before closing the source panel", async () => {
+    const h = harness();
+    h.open();
+    await h.update(["A", "B", "C"]);
+    act(() => {
+      h.result.current.requestDayModeChange("2日目");
+    });
+    h.rerender();
+    vi.mocked(h.ports.requestMutation).mockClear();
+    await act(() => h.result.current.discardPendingTransition());
+    expect(h.ports.requestMutation).toHaveBeenCalledOnce();
+    expect(h.ids()).toEqual(["B", "A", "C"]);
+    expect(h.snapshot().dayModes.event).toEqual({ "2日目": "execute" });
+    expect(h.ports.navigation.navigateToTab).toHaveBeenCalledExactlyOnceWith(
+      "2日目",
+    );
+  });
+});
+
+it("does not reuse a cancelled long-press intent for a later ordinary transition", async () => {
+  const h = harness();
+  h.open();
+  await h.update(["A", "B", "C"]);
+  act(() => {
+    h.result.current.requestDayModeChange("2日目");
+  });
+  h.rerender();
+  h.state.confirmDialogOpen = false;
+  h.state.pendingTabChange = null;
+  h.rerender();
+  act(() => {
+    h.result.current.requestTabChange("1日目");
+  });
+  h.rerender();
+  await act(() => h.result.current.confirmPendingTransition());
+  expect(h.snapshot().dayModes).toEqual({});
+  expect(h.ports.navigation.navigateToTab).toHaveBeenCalledExactlyOnceWith(
+    "1日目",
+  );
+});
+
+it("merges settings-only duplicate source days before combining discard with a same-day mode toggle", async () => {
+  const h = harness();
+  h.open();
+  await h.update(["A", "B", "C"]);
+  h.mutate((snapshot) => {
+    snapshot.dayModes.event = {
+      "1日目": "edit",
+      " 1日目　": "execute",
+      "2日目": "focus",
+    };
+  });
+  act(() => {
+    h.result.current.requestDayModeChange("1日目");
+  });
+  h.rerender();
+  vi.mocked(h.ports.requestMutation).mockClear();
+  const before = structuredClone(h.snapshot());
+  const implementation = vi
+    .mocked(h.ports.requestMutation)
+    .getMockImplementation()!;
+  let plan!: ReturnType<
+    Parameters<MapVisitListCommandPorts["requestMutation"]>[0]["plan"]
+  >;
+  vi.mocked(h.ports.requestMutation).mockImplementationOnce(async (intent) => {
+    plan = intent.plan(structuredClone(before));
+    return implementation(intent);
+  });
+  await act(() => h.result.current.discardPendingTransition());
+  expect(plan.confirmation?.details.join("\n")).toContain("訪問順");
+  expect(plan.snapshot.dayModes.event).toEqual({
+    "1日目": "execute",
+    "2日目": "focus",
+  });
+  expect(plan.snapshot.executeModeItems.event["1日目"]).toEqual([
+    "B",
+    "A",
+    "C",
+  ]);
+  expect(h.ports.requestMutation).toHaveBeenCalledOnce();
+  expect(h.ports.navigation.navigateToTab).toHaveBeenCalledExactlyOnceWith(
+    "1日目",
+  );
+});

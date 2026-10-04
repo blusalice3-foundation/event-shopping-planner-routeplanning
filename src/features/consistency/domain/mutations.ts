@@ -86,9 +86,16 @@ export function applyChangedFields(
       .filter((entry) => latestById.has(entry.id) || !baseById.has(entry.id))
       .map((entry) => entry.id);
     let index = 0;
-    const order = surviving.map((entry) =>
-      desiredById.has(entry.id) ? orderedKnown[index++] : entry.id,
+    const orderChanged = !equal(
+      base.map((entry) => entry.id),
+      desired.map((entry) => entry.id),
     );
+    const order = surviving.map((entry) =>
+      orderChanged && desiredById.has(entry.id)
+        ? orderedKnown[index++]
+        : entry.id,
+    );
+    if (!orderChanged) index = orderedKnown.length;
     order.push(...orderedKnown.slice(index));
     return [...new Set(order)].map((id) => {
       const desiredItem = desiredById.get(id),
@@ -123,6 +130,93 @@ export function applyChangedFields(
     return [...new Set([...result, ...ordered.slice(index)])];
   }
   return structuredClone(desired);
+}
+export interface ChangedFieldConflict {
+  path: string[];
+  baseline: unknown;
+  current: unknown;
+  desired: unknown;
+}
+/** Only fields changed by both writers to different values need approval. */
+export function changedFieldConflicts(
+  base: unknown,
+  desired: unknown,
+  latest: unknown,
+  path: string[] = [],
+): ChangedFieldConflict[] {
+  if (equal(base, desired) || equal(base, latest) || equal(desired, latest))
+    return [];
+  if (isRecord(base) && isRecord(desired) && isRecord(latest))
+    return [
+      ...new Set([...Object.keys(base), ...Object.keys(desired)]),
+    ].flatMap((key) =>
+      changedFieldConflicts(base[key], desired[key], latest[key], [
+        ...path,
+        key,
+      ]),
+    );
+  const identifiable = (
+    value: unknown,
+  ): value is Array<Record<string, unknown> & { id: string }> =>
+    Array.isArray(value) &&
+    value.every((entry) => isRecord(entry) && typeof entry.id === "string");
+  if (identifiable(base) && identifiable(desired) && identifiable(latest)) {
+    const old = new Map(base.map((entry) => [entry.id, entry]));
+    const wanted = new Map(desired.map((entry) => [entry.id, entry]));
+    const current = new Map(latest.map((entry) => [entry.id, entry]));
+    return [...new Set([...old.keys(), ...wanted.keys()])].flatMap((id) =>
+      // A remotely removed item is not resurrected by applyChangedFields.
+      old.has(id) && wanted.has(id) && !current.has(id)
+        ? []
+        : changedFieldConflicts(old.get(id), wanted.get(id), current.get(id), [
+            ...path,
+            id,
+          ]),
+    );
+  }
+  return [{ path, baseline: base, current: latest, desired }];
+}
+export function confirmChangedFieldConflicts(
+  plan: MutationPlan,
+  conflicts: ChangedFieldConflict[],
+): MutationPlan {
+  if (!conflicts.length) return plan;
+  const labels: Record<string, string> = {
+    remarks: "メモ",
+    title: "品目名",
+    circle: "サークル",
+    price: "金額",
+    quantity: "数量",
+    purchaseStatus: "購入状態",
+    eventDate: "日付",
+    block: "ブロック",
+    number: "番号",
+    priorityLevel: "優先度",
+    eventLists: "品目",
+    eventMetadata: "イベント情報",
+    dayModes: "日付別モード",
+    executeModeItems: "実行列",
+    hallDefinitions: "ホール定義",
+    eventConsistency: "関連設定",
+    mapData: "マップ",
+    routeSettings: "経路設定",
+  };
+  const display = (value: unknown) =>
+    value === undefined ? "（未設定）" : JSON.stringify(value);
+  return {
+    ...plan,
+    confirmation: {
+      title: "競合する更新を確認",
+      details: [
+        ...conflicts.map(
+          (conflict) =>
+            `${conflict.path.map((key) => labels[key] ?? key).join(" / ")}: 編集開始時 ${display(conflict.baseline)} → 現在 ${display(conflict.current)}。今回 ${display(conflict.desired)} に変更します。`,
+        ),
+        ...(plan.confirmation?.details ?? []),
+      ],
+      comparison: { conflicts, related: plan.confirmation?.comparison ?? null },
+    },
+  };
 }
 export interface MutationContext {
   eventName: string | null;

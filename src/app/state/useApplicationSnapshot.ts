@@ -23,6 +23,8 @@ import {
 } from "../commands/applicationMutationCoordinator";
 import {
   applyChangedFields,
+  changedFieldConflicts,
+  confirmChangedFieldConflicts,
   planProjectedMutation,
   type MutationContext,
 } from "../../features/consistency/domain/mutations";
@@ -275,7 +277,10 @@ export function useApplicationSnapshot(
                   projected[key],
                 ),
               });
-          return planProjectedMutation(latest, changed, batch.context);
+          return confirmChangedFieldConflicts(
+            planProjectedMutation(latest, changed, batch.context),
+            changedFieldConflicts(batch.base, batch.draft, projected),
+          );
         },
       });
     },

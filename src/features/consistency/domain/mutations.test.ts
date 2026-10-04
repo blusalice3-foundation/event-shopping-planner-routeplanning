@@ -6,7 +6,13 @@ import {
   createEventConsistency,
   createVisitContext,
 } from "../../../types/consistency";
-import { planProjectedMutation } from "./mutations";
+import {
+  applyChangedFields,
+  changedFieldConflicts,
+  planProjectedMutation,
+} from "./mutations";
+import { createApplicationMutationCoordinator } from "../../../app/commands/applicationMutationCoordinator";
+import { planDayModeToggle } from "./dayMode";
 import { planItemEdit } from "./itemEdit";
 import { duplicateEventDays, planDayMerge } from "./dayMerge";
 import { applyVisitHistory } from "./visitHistory";
@@ -560,4 +566,222 @@ describe("definition dependency scope", () => {
     expect(plan.snapshot.dayModes).toEqual(source.dayModes);
     valid(plan.snapshot);
   });
+});
+
+describe("same-field edit conflicts", () => {
+  it.each([
+    ["remarks", "別タブのメモ", "今回のメモ"],
+    ["title", "別タブの品目", "今回の品目"],
+    ["price", 700, 900],
+    ["quantity", 2, 3],
+    ["purchaseStatus", "Purchased", "SoldOut"],
+  ] as const)(
+    "requires approval before replacing a changed %s",
+    (field, current, desired) => {
+      const source = snapshot();
+      const baseline = structuredClone(
+        source.eventLists.event[0],
+      ) as ShoppingItem;
+      Object.assign(source.eventLists.event[0]!, { [field]: current });
+      const plan = planItemEdit(
+        source,
+        "event",
+        baseline,
+        { ...baseline, [field]: desired },
+        { kind: "unchanged" },
+      );
+      expect(plan.confirmation?.title).toBe("競合する更新を確認");
+      expect(plan.confirmation?.details.join("\n")).toContain(
+        JSON.stringify(current),
+      );
+      expect(plan.confirmation?.details.join("\n")).toContain(
+        JSON.stringify(desired),
+      );
+      expect((source.eventLists.event[0] as ShoppingItem)[field]).toBe(current);
+      valid(plan.snapshot);
+    },
+  );
+  it("does not ask again when both writers chose the same value", () => {
+    const source = snapshot();
+    const baseline = structuredClone(
+      source.eventLists.event[0],
+    ) as ShoppingItem;
+    (source.eventLists.event[0] as ShoppingItem).remarks = "同じメモ";
+    expect(
+      planItemEdit(
+        source,
+        "event",
+        baseline,
+        { ...baseline, remarks: "同じメモ" },
+        { kind: "unchanged" },
+      ).confirmation,
+    ).toBeUndefined();
+  });
+  it("reconfirms changed conflict values and preserves unrelated purchases", async () => {
+    let durable = snapshot();
+    let visible = structuredClone(durable);
+    const baseline = structuredClone(
+      durable.eventLists.event[0],
+    ) as ShoppingItem;
+    let commits = 0;
+    const coordinator = createApplicationMutationCoordinator({
+      readCurrent: () => visible,
+      drain: async () => {},
+      readDurable: async () => ({
+        snapshot: structuredClone(durable),
+        expectedRoots: {},
+        consistencyMissing: false,
+      }),
+      commit: async (next) => {
+        commits++;
+        durable = structuredClone(next);
+      },
+      apply: (next) => {
+        visible = next;
+      },
+    });
+    (durable.eventLists.event[0] as ShoppingItem).remarks = "別タブのメモ";
+    const intent = {
+      id: "edit",
+      events: ["event"],
+      plan: (latest: PersistenceSnapshot) =>
+        planItemEdit(
+          latest,
+          "event",
+          baseline,
+          { ...baseline, remarks: "今回のメモ" },
+          { kind: "unchanged" },
+        ),
+    };
+    const first = await coordinator.request(intent);
+    if (first.status !== "confirmation-required")
+      throw new Error("missing conflict confirmation");
+    expect(commits).toBe(0);
+    (durable.eventLists.event[0] as ShoppingItem).remarks = "さらに新しいメモ";
+    const next = await coordinator.confirm(first.token);
+    if (next.status !== "confirmation-required")
+      throw new Error("missing reconfirmation");
+    expect(next.confirmation.details.join("\n")).toContain("さらに新しいメモ");
+    expect(commits).toBe(0);
+    (durable.eventLists.event[0] as ShoppingItem).purchaseStatus = "Purchased";
+    (durable.eventLists.event[0] as ShoppingItem).price = 1200;
+    expect((await coordinator.confirm(next.token)).status).toBe("committed");
+    expect(visible.eventLists.event[0]).toMatchObject({
+      remarks: "今回のメモ",
+      purchaseStatus: "Purchased",
+      price: 1200,
+    });
+  });
+  it("detects a same-field edit discovered only after a database conflict", async () => {
+    const durable = snapshot();
+    const baseline = structuredClone(
+      durable.eventLists.event[0],
+    ) as ShoppingItem;
+    let attempts = 0;
+    const coordinator = createApplicationMutationCoordinator({
+      readCurrent: () => durable,
+      drain: async () => {},
+      readDurable: async () => ({
+        snapshot: structuredClone(durable),
+        expectedRoots: {},
+        consistencyMissing: false,
+      }),
+      commit: async () => {
+        attempts++;
+        (durable.eventLists.event[0] as ShoppingItem).remarks =
+          "DB競合で届いたメモ";
+        throw Object.assign(new Error("CAS conflict"), {
+          name: "PersistenceConflict",
+        });
+      },
+      apply: () => {
+        throw new Error("must not apply");
+      },
+    });
+    const result = await coordinator.request({
+      id: "edit",
+      events: ["event"],
+      plan: (latest) =>
+        planItemEdit(
+          latest,
+          "event",
+          baseline,
+          { ...baseline, remarks: "今回のメモ" },
+          { kind: "unchanged" },
+        ),
+    });
+    expect(result.status).toBe("confirmation-required");
+    expect(attempts).toBe(1);
+    expect((durable.eventLists.event[0] as ShoppingItem).remarks).toBe(
+      "DB競合で届いたメモ",
+    );
+    if (result.status === "confirmation-required") {
+      coordinator.cancel(result.token);
+      expect((await coordinator.confirm(result.token)).status).toBe("expired");
+    }
+  });
+  it("detects nested settings and item removal that would discard another update", () => {
+    expect(
+      changedFieldConflicts(
+        { settings: { angle: 0, color: "red" } },
+        { settings: { angle: 90, color: "red" } },
+        { settings: { angle: 180, color: "blue" } },
+      ).map((entry) => entry.path),
+    ).toEqual([["settings", "angle"]]);
+    expect(
+      changedFieldConflicts([item("A")], [], [item("A", { remarks: "最新" })]),
+    ).toHaveLength(1);
+  });
+});
+describe("target-day mode plans", () => {
+  it("preserves an unambiguous whitespace key and changes only the target day", () => {
+    const source = snapshot();
+    source.dayModes.event["2日目"] = "edit";
+    const plan = planDayModeToggle(source, "event", "1日目");
+    expect(plan.confirmation).toBeUndefined();
+    expect(plan.snapshot.dayModes.event).toEqual({
+      " 1日目　": "edit",
+      "2日目": "edit",
+    });
+    expect(source.dayModes.event[" 1日目　"]).toBe("execute");
+  });
+  it.each(["mode", "selection", "halls"])(
+    "confirms a settings-only %s duplicate together with the mode change",
+    (kind) => {
+      const source = snapshot();
+      source.dayModes.event = { "1日目": "edit", "2日目": "execute" };
+      source.eventConsistency.event.days = {};
+      if (kind === "mode") source.dayModes.event[" 1日目　"] = "execute";
+      if (kind === "selection")
+        source.eventConsistency.event.days = {
+          "1日目": createDayConsistency(),
+          " 1日目　": createDayConsistency(),
+        };
+      if (kind === "halls")
+        source.hallDefinitions.event = {
+          "__mapless__:1日目": [],
+          "__mapless__: 1日目　": [],
+        };
+      const original = structuredClone(source);
+      const plan = planDayModeToggle(source, "event", "1日目");
+      expect(plan.confirmation?.details.join("\n")).toContain("モード");
+      expect(plan.snapshot.dayModes.event).toEqual({
+        "1日目": "execute",
+        "2日目": "execute",
+      });
+      expect(duplicateEventDays(plan.snapshot, "event")).toEqual([]);
+      expect(source).toEqual(original);
+      valid(plan.snapshot);
+    },
+  );
+});
+
+it("preserves a concurrently changed item order when only a field was edited", () => {
+  const baseline = [item("A"), item("B")];
+  const desired = [item("A", { remarks: "今回のメモ" }), item("B")];
+  const latest = [item("B"), item("A", { price: 900 })];
+  expect(applyChangedFields(baseline, desired, latest)).toEqual([
+    item("B"),
+    item("A", { remarks: "今回のメモ", price: 900 }),
+  ]);
 });

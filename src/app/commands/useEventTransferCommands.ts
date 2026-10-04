@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
   type ChangeEvent,
   type Dispatch,
   type RefObject,
@@ -25,7 +26,10 @@ import type {
   MapViewportSettingsStore,
   RouteSettingsStore,
 } from "../../types/map";
-import { type PersistenceCommandPort } from "../ports/PersistenceCommandPort";
+import {
+  type PersistenceCommandPort,
+  type PersistenceSnapshot,
+} from "../ports/PersistenceCommandPort";
 import type { AppNavigationCommands } from "../navigation";
 import type { PendingXlsxRestoreCompletion } from "../state/appOverlayTypes";
 import type { XlsxOperationOverlayActivity } from "../state/appOverlayState";
@@ -47,6 +51,7 @@ import {
 import {
   buildEventExportFile,
   hasExportableItems,
+  selectEventExportContent,
 } from "../../features/events/exportFlow";
 import {
   buildXlsxEventRestoreSource,
@@ -121,7 +126,10 @@ export interface EventTransferCommandPorts extends ApplicationMutationPort {
 export interface EventTransferCommands {
   backupFileInputRef: RefObject<HTMLInputElement>;
   cancelXlsxOperation(): void;
-  handleExportEvent(eventName: string): void;
+  handleExportEvent(eventName: string): Promise<void>;
+  previewEventExport(
+    options: ExportOptions,
+  ): ReturnType<typeof selectEventExportContent>["manifest"];
   handleBackupExport(): void;
   handlePersistenceRecoveryExport(): PersistenceRecoveryExportResult;
   handleBackupRestoreRequest(): void;
@@ -151,7 +159,6 @@ export const useEventTransferCommands = ({
   requestMutation,
   readExportSnapshot,
   appRuntime,
-  eventLists,
   startupState,
   exportEventName,
   pendingBackup,
@@ -168,6 +175,11 @@ export const useEventTransferCommands = ({
 }: EventTransferCommandPorts): EventTransferCommands => {
   const backupFileInputRef = useRef<HTMLInputElement>(null);
   const xlsxOperationRef = useRef<ActiveXlsxOperation | null>(null);
+  const exportRequestRef = useRef(0);
+  const [exportSession, setExportSession] = useState<{
+    eventName: string;
+    snapshot: PersistenceSnapshot;
+  } | null>(null);
 
   useEffect(
     () => () => {
@@ -185,15 +197,37 @@ export const useEventTransferCommands = ({
   }, [updateXlsxOperation]);
 
   const handleExportEvent = useCallback(
-    (eventName: string) => {
-      const itemsToExport = eventLists[eventName];
-      if (!hasExportableItems(itemsToExport)) {
-        alert("出力できるアイテムがありません。");
-        return;
+    async (eventName: string) => {
+      const request = ++exportRequestRef.current;
+      try {
+        const snapshot = structuredClone(await readExportSnapshot());
+        if (request !== exportRequestRef.current) return;
+        if (
+          !hasExportableItems(snapshot.eventLists[eventName] as ShoppingItem[])
+        ) {
+          alert("出力できるアイテムがありません。");
+          return;
+        }
+        setExportSession({ eventName, snapshot });
+        openExport(eventName);
+      } catch {
+        alert("出力内容を確認できません。再試行してください。");
       }
-      openExport(eventName);
     },
-    [eventLists, openExport],
+    [readExportSnapshot, openExport],
+  );
+
+  const previewEventExport = useCallback(
+    (options: ExportOptions) => {
+      if (!exportSession || exportSession.eventName !== exportEventName)
+        throw new Error("出力内容を確認し直してください。");
+      return selectEventExportContent(
+        exportSession.snapshot,
+        exportSession.eventName,
+        options,
+      ).manifest;
+    },
+    [exportSession, exportEventName],
   );
 
   const handleBackupExport = useCallback(async () => {
@@ -338,9 +372,11 @@ export const useEventTransferCommands = ({
 
   const handleConfirmExport = useCallback(
     async (options: ExportOptions) => {
-      if (!exportEventName) return;
+      if (!exportEventName || exportSession?.eventName !== exportEventName)
+        return;
 
-      const exportSnapshot = await readExportSnapshot();
+      options = structuredClone(options);
+      const exportSnapshot = exportSession.snapshot;
       const itemsToExport = exportSnapshot.eventLists[
         exportEventName
       ] as ShoppingItem[];
@@ -406,7 +442,7 @@ export const useEventTransferCommands = ({
     },
     [
       exportEventName,
-      readExportSnapshot,
+      exportSession,
       clearXlsxOperation,
       confirmEventOverlay,
       appRuntime,
@@ -600,6 +636,7 @@ export const useEventTransferCommands = ({
     backupFileInputRef,
     cancelXlsxOperation,
     handleExportEvent,
+    previewEventExport,
     handleBackupExport,
     handlePersistenceRecoveryExport,
     handleBackupRestoreRequest,

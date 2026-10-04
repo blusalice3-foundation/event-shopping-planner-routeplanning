@@ -6,7 +6,12 @@ import {
   computeUpdateItem,
   repositionExecuteItemAfterIdentityChangeWithResult,
 } from "../../events/itemOps";
-import { applyChangedFields, planProjectedMutation } from "./mutations";
+import {
+  applyChangedFields,
+  changedFieldConflicts,
+  confirmChangedFieldConflicts,
+  planProjectedMutation,
+} from "./mutations";
 import {
   existingDayKey,
   getContextHalls,
@@ -67,7 +72,7 @@ export function planItemEdit(
   const projection = projectConsistencySnapshot(
     snapshot,
     eventName,
-    edited.eventDate,
+    changed.eventDate,
   );
   // Keep displayed choices on untouched items; the edited item's explicit intent is separate.
   const displayedItems = (
@@ -77,17 +82,25 @@ export function planItemEdit(
       ? { ...changed, manualHallId: item.manualHallId }
       : item,
   );
-  return planProjectedMutation(
-    snapshot,
-    {
-      eventLists: { ...projection.eventLists, [eventName]: displayedItems },
-      executeModeItems: { ...snapshot.executeModeItems, [eventName]: execute },
-    },
-    {
-      eventName,
-      day: edited.eventDate,
-      selection: { itemId: edited.id, intent: selection },
-    },
+  return confirmChangedFieldConflicts(
+    planProjectedMutation(
+      snapshot,
+      {
+        eventLists: { ...projection.eventLists, [eventName]: displayedItems },
+        executeModeItems: {
+          ...snapshot.executeModeItems,
+          [eventName]: execute,
+        },
+      },
+      {
+        eventName,
+        day: changed.eventDate,
+        selection: { itemId: edited.id, intent: selection },
+      },
+    ),
+    changedFieldConflicts(clean(baseline), clean(edited), clean(original), [
+      edited.id,
+    ]),
   );
 }
 export function previewItemEdit(

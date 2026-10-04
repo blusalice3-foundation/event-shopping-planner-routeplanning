@@ -343,3 +343,149 @@ test("split legacy visit lists restore and remain separate after reorder and rel
     [eventName]: { "1日目": ["2", "1"] },
   });
 });
+
+async function editMemo(page: Page, memo: string) {
+  const card = page
+    .locator('[data-item-id="1"]')
+    .first()
+    .locator(":scope > div.rounded-lg")
+    .first();
+  await card.dispatchEvent("pointerdown", {
+    button: 0,
+    isPrimary: true,
+    pointerType: "mouse",
+  });
+  await expect(
+    page.getByRole("button", { name: "編集", exact: true }),
+  ).toBeVisible();
+  await card.dispatchEvent("pointerup", {
+    button: 0,
+    isPrimary: true,
+    pointerType: "mouse",
+  });
+  await page.getByRole("button", { name: "編集", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "利用者メモ", exact: true })
+    .last()
+    .fill(memo);
+}
+test("a stale edit asks before replacing another tab's memo and reconfirms further changes", async ({
+  page,
+  context,
+}) => {
+  await restore(page);
+  await editMemo(page, "古い画面からのメモ");
+  const other = await context.newPage();
+  await other.goto("/");
+  await other.getByText(eventName, { exact: true }).click();
+  await expect(
+    other.getByRole("heading", { name: eventName, exact: true }),
+  ).toBeVisible();
+  await editMemo(other, "別タブのメモ");
+  await other.getByRole("button", { name: "保存", exact: true }).click();
+  await expect
+    .poll(async () => stored(page, "eventLists"))
+    .toMatchObject({
+      [eventName]: expect.arrayContaining([
+        expect.objectContaining({ id: "1", remarks: "別タブのメモ" }),
+      ]),
+    });
+  await page.getByRole("button", { name: "保存", exact: true }).click();
+  const conflict = page.getByRole("dialog", { name: "競合する更新を確認" });
+  await expect(conflict).toContainText("別タブのメモ");
+  expect(await stored(page, "eventLists")).toMatchObject({
+    [eventName]: expect.arrayContaining([
+      expect.objectContaining({ id: "1", remarks: "別タブのメモ" }),
+    ]),
+  });
+  await editMemo(other, "さらに更新したメモ");
+  await other.getByRole("button", { name: "保存", exact: true }).click();
+  await expect
+    .poll(async () => stored(page, "eventLists"))
+    .toMatchObject({
+      [eventName]: expect.arrayContaining([
+        expect.objectContaining({ id: "1", remarks: "さらに更新したメモ" }),
+      ]),
+    });
+  await conflict.getByRole("button", { name: "確認して保存" }).click();
+  await expect(conflict).toContainText("さらに更新したメモ");
+  expect(await stored(page, "eventLists")).toMatchObject({
+    [eventName]: expect.arrayContaining([
+      expect.objectContaining({ id: "1", remarks: "さらに更新したメモ" }),
+    ]),
+  });
+  await conflict.getByRole("button", { name: "取消", exact: true }).click();
+  await expect(conflict).toBeHidden();
+  expect(await stored(page, "eventLists")).toMatchObject({
+    [eventName]: expect.arrayContaining([
+      expect.objectContaining({ id: "1", remarks: "さらに更新したメモ" }),
+    ]),
+  });
+  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(conflict).toBeVisible();
+  await conflict.getByRole("button", { name: "確認して保存" }).click();
+  await expect
+    .poll(async () => stored(page, "eventLists"))
+    .toMatchObject({
+      [eventName]: expect.arrayContaining([
+        expect.objectContaining({ id: "1", remarks: "古い画面からのメモ" }),
+      ]),
+    });
+  await other.close();
+});
+test("long press confirms settings-only duplicate days before changing the displayed day", async ({
+  page,
+}) => {
+  const source = backup();
+  (source.data.dayModes[eventName] as Record<string, string>)[" 2日目　"] =
+    "execute";
+  await restore(page, source);
+  const second = page.getByRole("button", { name: /^2日目/ });
+  await second.hover();
+  await page.mouse.down();
+  const merge = page.getByRole("dialog", { name: /2日目 の保存先を統合/ });
+  await expect(merge).toBeVisible();
+  await page.mouse.up();
+  await expect(page.locator('[data-item-id="1"]')).toBeVisible();
+  await expect(page.locator('[data-item-id="2"]')).toHaveCount(0);
+  expect(await stored(page, "dayModes")).toMatchObject({
+    [eventName]: { "2日目": "edit", " 2日目　": "execute" },
+  });
+  await merge.getByRole("button", { name: "取消", exact: true }).click();
+  await expect(merge).toBeHidden();
+  await expect(page.locator('[data-item-id="1"]')).toBeVisible();
+  await second.hover();
+  await page.mouse.down();
+  await expect(merge).toBeVisible();
+  await page.mouse.up();
+  await merge.getByRole("button", { name: "確認して保存" }).click();
+  await expect
+    .poll(async () => stored(page, "dayModes"))
+    .toEqual({ [eventName]: { "1日目": "edit", "2日目": "execute" } });
+  await expect(page.locator('[data-item-id="2"]')).toBeVisible();
+  await expect(page.locator('[data-item-id="1"]')).toHaveCount(0);
+});
+test("a failed long-press save keeps the current day and persisted modes", async ({
+  page,
+}) => {
+  await restore(page);
+  await page.evaluate(() => {
+    const original = IDBDatabase.prototype.transaction;
+    IDBDatabase.prototype.transaction = function (
+      ...args: Parameters<typeof original>
+    ) {
+      if (args[1] === "readwrite")
+        throw new DOMException("長押し保存失敗の検証", "AbortError");
+      return original.apply(this, args);
+    };
+  });
+  await page.getByRole("button", { name: /^2日目/ }).hover();
+  await page.mouse.down();
+  await expect(page.getByRole("alert")).toContainText("長押し保存失敗の検証");
+  await page.mouse.up();
+  await expect(page.locator('[data-item-id="1"]')).toBeVisible();
+  await expect(page.locator('[data-item-id="2"]')).toHaveCount(0);
+  expect(await stored(page, "dayModes")).toEqual({
+    [eventName]: { "1日目": "edit", "2日目": "edit" },
+  });
+});
