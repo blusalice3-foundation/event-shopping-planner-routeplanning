@@ -23,6 +23,7 @@ import { resolveMembership } from "./membership";
 import { encodeHallRef, projectConsistencySnapshot } from "./projection";
 export interface ItemMembershipPreview {
   status: string;
+  locationStatus: string;
   halls: HallDefinition[];
   details: string[];
 }
@@ -144,7 +145,26 @@ export function previewItemEdit(
     halls,
     context: map.status === "resolved" ? day?.maps[map.key] : day?.mapless,
   });
+  const locationStatus =
+    map.status === "selection-required"
+      ? "マップ選択待ち"
+      : map.status === "none"
+        ? "マップなし"
+        : membership.location?.status === "resolved"
+          ? "場所を特定済み"
+          : "場所未解決";
+  if (map.status === "resolved") {
+    if (membership.location?.status === "ambiguous")
+      details.push(
+        `マップ「${map.key}」で同じブロック名・番号に異なる位置の番号セルが${membership.location.candidates.length}件あるため、場所を特定できません。ブロック定義を確認してください。`,
+      );
+    else if (membership.location?.status === "missing")
+      details.push(
+        `マップ「${map.key}」に一致する番号セルが見つからないため、場所を特定できません。ブロック名・番号とブロック定義を確認してください。`,
+      );
+  }
   return {
+    locationStatus,
     status:
       membership.status === "map-selection-required"
         ? "利用するマップを選択してください"

@@ -1,3 +1,5 @@
+import { createAppBackup } from "../../src/utils/appBackup";
+import { migrateLegacyConsistency } from "../../src/features/consistency/domain/migration";
 import type { EventConsistencyStore } from "../../src/types/consistency";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -41,7 +43,7 @@ const backup = (items = [item("1"), item("2", "2日目")]) => ({
     hallRouteSettings: {},
   },
 });
-async function restore(page: Page, data = backup()) {
+async function restore(page: Page, data: unknown = backup()) {
   await page.goto("/");
   await page
     .locator('input[aria-label="バックアップファイルを選択"]')
@@ -61,26 +63,29 @@ async function restore(page: Page, data = backup()) {
     page.getByRole("heading", { name: eventName, exact: true }),
   ).toBeVisible();
 }
-async function stored(page: Page, store: string) {
-  return page.evaluate(async (name) => {
-    const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open("EventShoppingPlannerDB");
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-    try {
-      return await new Promise<unknown>((resolve, reject) => {
-        const request = database
-          .transaction(name, "readonly")
-          .objectStore(name)
-          .get("data");
+async function stored(page: Page, store: string, key = "data") {
+  return page.evaluate(
+    async ({ name, key }) => {
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open("EventShoppingPlannerDB");
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });
-    } finally {
-      database.close();
-    }
-  }, store);
+      try {
+        return await new Promise<unknown>((resolve, reject) => {
+          const request = database
+            .transaction(name, "readonly")
+            .objectStore(name)
+            .get(key);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      } finally {
+        database.close();
+      }
+    },
+    { name: store, key },
+  );
 }
 test("legacy JSON restores atomically and target-day long press persists exactly once", async ({
   page,
@@ -488,4 +493,172 @@ test("a failed long-press save keeps the current day and persisted modes", async
   expect(await stored(page, "dayModes")).toEqual({
     [eventName]: { "1日目": "edit", "2日目": "edit" },
   });
+});
+
+test("hall-order save preserves mixed legacy metadata on split lists and reload", async ({
+  page,
+}) => {
+  const source = migrateLegacyConsistency(mapBackup().data).data;
+  for (const context of Object.values(
+    source.eventConsistency[eventName].days["1日目"].maps,
+  )) {
+    const list = context.hallVisitLists[0];
+    context.hallVisitLists = [
+      { group: list.group, itemIds: ["1"] },
+      { group: list.group, itemIds: ["2"], legacyHallId: "hall" },
+    ];
+    context.hallOrder.push({ hall: null, priority: "none" });
+  }
+  await restore(page, createAppBackup(source));
+  const check = async () => {
+    const state = (await stored(
+      page,
+      "eventConsistency",
+    )) as EventConsistencyStore;
+    for (const context of Object.values(state[eventName].days["1日目"].maps)) {
+      expect(context.hallVisitLists).toHaveLength(2);
+      expect(
+        context.hallVisitLists.find((list) => list.itemIds.includes("1"))
+          ?.legacyHallId,
+      ).toBeUndefined();
+      expect(
+        context.hallVisitLists.find((list) => list.itemIds.includes("2"))
+          ?.legacyHallId,
+      ).toBe("hall");
+    }
+    expect(state[eventName].days["2日目"]).toEqual(
+      source.eventConsistency[eventName].days["2日目"],
+    );
+  };
+  await check();
+  await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+  await page.getByTitle("ホール順を編集", { exact: true }).click();
+  const order = page.getByRole("dialog", { name: "ホール間移動順序" });
+  await order.getByRole("button", { name: "▼", exact: true }).click();
+  await order.getByRole("button", { name: "保存", exact: true }).click();
+  await expect
+    .poll(() => stored(page, "eventConsistency"))
+    .toMatchObject({
+      [eventName]: {
+        days: {
+          "1日目": {
+            maps: {
+              "1日目マップ": {
+                hallOrder: [
+                  { hall: null, priority: "none" },
+                  {
+                    hall: {
+                      kind: "map",
+                      mapKey: "1日目マップ",
+                      hallId: "hall",
+                    },
+                    priority: "none",
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    });
+  await check();
+  await page.reload();
+  await expect(
+    page.locator('input[aria-label="バックアップファイルを選択"]'),
+  ).toBeAttached();
+  await check();
+});
+
+test("item editor shows location ambiguity separately and cancellation preserves items", async ({
+  page,
+}) => {
+  const source = mapBackup();
+  source.data.mapData[eventName]["1日目マップ"].blocks.push({
+    name: "A",
+    startRow: 4,
+    startCol: 4,
+    endRow: 6,
+    endCol: 6,
+    numberCells: [{ row: 5, col: 5, value: 1 }],
+  });
+  await restore(page, source);
+  const before = await stored(page, "eventLists");
+  await editMemo(page, "ユーザー登録");
+  const editor = page.getByRole("dialog", { name: "アイテム編集" });
+  await expect(editor).toContainText("所属: 未割当");
+  await expect(editor).toContainText("場所: 場所未解決");
+  await expect(editor).toContainText("異なる位置の番号セルが2件");
+  await expect(editor).toContainText("マップ「1日目マップ」");
+  await expect(editor).toContainText("ブロック定義を確認してください");
+  await editor.getByRole("button", { name: "キャンセル", exact: true }).click();
+  expect(await stored(page, "eventLists")).toEqual(before);
+  await page.reload();
+  await expect(
+    page.locator('input[aria-label="バックアップファイルを選択"]'),
+  ).toBeAttached();
+  await page.getByText(eventName, { exact: true }).click();
+  await editMemo(page, "ユーザー登録");
+  await expect(
+    page.getByRole("dialog", { name: "アイテム編集" }),
+  ).toContainText("異なる位置の番号セルが2件");
+});
+
+test("block definition waits for renewed approval after another tab changes priority", async ({
+  page,
+  context,
+}) => {
+  await restore(page, mapBackup());
+  await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+  await page.getByTitle("リスト表示に切り替え", { exact: true }).hover();
+  await page.mouse.down();
+  const blocks = page.getByRole("button", {
+    name: "🔲 ブロック定義",
+    exact: true,
+  });
+  await expect(blocks).toBeVisible();
+  await page.mouse.up();
+  await blocks.click();
+  await page.getByRole("button", { name: /A.*2セル/ }).click();
+  await page.getByPlaceholder("例: ア, め, N").fill("Ａ");
+  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await page.getByRole("button", { name: "適用", exact: true }).click();
+  const confirmation = page.getByRole("dialog", {
+    name: "所属・配置の変更を確認",
+  });
+  await expect(confirmation).toBeVisible();
+  const other = await context.newPage();
+  await other.goto("/");
+  await other.getByText(eventName, { exact: true }).click();
+  await editMemo(other, "ユーザー登録");
+  await other
+    .getByRole("combobox", { name: "優先度", exact: true })
+    .selectOption("highest");
+  await other.getByRole("button", { name: "保存", exact: true }).click();
+  await expect
+    .poll(() => stored(page, "eventLists"))
+    .toMatchObject({
+      [eventName]: expect.arrayContaining([
+        expect.objectContaining({ id: "1", priorityLevel: "highest" }),
+      ]),
+    });
+  await confirmation.getByRole("button", { name: "確認して保存" }).click();
+  await expect(confirmation).toBeVisible();
+  await expect(confirmation).toContainText("最優先");
+  const mapStorageKey = `mapData:${JSON.stringify([eventName, "1日目マップ"])}`;
+  expect(await stored(page, "mapData", mapStorageKey)).toMatchObject({
+    blocks: [expect.objectContaining({ name: "A" })],
+  });
+  await confirmation.getByRole("button", { name: "確認して保存" }).click();
+  await expect(confirmation).toBeHidden();
+  await expect
+    .poll(() => stored(page, "mapData", mapStorageKey))
+    .toMatchObject({
+      blocks: [expect.objectContaining({ name: "Ａ" })],
+    });
+  expect(await stored(page, "eventLists")).toMatchObject({
+    [eventName]: expect.arrayContaining([
+      expect.objectContaining({ id: "1", priorityLevel: "highest" }),
+    ]),
+  });
+  await other.close();
 });

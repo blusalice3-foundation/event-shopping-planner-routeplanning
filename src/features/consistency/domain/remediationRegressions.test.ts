@@ -1,0 +1,632 @@
+import {
+  exportToXlsx,
+  importFromXlsx,
+} from "../../../xlsx/engine/eventWorkbookEngine";
+import type { EventWorkbookAdditionalData } from "../../../xlsx/domain/eventWorkbook";
+import { describe, expect, it } from "vitest";
+import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
+import { createApplicationMutationCoordinator } from "../../../app/commands/applicationMutationCoordinator";
+import type { ShoppingItem } from "../../../types/item";
+import type { DayMapData, HallRouteSettings } from "../../../types/map";
+import {
+  createDayConsistency,
+  createEventConsistency,
+  createVisitContext,
+} from "../../../types/consistency";
+import {
+  createAppBackup,
+  parseAppBackup,
+  serializeAppBackup,
+  validateSnapshotReferences,
+  validateSnapshotStructure,
+} from "../../../utils/appBackup";
+import { planItemEdit, previewItemEdit } from "./itemEdit";
+import { planProjectedMutation } from "./mutations";
+import { projectConsistencySnapshot } from "./projection";
+
+const mapKey = "1日目マップ";
+const makeSource = (): PersistenceSnapshot => {
+  const items: ShoppingItem[] = ["a", "b"].map((id, index) => ({
+    id,
+    circle: id,
+    title: "ユーザー登録",
+    eventDate: "1日目",
+    block: "A",
+    number: String(index + 1),
+    price: 500,
+    quantity: 1,
+    purchaseStatus: "None",
+    remarks: "元のメモ",
+  }));
+  const group = {
+    hall: { kind: "map" as const, mapKey, hallId: "hall" },
+    priority: "none" as const,
+  };
+  return {
+    eventLists: { event: items },
+    eventMetadata: {},
+    executeModeItems: { event: { "1日目": ["a", "b"] } },
+    dayModes: { event: { "1日目": "execute" } },
+    mapRotationSettings: {},
+    mapViewportSettings: {},
+    routeSettings: {},
+    hallRouteSettings: {},
+    mapData: {
+      event: {
+        [mapKey]: {
+          cells: [],
+          mergedCells: [],
+          maxRow: 8,
+          maxCol: 8,
+          blocks: [
+            {
+              name: "A",
+              startRow: 1,
+              startCol: 1,
+              endRow: 4,
+              endCol: 4,
+              numberCells: [
+                { row: 2, col: 2, value: 1 },
+                { row: 3, col: 2, value: 2 },
+              ],
+            },
+          ],
+        },
+      },
+    },
+    hallDefinitions: {
+      event: {
+        [mapKey]: [
+          {
+            id: "hall",
+            name: "東館",
+            vertices: [
+              { row: 1, col: 1 },
+              { row: 1, col: 4 },
+              { row: 4, col: 4 },
+              { row: 4, col: 1 },
+            ],
+          },
+        ],
+      },
+    },
+    eventConsistency: {
+      event: {
+        ...createEventConsistency(),
+        days: {
+          "1日目": {
+            ...createDayConsistency(),
+            selectedMapKey: mapKey,
+            maps: {
+              [mapKey]: {
+                ...createVisitContext(),
+                hallOrder: [group],
+                hallVisitLists: [
+                  { group, itemIds: ["a"] },
+                  { group, itemIds: ["b"], legacyHallId: "hall" },
+                ],
+                route: {
+                  isRouteVisible: true,
+                  visitOrder: items.map((item, order) => ({
+                    row: order + 2,
+                    col: 2,
+                    blockName: "A",
+                    number: order + 1,
+                    order,
+                    itemIds: [item.id],
+                  })),
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+};
+const context = (source: PersistenceSnapshot) =>
+  source.eventConsistency.event.days["1日目"].maps[mapKey];
+const definitionPlan = (source: PersistenceSnapshot) => {
+  const maps = structuredClone(source.mapData);
+  const map = maps.event[mapKey] as DayMapData;
+  map.blocks[0].numberCells[0].row = 1;
+  return planProjectedMutation(
+    source,
+    { mapData: maps },
+    { eventName: "event", day: "1日目" },
+  );
+};
+const valid = (source: PersistenceSnapshot) => {
+  expect(validateSnapshotStructure(source)).toEqual([]);
+  expect(validateSnapshotReferences(source)).toEqual([]);
+};
+const coordinatorFor = (source: PersistenceSnapshot) => {
+  let durable = structuredClone(source);
+  let visible = structuredClone(source);
+  let commits = 0;
+  const coordinator = createApplicationMutationCoordinator({
+    readCurrent: () => visible,
+    drain: async () => {},
+    readDurable: async () => ({
+      snapshot: structuredClone(durable),
+      expectedRoots: {},
+      consistencyMissing: false,
+    }),
+    commit: async (next) => {
+      commits++;
+      durable = structuredClone(next);
+    },
+    apply: (next) => {
+      visible = next;
+    },
+  });
+  return { coordinator, current: () => durable, commits: () => commits };
+};
+
+describe("R28 definition confirmation covers final visit results", () => {
+  it("reconfirms a priority edit accepted while waiting and rejects the old token", async () => {
+    const session = coordinatorFor(makeSource());
+    const first = await session.coordinator.request({
+      id: "definition",
+      events: ["event"],
+      plan: definitionPlan,
+    });
+    if (first.status !== "confirmation-required")
+      throw new Error("missing confirmation");
+    const baseline = session.current().eventLists.event[0] as ShoppingItem;
+    expect(
+      (
+        await session.coordinator.request({
+          id: "priority",
+          events: ["event"],
+          plan: (latest) =>
+            planItemEdit(
+              latest,
+              "event",
+              baseline,
+              { ...baseline, priorityLevel: "highest" },
+              { kind: "unchanged" },
+            ),
+        })
+      ).status,
+    ).toBe("committed");
+    const next = await session.coordinator.confirm(first.token);
+    expect(next.status).toBe("confirmation-required");
+    expect(session.commits()).toBe(1);
+    if (next.status !== "confirmation-required") return;
+    expect(next.confirmation.details.join("\n")).toContain("最優先");
+    expect((await session.coordinator.confirm(first.token)).status).toBe(
+      "expired",
+    );
+    expect((await session.coordinator.confirm(next.token)).status).toBe(
+      "committed",
+    );
+    expect(context(session.current()).hallVisitLists).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          group: expect.objectContaining({ priority: "highest" }),
+          itemIds: ["a"],
+        }),
+      ]),
+    );
+    expect(
+      (session.current().mapData.event[mapKey] as DayMapData).blocks[0]
+        .numberCells[0].row,
+    ).toBe(1);
+    valid(session.current());
+  });
+  it.each(["hallOrder", "hallVisitLists", "route", "executeOrder"] as const)(
+    "reconfirms changed %s and cancellation retains the intervening update",
+    async (field) => {
+      const source = makeSource();
+      context(source).hallOrder.push({ hall: null, priority: "priority" });
+      const session = coordinatorFor(source);
+      const first = await session.coordinator.request({
+        id: "definition",
+        events: ["event"],
+        plan: definitionPlan,
+      });
+      if (first.status !== "confirmation-required")
+        throw new Error("missing confirmation");
+      const latest = session.current();
+      if (field === "hallOrder") context(latest).hallOrder.reverse();
+      if (field === "hallVisitLists") context(latest).hallVisitLists.reverse();
+      if (field === "route") context(latest).route!.isRouteVisible = false;
+      if (field === "executeOrder")
+        latest.executeModeItems.event["1日目"].reverse();
+      const updated = structuredClone(latest);
+      const next = await session.coordinator.confirm(first.token);
+      expect(next.status).toBe("confirmation-required");
+      expect(session.commits()).toBe(0);
+      if (next.status !== "confirmation-required") return;
+      session.coordinator.cancel(next.token);
+      expect((await session.coordinator.confirm(next.token)).status).toBe(
+        "expired",
+      );
+      expect(session.current()).toEqual(updated);
+    },
+  );
+  it("retains purchases, money, quantities and memos without asking again", async () => {
+    const session = coordinatorFor(makeSource());
+    const first = await session.coordinator.request({
+      id: "definition",
+      events: ["event"],
+      plan: definitionPlan,
+    });
+    if (first.status !== "confirmation-required")
+      throw new Error("missing confirmation");
+    Object.assign(session.current().eventLists.event[0] as ShoppingItem, {
+      purchaseStatus: "Purchased",
+      price: 900,
+      quantity: 2,
+      remarks: "確認中のメモ",
+    });
+    expect((await session.coordinator.confirm(first.token)).status).toBe(
+      "committed",
+    );
+    expect(session.current().eventLists.event[0]).toMatchObject({
+      purchaseStatus: "Purchased",
+      price: 900,
+      quantity: 2,
+      remarks: "確認中のメモ",
+    });
+    valid(session.current());
+  });
+  it("ignores visit settings on an unrelated day", async () => {
+    const source = makeSource();
+    source.eventConsistency.event.days["2日目"] = {
+      ...createDayConsistency(),
+      mapless: createVisitContext(),
+    };
+    const session = coordinatorFor(source);
+    const first = await session.coordinator.request({
+      id: "definition",
+      events: ["event"],
+      plan: definitionPlan,
+    });
+    if (first.status !== "confirmation-required")
+      throw new Error("missing confirmation");
+    session
+      .current()
+      .eventConsistency.event.days[
+        "2日目"
+      ].mapless!.hallOrder.push({ hall: null, priority: "highest" });
+    expect((await session.coordinator.confirm(first.token)).status).toBe(
+      "committed",
+    );
+    expect(
+      session.current().eventConsistency.event.days["2日目"].mapless!.hallOrder,
+    ).toEqual([{ hall: null, priority: "highest" }]);
+  });
+});
+
+describe("I02 split visit lists retain their own legacy metadata", () => {
+  it.each(["order-only", "reverse-lists", "changed-members"] as const)(
+    "preserves each list for %s and JSON roundtrip",
+    (operation) => {
+      const source = makeSource();
+      context(source).hallOrder.push({ hall: null, priority: "none" });
+      const projected = projectConsistencySnapshot(source, "event", "1日目");
+      const settings = structuredClone(projected.hallRouteSettings) as Record<
+        string,
+        Record<string, HallRouteSettings>
+      >;
+      settings.event[mapKey].hallOrder.reverse();
+      if (operation === "reverse-lists")
+        settings.event[mapKey].hallVisitLists.reverse();
+      if (operation === "changed-members") {
+        source.eventLists.event.push({
+          ...(source.eventLists.event[0] as ShoppingItem),
+          id: "c",
+        });
+        source.executeModeItems.event["1日目"].push("c");
+        settings.event[mapKey].hallVisitLists[0].itemIds.push("c");
+      }
+      const plan = planProjectedMutation(
+        source,
+        { hallRouteSettings: settings },
+        { eventName: "event", day: "1日目" },
+      );
+      const lists = context(plan.snapshot).hallVisitLists;
+      expect(
+        lists.find((list) => list.itemIds.includes("a"))?.legacyHallId,
+      ).toBeUndefined();
+      expect(
+        lists.find((list) => list.itemIds.includes("b"))?.legacyHallId,
+      ).toBe("hall");
+      expect(lists).toHaveLength(2);
+      const restored = parseAppBackup(
+        serializeAppBackup(createAppBackup(plan.snapshot)),
+      );
+      expect(restored.ok).toBe(true);
+      if (restored.ok)
+        expect(context(restored.data).hallVisitLists).toEqual(lists);
+      valid(plan.snapshot);
+    },
+  );
+});
+
+describe("R20/I08 item preview separates hall membership from unresolved location", () => {
+  const ambiguousSource = () => {
+    const source = makeSource();
+    const map = source.mapData.event[mapKey] as DayMapData;
+    map.blocks.push({
+      ...map.blocks[0],
+      numberCells: [{ row: 6, col: 6, value: 1 }],
+    });
+    return source;
+  };
+  it.each([
+    "unassigned",
+    "automatic",
+    "manual",
+    "confirmation-required",
+  ] as const)("shows ambiguity independently of %s membership", (state) => {
+    const source = ambiguousSource();
+    if (state !== "unassigned")
+      source.hallDefinitions.event["__mapless__:1日目"] = [
+        { id: "simple", name: "簡易館", vertices: [], blockNames: ["A"] },
+      ];
+    if (state === "manual")
+      context(source).assignments.a = {
+        kind: "simple",
+        dayKey: "1日目",
+        hallId: "simple",
+      };
+    if (state === "confirmation-required")
+      (source.hallDefinitions.event["__mapless__:1日目"] as unknown[]).push({
+        id: "second",
+        name: "第二館",
+        vertices: [],
+        blockNames: ["A"],
+      });
+    const baseline = source.eventLists.event[0] as ShoppingItem;
+    const preview = previewItemEdit(source, "event", baseline, baseline, {
+      kind: "unchanged",
+    });
+    expect(preview.status).toBe(
+      {
+        unassigned: "未割当",
+        automatic: "自動判定",
+        manual: "共有先の手動指定を使用",
+        "confirmation-required": "所属確認が必要",
+      }[state],
+    );
+    expect(preview).toMatchObject({ locationStatus: "場所未解決" });
+    expect(preview.details.join("\n")).toContain("異なる位置");
+    expect(preview.details.join("\n")).toContain(mapKey);
+    expect(preview.details.join("\n")).toContain("ブロック定義");
+    expect(source.eventLists.event[0]).toEqual(baseline);
+  });
+  it("shows the missing-cell reason but does not label a resolved or mapless item ambiguous", () => {
+    const source = makeSource();
+    const baseline = source.eventLists.event[0] as ShoppingItem;
+    expect(
+      previewItemEdit(source, "event", baseline, baseline, {
+        kind: "unchanged",
+      }),
+    ).toMatchObject({ locationStatus: "場所を特定済み" });
+    const missing = previewItemEdit(
+      source,
+      "event",
+      baseline,
+      { ...baseline, number: "99" },
+      { kind: "unchanged" },
+    );
+    expect(missing).toMatchObject({ locationStatus: "場所未解決" });
+    expect(missing.details.join("\n")).toContain("番号セルが見つからない");
+    source.mapData.event = {};
+    source.eventConsistency.event.days["1日目"].selectedMapKey = null;
+    expect(
+      previewItemEdit(source, "event", baseline, baseline, {
+        kind: "unchanged",
+      }),
+    ).toMatchObject({ locationStatus: "マップなし" });
+  });
+});
+
+describe("definition confirmation across dependent contexts", () => {
+  it.each(["dependent-day", "hidden-map"] as const)(
+    "reconfirms %s visit results even outside the displayed context",
+    async (scope) => {
+      const source = makeSource();
+      const editedId = scope === "dependent-day" ? "c" : "a";
+      if (scope === "dependent-day") {
+        source.eventLists.event.push({
+          ...(source.eventLists.event[0] as ShoppingItem),
+          id: "c",
+          eventDate: "１日目",
+        });
+        source.executeModeItems.event["１日目"] = ["c"];
+        const dependent = createVisitContext();
+        dependent.hallOrder = structuredClone(context(source).hallOrder);
+        dependent.hallVisitLists = [
+          { group: dependent.hallOrder[0], itemIds: ["c"] },
+        ];
+        source.eventConsistency.event.days["１日目"] = {
+          ...createDayConsistency(),
+          selectedMapKey: mapKey,
+          maps: { [mapKey]: dependent },
+        };
+      } else {
+        source.mapData.event["１日目マップ"] = structuredClone(
+          source.mapData.event[mapKey],
+        );
+        source.hallDefinitions.event["１日目マップ"] = structuredClone(
+          source.hallDefinitions.event[mapKey],
+        );
+        source.eventConsistency.event.days["1日目"].maps["１日目マップ"] =
+          createVisitContext();
+        source.eventConsistency.event.days["1日目"].selectedMapKey =
+          "１日目マップ";
+      }
+      const session = coordinatorFor(source);
+      const first = await session.coordinator.request({
+        id: "definition",
+        events: ["event"],
+        plan: definitionPlan,
+      });
+      if (first.status !== "confirmation-required")
+        throw new Error("missing confirmation");
+      const edited = (
+        session.current().eventLists.event as ShoppingItem[]
+      ).find((item) => item.id === editedId)!;
+      edited.priorityLevel = "highest";
+      const next = await session.coordinator.confirm(first.token);
+      expect(next.status).toBe("confirmation-required");
+      expect(session.commits()).toBe(0);
+      if (next.status !== "confirmation-required") return;
+      expect(next.confirmation.details.join("\n")).toContain("最優先");
+      expect((await session.coordinator.confirm(next.token)).status).toBe(
+        "committed",
+      );
+      const day = scope === "dependent-day" ? "１日目" : "1日目";
+      expect(
+        session.current().eventConsistency.event.days[day].maps[mapKey]
+          .hallVisitLists,
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            group: expect.objectContaining({ priority: "highest" }),
+            itemIds: [editedId],
+          }),
+        ]),
+      );
+      valid(session.current());
+    },
+  );
+  it("reconfirms simple-hall definition changes with mapless visit results", async () => {
+    const source = makeSource();
+    source.mapData.event = {};
+    source.hallDefinitions.event = {
+      "__mapless__:1日目": [
+        { id: "hall", name: "東館", vertices: [], blockNames: ["A"] },
+      ],
+    };
+    const visits = context(source);
+    const group = {
+      hall: { kind: "simple" as const, dayKey: "1日目", hallId: "hall" },
+      priority: "none" as const,
+    };
+    visits.hallOrder = [group];
+    visits.hallVisitLists = visits.hallVisitLists.map((list) => ({
+      ...list,
+      group,
+    }));
+    visits.route = null;
+    source.eventConsistency.event.days["1日目"] = {
+      ...createDayConsistency(),
+      mapless: visits,
+    };
+    const session = coordinatorFor(source);
+    const first = await session.coordinator.request({
+      id: "definition",
+      events: ["event"],
+      plan: (latest) => {
+        const definitions = structuredClone(latest.hallDefinitions);
+        (definitions.event["__mapless__:1日目"] as { name: string }[])[0].name =
+          "変更後の東館";
+        return planProjectedMutation(
+          latest,
+          { hallDefinitions: definitions },
+          { eventName: "event", day: "1日目" },
+        );
+      },
+    });
+    if (first.status !== "confirmation-required")
+      throw new Error("missing confirmation");
+    (session.current().eventLists.event[0] as ShoppingItem).priorityLevel =
+      "highest";
+    const next = await session.coordinator.confirm(first.token);
+    expect(next.status).toBe("confirmation-required");
+    expect(session.commits()).toBe(0);
+    if (next.status !== "confirmation-required") return;
+    expect(next.confirmation.details.join("\n")).toContain(
+      "変更後の東館（最優先）",
+    );
+    expect((await session.coordinator.confirm(next.token)).status).toBe(
+      "committed",
+    );
+    valid(session.current());
+  });
+});
+
+it("keeps distinct legacy IDs with their split lists rather than duplicating the first", () => {
+  const source = makeSource();
+  context(source).hallVisitLists[0].legacyHallId = "hall:custom";
+  context(source).hallOrder.push({ hall: null, priority: "none" });
+  const projected = projectConsistencySnapshot(source, "event", "1日目");
+  const settings = structuredClone(projected.hallRouteSettings) as Record<
+    string,
+    Record<string, HallRouteSettings>
+  >;
+  settings.event[mapKey].hallOrder.reverse();
+  const plan = planProjectedMutation(
+    source,
+    { hallRouteSettings: settings },
+    { eventName: "event", day: "1日目" },
+  );
+  expect(
+    context(plan.snapshot).hallVisitLists.map((list) => list.legacyHallId),
+  ).toEqual(["hall:custom", "hall"]);
+  valid(plan.snapshot);
+});
+
+it("updates the location preview after a duplicate definition is corrected without changing the item", () => {
+  const source = makeSource();
+  const map = source.mapData.event[mapKey] as DayMapData;
+  map.blocks.push({
+    ...map.blocks[0],
+    numberCells: [{ row: 6, col: 6, value: 1 }],
+  });
+  const original = structuredClone(source.eventLists.event[0]) as ShoppingItem;
+  expect(
+    previewItemEdit(source, "event", original, original, { kind: "unchanged" }),
+  ).toMatchObject({ locationStatus: "場所未解決" });
+  map.blocks.pop();
+  const resolved = previewItemEdit(source, "event", original, original, {
+    kind: "unchanged",
+  });
+  expect(resolved).toMatchObject({
+    status: "自動判定",
+    locationStatus: "場所を特定済み",
+  });
+  expect(resolved.details.join("\n")).not.toContain("異なる位置");
+  expect(source.eventLists.event[0]).toEqual(original);
+});
+
+it("retains sparse legacy metadata after hall-order save through a full Excel roundtrip", async () => {
+  const source = makeSource();
+  context(source).hallOrder.push({ hall: null, priority: "none" });
+  const settings = structuredClone(
+    projectConsistencySnapshot(source, "event", "1日目").hallRouteSettings,
+  ) as Record<string, Record<string, HallRouteSettings>>;
+  settings.event[mapKey].hallOrder.reverse();
+  const saved = planProjectedMutation(
+    source,
+    { hallRouteSettings: settings },
+    { eventName: "event", day: "1日目" },
+  ).snapshot;
+  const blob = await exportToXlsx(
+    "event",
+    saved.eventLists.event as ShoppingItem[],
+    {
+      format: "full",
+      includeItems: true,
+      includeLayoutInfo: true,
+      includeMapData: true,
+      includeRouteInfo: true,
+    },
+    {
+      ...saved,
+      metadata: saved.eventMetadata.event,
+    } as EventWorkbookAdditionalData,
+  );
+  const restored = await importFromXlsx(new File([blob], "split-legacy.xlsx"));
+  expect(restored.success).toBe(true);
+  expect(restored.errors).toEqual([]);
+  expect(
+    restored.eventConsistency?.days["1日目"].maps[mapKey].hallVisitLists,
+  ).toEqual(context(saved).hallVisitLists);
+  expect(restored.items).toMatchObject(saved.eventLists.event);
+});

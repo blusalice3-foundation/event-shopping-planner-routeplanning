@@ -2387,7 +2387,12 @@ const App: React.FC = () => {
                     edited,
                     selection,
                   )
-                : { status: "イベントが未選択です", halls: [], details: [] },
+                : {
+                    status: "イベントが未選択です",
+                    locationStatus: "確認できません",
+                    halls: [],
+                    details: [],
+                  },
             handleUpdateItem,
           },
           event: {

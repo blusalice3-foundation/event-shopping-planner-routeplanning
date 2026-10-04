@@ -239,6 +239,11 @@ export function planProjectedMutation(
   const next = structuredClone(source);
   const details: string[] = [];
   const comparisons: unknown[] = [];
+  const definitionContexts: Array<{
+    eventName: string;
+    day: string;
+    mapKey: string | null;
+  }> = [];
   const standard = [
     "eventMetadata",
     "mapData",
@@ -369,16 +374,41 @@ export function planProjectedMutation(
         if (!group) throw new Error("巡回先の保存元を確認してください。");
         return group;
       });
-      target.hallVisitLists = settings.hallVisitLists.map((list) => {
+      const previousLists = target.hallVisitLists;
+      const decodedLists = settings.hallVisitLists.map((list) => {
         const group = decodeGroup(list.hallId);
         if (!group) throw new Error("訪問先の保存元を確認してください。");
-        const old = target.hallVisitLists.find(
-          (old) => hallGroupKey(old.group) === hallGroupKey(group),
+        return { group, itemIds: [...list.itemIds] };
+      });
+      // Reserve unchanged lists first, including lists moved within one group.
+      // Match remaining split lists in group order; never reuse another list's metadata.
+      const used = new Set<number>();
+      const matches = decodedLists.map((list) => {
+        const index = previousLists.findIndex(
+          (old, index) =>
+            !used.has(index) &&
+            hallGroupKey(old.group) === hallGroupKey(list.group) &&
+            equal(old.itemIds, list.itemIds),
         );
+        if (index >= 0) used.add(index);
+        return index;
+      });
+      target.hallVisitLists = decodedLists.map((list, index) => {
+        const oldIndex =
+          matches[index] >= 0
+            ? matches[index]
+            : previousLists.findIndex(
+                (old, index) =>
+                  !used.has(index) &&
+                  hallGroupKey(old.group) === hallGroupKey(list.group),
+              );
+        if (oldIndex >= 0) used.add(oldIndex);
+        const old = previousLists[oldIndex];
         return {
-          group,
-          itemIds: [...list.itemIds],
-          ...(old?.legacyHallId ? { legacyHallId: old.legacyHallId } : {}),
+          ...list,
+          ...(old?.legacyHallId !== undefined
+            ? { legacyHallId: old.legacyHallId }
+            : {}),
         };
       });
     }
@@ -725,6 +755,7 @@ export function planProjectedMutation(
           : { status: "none" as const, candidates: [] as [] };
       const halls = getContextHalls(definitions, day, mapKey);
       if (definitionAffected) {
+        definitionContexts.push({ eventName, day, mapKey });
         const beforeAssignments = structuredClone(context.assignments);
         const candidates = createMembershipResolver({
           items,
@@ -875,6 +906,64 @@ export function planProjectedMutation(
     }
   }
   const repaired = reconcileConsistencyReferences(next);
+  // Compare the final repaired visit results for every dependent day and map.
+  // Purchase records and unrelated contexts do not participate in this approval.
+  for (const { eventName, day, mapKey } of definitionContexts) {
+    const beforeDay = source.eventConsistency[eventName]?.days[day];
+    const afterDay = repaired.data.eventConsistency[eventName]?.days[day];
+    const before =
+      mapKey === null ? beforeDay?.mapless : beforeDay?.maps[mapKey];
+    const after = mapKey === null ? afterDay?.mapless : afterDay?.maps[mapKey];
+    comparisons.push({
+      eventName,
+      day,
+      mapKey,
+      previousSelectedMapKey: beforeDay?.selectedMapKey ?? null,
+      selectedMapKey: afterDay?.selectedMapKey ?? null,
+      before: before ?? null,
+      after: after ?? null,
+    });
+    if (!after) continue;
+    const halls = getContextHalls(
+      repaired.data.hallDefinitions[eventName] as Record<
+        string,
+        HallDefinition[]
+      >,
+      day,
+      mapKey,
+    );
+    const groupLabel = (group: (typeof after.hallOrder)[number]) => {
+      const name = group.hall
+        ? (halls.find((hall) => sameHall(hall.ref, group.hall))?.definition
+            .name ?? "未割当")
+        : "未割当";
+      const priority =
+        group.priority === "highest"
+          ? "最優先"
+          : group.priority === "priority"
+            ? "優先"
+            : "通常";
+      return `${name}（${priority}）`;
+    };
+    const itemNames = new Map(
+      (repaired.data.eventLists[eventName] as ShoppingItem[]).map((item) => [
+        item.id,
+        `${item.circle}・${item.title}（${item.block}-${item.number}）`,
+      ]),
+    );
+    const itemLabel = (id: string) => itemNames.get(id) ?? "削除済みの品目";
+    const scope = `${day} / ${mapKey ?? "マップなし"}`;
+    details.push(
+      `${scope}: 巡回順: ${after.hallOrder.map(groupLabel).join(" → ") || "なし"}`,
+    );
+    details.push(
+      `${scope}: 訪問リスト: ${after.hallVisitLists.map((list) => `${groupLabel(list.group)}: ${list.itemIds.map(itemLabel).join(" → ") || "空"}`).join(" / ") || "なし"}`,
+    );
+    if (after.route)
+      details.push(
+        `${scope}: 経路: ${after.route.visitOrder.map((point) => point.itemIds.map(itemLabel).join("・")).join(" → ") || "なし"}`,
+      );
+  }
   if (patch.hallDefinitions || patch.mapData) {
     comparisons.push({
       previousDefinitions: Object.fromEntries(

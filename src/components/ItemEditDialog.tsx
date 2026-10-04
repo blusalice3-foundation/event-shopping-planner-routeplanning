@@ -557,7 +557,8 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
           )}
           {preview && (
             <section aria-live="polite" className="text-sm p-3 border rounded">
-              <p>{preview.status}</p>
+              <p>所属: {preview.status}</p>
+              <p>場所: {preview.locationStatus}</p>
               {preview.details.map((detail, index) => (
                 <p key={index}>{detail}</p>
               ))}
