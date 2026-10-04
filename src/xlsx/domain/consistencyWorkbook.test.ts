@@ -218,6 +218,36 @@ describe("full workbook option matrix", () => {
                 ?.route,
           ).toBe(L && M && R);
         });
+  it("round-trips split visit lists in both map and mapless contexts without merging them", async () => {
+    const original = source();
+    const first = original.eventLists.event[0] as ShoppingItem;
+    original.eventLists.event.push({ ...first, id: "B", title: "分割先" });
+    original.executeModeItems.event[" 1日目　"].push("B");
+    const day = original.eventConsistency.event.days[" 1日目　"];
+    for (const context of [day.mapless!, day.maps["１日目マップ"]]) {
+      const firstList = context.hallVisitLists[0];
+      firstList.legacyHallId = "hall";
+      context.hallVisitLists.push({
+        ...structuredClone(firstList),
+        itemIds: ["B"],
+      });
+    }
+    const before = structuredClone(original);
+    const blob = await exportToXlsx(
+      "event",
+      original.eventLists.event as ShoppingItem[],
+      options(true, true, true),
+      {
+        ...original,
+        metadata: original.eventMetadata.event,
+      } as EventWorkbookAdditionalData,
+    );
+    const restored = await importFromXlsx(new File([blob], "split.xlsx"));
+    expect(restored.errors).toEqual([]);
+    expect(restored.success).toBe(true);
+    expect(restored.eventConsistency).toEqual(original.eventConsistency.event);
+    expect(original).toEqual(before);
+  });
   it("emits only items in simple format and leaves manual hall cells empty", async () => {
     const original = source();
     const blob = await exportToXlsx(

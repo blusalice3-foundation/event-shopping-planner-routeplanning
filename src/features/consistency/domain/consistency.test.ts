@@ -1,4 +1,6 @@
 import { planMapReimport } from "./mapReimport";
+import { planItemEdit } from "./itemEdit";
+import { planDayMerge } from "./dayMerge";
 import {
   planLegacyResolution,
   legacyPendingIdentity,
@@ -567,5 +569,191 @@ describe("migration review and map reimport", () => {
     expect(
       plan.snapshot.mapRotationSettings.event["1 日目マップ"],
     ).toBeDefined();
+  });
+});
+
+describe("split legacy visit lists", () => {
+  const splitBackup = () => {
+    const source = legacy();
+    source.eventLists.event = [item("A"), item("B", { number: "02a" })];
+    source.executeModeItems.event["1日目"] = ["A", "B"];
+    source.hallRouteSettings.event = {
+      "1日目マップ": {
+        hallOrder: ["east:priority"],
+        hallVisitLists: [
+          { hallId: "east:priority", itemIds: ["A"] },
+          { hallId: "east:priority", itemIds: ["B"] },
+        ],
+      },
+    };
+    return source;
+  };
+  it("restores V1 split lists and round-trips their spelling and relative order in V2", () => {
+    const source = splitBackup();
+    const original = structuredClone(source);
+    const restored = parseAppBackup({
+      kind: "event-shopping-planner-backup",
+      version: 1,
+      exportedAt: "2026-10-04T00:00:00.000Z",
+      data: source,
+    });
+    expect(restored.ok).toBe(true);
+    if (!restored.ok) throw new Error(restored.errors.join("\n"));
+    const lists =
+      restored.data.eventConsistency.event.days["1日目"].maps["1日目マップ"]
+        .hallVisitLists;
+    expect(lists.map((list) => [list.legacyHallId, list.itemIds])).toEqual([
+      ["east:priority", ["A"]],
+      ["east:priority", ["B"]],
+    ]);
+    const roundTrip = parseAppBackup(
+      serializeAppBackup(createAppBackup(restored.data)),
+    );
+    expect(roundTrip.ok).toBe(true);
+    if (roundTrip.ok) expect(roundTrip.data).toEqual(restored.data);
+    expect(source).toEqual(original);
+    const invalid = structuredClone(restored.data);
+    invalid.eventConsistency.event.days["1日目"].maps[
+      "1日目マップ"
+    ].hallVisitLists[0].itemIds = ["A", "A"];
+    expect(validateSnapshotStructure(invalid)).not.toEqual([]);
+  });
+  it("retains split membership after execution reorder and confirmed day merge", () => {
+    const source = splitBackup();
+    source.eventLists.event = (source.eventLists.event as ShoppingItem[]).map(
+      (value) => ({
+        ...value,
+        priorityLevel: "priority",
+        manualHallId: "east",
+      }),
+    );
+    const migrated = migrateLegacyConsistency(source).data;
+    const baseline = migrated.eventLists.event[0] as ShoppingItem;
+    const plan = planItemEdit(
+      migrated,
+      "event",
+      baseline,
+      { ...baseline, number: "03a" },
+      { kind: "unchanged" },
+    );
+    const lists =
+      plan.snapshot.eventConsistency.event.days["1日目"].maps["1日目マップ"]
+        .hallVisitLists;
+    expect(lists.map((list) => list.itemIds)).toEqual([["A"], ["B"]]);
+    migrated.eventConsistency.event.days[" 1日目 "] = createDayConsistency();
+    const merged = planDayMerge(migrated, "event", "1日目");
+    expect(
+      merged.snapshot.eventConsistency.event.days["1日目"].maps["1日目マップ"]
+        .hallVisitLists,
+    ).toEqual(
+      migrated.eventConsistency.event.days["1日目"].maps["1日目マップ"]
+        .hallVisitLists,
+    );
+    expect(validateSnapshotStructure(plan.snapshot)).toEqual([]);
+    expect(validateSnapshotReferences(plan.snapshot)).toEqual([]);
+  });
+});
+
+describe("explicit membership resolves pending legacy manual halls", () => {
+  const pendingSource = () => {
+    const source = legacy();
+    source.eventLists.event = [
+      item("A", { manualHallId: "east" }),
+      item("B", { manualHallId: "east" }),
+      item("C", { number: "02a", manualHallId: "east" }),
+    ];
+    source.hallDefinitions.event["__mapless__:1日目"] = [
+      { id: "east", name: "簡易", vertices: [], blockNames: ["A"] },
+    ];
+    return migrateLegacyConsistency(source).data;
+  };
+  it.each(["select", "automatic"] as const)(
+    "clears pending peers for %s while preserving other spaces, days, maps and payloads",
+    (kind) => {
+      const source = pendingSource();
+      const event = source.eventConsistency.event;
+      const pending = event.legacyPending[0];
+      const unrelated = [
+        { ...pending, sourceMapKey: "１日目マップ" },
+        { ...pending, sourceDayKey: "2日目" },
+        {
+          ...pending,
+          payload: {
+            kind: "hall-route-settings" as const,
+            settings: { hallOrder: [], hallVisitLists: [] },
+          },
+        },
+      ];
+      event.legacyPending.push(...unrelated);
+      const original = structuredClone(source);
+      const baseline = source.eventLists.event[0] as ShoppingItem;
+      const plan = planItemEdit(
+        source,
+        "event",
+        baseline,
+        baseline,
+        kind === "select"
+          ? {
+              kind,
+              hall: { kind: "map", mapKey: "1日目マップ", hallId: "east" },
+            }
+          : { kind },
+      );
+      const next = plan.snapshot.eventConsistency.event;
+      expect(next.legacyPending).toEqual([
+        event.legacyPending[2],
+        ...unrelated,
+      ]);
+      expect(next.days["1日目"].maps["1日目マップ"].assignments).toEqual(
+        kind === "select"
+          ? {
+              A: { kind: "map", mapKey: "1日目マップ", hallId: "east" },
+              B: { kind: "map", mapKey: "1日目マップ", hallId: "east" },
+            }
+          : {},
+      );
+      expect(plan.confirmation?.comparison).toBeDefined();
+      const restored = parseAppBackup(
+        serializeAppBackup(createAppBackup(plan.snapshot)),
+      );
+      expect(restored.ok).toBe(true);
+      if (restored.ok)
+        expect(restored.data.eventConsistency.event.legacyPending).toEqual(
+          next.legacyPending,
+        );
+      expect(source).toEqual(original);
+    },
+  );
+  it("retains pending choices during ordinary edits", () => {
+    const source = pendingSource();
+    const baseline = source.eventLists.event[0] as ShoppingItem;
+    const plan = planItemEdit(
+      source,
+      "event",
+      baseline,
+      { ...baseline, title: "変更" },
+      { kind: "unchanged" },
+    );
+    expect(plan.snapshot.eventConsistency.event.legacyPending).toEqual(
+      source.eventConsistency.event.legacyPending,
+    );
+  });
+  it("resolves every pending peer from the migration review as well", () => {
+    const source = pendingSource();
+    const pending = source.eventConsistency.event.legacyPending[0];
+    const plan = planLegacyResolution(
+      source,
+      "event",
+      legacyPendingIdentity(pending),
+      {
+        day: "1日目",
+        mapKey: "1日目マップ",
+        groups: {},
+        automatic: true,
+      },
+    );
+    expect(plan.snapshot.eventConsistency.event.legacyPending).toEqual([
+      source.eventConsistency.event.legacyPending[2],
+    ]);
   });
 });

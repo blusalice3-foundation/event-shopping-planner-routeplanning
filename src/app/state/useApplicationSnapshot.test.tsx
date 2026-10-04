@@ -110,3 +110,21 @@ describe("one accepted application state", () => {
     expect(h.commit).toHaveBeenCalledOnce();
   });
 });
+
+it("exports current memory through the application port even when draining saves fails", async () => {
+  const h = harness();
+  const drain = vi.fn(async () => {
+    throw new Error("save unavailable");
+  });
+  h.result.current.handlers.current.drain = drain;
+  act(() => {
+    h.result.current.hydrationSetters.setDayModes({
+      event: { "1日目": "execute" },
+    });
+  });
+  const exported = await h.result.current.coordinator.readExportSnapshot();
+  expect(exported.dayModes).toEqual({ event: { "1日目": "execute" } });
+  expect(h.durable().dayModes).toEqual({});
+  expect(drain).not.toHaveBeenCalled();
+  expect(h.commit).not.toHaveBeenCalled();
+});

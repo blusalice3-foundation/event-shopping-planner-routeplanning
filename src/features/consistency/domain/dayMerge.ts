@@ -217,14 +217,8 @@ export function planDayMerge(
         )
       )
         target.hallOrder.push(group);
-    for (const list of source.hallVisitLists) {
-      const existing = target.hallVisitLists.find(
-        (entry) => hallGroupKey(entry.group) === hallGroupKey(list.group),
-      );
-      if (existing)
-        existing.itemIds = [...new Set([...existing.itemIds, ...list.itemIds])];
-      else target.hallVisitLists.push(list);
-    }
+    // Keep saved list boundaries and relative order, even within one group.
+    target.hallVisitLists.push(...source.hallVisitLists);
     if (source.route) {
       if (!target.route) target.route = source.route;
       else {

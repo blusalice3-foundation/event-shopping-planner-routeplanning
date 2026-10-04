@@ -167,11 +167,8 @@ export function validateEventConsistency(value: unknown): string[] {
         ),
       `${path}.hallVisitLists`,
     );
-    if (Array.isArray(raw.hallVisitLists))
-      check(
-        unique(raw.hallVisitLists.filter(record).map((list) => list.group)),
-        path + ".hallVisitLists",
-      );
+    // A legacy hall/priority group can contain several separately saved lists.
+    // Validate each list above without combining or rejecting those partitions.
     check(
       raw.route === null || (!mapless && isConsistencyRoute(raw.route)),
       `${path}.route`,

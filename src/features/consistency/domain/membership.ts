@@ -3,6 +3,7 @@ import type { BlockDefinition, DayMapData } from "../../../types/map";
 import type {
   HallRef,
   HallSelectionIntent,
+  LegacyPendingV1,
   VisitContextV1,
 } from "../../../types/consistency";
 import {
@@ -303,4 +304,21 @@ export function applyMembershipIntent(
       delete context.assignments[item.id];
   }
   return context;
+}
+
+/** An explicit choice supersedes legacy manual values for this shared unit only. */
+export function removeResolvedManualHallPending(
+  pending: LegacyPendingV1[],
+  memberIds: readonly string[],
+  day: string,
+  mapKey: string | null,
+): LegacyPendingV1[] {
+  const members = new Set(memberIds);
+  return pending.filter(
+    (entry) =>
+      entry.payload.kind !== "manual-hall" ||
+      !members.has(entry.payload.itemId) ||
+      (entry.sourceDayKey !== null && !sameDay(entry.sourceDayKey, day)) ||
+      (entry.sourceMapKey !== null && entry.sourceMapKey !== mapKey),
+  );
 }

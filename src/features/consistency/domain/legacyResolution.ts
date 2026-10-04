@@ -16,7 +16,11 @@ import {
   sameDay,
   sameHall,
 } from "./context";
-import { applyMembershipIntent } from "./membership";
+import {
+  applyMembershipIntent,
+  resolveMembership,
+  removeResolvedManualHallPending,
+} from "./membership";
 import { planProjectedMutation } from "./mutations";
 export interface LegacyResolutionChoice {
   day: string;
@@ -145,6 +149,19 @@ export function planLegacyResolution(
     );
     if (choice.mapKey === null) day.mapless = result;
     else day.maps[choice.mapKey] = result;
+    const membership = resolveMembership(member, {
+      items,
+      day: choice.day,
+      map,
+      halls,
+      context: result,
+    });
+    event.legacyPending = removeResolvedManualHallPending(
+      event.legacyPending,
+      membership.memberIds,
+      choice.day,
+      choice.mapKey,
+    );
   } else if (entry.payload.kind === "hall-route-settings") {
     target.hallOrder = entry.payload.settings.hallOrder.map(
       (id) => choice.groups[id],
@@ -183,7 +200,9 @@ export function planLegacyResolution(
         .filter((point) => point.itemIds.length > 0),
     };
   }
-  event.legacyPending.splice(index, 1);
+  event.legacyPending = event.legacyPending.filter(
+    (pending) => legacyPendingIdentity(pending) !== identity,
+  );
   const plan = planProjectedMutation(
     source,
     {
@@ -205,6 +224,14 @@ export function planLegacyResolution(
       ],
       comparison: {
         original: entry,
+        resolvedPending: source.eventConsistency[name].legacyPending.filter(
+          (pending) =>
+            !event.legacyPending.some(
+              (retained) =>
+                legacyPendingIdentity(retained) ===
+                legacyPendingIdentity(pending),
+            ),
+        ),
         choice,
         definitions: next.hallDefinitions[name],
         before: source.eventConsistency[name].days,

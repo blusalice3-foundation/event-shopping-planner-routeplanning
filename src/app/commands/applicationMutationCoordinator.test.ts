@@ -279,22 +279,78 @@ describe("mutation queue durable boundaries", () => {
       status: "expired",
     });
   });
-  it("exports coherent durable data including updates from another tab", async () => {
-    const saved = snapshot();
-    saved.eventMetadata.external = true;
-    const coordinator = createApplicationMutationCoordinator({
-      readCurrent: snapshot,
-      drain: async () => {},
-      readDurable: async () => ({
-        snapshot: saved,
-        expectedRoots: {},
-        consistencyMissing: false,
-      }),
-      commit: async () => {},
-      apply: vi.fn(),
+  it("exports an immutable current snapshot including unsaved values without reading or writing the database", async () => {
+    const current = snapshot();
+    current.eventMetadata.unsaved = { memo: "ユーザー登録" };
+    const drain = vi.fn(async () => {
+      throw new Error("unsaved write failed");
     });
-    expect(
-      (await coordinator.readExportSnapshot()).eventMetadata.external,
-    ).toBe(true);
+    const readDurable = vi.fn(async () => {
+      throw new Error("database unavailable");
+    });
+    const commit = vi.fn(async () => {});
+    const apply = vi.fn();
+    const coordinator = createApplicationMutationCoordinator({
+      readCurrent: () => current,
+      drain,
+      readDurable,
+      commit,
+      apply,
+    });
+    const exported = await coordinator.readExportSnapshot();
+    expect(exported).toEqual(current);
+    current.eventMetadata.unsaved = { memo: "後の変更" };
+    expect(exported.eventMetadata.unsaved).toEqual({ memo: "ユーザー登録" });
+    expect(drain).not.toHaveBeenCalled();
+    expect(readDurable).not.toHaveBeenCalled();
+    expect(commit).not.toHaveBeenCalled();
+    expect(apply).not.toHaveBeenCalled();
   });
+  it.each([false, true])(
+    "waits for a preceding mutation with write failure=%s and exports only accepted state",
+    async (fails) => {
+      let current = snapshot();
+      let release!: () => void;
+      const barrier = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const coordinator = createApplicationMutationCoordinator({
+        readCurrent: () => current,
+        drain: async () => {},
+        readDurable: async () => ({
+          snapshot: structuredClone(current),
+          expectedRoots: {},
+          consistencyMissing: false,
+        }),
+        commit: async () => {
+          await barrier;
+          if (fails) throw new Error("write failed");
+        },
+        apply: (next) => {
+          current = next;
+        },
+      });
+      const mutation = coordinator.request({
+        id: "edit",
+        events: ["event"],
+        plan: (next) => {
+          next.eventMetadata.event = { accepted: true };
+          return { snapshot: next };
+        },
+      });
+      const outcome = mutation.catch((error: Error) => error);
+      let exported = false;
+      const output = coordinator.readExportSnapshot().then((value) => {
+        exported = true;
+        return value;
+      });
+      await Promise.resolve();
+      expect(exported).toBe(false);
+      release();
+      await outcome;
+      expect((await output).eventMetadata).toEqual(
+        fails ? {} : { event: { accepted: true } },
+      );
+    },
+  );
 });

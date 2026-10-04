@@ -203,10 +203,9 @@ export function createApplicationMutationCoordinator(
     },
     invalidate,
     generation: (event: string): number => generations.get(event) ?? 0,
+    // Wait for earlier mutations, then preserve the accepted in-memory values.
+    // Export is read-only and must remain available when persistence fails.
     readExportSnapshot: (): Promise<PersistenceSnapshot> =>
-      enqueue(async () => {
-        await ports.drain();
-        return structuredClone((await ports.readDurable()).snapshot);
-      }),
+      enqueue(() => structuredClone(ports.readCurrent())),
   };
 }

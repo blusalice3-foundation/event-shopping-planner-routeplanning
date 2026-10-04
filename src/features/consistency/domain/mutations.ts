@@ -29,6 +29,7 @@ import {
   createMembershipResolver,
   resolveLocation,
   resolveMembership,
+  removeResolvedManualHallPending,
 } from "./membership";
 import {
   decodeHallGroup,
@@ -543,6 +544,21 @@ export function planProjectedMutation(
           halls,
           context,
         });
+        const beforePending = event.legacyPending;
+        if (intent.kind !== "unchanged")
+          event.legacyPending = removeResolvedManualHallPending(
+            beforePending,
+            resolution.memberIds,
+            item.eventDate,
+            mapKey,
+          );
+        const resolvedPending = beforePending.filter(
+          (entry) => !event.legacyPending.includes(entry),
+        );
+        if (resolvedPending.length)
+          details.push(
+            `旧所属指定の確認待ち ${resolvedPending.length} 件も処理します。`,
+          );
         if (
           !equal(before, context.assignments) ||
           identityChanged ||
@@ -566,6 +582,7 @@ export function planProjectedMutation(
             before,
             after: context.assignments,
             resolution,
+            resolvedPending,
             definitions: halls,
           });
         }
@@ -709,7 +726,9 @@ export function planProjectedMutation(
       for (const list of context.hallVisitLists)
         list.itemIds = ordered
           .filter(
-            (item) => hallGroupKey(groupFor(item)) === hallGroupKey(list.group),
+            (item) =>
+              list.itemIds.includes(item.id) &&
+              hallGroupKey(groupFor(item)) === hallGroupKey(list.group),
           )
           .map((item) => item.id);
       // Visibility-only route edits retain the saved path. Membership/order edits

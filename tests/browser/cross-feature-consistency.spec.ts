@@ -307,3 +307,39 @@ test("a migrated database starts when legacy localStorage reads fail", async ({
   expect(await stored(page, "eventConsistency")).toEqual(before);
   expect(errors).toEqual([]);
 });
+
+test("split legacy visit lists restore and remain separate after reorder and reload", async ({
+  page,
+}) => {
+  const data = mapBackup();
+  for (const settings of Object.values(data.data.hallRouteSettings[eventName]))
+    settings.hallVisitLists = [
+      { hallId: "hall", itemIds: ["1"] },
+      { hallId: "hall", itemIds: ["2"] },
+    ];
+  await restore(page, data);
+  const checkLists = async () => {
+    const state = (await stored(
+      page,
+      "eventConsistency",
+    )) as EventConsistencyStore;
+    for (const context of Object.values(state[eventName].days["1日目"].maps))
+      expect(
+        context.hallVisitLists.map((list) => [list.legacyHallId, list.itemIds]),
+      ).toEqual([
+        ["hall", ["1"]],
+        ["hall", ["2"]],
+      ]);
+  };
+  await checkLists();
+  await reorderVisitList(page);
+  await checkLists();
+  await page.reload();
+  await expect(
+    page.locator('input[aria-label="バックアップファイルを選択"]'),
+  ).toBeAttached();
+  await checkLists();
+  expect(await stored(page, "executeModeItems")).toMatchObject({
+    [eventName]: { "1日目": ["2", "1"] },
+  });
+});
