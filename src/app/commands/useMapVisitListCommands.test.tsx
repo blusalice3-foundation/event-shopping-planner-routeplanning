@@ -332,6 +332,31 @@ describe("visit list commands share one session and successful save baseline", (
     expect(h.state.originalOrder).toEqual(["B", "A", "C"]);
     expect(h.ids()).toEqual(["A", "B", "C"]);
   });
+  it("retries a failed event-list discard without losing the session or cancel baseline", async () => {
+    const h = harness();
+    h.open();
+    await h.update(["A", "B", "C"]);
+    act(() => h.result.current.requestTabChange("eventList"));
+    h.rerender();
+    vi.mocked(h.ports.requestMutation).mockRejectedValueOnce(
+      new Error("abort"),
+    );
+    await expect(
+      act(() => h.result.current.discardPendingTransition()),
+    ).rejects.toThrow("abort");
+    h.rerender();
+    expect(h.ids()).toEqual(["A", "B", "C"]);
+    expect(h.state.originalOrder).toEqual(["B", "A", "C"]);
+    expect(h.state.panelOpen).toBe(true);
+    expect(h.state.hasUnsavedChanges).toBe(true);
+    expect(h.ports.navigation.navigateToTab).not.toHaveBeenCalled();
+    await act(() => h.result.current.discardPendingTransition());
+    expect(h.ids()).toEqual(["B", "A", "C"]);
+    expect(h.ports.navigation.navigateToTab).toHaveBeenCalledExactlyOnceWith(
+      "eventList",
+    );
+    expect(h.state.panelOpen).toBe(false);
+  });
   it("restores the baseline before discard completes navigation", async () => {
     const h = harness();
     h.open();

@@ -293,6 +293,8 @@ export const useMapVisitListCommands = ({
       });
       const settled = task.finally(() => {
         pendingWrites.current -= 1;
+        // Awaiters still receive this failure, while a later user action can retry.
+        if (writes.current === settled) writes.current = Promise.resolve();
       });
       writes.current = settled;
       return settled;

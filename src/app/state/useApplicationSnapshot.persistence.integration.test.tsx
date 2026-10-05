@@ -312,3 +312,96 @@ it("watches an item-array reorder but keeps purchase content edits atomic", asyn
     (await db.readApplicationSnapshot()).snapshot.eventLists[EVENT][1],
   ).toMatchObject({ price: 1000 });
 });
+
+it.each(
+  (["abort", "quota", "conflicts"] as const).flatMap((failure) =>
+    (["single setter", "related setters"] as const).flatMap((origin) =>
+      (["retry", "discard"] as const).map((action) => ({
+        failure,
+        origin,
+        action,
+      })),
+    ),
+  ),
+)(
+  "keeps failed related reorder values out of UI, previews and exports: $failure, $origin, $action",
+  async ({ failure, origin, action }) => {
+    const h = await harness(true);
+    const error =
+      failure === "conflicts"
+        ? Object.assign(new Error("保存競合"), { name: "PersistenceConflict" })
+        : new DOMException(
+            "一括保存の失敗",
+            failure === "quota" ? "QuotaExceededError" : "AbortError",
+          );
+    const attempts = failure === "conflicts" ? 3 : 1;
+    for (let attempt = 0; attempt < attempts; attempt++)
+      h.atomic.mockRejectedValueOnce(error);
+    act(() => {
+      if (origin === "related setters")
+        h.result.current.application.setters.setDayModes({
+          [EVENT]: { [DAY]: "execute" },
+        });
+      reorder(h);
+    });
+    await waitFor(() =>
+      expect(h.result.current.application.retryableFailures).toHaveLength(1),
+    );
+    expect(h.atomic).toHaveBeenCalledTimes(attempts);
+    expect(h.single).not.toHaveBeenCalled();
+    expect((await db.readApplicationSnapshot()).snapshot).toEqual(h.seed);
+    for (const snapshot of [
+      h.result.current.application.values,
+      h.result.current.application.previewRef.current,
+      await h.result.current.application.coordinator.readExportSnapshot(),
+    ]) {
+      expect(snapshot.executeModeItems).toEqual(h.seed.executeModeItems);
+      expect(snapshot.eventConsistency).toEqual(h.seed.eventConsistency);
+      expect(snapshot.dayModes).toEqual(h.seed.dayModes);
+    }
+    // A subsequent purchase must neither include nor silently apply the failed order.
+    await act(async () => {
+      h.result.current.application.setters.setEventLists((current) => ({
+        ...current,
+        [EVENT]: current[EVENT].map((item) =>
+          item.id === "1" ? { ...item, remarks: "失敗後の最新購入メモ" } : item,
+        ),
+      }));
+      h.result.current.application.flushDraft();
+      await h.result.current.application.coordinator.enqueue(() => undefined);
+    });
+    expect(h.result.current.application.values.executeModeItems).toEqual(
+      h.seed.executeModeItems,
+    );
+    const withPurchase = (await db.readApplicationSnapshot()).snapshot;
+    expect(withPurchase.executeModeItems).toEqual(h.seed.executeModeItems);
+    expect(withPurchase.eventLists[EVENT][0]).toMatchObject({
+      remarks: "失敗後の最新購入メモ",
+    });
+    await act(async () => {
+      if (action === "retry") {
+        h.result.current.application.retryPending();
+        await h.result.current.application.flush();
+      } else h.result.current.application.discardPending();
+    });
+    const saved = (await db.readApplicationSnapshot()).snapshot;
+    const expected = action === "retry" ? ["2", "1"] : ["1", "2"];
+    expect(saved.executeModeItems[EVENT][DAY]).toEqual(expected);
+    expect(
+      saved.eventConsistency[EVENT].days[DAY].mapless?.hallVisitLists[0]
+        .itemIds,
+    ).toEqual(expected);
+    expect(saved.executeModeItems[EVENT]["2日目"]).toEqual(["3"]);
+    expect(saved.eventLists).toEqual(withPurchase.eventLists);
+    expect(h.single).not.toHaveBeenCalled();
+    expect(h.result.current.application.retryableFailures).toEqual([]);
+    h.unmount();
+    const remounted = h.mount();
+    await waitFor(() =>
+      expect(remounted.result.current.persistence.isInitialized).toBe(true),
+    );
+    expect(
+      remounted.result.current.application.values.executeModeItems[EVENT][DAY],
+    ).toEqual(expected);
+  },
+);

@@ -133,3 +133,36 @@ it.each([
   expect(view.getByText("西館最優先")).toBeInTheDocument();
   expect(view.queryByText("ホール未定義優先")).not.toBeInTheDocument();
 });
+
+it.each([false, true])(
+  "reopens from current settings after the proposed hall order was saved=%s",
+  (saved) => {
+    const settings = { hallOrder: ["hall-1", "hall-dark"], hallVisitLists: [] };
+    const update = vi.fn();
+    const panel = (isOpen: boolean, current = settings) => (
+      <HallOrderPanel
+        isOpen={isOpen}
+        onClose={vi.fn()}
+        halls={halls}
+        hallRouteSettings={current}
+        onUpdateHallRouteSettings={update}
+        getItemCountInHall={() => 1}
+      />
+    );
+    const view = render(panel(true));
+    fireEvent.click(view.getAllByRole("button", { name: /^▼$/ })[0]);
+    fireEvent.click(view.getByRole("button", { name: /^保存$/ }));
+    expect(update).toHaveBeenCalledExactlyOnceWith({
+      ...settings,
+      hallOrder: ["hall-dark", "hall-1"],
+    });
+    const current = saved ? update.mock.calls[0][0] : settings;
+    view.rerender(panel(false, current));
+    view.rerender(panel(true, current));
+    const names = view
+      .getAllByText(/^(東1|東2)$/)
+      .map((element) => element.textContent);
+    expect(names).toEqual(saved ? ["東2", "東1"] : ["東1", "東2"]);
+    expect(update).toHaveBeenCalledOnce();
+  },
+);

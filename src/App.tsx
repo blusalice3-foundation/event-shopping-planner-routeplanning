@@ -938,12 +938,12 @@ const App: React.FC = () => {
       if (activeEventName) {
         navigationCommands.openEvent(activeEventName, itemToEdit.eventDate);
       } else {
-        navigationCommands.showEventList();
+        handleShowEventList();
       }
     } else {
       setItemToEdit(null);
       alert("参加日がないため処理を停止しました。");
-      navigationCommands.showEventList();
+      handleShowEventList();
     }
   };
 
@@ -1338,6 +1338,10 @@ const App: React.FC = () => {
       navigateToTab,
     },
   });
+
+  const handleShowEventList = useCallback(() => {
+    requestVisitListTabChange("eventList");
+  }, [requestVisitListTabChange]);
 
   const handleHighlightMapCell = useCallback(
     (row: number, col: number) => {
@@ -2074,7 +2078,7 @@ const App: React.FC = () => {
           navigation: {
             getMapTabForDate,
             handleSetViewMode,
-            onShowEventList: navigationCommands.showEventList,
+            onShowEventList: handleShowEventList,
             onShowImport: navigationCommands.showImport,
             onToggleEventSurface: navigationCommands.toggleEventSurface,
           },
@@ -2478,7 +2482,7 @@ const App: React.FC = () => {
             previewEventExport,
             handleConfirmRename,
             handleUrlUpdate,
-            onShowEventList: navigationCommands.showEventList,
+            onShowEventList: handleShowEventList,
           },
           mapEditor: {
             handleCancelCellSelection,

@@ -241,8 +241,7 @@ const mapBackup = () => {
     },
   };
 };
-async function reorderVisitList(page: Page) {
-  await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+async function openVisitList(page: Page) {
   await page.getByTitle("リスト表示に切り替え", { exact: true }).hover();
   await page.mouse.down();
   const openPanel = page.getByRole("button", {
@@ -252,6 +251,10 @@ async function reorderVisitList(page: Page) {
   await expect(openPanel).toBeVisible();
   await page.mouse.up();
   await openPanel.click();
+}
+async function reorderVisitList(page: Page) {
+  await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+  await openVisitList(page);
   const rows = page.locator("[data-drag-item]");
   await expect(rows).toHaveCount(2);
   const transfer = await page.evaluateHandle(() => new DataTransfer());
@@ -264,6 +267,60 @@ async function reorderVisitList(page: Page) {
     .toMatchObject({
       [eventName]: { "1日目": ["2", "1"], "2日目": ["3"] },
     });
+}
+for (const choice of ["保存して確定", "キャンセル（破棄）"] as const) {
+  test(`event-list navigation waits for the visit transition answer: ${choice}`, async ({
+    page,
+  }) => {
+    await restore(page, mapBackup());
+    const originalItems = await stored(page, "eventLists");
+    const originalConsistency = (await stored(
+      page,
+      "eventConsistency",
+    )) as EventConsistencyStore;
+    await reorderVisitList(page);
+    await expect(
+      page.getByTitle("元に戻す (Ctrl+Z)", { exact: true }),
+    ).toBeEnabled();
+    await page
+      .getByRole("button", { name: "イベント一覧", exact: true })
+      .click();
+    const confirm = page.getByRole("heading", { name: "変更を保存しますか？" });
+    await expect(confirm).toBeVisible();
+    // The panel and its history must stay alive until the answer is applied.
+    await expect(
+      page.getByTitle("元に戻す (Ctrl+Z)", { exact: true }),
+    ).toBeEnabled();
+    expect(await stored(page, "executeModeItems")).toMatchObject({
+      [eventName]: { "1日目": ["2", "1"] },
+    });
+    await page.getByRole("button", { name: choice, exact: true }).click();
+    await expect(confirm).toBeHidden();
+    await expect(page.locator("[data-drag-item]")).toHaveCount(0);
+    const expected = choice === "保存して確定" ? ["2", "1"] : ["1", "2"];
+    expect(await stored(page, "executeModeItems")).toMatchObject({
+      [eventName]: { "1日目": expected, "2日目": ["3"] },
+    });
+    expect(await stored(page, "eventLists")).toEqual(originalItems);
+    expect(
+      ((await stored(page, "eventConsistency")) as EventConsistencyStore)[
+        eventName
+      ].days["2日目"],
+    ).toEqual(originalConsistency[eventName].days["2日目"]);
+    await page.getByText(eventName, { exact: true }).click();
+    await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+    await openVisitList(page);
+    await expect(
+      page.getByTitle("元に戻す (Ctrl+Z)", { exact: true }),
+    ).toBeDisabled();
+    await expect(page.locator("[data-drag-item]").first()).toContainText(
+      "サークル" + expected[0],
+    );
+    await page.getByRole("button", { name: "キャンセル", exact: true }).click();
+    expect(await stored(page, "executeModeItems")).toMatchObject({
+      [eventName]: { "1日目": expected },
+    });
+  });
 }
 for (const choice of ["保存して確定", "キャンセル（破棄）"] as const) {
   test(`map selection waits for the visit transition answer: ${choice}`, async ({
@@ -1243,6 +1300,209 @@ test.describe("spreadsheet and save-conflict connections", () => {
       };
     });
   }
+  for (const failure of ["abort", "conflicts"] as const) {
+    for (const action of ["retry", "discard"] as const) {
+      for (const operation of ["settings", "reorder"] as const) {
+        test(`failed hall-order save keeps DB, screen and JSON unchanged: ${failure}, ${action}, ${operation}`, async ({
+          page,
+        }) => {
+          const source = mapBackup();
+          source.data.dayModes[eventName]["1日目"] = "execute";
+          for (const mapKey of ["1日目マップ", "１日目マップ"] as const) {
+            source.data.hallDefinitions[eventName][mapKey] = [
+              {
+                id: "A",
+                name: "ホールA",
+                vertices: [
+                  { row: 1, col: 1 },
+                  { row: 1, col: 5 },
+                  { row: 2, col: 5 },
+                  { row: 2, col: 1 },
+                ],
+              },
+              {
+                id: "B",
+                name: "ホールB",
+                vertices: [
+                  { row: 3, col: 1 },
+                  { row: 3, col: 5 },
+                  { row: 5, col: 5 },
+                  { row: 5, col: 1 },
+                ],
+              },
+            ];
+            source.data.hallRouteSettings[eventName][mapKey] = {
+              hallOrder: ["A", "B"],
+              hallVisitLists: [
+                { hallId: "A", itemIds: ["1"] },
+                { hallId: "B", itemIds: ["2"] },
+              ],
+            };
+          }
+          await restore(page, source);
+          const beforeConsistency = await stored(page, "eventConsistency");
+          const beforeItems = await stored(page, "eventLists");
+          await page
+            .getByTitle("マップ表示に切り替え", { exact: true })
+            .click();
+          await page.getByTitle("ホール順を編集", { exact: true }).click();
+          const order = page.getByRole("dialog", { name: "ホール間移動順序" });
+          await expect(
+            order.locator(".font-medium").filter({ hasText: /^ホール[AB]$/ }),
+          ).toHaveText(["ホールA", "ホールB"]);
+          await order
+            .getByRole("button", { name: "▼", exact: true })
+            .first()
+            .click();
+          if (failure === "conflicts") await forceThreeSnapshotConflicts(page);
+          else await forceSnapshotAbort(page);
+          if (operation === "settings")
+            await order
+              .getByRole("button", { name: "保存", exact: true })
+              .click();
+          else {
+            await order
+              .getByRole("button", { name: "🔄 実行列を並び替え", exact: true })
+              .click();
+            await order
+              .getByRole("button", { name: "ホール間移動順序を閉じる" })
+              .click();
+          }
+          const pending = page.getByRole("alert").filter({
+            hasText: "件の操作を未保存のまま保留しています",
+          });
+          await expect(pending).toBeVisible();
+          await expect(order).toBeHidden();
+          expect(await stored(page, "executeModeItems")).toMatchObject({
+            [eventName]: { "1日目": ["1", "2"], "2日目": ["3"] },
+          });
+          expect(await stored(page, "eventConsistency")).toEqual(
+            beforeConsistency,
+          );
+          const downloading = page.waitForEvent("download");
+          await pending
+            .getByRole("button", {
+              name: "JSONバックアップを保存",
+              exact: true,
+            })
+            .click();
+          const stream = await (await downloading).createReadStream();
+          const chunks: Buffer[] = [];
+          for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
+          const exported = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+          expect(exported.data.executeModeItems[eventName]["1日目"]).toEqual([
+            "1",
+            "2",
+          ]);
+          expect(exported.data.eventConsistency).toEqual(beforeConsistency);
+          await page.getByTitle("ホール順を編集", { exact: true }).click();
+          await expect(
+            order.locator(".font-medium").filter({ hasText: /^ホール[AB]$/ }),
+          ).toHaveText(["ホールA", "ホールB"]);
+          await order
+            .getByRole("button", { name: "ホール間移動順序を閉じる" })
+            .click();
+          await page
+            .getByTitle("リスト表示に切り替え", { exact: true })
+            .click();
+          await expect(page.locator("[data-item-id]")).toHaveCount(2);
+          expect(
+            await page
+              .locator("[data-item-id]")
+              .evaluateAll((rows) =>
+                rows.map((row) => row.getAttribute("data-item-id")),
+              ),
+          ).toEqual(["1", "2"]);
+          await pending
+            .getByRole("button", {
+              name:
+                action === "retry"
+                  ? "保留中の保存を再試行"
+                  : "保留中の操作を取り消す",
+              exact: true,
+            })
+            .click();
+          await expect
+            .poll(async () => {
+              const snapshot = (await stored(
+                page,
+                "eventConsistency",
+              )) as EventConsistencyStore;
+              return snapshot[eventName].days["1日目"].maps[
+                "1日目マップ"
+              ].hallOrder.map((group) => group.hall?.hallId);
+            })
+            .toEqual(action === "retry" ? ["B", "A"] : ["A", "B"]);
+          await expect(pending).toBeHidden();
+          const expected =
+            action === "retry" && operation === "reorder"
+              ? ["2", "1"]
+              : ["1", "2"];
+          const consistency = (await stored(
+            page,
+            "eventConsistency",
+          )) as EventConsistencyStore;
+          const before = beforeConsistency as EventConsistencyStore;
+          expect(
+            consistency[eventName].days["1日目"].maps[
+              "1日目マップ"
+            ].hallOrder.map((group) => group.hall?.hallId),
+          ).toEqual(action === "retry" ? ["B", "A"] : ["A", "B"]);
+          expect(
+            consistency[eventName].days["1日目"].maps["１日目マップ"],
+          ).toEqual(before[eventName].days["1日目"].maps["１日目マップ"]);
+          expect(consistency[eventName].days["2日目"]).toEqual(
+            before[eventName].days["2日目"],
+          );
+          expect(await stored(page, "executeModeItems")).toMatchObject({
+            [eventName]: { "1日目": expected, "2日目": ["3"] },
+          });
+          expect(await stored(page, "eventLists")).toEqual(beforeItems);
+          await page.reload();
+          await expect(
+            page.locator('input[aria-label="バックアップファイルを選択"]'),
+          ).toBeAttached();
+          expect(await stored(page, "executeModeItems")).toMatchObject({
+            [eventName]: { "1日目": expected },
+          });
+        });
+      }
+    }
+  }
+
+  test("failed visit discard keeps event navigation, undo history and cancel baseline pending", async ({
+    page,
+  }) => {
+    await restore(page, mapBackup());
+    await reorderVisitList(page);
+    await page
+      .getByRole("button", { name: "イベント一覧", exact: true })
+      .click();
+    const confirm = page.getByRole("heading", { name: "変更を保存しますか？" });
+    await expect(confirm).toBeVisible();
+    await forceSnapshotAbort(page);
+    await page
+      .getByRole("button", { name: "キャンセル（破棄）", exact: true })
+      .click();
+    await expect(
+      page.getByRole("alert").filter({ hasText: "購入記録の書き込み失敗" }),
+    ).toBeVisible();
+    await expect(confirm).toBeVisible();
+    await expect(
+      page.getByTitle("元に戻す (Ctrl+Z)", { exact: true }),
+    ).toBeEnabled();
+    expect(await stored(page, "executeModeItems")).toMatchObject({
+      [eventName]: { "1日目": ["2", "1"] },
+    });
+    await page
+      .getByRole("button", { name: "キャンセル（破棄）", exact: true })
+      .click();
+    await expect(confirm).toBeHidden();
+    await expect(page.locator("[data-drag-item]")).toHaveCount(0);
+    expect(await stored(page, "executeModeItems")).toMatchObject({
+      [eventName]: { "1日目": ["1", "2"], "2日目": ["3"] },
+    });
+  });
   for (const [failure, action] of [
     ["conflicts", "retry"],
     ["conflicts", "discard"],

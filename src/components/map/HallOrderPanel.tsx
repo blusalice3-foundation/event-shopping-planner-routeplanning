@@ -98,10 +98,10 @@ const HallOrderPanel: React.FC<HallOrderPanelProps> = ({
     onEscape: onClose,
   });
 
-  // hallRouteSettingsが変更されたらlocalOrderを更新
+  // 閉じても残るマップ内のパネルは、開くたびに現在の巡回設定を読み直す。
   React.useEffect(() => {
-    setLocalOrder(hallRouteSettings.hallOrder);
-  }, [hallRouteSettings.hallOrder]);
+    if (isOpen) setLocalOrder(hallRouteSettings.hallOrder);
+  }, [isOpen, hallRouteSettings.hallOrder]);
 
   // グループ順序を上に移動
   const handleMoveUp = useCallback((index: number) => {

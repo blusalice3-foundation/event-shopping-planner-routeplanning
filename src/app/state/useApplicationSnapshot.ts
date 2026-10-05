@@ -73,9 +73,39 @@ type Batch = {
   base: PersistenceSnapshot;
   draft: PersistenceSnapshot;
   retainOnConflict?: boolean;
+  retryOnFailure?: boolean;
   acceptedBase?: PersistenceSnapshot;
   acceptedDraft?: PersistenceSnapshot;
 };
+function changedSnapshotStores(
+  base: PersistenceSnapshot,
+  snapshot: PersistenceSnapshot,
+) {
+  return keys.filter(
+    (key) => JSON.stringify(base[key]) !== JSON.stringify(snapshot[key]),
+  );
+}
+function shouldRetainSetterBatch(
+  batch: Batch,
+  latest: PersistenceSnapshot,
+  plan: MutationPlan,
+): boolean {
+  // These setters accept ordinary user edits. Definitions, membership and
+  // route settings remain proposed operations even within one physical store.
+  const acceptedKeys: Array<keyof PersistenceSnapshot> = [
+    "eventLists",
+    "eventMetadata",
+    "executeModeItems",
+    "dayModes",
+    "mapRotationSettings",
+    "mapViewportSettings",
+  ];
+  return (
+    changedSnapshotStores(batch.base, batch.draft).every((key) =>
+      acceptedKeys.includes(key),
+    ) && changedSnapshotStores(latest, plan.snapshot).length <= 1
+  );
+}
 function planBatch(batch: Batch, latest: PersistenceSnapshot): MutationPlan {
   const projected = projectConsistencySnapshot(
     latest,
@@ -207,10 +237,7 @@ export function useApplicationSnapshot(
             ...validateSnapshotReferences(snapshot),
           ];
           if (errors.length) throw new Error(errors.join("\n"));
-          const changedStores = keys.filter(
-            (key) =>
-              JSON.stringify(base[key]) !== JSON.stringify(snapshot[key]),
-          );
+          const changedStores = changedSnapshotStores(base, snapshot);
           // Decide after reference repair: saved visit lists/routes make an
           // execution reorder a multi-store mutation, even with one setter.
           if (
@@ -283,12 +310,15 @@ export function useApplicationSnapshot(
     for (const batch of [
       ...submitted.current,
       ...(draft.current ? [draft.current] : []),
-    ])
+    ]) {
+      if (suspended.current.has(batch.id) && !retained.current.has(batch.id))
+        continue;
       next = applyChangedFields(
         batch.acceptedBase ?? batch.base,
         batch.acceptedDraft ?? batch.draft,
         next,
       ) as PersistenceSnapshot;
+    }
     previewRef.current = next;
   }, []);
   // Do not replace a synchronously accepted draft with an older render.
@@ -342,9 +372,22 @@ export function useApplicationSnapshot(
   const fail = useCallback(
     (id: string, error: unknown) => {
       const batch = submitted.current.find((entry) => entry.id === id);
+      if (batch?.retryOnFailure && batch.retainOnConflict === undefined) {
+        // A failed drain can precede planning. Preserve accepted single-store
+        // edits, but keep a related operation's proposed values out of exports.
+        try {
+          batch.retainOnConflict = shouldRetainSetterBatch(
+            batch,
+            rawRef.current,
+            planBatch(batch, rawRef.current),
+          );
+        } catch {
+          batch.retainOnConflict = false;
+        }
+      }
       if (
         error instanceof MutationConflictError ||
-        (batch?.retainOnConflict &&
+        ((batch?.retainOnConflict || batch?.retryOnFailure) &&
           !(error instanceof MutationCancelledError) &&
           !(error instanceof CommittedStateApplyError))
       ) {
@@ -462,7 +505,18 @@ export function useApplicationSnapshot(
       return request({
         id: batch.id,
         events,
-        plan: (latest) => planBatch(batch, latest),
+        plan: (latest) => {
+          const plan = planBatch(batch, latest);
+          // Reference repair can turn one setter into a multi-store operation.
+          // Only standalone setter edits are accepted before a successful save.
+          if (batch.retryOnFailure)
+            batch.retainOnConflict = shouldRetainSetterBatch(
+              batch,
+              latest,
+              plan,
+            );
+          return plan;
+        },
       });
     },
     [request],
@@ -487,7 +541,7 @@ export function useApplicationSnapshot(
                 context: { ...contextRef.current },
                 base,
                 draft: structuredClone(base),
-                retainOnConflict: true,
+                retryOnFailure: true,
               };
               queueMicrotask(flushDraft);
             }
