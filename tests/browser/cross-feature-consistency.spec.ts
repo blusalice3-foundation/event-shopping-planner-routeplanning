@@ -1986,6 +1986,11 @@ test("focus map shows mixed execution counts separately from candidates and the 
     .toEqual(expect.arrayContaining(["後1", "遅1", "候補1"]));
   expect(await labels()).not.toContain("済");
   const phase = page.getByLabel("phase", { exact: true });
+  await page.evaluate(() => {
+    (
+      window as typeof window & { __focusStatusLabels: string[] }
+    ).__focusStatusLabels.length = 0;
+  });
   await phase.selectOption("postponed");
   const confirmation = page.getByRole("dialog", {
     name: "フェーズを切り替えますか？",
@@ -1993,12 +1998,7 @@ test("focus map shows mixed execution counts separately from candidates and the 
   if (await confirmation.isVisible()) {
     await confirmation.getByRole("button", { name: /最初から開始/ }).click();
   }
-  await page.evaluate(() => {
-    (
-      window as typeof window & { __focusStatusLabels: string[] }
-    ).__focusStatusLabels.length = 0;
-    window.dispatchEvent(new Event("resize"));
-  });
+
   await expect
     .poll(labels)
     .toEqual(expect.arrayContaining(["後始", "後1", "遅1", "候補1"]));
@@ -2943,3 +2943,106 @@ test("legacy mixed hall order keeps the saved simple sequence in the editor afte
   await page.getByText(eventName, { exact: true }).click();
   await check();
 });
+
+for (const timing of ["before apply", "confirmation"] as const) {
+  for (const removal of ["all maps", "edited map"] as const) {
+    test(
+      "stale block edit never recreates maps removed by another tab's replacement: " +
+        timing +
+        ", " +
+        removal,
+      async ({ page, context }) => {
+        const errors: string[] = [];
+        page.on("pageerror", (error) => errors.push(error.message));
+        await restore(page, mapBackup());
+        await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+        await page.getByTitle("リスト表示に切り替え", { exact: true }).hover();
+        await page.mouse.down();
+        const blocks = page.getByRole("button", {
+          name: "🔲 ブロック定義",
+          exact: true,
+        });
+        await expect(blocks).toBeVisible();
+        await page.mouse.up();
+        await blocks.click();
+        await page.getByRole("button", { name: /A.*2セル/ }).click();
+        await page.getByPlaceholder("例: ア, め, N").fill("Ａ");
+        await page.getByRole("button", { name: "保存", exact: true }).click();
+        const confirmation = page.getByRole("dialog", {
+          name: "所属・配置の変更を確認",
+        });
+        if (timing === "confirmation") {
+          await page.getByRole("button", { name: "適用", exact: true }).click();
+          await expect(confirmation).toBeVisible();
+        }
+        const replacement =
+          removal === "all maps"
+            ? backup(mapBackup().data.eventLists[eventName])
+            : mapBackup();
+        if (removal === "edited map") {
+          delete (
+            replacement.data.mapData as Record<string, Record<string, unknown>>
+          )[eventName]["1日目マップ"];
+          delete (
+            replacement.data.hallDefinitions as Record<
+              string,
+              Record<string, unknown>
+            >
+          )[eventName]["1日目マップ"];
+          delete (
+            replacement.data.hallRouteSettings as Record<
+              string,
+              Record<string, unknown>
+            >
+          )[eventName]["1日目マップ"];
+        }
+        replacement.data.eventLists[eventName][0].remarks = "置換後の最新メモ";
+        replacement.data.eventLists[eventName][0].price = 900;
+        replacement.data.eventLists[eventName][0].purchaseStatus = "Purchased";
+        const other = await context.newPage();
+        await restore(
+          other,
+          replacement,
+          "「" + eventName + "」の復元内容を確認",
+        );
+        const beforeMaps = await storedMaps(other);
+        const stores = [
+          "eventLists",
+          "eventConsistency",
+          "hallDefinitions",
+          "executeModeItems",
+          "dayModes",
+        ];
+        const before = await Promise.all(
+          stores.map((store) => stored(other, store)),
+        );
+        if (timing === "confirmation")
+          await confirmation
+            .getByRole("button", { name: "確認して保存" })
+            .click();
+        else
+          await page.getByRole("button", { name: "適用", exact: true }).click();
+        await expect(confirmation).toBeHidden();
+        const alert = page.getByRole("alert");
+        await expect(alert).toBeVisible();
+        await expect(alert).toContainText(
+          "編集対象が削除されています。最新のイベント・マップを選び直して編集を開き直してください。",
+        );
+        expect(await storedMaps(page)).toEqual(beforeMaps);
+        expect(
+          await Promise.all(stores.map((store) => stored(page, store))),
+        ).toEqual(before);
+        await page.reload();
+        await expect(
+          page.locator('input[aria-label="バックアップファイルを選択"]'),
+        ).toBeAttached();
+        expect(await storedMaps(page)).toEqual(beforeMaps);
+        expect(
+          await Promise.all(stores.map((store) => stored(page, store))),
+        ).toEqual(before);
+        expect(errors).toEqual([]);
+        await other.close();
+      },
+    );
+  }
+}

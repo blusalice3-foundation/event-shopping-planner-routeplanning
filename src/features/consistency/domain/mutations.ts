@@ -4,7 +4,10 @@ import { preserveDayBucketKeys } from "./dayBuckets";
 import { resolveSimpleKey } from "./context";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
 import type { MutationPlan } from "../../../app/commands/applicationMutationCoordinator";
-import { semanticSignature } from "../../../app/commands/applicationMutationCoordinator";
+import {
+  MutationTargetMissingError,
+  semanticSignature,
+} from "../../../app/commands/applicationMutationCoordinator";
 import type { ShoppingItem } from "../../../types/item";
 import type {
   DayMapData,
@@ -51,8 +54,17 @@ export function applyChangedFields(
   base: unknown,
   desired: unknown,
   latest: unknown,
+  options: { requireExistingTargets?: boolean } = {},
 ): unknown {
   if (equal(base, desired)) return latest;
+  if (
+    latest === undefined &&
+    desired !== undefined &&
+    (isRecord(base) || Array.isArray(base))
+  ) {
+    if (options.requireExistingTargets) throw new MutationTargetMissingError();
+    return latest;
+  }
   if (isRecord(base) && isRecord(desired) && isRecord(latest)) {
     const result = { ...latest };
     for (const key of new Set([
@@ -60,11 +72,13 @@ export function applyChangedFields(
       ...Object.keys(desired),
     ])) {
       if (equal(base[key], desired[key])) continue;
-      if (!Object.prototype.hasOwnProperty.call(desired, key))
-        delete result[key];
+      const value = Object.prototype.hasOwnProperty.call(desired, key)
+        ? applyChangedFields(base[key], desired[key], latest[key], options)
+        : undefined;
+      if (value === undefined) delete result[key];
       else
         Object.defineProperty(result, key, {
-          value: applyChangedFields(base[key], desired[key], latest[key]),
+          value,
           enumerable: true,
           writable: true,
           configurable: true,
@@ -105,7 +119,7 @@ export function applyChangedFields(
         current = latestById.get(id);
       return desiredItem
         ? current && old
-          ? applyChangedFields(old, desiredItem, current)
+          ? applyChangedFields(old, desiredItem, current, options)
           : structuredClone(desiredItem)
         : current;
     });

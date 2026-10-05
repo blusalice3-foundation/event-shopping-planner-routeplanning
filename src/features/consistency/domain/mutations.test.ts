@@ -1062,3 +1062,82 @@ describe("selectable day merge results (R19/R22/R28)", () => {
     },
   );
 });
+
+describe("removed changed-field targets (R28/R37)", () => {
+  it.each([
+    {
+      value: { blocks: [{ name: "A" }] },
+      desired: { blocks: [{ name: "Ｂ" }] },
+    },
+    { value: [item("A")], desired: [item("A", { remarks: "今回のメモ" })] },
+    { value: ["A", "B"], desired: ["B", "A"] },
+  ])(
+    "keeps a removed collection absent and rejects saving its old delta: $value",
+    ({ value, desired }) => {
+      const baseline = {
+        event: { target: value, unrelated: { name: "別マップ" } },
+      };
+      const edited = {
+        event: { target: desired, unrelated: { name: "別マップ" } },
+      };
+      for (const latest of [
+        {},
+        { event: {} },
+        { event: { unrelated: { name: "最新の別マップ" } } },
+      ]) {
+        expect(applyChangedFields(baseline, edited, latest)).toEqual(latest);
+        expect(() =>
+          applyChangedFields(baseline, edited, latest, {
+            requireExistingTargets: true,
+          }),
+        ).toThrow("編集対象が削除されています");
+        expect(
+          JSON.stringify(applyChangedFields(baseline, edited, latest)),
+        ).not.toContain("target");
+      }
+    },
+  );
+  it("allows an intentional new target while preserving newer unrelated fields", () => {
+    expect(
+      applyChangedFields(
+        { event: { existing: { name: "元のマップ" } } },
+        {
+          event: {
+            existing: { name: "元のマップ" },
+            added: { name: "新規マップ" },
+          },
+        },
+        { event: { existing: { name: "最新のマップ" } } },
+        { requireExistingTargets: true },
+      ),
+    ).toEqual({
+      event: {
+        existing: { name: "最新のマップ" },
+        added: { name: "新規マップ" },
+      },
+    });
+  });
+  it("keeps remotely removed array entries absent while applying surviving item edits", () => {
+    expect(
+      applyChangedFields(
+        [item("A"), item("B")],
+        [
+          item("A", { remarks: "消失した品目の編集" }),
+          item("B", { title: "変更後" }),
+        ],
+        [item("B", { price: 900 })],
+        { requireExistingTargets: true },
+      ),
+    ).toEqual([item("B", { title: "変更後", price: 900 })]);
+  });
+  it("allows an idempotent deletion without restoring a removed target", () => {
+    expect(
+      applyChangedFields(
+        { target: { name: "削除済み" } },
+        {},
+        {},
+        { requireExistingTargets: true },
+      ),
+    ).toEqual({});
+  });
+});

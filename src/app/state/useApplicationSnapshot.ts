@@ -19,6 +19,7 @@ import {
   createApplicationMutationCoordinator,
   semanticSignature,
   MutationConflictError,
+  MutationTargetMissingError,
   CommittedStateApplyError,
   type MutationPlan,
   type ConfirmationToken,
@@ -113,15 +114,57 @@ function planBatch(batch: Batch, latest: PersistenceSnapshot): MutationPlan {
     batch.context.day,
   );
   const changed: Partial<PersistenceSnapshot> = {};
+  const mapStores: Array<keyof PersistenceSnapshot> = [
+    "mapData",
+    "hallDefinitions",
+    "hallRouteSettings",
+    "routeSettings",
+    "mapRotationSettings",
+    "mapViewportSettings",
+  ];
   for (const key of keys)
-    if (JSON.stringify(batch.base[key]) !== JSON.stringify(batch.draft[key]))
+    if (JSON.stringify(batch.base[key]) !== JSON.stringify(batch.draft[key])) {
+      for (const event of new Set([
+        ...Object.keys(batch.base[key]),
+        ...Object.keys(batch.draft[key]),
+      ])) {
+        if (
+          semanticSignature(batch.base[key][event]) ===
+          semanticSignature(batch.draft[key][event])
+        )
+          continue;
+        if (
+          batch.base.eventLists[event] !== undefined &&
+          batch.draft.eventLists[event] !== undefined &&
+          latest.eventLists[event] === undefined
+        )
+          throw new MutationTargetMissingError();
+        if (mapStores.includes(key)) {
+          const old = batch.base[key][event] as
+            | Record<string, unknown>
+            | undefined;
+          const desired = batch.draft[key][event] as
+            | Record<string, unknown>
+            | undefined;
+          for (const mapKey of Object.keys(batch.base.mapData[event] ?? {}))
+            if (
+              desired?.[mapKey] !== undefined &&
+              semanticSignature(old?.[mapKey]) !==
+                semanticSignature(desired[mapKey]) &&
+              latest.mapData[event]?.[mapKey] === undefined
+            )
+              throw new MutationTargetMissingError();
+        }
+      }
       Object.assign(changed, {
         [key]: applyChangedFields(
           batch.base[key],
           batch.draft[key],
           projected[key],
+          { requireExistingTargets: true },
         ),
       });
+    }
   return confirmChangedFieldConflicts(
     planProjectedMutation(latest, changed, batch.context),
     changedFieldConflicts(batch.base, batch.draft, projected),
@@ -392,6 +435,7 @@ export function useApplicationSnapshot(
         error instanceof MutationConflictError ||
         ((batch?.retainOnConflict || batch?.retryOnFailure) &&
           !(error instanceof MutationCancelledError) &&
+          !(error instanceof MutationTargetMissingError) &&
           !(error instanceof CommittedStateApplyError))
       ) {
         suspended.current.add(id);

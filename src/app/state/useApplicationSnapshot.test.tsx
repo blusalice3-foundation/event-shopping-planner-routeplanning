@@ -1067,3 +1067,199 @@ it.each([
     h.unmount();
   },
 );
+
+function mapEditHarness() {
+  const h = harness();
+  const map = {
+    maxRow: 6,
+    maxCol: 6,
+    cells: [],
+    mergedCells: [],
+    blocks: [
+      {
+        name: "A",
+        startRow: 1,
+        startCol: 1,
+        endRow: 5,
+        endCol: 5,
+        numberCells: [{ row: 2, col: 2, value: 1 }],
+      },
+    ],
+  };
+  const initial = {
+    eventLists: {
+      event: [purchase],
+      other: [{ ...purchase, remarks: "別イベント" }],
+    },
+    mapData: {
+      event: { "1日目マップ": map, "１日目マップ": structuredClone(map) },
+    },
+    eventConsistency: {
+      event: createEventConsistency(),
+      other: createEventConsistency(),
+    },
+  };
+  Object.assign(h.durable(), initial);
+  act(() => {
+    h.result.current.hydrationSetters.setEventLists(
+      structuredClone(initial.eventLists),
+    );
+    h.result.current.hydrationSetters.setMapData(
+      structuredClone(initial.mapData),
+    );
+    h.result.current.hydrationSetters.setEventConsistency(
+      structuredClone(initial.eventConsistency),
+    );
+  });
+  const edited = structuredClone(initial.mapData);
+  edited.event["1日目マップ"].blocks[0].name = "Ａ";
+  return { ...h, edited };
+}
+
+describe("expired map edits adopt durable removals (R28/R37)", () => {
+  for (const timing of [
+    "before request",
+    "confirmation",
+    "CAS retry",
+  ] as const) {
+    it.each(["map container", "selected map", "event"] as const)(
+      timing + ": never recreates a removed %s or another map",
+      async (removed) => {
+        const h = mapEditHarness();
+        const remove = () => {
+          if (removed === "event") {
+            for (const store of Object.values(h.durable())) delete store.event;
+          } else if (removed === "map container")
+            delete h.durable().mapData.event;
+          else delete h.durable().mapData.event["1日目マップ"];
+          (h.durable().eventLists.other[0] as typeof purchase).remarks =
+            "別タブの最新メモ";
+        };
+        if (timing === "before request") remove();
+        act(() => h.result.current.setters.setMapData(h.edited));
+        if (timing !== "before request") {
+          await waitFor(() =>
+            expect(h.result.current.confirmations).toHaveLength(1),
+          );
+          if (timing === "CAS retry")
+            h.commit.mockImplementationOnce(async () => {
+              remove();
+              throw repeatedConflict();
+            });
+          else remove();
+          await act(async () => {
+            h.result.current.confirm(h.result.current.confirmations[0].token);
+            await h.result.current.coordinator.enqueue(() => undefined);
+          });
+        }
+        await waitFor(() =>
+          expect(h.result.current.failure).toContain(
+            "編集対象が削除されています",
+          ),
+        );
+        expect(h.commit).toHaveBeenCalledTimes(timing === "CAS retry" ? 1 : 0);
+        expect(h.result.current.confirmations).toEqual([]);
+        expect(h.result.current.retryableFailures).toEqual([]);
+        expect(h.result.current.pendingCount).toBe(0);
+        expect(h.result.current.isPending()).toBe(false);
+        expect(h.result.current.raw).toEqual(h.durable());
+        expect(h.result.current.previewRef.current.mapData).toEqual(
+          h.durable().mapData,
+        );
+        expect(await h.result.current.coordinator.readExportSnapshot()).toEqual(
+          h.durable(),
+        );
+        expect(h.result.current.coordinator.generation("event")).toBe(1);
+        expect(h.result.current.coordinator.generation("other")).toBe(0);
+        if (removed === "selected map")
+          expect(Object.keys(h.durable().mapData.event)).toEqual([
+            "１日目マップ",
+          ]);
+        else expect(h.durable().mapData.event).toBeUndefined();
+        h.unmount();
+      },
+    );
+  }
+  it.each(["before request", "confirmation"] as const)(
+    "rejects the first hall definition for a removed map (%s)",
+    async (timing) => {
+      const h = mapEditHarness();
+      let outcome!: Promise<unknown>;
+      if (timing === "before request")
+        delete h.durable().mapData.event["1日目マップ"];
+      act(() => {
+        outcome = h.result.current
+          .commitPatch({
+            hallDefinitions: {
+              event: {
+                "1日目マップ": [
+                  {
+                    id: "hall",
+                    name: "新規ホール",
+                    vertices: [
+                      { row: 1, col: 1 },
+                      { row: 1, col: 5 },
+                      { row: 5, col: 1 },
+                    ],
+                  },
+                ],
+              },
+            },
+          })
+          .catch((error: unknown) => error);
+      });
+      if (timing === "confirmation") {
+        await waitFor(() =>
+          expect(h.result.current.confirmations).toHaveLength(1),
+        );
+        delete h.durable().mapData.event["1日目マップ"];
+        await act(async () => {
+          h.result.current.confirm(h.result.current.confirmations[0].token);
+          await h.result.current.coordinator.enqueue(() => undefined);
+        });
+      }
+      await act(async () => {
+        expect(await outcome).toMatchObject({ name: "MutationTargetMissing" });
+      });
+      expect(h.commit).not.toHaveBeenCalled();
+      expect(h.result.current.raw).toEqual(h.durable());
+      expect(h.durable().hallDefinitions).toEqual({});
+      expect(h.result.current.pendingCount).toBe(0);
+      h.unmount();
+    },
+  );
+  it("expires the removed event's other confirmations and preserves another event's review", async () => {
+    const h = mapEditHarness();
+    act(() => h.result.current.setters.setMapData(h.edited));
+    await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+    const token = h.result.current.confirmations[0].token;
+    for (const event of ["event", "other"]) {
+      act(() => {
+        void h.result.current
+          .request({
+            events: [event],
+            plan: (snapshot) => ({
+              snapshot,
+              confirmation: { title: event, details: [], comparison: event },
+            }),
+          })
+          .catch(() => {});
+      });
+    }
+    await waitFor(() => expect(h.result.current.confirmations).toHaveLength(3));
+    delete h.durable().mapData.event;
+    await act(async () => {
+      h.result.current.confirm(token);
+      await h.result.current.coordinator.enqueue(() => undefined);
+    });
+    expect(
+      h.result.current.confirmations.map((entry) => entry.confirmation.title),
+    ).toEqual(["other"]);
+    expect(h.result.current.pendingCount).toBe(1);
+    expect(h.commit).not.toHaveBeenCalled();
+    await act(() =>
+      h.result.current.cancel(h.result.current.confirmations[0].token),
+    );
+    h.unmount();
+  });
+});

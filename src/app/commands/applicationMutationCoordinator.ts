@@ -62,6 +62,14 @@ export class MutationConflictError extends Error {
     this.name = "MutationConflict";
   }
 }
+export class MutationTargetMissingError extends Error {
+  constructor() {
+    super(
+      "編集対象が削除されています。最新のイベント・マップを選び直して編集を開き直してください。",
+    );
+    this.name = "MutationTargetMissing";
+  }
+}
 export class PendingAcceptedMutationError extends Error {
   constructor() {
     super("未保存で保留中の操作を再試行または取り消してから保存してください。");
@@ -177,6 +185,15 @@ export function createApplicationMutationCoordinator(
     for (const event of events)
       generations.set(event, (generations.get(event) ?? 0) + 1);
   }
+  function expirePending(): void {
+    const expired = [...pending]
+      .filter(
+        ([, value]) => value.generation !== generation(value.intent.events),
+      )
+      .map(([operationId]) => operationId);
+    for (const operationId of expired) pending.delete(operationId);
+    if (expired.length) ports.onExpired?.(expired);
+  }
   async function execute(
     id: string,
     confirmation?: ConfirmationToken,
@@ -221,7 +238,20 @@ export function createApplicationMutationCoordinator(
       const before = operation.confirmation
         ? structuredClone(planning)
         : undefined;
-      const plan = operation.intent.plan(planning, operation.choices);
+      let plan: MutationPlan;
+      try {
+        plan = operation.intent.plan(planning, operation.choices);
+      } catch (error) {
+        if (error instanceof MutationTargetMissingError) {
+          // The other tab's removal is durable. End stale sessions and adopt
+          // that snapshot without writing any part of this proposed edit.
+          pending.delete(id);
+          invalidate(operation.intent.events);
+          expirePending();
+          ports.apply(structuredClone(read.snapshot), operation.intent.events);
+        }
+        throw error;
+      }
       const review =
         plan.confirmation ??
         (operation.confirmation && before
@@ -286,13 +316,7 @@ export function createApplicationMutationCoordinator(
         ports.onApplyFailure?.(failure);
         throw failure;
       }
-      const expired = [...pending]
-        .filter(
-          ([, value]) => value.generation !== generation(value.intent.events),
-        )
-        .map(([operationId]) => operationId);
-      for (const operationId of expired) pending.delete(operationId);
-      if (expired.length) ports.onExpired?.(expired);
+      expirePending();
       return result;
     }
     throw new MutationConflictError();
