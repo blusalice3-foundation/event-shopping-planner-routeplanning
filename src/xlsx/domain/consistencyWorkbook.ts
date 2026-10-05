@@ -98,12 +98,8 @@ function pendingIncluded(
   R: boolean,
 ): boolean {
   if (!R) return false;
-  if (
-    pending.reason === "ambiguous-source" ||
-    pending.reason === "ambiguous-day" ||
-    pending.sourceDayKey === null
-  )
-    return L && M;
+  // An unresolved day still has known dependencies when its source is known.
+  if (pending.reason === "ambiguous-source") return L && M;
   return (
     (!pending.sourceMapKey || M) &&
     (!(

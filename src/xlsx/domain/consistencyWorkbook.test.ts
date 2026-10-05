@@ -19,6 +19,7 @@ import {
   validateWorkbookManifest,
 } from "./consistencyWorkbook";
 import { exportToXlsx, importFromXlsx } from "../engine/eventWorkbookEngine";
+import { migrateLegacyConsistency } from "../../features/consistency/domain/migration";
 const source = (): PersistenceSnapshot => {
   const simple = {
     kind: "simple" as const,
@@ -273,6 +274,159 @@ describe("full workbook option matrix", () => {
         includeItems: false,
       }),
     ).toThrow("必須"));
+});
+describe("pending workbook dependencies", () => {
+  for (const L of [false, true])
+    for (const M of [false, true])
+      for (const R of [false, true]) {
+        it(`preserves undated legacy mapless halls with layout=${L} maps=${M} routes=${R}`, async () => {
+          const old = source();
+          old.eventLists.event.push({
+            ...(old.eventLists.event[0] as ShoppingItem),
+            id: "B",
+            eventDate: "2日目",
+          });
+          old.mapData = {};
+          old.mapRotationSettings = {};
+          old.hallDefinitions = {
+            event: {
+              __mapless__: [
+                {
+                  id: "old",
+                  name: "旧簡易ホール",
+                  vertices: [],
+                  blockNames: ["A"],
+                },
+              ],
+            },
+          };
+          const { eventConsistency: _unused, ...legacy } = old;
+          const original = migrateLegacyConsistency(legacy).data;
+          const pending = original.eventConsistency.event.legacyPending;
+          expect(pending).toEqual([
+            expect.objectContaining({
+              sourceKey: "__mapless__",
+              sourceDayKey: null,
+              sourceMapKey: null,
+              reason: "ambiguous-day",
+              payload: expect.objectContaining({ kind: "hall-definitions" }),
+            }),
+          ]);
+          const before = structuredClone(original);
+          const selected = selectWorkbookContent(
+            original,
+            "event",
+            options(L, M, R),
+          );
+          const expected = R ? pending : [];
+          expect(
+            selected.snapshot.eventConsistency.event.legacyPending,
+          ).toEqual(expected);
+          expect(selected.manifest.sections.legacyPending).toEqual({
+            included: R,
+            count: expected.length,
+          });
+          expect(
+            selected.manifest.omissions.filter(
+              (entry) => entry.section === "legacyPending",
+            ),
+          ).toHaveLength(R ? 0 : 1);
+          const blob = await exportToXlsx(
+            "event",
+            original.eventLists.event as ShoppingItem[],
+            options(L, M, R),
+            {
+              ...original,
+              metadata: original.eventMetadata.event,
+            } as EventWorkbookAdditionalData,
+          );
+          const restored = await importFromXlsx(
+            new File([blob], "pending.xlsx"),
+          );
+          expect(restored.errors).toEqual([]);
+          expect(restored.success).toBe(true);
+          expect(restored.eventConsistency?.legacyPending).toEqual(expected);
+          expect(restored.contentManifest).toEqual(selected.manifest);
+          expect(original).toEqual(before);
+        });
+        it(`requires only actual pending dependencies with layout=${L} maps=${M} routes=${R}`, () => {
+          const original = source();
+          const maplessHalls = original.eventConsistency.event.legacyPending[0];
+          const mappedHalls = {
+            ...maplessHalls,
+            sourceKey: "１日目マップ",
+            sourceMapKey: "１日目マップ",
+          };
+          const maplessVisits = {
+            ...maplessHalls,
+            payload: {
+              kind: "hall-route-settings" as const,
+              settings: { hallOrder: ["pending"], hallVisitLists: [] },
+            },
+          };
+          const mappedVisits = {
+            ...maplessVisits,
+            sourceKey: mappedHalls.sourceKey,
+            sourceMapKey: mappedHalls.sourceMapKey,
+          };
+          const route = {
+            ...mappedHalls,
+            payload: {
+              kind: "route-settings" as const,
+              settings: { isRouteVisible: true, visitOrder: [] },
+            },
+          };
+          const manual = {
+            ...maplessHalls,
+            sourceKey: "eventLists",
+            sourceDayKey: "1日目",
+            payload: {
+              kind: "manual-hall" as const,
+              itemId: "A",
+              manualHallId: "hall",
+            },
+          };
+          const unknownSource = {
+            ...manual,
+            reason: "ambiguous-source" as const,
+          };
+          original.eventConsistency.event.legacyPending = [
+            maplessHalls,
+            mappedHalls,
+            maplessVisits,
+            mappedVisits,
+            route,
+            manual,
+            unknownSource,
+          ];
+          const expected = R
+            ? [
+                maplessHalls,
+                ...(M ? [mappedHalls] : []),
+                ...(L ? [maplessVisits] : []),
+                ...(L && M ? [mappedVisits, route] : []),
+                manual,
+                ...(L && M ? [unknownSource] : []),
+              ]
+            : [];
+          const selected = selectWorkbookContent(
+            original,
+            "event",
+            options(L, M, R),
+          );
+          expect(
+            selected.snapshot.eventConsistency.event.legacyPending,
+          ).toEqual(expected);
+          expect(selected.manifest.sections.legacyPending.count).toBe(
+            expected.length,
+          );
+          expect(
+            selected.manifest.omissions.find(
+              (entry) => entry.section === "legacyPending",
+            )?.count ?? 0,
+          ).toBe(7 - expected.length);
+        });
+      }
 });
 describe("related settings and manifest corruption", () => {
   it("splits large Japanese and emoji records without breaking surrogate pairs", () => {

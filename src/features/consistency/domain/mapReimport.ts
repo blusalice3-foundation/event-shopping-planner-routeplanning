@@ -12,6 +12,7 @@ import type {
 import type { ShoppingItem } from "../../../types/item";
 import {
   collectEventDays,
+  ensureDayConsistency,
   getDayConsistency,
   normalizeMapDay,
   resolveDayMap,
@@ -86,7 +87,12 @@ export function planMapReimport(
     details.push(
       `更新する実在マップ: ${key} / 依存する日付: ${dependentDays.join("、")}`,
     );
-    maps[key] = structuredClone(target.mapData);
+    ensureDayConsistency(event, target.eventDate, [
+      next.executeModeItems[eventName],
+      next.dayModes[eventName],
+    ]).selectedMapKey = key;
+    // Worker DTOs retain optional undefined fields; persistence omits them.
+    maps[key] = JSON.parse(JSON.stringify(target.mapData)) as DayMapData;
     delete definitions[key];
     const angle = normalizeRotationAngle(target.initialAngle);
     rotations[key] = {

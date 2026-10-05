@@ -1,3 +1,4 @@
+import ExcelJS from "exceljs";
 import { createAppBackup } from "../../src/utils/appBackup";
 import { migrateLegacyConsistency } from "../../src/features/consistency/domain/migration";
 import type { EventConsistencyStore } from "../../src/types/consistency";
@@ -43,7 +44,11 @@ const backup = (items = [item("1"), item("2", "2日目")]) => ({
     hallRouteSettings: {},
   },
 });
-async function restore(page: Page, data: unknown = backup()) {
+async function restore(
+  page: Page,
+  data: unknown = backup(),
+  reviewTitle?: string,
+) {
   await page.goto("/");
   await page
     .locator('input[aria-label="バックアップファイルを選択"]')
@@ -58,6 +63,14 @@ async function restore(page: Page, data: unknown = backup()) {
   await expect(dialog).toBeVisible();
   await dialog.getByRole("radio", { name: /同名で置換/ }).check();
   await dialog.getByRole("button", { name: "置換して復元" }).click();
+  if (reviewTitle) {
+    const review = page.getByRole("dialog", { name: reviewTitle, exact: true });
+    await expect(review).toBeVisible();
+    await review
+      .getByRole("button", { name: "確認して保存", exact: true })
+      .click();
+    await expect(review).toBeHidden();
+  }
   await expect(dialog).toBeHidden();
   await expect(
     page.getByRole("heading", { name: eventName, exact: true }),
@@ -86,6 +99,45 @@ async function stored(page: Page, store: string, key = "data") {
     },
     { name: store, key },
   );
+}
+async function storedMaps(page: Page) {
+  return page.evaluate(async () => {
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("EventShoppingPlannerDB");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      return await new Promise<Record<string, Record<string, unknown>>>(
+        (resolve, reject) => {
+          const maps: Record<string, Record<string, unknown>> = {};
+          const request = database
+            .transaction("mapData", "readonly")
+            .objectStore("mapData")
+            .openCursor();
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => {
+            const cursor = request.result;
+            if (!cursor) {
+              resolve(maps);
+              return;
+            }
+            const key = String(cursor.key);
+            if (key.startsWith("mapData:")) {
+              const [event, map] = JSON.parse(key.slice("mapData:".length)) as [
+                string,
+                string,
+              ];
+              (maps[event] ??= {})[map] = cursor.value;
+            }
+            cursor.continue();
+          };
+        },
+      );
+    } finally {
+      database.close();
+    }
+  });
 }
 test("legacy JSON restores atomically and target-day long press persists exactly once", async ({
   page,
@@ -1652,4 +1704,184 @@ test("a standalone execute reorder writes only its store and survives reload", a
   expect(await stored(page, "executeModeItems")).toMatchObject({
     [eventName]: { "1日目": ["2", "1"] },
   });
+});
+
+test("full Excel keeps undated mapless legacy halls through Worker export and restore", async ({
+  page,
+}) => {
+  const source = backup();
+  source.data.hallDefinitions = {
+    [eventName]: {
+      __mapless__: [
+        { id: "old", name: "旧簡易ホール", vertices: [], blockNames: ["A"] },
+      ],
+    },
+  };
+  await restore(page, source, `「${eventName}」の復元内容を確認`);
+  const before = (await stored(
+    page,
+    "eventConsistency",
+  )) as EventConsistencyStore;
+  expect(before[eventName].legacyPending).toHaveLength(1);
+  await page.getByRole("button", { name: "イベント一覧", exact: true }).click();
+  await page.getByRole("button", { name: "メニュー", exact: true }).click();
+  await page.getByRole("button", { name: /Excel形式で出力/ }).click();
+  await expect(
+    page.getByRole("checkbox", {
+      name: "配置情報（実行列・候補リストの順序）",
+    }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("checkbox", { name: "マップ・表示位置・ブロック検出設定" }),
+  ).not.toBeChecked();
+  await expect(
+    page.getByRole("checkbox", { name: "ホール定義・所属・巡回設定" }),
+  ).toBeChecked();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "エクスポート", exact: true }).click();
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  if (!stream) throw new Error("Excel download stream is missing");
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  await page.locator('input[aria-label="Excelファイルを選択"]').setInputFiles({
+    name: "pending.xlsx",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: Buffer.concat(chunks),
+  });
+  const dialog = page.getByRole("dialog", {
+    name: "バックアップからイベントを復元",
+  });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("radio", { name: /同名で置換/ }).check();
+  await dialog
+    .getByRole("button", { name: "置換して復元", exact: true })
+    .click();
+  const review = page.getByRole("dialog", {
+    name: `「${eventName}」の復元内容を確認`,
+    exact: true,
+  });
+  await expect(review).toBeVisible();
+  await review
+    .getByRole("button", { name: "確認して保存", exact: true })
+    .click();
+  await expect(review).toBeHidden();
+  await expect(dialog).toBeHidden();
+  await expect
+    .poll(() => stored(page, "eventConsistency"))
+    .toMatchObject({
+      [eventName]: { legacyPending: before[eventName].legacyPending },
+    });
+  await page.reload();
+  await expect(
+    page.locator('input[aria-label="バックアップファイルを選択"]'),
+  ).toBeAttached();
+  const after = (await stored(
+    page,
+    "eventConsistency",
+  )) as EventConsistencyStore;
+  expect(after[eventName].legacyPending).toEqual(
+    before[eventName].legacyPending,
+  );
+});
+
+test("map reimport saves the chosen actual map and displays it after reload", async ({
+  page,
+}) => {
+  const source = mapBackup();
+  for (const store of [
+    source.data.mapData,
+    source.data.hallDefinitions,
+    source.data.hallRouteSettings,
+  ]) {
+    const values = store[eventName] as Record<string, unknown>;
+    values["1 日目マップ"] = values["1日目マップ"];
+    delete values["1日目マップ"];
+  }
+  await restore(page, source);
+  const selector = page.getByRole("combobox", { name: "利用するマップ" });
+  await expect(selector).toHaveValue("");
+  const before = (await stored(
+    page,
+    "eventConsistency",
+  )) as EventConsistencyStore;
+  const mapsBefore = (await storedMaps(page)) as Record<
+    string,
+    Record<string, unknown>
+  >;
+  const itemsBefore = await stored(page, "eventLists");
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("1日目");
+  const border = { style: "medium" as const, color: { argb: "FFFF0000" } };
+  sheet.getCell("A1").value = "A";
+  sheet.getCell("A1").border = { top: border, bottom: border, left: border };
+  sheet.getCell("B1").value = 1;
+  sheet.getCell("B1").border = { top: border, bottom: border, right: border };
+  await page.getByRole("button", { name: "イベント一覧", exact: true }).click();
+  await page.getByRole("button", { name: "メニュー", exact: true }).click();
+  const chooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: /マップデータ取り込み/ }).click();
+  await (
+    await chooserPromise
+  ).setFiles({
+    name: "map.xlsx",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
+  });
+  await expect(
+    page.getByRole("heading", { name: "📋 マップデータ取り込み" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "取り込む", exact: true }).click();
+  const targetDialog = page.getByRole("dialog", {
+    name: "マップを入れ替える前の確認",
+  });
+  await expect(targetDialog).toBeVisible();
+  await targetDialog
+    .getByRole("combobox", { name: "1日目の更新先マップ" })
+    .selectOption("1 日目マップ");
+  await targetDialog
+    .getByRole("button", { name: "影響範囲を確認する", exact: true })
+    .click();
+  const confirmation = page.getByRole("dialog", {
+    name: "マップ再取り込みの影響を確認",
+  });
+  await expect(confirmation).toBeVisible();
+  expect(await stored(page, "eventConsistency")).toEqual(before);
+  expect(await storedMaps(page)).toEqual(mapsBefore);
+  await confirmation
+    .getByRole("button", { name: "確認して保存", exact: true })
+    .click();
+  await expect(confirmation).toBeHidden();
+  await expect(selector).toHaveValue("1 日目マップ");
+  await expect
+    .poll(() => stored(page, "eventConsistency"))
+    .toMatchObject({
+      [eventName]: { days: { "1日目": { selectedMapKey: "1 日目マップ" } } },
+    });
+  const mapsAfter = (await storedMaps(page)) as Record<
+    string,
+    Record<string, unknown>
+  >;
+  expect(Object.keys(mapsAfter[eventName]).sort()).toEqual(
+    Object.keys(mapsBefore[eventName]).sort(),
+  );
+  expect(mapsAfter[eventName]["１日目マップ"]).toEqual(
+    mapsBefore[eventName]["１日目マップ"],
+  );
+  expect(mapsAfter[eventName]["1 日目マップ"]).not.toEqual(
+    mapsBefore[eventName]["1 日目マップ"],
+  );
+  expect(await stored(page, "eventLists")).toEqual(itemsBefore);
+  await page.reload();
+  await expect(
+    page.locator('input[aria-label="バックアップファイルを選択"]'),
+  ).toBeAttached();
+  await page.getByText(eventName, { exact: true }).click();
+  await expect(selector).toHaveValue("1 日目マップ");
+  await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+  await expect(
+    page.getByText("利用するマップを選択してください。", { exact: true }),
+  ).toHaveCount(0);
 });

@@ -530,6 +530,143 @@ describe("migration review and map reimport", () => {
       remarks: "購入中に更新",
     });
   });
+  it.each(["1日目", " 1日目　"])(
+    "saves the reimport selection in the existing day key %s without changing another day's selection",
+    (dayKey) => {
+      const source = legacy();
+      source.eventLists.event.push(item("B", { eventDate: "１日目" }));
+      source.executeModeItems.event = { [dayKey]: ["A"], "１日目": ["B"] };
+      source.mapData.event = { "１日目マップ": map(), "1 日目マップ": map() };
+      source.hallDefinitions.event = {};
+      const data = createAppBackup(source as never).data;
+      data.eventConsistency.event.days[dayKey].selectedMapKey = "１日目マップ";
+      data.eventConsistency.event.days["１日目"].selectedMapKey =
+        "１日目マップ";
+      const before = structuredClone(data);
+      const updatedMap = { ...map(), maxRow: 10 };
+      const plan = planMapReimport(
+        data,
+        "event",
+        [
+          {
+            eventDate: "1日目",
+            mapTabName: "1日目マップ",
+            mapData: updatedMap,
+            initialAngle: 90,
+          },
+        ],
+        {
+          preserveMaplessHalls: true,
+          targetMapKeys: { "1日目": "1 日目マップ" },
+        },
+        DEFAULT_BLOCK_DETECTION_SETTINGS,
+      );
+      expect(Object.keys(plan.snapshot.eventConsistency.event.days)).toEqual(
+        Object.keys(data.eventConsistency.event.days),
+      );
+      expect(
+        plan.snapshot.eventConsistency.event.days[dayKey].selectedMapKey,
+      ).toBe("1 日目マップ");
+      expect(
+        plan.snapshot.eventConsistency.event.days["１日目"].selectedMapKey,
+      ).toBe("１日目マップ");
+      expect(
+        plan.snapshot.eventConsistency.event.days["１日目"].maps[
+          "１日目マップ"
+        ],
+      ).toEqual(
+        data.eventConsistency.event.days["１日目"].maps["１日目マップ"],
+      );
+      expect(plan.snapshot.mapData.event["1 日目マップ"]).toEqual(updatedMap);
+      expect(plan.snapshot.mapData.event["１日目マップ"]).toEqual(
+        data.mapData.event["１日目マップ"],
+      );
+      expect(plan.snapshot.executeModeItems).toEqual(data.executeModeItems);
+      expect(plan.snapshot.eventLists).toEqual(data.eventLists);
+      expect(plan.confirmation?.comparison).not.toBeUndefined();
+      expect([
+        ...validateSnapshotStructure(plan.snapshot),
+        ...validateSnapshotReferences(plan.snapshot),
+      ]).toEqual([]);
+      expect(data).toEqual(before);
+    },
+  );
+  it("saves the new actual map key when no previous map exists", () => {
+    const source = legacy();
+    source.mapData = {};
+    source.hallDefinitions = {};
+    const data = createAppBackup(source as never).data;
+    const plan = planMapReimport(
+      data,
+      "event",
+      [
+        {
+          eventDate: "1日目",
+          mapTabName: "１ 日目マップ",
+          mapData: map(),
+          initialAngle: 0,
+        },
+      ],
+      { preserveMaplessHalls: true },
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(
+      plan.snapshot.eventConsistency.event.days["1日目"].selectedMapKey,
+    ).toBe("１ 日目マップ");
+    expect(
+      resolveDayMap(
+        plan.snapshot.mapData.event as Record<string, DayMapData>,
+        "1日目",
+        plan.snapshot.eventConsistency.event.days["1日目"].selectedMapKey,
+      ),
+    ).toMatchObject({ status: "resolved", key: "１ 日目マップ" });
+    expect(data.mapData).toEqual({});
+  });
+  it("accepts Worker map optionals without losing drawing data during persistence", () => {
+    const data = createAppBackup(legacy() as never).data;
+    const imported = { ...map(), maxRow: 50, maxCol: 50 };
+    imported.cells = [
+      {
+        row: 26,
+        col: 27,
+        value: 1,
+        backgroundColor: null,
+        borders: { top: null, right: null, bottom: null, left: null },
+        mergeParent: undefined,
+      },
+    ];
+    imported.blocks[0].cellGroups = undefined;
+    const before = structuredClone(imported);
+    const plan = planMapReimport(
+      data,
+      "event",
+      [
+        {
+          eventDate: "1日目",
+          mapTabName: "1日目マップ",
+          mapData: imported,
+          initialAngle: 0,
+        },
+      ],
+      { preserveMaplessHalls: true },
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect([
+      ...validateSnapshotStructure(plan.snapshot),
+      ...validateSnapshotReferences(plan.snapshot),
+    ]).toEqual([]);
+    expect(plan.snapshot.mapData.event["1日目マップ"]).toMatchObject({
+      cells: [{ row: 26, col: 27, value: 1 }],
+      blocks: [{ name: "A", numberCells: imported.blocks[0].numberCells }],
+    });
+    expect(imported).toEqual(before);
+    const restored = parseAppBackup(
+      serializeAppBackup(createAppBackup(plan.snapshot)),
+    );
+    expect(restored.ok).toBe(true);
+    if (restored.ok)
+      expect(restored.data.mapData.event).toEqual(plan.snapshot.mapData.event);
+  });
   it("requires an explicit target when multiple real map keys match", () => {
     const source = legacy();
     source.mapData.event = { "１日目マップ": map(), "1 日目マップ": map() };
@@ -569,6 +706,25 @@ describe("migration review and map reimport", () => {
     expect(
       plan.snapshot.mapRotationSettings.event["1 日目マップ"],
     ).toBeDefined();
+    expect(
+      plan.snapshot.eventConsistency.event.days["1日目"].selectedMapKey,
+    ).toBe("1 日目マップ");
+    expect(
+      resolveDayMap(
+        plan.snapshot.mapData.event as Record<string, DayMapData>,
+        "1日目",
+        plan.snapshot.eventConsistency.event.days["1日目"].selectedMapKey,
+      ),
+    ).toMatchObject({ status: "resolved", key: "1 日目マップ" });
+    const restored = parseAppBackup(
+      serializeAppBackup(createAppBackup(plan.snapshot)),
+    );
+    expect(restored.ok).toBe(true);
+    if (!restored.ok) throw new Error(restored.errors.join("\n"));
+    expect(
+      restored.data.eventConsistency.event.days["1日目"].selectedMapKey,
+    ).toBe("1 日目マップ");
+    expect(data.eventConsistency.event.days["1日目"].selectedMapKey).toBeNull();
   });
 });
 
