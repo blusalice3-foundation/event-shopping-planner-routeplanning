@@ -22,6 +22,7 @@ import {
   removeResolvedManualHallPending,
 } from "./membership";
 import { planProjectedMutation } from "./mutations";
+import { reconcileConsistencyReferences } from "./references";
 export interface LegacyResolutionChoice {
   day: string;
   mapKey: string | null;
@@ -186,9 +187,10 @@ export function planLegacyResolution(
   } else {
     if (choice.mapKey === null)
       throw new Error("経路の保存先マップを選択してください。");
+    const route = entry.payload.settings;
     target.route = {
-      ...entry.payload.settings,
-      visitOrder: entry.payload.settings.visitOrder
+      ...route,
+      visitOrder: route.visitOrder
         .map((point) => ({
           ...point,
           itemIds: point.itemIds.filter((id) =>
@@ -197,22 +199,32 @@ export function planLegacyResolution(
             ),
           ),
         }))
-        .filter((point) => point.itemIds.length > 0),
+        .filter(
+          (point, index) =>
+            point.itemIds.length > 0 ||
+            route.visitOrder[index].itemIds.length === 0,
+        ),
     };
   }
   event.legacyPending = event.legacyPending.filter(
     (pending) => legacyPendingIdentity(pending) !== identity,
   );
-  const plan = planProjectedMutation(
-    source,
-    {
-      eventConsistency: next.eventConsistency,
-      ...(entry.payload.kind === "hall-definitions"
-        ? { hallDefinitions: next.hallDefinitions }
-        : {}),
-    },
-    { eventName: name, day: choice.day, confirm: false },
-  );
+  // Choosing the destination of retained visit settings must keep their saved
+  // positions, including itemless points. No membership or order edit occurred.
+  const plan =
+    entry.payload.kind === "hall-route-settings" ||
+    entry.payload.kind === "route-settings"
+      ? { snapshot: reconcileConsistencyReferences(next).data }
+      : planProjectedMutation(
+          source,
+          {
+            eventConsistency: next.eventConsistency,
+            ...(entry.payload.kind === "hall-definitions"
+              ? { hallDefinitions: next.hallDefinitions }
+              : {}),
+          },
+          { eventName: name, day: choice.day, confirm: false },
+        );
   return {
     snapshot: plan.snapshot,
     confirmation: {

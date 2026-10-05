@@ -479,6 +479,60 @@ describe("long-press mode changes finish before navigation", () => {
       expect(h.ports.navigation.navigateToTab).not.toHaveBeenCalled();
     },
   );
+  it("commits confirm and the target mode together before closing the source panel", async () => {
+    const h = harness();
+    h.open();
+    await h.update(["A", "B", "C"]);
+    act(() => h.result.current.requestDayModeChange("2日目"));
+    h.rerender();
+    vi.mocked(h.ports.requestMutation).mockClear();
+    await act(() => h.result.current.confirmPendingTransition());
+    expect(h.ports.requestMutation).toHaveBeenCalledOnce();
+    expect(h.ids()).toEqual(["A", "B", "C"]);
+    expect(h.snapshot().dayModes.event).toEqual({ "2日目": "execute" });
+    expect(h.state.originalOrder).toEqual(["A", "B", "C"]);
+    expect(h.ports.navigation.navigateToTab).toHaveBeenCalledExactlyOnceWith(
+      "2日目",
+    );
+  });
+
+  it.each(["cancelled", "source merge save failed"])(
+    "keeps the target mode unchanged when confirm's source merge is %s",
+    async (reason) => {
+      const h = harness();
+      h.open();
+      await h.update(["C", "A", "B"]);
+      h.mutate((snapshot) => {
+        snapshot.dayModes.event = {
+          "1日目": "edit",
+          [DAY]: "execute",
+          "2日目": "edit",
+        };
+      });
+      act(() => h.result.current.requestDayModeChange("2日目"));
+      h.rerender();
+      const before = structuredClone(h.snapshot());
+      const implementation = vi
+        .mocked(h.ports.requestMutation)
+        .getMockImplementation()!;
+      vi.mocked(h.ports.requestMutation).mockClear();
+      vi.mocked(h.ports.requestMutation).mockImplementation(async (intent) => {
+        const plan = intent.plan(structuredClone(h.snapshot()));
+        if (plan.confirmation) throw new Error(reason);
+        return implementation(intent);
+      });
+      await expect(
+        act(() => h.result.current.confirmPendingTransition()),
+      ).rejects.toThrow(reason);
+      expect(h.ports.requestMutation).toHaveBeenCalledOnce();
+      expect(h.snapshot()).toEqual(before);
+      expect(h.state.originalOrder).toEqual(["B", "A", "C"]);
+      expect(h.state.hasUnsavedChanges).toBe(true);
+      expect(h.state.confirmDialogOpen).toBe(true);
+      expect(h.result.current.historyVersion).toBe(0);
+      expect(h.ports.navigation.navigateToTab).not.toHaveBeenCalled();
+    },
+  );
   it("commits discard and the target mode together before closing the source panel", async () => {
     const h = harness();
     h.open();
@@ -561,5 +615,236 @@ it("merges settings-only duplicate source days before combining discard with a s
   expect(h.ports.requestMutation).toHaveBeenCalledOnce();
   expect(h.ports.navigation.navigateToTab).toHaveBeenCalledExactlyOnceWith(
     "1日目",
+  );
+});
+
+describe("visit sessions wait for duplicate-day review", () => {
+  function holdMutation(h: ReturnType<typeof harness>) {
+    let intent!: Parameters<MapVisitListCommandPorts["requestMutation"]>[0];
+    let resolve!: (snapshot: PersistenceSnapshot) => void;
+    let reject!: (reason: Error) => void;
+    const pending = new Promise<PersistenceSnapshot>((accept, cancel) => {
+      resolve = accept;
+      reject = cancel;
+    });
+    vi.mocked(h.ports.requestMutation).mockImplementationOnce((value) => {
+      intent = value;
+      return pending;
+    });
+    return {
+      plan: (choices?: Record<string, string>) =>
+        intent.plan(structuredClone(h.snapshot()), choices),
+      accept: (choices?: Record<string, string>) => {
+        const plan = intent.plan(structuredClone(h.snapshot()), choices);
+        h.mutate((snapshot) => Object.assign(snapshot, plan.snapshot));
+        resolve(h.snapshot());
+      },
+      reject,
+    };
+  }
+
+  it("reviews duplicate execution keys before opening and uses the selected destination", async () => {
+    const h = harness();
+    h.mutate((snapshot) => {
+      snapshot.executeModeItems.event["1日目"] = ["D", "A"];
+    });
+    const before = structuredClone(h.snapshot());
+    const review = holdMutation(h);
+    h.open();
+    expect(h.actions.openPanel).not.toHaveBeenCalled();
+    const plan = review.plan();
+    expect(plan.confirmation?.title).toContain("保存先を統合");
+    expect(h.snapshot()).toEqual(before);
+    await act(async () =>
+      review.accept({ destination: DAY, executeOrder: DAY }),
+    );
+    expect(h.state.originalOrder).toEqual(["B", "A", "C", "D"]);
+    await h.update(["D", "C", "A", "B"]);
+    await act(() => h.result.current.discardChanges());
+    expect(h.ids()).toEqual(["B", "A", "C", "D"]);
+    expect(h.snapshot().executeModeItems.event["1日目"]).toBeUndefined();
+    expect(h.snapshot().executeModeItems.event["2日目"]).toEqual(["E"]);
+  });
+
+  it.each(["cancelled", "save failed"])(
+    "keeps duplicate keys and the panel closed when review is %s",
+    async (reason) => {
+      const h = harness();
+      h.mutate((snapshot) => {
+        snapshot.executeModeItems.event["1日目"] = ["D", "A"];
+      });
+      const before = structuredClone(h.snapshot());
+      const review = holdMutation(h);
+      h.open();
+      expect(review.plan().confirmation).toBeDefined();
+      await act(async () => review.reject(new Error(reason)));
+      expect(h.snapshot()).toEqual(before);
+      expect(h.actions.openPanel).not.toHaveBeenCalled();
+      expect(h.state.panelOpen).toBe(false);
+      // A later attempt can establish a new session.
+      h.open();
+      await act(async () => {});
+      expect(h.state.panelOpen).toBe(true);
+    },
+  );
+
+  it.each(["day", "event generation", "navigation"])(
+    "does not open a delayed session after %s changes",
+    async (change) => {
+      const h = harness();
+      h.mutate((snapshot) => {
+        snapshot.executeModeItems.event["1日目"] = ["D", "A"];
+      });
+      const review = holdMutation(h);
+      h.open();
+      act(() => {
+        if (change === "day")
+          Object.assign(h.state, { activeEventDate: "2日目" });
+        else if (change === "event generation")
+          Object.assign(h.state, { generation: 1 });
+        else h.result.current.requestTabChange("eventList");
+      });
+      h.rerender();
+      expect(() => review.plan()).toThrow("訪問リストの操作は終了しています。");
+      await act(async () => review.reject(new Error("expired")));
+      expect(h.actions.openPanel).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["reorder", "discard", "save"])(
+    "reviews settings-only duplicates introduced while open before %s",
+    async (operation) => {
+      const h = harness();
+      h.open();
+      await h.update(["C", "A", "B"]);
+      h.mutate((snapshot) => {
+        snapshot.dayModes.event = {
+          "1日目": "edit",
+          [DAY]: "execute",
+          "2日目": "focus",
+        };
+      });
+      const before = structuredClone(h.snapshot());
+      const review = holdMutation(h);
+      let pending!: Promise<void>;
+      act(() => {
+        pending =
+          operation === "reorder"
+            ? h.result.current.updateOrder([item("A"), item("B"), item("C")])
+            : operation === "discard"
+              ? h.result.current.discardChanges()
+              : h.result.current.saveChanges();
+      });
+      await act(async () => {});
+      const plan = review.plan({ destination: "1日目", mode: "execute" });
+      expect(plan.confirmation?.title).toContain("保存先を統合");
+      expect(h.snapshot()).toEqual(before);
+      await act(async () => {
+        review.accept({ destination: "1日目", mode: "execute" });
+        await pending;
+      });
+      expect(h.snapshot().dayModes.event).toEqual({
+        "1日目": "execute",
+        "2日目": "focus",
+      });
+      expect(h.result.current.historyVersion).toBe(1);
+      expect(h.snapshot().executeModeItems.event[DAY]).toBeUndefined();
+      await act(() => h.result.current.discardChanges());
+      expect(h.snapshot().executeModeItems.event[DAY]).toBeUndefined();
+      expect(h.snapshot().executeModeItems.event["2日目"]).toEqual(["E"]);
+    },
+  );
+
+  it.each(["confirm", "discard"] as const)(
+    "keeps source and target merge choices separate during %s and mode navigation",
+    async (operation) => {
+      const h = harness();
+      h.open();
+      await h.update(["C", "A", "B"]);
+      h.mutate((snapshot) => {
+        snapshot.dayModes.event = {
+          "1日目": "edit",
+          [DAY]: "execute",
+          "2日目": "edit",
+          " 2日目　": "execute",
+        };
+      });
+      act(() => h.result.current.requestDayModeChange("2日目"));
+      h.rerender();
+      const review = holdMutation(h);
+      let pending!: Promise<void>;
+      act(() => {
+        pending =
+          operation === "discard"
+            ? h.result.current.discardPendingTransition()
+            : h.result.current.confirmPendingTransition();
+      });
+      await act(async () => {});
+      const choices = {
+        destination: " 2日目　",
+        mode: "execute",
+        "source:destination": DAY,
+        "source:mode": "edit",
+      };
+      const plan = review.plan(choices);
+      expect(plan.confirmation?.choices?.map((choice) => choice.id)).toEqual(
+        expect.arrayContaining([
+          "destination",
+          "source:destination",
+          "mode",
+          "source:mode",
+        ]),
+      );
+      expect(plan.snapshot.dayModes.event).toEqual({
+        [DAY]: "edit",
+        " 2日目　": "execute",
+      });
+      expect(h.ids()).toEqual(["C", "A", "B"]);
+      await act(async () => {
+        review.accept(choices);
+        await pending;
+      });
+      expect(h.ids()).toEqual(
+        operation === "discard" ? ["B", "A", "C"] : ["C", "A", "B"],
+      );
+      expect(h.snapshot().executeModeItems.event[" 2日目　"]).toEqual(["E"]);
+      expect(h.ports.navigation.navigateToTab).toHaveBeenCalledExactlyOnceWith(
+        "2日目",
+      );
+    },
+  );
+
+  it.each(["reorder", "discard", "save"])(
+    "preserves history and the cancel baseline when %s merge review fails",
+    async (operation) => {
+      const h = harness();
+      h.open();
+      await h.update(["C", "A", "B"]);
+      h.mutate((snapshot) => {
+        snapshot.dayModes.event = { "1日目": "edit", [DAY]: "execute" };
+      });
+      const before = structuredClone(h.snapshot());
+      const review = holdMutation(h);
+      let pending!: Promise<void>;
+      act(() => {
+        pending =
+          operation === "reorder"
+            ? h.result.current.updateOrder([item("A"), item("B"), item("C")])
+            : operation === "discard"
+              ? h.result.current.discardChanges()
+              : h.result.current.saveChanges();
+      });
+      const rejected = expect(pending).rejects.toThrow("abort");
+      await act(async () => {});
+      expect(review.plan().confirmation).toBeDefined();
+      await act(async () => {
+        review.reject(new Error("abort"));
+        await rejected;
+      });
+      expect(h.snapshot()).toEqual(before);
+      expect(h.state.originalOrder).toEqual(["B", "A", "C"]);
+      expect(h.state.hasUnsavedChanges).toBe(true);
+      expect(h.result.current.historyVersion).toBe(0);
+    },
   );
 });

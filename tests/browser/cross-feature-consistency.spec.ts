@@ -3,6 +3,16 @@ import { createAppBackup } from "../../src/utils/appBackup";
 import { migrateLegacyConsistency } from "../../src/features/consistency/domain/migration";
 import type { EventConsistencyStore } from "../../src/types/consistency";
 import { expect, test, type Page } from "@playwright/test";
+import {
+  createNextPersistenceCheckpoint,
+  prepareMetadataForPayload,
+  type StoredPersistenceMetadata,
+} from "../../src/persistence/internal/persistenceCore";
+import {
+  createPersistenceMetadataKey,
+  createPersistenceCheckpointKey,
+  type PersistenceCheckpoint,
+} from "../../src/utils/persistenceResilience";
 
 const eventName = "整合性検証";
 const item = (id: string, eventDate = "1日目") => ({
@@ -1315,6 +1325,70 @@ test.describe("spreadsheet and save-conflict connections", () => {
       };
     });
   }
+
+  for (const failure of ["cancel", "abort"] as const) {
+    test(
+      "confirming a long press preserves the target mode when source-day merge " +
+        failure +
+        " occurs",
+      async ({ page }) => {
+        await restore(page, mapBackup());
+        await reorderVisitList(page);
+        await addDurableDuplicateMode(page);
+        const beforeExecute = await stored(page, "executeModeItems");
+        const beforeModes = await stored(page, "dayModes");
+        const beforeConsistency = await stored(page, "eventConsistency");
+        await page.getByRole("button", { name: /^2日目/ }).hover();
+        await page.mouse.down();
+        const transition = page.getByRole("heading", {
+          name: "変更を保存しますか？",
+        });
+        await expect(transition).toBeVisible();
+        await page.mouse.up();
+        await page
+          .getByRole("button", { name: "保存して確定", exact: true })
+          .click();
+        const review = page.getByRole("dialog", {
+          name: /1日目 の保存先を統合/,
+        });
+        await expect(review).toBeVisible();
+        expect(await stored(page, "dayModes")).toEqual(beforeModes);
+        if (failure === "cancel") {
+          await review
+            .getByRole("button", { name: "取消", exact: true })
+            .click();
+          await expect(review).toBeHidden();
+        } else {
+          await forceSnapshotAbort(page);
+          await review
+            .getByRole("button", { name: "確認して保存", exact: true })
+            .click();
+          await expect(
+            page
+              .getByRole("alert")
+              .filter({ hasText: "購入記録の書き込み失敗" }),
+          ).toBeVisible();
+        }
+        expect(await stored(page, "dayModes")).toEqual(beforeModes);
+        expect(await stored(page, "executeModeItems")).toEqual(beforeExecute);
+        expect(await stored(page, "eventConsistency")).toEqual(
+          beforeConsistency,
+        );
+        await expect(transition).toBeVisible();
+        await expect(page.locator("[data-drag-item]")).toHaveCount(2);
+        await expect(
+          page.getByTitle("元に戻す (Ctrl+Z)", { exact: true }),
+        ).toBeEnabled();
+        await page.reload();
+        await expect(
+          page.locator('input[aria-label="バックアップファイルを選択"]'),
+        ).toBeAttached();
+        expect(await stored(page, "dayModes")).toEqual(beforeModes);
+        expect(await stored(page, "executeModeItems")).toEqual(beforeExecute);
+      },
+    );
+  }
+
   for (const failure of ["abort", "conflicts"] as const) {
     for (const action of ["retry", "discard"] as const) {
       for (const operation of ["settings", "reorder"] as const) {
@@ -2385,4 +2459,487 @@ test("confirmation disables cancellation, choices and repeated saving during its
     page.locator('input[aria-label="バックアップファイルを選択"]'),
   ).toBeAttached();
   expect(await stored(page, "dayModes")).toEqual(expected);
+});
+
+async function dragSecondVisitFirst(page: Page) {
+  const rows = page.locator("[data-drag-item]");
+  await expect(rows).toHaveCount(2);
+  const transfer = await page.evaluateHandle(() => new DataTransfer());
+  await rows.nth(1).dispatchEvent("dragstart", { dataTransfer: transfer });
+  await rows.nth(0).dispatchEvent("dragover", { dataTransfer: transfer });
+  await rows.nth(0).dispatchEvent("drop", { dataTransfer: transfer });
+  await transfer.dispose();
+}
+
+for (const duplicate of ["execution", "modes", "contexts"] as const) {
+  test(`visit opening reviews ${duplicate} duplicate day keys before creating history`, async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    const raw = mapBackup();
+    Object.assign(raw.data.eventLists[eventName][0], {
+      purchaseStatus: "Purchased",
+      price: 900,
+      quantity: 2,
+    });
+    const source = migrateLegacyConsistency(raw.data).data;
+    source.dayModes[eventName]["1日目"] = "execute";
+    if (duplicate === "execution") {
+      source.executeModeItems[eventName]["1日目"] = ["1"];
+      source.executeModeItems[eventName][" 1日目　"] = ["2"];
+    } else if (duplicate === "modes") {
+      source.dayModes[eventName][" 1日目　"] = "edit";
+    } else {
+      source.eventConsistency[eventName].days[" 1日目　"] = structuredClone(
+        source.eventConsistency[eventName].days["1日目"],
+      );
+    }
+    await restore(page, createAppBackup(source));
+    const beforeItems = await stored(page, "eventLists");
+    const beforeExecute = await stored(page, "executeModeItems");
+    const beforeModes = await stored(page, "dayModes");
+    await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+    await openVisitList(page);
+    const review = page.getByRole("dialog", { name: /1日目 の保存先を統合/ });
+    await expect(review).toBeVisible();
+    await expect(page.locator("[data-drag-item]")).toHaveCount(0);
+    expect(await stored(page, "executeModeItems")).toEqual(beforeExecute);
+    expect(await stored(page, "dayModes")).toEqual(beforeModes);
+    await review.getByRole("button", { name: "取消", exact: true }).click();
+    await expect(review).toBeHidden();
+    await expect(page.locator("[data-drag-item]")).toHaveCount(0);
+    expect(await stored(page, "executeModeItems")).toEqual(beforeExecute);
+    expect(await stored(page, "dayModes")).toEqual(beforeModes);
+
+    await openVisitList(page);
+    await expect(review).toBeVisible();
+    await review
+      .getByRole("combobox", { name: "統合先の日付表記" })
+      .selectOption(" 1日目　");
+    if (duplicate === "execution")
+      await review
+        .getByRole("combobox", { name: /実行列の順序/ })
+        .selectOption("1日目");
+    await review
+      .getByRole("button", { name: "確認して保存", exact: true })
+      .click();
+    await expect(review).toBeHidden();
+    await expect(page.locator("[data-drag-item]")).toHaveCount(2);
+    await expect(
+      page.getByTitle("元に戻す (Ctrl+Z)", { exact: true }),
+    ).toBeDisabled();
+    expect(await stored(page, "executeModeItems")).toEqual({
+      [eventName]: { " 1日目　": ["1", "2"], "2日目": ["3"] },
+    });
+    await dragSecondVisitFirst(page);
+    await expect
+      .poll(() => stored(page, "executeModeItems"))
+      .toEqual({
+        [eventName]: { " 1日目　": ["2", "1"], "2日目": ["3"] },
+      });
+    await page.getByRole("button", { name: "キャンセル", exact: true }).click();
+    await expect
+      .poll(() => stored(page, "executeModeItems"))
+      .toEqual({
+        [eventName]: { " 1日目　": ["1", "2"], "2日目": ["3"] },
+      });
+    expect(await stored(page, "eventLists")).toEqual(beforeItems);
+    await page.reload();
+    await expect(
+      page.locator('input[aria-label="バックアップファイルを選択"]'),
+    ).toBeAttached();
+    expect(await stored(page, "executeModeItems")).toEqual({
+      [eventName]: { " 1日目　": ["1", "2"], "2日目": ["3"] },
+    });
+    expect(await stored(page, "eventLists")).toEqual(beforeItems);
+    expect(errors).toEqual([]);
+  });
+}
+
+async function addDurableDuplicateMode(
+  page: Page,
+  mode: "edit" | "execute" = "execute",
+) {
+  // Simulate another writer using the application's integrity metadata generators.
+  const modes = (await stored(page, "dayModes")) as Record<
+    string,
+    Record<string, string>
+  >;
+  modes[eventName][" 1日目　"] = mode;
+  const metadataKey = createPersistenceMetadataKey("dayModes", "data");
+  const checkpointKey = createPersistenceCheckpointKey("dayModes", "data");
+  const previous = (await stored(
+    page,
+    "syncQueue",
+    metadataKey,
+  )) as StoredPersistenceMetadata;
+  const previousCheckpoint = (await stored(
+    page,
+    "syncQueue",
+    checkpointKey,
+  )) as PersistenceCheckpoint | null;
+  const metadata = await prepareMetadataForPayload(
+    "dayModes",
+    "data",
+    modes,
+    previous.revision,
+  );
+  const checkpoint = createNextPersistenceCheckpoint(
+    "dayModes",
+    "data",
+    metadata,
+    previousCheckpoint,
+  );
+  await page.evaluate(
+    async ({ modes, metadataKey, checkpointKey, metadata, checkpoint }) => {
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open("EventShoppingPlannerDB");
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const transaction = database.transaction(
+            ["dayModes", "syncQueue"],
+            "readwrite",
+          );
+          transaction.objectStore("dayModes").put(modes, "data");
+          transaction.objectStore("syncQueue").put(metadata, metadataKey);
+          transaction.objectStore("syncQueue").put(checkpoint, checkpointKey);
+          transaction.oncomplete = () => resolve();
+          transaction.onabort = () => reject(transaction.error);
+          transaction.onerror = () => reject(transaction.error);
+        });
+      } finally {
+        database.close();
+      }
+    },
+    { modes, metadataKey, checkpointKey, metadata, checkpoint },
+  );
+}
+
+for (const operation of ["reorder", "discard", "save"] as const) {
+  test(`visit ${operation} reviews settings-only duplicates introduced while open`, async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await restore(page, mapBackup());
+    await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+    await openVisitList(page);
+    await expect(page.locator("[data-drag-item]")).toHaveCount(2);
+    const beforeItems = await stored(page, "eventLists");
+    await page.getByRole("button", { name: "左側に移動", exact: true }).click();
+    await addDurableDuplicateMode(page);
+    const beforeExecute = await stored(page, "executeModeItems");
+    const beforeModes = await stored(page, "dayModes");
+    const operate = async () => {
+      if (operation === "reorder") await dragSecondVisitFirst(page);
+      else
+        await page
+          .getByRole("button", {
+            name: operation === "discard" ? "キャンセル" : "確定",
+            exact: true,
+          })
+          .click();
+    };
+    await operate();
+    const review = page.getByRole("dialog", { name: /1日目 の保存先を統合/ });
+    await expect(review).toBeVisible();
+    expect(await stored(page, "executeModeItems")).toEqual(beforeExecute);
+    expect(await stored(page, "dayModes")).toEqual(beforeModes);
+    await review.getByRole("button", { name: "取消", exact: true }).click();
+    await expect(review).toBeHidden();
+    expect(await stored(page, "executeModeItems")).toEqual(beforeExecute);
+    expect(await stored(page, "dayModes")).toEqual(beforeModes);
+    await operate();
+    await expect(review).toBeVisible();
+    await review
+      .getByRole("combobox", { name: "統合先の日付表記" })
+      .selectOption(" 1日目　");
+    await review
+      .getByRole("combobox", { name: "統合後の表示モード" })
+      .selectOption("edit");
+    await review
+      .getByRole("button", { name: "確認して保存", exact: true })
+      .click();
+    await expect(review).toBeHidden();
+    await expect
+      .poll(() => stored(page, "executeModeItems"))
+      .toEqual({
+        [eventName]: {
+          " 1日目　": operation === "reorder" ? ["2", "1"] : ["1", "2"],
+          "2日目": ["3"],
+        },
+      });
+    expect(await stored(page, "dayModes")).toEqual({
+      [eventName]: { " 1日目　": "edit", "2日目": "edit" },
+    });
+    await expect(
+      page.getByTitle("元に戻す (Ctrl+Z)", { exact: true }),
+    ).toBeDisabled();
+    await page.getByRole("button", { name: "キャンセル", exact: true }).click();
+    await expect
+      .poll(() => stored(page, "executeModeItems"))
+      .toEqual({
+        [eventName]: { " 1日目　": ["1", "2"], "2日目": ["3"] },
+      });
+    expect(await stored(page, "eventLists")).toEqual(beforeItems);
+    expect(errors).toEqual([]);
+  });
+}
+
+for (const operation of ["opening", "reorder"] as const) {
+  test(`visit ${operation} merge abort preserves the previous data and can be retried`, async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    const source = migrateLegacyConsistency(mapBackup().data).data;
+    if (operation === "opening")
+      source.executeModeItems[eventName][" 1日目　"] = ["2", "1"];
+    await restore(page, createAppBackup(source));
+    await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+    if (operation === "reorder") {
+      await openVisitList(page);
+      await expect(page.locator("[data-drag-item]")).toHaveCount(2);
+      await addDurableDuplicateMode(page);
+    }
+    const beforeItems = await stored(page, "eventLists");
+    const beforeExecute = await stored(page, "executeModeItems");
+    const beforeModes = await stored(page, "dayModes");
+    const operate = () =>
+      operation === "opening"
+        ? openVisitList(page)
+        : dragSecondVisitFirst(page);
+    await operate();
+    const review = page.getByRole("dialog", { name: /1日目 の保存先を統合/ });
+    await expect(review).toBeVisible();
+    await page.evaluate(() => {
+      const original = IDBObjectStore.prototype.put;
+      IDBObjectStore.prototype.put = function (
+        ...args: Parameters<typeof original>
+      ) {
+        if (
+          this.transaction.mode === "readwrite" &&
+          this.transaction.objectStoreNames.contains("eventConsistency")
+        ) {
+          IDBObjectStore.prototype.put = original;
+          throw new DOMException("日付統合の保存失敗", "AbortError");
+        }
+        return original.apply(this, args);
+      };
+    });
+    await review
+      .getByRole("button", { name: "確認して保存", exact: true })
+      .click();
+    await expect(
+      page.getByRole("alert").filter({ hasText: "日付統合の保存失敗" }),
+    ).toBeVisible();
+    await expect(review).toBeHidden();
+    await expect(page.locator("[data-drag-item]")).toHaveCount(
+      operation === "opening" ? 0 : 2,
+    );
+    expect(await stored(page, "eventLists")).toEqual(beforeItems);
+    expect(await stored(page, "executeModeItems")).toEqual(beforeExecute);
+    expect(await stored(page, "dayModes")).toEqual(beforeModes);
+    await operate();
+    await expect(review).toBeVisible();
+    await review
+      .getByRole("button", { name: "確認して保存", exact: true })
+      .click();
+    await expect(review).toBeHidden();
+    await expect(page.locator("[data-drag-item]")).toHaveCount(2);
+    expect(await stored(page, "executeModeItems")).toEqual({
+      [eventName]: {
+        "1日目": operation === "opening" ? ["1", "2"] : ["2", "1"],
+        "2日目": ["3"],
+      },
+    });
+    expect(await stored(page, "eventLists")).toEqual(beforeItems);
+    expect(errors).toEqual([]);
+  });
+}
+
+test("visit reorder renews duplicate-day review after the saved modes change", async ({
+  page,
+}) => {
+  await restore(page, mapBackup());
+  await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+  await openVisitList(page);
+  await expect(page.locator("[data-drag-item]")).toHaveCount(2);
+  await addDurableDuplicateMode(page);
+  await dragSecondVisitFirst(page);
+  const review = page.getByRole("dialog", { name: /1日目 の保存先を統合/ });
+  await expect(review).toBeVisible();
+  await addDurableDuplicateMode(page, "edit");
+  const beforeExecute = await stored(page, "executeModeItems");
+  await review
+    .getByRole("button", { name: "確認して保存", exact: true })
+    .click();
+  await expect(review).toContainText('" 1日目　"=edit');
+  expect(await stored(page, "executeModeItems")).toEqual(beforeExecute);
+  expect(await stored(page, "dayModes")).toMatchObject({
+    [eventName]: { "1日目": "edit", " 1日目　": "edit" },
+  });
+  await review
+    .getByRole("button", { name: "確認して保存", exact: true })
+    .click();
+  await expect(review).toBeHidden();
+  await expect
+    .poll(() => stored(page, "executeModeItems"))
+    .toEqual({
+      [eventName]: { "1日目": ["2", "1"], "2日目": ["3"] },
+    });
+  expect(await stored(page, "dayModes")).toEqual({
+    [eventName]: { "1日目": "edit", "2日目": "edit" },
+  });
+});
+
+test("legacy shared-map empty visits are retained for review after restore and reload", async ({
+  page,
+}) => {
+  const original = mapBackup();
+  const mapKey = "1日目マップ";
+  const visits = {
+    hallOrder: [],
+    hallVisitLists: [
+      { hallId: "hall:priority", itemIds: [] },
+      { hallId: "hall", itemIds: ["1", "2"] },
+    ],
+  };
+  const route = {
+    isRouteVisible: true,
+    visitOrder: [
+      { row: 1, col: 2, blockName: "A", number: 0, order: 0, itemIds: [] },
+      {
+        row: 2,
+        col: 2,
+        blockName: "A",
+        number: 1,
+        order: 1,
+        itemIds: ["1", "2"],
+      },
+    ],
+  };
+  const source = {
+    ...original,
+    data: {
+      ...original.data,
+      eventLists: { [eventName]: [item("1"), item("2", "１日目")] },
+      executeModeItems: { [eventName]: { "1日目": ["1"], "１日目": ["2"] } },
+      dayModes: { [eventName]: { "1日目": "execute", "１日目": "edit" } },
+      mapData: {
+        [eventName]: { [mapKey]: original.data.mapData[eventName][mapKey] },
+      },
+      hallDefinitions: {
+        [eventName]: {
+          [mapKey]: original.data.hallDefinitions[eventName][mapKey],
+        },
+      },
+      hallRouteSettings: { [eventName]: { [mapKey]: visits } },
+      routeSettings: { [eventName]: { [mapKey]: route } },
+    },
+  };
+  await restore(page, source, "「" + eventName + "」の復元内容を確認");
+  const check = async () => {
+    const saved = (await stored(
+      page,
+      "eventConsistency",
+    )) as EventConsistencyStore;
+    expect(
+      saved[eventName].legacyPending.map((pending) => pending.payload),
+    ).toEqual([
+      { kind: "hall-route-settings", settings: visits },
+      { kind: "route-settings", settings: route },
+    ]);
+    for (const [day, id] of [
+      ["1日目", "1"],
+      ["１日目", "2"],
+    ]) {
+      const context = saved[eventName].days[day].maps[mapKey];
+      expect(context.hallVisitLists.map((list) => list.itemIds)).toEqual([
+        [id],
+      ]);
+      expect(context.route?.visitOrder.map((point) => point.itemIds)).toEqual([
+        [id],
+      ]);
+    }
+  };
+  await check();
+  await page.reload();
+  await expect(
+    page.locator('input[aria-label="バックアップファイルを選択"]'),
+  ).toBeAttached();
+  await check();
+});
+
+test("legacy mixed hall order keeps the saved simple sequence in the editor after reload", async ({
+  page,
+}) => {
+  const original = mapBackup();
+  const source = {
+    ...original,
+    data: {
+      ...original.data,
+      hallDefinitions: {
+        [eventName]: {
+          ...original.data.hallDefinitions[eventName],
+          "__mapless__:1日目": [
+            { id: "simple1", name: "簡易1", vertices: [], blockNames: ["B"] },
+            { id: "simple2", name: "簡易2", vertices: [], blockNames: ["C"] },
+          ],
+        },
+      },
+      hallRouteSettings: {
+        [eventName]: {
+          ...original.data.hallRouteSettings[eventName],
+          "__mapless__:1日目": {
+            hallOrder: ["simple2", "simple1"],
+            hallVisitLists: [],
+          },
+        },
+      },
+    },
+  };
+  await restore(page, source);
+  const beforeExecute = await stored(page, "executeModeItems");
+  const beforeItems = await stored(page, "eventLists");
+  const check = async () => {
+    const saved = (await stored(
+      page,
+      "eventConsistency",
+    )) as EventConsistencyStore;
+    for (const context of Object.values(saved[eventName].days["1日目"].maps))
+      expect(context.hallOrder.map((group) => group.hall?.hallId)).toEqual([
+        "hall",
+        "simple2",
+        "simple1",
+      ]);
+    await expect(
+      page.getByTitle(/^(マップ表示|リスト表示)に切り替え$/),
+    ).toBeVisible();
+    const mapToggle = page.getByTitle("マップ表示に切り替え", { exact: true });
+    if (await mapToggle.isVisible()) await mapToggle.click();
+    await page.getByTitle("ホール順を編集", { exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "ホール間移動順序" });
+    await expect(dialog.getByText(/^(東館|簡易1|簡易2)$/)).toHaveText([
+      "東館",
+      "簡易2",
+      "簡易1",
+    ]);
+    await dialog
+      .getByRole("button", { name: "ホール間移動順序を閉じる" })
+      .click();
+    expect(await stored(page, "executeModeItems")).toEqual(beforeExecute);
+    expect(await stored(page, "eventLists")).toEqual(beforeItems);
+  };
+  await check();
+  await page.reload();
+  await expect(
+    page.locator('input[aria-label="バックアップファイルを選択"]'),
+  ).toBeAttached();
+  await page.getByText(eventName, { exact: true }).click();
+  await check();
 });

@@ -123,6 +123,7 @@ type AppOverlayLayerFields = {
   >;
   handleVisitListClose: VisitListPanelProps["onClose"];
   visitListItems: ShoppingItem[];
+  visitListHistoryVersion?: number;
   handleVisitListOrderUpdate: VisitListPanelProps["onUpdateOrder"];
   visitListHallOrder: string[];
   layoutMode: LayoutMode;
@@ -194,7 +195,10 @@ export type AppOverlayLayerModel = {
   >;
   readonly visitList: Pick<
     AppOverlayLayerFields,
-    "layoutMode" | "visitListHallOrder" | "visitListItems"
+    | "layoutMode"
+    | "visitListHallOrder"
+    | "visitListItems"
+    | "visitListHistoryVersion"
   >;
   readonly imports: Pick<
     AppOverlayLayerFields,
@@ -311,7 +315,12 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       mapTabDates,
       vertexGuideOptions,
     },
-    visitList: { layoutMode, visitListHallOrder, visitListItems },
+    visitList: {
+      layoutMode,
+      visitListHallOrder,
+      visitListItems,
+      visitListHistoryVersion,
+    },
     imports: { exportFileInputRef, mapFileInputRef, mapImportSavedSettings },
     list: {
       candidateMovePlan,
@@ -655,6 +664,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
             activeEventName,
             activeEventDate,
             visitListPanelMapTab,
+            visitListHistoryVersion,
           ])}
           isOpen={visitListPanelOpen}
           onClose={handleVisitListClose}

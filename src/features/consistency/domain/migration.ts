@@ -25,6 +25,7 @@ import {
   ensureDayConsistency,
   ensureVisitContext,
   getContextHalls,
+  getDayConsistency,
   hallGroupKey,
   interpretLegacyGroup,
   normalizeMapDay,
@@ -353,7 +354,11 @@ export function migrateLegacyConsistency(
             });
         }
       }
-      if (pendingOrder || !candidates.length)
+      const pendingLists =
+        candidates.length > 1
+          ? settings.hallVisitLists.filter((list) => list.itemIds.length === 0)
+          : [];
+      if (pendingOrder || pendingLists.length || !candidates.length)
         addPending({
           sourceKey,
           sourceDayKey: null,
@@ -361,9 +366,13 @@ export function migrateLegacyConsistency(
           reason: "ambiguous-day",
           payload: {
             kind: "hall-route-settings",
-            settings: !candidates.length
-              ? settings
-              : { hallOrder: settings.hallOrder, hallVisitLists: [] },
+            settings:
+              !candidates.length || pendingLists.length > 0
+                ? settings
+                : {
+                    hallOrder: pendingOrder ? settings.hallOrder : [],
+                    hallVisitLists: pendingLists,
+                  },
           },
         });
     }
@@ -411,6 +420,21 @@ export function migrateLegacyConsistency(
         });
         continue;
       }
+      const pendingPoints =
+        candidates.length > 1
+          ? route.visitOrder.filter((point) => point.itemIds.length === 0)
+          : [];
+      if (pendingPoints.length)
+        addPending({
+          sourceKey,
+          sourceDayKey: null,
+          sourceMapKey: sourceKey,
+          reason: "ambiguous-day",
+          payload: {
+            kind: "route-settings",
+            settings: route,
+          },
+        });
       for (const day of candidates) {
         const visitOrder = route.visitOrder.flatMap((point) => {
           const itemIds = point.itemIds.filter((id) => {
@@ -446,10 +470,27 @@ export function migrateLegacyConsistency(
       for (const mapKey of candidateMaps.length ? candidateMaps : [null]) {
         const target = context(day, mapKey);
         if (!target) continue;
-        if (!target.hallOrder.length)
-          target.hallOrder = getContextHalls(definitions, day, mapKey).map(
-            (hall) => ({ hall: hall.ref, priority: "none" }),
-          );
+        const halls = getContextHalls(definitions, day, mapKey);
+        const simple =
+          mapKey === null ? target : getDayConsistency(event, day)?.mapless;
+        const mapOrder = target.hallOrder.length
+          ? target.hallOrder
+          : halls
+              .filter((hall) => hall.ref.kind === "map")
+              .map((hall) => ({ hall: hall.ref, priority: "none" as const }));
+        const simpleOrder = simple?.hallOrder.length
+          ? simple.hallOrder
+          : halls
+              .filter((hall) => hall.ref.kind === "simple")
+              .map((hall) => ({ hall: hall.ref, priority: "none" as const }));
+        // Seed the complete order with the old map-then-simple display order.
+        // Definition registration order must not replace either saved order.
+        target.hallOrder = [...mapOrder, ...simpleOrder].filter(
+          (group, index, order) =>
+            order.findIndex(
+              (candidate) => hallGroupKey(candidate) === hallGroupKey(group),
+            ) === index,
+        );
       }
     }
     delete data.hallRouteSettings[eventName];

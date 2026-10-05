@@ -1292,6 +1292,7 @@ const App: React.FC = () => {
   const smartInsertLongPressTriggeredRef = React.useRef(false);
 
   const {
+    historyVersion: visitListHistoryVersion,
     openPanel: openVisitListPanel,
     updateOrder: handleVisitListOrderUpdate,
     saveChanges: handleVisitListConfirm,
@@ -2385,6 +2386,7 @@ const App: React.FC = () => {
             vertexGuideOptions,
           },
           visitList: {
+            visitListHistoryVersion,
             layoutMode,
             visitListHallOrder,
             visitListItems,

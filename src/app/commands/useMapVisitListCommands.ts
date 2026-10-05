@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   MutationPlan,
   MutationChoices,
 } from "./applicationMutationCoordinator";
 import { planDayModeToggle } from "../../features/consistency/domain/dayMode";
+import {
+  duplicateEventDays,
+  planDayMerge,
+} from "../../features/consistency/domain/dayMerge";
 import type { ApplicationMutationPort } from "../ports/ApplicationMutationPort";
 import {
   existingDayKey,
@@ -11,6 +15,8 @@ import {
   getDayConsistency,
   hallGroupKey,
   resolveDayMap,
+  resolveDayKey,
+  sameDay,
 } from "../../features/consistency/domain/context";
 import { createMembershipResolver } from "../../features/consistency/domain/membership";
 import { applyVisitHistory } from "../../features/consistency/domain/visitHistory";
@@ -71,6 +77,7 @@ export type MapVisitListTransitionResult =
   | "pending";
 
 export interface MapVisitListCommands {
+  readonly historyVersion: number;
   openPanel(mapTab: string): void;
   updateOrder(items: readonly ShoppingItem[]): Promise<void>;
   saveChanges(): Promise<void>;
@@ -93,6 +100,64 @@ interface VisitSession {
   baseline: string[];
   latest: string[];
 }
+type SessionTransition = (
+  snapshot: PersistenceSnapshot,
+  choices?: MutationChoices,
+) => MutationPlan;
+
+/** Reviews source and target changes before either is persisted. */
+function planSessionTransition(
+  snapshot: PersistenceSnapshot,
+  value: VisitSession,
+  choices?: MutationChoices,
+  transition?: SessionTransition,
+): MutationPlan {
+  const transitionPlan = transition?.(snapshot, choices);
+  const sourceChoices = transition
+    ? Object.fromEntries(
+        Object.entries(choices ?? {})
+          .filter(([key]) => key.startsWith("source:"))
+          .map(([key, choice]) => [key.slice("source:".length), choice]),
+      )
+    : choices;
+  const mergePlan = planDayMerge(
+    transitionPlan?.snapshot ?? snapshot,
+    value.event,
+    value.day,
+    undefined,
+    sourceChoices,
+  );
+
+  const sourceReview = mergePlan.confirmation
+    ? {
+        ...mergePlan.confirmation,
+        choices: mergePlan.confirmation.choices?.map((choice) => ({
+          ...choice,
+          id: transition ? `source:${choice.id}` : choice.id,
+          label: transition ? `${value.day} / ${choice.label}` : choice.label,
+        })),
+      }
+    : undefined;
+  const review =
+    transitionPlan?.confirmation && sourceReview
+      ? {
+          title: transitionPlan.confirmation.title,
+          choices: [
+            ...(transitionPlan.confirmation.choices ?? []),
+            ...(sourceReview.choices ?? []),
+          ],
+          details: [
+            ...transitionPlan.confirmation.details,
+            ...sourceReview.details,
+          ],
+          comparison: {
+            transition: transitionPlan.confirmation.comparison,
+            source: sourceReview.comparison,
+          },
+        }
+      : (sourceReview ?? transitionPlan?.confirmation);
+  return { ...mergePlan, confirmation: review };
+}
 export const useMapVisitListCommands = ({
   state,
   actions,
@@ -103,6 +168,12 @@ export const useMapVisitListCommands = ({
   const current = useRef(state);
   current.current = state;
   const session = useRef<VisitSession | null>(null);
+  const opening = useRef<{
+    event: string;
+    day: string;
+    generation: number;
+  } | null>(null);
+  const [historyVersion, setHistoryVersion] = useState(0);
   const writes = useRef<Promise<unknown>>(Promise.resolve());
   const pendingWrites = useRef(0);
   const pendingModeChange = useRef<ActiveTab | null>(null);
@@ -124,25 +195,96 @@ export const useMapVisitListCommands = ({
         map !== value.currentMapTabName
       )
         return;
-      const days = value.executeModeItems[value.activeEventName] ?? {};
-      const day =
-        existingDayKey(days, value.activeEventDate) ?? value.activeEventDate;
-      const ids = [...(days[day] ?? [])];
-      session.current = {
-        event: value.activeEventName,
-        day,
-        map,
-        generation: value.generation ?? 0,
-        baseline: ids,
-        latest: ids,
+      if (opening.current) return;
+      const event = value.activeEventName;
+      const requestedDay = value.activeEventDate;
+      const generation = value.generation ?? 0;
+      const target = { event, day: requestedDay, generation };
+      const open = (snapshot?: PersistenceSnapshot) => {
+        const days =
+          snapshot?.executeModeItems[event] ??
+          value.executeModeItems[event] ??
+          {};
+        const day = existingDayKey(days, requestedDay) ?? requestedDay;
+        const selectedMap = snapshot
+          ? getDayConsistency(snapshot.eventConsistency[event], day)
+              ?.selectedMapKey
+          : null;
+        const resolvedMap = selectedMap ?? map;
+        if (
+          current.current.activeEventName !== event ||
+          (current.current.generation ?? 0) !== generation ||
+          !sameDay(current.current.activeEventDate, requestedDay) ||
+          (current.current.currentMapTabName !== map &&
+            current.current.currentMapTabName !== resolvedMap)
+        )
+          return;
+        const ids = [...(days[day] ?? [])];
+        session.current = {
+          event,
+          day,
+          map: resolvedMap,
+          generation,
+          baseline: ids,
+          latest: ids,
+        };
+        afterTransition.current = undefined;
+        pendingModeChange.current = null;
+        actions.openPanel(resolvedMap, ids);
       };
-      afterTransition.current = undefined;
-      pendingModeChange.current = null;
-      actions.openPanel(map, ids);
+      const snapshot = readCurrentSnapshot?.();
+      const duplicates = snapshot
+        ? duplicateEventDays(snapshot, event).some((day) =>
+            sameDay(day, requestedDay),
+          )
+        : resolveDayKey(value.executeModeItems[event], requestedDay).status ===
+          "ambiguous";
+      if (!duplicates) {
+        open(snapshot);
+        return;
+      }
+      opening.current = target;
+      void requestMutation({
+        events: [event],
+        expectedGenerations: { [event]: generation },
+        plan: (snapshot, choices) => {
+          if (
+            opening.current !== target ||
+            current.current.activeEventName !== event ||
+            (current.current.generation ?? 0) !== generation ||
+            !sameDay(current.current.activeEventDate, requestedDay)
+          )
+            throw new Error("訪問リストの操作は終了しています。");
+          return planDayMerge(
+            snapshot,
+            event,
+            requestedDay,
+            undefined,
+            choices,
+          );
+        },
+      })
+        .then((snapshot) => {
+          if (opening.current === target) open(snapshot);
+        })
+        .catch(() => {
+          // The mutation port presents cancellation and persistence errors.
+        })
+        .finally(() => {
+          if (opening.current === target) opening.current = null;
+        });
     },
-    [actions],
+    [actions, readCurrentSnapshot, requestMutation],
   );
   useEffect(() => {
+    const pending = opening.current;
+    if (
+      pending &&
+      (state.activeEventName !== pending.event ||
+        (state.generation ?? 0) !== pending.generation ||
+        !sameDay(state.activeEventDate, pending.day))
+    )
+      opening.current = null;
     const value = session.current;
     if (!state.panelOpen) {
       session.current = null;
@@ -193,20 +335,32 @@ export const useMapVisitListCommands = ({
       const value = session.current;
       if (!valid(value)) return Promise.resolve();
       pendingWrites.current += 1;
+      let rebase: { day: string; map: string; baseline: string[] } | undefined;
       const task = requestMutation({
         events: [value.event],
         expectedGenerations: { [value.event]: value.generation },
         plan: (snapshot, choices) => {
           if (!valid(value) || session.current !== value)
             throw new Error("訪問リストの操作は終了しています。");
-          // Resolve duplicate target-day settings before projecting the source order.
-          const transitionPlan = transition?.(snapshot, choices);
-          snapshot = transitionPlan?.snapshot ?? snapshot;
+          // Target mode changes and source-day merges share one confirmed commit.
+          const sourceDuplicated = duplicateEventDays(
+            snapshot,
+            value.event,
+          ).some((day) => sameDay(day, value.day));
+          const mergePlan = planSessionTransition(
+            snapshot,
+            value,
+            choices,
+            transition,
+          );
+          snapshot = mergePlan.snapshot;
+          rebase = undefined;
+          const review = mergePlan.confirmation;
           const dayKey = existingDayKey(
             snapshot.executeModeItems[value.event],
             value.day,
           );
-          if (!dayKey) return transitionPlan ?? { snapshot };
+          if (!dayKey) return { snapshot, confirmation: review };
           const items = snapshot.eventLists[value.event] as ShoppingItem[];
           const day = getDayConsistency(
             snapshot.eventConsistency[value.event],
@@ -215,15 +369,22 @@ export const useMapVisitListCommands = ({
           const maps = snapshot.mapData[value.event] as
             | Record<string, DayMapData>
             | undefined;
-          const map = resolveDayMap(maps, dayKey, value.map);
-          const context = day?.maps[value.map];
+          const mapKey = day?.selectedMapKey ?? value.map;
+          const map = resolveDayMap(maps, dayKey, mapKey);
+          const context = day?.maps[mapKey];
+          if (sourceDuplicated || dayKey !== value.day || mapKey !== value.map)
+            rebase = {
+              day: dayKey,
+              map: mapKey,
+              baseline: [...snapshot.executeModeItems[value.event][dayKey]],
+            };
           const halls = getContextHalls(
             snapshot.hallDefinitions[value.event] as Record<
               string,
               HallDefinition[]
             >,
             dayKey,
-            value.map,
+            mapKey,
           );
           const resolve = createMembershipResolver({
             items,
@@ -256,24 +417,24 @@ export const useMapVisitListCommands = ({
             {
               eventName: value.event,
               day: dayKey,
-              mapKey: value.map,
+              mapKey,
               confirm: false,
             },
           );
-          if (!transitionPlan?.confirmation) return orderPlan;
+          if (!review) return orderPlan;
           const beforeOrder = snapshot.executeModeItems[value.event][dayKey];
           const afterOrder =
             orderPlan.snapshot.executeModeItems[value.event][dayKey];
           return {
             ...orderPlan,
             confirmation: {
-              ...transitionPlan.confirmation,
+              ...review,
               details: [
-                ...transitionPlan.confirmation.details,
+                ...review.details,
                 `${value.day} の訪問順: ${JSON.stringify(beforeOrder)} → ${JSON.stringify(afterOrder)}`,
               ],
               comparison: {
-                transition: transitionPlan.confirmation.comparison,
+                review: review.comparison,
                 beforeOrder,
                 afterOrder,
               },
@@ -289,6 +450,12 @@ export const useMapVisitListCommands = ({
         value.latest = day
           ? [...snapshot.executeModeItems[value.event][day]]
           : [];
+        if (day) value.day = day;
+        if (rebase) {
+          value.map = rebase.map;
+          value.baseline = dirty ? rebase.baseline : [...value.latest];
+          setHistoryVersion((version) => version + 1);
+        }
         actions.setUnsaved(dirty);
       });
       const settled = task.finally(() => {
@@ -309,22 +476,52 @@ export const useMapVisitListCommands = ({
       ),
     [applyOrder],
   );
-  const saveChanges = useCallback(async () => {
-    await writes.current;
-    const value = session.current;
-    if (!valid(value)) return;
-    const currentSnapshot = readCurrentSnapshot?.();
-    const currentDay = currentSnapshot
-      ? existingDayKey(currentSnapshot.executeModeItems[value.event], value.day)
-      : undefined;
-    if (currentSnapshot && currentDay)
-      value.latest = [
-        ...currentSnapshot.executeModeItems[value.event][currentDay],
-      ];
-    value.baseline = [...value.latest];
-    actions.openPanel(value.map, value.baseline);
-    actions.setUnsaved(false);
-  }, [valid, actions, readCurrentSnapshot]);
+  const saveChanges = useCallback(
+    async (transition?: SessionTransition) => {
+      await writes.current;
+      const value = session.current;
+      if (!valid(value)) return;
+      let merged = false;
+      const currentSnapshot = await requestMutation({
+        events: [value.event],
+        expectedGenerations: { [value.event]: value.generation },
+        plan: (snapshot, choices) => {
+          if (!valid(value) || session.current !== value)
+            throw new Error("訪問リストの操作は終了しています。");
+          const plan = planSessionTransition(
+            snapshot,
+            value,
+            choices,
+            transition,
+          );
+          merged = !!plan.confirmation;
+          return plan;
+        },
+      });
+      if (!valid(value) || session.current !== value) return;
+      const currentDay = existingDayKey(
+        currentSnapshot.executeModeItems[value.event],
+        value.day,
+      );
+      if (merged || (currentDay && currentDay !== value.day))
+        setHistoryVersion((version) => version + 1);
+      if (currentSnapshot && currentDay) {
+        value.day = currentDay;
+        value.map =
+          getDayConsistency(
+            currentSnapshot.eventConsistency[value.event],
+            currentDay,
+          )?.selectedMapKey ?? value.map;
+        value.latest = [
+          ...currentSnapshot.executeModeItems[value.event][currentDay],
+        ];
+      }
+      value.baseline = [...value.latest];
+      actions.openPanel(value.map, value.baseline);
+      actions.setUnsaved(false);
+    },
+    [valid, actions, requestMutation],
+  );
   const discardChanges = useCallback(async () => {
     await writes.current;
     const value = session.current;
@@ -352,6 +549,7 @@ export const useMapVisitListCommands = ({
     (tab: ActiveTab, after?: () => void): MapVisitListTransitionResult => {
       if (current.current.confirmDialogOpen || transitioning.current)
         return "ignored";
+      opening.current = null;
       if (
         current.current.panelOpen &&
         (current.current.hasUnsavedChanges || pendingWrites.current > 0)
@@ -387,6 +585,7 @@ export const useMapVisitListCommands = ({
         actions.requestConfirmClose(tab);
         return "confirmation";
       }
+      opening.current = null;
       const event = state.activeEventName;
       const generation = state.generation ?? 0;
       transitioning.current = true;
@@ -438,14 +637,9 @@ export const useMapVisitListCommands = ({
               planDayModeToggle(snapshot, value.event, modeTab, choices),
             );
           } else {
-            await requestMutation({
-              events: [value.event],
-              expectedGenerations: { [value.event]: value.generation },
-              plan: (snapshot, choices) =>
-                planDayModeToggle(snapshot, value.event, modeTab, choices),
-            });
-            if (!valid(value) || session.current !== value) return;
-            await saveChanges();
+            await saveChanges((snapshot, choices) =>
+              planDayModeToggle(snapshot, value.event, modeTab, choices),
+            );
           }
         } else if (discard) await discardChanges();
         else await saveChanges();
@@ -461,17 +655,10 @@ export const useMapVisitListCommands = ({
       if (tab !== null) navigation.navigateToTab(tab);
       callback?.();
     },
-    [
-      valid,
-      discardChanges,
-      saveChanges,
-      applyOrder,
-      requestMutation,
-      actions,
-      navigation,
-    ],
+    [valid, discardChanges, saveChanges, applyOrder, actions, navigation],
   );
   return {
+    historyVersion,
     openPanel,
     updateOrder,
     saveChanges,
