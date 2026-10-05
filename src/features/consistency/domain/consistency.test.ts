@@ -913,3 +913,118 @@ describe("explicit membership resolves pending legacy manual halls", () => {
     ]);
   });
 });
+
+describe("map reimport respects actual day dependencies (R33/R36)", () => {
+  function sourceWithOtherDay() {
+    const source = legacy();
+    source.eventLists.event = [item("A"), item("B", { eventDate: "１日目" })];
+    source.executeModeItems.event = { "1日目": ["A"], "１日目": ["B"] };
+    source.mapData.event = { "1日目マップ": map(), "１日目マップ": map() };
+    source.hallDefinitions.event = {
+      "1日目マップ": halls,
+      "１日目マップ": halls,
+      "__mapless__:1日目": [
+        { id: "simple", name: "簡易東館", blockNames: ["A"], vertices: [] },
+      ],
+      "__mapless__:１日目": [
+        { id: "simple", name: "簡易西館", blockNames: ["A"], vertices: [] },
+      ],
+    };
+    const data = createAppBackup(source as never).data;
+    for (const [day, id, selected] of [
+      ["1日目", "A", "1日目マップ"],
+      ["１日目", "B", "１日目マップ"],
+    ]) {
+      data.eventConsistency.event.days[day] = {
+        ...createDayConsistency(),
+        selectedMapKey: selected,
+        maps: {
+          [selected]: {
+            ...createVisitContext(),
+            assignments: {
+              [id]: { kind: "simple", dayKey: day, hallId: "simple" },
+            },
+            hallOrder: [
+              {
+                hall: { kind: "simple", dayKey: day, hallId: "simple" },
+                priority: "none",
+              },
+            ],
+            hallVisitLists: [
+              {
+                group: {
+                  hall: { kind: "simple", dayKey: day, hallId: "simple" },
+                  priority: "none",
+                },
+                itemIds: [id],
+              },
+            ],
+          },
+        },
+      };
+    }
+    return data;
+  }
+  const reimport = (
+    source: ReturnType<typeof sourceWithOtherDay>,
+    preserveMaplessHalls = false,
+  ) =>
+    planMapReimport(
+      source,
+      "event",
+      [
+        {
+          eventDate: "1日目",
+          mapTabName: "1日目マップ",
+          mapData: { ...map(), maxRow: 20 },
+          initialAngle: 90,
+        },
+      ],
+      { preserveMaplessHalls },
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+
+  it.each([false, true])(
+    "preserves another day's selected map and simple settings with preservation=%s",
+    (preserve) => {
+      const source = sourceWithOtherDay();
+      const before = structuredClone(source);
+      const plan = reimport(source, preserve);
+      expect(plan.snapshot.hallDefinitions.event["__mapless__:１日目"]).toEqual(
+        source.hallDefinitions.event["__mapless__:１日目"],
+      );
+      expect(plan.snapshot.eventConsistency.event.days["１日目"]).toEqual(
+        source.eventConsistency.event.days["１日目"],
+      );
+      expect(plan.confirmation?.details.join("\n")).not.toContain(
+        "簡易ホールを削除: __mapless__:１日目",
+      );
+      expect(plan.snapshot.eventLists).toEqual(source.eventLists);
+      expect(source).toEqual(before);
+      expect(validateSnapshotReferences(plan.snapshot)).toEqual([]);
+    },
+  );
+
+  it.each(["selected", "saved-reference", "unselected-reference"] as const)(
+    "includes another day with a real %s dependency",
+    (dependency) => {
+      const source = sourceWithOtherDay();
+      const other = source.eventConsistency.event.days["１日目"];
+      if (dependency === "selected") {
+        other.selectedMapKey = "1日目マップ";
+        other.maps = {};
+      } else {
+        other.maps["1日目マップ"] = structuredClone(other.maps["１日目マップ"]);
+        if (dependency === "unselected-reference") other.selectedMapKey = null;
+      }
+      const plan = reimport(source);
+      expect(
+        plan.snapshot.hallDefinitions.event["__mapless__:１日目"],
+      ).toBeUndefined();
+      expect(plan.confirmation?.details.join("\n")).toContain(
+        "簡易ホールを削除: __mapless__:１日目",
+      );
+      expect(validateSnapshotReferences(plan.snapshot)).toEqual([]);
+    },
+  );
+});

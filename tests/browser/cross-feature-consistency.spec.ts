@@ -3046,3 +3046,459 @@ for (const timing of ["before apply", "confirmation"] as const) {
     );
   }
 }
+
+for (const operation of ["ordinary reorder", "ordinary item edit"] as const) {
+  for (const outcome of ["cancel", "save", "abort"] as const) {
+    test(`${operation} reviews mode-only duplicate dates and handles ${outcome} atomically`, async ({
+      page,
+    }) => {
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      const source = migrateLegacyConsistency(
+        backup([item("1"), item("2"), item("3", "2日目")]).data,
+      ).data;
+      source.dayModes[eventName]["1日目"] = "edit";
+      source.dayModes[eventName][" 1日目　"] = "execute";
+      await restore(page, createAppBackup(source));
+      const before = {
+        items: await stored(page, "eventLists"),
+        execute: await stored(page, "executeModeItems"),
+        modes: await stored(page, "dayModes"),
+        consistency: await stored(page, "eventConsistency"),
+      };
+      if (operation === "ordinary item edit")
+        await editMemo(page, "統合後のメモ");
+      const operate = () =>
+        operation === "ordinary reorder"
+          ? page
+              .locator('[data-item-id="2"]')
+              .getByTitle("上に移動", { exact: true })
+              .click()
+          : page
+              .getByRole("dialog", { name: "アイテム編集" })
+              .getByRole("button", { name: "保存", exact: true })
+              .click();
+      await operate();
+      const review = page.getByRole("dialog", { name: /1日目 の保存先を統合/ });
+      await expect(review).toBeVisible();
+      const unchanged = async () => {
+        expect(await stored(page, "eventLists")).toEqual(before.items);
+        expect(await stored(page, "executeModeItems")).toEqual(before.execute);
+        expect(await stored(page, "dayModes")).toEqual(before.modes);
+        expect(await stored(page, "eventConsistency")).toEqual(
+          before.consistency,
+        );
+      };
+      await unchanged();
+      if (outcome === "cancel") {
+        await review.getByRole("button", { name: "取消", exact: true }).click();
+        await expect(review).toBeHidden();
+        await unchanged();
+      } else {
+        await review
+          .getByRole("combobox", { name: "統合先の日付表記" })
+          .selectOption(" 1日目　");
+        await review
+          .getByRole("combobox", { name: "統合後の表示モード" })
+          .selectOption("execute");
+        await expect(review).toHaveAttribute("aria-busy", "false");
+        if (outcome === "abort") {
+          await page.evaluate(() => {
+            const original = IDBObjectStore.prototype.put;
+            IDBObjectStore.prototype.put = function (
+              ...args: Parameters<typeof original>
+            ) {
+              if (
+                this.transaction.mode === "readwrite" &&
+                this.transaction.objectStoreNames.contains("eventConsistency")
+              ) {
+                IDBObjectStore.prototype.put = original;
+                throw new DOMException(
+                  "通常操作の日付統合保存失敗",
+                  "AbortError",
+                );
+              }
+              return original.apply(this, args);
+            };
+          });
+        }
+        await review
+          .getByRole("button", { name: "確認して保存", exact: true })
+          .click();
+        await expect(review).toBeHidden();
+        if (outcome === "abort") {
+          await expect(
+            page
+              .getByRole("alert")
+              .filter({ hasText: "通常操作の日付統合保存失敗" })
+              .first(),
+          ).toBeVisible();
+          await unchanged();
+        } else {
+          await expect
+            .poll(() => stored(page, "dayModes"))
+            .toEqual({
+              [eventName]: { " 1日目　": "execute", "2日目": "edit" },
+            });
+          expect(await stored(page, "executeModeItems")).toEqual({
+            [eventName]: {
+              " 1日目　":
+                operation === "ordinary reorder" ? ["2", "1"] : ["1", "2"],
+              "2日目": ["3"],
+            },
+          });
+          expect(await stored(page, "eventLists")).toMatchObject({
+            [eventName]: expect.arrayContaining([
+              expect.objectContaining({
+                id: "1",
+                remarks:
+                  operation === "ordinary item edit"
+                    ? "統合後のメモ"
+                    : "ユーザー登録",
+              }),
+              expect.objectContaining(item("3", "2日目")),
+            ]),
+          });
+          await page.reload();
+          await page.getByText(eventName, { exact: true }).click();
+          expect(await stored(page, "dayModes")).toEqual({
+            [eventName]: { " 1日目　": "execute", "2日目": "edit" },
+          });
+        }
+      }
+      expect(errors).toEqual([]);
+    });
+  }
+}
+
+test("map reimport removes only dependent simple halls and preserves another selected map day", async ({
+  page,
+}) => {
+  const source = migrateLegacyConsistency(mapBackup().data).data;
+  const items = source.eventLists[eventName] as Array<ReturnType<typeof item>>;
+  items[2].eventDate = "１日目";
+  source.executeModeItems[eventName] = { "1日目": ["1", "2"], "１日目": ["3"] };
+  source.dayModes[eventName] = { "1日目": "execute", "１日目": "execute" };
+  source.eventConsistency[eventName].days["１日目"] = structuredClone(
+    source.eventConsistency[eventName].days["1日目"],
+  );
+  delete source.eventConsistency[eventName].days["2日目"];
+  for (const [day, mapKey, ids] of [
+    ["1日目", "1日目マップ", ["1", "2"]],
+    ["１日目", "１日目マップ", ["3"]],
+  ] as const) {
+    const hall = { kind: "simple" as const, dayKey: day, hallId: "simple" };
+    const group = { hall, priority: "none" as const };
+    source.hallDefinitions[eventName]["__mapless__:" + day] = [
+      { id: "simple", name: day + "簡易会場", blockNames: ["A"], vertices: [] },
+    ];
+    const settings = source.eventConsistency[eventName].days[day];
+    settings.selectedMapKey = mapKey;
+    settings.maps = {
+      [mapKey]: {
+        assignments: Object.fromEntries(ids.map((id) => [id, hall])),
+        hallOrder: [group],
+        hallVisitLists: [{ group, itemIds: [...ids] }],
+        route: null,
+      },
+    };
+  }
+  await restore(page, createAppBackup(source));
+  const before = (await stored(
+    page,
+    "eventConsistency",
+  )) as EventConsistencyStore;
+  const definitions = (await stored(page, "hallDefinitions")) as Record<
+    string,
+    Record<string, unknown>
+  >;
+  const itemsBefore = await stored(page, "eventLists");
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("1日目");
+  const border = { style: "medium" as const, color: { argb: "FFFF0000" } };
+  sheet.getCell("A1").value = "A";
+  sheet.getCell("A1").border = { top: border, bottom: border, left: border };
+  sheet.getCell("B1").value = 1;
+  sheet.getCell("B1").border = { top: border, bottom: border, right: border };
+  await page.getByRole("button", { name: "イベント一覧", exact: true }).click();
+  await page.getByRole("button", { name: "メニュー", exact: true }).click();
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: /マップデータ取り込み/ }).click();
+  await (
+    await chooser
+  ).setFiles({
+    name: "map.xlsx",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
+  });
+  await page.getByRole("button", { name: "取り込む", exact: true }).click();
+  const target = page.getByRole("dialog", {
+    name: "マップを入れ替える前の確認",
+  });
+  await expect(target).toBeVisible();
+  await target
+    .getByRole("checkbox", { name: /マップを使わない会場設定を残す/ })
+    .uncheck();
+  await target
+    .getByRole("button", { name: "影響範囲を確認する", exact: true })
+    .click();
+  const review = page.getByRole("dialog", {
+    name: "マップ再取り込みの影響を確認",
+  });
+  await expect(review).toContainText("簡易ホールを削除: __mapless__:1日目");
+  await expect(review).not.toContainText(
+    "簡易ホールを削除: __mapless__:１日目",
+  );
+  expect(await stored(page, "eventConsistency")).toEqual(before);
+  await review
+    .getByRole("button", { name: "確認して保存", exact: true })
+    .click();
+  await expect(review).toBeHidden();
+  const after = (await stored(
+    page,
+    "eventConsistency",
+  )) as EventConsistencyStore;
+  expect(after[eventName].days["１日目"]).toEqual(
+    before[eventName].days["１日目"],
+  );
+  const definitionsAfter = (await stored(page, "hallDefinitions")) as Record<
+    string,
+    Record<string, unknown>
+  >;
+  expect(definitionsAfter[eventName]["__mapless__:1日目"]).toBeUndefined();
+  expect(definitionsAfter[eventName]["__mapless__:１日目"]).toEqual(
+    definitions[eventName]["__mapless__:１日目"],
+  );
+  expect(definitionsAfter[eventName]["１日目マップ"]).toEqual(
+    definitions[eventName]["１日目マップ"],
+  );
+  expect(await stored(page, "eventLists")).toEqual(itemsBefore);
+  await page.reload();
+  expect(
+    ((await stored(page, "eventConsistency")) as EventConsistencyStore)[
+      eventName
+    ].days["１日目"],
+  ).toEqual(before[eventName].days["１日目"]);
+});
+
+test("ordinary item edit carries its chosen simple hall through a selectable day merge", async ({
+  page,
+}) => {
+  const source = migrateLegacyConsistency(
+    backup([item("1"), item("2")]).data,
+  ).data;
+  source.dayModes[eventName][" 1日目　"] = "execute";
+  source.hallDefinitions[eventName] = {
+    "__mapless__: 1日目　": [
+      {
+        id: "simple",
+        name: "選択する簡易会場",
+        blockNames: ["A"],
+        vertices: [],
+      },
+    ],
+  };
+  await restore(page, createAppBackup(source));
+  await editMemo(page, "所属指定付きの編集");
+  const editor = page.getByRole("dialog", { name: "アイテム編集" });
+  await editor
+    .getByRole("combobox", { name: /^ホール設定/ })
+    .selectOption("@hall:" + JSON.stringify(["simple", " 1日目　", "simple"]));
+  await editor.getByRole("button", { name: "保存", exact: true }).click();
+  const review = page.getByRole("dialog", { name: /1日目 の保存先を統合/ });
+  await expect(review).toBeVisible();
+  await review
+    .getByRole("combobox", { name: "統合先の日付表記" })
+    .selectOption(" 1日目　");
+  await expect(review).toHaveAttribute("aria-busy", "false");
+  await review
+    .getByRole("button", { name: "確認して保存", exact: true })
+    .click();
+  await expect(review).toBeHidden();
+  await expect(editor).toBeHidden();
+  expect(await stored(page, "eventConsistency")).toMatchObject({
+    [eventName]: {
+      days: {
+        " 1日目　": {
+          mapless: {
+            assignments: {
+              "1": { kind: "simple", dayKey: " 1日目　", hallId: "simple" },
+            },
+          },
+        },
+      },
+    },
+  });
+  expect(await stored(page, "eventLists")).toMatchObject({
+    [eventName]: expect.arrayContaining([
+      expect.objectContaining({ id: "1", remarks: "所属指定付きの編集" }),
+    ]),
+  });
+  await page.reload();
+  expect(await stored(page, "hallDefinitions")).toMatchObject({
+    [eventName]: {
+      "__mapless__: 1日目　": [{ id: "simple", name: "選択する簡易会場" }],
+    },
+  });
+});
+
+for (const selected of [undefined, "edit", "execute", "focus"] as const) {
+  test(`ordinary mode change saves its confirmed ${selected ?? "default"} mode after a day merge and reload`, async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    const source = migrateLegacyConsistency(backup().data).data;
+    source.dayModes[eventName][" 1日目　"] = "focus";
+    await restore(page, createAppBackup(source));
+    const itemsBefore = await stored(page, "eventLists");
+    const executeBefore = await stored(page, "executeModeItems");
+    await page.getByTitle("実行モード", { exact: true }).click();
+    const review = page.getByRole("dialog", { name: /1日目 の保存先を統合/ });
+    const mode = review.getByRole("combobox", { name: "統合後の表示モード" });
+    await expect(mode).toHaveValue("execute");
+    await expect(mode.locator('option[value="focus"]')).toContainText(
+      "集中モード",
+    );
+    if (selected !== undefined) await mode.selectOption(selected);
+    const expected = selected ?? "execute";
+    await expect(mode).toHaveValue(expected);
+    await expect(review).toHaveAttribute("aria-busy", "false");
+    await review
+      .getByRole("combobox", { name: "統合先の日付表記" })
+      .selectOption(" 1日目　");
+    await expect(mode).toHaveValue(expected);
+    await review
+      .getByRole("button", { name: "確認して保存", exact: true })
+      .click();
+    await expect(review).toBeHidden();
+    const expectedModes = {
+      [eventName]: { " 1日目　": expected, "2日目": "edit" },
+    };
+    await expect.poll(() => stored(page, "dayModes")).toEqual(expectedModes);
+    expect(await stored(page, "eventLists")).toEqual(itemsBefore);
+    expect(await stored(page, "executeModeItems")).toEqual({
+      [eventName]: { " 1日目　": ["1"], "2日目": ["2"] },
+    });
+    expect(executeBefore).toEqual({
+      [eventName]: { "1日目": ["1"], "2日目": ["2"] },
+    });
+    if (expected === "focus")
+      await expect(page.locator("#focus-mode-footer")).toBeVisible();
+    await page.reload();
+    await page.getByText(eventName, { exact: true }).click();
+    expect(await stored(page, "dayModes")).toEqual(expectedModes);
+    expect(await stored(page, "eventLists")).toEqual(itemsBefore);
+    if (expected === "focus")
+      await expect(page.locator("#focus-mode-footer")).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+}
+
+for (const outcome of ["save", "cancel", "abort"] as const) {
+  test(`a focused standalone merge shows its saved mode and handles ${outcome} without losing records`, async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    const source = migrateLegacyConsistency(backup().data).data;
+    source.dayModes[eventName]["1日目"] = "focus";
+    source.dayModes[eventName][" 1日目　"] = "execute";
+    await restore(page, createAppBackup(source));
+    const stores = [
+      "dayModes",
+      "eventLists",
+      "executeModeItems",
+      "eventConsistency",
+    ];
+    const before = await Promise.all(
+      stores.map((store) => stored(page, store)),
+    );
+    await page
+      .getByRole("button", { name: "統合内容を確認", exact: true })
+      .click();
+    const review = page.getByRole("dialog", { name: /1日目 の保存先を統合/ });
+    const mode = review.getByRole("combobox", { name: "統合後の表示モード" });
+    await expect(mode).toHaveValue("focus");
+    await expect(mode.locator("option:checked")).toContainText("集中モード");
+    expect(
+      await Promise.all(stores.map((store) => stored(page, store))),
+    ).toEqual(before);
+    if (outcome === "abort") {
+      await page.evaluate(() => {
+        const original = IDBObjectStore.prototype.put;
+        IDBObjectStore.prototype.put = function (
+          ...args: Parameters<typeof original>
+        ) {
+          if (
+            this.transaction.mode === "readwrite" &&
+            this.transaction.objectStoreNames.contains("eventConsistency")
+          ) {
+            IDBObjectStore.prototype.put = original;
+            throw new DOMException(
+              "集中モードの日付統合保存失敗",
+              "AbortError",
+            );
+          }
+          return original.apply(this, args);
+        };
+      });
+    }
+    await review
+      .getByRole("button", {
+        name: outcome === "cancel" ? "取消" : "確認して保存",
+        exact: true,
+      })
+      .click();
+    await expect(review).toBeHidden();
+    if (outcome === "save") {
+      await expect
+        .poll(() => stored(page, "dayModes"))
+        .toEqual({ [eventName]: { "1日目": "focus", "2日目": "edit" } });
+      expect(await stored(page, "eventLists")).toEqual(before[1]);
+      expect(await stored(page, "executeModeItems")).toEqual(before[2]);
+      await expect(page.locator("#focus-mode-footer")).toBeVisible();
+    } else {
+      if (outcome === "abort")
+        await expect(
+          page
+            .getByRole("alert")
+            .filter({ hasText: "集中モードの日付統合保存失敗" })
+            .first(),
+        ).toBeVisible();
+      expect(
+        await Promise.all(stores.map((store) => stored(page, store))),
+      ).toEqual(before);
+    }
+    const savedModes = await stored(page, "dayModes");
+    await page.reload();
+    await page.getByText(eventName, { exact: true }).click();
+    expect(await stored(page, "dayModes")).toEqual(savedModes);
+    expect(await stored(page, "eventLists")).toEqual(before[1]);
+    await expect(page.locator("#focus-mode-footer")).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+}
+
+test("a day-tab long press can confirm focus mode through a day merge and reload", async ({
+  page,
+}) => {
+  const { dialog } = await openModeMergeReview(page);
+  const mode = dialog.getByRole("combobox", { name: "統合後の表示モード" });
+  await expect(mode).toHaveValue("execute");
+  await mode.selectOption("focus");
+  await expect(mode).toHaveValue("focus");
+  await expect(dialog).toHaveAttribute("aria-busy", "false");
+  await dialog
+    .getByRole("button", { name: "確認して保存", exact: true })
+    .click();
+  await expect(dialog).toBeHidden();
+  const expected = { [eventName]: { "1日目": "focus", "2日目": "edit" } };
+  await expect.poll(() => stored(page, "dayModes")).toEqual(expected);
+  await expect(page.locator("#focus-mode-footer")).toBeVisible();
+  await page.reload();
+  await page.getByText(eventName, { exact: true }).click();
+  expect(await stored(page, "dayModes")).toEqual(expected);
+  await expect(page.locator("#focus-mode-footer")).toBeVisible();
+});

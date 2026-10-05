@@ -21,6 +21,9 @@ import {
 } from "./context";
 import { resolveMembership } from "./membership";
 import { encodeHallRef, projectConsistencySnapshot } from "./projection";
+import { planWithDayMerges } from "./dayMergeMutation";
+import type { MutationChoices } from "../../../app/commands/applicationMutationCoordinator";
+
 export interface ItemMembershipPreview {
   mapSelectionRequired: boolean;
   status: string;
@@ -34,12 +37,40 @@ export function planItemEdit(
   baseline: ShoppingItem,
   edited: ShoppingItem,
   selection: HallSelectionIntent,
+  choices: MutationChoices = {},
 ) {
   const original = (
     snapshot.eventLists[eventName] as ShoppingItem[] | undefined
   )?.find((item) => item.id === edited.id);
   if (!original)
     throw new Error("品目が削除されています。編集を開き直してください。");
+  const targets = [
+    { eventName, day: baseline.eventDate },
+    { eventName, day: original.eventDate },
+    { eventName, day: edited.eventDate },
+  ];
+  return planWithDayMerges(snapshot, targets, choices, (merged, remapHall) =>
+    planItemEditAfterMerge(
+      merged,
+      eventName,
+      baseline,
+      edited,
+      selection.kind === "select"
+        ? { ...selection, hall: remapHall(eventName, selection.hall) }
+        : selection,
+    ),
+  );
+}
+function planItemEditAfterMerge(
+  snapshot: PersistenceSnapshot,
+  eventName: string,
+  baseline: ShoppingItem,
+  edited: ShoppingItem,
+  selection: HallSelectionIntent,
+) {
+  const original = (snapshot.eventLists[eventName] as ShoppingItem[]).find(
+    (item) => item.id === edited.id,
+  )!;
   const clean = (item: ShoppingItem) => {
     const next = { ...item };
     delete next.manualHallId;
@@ -115,7 +146,12 @@ export function previewItemEdit(
   let details: string[] = [];
   try {
     const plan = planItemEdit(snapshot, eventName, baseline, edited, selection);
-    snapshot = plan.snapshot;
+    if (
+      !plan.confirmation?.choices?.some((choice) =>
+        choice.id.startsWith("dayMerge:"),
+      )
+    )
+      snapshot = plan.snapshot;
     details = plan.confirmation?.details ?? [];
   } catch (error) {
     details = [

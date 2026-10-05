@@ -22,6 +22,7 @@ import {
   MutationTargetMissingError,
   CommittedStateApplyError,
   type MutationPlan,
+  type MutationChoices,
   type ConfirmationToken,
   type MutationConfirmation,
   type MutationIntent,
@@ -102,12 +103,20 @@ function shouldRetainSetterBatch(
     "mapViewportSettings",
   ];
   return (
+    !plan.confirmation?.choices?.some((choice) =>
+      choice.id.startsWith("dayMerge:"),
+    ) &&
     changedSnapshotStores(batch.base, batch.draft).every((key) =>
       acceptedKeys.includes(key),
-    ) && changedSnapshotStores(latest, plan.snapshot).length <= 1
+    ) &&
+    changedSnapshotStores(latest, plan.snapshot).length <= 1
   );
 }
-function planBatch(batch: Batch, latest: PersistenceSnapshot): MutationPlan {
+function planBatch(
+  batch: Batch,
+  latest: PersistenceSnapshot,
+  choices: MutationChoices = {},
+): MutationPlan {
   const projected = projectConsistencySnapshot(
     latest,
     batch.context.eventName,
@@ -166,7 +175,7 @@ function planBatch(batch: Batch, latest: PersistenceSnapshot): MutationPlan {
       });
     }
   return confirmChangedFieldConflicts(
-    planProjectedMutation(latest, changed, batch.context),
+    planProjectedMutation(latest, changed, batch.context, choices),
     changedFieldConflicts(batch.base, batch.draft, projected),
   );
 }
@@ -497,7 +506,13 @@ export function useApplicationSnapshot(
                 )
               : null;
             const plan = intent.plan(snapshot, choices);
-            if (base && !submitted.current.some((batch) => batch.id === id)) {
+            if (
+              base &&
+              !plan.confirmation?.choices?.some((choice) =>
+                choice.id.startsWith("dayMerge:"),
+              ) &&
+              !submitted.current.some((batch) => batch.id === id)
+            ) {
               submitted.current.push({
                 id,
                 context: acceptedContext,
@@ -552,8 +567,8 @@ export function useApplicationSnapshot(
       return request({
         id: batch.id,
         events,
-        plan: (latest) => {
-          const plan = planBatch(batch, latest);
+        plan: (latest, choices) => {
+          const plan = planBatch(batch, latest, choices);
           // Reference repair can turn one setter into a multi-store operation.
           // Only standalone setter edits are accepted before a successful save.
           if (batch.retryOnFailure)

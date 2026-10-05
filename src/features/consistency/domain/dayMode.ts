@@ -20,7 +20,9 @@ export function planDayModeToggle(
   const key = existingDayKey(initial.snapshot.dayModes[eventName], day) ?? day;
   const before = initial.snapshot.dayModes[eventName]?.[key];
   const mode =
-    selectedMode === "edit" || selectedMode === "execute"
+    selectedMode === "edit" ||
+    selectedMode === "execute" ||
+    selectedMode === "focus"
       ? selectedMode
       : before === "execute"
         ? "edit"

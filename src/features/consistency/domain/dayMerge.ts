@@ -15,12 +15,17 @@ import {
   createVisitContext,
 } from "../../../types/consistency";
 import type { HallDefinition } from "../../../types/map";
-import type { ShoppingItem } from "../../../types/item";
+import type { ShoppingItem, ViewMode } from "../../../types/item";
 import { getMaplessKey, MAPLESS_HALL_KEY } from "../../../types/map";
 import { normalizeExecutionVisitDay } from "../../../utils/visitProjection";
 import { hallGroupKey, hallRefKey, sameDay } from "./context";
 import { mapContextEntries } from "./migration";
 
+const modeLabels: Record<ViewMode, string> = {
+  edit: "編集モード",
+  execute: "実行モード",
+  focus: "集中モード",
+};
 const sortedKeys = (record: object | undefined, day: string) =>
   Object.keys(record ?? {})
     .filter((key) => sameDay(key, day))
@@ -52,6 +57,9 @@ export function duplicateEventDays(
     ),
   ].sort();
 }
+export interface DayMergePlan extends MutationPlan {
+  hallRefRemap?: ReadonlyMap<string, HallRef>;
+}
 /** Produces a stable proposal without touching either the source or purchase fields. */
 export function planDayMerge(
   snapshot: PersistenceSnapshot,
@@ -59,7 +67,7 @@ export function planDayMerge(
   requestedDay: string,
   preferredKey = normalizeExecutionVisitDay(requestedDay),
   selections: MutationChoices = {},
-): MutationPlan {
+): DayMergePlan {
   if (!sameDay(requestedDay, preferredKey))
     throw new Error("統合先は同じ日付を指定してください。");
   const next = structuredClone(snapshot);
@@ -79,7 +87,9 @@ export function planDayMerge(
     const selected = selections[id];
     const value = options.some((option) => option.value === selected)
       ? selected
-      : fallback;
+      : options.some((option) => option.value === fallback)
+        ? fallback
+        : options[0].value;
     if (options.length > 1) choices.push({ id, label, options, value });
     return value;
   };
@@ -220,26 +230,27 @@ export function planDayMerge(
   }
   const modes = next.dayModes[name] ?? {};
   const modeKeys = sortedKeys(modes, preferredKey);
-  if (modeKeys.length) {
+  if (modeKeys.length || selections.mode !== undefined) {
     const mode = choose(
       "mode",
       "統合後の表示モード",
-      ["edit", "execute"].map((value) => ({
+      Object.entries(modeLabels).map(([value, label]) => ({
         value,
-        label: `${value === "execute" ? "実行モード" : "編集モード"}（${
+        label: `${label}（${
           modeKeys
             .filter((key) => modes[key] === value)
             .map((key) => JSON.stringify(key))
             .join("、") || "新しく選択"
         }）`,
       })),
-      modes[modeKeys[0]],
+      modes[modeKeys[0]] ?? "edit",
     );
     details.push(
       `表示モード: ${modeKeys.map((key) => `${JSON.stringify(key)}=${modes[key]}`).join("、")} → ${mode}`,
     );
     for (const key of modeKeys) delete modes[key];
     modes[preferredKey] = mode;
+    next.dayModes[name] = modes;
   }
   const keys = sortedKeys(event.days, preferredKey);
   const merged = createDayConsistency();
@@ -451,6 +462,7 @@ export function planDayMerge(
   });
   return {
     snapshot: next,
+    hallRefRemap: remap,
     confirmation: {
       title: `${name} / ${requestedDay} の保存先を統合`,
       choices,

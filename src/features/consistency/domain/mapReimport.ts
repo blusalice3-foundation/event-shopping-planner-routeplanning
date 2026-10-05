@@ -12,6 +12,7 @@ import type {
 import type { ShoppingItem } from "../../../types/item";
 import {
   collectEventDays,
+  dayMapDependencies,
   ensureDayConsistency,
   getDayConsistency,
   normalizeMapDay,
@@ -73,15 +74,11 @@ export function planMapReimport(
     changedMaps.add(key);
     const dependentDays = days.filter(
       (day) =>
-        resolveDayMap(
+        dayMapDependencies(
           source.mapData[eventName] as Record<string, DayMapData>,
+          source.eventConsistency[eventName],
           day,
-        ).candidates.some((candidate) => candidate === key) ||
-        Object.prototype.hasOwnProperty.call(
-          getDayConsistency(event, day)?.maps ?? {},
-          key,
-        ) ||
-        sameDay(day, target.eventDate),
+        ).includes(key) || sameDay(day, target.eventDate),
     );
     dependentDays.forEach((day) => affectedDays.add(day));
     details.push(
@@ -125,7 +122,12 @@ export function planMapReimport(
       mapViewportSettings: next.mapViewportSettings,
       eventConsistency: next.eventConsistency,
     },
-    { eventName, day: targets[0]?.eventDate ?? "", confirm: true },
+    {
+      eventName,
+      day: targets[0]?.eventDate ?? "",
+      confirm: true,
+      mergeDuplicateDays: false,
+    },
   );
   // Reimport discards positions defined on the previous drawing, preserving visibility.
   for (const { mapKey, context } of mapContextEntries(

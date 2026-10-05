@@ -13,8 +13,10 @@ import {
 } from "./mutations";
 import { createApplicationMutationCoordinator } from "../../../app/commands/applicationMutationCoordinator";
 import { planDayModeToggle } from "./dayMode";
-import { planItemEdit } from "./itemEdit";
+import { planItemEdit, previewItemEdit } from "./itemEdit";
+import { decodeHallRef, projectConsistencySnapshot } from "./projection";
 import { duplicateEventDays, planDayMerge } from "./dayMerge";
+import { planWithDayMerges } from "./dayMergeMutation";
 import { applyVisitHistory } from "./visitHistory";
 import {
   validateSnapshotReferences,
@@ -1140,4 +1142,605 @@ describe("removed changed-field targets (R28/R37)", () => {
       ),
     ).toEqual({});
   });
+});
+
+describe("confirmed display modes across day merge entry points (R19/R22)", () => {
+  it.each(["edit", "execute", "focus"] as const)(
+    "offers a focused source and saves the confirmed %s mode in a standalone merge",
+    (mode) => {
+      const source = snapshot();
+      source.dayModes.event = {
+        "1日目": "focus",
+        " 1日目　": "execute",
+        "2日目": "edit",
+      };
+      const original = structuredClone(source);
+      const initial = planDayMerge(source, "event", "1日目");
+      const choice = initial.confirmation!.choices!.find(
+        (choice) => choice.id === "mode",
+      )!;
+      expect(choice.options.map((option) => option.value)).toEqual([
+        "edit",
+        "execute",
+        "focus",
+      ]);
+      expect(choice.value).toBe("focus");
+      expect(initial.snapshot.dayModes.event["1日目"]).toBe(choice.value);
+      expect(
+        choice.options.find((option) => option.value === "focus")!.label,
+      ).toContain("集中モード");
+      const plan = planDayMerge(source, "event", "1日目", undefined, { mode });
+      expect(plan.snapshot.dayModes.event).toEqual({
+        "1日目": mode,
+        "2日目": "edit",
+      });
+      expect(source).toEqual(original);
+      expect(plan.snapshot.eventLists).toEqual(original.eventLists);
+      valid(plan.snapshot);
+      const restored = parseAppBackup(
+        serializeAppBackup(createAppBackup(plan.snapshot)),
+      );
+      expect(restored.ok).toBe(true);
+      if (restored.ok)
+        expect(restored.data.dayModes).toEqual(plan.snapshot.dayModes);
+    },
+  );
+
+  const modeChanges = ["edit", "execute", "focus"].flatMap((requested) =>
+    ["edit", "execute", "focus"].flatMap((confirmed) =>
+      ["1日目", " 1日目　"].map((destination) => ({
+        requested,
+        confirmed,
+        destination,
+      })),
+    ),
+  );
+  it.each(modeChanges)(
+    "uses confirmed $confirmed instead of requested $requested at $destination",
+    ({ requested, confirmed, destination }) => {
+      const source = snapshot();
+      source.dayModes.event = {
+        "1日目": requested === "edit" ? "execute" : "edit",
+        " 1日目　": "focus",
+        "2日目": "execute",
+      };
+      source.eventLists.other = [];
+      source.eventConsistency.other = createEventConsistency();
+      source.dayModes.other = { "1日目": "focus" };
+      const original = structuredClone(source);
+      const patch = structuredClone(
+        projectConsistencySnapshot(source, "event", "1日目").dayModes,
+      );
+      patch.event["1日目"] = requested;
+      const input = { eventName: "event", day: "1日目" };
+      const initial = planProjectedMutation(source, { dayModes: patch }, input);
+      const modeChoice = initial.confirmation!.choices!.find(
+        (choice) => choice.label === "統合後の表示モード",
+      )!;
+      expect(modeChoice.value).toBe(requested);
+      expect(initial.snapshot.dayModes.event["1日目"]).toBe(requested);
+      const destinationChoice = initial.confirmation!.choices!.find(
+        (choice) => choice.label === "統合先の日付表記",
+      )!;
+      const plan = planProjectedMutation(source, { dayModes: patch }, input, {
+        [modeChoice.id]: confirmed,
+        [destinationChoice.id]: destination,
+      });
+      expect(
+        plan.confirmation!.choices!.find(
+          (choice) => choice.id === modeChoice.id,
+        )!.value,
+      ).toBe(confirmed);
+      expect(plan.snapshot.dayModes).toEqual({
+        event: { [destination]: confirmed, "2日目": "execute" },
+        other: original.dayModes.other,
+      });
+      expect(plan.snapshot.executeModeItems.event).toEqual({
+        [destination]: ["B", "A"],
+      });
+      expect(plan.snapshot.eventLists).toEqual(original.eventLists);
+      expect(source).toEqual(original);
+      expect(duplicateEventDays(plan.snapshot, "event")).toEqual([]);
+      valid(plan.snapshot);
+    },
+  );
+
+  it.each(["edit", "execute", "focus"] as const)(
+    "renews the review and keeps chosen %s after another writer resolves the duplicate days",
+    async (mode) => {
+      let durable = snapshot();
+      durable.dayModes.event["1日目"] = "edit";
+      const coordinator = createApplicationMutationCoordinator({
+        readCurrent: () => durable,
+        drain: async () => {},
+        readDurable: async () => ({
+          snapshot: structuredClone(durable),
+          expectedRoots: {},
+          consistencyMissing: false,
+        }),
+        commit: async (next) => {
+          durable = next;
+        },
+        apply: () => {},
+      });
+      const first = await coordinator.request({
+        id: "confirmed-mode",
+        events: ["event"],
+        plan: (latest, choices) => {
+          const dayModes = projectConsistencySnapshot(
+            latest,
+            "event",
+            "1日目",
+          ).dayModes;
+          return planProjectedMutation(
+            latest,
+            {
+              dayModes: {
+                ...dayModes,
+                event: { ...dayModes.event, "1日目": "execute" },
+              },
+            },
+            { eventName: "event", day: "1日目" },
+            choices,
+          );
+        },
+      });
+      if (first.status !== "confirmation-required")
+        throw new Error("Expected initial review");
+      const modeChoice = first.confirmation.choices!.find(
+        (choice) => choice.label === "統合後の表示モード",
+      )!;
+      const chosen = await coordinator.choose(first.token, modeChoice.id, mode);
+      if (chosen.status !== "confirmation-required")
+        throw new Error("Expected chosen review");
+      durable = planDayMerge(durable, "event", "1日目", undefined, {
+        mode: "execute",
+      }).snapshot;
+      const external = structuredClone(durable);
+      const renewed = await coordinator.confirm(chosen.token);
+      expect(renewed.status).toBe("confirmation-required");
+      expect(durable).toEqual(external);
+      if (renewed.status !== "confirmation-required")
+        throw new Error("Expected renewed review");
+      expect(await coordinator.confirm(renewed.token)).toMatchObject({
+        status: "committed",
+      });
+      expect(durable.dayModes.event).toEqual({ "1日目": mode });
+      expect(durable.eventLists).toEqual(external.eventLists);
+      valid(durable);
+    },
+  );
+
+  it("confirms a newly requested mode when only execution buckets are duplicated", () => {
+    const source = snapshot();
+    source.dayModes.event = {};
+    source.executeModeItems.event["1日目"] = ["A"];
+    const patch = { dayModes: { event: { "1日目": "execute" } } };
+    const input = { eventName: "event", day: "1日目" };
+    const initial = planProjectedMutation(source, patch, input);
+    const choice = initial.confirmation!.choices!.find(
+      (choice) => choice.label === "統合後の表示モード",
+    )!;
+    expect(choice.value).toBe("execute");
+    const plan = planProjectedMutation(source, patch, input, {
+      [choice.id]: "focus",
+    });
+    expect(plan.snapshot.dayModes.event).toEqual({ "1日目": "focus" });
+    valid(plan.snapshot);
+  });
+
+  it.each(["edit", "execute", "focus"] as const)(
+    "keeps the long-press confirmation and saved %s mode aligned",
+    (mode) => {
+      const source = selectableDayMergeSource();
+      source.dayModes.event["1日目"] = "focus";
+      const plan = planDayModeToggle(source, "event", "1日目", {
+        mode,
+        destination: " 1日目　",
+      });
+      expect(
+        plan.confirmation!.choices!.find((choice) => choice.id === "mode")!
+          .value,
+      ).toBe(mode);
+      expect(plan.snapshot.dayModes.event).toEqual({
+        " 1日目　": mode,
+        "2日目": "edit",
+      });
+      valid(plan.snapshot);
+    },
+  );
+});
+
+describe("ordinary mutations review duplicate day settings (R19/R22)", () => {
+  it.each(["reorder", "edit", "move"] as const)(
+    "reviews mode-only duplicates before %s and preserves other days",
+    (operation) => {
+      const source = snapshot();
+      source.dayModes.event["1日目"] = "edit";
+      source.dayModes.event["2日目"] = "execute";
+      const original = structuredClone(source);
+      const baseline = source.eventLists.event[0] as ShoppingItem;
+      const plan =
+        operation === "edit" || operation === "move"
+          ? planItemEdit(
+              source,
+              "event",
+              baseline,
+              {
+                ...baseline,
+                remarks: "今回の編集",
+                ...(operation === "move" ? { eventDate: "2日目" } : {}),
+              },
+              { kind: "unchanged" },
+            )
+          : planProjectedMutation(
+              source,
+              { executeModeItems: { event: { "1日目": ["A", "B"] } } },
+              { eventName: "event", day: "1日目", confirm: false },
+            );
+      expect(plan.confirmation?.title).toContain("保存先を統合");
+      expect(
+        plan.confirmation?.choices?.some(
+          (choice) => choice.label === "統合後の表示モード",
+        ),
+      ).toBe(true);
+      expect(duplicateEventDays(plan.snapshot, "event")).toEqual([]);
+      expect(source).toEqual(original);
+      expect(plan.snapshot.dayModes.event["2日目"]).toBe("execute");
+      valid(plan.snapshot);
+    },
+  );
+
+  it("applies the chosen destination and mode together with an ordinary reorder", async () => {
+    const source = snapshot();
+    source.dayModes.event["1日目"] = "edit";
+    const coordinator = createApplicationMutationCoordinator({
+      readCurrent: () => source,
+      drain: async () => {},
+      readDurable: async () => ({
+        snapshot: structuredClone(source),
+        expectedRoots: {},
+        consistencyMissing: false,
+      }),
+      commit: async (next) => {
+        Object.assign(source, next);
+      },
+      apply: () => {},
+    });
+    const first = await coordinator.request({
+      id: "ordinary-reorder",
+      events: ["event"],
+      plan: (latest, choices) =>
+        planProjectedMutation(
+          latest,
+          { executeModeItems: { event: { "1日目": ["A", "B"] } } },
+          { eventName: "event", day: "1日目" },
+          choices,
+        ),
+    });
+    if (first.status !== "confirmation-required")
+      throw new Error("Expected day merge review");
+    const selections = Object.fromEntries(
+      first.confirmation.choices!.map((choice) => [
+        choice.id,
+        choice.label === "統合先の日付表記"
+          ? " 1日目　"
+          : choice.label === "統合後の表示モード"
+            ? "edit"
+            : choice.value,
+      ]),
+    );
+    let token = first.token;
+    for (const [id, value] of Object.entries(selections)) {
+      const selected = await coordinator.choose(token, id, value);
+      if (selected.status !== "confirmation-required")
+        throw new Error("Expected selected review");
+      token = selected.token;
+    }
+    expect((await coordinator.confirm(token)).status).toBe("committed");
+    expect(source.dayModes.event).toEqual({ " 1日目　": "edit" });
+    expect(source.executeModeItems.event).toEqual({ " 1日目　": ["A", "B"] });
+    valid(source);
+  });
+});
+
+describe("ordinary mutation merge scope and renewed review", () => {
+  it("keeps source and destination day choices separate when editing an item's date", () => {
+    const source = snapshot();
+    source.dayModes.event["1日目"] = "edit";
+    source.dayModes.event["2日目"] = "edit";
+    source.dayModes.event[" 2日目　"] = "execute";
+    const baseline = source.eventLists.event[0] as ShoppingItem;
+    const edited = { ...baseline, eventDate: "2日目", remarks: "移動後のメモ" };
+    const initial = planItemEdit(source, "event", baseline, edited, {
+      kind: "unchanged",
+    });
+    const modeChoices = initial.confirmation!.choices!.filter((choice) =>
+      choice.label.includes("統合後の表示モード"),
+    );
+    expect(modeChoices).toHaveLength(2);
+    expect(new Set(modeChoices.map((choice) => choice.id)).size).toBe(2);
+    expect(new Set(modeChoices.map((choice) => choice.label)).size).toBe(2);
+    const choices = Object.fromEntries(
+      modeChoices.map((choice) => [
+        choice.id,
+        choice.id.includes("2日目") ? "execute" : "edit",
+      ]),
+    );
+    const selected = planItemEdit(
+      source,
+      "event",
+      baseline,
+      edited,
+      { kind: "unchanged" },
+      choices,
+    );
+    expect(selected.snapshot.dayModes.event).toEqual({
+      "1日目": "edit",
+      "2日目": "execute",
+    });
+    expect(duplicateEventDays(selected.snapshot, "event")).toEqual([]);
+    expect(selected.snapshot.eventLists.event[0]).toMatchObject(edited);
+    valid(selected.snapshot);
+  });
+
+  it("renews an ordinary edit's merge review when modes change and preserves a concurrent purchase", async () => {
+    let durable = snapshot();
+    durable.dayModes.event["1日目"] = "edit";
+    const baseline = durable.eventLists.event[0] as ShoppingItem;
+    let commits = 0;
+    const coordinator = createApplicationMutationCoordinator({
+      readCurrent: () => durable,
+      drain: async () => {},
+      readDurable: async () => ({
+        snapshot: structuredClone(durable),
+        expectedRoots: {},
+        consistencyMissing: false,
+      }),
+      commit: async (next) => {
+        commits++;
+        durable = structuredClone(next);
+      },
+      apply: () => {},
+    });
+    const first = await coordinator.request({
+      id: "ordinary-edit-review",
+      events: ["event"],
+      plan: (latest, choices) =>
+        planItemEdit(
+          latest,
+          "event",
+          baseline,
+          { ...baseline, remarks: "新しいメモ" },
+          { kind: "unchanged" },
+          choices,
+        ),
+    });
+    if (first.status !== "confirmation-required")
+      throw new Error("Expected merge review");
+    durable.dayModes.event[" 1日目　"] = "edit";
+    Object.assign(durable.eventLists.event[1] as ShoppingItem, {
+      purchaseStatus: "Purchased",
+      price: 800,
+      quantity: 2,
+    });
+    const renewed = await coordinator.confirm(first.token);
+    expect(commits).toBe(0);
+    if (renewed.status !== "confirmation-required")
+      throw new Error("Expected renewed merge review");
+    expect((await coordinator.confirm(renewed.token)).status).toBe("committed");
+    expect(durable.eventLists.event[1]).toMatchObject({
+      purchaseStatus: "Purchased",
+      price: 800,
+      quantity: 2,
+    });
+    expect(durable.eventLists.event[0]).toMatchObject({
+      remarks: "新しいメモ",
+    });
+    valid(durable);
+  });
+
+  it("retains merge choices when the requested edit also conflicts with another writer", () => {
+    const source = snapshot();
+    source.dayModes.event["1日目"] = "edit";
+    const baseline = structuredClone(
+      source.eventLists.event[0],
+    ) as ShoppingItem;
+    (source.eventLists.event[0] as ShoppingItem).remarks = "別タブのメモ";
+    const plan = planItemEdit(
+      source,
+      "event",
+      baseline,
+      { ...baseline, remarks: "今回のメモ" },
+      { kind: "unchanged" },
+    );
+    expect(
+      plan.confirmation!.choices!.some(
+        (choice) => choice.label === "統合後の表示モード",
+      ),
+    ).toBe(true);
+    expect(plan.confirmation!.details.join("\n")).toContain("別タブのメモ");
+    valid(plan.snapshot);
+  });
+});
+
+it("remaps an explicit simple-hall choice with the day merge before saving an item edit", () => {
+  const source = snapshot();
+  source.dayModes.event["1日目"] = "edit";
+  source.hallDefinitions.event = {
+    "__mapless__: 1日目　": [
+      { id: "simple", name: "簡易会場", blockNames: ["A"], vertices: [] },
+    ],
+  };
+  const baseline = source.eventLists.event[0] as ShoppingItem;
+  const preview = previewItemEdit(
+    source,
+    "event",
+    baseline,
+    { ...baseline, remarks: "ホール選択付きの編集" },
+    { kind: "unchanged" },
+  );
+  expect(decodeHallRef(preview.halls[0].id)).toEqual({
+    kind: "simple",
+    dayKey: " 1日目　",
+    hallId: "simple",
+  });
+  const plan = planItemEdit(
+    source,
+    "event",
+    baseline,
+    { ...baseline, remarks: "ホール選択付きの編集" },
+    {
+      kind: "select",
+      hall: { kind: "simple", dayKey: " 1日目　", hallId: "simple" },
+    },
+  );
+  expect(
+    plan.confirmation!.choices!.some(
+      (choice) => choice.label === "統合先の日付表記",
+    ),
+  ).toBe(true);
+  expect(
+    plan.snapshot.eventConsistency.event.days["1日目"].mapless!.assignments.A,
+  ).toEqual({
+    kind: "simple",
+    dayKey: "1日目",
+    hallId: "simple",
+  });
+  valid(plan.snapshot);
+});
+
+it.each(["hall order", "hall definition"] as const)(
+  "preserves a requested %s change while merging its simple-hall source",
+  (operation) => {
+    const source = snapshot();
+    source.dayModes.event["1日目"] = "edit";
+    source.hallDefinitions.event = {
+      "__mapless__: 1日目　": [
+        { id: "first", name: "簡易一", blockNames: ["A"], vertices: [] },
+        { id: "second", name: "簡易二", blockNames: ["A"], vertices: [] },
+      ],
+    };
+    const refs = ["first", "second"].map((hallId) => ({
+      kind: "simple" as const,
+      dayKey: " 1日目　",
+      hallId,
+    }));
+    source.eventConsistency.event.days[" 1日目　"].mapless!.hallOrder =
+      refs.map((hall) => ({ hall, priority: "none" }));
+    const projection = projectConsistencySnapshot(source, "event", "1日目");
+    if (operation === "hall order")
+      (
+        projection.hallRouteSettings.event["__mapless__:1日目"] as {
+          hallOrder: string[];
+        }
+      ).hallOrder.reverse();
+    else
+      (
+        projection.hallDefinitions.event["__mapless__:1日目"] as Array<{
+          name: string;
+        }>
+      )[0].name = "変更した簡易一";
+    const plan = planProjectedMutation(
+      source,
+      operation === "hall order"
+        ? { hallRouteSettings: projection.hallRouteSettings }
+        : { hallDefinitions: projection.hallDefinitions },
+      { eventName: "event", day: "1日目" },
+    );
+    expect(plan.confirmation!.title).toContain("保存先を統合");
+    if (operation === "hall order")
+      expect(
+        plan.snapshot.eventConsistency.event.days["1日目"]
+          .mapless!.hallOrder.map((group) => group.hall)
+          .filter((hall) => hall !== null),
+      ).toEqual(
+        [...refs].reverse().map((hall) => ({ ...hall, dayKey: "1日目" })),
+      );
+    else
+      expect(
+        plan.snapshot.hallDefinitions.event["__mapless__:1日目"],
+      ).toMatchObject([{ name: "変更した簡易一" }, { name: "簡易二" }]);
+    valid(plan.snapshot);
+  },
+);
+
+it("applies a simple-hall definition edit to its remapped ID when duplicate sources collide", () => {
+  const source = snapshot();
+  source.hallDefinitions.event = {
+    "__mapless__:1日目": [
+      { id: "hall", name: "東", blockNames: ["B"], vertices: [] },
+    ],
+    "__mapless__: 1日目　": [
+      { id: "hall", name: "西", blockNames: ["A"], vertices: [] },
+    ],
+  };
+  const projection = projectConsistencySnapshot(source, "event", "1日目");
+  (
+    projection.hallDefinitions.event["__mapless__: 1日目　"] as Array<{
+      name: string;
+    }>
+  )[0].name = "変更した西";
+  const plan = planProjectedMutation(
+    source,
+    { hallDefinitions: projection.hallDefinitions },
+    { eventName: "event", day: "1日目" },
+  );
+  expect(
+    plan.snapshot.hallDefinitions.event["__mapless__:1日目"],
+  ).toMatchObject([
+    { id: "hall", name: "東" },
+    { id: "hall~2", name: "変更した西" },
+  ]);
+  valid(plan.snapshot);
+});
+
+it("keeps remapped simple-hall choices isolated between events with the same source IDs", () => {
+  const source = snapshot();
+  source.hallDefinitions.event = {
+    "__mapless__:1日目": [
+      { id: "hall", name: "東", blockNames: ["B"], vertices: [] },
+    ],
+    "__mapless__: 1日目　": [
+      { id: "hall", name: "西", blockNames: ["A"], vertices: [] },
+    ],
+  };
+  source.eventLists.other = [item("C"), item("D")];
+  source.executeModeItems.other = { " 1日目　": ["C", "D"] };
+  source.dayModes.other = { "1日目": "edit", " 1日目　": "execute" };
+  source.hallDefinitions.other = {
+    "__mapless__: 1日目　": [
+      { id: "hall", name: "別イベント", blockNames: ["A"], vertices: [] },
+    ],
+  };
+  source.eventConsistency.other = {
+    ...createEventConsistency(),
+    days: {
+      " 1日目　": { ...createDayConsistency(), mapless: createVisitContext() },
+    },
+  };
+  const hall = { kind: "simple" as const, dayKey: " 1日目　", hallId: "hall" };
+  const plan = planWithDayMerges(
+    source,
+    [
+      { eventName: "event", day: "1日目" },
+      { eventName: "other", day: "1日目" },
+    ],
+    {},
+    (merged, remapHall) => {
+      const next = structuredClone(merged);
+      next.eventConsistency.event.days["1日目"].mapless!.assignments.A =
+        remapHall("event", hall);
+      next.eventConsistency.other.days["1日目"].mapless!.assignments.C =
+        remapHall("other", hall);
+      return { snapshot: next };
+    },
+  );
+  expect(
+    plan.snapshot.eventConsistency.event.days["1日目"].mapless!.assignments.A,
+  ).toEqual({ ...hall, dayKey: "1日目", hallId: "hall~2" });
+  expect(
+    plan.snapshot.eventConsistency.other.days["1日目"].mapless!.assignments.C,
+  ).toEqual({ ...hall, dayKey: "1日目" });
+  valid(plan.snapshot);
 });

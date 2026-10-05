@@ -2440,13 +2440,14 @@ const App: React.FC = () => {
                     (field) =>
                       (baseline[field] ?? "") === (edited[field] ?? ""),
                   ),
-                plan: (snapshot) =>
+                plan: (snapshot, choices) =>
                   planItemEdit(
                     snapshot,
                     activeEventName,
                     baseline,
                     edited,
                     selection,
+                    choices,
                   ),
               });
             },

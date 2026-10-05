@@ -1263,3 +1263,35 @@ describe("expired map edits adopt durable removals (R28/R37)", () => {
     h.unmount();
   });
 });
+
+it("keeps a confirmed day merge out of accepted state after a standalone mode write fails", async () => {
+  const h = harness();
+  const modes = { event: { "1日目": "edit", " 1日目　": "execute" } } as const;
+  h.durable().dayModes = structuredClone(modes);
+  act(() =>
+    h.result.current.hydrationSetters.setDayModes(structuredClone(modes)),
+  );
+  h.commit.mockRejectedValueOnce(new Error("day merge write aborted"));
+  act(() =>
+    h.result.current.setters.setDayModes({
+      event: { "1日目": "execute", " 1日目　": "execute" },
+    }),
+  );
+  await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+  expect(h.commit).not.toHaveBeenCalled();
+  await act(async () => {
+    h.result.current.confirm(h.result.current.confirmations[0].token);
+    await h.result.current.coordinator.enqueue(() => undefined);
+  });
+  await waitFor(() =>
+    expect(h.result.current.retryableFailures).toHaveLength(1),
+  );
+  expect(h.result.current.raw.dayModes).toEqual(modes);
+  expect(h.result.current.values.dayModes).toEqual(modes);
+  expect(
+    (await h.result.current.coordinator.readExportSnapshot()).dayModes,
+  ).toEqual(modes);
+  expect(h.durable().dayModes).toEqual(modes);
+  act(() => h.result.current.discardPending());
+  h.unmount();
+});

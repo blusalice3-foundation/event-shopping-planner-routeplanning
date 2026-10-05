@@ -110,6 +110,26 @@ export function resolveDayMap(
     ? { status: "selection-required", candidates }
     : { status: "none", candidates: [] };
 }
+
+/** Saved selection and real map contexts define dependencies, not name candidates. */
+export function dayMapDependencies(
+  maps: Record<string, DayMapData> | undefined,
+  event: EventConsistencyV1 | undefined,
+  day: string,
+): string[] {
+  const saved = Object.entries(event?.days ?? {})
+    .filter(([key]) => sameDay(key, day))
+    .map(([, value]) => value);
+  const keys = new Set<string>();
+  for (const settings of saved.length ? saved : [undefined]) {
+    const resolved = resolveDayMap(maps, day, settings?.selectedMapKey);
+    if (resolved.status === "resolved") keys.add(resolved.key);
+    for (const key of Object.keys(settings?.maps ?? {}))
+      if (maps?.[key]) keys.add(key);
+  }
+  return [...keys].sort();
+}
+
 export function getDayConsistency(
   event: EventConsistencyV1 | undefined,
   day: string,
