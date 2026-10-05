@@ -550,7 +550,7 @@ function planProjectedMutationAfterMerge(
   const next = structuredClone(source);
   const details: string[] = [];
   const comparisons: unknown[] = [];
-  const definitionContexts: Array<{
+  const affectedContexts: Array<{
     eventName: string;
     day: string;
     mapKey: string | null;
@@ -1079,8 +1079,13 @@ function planProjectedMutationAfterMerge(
             }
           : { status: "none" as const, candidates: [] as [] };
       const halls = getContextHalls(definitions, day, mapKey);
+      if (
+        affectedDays.has(day.replace(/\u3000/g, " ").trim()) ||
+        definitionAffected ||
+        !equal(context.assignments, oldContext?.assignments)
+      )
+        affectedContexts.push({ eventName, day, mapKey });
       if (definitionAffected) {
-        definitionContexts.push({ eventName, day, mapKey });
         const beforeAssignments = structuredClone(context.assignments);
         const candidates = createMembershipResolver({
           items,
@@ -1231,9 +1236,13 @@ function planProjectedMutationAfterMerge(
     }
   }
   const repaired = reconcileConsistencyReferences(next);
-  // Compare the final repaired visit results for every dependent day and map.
+  // Compare source values and final repaired results across all affected days and maps.
   // Purchase records and unrelated contexts do not participate in this approval.
-  for (const { eventName, day, mapKey } of definitionContexts) {
+  const describeAffectedContexts =
+    details.length > 0 ||
+    patch.hallDefinitions !== undefined ||
+    patch.mapData !== undefined;
+  for (const { eventName, day, mapKey } of affectedContexts) {
     const beforeDay = source.eventConsistency[eventName]?.days[day];
     const afterDay = repaired.data.eventConsistency[eventName]?.days[day];
     const before =
@@ -1248,7 +1257,7 @@ function planProjectedMutationAfterMerge(
       before: before ?? null,
       after: after ?? null,
     });
-    if (!after) continue;
+    if (!after || !describeAffectedContexts) continue;
     const halls = getContextHalls(
       repaired.data.hallDefinitions[eventName] as Record<
         string,
@@ -1278,6 +1287,30 @@ function planProjectedMutationAfterMerge(
     );
     const itemLabel = (id: string) => itemNames.get(id) ?? "削除済みの品目";
     const scope = `${day} / ${mapKey ?? "マップなし"}`;
+    const beforeHalls = getContextHalls(
+      source.hallDefinitions[eventName] as Record<string, HallDefinition[]>,
+      day,
+      mapKey,
+    );
+    const assignmentLabel = (hall: HallRef | undefined, previous: boolean) =>
+      hall
+        ? ((previous ? beforeHalls : halls).find((entry) =>
+            sameHall(entry.ref, hall),
+          )?.definition.name ?? "未割当")
+        : previous
+          ? "指定なし"
+          : "指定解除";
+    for (const id of new Set([
+      ...Object.keys(before?.assignments ?? {}),
+      ...Object.keys(after.assignments),
+    ])) {
+      const oldHall = before?.assignments[id];
+      const newHall = after.assignments[id];
+      if (!equal(oldHall, newHall))
+        details.push(
+          `${scope}: ${itemLabel(id)}: ${assignmentLabel(oldHall, true)} → ${assignmentLabel(newHall, false)}`,
+        );
+    }
     details.push(
       `${scope}: 巡回順: ${after.hallOrder.map(groupLabel).join(" → ") || "なし"}`,
     );

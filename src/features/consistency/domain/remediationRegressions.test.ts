@@ -140,7 +140,7 @@ const valid = (source: PersistenceSnapshot) => {
   expect(validateSnapshotStructure(source)).toEqual([]);
   expect(validateSnapshotReferences(source)).toEqual([]);
 };
-const coordinatorFor = (source: PersistenceSnapshot) => {
+const coordinatorFor = (source: PersistenceSnapshot, commitFailure?: Error) => {
   let durable = structuredClone(source);
   let visible = structuredClone(source);
   let commits = 0;
@@ -153,6 +153,7 @@ const coordinatorFor = (source: PersistenceSnapshot) => {
       consistencyMissing: false,
     }),
     commit: async (next) => {
+      if (commitFailure) throw commitFailure;
       commits++;
       durable = structuredClone(next);
     },
@@ -164,6 +165,18 @@ const coordinatorFor = (source: PersistenceSnapshot) => {
 };
 
 describe("R28 definition confirmation covers final visit results", () => {
+  it("still shows affected visit settings for a definition change on an empty day", () => {
+    const source = makeSource();
+    source.eventLists.event = [];
+    source.executeModeItems.event["1日目"] = [];
+    context(source).hallVisitLists = [];
+    context(source).route!.visitOrder = [];
+    const plan = definitionPlan(source);
+    expect(plan.confirmation?.details.join("\n")).toContain(
+      "1日目 / 1日目マップ: 巡回順: 東館（通常）",
+    );
+    valid(plan.snapshot);
+  });
   it("reconfirms a priority edit accepted while waiting and rejects the old token", async () => {
     const session = coordinatorFor(makeSource());
     const first = await session.coordinator.request({
@@ -837,6 +850,314 @@ describe("map selection before item edits (I06-I08 / R16)", () => {
     const latest = structuredClone(session.current());
     await expect(session.coordinator.confirm(first.token)).rejects.toThrow(
       "利用するマップを選択",
+    );
+    expect(session.commits()).toBe(0);
+    expect(session.current()).toEqual(latest);
+  });
+});
+
+describe("R28/R34 item moves compare every source and destination context", () => {
+  const hiddenMapKey = "１日目マップ";
+  const destinationMapKey = "2日目マップ";
+  const hiddenDestinationMapKey = "２日目マップ";
+  const moveSource = (mapless = false) => {
+    const source = makeSource();
+    (source.eventLists.event[1] as ShoppingItem).number = "1";
+    source.eventLists.event.push({
+      ...(source.eventLists.event[0] as ShoppingItem),
+      id: "c",
+      eventDate: "2日目",
+    });
+    source.executeModeItems.event["2日目"] = ["c"];
+    const day = source.eventConsistency.event.days["1日目"];
+    for (const key of [
+      mapKey,
+      hiddenMapKey,
+      destinationMapKey,
+      hiddenDestinationMapKey,
+    ]) {
+      source.mapData.event[key] = structuredClone(source.mapData.event[mapKey]);
+      const halls = structuredClone(
+        source.hallDefinitions.event[mapKey],
+      ) as Array<{
+        id: string;
+        name: string;
+        vertices: Array<{ row: number; col: number }>;
+      }>;
+      source.hallDefinitions.event[key] = [
+        halls[0],
+        { ...halls[0], id: "west", name: "西館" },
+      ];
+      const hall = { kind: "map" as const, mapKey: key, hallId: "hall" };
+      const visits = structuredClone(context(source));
+      visits.assignments = { a: hall, b: hall };
+      visits.hallOrder = [{ hall, priority: "none" }];
+      visits.hallVisitLists = [
+        { group: visits.hallOrder[0], itemIds: ["a", "b"] },
+      ];
+      if (key === mapKey || key === hiddenMapKey) day.maps[key] = visits;
+      else {
+        visits.assignments = { c: hall };
+        visits.hallVisitLists[0].itemIds = ["c"];
+        visits.route!.visitOrder = [
+          { ...visits.route!.visitOrder[0], itemIds: ["c"] },
+        ];
+        const destination = (source.eventConsistency.event.days["2日目"] ??=
+          createDayConsistency());
+        destination.selectedMapKey = destinationMapKey;
+        destination.maps[key] = visits;
+      }
+    }
+    if (mapless) {
+      const hall = { kind: "simple" as const, dayKey: "1日目", hallId: "hall" };
+      const visits = structuredClone(context(source));
+      visits.assignments = { a: hall, b: hall };
+      visits.hallOrder = [{ hall, priority: "none" }];
+      visits.hallVisitLists = [
+        { group: visits.hallOrder[0], itemIds: ["a", "b"] },
+      ];
+      visits.route = null;
+      day.mapless = visits;
+      day.maps = {};
+      day.selectedMapKey = null;
+      delete source.mapData.event[mapKey];
+      delete source.mapData.event[hiddenMapKey];
+      delete source.hallDefinitions.event[mapKey];
+      delete source.hallDefinitions.event[hiddenMapKey];
+      source.hallDefinitions.event["__mapless__:1日目"] = [
+        { id: "hall", name: "東館", vertices: [], blockNames: ["A"] },
+        { id: "west", name: "西館", vertices: [], blockNames: ["A"] },
+      ];
+    }
+    valid(source);
+    return source;
+  };
+  const moveIntent = (source: PersistenceSnapshot) => {
+    const baseline = structuredClone(
+      source.eventLists.event[0],
+    ) as ShoppingItem;
+    return {
+      id: "move-between-days",
+      events: ["event"],
+      plan: (latest: PersistenceSnapshot) =>
+        planItemEdit(
+          latest,
+          "event",
+          baseline,
+          { ...baseline, eventDate: "2日目" },
+          { kind: "unchanged" },
+        ),
+    };
+  };
+
+  it.each(["selected-map", "hidden-map", "mapless"] as const)(
+    "reconfirms a changed %s source assignment even when the final move is identical",
+    async (scope) => {
+      const source = moveSource(scope === "mapless");
+      const session = coordinatorFor(source);
+      const intent = moveIntent(source);
+      const first = await session.coordinator.request(intent);
+      if (first.status !== "confirmation-required")
+        throw new Error("missing move confirmation");
+      const previousResult = intent.plan(source).snapshot;
+      const day = session.current().eventConsistency.event.days["1日目"];
+      const visits =
+        scope === "mapless"
+          ? day.mapless!
+          : day.maps[scope === "hidden-map" ? hiddenMapKey : mapKey];
+      visits.assignments.a = { ...visits.assignments.a, hallId: "west" };
+      expect(intent.plan(session.current()).snapshot).toEqual(previousResult);
+      const latest = structuredClone(session.current());
+      const renewed = await session.coordinator.confirm(first.token);
+      expect(renewed.status).toBe("confirmation-required");
+      expect(session.commits()).toBe(0);
+      expect(session.current()).toEqual(latest);
+      if (renewed.status !== "confirmation-required")
+        throw new Error("missing source reconfirmation");
+      expect(renewed.token.signature).not.toBe(first.token.signature);
+      expect(renewed.confirmation.details.join("\n")).toContain(
+        "西館 → 指定解除",
+      );
+      expect(renewed.confirmation.details.join("\n")).toContain(
+        scope === "mapless"
+          ? "1日目 / マップなし"
+          : scope === "hidden-map"
+            ? hiddenMapKey
+            : mapKey,
+      );
+      expect((await session.coordinator.confirm(first.token)).status).toBe(
+        "expired",
+      );
+      expect((await session.coordinator.confirm(renewed.token)).status).toBe(
+        "committed",
+      );
+      expect(session.commits()).toBe(1);
+      const saved = session.current();
+      expect(saved.eventLists.event[0]).toMatchObject({ eventDate: "2日目" });
+      const oldDay = saved.eventConsistency.event.days["1日目"];
+      for (const visit of [
+        ...Object.values(oldDay.maps),
+        ...(oldDay.mapless ? [oldDay.mapless] : []),
+      ]) {
+        expect(visit.assignments.a).toBeUndefined();
+        expect(visit.assignments.b).toMatchObject({ hallId: "hall" });
+        expect(
+          visit.hallVisitLists.flatMap((list) => list.itemIds),
+        ).not.toContain("a");
+        expect(
+          visit.route?.visitOrder.flatMap((point) => point.itemIds) ?? [],
+        ).not.toContain("a");
+      }
+      for (const key of [destinationMapKey, hiddenDestinationMapKey]) {
+        const visit = saved.eventConsistency.event.days["2日目"].maps[key];
+        expect(visit.assignments.a).toEqual(visit.assignments.c);
+        expect(visit.hallVisitLists.flatMap((list) => list.itemIds)).toContain(
+          "a",
+        );
+      }
+      valid(saved);
+      const restored = parseAppBackup(
+        serializeAppBackup(createAppBackup(saved)),
+      );
+      expect(restored.ok).toBe(true);
+      if (restored.ok)
+        expect(restored.data.eventConsistency).toEqual(saved.eventConsistency);
+    },
+  );
+
+  it.each([destinationMapKey, hiddenDestinationMapKey])(
+    "reconfirms a changed destination assignment in %s",
+    async (key) => {
+      const source = moveSource();
+      const session = coordinatorFor(source);
+      const first = await session.coordinator.request(moveIntent(source));
+      if (first.status !== "confirmation-required")
+        throw new Error("missing move confirmation");
+      const visits =
+        session.current().eventConsistency.event.days["2日目"].maps[key];
+      visits.assignments.c = { ...visits.assignments.c, hallId: "west" };
+      const renewed = await session.coordinator.confirm(first.token);
+      expect(renewed.status).toBe("confirmation-required");
+      expect(session.commits()).toBe(0);
+      if (renewed.status !== "confirmation-required")
+        throw new Error("missing destination reconfirmation");
+      expect((await session.coordinator.confirm(renewed.token)).status).toBe(
+        "committed",
+      );
+      expect(
+        session.current().eventConsistency.event.days["2日目"].maps[key]
+          .assignments.a,
+      ).toMatchObject({ hallId: "west" });
+      valid(session.current());
+    },
+  );
+
+  it("preserves purchases, memos and unrelated day settings without asking again", async () => {
+    const source = moveSource();
+    source.eventConsistency.event.days["3日目"] = {
+      ...createDayConsistency(),
+      mapless: createVisitContext(),
+    };
+    const session = coordinatorFor(source);
+    const first = await session.coordinator.request(moveIntent(source));
+    if (first.status !== "confirmation-required")
+      throw new Error("missing move confirmation");
+    Object.assign(session.current().eventLists.event[0] as ShoppingItem, {
+      purchaseStatus: "Purchased",
+      price: 900,
+      quantity: 2,
+      remarks: "確認中のメモ",
+    });
+    session
+      .current()
+      .eventConsistency.event.days[
+        "3日目"
+      ].mapless!.hallOrder.push({ hall: null, priority: "highest" });
+    expect((await session.coordinator.confirm(first.token)).status).toBe(
+      "committed",
+    );
+    expect(session.current().eventLists.event[0]).toMatchObject({
+      eventDate: "2日目",
+      purchaseStatus: "Purchased",
+      price: 900,
+      quantity: 2,
+      remarks: "確認中のメモ",
+    });
+    expect(
+      session.current().eventConsistency.event.days["3日目"].mapless!.hallOrder,
+    ).toEqual([{ hall: null, priority: "highest" }]);
+    valid(session.current());
+  });
+
+  it("keeps the latest source assignment when saving the renewed move fails", async () => {
+    const source = moveSource();
+    const session = coordinatorFor(source, new Error("エラーが発生しました"));
+    const first = await session.coordinator.request(moveIntent(source));
+    if (first.status !== "confirmation-required")
+      throw new Error("missing move confirmation");
+    const visits =
+      session.current().eventConsistency.event.days["1日目"].maps[hiddenMapKey];
+    visits.assignments.a = { ...visits.assignments.a, hallId: "west" };
+    const latest = structuredClone(session.current());
+    const renewed = await session.coordinator.confirm(first.token);
+    if (renewed.status !== "confirmation-required")
+      throw new Error("missing reconfirmation");
+    await expect(session.coordinator.confirm(renewed.token)).rejects.toThrow(
+      "エラーが発生しました",
+    );
+    expect(session.commits()).toBe(0);
+    expect(session.current()).toEqual(latest);
+  });
+
+  it("keeps an explicit hall selection scoped to its map while retaining another map's update", async () => {
+    const source = moveSource();
+    const baseline = structuredClone(
+      source.eventLists.event[0],
+    ) as ShoppingItem;
+    const session = coordinatorFor(source);
+    const first = await session.coordinator.request({
+      id: "select-hall-in-current-map",
+      events: ["event"],
+      plan: (latest) =>
+        planItemEdit(latest, "event", baseline, baseline, {
+          kind: "select",
+          hall: { kind: "map", mapKey, hallId: "west" },
+        }),
+    });
+    if (first.status !== "confirmation-required")
+      throw new Error("missing hall confirmation");
+    const hidden =
+      session.current().eventConsistency.event.days["1日目"].maps[hiddenMapKey];
+    hidden.assignments.a = { ...hidden.assignments.a, hallId: "west" };
+    const unchangedHidden = structuredClone(hidden);
+    expect((await session.coordinator.confirm(first.token)).status).toBe(
+      "committed",
+    );
+    expect(
+      session.current().eventConsistency.event.days["1日目"].maps[hiddenMapKey],
+    ).toEqual(unchangedHidden);
+    for (const id of ["a", "b"])
+      expect(context(session.current()).assignments[id]).toMatchObject({
+        hallId: "west",
+      });
+    valid(session.current());
+  });
+  it("keeps an intervening source choice after cancellation", async () => {
+    const source = moveSource();
+    const session = coordinatorFor(source);
+    const first = await session.coordinator.request(moveIntent(source));
+    if (first.status !== "confirmation-required")
+      throw new Error("missing move confirmation");
+    const visits =
+      session.current().eventConsistency.event.days["1日目"].maps[hiddenMapKey];
+    visits.assignments.a = { ...visits.assignments.a, hallId: "west" };
+    const latest = structuredClone(session.current());
+    const renewed = await session.coordinator.confirm(first.token);
+    if (renewed.status !== "confirmation-required")
+      throw new Error("missing reconfirmation");
+    expect(session.coordinator.cancel(renewed.token)).toBe(true);
+    expect((await session.coordinator.confirm(renewed.token)).status).toBe(
+      "expired",
     );
     expect(session.commits()).toBe(0);
     expect(session.current()).toEqual(latest);

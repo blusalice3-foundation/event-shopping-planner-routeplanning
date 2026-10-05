@@ -3502,3 +3502,137 @@ test("a day-tab long press can confirm focus mode through a day merge and reload
   expect(await stored(page, "dayModes")).toEqual(expected);
   await expect(page.locator("#focus-mode-footer")).toBeVisible();
 });
+
+for (const outcome of ["save", "cancel"] as const) {
+  test(`item move renews approval after another tab changes its hidden source assignment: ${outcome}`, async ({
+    page,
+    context,
+  }) => {
+    const source = migrateLegacyConsistency(mapBackup().data).data;
+    for (const key of ["1日目マップ", "１日目マップ"]) {
+      const definitions = source.hallDefinitions[eventName][key] as Array<{
+        id: string;
+        name: string;
+        vertices: Array<{ row: number; col: number }>;
+      }>;
+      definitions.push({ ...definitions[0], id: "west", name: "西館" });
+      source.eventConsistency[eventName].days["1日目"].maps[key].assignments[
+        "1"
+      ] = { kind: "map", mapKey: key, hallId: "hall" };
+    }
+    source.eventConsistency[eventName].days["1日目"].selectedMapKey =
+      "1日目マップ";
+    await restore(page, createAppBackup(source));
+    await editMemo(page, "ユーザー登録");
+    const editor = page.getByRole("dialog", { name: "アイテム編集" });
+    await editor
+      .getByRole("textbox", { name: "参加日", exact: true })
+      .fill("2日目");
+    await editor.getByRole("button", { name: "保存", exact: true }).click();
+    const review = page.getByRole("dialog", { name: "所属・配置の変更を確認" });
+    await expect(review).toBeVisible();
+    await expect(review).toContainText("１日目マップ");
+    await expect(review).toContainText("東館 → 指定解除");
+
+    const other = await context.newPage();
+    await other.goto("/");
+    await other.getByText(eventName, { exact: true }).click();
+    await other.getByTitle("マップ表示に切り替え", { exact: true }).click();
+    await other
+      .getByRole("combobox", { name: "利用するマップ" })
+      .selectOption("１日目マップ");
+    await other.getByTitle("リスト表示に切り替え", { exact: true }).click();
+    await editMemo(other, "ユーザー登録");
+    const otherEditor = other.getByRole("dialog", { name: "アイテム編集" });
+    await otherEditor
+      .getByRole("combobox", { name: /^ホール設定/ })
+      .selectOption("@hall:" + JSON.stringify(["map", "１日目マップ", "west"]));
+    await otherEditor
+      .getByRole("button", { name: "保存", exact: true })
+      .click();
+    const otherReview = other.getByRole("dialog", {
+      name: "所属・配置の変更を確認",
+    });
+    await expect(otherReview).toBeVisible();
+    await otherReview
+      .getByRole("button", { name: "確認して保存", exact: true })
+      .click();
+    await expect(otherReview).toBeHidden();
+    await expect
+      .poll(() => stored(page, "eventConsistency"))
+      .toMatchObject({
+        [eventName]: {
+          days: {
+            "1日目": {
+              maps: {
+                "１日目マップ": { assignments: { "1": { hallId: "west" } } },
+              },
+            },
+          },
+        },
+      });
+    const before = await Promise.all(
+      ["eventLists", "eventConsistency", "executeModeItems"].map((store) =>
+        stored(page, store),
+      ),
+    );
+
+    await review
+      .getByRole("button", { name: "確認して保存", exact: true })
+      .click();
+    await expect(review).toBeVisible();
+    await expect(review).toContainText("西館 → 指定解除");
+    expect(
+      await Promise.all(
+        ["eventLists", "eventConsistency", "executeModeItems"].map((store) =>
+          stored(page, store),
+        ),
+      ),
+    ).toEqual(before);
+    await review
+      .getByRole("button", {
+        name: outcome === "save" ? "確認して保存" : "取消",
+        exact: true,
+      })
+      .click();
+    await expect(review).toBeHidden();
+    if (outcome === "cancel") {
+      expect(
+        await Promise.all(
+          ["eventLists", "eventConsistency", "executeModeItems"].map((store) =>
+            stored(page, store),
+          ),
+        ),
+      ).toEqual(before);
+    } else {
+      expect(await stored(page, "eventLists")).toMatchObject({
+        [eventName]: expect.arrayContaining([
+          expect.objectContaining({ id: "1", eventDate: "2日目" }),
+        ]),
+      });
+      const saved = (await stored(
+        page,
+        "eventConsistency",
+      )) as EventConsistencyStore;
+      for (const key of ["1日目マップ", "１日目マップ"]) {
+        const visits = saved[eventName].days["1日目"].maps[key];
+        expect(visits.assignments["1"]).toBeUndefined();
+        expect(
+          visits.hallVisitLists.flatMap((list) => list.itemIds),
+        ).not.toContain("1");
+      }
+      expect(await stored(page, "executeModeItems")).toMatchObject({
+        [eventName]: { "1日目": ["2"], "2日目": ["3", "1"] },
+      });
+    }
+    await page.reload();
+    expect(await stored(page, "eventLists")).toMatchObject({
+      [eventName]: expect.arrayContaining([
+        expect.objectContaining({
+          id: "1",
+          eventDate: outcome === "save" ? "2日目" : "1日目",
+        }),
+      ]),
+    });
+  });
+}
