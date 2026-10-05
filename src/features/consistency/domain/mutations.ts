@@ -20,6 +20,7 @@ import {
   ensureDayConsistency,
   ensureVisitContext,
   getContextHalls,
+  getDayConsistency,
   hallGroupKey,
   resolveDayMap,
   sameDay,
@@ -580,12 +581,29 @@ export function planProjectedMutation(
         !sameDay(old.eventDate, item.eventDate) ||
         old.block !== item.block ||
         old.number !== item.number;
+      const editingItem =
+        eventName === input.eventName && input.selection?.itemId === item.id;
+      const requiresMap =
+        identityChanged ||
+        old?.priorityLevel !== item.priorityLevel ||
+        oldDisplayed.get(item.id)?.manualHallId !==
+          newDisplayed.get(item.id)?.manualHallId ||
+        editingItem;
+      if (requiresMap) {
+        const selectedDay = getDayConsistency(event, item.eventDate);
+        if (
+          resolveDayMap(maps, item.eventDate, selectedDay?.selectedMapKey)
+            .status === "selection-required"
+        )
+          throw new Error(
+            "利用するマップを選択してから編集を保存してください。",
+          );
+      }
       if (
         !identityChanged &&
         oldDisplayed.get(item.id)?.manualHallId ===
           newDisplayed.get(item.id)?.manualHallId &&
-        (input.selection?.itemId !== item.id ||
-          input.selection.intent.kind === "unchanged")
+        (!editingItem || input.selection?.intent.kind === "unchanged")
       )
         continue;
       if (identityChanged) affect(item.eventDate);
@@ -602,12 +620,6 @@ export function planProjectedMutation(
       const allContexts: Array<string | null> =
         selected.status === "none" ? [null, ...mapKeys] : mapKeys;
       const contexts = allContexts;
-      if (
-        selected.status === "selection-required" &&
-        input.selection?.itemId === item.id &&
-        input.selection.intent.kind !== "unchanged"
-      )
-        throw new Error("マップの選択が必要です。");
       for (const mapKey of contexts) {
         if (mapKey !== null && !maps[mapKey]) continue;
         const map =

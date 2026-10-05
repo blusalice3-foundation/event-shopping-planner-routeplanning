@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ShoppingList from "./ShoppingList";
+import { useSearchScrollRequest } from "../app/state/useSearchScrollRequest";
 import type { ShoppingItem } from "../types/item";
 const items: ShoppingItem[] = [
   {
@@ -26,7 +27,13 @@ afterEach(() => {
     Object.defineProperty(HTMLElement.prototype, "scrollIntoView", original);
   else Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
 });
-function Harness({ requestId }: { requestId: number | null }) {
+function Harness({
+  requestId,
+  onConsumed,
+}: {
+  requestId: number | null;
+  onConsumed?: (requestId: number) => void;
+}) {
   const [collapsed, setCollapsed] = useState(new Set(["A-01"]));
   return (
     <>
@@ -57,6 +64,7 @@ function Harness({ requestId }: { requestId: number | null }) {
         searchScrollRequest={
           requestId === null ? null : { requestId, itemId: "target" }
         }
+        onSearchScrollRequestConsumed={onConsumed}
       />
     </>
   );
@@ -96,5 +104,45 @@ describe("search scroll requests", () => {
     const settledCount = scrolled.length;
     view.rerender(<Harness requestId={2} />);
     expect(scrolled).toHaveLength(settledCount);
+  });
+});
+
+function RemountHarness() {
+  const [visible, setVisible] = useState(true);
+  const search = useSearchScrollRequest("same event, day and query");
+  return (
+    <>
+      <button onClick={() => search.request("target")}>次を検索</button>
+      <button onClick={() => setVisible((current) => !current)}>
+        一覧を切り替え
+      </button>
+      {visible && (
+        <Harness
+          requestId={search.searchScrollRequest?.requestId ?? null}
+          onConsumed={search.consume}
+        />
+      )}
+    </>
+  );
+}
+
+describe("search request consumption across list mounts", () => {
+  it("does not replay a consumed request after reopening and accepts a new search", async () => {
+    const scroll = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scroll,
+    });
+    render(<RemountHarness />);
+    fireEvent.click(screen.getByRole("button", { name: "次を検索" }));
+    await waitFor(() => expect(scroll).toHaveBeenCalled());
+    const consumedCount = scroll.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "一覧を切り替え" }));
+    fireEvent.click(screen.getByRole("button", { name: "一覧を切り替え" }));
+    expect(scroll).toHaveBeenCalledTimes(consumedCount);
+    fireEvent.click(screen.getByRole("button", { name: "次を検索" }));
+    await waitFor(() =>
+      expect(scroll.mock.calls.length).toBeGreaterThan(consumedCount),
+    );
   });
 });

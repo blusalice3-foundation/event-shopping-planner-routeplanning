@@ -194,6 +194,7 @@ type AppMainContentFields = {
   >;
   highlightedItemId: string | null;
   searchScrollRequest?: { itemId: string; requestId: number } | null;
+  onSearchScrollRequestConsumed?: (requestId: number) => void;
   highlightedMapCell: { row: number; col: number } | null;
   isMapTab: boolean;
   items: ShoppingItem[];
@@ -287,6 +288,7 @@ export type AppMainContentModel = {
     | "hallRouteSettings"
     | "highlightedItemId"
     | "searchScrollRequest"
+    | "onSearchScrollRequestConsumed"
     | "highlightedMapCell"
     | "mapData"
     | "mapIsHallOrderOpen"
@@ -452,6 +454,7 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
       hallRouteSettings,
       highlightedItemId,
       searchScrollRequest,
+      onSearchScrollRequestConsumed,
       highlightedMapCell,
       mapData,
       mapIsHallOrderOpen,
@@ -737,6 +740,7 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
                   duplicateCircleItemIds={duplicateCircleItemIds}
                   highlightedItemId={highlightedItemId}
                   searchScrollRequest={searchScrollRequest}
+                  onSearchScrollRequestConsumed={onSearchScrollRequestConsumed}
                   layoutMode={layoutMode}
                   viewMode="edit"
                   showHallGroups={!spaceGroupingEnabled}
@@ -851,6 +855,7 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
                   duplicateCircleItemIds={duplicateCircleItemIds}
                   highlightedItemId={highlightedItemId}
                   searchScrollRequest={searchScrollRequest}
+                  onSearchScrollRequestConsumed={onSearchScrollRequestConsumed}
                   layoutMode={layoutMode}
                   viewMode="edit"
                   showSpaceGroups={spaceGroupingEnabled}
@@ -935,6 +940,7 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
               duplicateCircleItemIds={duplicateCircleItemIds}
               highlightedItemId={highlightedItemId}
               searchScrollRequest={searchScrollRequest}
+              onSearchScrollRequestConsumed={onSearchScrollRequestConsumed}
               layoutMode={layoutMode}
               viewMode="execute"
               showSpaceGroups={executeSpaceGroupingEnabled}

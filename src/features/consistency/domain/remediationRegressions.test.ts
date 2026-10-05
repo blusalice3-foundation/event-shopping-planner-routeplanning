@@ -630,3 +630,215 @@ it("retains sparse legacy metadata after hall-order save through a full Excel ro
   ).toEqual(context(saved).hallVisitLists);
   expect(restored.items).toMatchObject(saved.eventLists.event);
 });
+
+describe("map selection before item edits (I06-I08 / R16)", () => {
+  const ambiguousSource = () => {
+    const source = makeSource();
+    const original = context(source);
+    const day = source.eventConsistency.event.days["1日目"];
+    day.selectedMapKey = null;
+    for (const key of ["1 日目マップ", "１日目マップ"]) {
+      source.mapData.event[key] = structuredClone(source.mapData.event[mapKey]);
+      source.hallDefinitions.event[key] = structuredClone(
+        source.hallDefinitions.event[mapKey],
+      );
+      const hall = { kind: "map" as const, mapKey: key, hallId: "hall" };
+      day.maps[key] = {
+        ...structuredClone(original),
+        assignments: { a: hall, b: hall },
+        hallOrder: original.hallOrder.map((group) => ({ ...group, hall })),
+        hallVisitLists: original.hallVisitLists.map((list) => ({
+          ...structuredClone(list),
+          group: { ...list.group, hall },
+        })),
+      };
+    }
+    delete source.mapData.event[mapKey];
+    delete source.hallDefinitions.event[mapKey];
+    delete day.maps[mapKey];
+    return source;
+  };
+
+  it.each([
+    { number: "2" },
+    { block: "B" },
+    { eventDate: " 1日目　" },
+    { priorityLevel: "highest" as const },
+    { remarks: "編集中のメモ" },
+  ])(
+    "rejects an unselected dialog edit %j without changing either map",
+    (patch) => {
+      const source = ambiguousSource();
+      const before = structuredClone(source);
+      const baseline = source.eventLists.event[0] as ShoppingItem;
+      const edited = { ...baseline, ...patch };
+      expect(() =>
+        planItemEdit(source, "event", baseline, edited, { kind: "unchanged" }),
+      ).toThrow("利用するマップを選択");
+      expect(
+        previewItemEdit(source, "event", baseline, edited, {
+          kind: "unchanged",
+        }),
+      ).toMatchObject({
+        mapSelectionRequired: true,
+        locationStatus: "マップ選択待ち",
+      });
+      expect(source).toEqual(before);
+      valid(source);
+    },
+  );
+
+  it.each(["identity", "priority", "automatic", "select"] as const)(
+    "rejects %s through the shared mutation path before updating visits",
+    (operation) => {
+      const source = ambiguousSource();
+      const before = structuredClone(source);
+      const items = structuredClone(source.eventLists.event) as ShoppingItem[];
+      if (operation === "identity") items[0].number = "2";
+      if (operation === "priority") items[0].priorityLevel = "highest";
+      const selection =
+        operation === "automatic"
+          ? { itemId: "a", intent: { kind: "automatic" as const } }
+          : operation === "select"
+            ? {
+                itemId: "a",
+                intent: {
+                  kind: "select" as const,
+                  hall: {
+                    kind: "map" as const,
+                    mapKey: "1 日目マップ",
+                    hallId: "hall",
+                  },
+                },
+              }
+            : undefined;
+      expect(() =>
+        planProjectedMutation(
+          source,
+          { eventLists: { event: items } },
+          {
+            eventName: "event",
+            day: "1日目",
+            selection,
+          },
+        ),
+      ).toThrow("利用するマップを選択");
+      expect(source).toEqual(before);
+    },
+  );
+
+  it("keeps direct purchase updates available and every map context intact", () => {
+    const source = ambiguousSource();
+    const items = structuredClone(source.eventLists.event) as ShoppingItem[];
+    items[0].purchaseStatus = "Purchased";
+    items[0].price = 900;
+    const plan = planProjectedMutation(
+      source,
+      { eventLists: { event: items } },
+      {
+        eventName: "event",
+        day: "1日目",
+      },
+    );
+    expect(plan.snapshot.eventConsistency).toEqual(source.eventConsistency);
+    expect(plan.snapshot.eventLists.event[0]).toMatchObject({
+      purchaseStatus: "Purchased",
+      price: 900,
+    });
+    valid(plan.snapshot);
+  });
+
+  it("accepts a saved selection and still checks changes across both maps", () => {
+    const source = ambiguousSource();
+    source.eventConsistency.event.days["1日目"].selectedMapKey = "1 日目マップ";
+    const baseline = source.eventLists.event[0] as ShoppingItem;
+    const edited = {
+      ...baseline,
+      number: "2",
+      priorityLevel: "highest" as const,
+    };
+    const preview = previewItemEdit(source, "event", baseline, edited, {
+      kind: "unchanged",
+    });
+    expect(preview.mapSelectionRequired).toBe(false);
+    const plan = planItemEdit(source, "event", baseline, edited, {
+      kind: "unchanged",
+    });
+    for (const key of ["1 日目マップ", "１日目マップ"]) {
+      expect(plan.confirmation?.details.join("\n")).toContain(key);
+      expect(
+        plan.snapshot.eventConsistency.event.days["1日目"].maps[key].assignments
+          .b,
+      ).toEqual(
+        source.eventConsistency.event.days["1日目"].maps[key].assignments.b,
+      );
+    }
+    valid(plan.snapshot);
+  });
+
+  it("rejects a saved selection that disappeared even when one candidate remains", () => {
+    const source = ambiguousSource();
+    source.eventConsistency.event.days["1日目"].selectedMapKey =
+      "削除済みマップ";
+    delete source.mapData.event["１日目マップ"];
+    const baseline = source.eventLists.event[0] as ShoppingItem;
+    expect(() =>
+      planItemEdit(
+        source,
+        "event",
+        baseline,
+        { ...baseline, number: "2" },
+        { kind: "unchanged" },
+      ),
+    ).toThrow("利用するマップを選択");
+  });
+
+  it("requires selection on the destination day before moving an item", () => {
+    const source = makeSource();
+    for (const key of ["2 日目マップ", "２日目マップ"])
+      source.mapData.event[key] = structuredClone(source.mapData.event[mapKey]);
+    const baseline = source.eventLists.event[0] as ShoppingItem;
+    const edited = {
+      ...baseline,
+      eventDate: "2日目",
+      number: "2",
+      priorityLevel: "highest" as const,
+    };
+    expect(() =>
+      planItemEdit(source, "event", baseline, edited, { kind: "unchanged" }),
+    ).toThrow("利用するマップを選択");
+    expect(
+      previewItemEdit(source, "event", baseline, edited, { kind: "unchanged" })
+        .mapSelectionRequired,
+    ).toBe(true);
+  });
+
+  it("stops an already confirmed edit when its map selection becomes invalid before saving", async () => {
+    const source = ambiguousSource();
+    source.eventConsistency.event.days["1日目"].selectedMapKey = "1 日目マップ";
+    const session = coordinatorFor(source);
+    const baseline = source.eventLists.event[0] as ShoppingItem;
+    const first = await session.coordinator.request({
+      id: "edit-before-map-invalidates",
+      events: ["event"],
+      plan: (latest) =>
+        planItemEdit(
+          latest,
+          "event",
+          baseline,
+          { ...baseline, number: "2" },
+          { kind: "unchanged" },
+        ),
+    });
+    if (first.status !== "confirmation-required")
+      throw new Error("Expected edit confirmation");
+    session.current().eventConsistency.event.days["1日目"].selectedMapKey =
+      "削除済みマップ";
+    const latest = structuredClone(session.current());
+    await expect(session.coordinator.confirm(first.token)).rejects.toThrow(
+      "利用するマップを選択",
+    );
+    expect(session.commits()).toBe(0);
+    expect(session.current()).toEqual(latest);
+  });
+});

@@ -14,13 +14,8 @@ import {
   getDayConsistency,
   resolveDayMap,
 } from "./features/consistency/domain/context";
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
+import { useSearchScrollRequest } from "./app/state/useSearchScrollRequest";
+import React, { useEffect, useCallback, useMemo, useRef } from "react";
 import { ShoppingItem, EventMetadata, ExecuteModeItems } from "./types/item";
 import { MapDataStore, HallDefinition } from "./types/map";
 import { FocusModeSessionState } from "./types/focus";
@@ -451,7 +446,7 @@ const App: React.FC = () => {
         setItemToEdit(null);
         overlayCommands.item.close();
         overlayCommands.mapEditor.close();
-        setSearchScrollRequest(null);
+        clearSearchScrollRequest();
         setHighlightedItemId(null);
         pendingEventUpdateBaseItemsRef.current = null;
         setFocusModeSessions((current) =>
@@ -1587,30 +1582,6 @@ const App: React.FC = () => {
     [activeEventName, activeTab, currentTabItems, eventDates, searchKeyword],
   );
 
-  useEffect(() => {
-    if (searchKeyword.trim()) {
-      if (searchMatches.length > 0) {
-        setCurrentSearchIndex(-1);
-      } else {
-        setCurrentSearchIndex(-1);
-        setHighlightedItemId(null);
-      }
-    } else {
-      setCurrentSearchIndex(-1);
-      setHighlightedItemId(null);
-    }
-  }, [
-    searchKeyword,
-    searchMatches,
-    setCurrentSearchIndex,
-    setHighlightedItemId,
-  ]);
-
-  useEffect(() => {
-    setCurrentSearchIndex(-1);
-    setHighlightedItemId(null);
-  }, [activeTab, setCurrentSearchIndex, setHighlightedItemId]);
-
   const duplicateCircleItemIds = useMemo(
     () =>
       selectDuplicateCircleItemIds({
@@ -1689,11 +1660,27 @@ const App: React.FC = () => {
     ],
   );
 
-  const searchRequestSequence = useRef(0);
-  const [searchScrollRequest, setSearchScrollRequest] = useState<{
-    itemId: string;
-    requestId: number;
-  } | null>(null);
+  const searchContextKey = JSON.stringify([
+    activeEventName,
+    activeTab,
+    activeEventDate,
+    searchKeyword,
+    currentMode,
+    sortState,
+    candidateNumberSortDirection,
+    [...selectedBlockFilters].sort(),
+    visibleSearchMatches,
+  ]);
+  const {
+    searchScrollRequest,
+    request: requestSearchScroll,
+    consume: consumeSearchScrollRequest,
+    clear: clearSearchScrollRequest,
+  } = useSearchScrollRequest(searchContextKey);
+  useEffect(() => {
+    setCurrentSearchIndex(-1);
+    setHighlightedItemId(null);
+  }, [searchContextKey, setCurrentSearchIndex, setHighlightedItemId]);
   const handleSearchNext = useCallback(() => {
     if (!searchKeyword.trim() || visibleSearchMatches.length === 0) {
       if (searchMatches.length > 0 && visibleSearchMatches.length === 0) {
@@ -1709,10 +1696,7 @@ const App: React.FC = () => {
     const nextItemId = visibleSearchMatches[nextIndex];
     setHighlightedItemId(nextItemId);
 
-    setSearchScrollRequest({
-      itemId: nextItemId,
-      requestId: ++searchRequestSequence.current,
-    });
+    requestSearchScroll(nextItemId);
   }, [
     searchKeyword,
     visibleSearchMatches,
@@ -1720,6 +1704,7 @@ const App: React.FC = () => {
     setCurrentSearchIndex,
     setHighlightedItemId,
     searchMatches.length,
+    requestSearchScroll,
   ]);
 
   const {
@@ -1803,6 +1788,7 @@ const App: React.FC = () => {
           role="dialog"
           aria-modal="true"
           aria-label={confirmation.title}
+          aria-busy={application.isConfirmationBusy}
         >
           <section className="bg-white dark:bg-slate-800 rounded p-5 max-w-3xl w-full max-h-[85vh] overflow-auto">
             <h2 className="text-lg font-bold">{confirmation.title}</h2>
@@ -1812,6 +1798,7 @@ const App: React.FC = () => {
                 <select
                   className="w-full rounded border p-2 bg-white text-slate-900 dark:bg-slate-700 dark:text-slate-100"
                   value={choice.value}
+                  disabled={application.isConfirmationBusy}
                   onChange={(event) =>
                     application.choose(token, choice.id, event.target.value)
                   }
@@ -1834,14 +1821,14 @@ const App: React.FC = () => {
             ))}
             <div className="flex gap-3">
               <button
-                disabled={application.isUpdatingChoices}
+                disabled={application.isConfirmationBusy}
                 onClick={() => application.cancel(token)}
               >
                 取消
               </button>
               <button
                 className="bg-blue-600 text-white rounded px-4 py-2"
-                disabled={application.isUpdatingChoices}
+                disabled={application.isConfirmationBusy}
                 onClick={() => application.confirm(token)}
               >
                 確認して保存
@@ -2266,6 +2253,7 @@ const App: React.FC = () => {
             hallRouteSettings,
             highlightedItemId,
             searchScrollRequest,
+            onSearchScrollRequestConsumed: consumeSearchScrollRequest,
             highlightedMapCell,
             mapData,
             mapIsHallOrderOpen,
@@ -2470,6 +2458,7 @@ const App: React.FC = () => {
                     selection,
                   )
                 : {
+                    mapSelectionRequired: true,
                     status: "イベントが未選択です",
                     locationStatus: "確認できません",
                     halls: [],

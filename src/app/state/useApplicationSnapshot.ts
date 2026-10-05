@@ -177,6 +177,7 @@ export function useApplicationSnapshot(
   const [failure, setFailure] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingChoices, setPendingChoices] = useState(0);
+  const [pendingConfirmations, setPendingConfirmations] = useState(0);
   const [confirmations, setConfirmations] = useState<
     Array<{ token: ConfirmationToken; confirmation: MutationConfirmation }>
   >([]);
@@ -325,6 +326,7 @@ export function useApplicationSnapshot(
   rebuildPreview();
   const handleResult = useCallback(
     (id: string, result: MutationResult) => {
+      if (!resolvers.current.has(id)) return;
       if (result.status === "confirmation-required") {
         setConfirmations((current) => [
           ...current.filter((entry) => entry.token.operationId !== id),
@@ -371,6 +373,7 @@ export function useApplicationSnapshot(
   );
   const fail = useCallback(
     (id: string, error: unknown) => {
+      if (!resolvers.current.has(id)) return;
       const batch = submitted.current.find((entry) => entry.id === id);
       if (batch?.retryOnFailure && batch.retainOnConflict === undefined) {
         // A failed drain can precede planning. Preserve accepted single-store
@@ -653,17 +656,21 @@ export function useApplicationSnapshot(
   );
   const confirm = useCallback(
     (token: ConfirmationToken) => {
-      void coordinator.confirm(token).then(
-        (result) => handleResult(token.operationId, result),
-        (error) => fail(token.operationId, error),
-      );
+      setPendingConfirmations((count) => count + 1);
+      void coordinator
+        .confirm(token)
+        .then(
+          (result) => handleResult(token.operationId, result),
+          (error) => fail(token.operationId, error),
+        )
+        .finally(() => setPendingConfirmations((count) => count - 1));
     },
     [coordinator, handleResult, fail],
   );
   const cancel = useCallback(
     (token: ConfirmationToken) => {
-      coordinator.cancel(token);
-      handleResult(token.operationId, { status: "cancelled" });
+      if (coordinator.cancel(token))
+        handleResult(token.operationId, { status: "cancelled" });
     },
     [coordinator, handleResult],
   );
@@ -680,8 +687,7 @@ export function useApplicationSnapshot(
   }, [coordinator, handleResult, fail]);
   const discardPending = useCallback(() => {
     for (const id of [...suspended.current]) {
-      coordinator.discard(id);
-      handleResult(id, { status: "cancelled" });
+      if (coordinator.discard(id)) handleResult(id, { status: "cancelled" });
     }
   }, [coordinator, handleResult]);
   const isPending = useCallback(
@@ -724,6 +730,7 @@ export function useApplicationSnapshot(
     cancel,
     pendingCount,
     isUpdatingChoices: pendingChoices > 0,
+    isConfirmationBusy: pendingChoices > 0 || pendingConfirmations > 0,
     retryableFailures,
     retryPending,
     discardPending,

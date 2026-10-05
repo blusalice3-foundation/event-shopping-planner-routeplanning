@@ -190,6 +190,21 @@ test("search brings an initially unmounted item into view and repeats after anot
   await page.getByPlaceholder("検索...").fill("サークル110");
   await page.getByRole("button", { name: "次を検索", exact: true }).click();
   await expect(page.locator('[data-item-id="110"]')).toBeInViewport();
+  await page.getByPlaceholder("検索...").fill("");
+  await page.getByRole("button", { name: "イベント一覧", exact: true }).click();
+  await page.getByText(eventName, { exact: true }).click();
+  await expect(page.locator('[data-item-id="1"]')).toBeInViewport();
+  await expect(page.locator('[data-item-id="110"]')).toHaveCount(0);
+  // An already handled request also expires when reopening with the same query.
+  await page.getByPlaceholder("検索...").fill("サークル110");
+  await page.getByRole("button", { name: "次を検索", exact: true }).click();
+  await expect(page.locator('[data-item-id="110"]')).toBeInViewport();
+  await page.getByRole("button", { name: "イベント一覧", exact: true }).click();
+  await page.getByText(eventName, { exact: true }).click();
+  await expect(page.locator('[data-item-id="1"]')).toBeInViewport();
+  await expect(page.locator('[data-item-id="110"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "次を検索", exact: true }).click();
+  await expect(page.locator('[data-item-id="110"]')).toBeInViewport();
 });
 
 const mapBackup = () => {
@@ -2144,4 +2159,230 @@ test("map reimport saves the chosen actual map and displays it after reload", as
   await expect(
     page.getByText("利用するマップを選択してください。", { exact: true }),
   ).toHaveCount(0);
+});
+
+test("item edits require a map selection before saving and preserve both maps on cancellation", async ({
+  page,
+}) => {
+  const source = mapBackup();
+  for (const store of [
+    source.data.mapData,
+    source.data.hallDefinitions,
+    source.data.hallRouteSettings,
+  ]) {
+    const values = store[eventName] as Record<string, unknown>;
+    values["1 日目マップ"] = values["1日目マップ"];
+    delete values["1日目マップ"];
+  }
+  await restore(page, source);
+  const selector = page.getByRole("combobox", { name: "利用するマップ" });
+  await expect(selector).toHaveValue("");
+  const before = await stored(page, "eventConsistency");
+  const itemsBefore = await stored(page, "eventLists");
+  const executeBefore = await stored(page, "executeModeItems");
+  await editMemo(page, "ユーザー登録");
+  const editor = page.getByRole("dialog", { name: "アイテム編集" });
+  await editor
+    .getByRole("textbox", { name: "ナンバー", exact: true })
+    .fill("2");
+  await editor
+    .getByRole("combobox", { name: "優先度", exact: true })
+    .selectOption("highest");
+  await expect(editor).toContainText("利用するマップを選択してください");
+  await expect(
+    editor.getByRole("button", { name: "保存", exact: true }),
+  ).toBeDisabled();
+  await editor.getByRole("button", { name: "キャンセル", exact: true }).click();
+  expect(await stored(page, "eventConsistency")).toEqual(before);
+  expect(await stored(page, "eventLists")).toEqual(itemsBefore);
+  expect(await stored(page, "executeModeItems")).toEqual(executeBefore);
+  await selector.selectOption("1 日目マップ");
+  await expect(selector).toHaveValue("1 日目マップ");
+  await editMemo(page, "ユーザー登録");
+  await editor
+    .getByRole("textbox", { name: "ナンバー", exact: true })
+    .fill("2");
+  await editor.getByRole("button", { name: "保存", exact: true }).click();
+  const review = page.getByRole("dialog", {
+    name: "所属・配置の変更を確認",
+    exact: true,
+  });
+  await expect(review).toBeVisible();
+  await expect(review).toContainText("1 日目マップ");
+  await expect(review).toContainText("１日目マップ");
+  await review
+    .getByRole("button", { name: "確認して保存", exact: true })
+    .click();
+  await expect(editor).toBeHidden();
+  await expect
+    .poll(() => stored(page, "eventLists"))
+    .toMatchObject({
+      [eventName]: [
+        expect.objectContaining({ id: "1", number: "2" }),
+        expect.anything(),
+        expect.anything(),
+      ],
+    });
+  await page.reload();
+  await page.getByText(eventName, { exact: true }).click();
+  await expect(selector).toHaveValue("1 日目マップ");
+  expect(await stored(page, "eventLists")).toMatchObject({
+    [eventName]: [
+      expect.objectContaining({ id: "1", number: "2" }),
+      expect.anything(),
+      expect.anything(),
+    ],
+  });
+});
+
+async function openModeMergeReview(page: Page) {
+  const source = migrateLegacyConsistency(backup().data).data;
+  source.dayModes[eventName][" 1日目　"] = "execute";
+  await restore(page, createAppBackup(source));
+  const day = page.getByRole("button", { name: /^1日目/ });
+  await day.hover();
+  await page.mouse.down();
+  const dialog = page.getByRole("dialog", { name: /1日目 の保存先を統合/ });
+  await expect(dialog).toBeVisible();
+  await page.mouse.up();
+  return { source, dialog };
+}
+
+for (const action of ["cancel", "save"] as const) {
+  test(`mode review is renewed after another tab resolves duplicate dates and can ${action}`, async ({
+    page,
+    context,
+  }) => {
+    const { dialog } = await openModeMergeReview(page);
+    const other = await context.newPage();
+    await other.goto("/");
+    await other.getByText(eventName, { exact: true }).click();
+    await other
+      .getByRole("button", { name: "統合内容を確認", exact: true })
+      .click();
+    const otherDialog = other.getByRole("dialog", {
+      name: /1日目 の保存先を統合/,
+    });
+    await otherDialog
+      .getByRole("combobox", { name: "統合後の表示モード" })
+      .selectOption("execute");
+    await otherDialog
+      .getByRole("button", { name: "確認して保存", exact: true })
+      .click();
+    await expect(otherDialog).toBeHidden();
+    const before = await stored(page, "dayModes");
+    const itemsBefore = await stored(page, "eventLists");
+    const consistencyBefore = await stored(page, "eventConsistency");
+    await dialog
+      .getByRole("combobox", { name: "統合後の表示モード" })
+      .selectOption("edit");
+    await expect(dialog).toHaveAttribute("aria-busy", "false");
+    await expect(dialog).toContainText("前回の確認対象が解消");
+    await expect(dialog).toContainText('"execute" → "edit"');
+    expect(await stored(page, "dayModes")).toEqual(before);
+    expect(await stored(page, "eventLists")).toEqual(itemsBefore);
+    expect(await stored(page, "eventConsistency")).toEqual(consistencyBefore);
+    await dialog
+      .getByRole("button", {
+        name: action === "cancel" ? "取消" : "確認して保存",
+        exact: true,
+      })
+      .click();
+    await expect(dialog).toBeHidden();
+    const expected =
+      action === "cancel"
+        ? before
+        : { [eventName]: { "1日目": "edit", "2日目": "edit" } };
+    expect(await stored(page, "dayModes")).toEqual(expected);
+    expect(await stored(page, "eventLists")).toEqual(itemsBefore);
+    await page.reload();
+    await expect(
+      page.locator('input[aria-label="バックアップファイルを選択"]'),
+    ).toBeAttached();
+    expect(await stored(page, "dayModes")).toEqual(expected);
+    await other.close();
+  });
+}
+
+test("confirmation disables cancellation, choices and repeated saving during its durable read", async ({
+  page,
+}) => {
+  const { dialog, source } = await openModeMergeReview(page);
+  const selectedMode = await dialog
+    .getByRole("combobox", { name: "統合後の表示モード" })
+    .inputValue();
+  await page.evaluate(() => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      IDBTransaction.prototype,
+      "oncomplete",
+    )!;
+    const gate = { ready: false, release: () => {} };
+    (
+      window as typeof window & { __confirmationReadGate: typeof gate }
+    ).__confirmationReadGate = gate;
+    let intercepted = false;
+    Object.defineProperty(IDBTransaction.prototype, "oncomplete", {
+      ...descriptor,
+      set(this: IDBTransaction, handler: IDBTransaction["oncomplete"]) {
+        if (
+          !intercepted &&
+          this.mode === "readonly" &&
+          this.objectStoreNames.contains("eventConsistency") &&
+          this.objectStoreNames.contains("eventLists")
+        ) {
+          intercepted = true;
+          descriptor.set!.call(this, (event: Event) => {
+            gate.ready = true;
+            gate.release = () => {
+              Object.defineProperty(
+                IDBTransaction.prototype,
+                "oncomplete",
+                descriptor,
+              );
+              handler?.call(this, event);
+            };
+          });
+        } else descriptor.set!.call(this, handler);
+      },
+    });
+  });
+  await dialog
+    .getByRole("button", { name: "確認して保存", exact: true })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (
+            window as typeof window & {
+              __confirmationReadGate: { ready: boolean };
+            }
+          ).__confirmationReadGate.ready,
+      ),
+    )
+    .toBe(true);
+  await expect(dialog).toHaveAttribute("aria-busy", "true");
+  const cancel = dialog.getByRole("button", { name: "取消", exact: true });
+  await expect(cancel).toBeDisabled();
+  await expect(
+    dialog.getByRole("button", { name: "確認して保存", exact: true }),
+  ).toBeDisabled();
+  for (const choice of await dialog.getByRole("combobox").all())
+    await expect(choice).toBeDisabled();
+  await cancel.evaluate((button: HTMLButtonElement) => button.click());
+  await expect(dialog).toBeVisible();
+  expect(await stored(page, "dayModes")).toEqual(source.dayModes);
+  await page.evaluate(() =>
+    (
+      window as typeof window & { __confirmationReadGate: { release(): void } }
+    ).__confirmationReadGate.release(),
+  );
+  await expect(dialog).toBeHidden();
+  const expected = { [eventName]: { "1日目": selectedMode, "2日目": "edit" } };
+  expect(await stored(page, "dayModes")).toEqual(expected);
+  await page.reload();
+  await expect(
+    page.locator('input[aria-label="バックアップファイルを選択"]'),
+  ).toBeAttached();
+  expect(await stored(page, "dayModes")).toEqual(expected);
 });

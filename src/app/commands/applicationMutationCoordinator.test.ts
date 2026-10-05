@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import type { PersistenceSnapshot } from "../ports/PersistenceCommandPort";
+import { planDayModeToggle } from "../../features/consistency/domain/dayMode";
+import { createEventConsistency } from "../../types/consistency";
+import type {
+  ApplicationSnapshotRead,
+  PersistenceSnapshot,
+} from "../ports/PersistenceCommandPort";
 import {
   createApplicationMutationCoordinator,
   type MutationIntent,
@@ -10,7 +15,7 @@ function setup() {
     eventLists: {
       event: [{ id: "A", remarks: "before", purchaseStatus: "None" }],
     },
-    eventConsistency: {},
+    eventConsistency: { event: createEventConsistency() },
     eventMetadata: {},
     executeModeItems: {},
     dayModes: {},
@@ -25,14 +30,18 @@ function setup() {
   const commit = vi.fn(async (snapshot: PersistenceSnapshot) => {
     durable = structuredClone(snapshot);
   });
-  const coordinator = createApplicationMutationCoordinator({
-    readCurrent: () => current,
-    drain: async () => undefined,
-    readDurable: async () => ({
+  const drain = vi.fn(async () => undefined);
+  const readDurable = vi.fn(
+    async (): Promise<ApplicationSnapshotRead> => ({
       snapshot: structuredClone(durable),
       expectedRoots: { revision: 1 },
       consistencyMissing: false,
     }),
+  );
+  const coordinator = createApplicationMutationCoordinator({
+    readCurrent: () => current,
+    drain,
+    readDurable,
     commit,
     apply: (value) => {
       current = value;
@@ -57,6 +66,9 @@ function setup() {
     coordinator,
     commit,
     restore,
+    drain,
+    readDurable,
+    durable: () => durable,
     update: (patch: Record<string, unknown>) => {
       Object.assign(durable.eventLists.event[0]!, patch);
       current = structuredClone(durable);
@@ -314,6 +326,7 @@ describe("mutation queue durable boundaries", () => {
       const barrier = new Promise<void>((resolve) => {
         release = resolve;
       });
+
       const coordinator = createApplicationMutationCoordinator({
         readCurrent: () => current,
         drain: async () => {},
@@ -353,4 +366,165 @@ describe("mutation queue durable boundaries", () => {
       );
     },
   );
+});
+
+it.each(["choose", "confirm", "retry"] as const)(
+  "renews review without saving when duplicate days disappear before %s (R28/I09)",
+  async (action) => {
+    const app = setup();
+    app.durable().dayModes.event = { "1日目": "edit", " 1日目　": "execute" };
+    const first = await app.coordinator.request({
+      id: "mode",
+      events: ["event"],
+      plan: (snapshot, choices) =>
+        planDayModeToggle(snapshot, "event", "1日目", choices),
+    });
+    if (first.status !== "confirmation-required")
+      throw new Error("Missing review");
+    app.durable().dayModes.event = { "1日目": "execute" };
+    const renewed = await (action === "choose"
+      ? app.coordinator.choose(first.token, "mode", "edit")
+      : action === "confirm"
+        ? app.coordinator.confirm(first.token)
+        : app.coordinator.retry(first.token.operationId));
+    expect(renewed.status).toBe("confirmation-required");
+    expect(app.commit).not.toHaveBeenCalled();
+    expect(app.durable().dayModes.event).toEqual({ "1日目": "execute" });
+    if (renewed.status !== "confirmation-required")
+      throw new Error("Missing renewed review");
+    expect(renewed.token).not.toBe(first.token);
+    expect(renewed.confirmation.details.join("\n")).toContain("edit");
+    expect(await app.coordinator.confirm(first.token)).toEqual({
+      status: "expired",
+    });
+    app.update({
+      remarks: "最新の購入メモ",
+      price: 900,
+      purchaseStatus: "Purchased",
+    });
+    expect((await app.coordinator.confirm(renewed.token)).status).toBe(
+      "committed",
+    );
+    expect(app.commit).toHaveBeenCalledOnce();
+    expect(app.read().dayModes.event).toEqual({ "1日目": "edit" });
+    expect(app.read().eventLists.event[0]).toMatchObject({
+      remarks: "最新の購入メモ",
+      price: 900,
+      purchaseStatus: "Purchased",
+    });
+  },
+);
+
+it("renews a review again when the result changes after its original confirmation disappears", async () => {
+  const app = setup();
+  app.durable().dayModes.event = { "1日目": "edit", " 1日目　": "execute" };
+  const first = await app.coordinator.request({
+    id: "mode",
+    events: ["event"],
+    plan: (snapshot, choices) =>
+      planDayModeToggle(snapshot, "event", "1日目", choices),
+  });
+  if (first.status !== "confirmation-required")
+    throw new Error("Missing review");
+  app.durable().dayModes.event = { "1日目": "execute" };
+  const second = await app.coordinator.confirm(first.token);
+  expect(second.status).toBe("confirmation-required");
+  if (second.status !== "confirmation-required")
+    throw new Error("Missing renewed review");
+  app.durable().dayModes.event = { "1日目": "edit" };
+  const third = await app.coordinator.confirm(second.token);
+  expect(third.status).toBe("confirmation-required");
+  expect(app.commit).not.toHaveBeenCalled();
+});
+
+it.each(["drain", "read", "conflict"] as const)(
+  "does not commit or apply after cancellation while awaiting %s (3.3/R28)",
+  async (boundary) => {
+    const app = setup();
+    const first = await app.coordinator.request(app.restore);
+    if (first.status !== "confirmation-required")
+      throw new Error("Missing review");
+    let release!: () => void;
+    let entered!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const waiting = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    if (boundary === "drain")
+      app.drain.mockImplementationOnce(async () => {
+        entered();
+        await gate;
+      });
+    else if (boundary === "read")
+      app.readDurable.mockImplementationOnce(async () => {
+        entered();
+        await gate;
+        return {
+          snapshot: structuredClone(app.durable()),
+          expectedRoots: {},
+          consistencyMissing: false,
+        };
+      });
+    else {
+      app.commit.mockRejectedValueOnce(
+        Object.assign(new Error("conflict"), { name: "PersistenceConflict" }),
+      );
+      app.readDurable
+        .mockImplementationOnce(async () => ({
+          snapshot: structuredClone(app.durable()),
+          expectedRoots: {},
+          consistencyMissing: false,
+        }))
+        .mockImplementationOnce(async () => {
+          entered();
+          await gate;
+          return {
+            snapshot: structuredClone(app.durable()),
+            expectedRoots: {},
+            consistencyMissing: false,
+          };
+        });
+    }
+    const confirming = app.coordinator.confirm(first.token);
+    await waiting;
+    app.coordinator.cancel(first.token);
+    release();
+    expect((await confirming).status).toBe("cancelled");
+    expect(app.commit).toHaveBeenCalledTimes(boundary === "conflict" ? 1 : 0);
+    expect(app.durable().eventLists.event[0]).toMatchObject({
+      remarks: "before",
+    });
+    expect(app.read().eventLists.event[0]).toMatchObject({ remarks: "before" });
+    expect(app.coordinator.generation("event")).toBe(0);
+  },
+);
+
+it("keeps a commit in progress valid when cancellation can no longer be accepted", async () => {
+  const app = setup();
+  const first = await app.coordinator.request(app.restore);
+  if (first.status !== "confirmation-required")
+    throw new Error("Missing review");
+  let release!: () => void;
+  let entered!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const waiting = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const save = app.commit.getMockImplementation()!;
+  app.commit.mockImplementationOnce(async (snapshot) => {
+    entered();
+    await gate;
+    await save(snapshot);
+  });
+  const confirming = app.coordinator.confirm(first.token);
+  await waiting;
+  expect(app.coordinator.cancel(first.token)).toBe(false);
+  expect(app.coordinator.discard(first.token.operationId)).toBe(false);
+  release();
+  expect((await confirming).status).toBe("committed");
+  expect(app.read().eventLists.event[0]).toMatchObject({ remarks: "backup" });
 });

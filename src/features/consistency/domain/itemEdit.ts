@@ -22,6 +22,7 @@ import {
 import { resolveMembership } from "./membership";
 import { encodeHallRef, projectConsistencySnapshot } from "./projection";
 export interface ItemMembershipPreview {
+  mapSelectionRequired: boolean;
   status: string;
   locationStatus: string;
   halls: HallDefinition[];
@@ -164,6 +165,7 @@ export function previewItemEdit(
       );
   }
   return {
+    mapSelectionRequired: map.status === "selection-required",
     locationStatus,
     status:
       membership.status === "map-selection-required"

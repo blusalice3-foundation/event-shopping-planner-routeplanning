@@ -151,6 +151,7 @@ interface ShoppingListProps {
   duplicateCircleItemIds?: Set<string>;
   highlightedItemId?: string | null;
   searchScrollRequest?: { itemId: string; requestId: number } | null;
+  onSearchScrollRequestConsumed?: (requestId: number) => void;
   layoutMode?: "pc" | "smartphone";
   viewMode?: "edit" | "execute" | "focus";
   // ホールグループ化用のprops
@@ -487,6 +488,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   duplicateCircleItemIds = EMPTY_DUPLICATE_CIRCLE_ITEM_IDS,
   highlightedItemId = null,
   searchScrollRequest = null,
+  onSearchScrollRequestConsumed,
   layoutMode = "pc",
   viewMode = "edit",
   showHallGroups = false,
@@ -1621,8 +1623,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     dispatchListController(
       shoppingListCommand.requestItemScroll(searchScrollRequest.itemId),
     );
+    onSearchScrollRequestConsumed?.(searchScrollRequest.requestId);
   }, [
     searchScrollRequest,
+    onSearchScrollRequestConsumed,
     items,
     listRowGroups,
     listControllerModel,

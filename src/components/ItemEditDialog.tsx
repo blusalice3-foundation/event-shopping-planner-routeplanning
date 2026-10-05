@@ -153,9 +153,10 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
     preview?.halls ?? findHallsByBlockName(form.block, halls);
   const showHallSelector =
     blockHallCandidates.length > 0 || !!form.manualHallId;
+  const mapSelectionRequired = preview?.mapSelectionRequired ?? false;
   const save = useCallback(
     (updated: ShoppingItem) => {
-      if (saving) return;
+      if (saving || mapSelectionRequired) return;
       setSaving(true);
       setSaveError(null);
       void Promise.resolve(onSave(updated, selectionIntent))
@@ -166,7 +167,7 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
         })
         .finally(() => setSaving(false));
     },
-    [onSave, selectionIntent, saving],
+    [onSave, selectionIntent, saving, mapSelectionRequired],
   );
   const formInputClass =
     "w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white";
@@ -705,7 +706,7 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving || !form.circle.trim()}
+            disabled={saving || mapSelectionRequired || !form.circle.trim()}
             className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded-lg font-medium transition-colors"
           >
             保存

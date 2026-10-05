@@ -969,3 +969,101 @@ it.each([false, true])(
     h.unmount();
   },
 );
+
+it.each([
+  "success",
+  "renewed review",
+  "failure",
+  "cancel",
+  "cancel and read failure",
+])(
+  "keeps confirmation busy through the durable read and settles correctly on %s",
+  async (outcome) => {
+    const h = harness();
+    let pending!: Promise<PersistenceSnapshot>;
+    let rejection: unknown;
+    act(() => {
+      pending = h.result.current.request({
+        events: ["event"],
+        plan: (snapshot) => {
+          const before = structuredClone(snapshot.dayModes);
+          snapshot.dayModes.event = { "1日目": "execute" };
+          return {
+            snapshot,
+            confirmation: {
+              title: "モードを確認",
+              details: [],
+              comparison: before,
+            },
+          };
+        },
+      });
+      void pending.catch((error) => {
+        rejection = error;
+      });
+    });
+    await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+    const token = h.result.current.confirmations[0].token;
+    let release!: () => void;
+    let entered!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const waiting = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    vi.spyOn(h.port, "readApplicationSnapshot").mockImplementationOnce(
+      async () => {
+        entered();
+        await gate;
+        if (outcome === "cancel and read failure")
+          throw new Error("遅れて届いた読込失敗");
+        return {
+          snapshot: structuredClone(h.durable()),
+          expectedRoots: {},
+          consistencyMissing: false,
+        };
+      },
+    );
+    await act(async () => {
+      h.result.current.confirm(token);
+      await waiting;
+    });
+    expect(h.result.current.isConfirmationBusy).toBe(true);
+    expect(h.commit).not.toHaveBeenCalled();
+    if (outcome === "renewed review")
+      h.durable().dayModes.event = { "1日目": "edit" };
+    if (outcome === "failure")
+      h.commit.mockRejectedValueOnce(new Error("保存失敗"));
+    if (outcome.startsWith("cancel")) act(() => h.result.current.cancel(token));
+    await act(async () => {
+      release();
+      await h.result.current.coordinator.enqueue(() => undefined);
+    });
+    await waitFor(() =>
+      expect(h.result.current.isConfirmationBusy).toBe(false),
+    );
+    if (outcome === "success") {
+      expect(h.commit).toHaveBeenCalledOnce();
+      expect(h.durable().dayModes.event).toEqual({ "1日目": "execute" });
+      expect(h.result.current.confirmations).toHaveLength(0);
+    } else if (outcome === "renewed review") {
+      expect(h.commit).not.toHaveBeenCalled();
+      expect(h.result.current.confirmations[0].token).not.toBe(token);
+      act(() =>
+        h.result.current.cancel(h.result.current.confirmations[0].token),
+      );
+    } else if (outcome === "failure") {
+      expect(rejection).toMatchObject({ message: "保存失敗" });
+      expect(h.durable().dayModes).toEqual({});
+    } else {
+      expect(h.commit).not.toHaveBeenCalled();
+      expect(rejection).toMatchObject({ name: "MutationCancelled" });
+      expect(h.result.current.confirmations).toHaveLength(0);
+      expect(h.result.current.failure).toBeNull();
+      expect(h.durable().dayModes).toEqual({});
+    }
+    expect(h.result.current.pendingCount).toBe(0);
+    h.unmount();
+  },
+);

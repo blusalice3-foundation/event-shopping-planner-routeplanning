@@ -96,6 +96,51 @@ export interface MutationCoordinatorPorts {
   onApplyFailure?(error: CommittedStateApplyError): void;
   onExpired?(operationIds: string[]): void;
 }
+function clearedConfirmation(
+  previous: MutationConfirmation,
+  before: PersistenceSnapshot,
+  after: PersistenceSnapshot,
+): MutationConfirmation {
+  const changes: Array<{ path: string[]; before: unknown; after: unknown }> =
+    [];
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    value !== null && typeof value === "object" && !Array.isArray(value);
+  const compare = (base: unknown, next: unknown, path: string[]) => {
+    if (semanticSignature(base) === semanticSignature(next)) return;
+    if (isRecord(base) && isRecord(next)) {
+      for (const key of [
+        ...new Set([...Object.keys(base), ...Object.keys(next)]),
+      ].sort())
+        compare(base[key], next[key], [...path, key]);
+    } else changes.push({ path, before: base, after: next });
+  };
+  compare(before, after, []);
+  const labels: Record<keyof PersistenceSnapshot, string> = {
+    eventLists: "購入品目",
+    eventConsistency: "所属・巡回設定",
+    eventMetadata: "イベント設定",
+    executeModeItems: "実行列",
+    dayModes: "表示モード",
+    mapData: "マップ",
+    mapRotationSettings: "マップの回転",
+    mapViewportSettings: "マップの表示位置",
+    routeSettings: "経路設定",
+    hallDefinitions: "ホール定義",
+    hallRouteSettings: "ホール巡回設定",
+  };
+  return {
+    title: previous.title,
+    details: [
+      "最新の状態では前回の確認対象が解消しています。以下の変更内容を改めて確認してください。",
+      ...changes.map(
+        (change) =>
+          `${change.path.map((key, index) => (index === 0 ? labels[key as keyof PersistenceSnapshot] : key)).join(" / ")}: ${JSON.stringify(change.before) ?? "未設定"} → ${JSON.stringify(change.after) ?? "未設定"}`,
+      ),
+      ...(changes.length ? [] : ["保存する変更はありません。"]),
+    ],
+    comparison: { confirmationCleared: true, changes },
+  };
+}
 /** One queue owns calculation, CAS, persistence, and successful state application. */
 export function createApplicationMutationCoordinator(
   ports: MutationCoordinatorPorts,
@@ -112,6 +157,7 @@ export function createApplicationMutationCoordinator(
       token?: ConfirmationToken;
       choices: Record<string, string>;
       confirmation?: MutationConfirmation;
+      committing?: boolean;
     }
   >();
   const completed = new Set<string>();
@@ -147,21 +193,44 @@ export function createApplicationMutationCoordinator(
     }
     if (confirmation && operation.token !== confirmation)
       return { status: "expired" };
+    const validity = (): MutationResult | undefined => {
+      if (pending.get(id) !== operation) return { status: "cancelled" };
+      if (
+        operation.generation !== generation(operation.intent.events) ||
+        (confirmation && operation.token !== confirmation)
+      )
+        return { status: "expired" };
+      return undefined;
+    };
     // Confirmation never keeps a transaction or this queue occupied.
     await ports.drain();
+    const afterDrain = validity();
+    if (afterDrain) return afterDrain;
     for (let attempt = 0; attempt < 3; attempt++) {
+      const beforeRead = validity();
+      if (beforeRead) return beforeRead;
       const read = await ports.readDurable();
-      if (operation.generation !== generation(operation.intent.events))
-        return { status: "expired" };
+      const afterRead = validity();
+      if (afterRead) return afterRead;
       // Planning includes retained edits as well as the latest other-tab values.
       // They may be previewed, but must be saved or discarded before this commit.
       const current = structuredClone(read.snapshot);
-      const plan = operation.intent.plan(
-        ports.readMutationCurrent?.(current, id) ?? current,
-        operation.choices,
-      );
-      if (plan.confirmation) {
-        const signature = semanticSignature(plan.confirmation.comparison);
+      const planning = ports.readMutationCurrent?.(current, id) ?? current;
+      // A previous review remains mandatory even if its original cause clears.
+      // Capture the input before planners can mutate it in place.
+      const before = operation.confirmation
+        ? structuredClone(planning)
+        : undefined;
+      const plan = operation.intent.plan(planning, operation.choices);
+      const review =
+        plan.confirmation ??
+        (operation.confirmation && before
+          ? clearedConfirmation(operation.confirmation, before, plan.snapshot)
+          : undefined);
+      const afterPlan = validity();
+      if (afterPlan) return afterPlan;
+      if (review) {
+        const signature = semanticSignature(review.comparison);
         if (!confirmation || confirmation.signature !== signature) {
           const token: ConfirmationToken = {
             operationId: id,
@@ -170,19 +239,25 @@ export function createApplicationMutationCoordinator(
             sequence: ++sequence,
           };
           operation.token = token;
-          operation.confirmation = plan.confirmation;
+          operation.confirmation = review;
           return {
             status: "confirmation-required",
             token,
-            confirmation: plan.confirmation,
+            confirmation: review,
           };
         }
       }
       if (ports.hasPendingAcceptedChanges?.(id))
         throw new PendingAcceptedMutationError();
+      const beforeCommit = validity();
+      if (beforeCommit) return beforeCommit;
       try {
+        operation.committing = true;
         await ports.commit(plan.snapshot, read.expectedRoots, read.snapshot);
       } catch (error) {
+        operation.committing = false;
+        const afterFailure = validity();
+        if (afterFailure) return afterFailure;
         if (error instanceof CommittedStateApplyError) {
           stopped = true;
           ports.onApplyFailure?.(error);
@@ -243,8 +318,9 @@ export function createApplicationMutationCoordinator(
     retry(operationId: string): Promise<MutationResult> {
       return enqueue(() => execute(operationId));
     },
-    discard(operationId: string): void {
-      pending.delete(operationId);
+    discard(operationId: string): boolean {
+      if (pending.get(operationId)?.committing) return false;
+      return pending.delete(operationId);
     },
     choose(
       token: ConfirmationToken,
@@ -282,9 +358,10 @@ export function createApplicationMutationCoordinator(
     confirm(token: ConfirmationToken): Promise<MutationResult> {
       return enqueue(() => execute(token.operationId, token));
     },
-    cancel(token: ConfirmationToken): void {
-      if (pending.get(token.operationId)?.token === token)
-        pending.delete(token.operationId);
+    cancel(token: ConfirmationToken): boolean {
+      const operation = pending.get(token.operationId);
+      if (operation?.token !== token || operation.committing) return false;
+      return pending.delete(token.operationId);
     },
     invalidate,
     generation: (event: string): number => generations.get(event) ?? 0,
