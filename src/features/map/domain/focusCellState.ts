@@ -2,7 +2,10 @@ import type { ShoppingItem } from "../../../types/item";
 import type { DayMapData } from "../../../types/map";
 import { normalizeExecutionVisitDay } from "../../../utils/visitProjection";
 import { resolveLocation } from "../../consistency/domain/membership";
-import { getNavigatorStatusKind } from "../../space-navigation/domain/statusSegments";
+import {
+  countNavigatorStatuses,
+  getNavigatorStatusKind,
+} from "../../space-navigation/domain/statusSegments";
 
 export function collectFocusCellItems(
   items: readonly ShoppingItem[],
@@ -43,7 +46,21 @@ export function summarizeFocusCell(items: readonly ShoppingItem[]) {
   const isVisited = all((item) => getNavigatorStatusKind(item) === "completed");
   const allPostponed = all((item) => item.purchaseStatus === "Postpone");
   const allLate = all((item) => item.purchaseStatus === "Late");
+  const counts = countNavigatorStatuses([
+    ...new Map(items.map((item) => [item.id, item])).values(),
+  ]);
+  const segments = [
+    { label: "未", count: counts.unvisited },
+    { label: "後", count: counts.postponed },
+    { label: "遅", count: counts.late },
+    { label: "限未", count: counts.limited },
+    { label: "済", count: counts.completed },
+  ].filter(({ count }) => count > 0);
+  const statusLabel = segments
+    .map(({ label, count }) => (segments.length > 1 ? label + count : label))
+    .join("・");
   return {
+    statusLabel,
     hasItems: items.length > 0,
     isVisited,
     allNone: all((item) => item.purchaseStatus === "None"),

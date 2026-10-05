@@ -1543,3 +1543,113 @@ test("priority text inside a hall ID keeps the hall name in the map order dialog
     dialog.getByText("ホール未定義優先", { exact: true }),
   ).toHaveCount(0);
 });
+
+test("focus map shows mixed execution counts separately from candidates and the current marker", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const labels: string[] = [];
+    Object.assign(window, { __focusStatusLabels: labels });
+    const original = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (
+      ...args: Parameters<typeof original>
+    ) {
+      labels.push(args[0]);
+      return original.apply(this, args);
+    };
+  });
+  const source = mapBackup();
+  source.data.eventLists[eventName] = [
+    { ...item("1"), number: "2" },
+    { ...item("2"), number: "01a", purchaseStatus: "Postpone" },
+    { ...item("3"), number: "01b", purchaseStatus: "Late" },
+    { ...item("4"), number: "01a" },
+  ];
+  source.data.executeModeItems[eventName] = {
+    "1日目": ["1", "2", "3"],
+    "2日目": [],
+  };
+  await restore(page, source);
+  await page.getByRole("button", { name: "🏃‍♂️", exact: true }).click();
+  await page.getByTitle("集中モード", { exact: true }).click();
+  await expect(page.locator("#focus-mode-footer")).toBeVisible();
+  await page.getByTitle("マップを表示", { exact: true }).click();
+  const labels = () =>
+    page.evaluate(
+      () =>
+        (window as typeof window & { __focusStatusLabels: string[] })
+          .__focusStatusLabels,
+    );
+  await expect
+    .poll(labels)
+    .toEqual(expect.arrayContaining(["後1", "遅1", "候補1"]));
+  expect(await labels()).not.toContain("済");
+  const phase = page.getByLabel("phase", { exact: true });
+  await phase.selectOption("postponed");
+  const confirmation = page.getByRole("dialog", {
+    name: "フェーズを切り替えますか？",
+  });
+  if (await confirmation.isVisible()) {
+    await confirmation.getByRole("button", { name: /最初から開始/ }).click();
+  }
+  await page.evaluate(() => {
+    (
+      window as typeof window & { __focusStatusLabels: string[] }
+    ).__focusStatusLabels.length = 0;
+    window.dispatchEvent(new Event("resize"));
+  });
+  await expect
+    .poll(labels)
+    .toEqual(expect.arrayContaining(["後始", "後1", "遅1", "候補1"]));
+});
+
+test("a standalone execute reorder writes only its store and survives reload", async ({
+  page,
+}) => {
+  const source = migrateLegacyConsistency(
+    backup([item("1"), item("2")]).data,
+  ).data;
+  // A standalone fixture has no saved visit lists or routes to reorder.
+  // Legacy migration normally creates a visit context for these execution IDs.
+  source.eventConsistency[eventName].days = {};
+  await restore(page, createAppBackup(source));
+  await page.evaluate(() => {
+    const writes: string[][] = [];
+    Object.assign(window, { __reorderTransactions: writes });
+    const original = IDBDatabase.prototype.transaction;
+    IDBDatabase.prototype.transaction = function (
+      ...args: Parameters<typeof original>
+    ) {
+      const transaction = original.apply(this, args);
+      if (args[1] === "readwrite")
+        writes.push(Array.from(transaction.objectStoreNames));
+      return transaction;
+    };
+  });
+  const row = page.locator('[data-item-id="2"]');
+  await row.getByTitle("上に移動", { exact: true }).click();
+  await expect
+    .poll(() => stored(page, "executeModeItems"))
+    .toMatchObject({ [eventName]: { "1日目": ["2", "1"] } });
+  const writes = await page.evaluate(
+    () =>
+      (window as typeof window & { __reorderTransactions: string[][] })
+        .__reorderTransactions,
+  );
+  expect(writes.some((stores) => stores.includes("executeModeItems"))).toBe(
+    true,
+  );
+  expect(
+    writes.every(
+      (stores) =>
+        !stores.includes("eventLists") && !stores.includes("eventConsistency"),
+    ),
+  ).toBe(true);
+  await page.reload();
+  await expect(
+    page.locator('input[aria-label="バックアップファイルを選択"]'),
+  ).toBeAttached();
+  expect(await stored(page, "executeModeItems")).toMatchObject({
+    [eventName]: { "1日目": ["2", "1"] },
+  });
+});

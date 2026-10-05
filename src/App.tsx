@@ -415,13 +415,13 @@ const App: React.FC = () => {
     flushPendingSave,
     runExclusiveRestore,
     acceptCommittedSnapshot,
+    observeSnapshot,
     migrationNotices,
     dismissMigrationNotices,
   } = useIndexedDbPersistence({
     persistenceCommands: appRuntime.persistenceCommands,
     values: application.raw,
     setters: application.hydrationSetters,
-    externalMutations: true,
   });
 
   const commitApplicationSnapshotPatch = application.commitPatch;
@@ -429,6 +429,7 @@ const App: React.FC = () => {
     application;
   application.handlers.current = {
     drain: flushPendingSave,
+    observeSnapshot,
     applied: (snapshot, invalidatedEvents) => {
       acceptCommittedSnapshot(snapshot);
       if (

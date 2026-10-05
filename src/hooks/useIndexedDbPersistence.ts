@@ -423,6 +423,8 @@ export function useIndexedDbPersistence({
   const isSavingRef = useRef(false);
   const saveRequestedRef = useRef(false);
   const latestValuesRef = useRef<PersistedStateValues>(values);
+  const observedSnapshotRef = useRef<PersistedStateValues | null>(null);
+  const lastSaveErrorRef = useRef<unknown>(null);
   const previousSavedValuesRef = useRef<PersistedStateValues>(values);
   const hasObservedHydratedValuesRef = useRef(false);
   const restoreInProgressRef = useRef(false);
@@ -434,7 +436,7 @@ export function useIndexedDbPersistence({
   const failedStoresRef = useRef<PersistedStoreName[]>(failedStores);
   const failureDetailsRef = useRef<PersistenceFailureDetail[]>(failureDetails);
   const isInitializedRef = useRef(false);
-  latestValuesRef.current = values;
+  latestValuesRef.current = observedSnapshotRef.current ?? values;
   persistenceStatusRef.current = persistenceStatus;
   failedStoresRef.current = failedStores;
   failureDetailsRef.current = failureDetails;
@@ -500,6 +502,7 @@ export function useIndexedDbPersistence({
   const drainSaveQueue = useCallback(async () => {
     if (isSavingRef.current || restoreInProgressRef.current) return;
     isSavingRef.current = true;
+    lastSaveErrorRef.current = null;
     try {
       while (saveRequestedRef.current && !restoreInProgressRef.current) {
         saveRequestedRef.current = false;
@@ -531,6 +534,7 @@ export function useIndexedDbPersistence({
             await save();
           } catch (error) {
             failed.push({ label, error });
+            lastSaveErrorRef.current = error;
           }
         }
 
@@ -575,6 +579,7 @@ export function useIndexedDbPersistence({
         }
       }
     } catch (error) {
+      lastSaveErrorRef.current = error;
       recordPersistenceReleaseAMetric({
         version: 1,
         name: "save",
@@ -674,6 +679,39 @@ export function useIndexedDbPersistence({
       }
     }
   }, [drainSaveQueue, isUpdateBlocked, waitForSaveIdle]);
+
+  // The application coordinator owns this observation until it settles.
+  // Reuse the debounced watcher and its per-store queue, rather than a second
+  // DB writer. Unchanged roots keep their baseline references.
+  const observeSnapshot = useCallback(
+    async (snapshot: PersistedStateValues, base: PersistedStateValues) => {
+      const previous = latestValuesRef.current;
+      const changedStores = (Object.keys(base) as PersistedStoreName[]).filter(
+        (key) => JSON.stringify(base[key]) !== JSON.stringify(snapshot[key]),
+      );
+      if (changedStores.length !== 1)
+        throw new Error("監視保存は単独の保存領域だけを対象とします。");
+      observedSnapshotRef.current = { ...base };
+      const store = changedStores[0];
+      Object.assign(observedSnapshotRef.current, { [store]: snapshot[store] });
+      previousSavedValuesRef.current = base;
+      latestValuesRef.current = observedSnapshotRef.current;
+      updatePersistenceStatus("unsaved");
+      try {
+        await new Promise<void>((resolve) => setTimeout(resolve, saveDelayMs));
+        await flushPendingSave();
+      } catch (error) {
+        // The coordinator retains the intent for replan/retry or explicit
+        // discard. Do not let the watcher independently resend a stale plan.
+        previousSavedValuesRef.current = previous;
+        throw lastSaveErrorRef.current ?? error;
+      } finally {
+        observedSnapshotRef.current = null;
+        latestValuesRef.current = previousSavedValuesRef.current;
+      }
+    },
+    [flushPendingSave, saveDelayMs, updatePersistenceStatus],
+  );
 
   const runExclusiveRestore = useCallback(
     async <T>(
@@ -1134,6 +1172,16 @@ export function useIndexedDbPersistence({
       return;
     }
 
+    if (
+      observedSnapshotRef.current ||
+      createSaveTasks(
+        previousSavedValuesRef.current,
+        latestValuesRef.current,
+        persistenceCommands,
+      ).length === 0
+    )
+      return;
+
     saveRequestedRef.current = true;
     updatePersistenceStatus("unsaved");
 
@@ -1144,6 +1192,7 @@ export function useIndexedDbPersistence({
   }, [
     isInitialized,
     externalMutations,
+    persistenceCommands,
     eventConsistency,
     saveDelayMs,
     eventLists,
@@ -1183,6 +1232,7 @@ export function useIndexedDbPersistence({
     [updateFailedStores, updateFailureDetails, updatePersistenceStatus],
   );
   return {
+    observeSnapshot,
     acceptCommittedSnapshot,
     migrationNotices,
     dismissMigrationNotices: () => setMigrationNotices([]),

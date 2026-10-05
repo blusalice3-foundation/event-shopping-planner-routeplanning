@@ -373,6 +373,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       string,
       {
         hasItems: boolean;
+        statusLabel: string;
         items: ShoppingItem[];
         visitKeys: Set<string>;
         isCurrentPosition: boolean;
@@ -492,7 +493,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
           }
         } else {
           labels.set(key, {
-            text: "\u6B21",
+            text: "次",
             bgColor: "rgba(255,109,0,0.5)",
             textColor: "#FFFFFF",
           });
@@ -515,9 +516,9 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
           bgColor: "rgba(158,158,158,0.5)",
           textColor: "rgba(76,175,80,0.8)",
         });
-      } else if (state.allNone) {
+      } else {
         labels.set(key, {
-          text: "\u672A",
+          text: state.statusLabel,
           bgColor: "rgba(66,165,245,0.3)",
           textColor: "rgba(33,150,243,0.8)",
         });
@@ -1840,15 +1841,37 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
           ctx.textBaseline = "bottom";
           ctx.fillStyle = label.textColor;
           drawUprightText(label.text, x + width / 2, pinY - pinFontSize);
-        } else {
-          // その他のラベルはセル中央に描画する。
-          const fontSize = Math.max(10, cellSize * 0.35);
-          ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillStyle = label.textColor;
-          drawUprightText(label.text, x + width / 2, y + height / 2);
         }
+        // Keep status counts inside the cell even when the current-position
+        // marker is above it. Separate lines keep mixed labels readable.
+        const statusText = state?.isCurrentPosition
+          ? state.isVisited
+            ? ""
+            : state.statusLabel
+          : label.text;
+        const lines = statusText ? statusText.split("・") : [];
+        const fontSize = Math.min(
+          Math.max(10, cellSize * 0.35),
+          height / (lines.length + 0.5),
+        );
+        ctx.font =
+          "bold " +
+          fontSize +
+          'px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = state?.isCurrentPosition
+          ? isDarkMode
+            ? "#FFFFFF"
+            : "#1e40af"
+          : label.textColor;
+        lines.forEach((line, index) => {
+          drawUprightText(
+            line,
+            x + width / 2,
+            y + height / 2 + (index - (lines.length - 1) / 2) * fontSize,
+          );
+        });
       });
 
       // 一時表示先は正式位置とは独立した青い破線二重枠で描く。

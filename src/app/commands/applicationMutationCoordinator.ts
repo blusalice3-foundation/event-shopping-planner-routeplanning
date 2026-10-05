@@ -87,7 +87,11 @@ export interface MutationCoordinatorPorts {
   hasPendingAcceptedChanges?(operationId: string): boolean;
   drain(): Promise<void>;
   readDurable(): Promise<ApplicationSnapshotRead>;
-  commit(snapshot: PersistenceSnapshot, expectedRoots: object): Promise<void>;
+  commit(
+    snapshot: PersistenceSnapshot,
+    expectedRoots: object,
+    base: PersistenceSnapshot,
+  ): Promise<void>;
   apply(snapshot: PersistenceSnapshot, invalidatedEvents: string[]): void;
   onApplyFailure?(error: CommittedStateApplyError): void;
   onExpired?(operationIds: string[]): void;
@@ -177,8 +181,13 @@ export function createApplicationMutationCoordinator(
       if (ports.hasPendingAcceptedChanges?.(id))
         throw new PendingAcceptedMutationError();
       try {
-        await ports.commit(plan.snapshot, read.expectedRoots);
+        await ports.commit(plan.snapshot, read.expectedRoots, read.snapshot);
       } catch (error) {
+        if (error instanceof CommittedStateApplyError) {
+          stopped = true;
+          ports.onApplyFailure?.(error);
+          throw error;
+        }
         if (
           error instanceof Error &&
           (error.name === "PersistenceConflict" ||

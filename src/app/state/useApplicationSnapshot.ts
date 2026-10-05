@@ -17,6 +17,7 @@ import type {
 } from "../../hooks/useIndexedDbPersistence";
 import {
   createApplicationMutationCoordinator,
+  semanticSignature,
   MutationConflictError,
   CommittedStateApplyError,
   type MutationPlan,
@@ -56,6 +57,16 @@ export const emptyApplicationSnapshot = (): PersistedStateValues => ({
 const keys = Object.keys(emptyApplicationSnapshot()) as Array<
   keyof PersistedStateValues
 >;
+function itemContentSignature(lists: PersistenceSnapshot["eventLists"]) {
+  return semanticSignature(
+    Object.fromEntries(
+      Object.entries(lists).map(([event, items]) => [
+        event,
+        items.map(semanticSignature).sort(),
+      ]),
+    ),
+  );
+}
 type Batch = {
   id: string;
   context: MutationContext;
@@ -121,7 +132,14 @@ export function useApplicationSnapshot(
   const rawRef = useRef(raw);
   const contextRef = useRef<MutationContext>({ eventName, day });
   contextRef.current = { eventName, day };
-  const handlers = useRef({
+  const handlers = useRef<{
+    drain(): Promise<void>;
+    observeSnapshot?(
+      snapshot: PersistedStateValues,
+      base: PersistedStateValues,
+    ): Promise<void>;
+    applied(snapshot: PersistedStateValues, events: string[]): void;
+  }>({
     drain: async () => {},
     applied: (_snapshot: PersistedStateValues, _events: string[]) => {},
   });
@@ -183,15 +201,44 @@ export function useApplicationSnapshot(
           precedingBatches(id).some((batch) => retained.current.has(batch.id)),
         drain: () => handlers.current.drain(),
         readDurable: () => persistence.readApplicationSnapshot(),
-        commit: async (snapshot, expectedRoots) => {
+        commit: async (snapshot, expectedRoots, base) => {
           const errors = [
             ...validateSnapshotStructure(snapshot),
             ...validateSnapshotReferences(snapshot),
           ];
           if (errors.length) throw new Error(errors.join("\n"));
-          await persistence.commitApplicationSnapshotAtomically(snapshot, {
-            expectedRoots,
-          });
+          const changedStores = keys.filter(
+            (key) =>
+              JSON.stringify(base[key]) !== JSON.stringify(snapshot[key]),
+          );
+          // Decide after reference repair: saved visit lists/routes make an
+          // execution reorder a multi-store mutation, even with one setter.
+          if (
+            changedStores.length === 1 &&
+            (changedStores[0] === "executeModeItems" ||
+              (changedStores[0] === "eventLists" &&
+                itemContentSignature(base.eventLists) ===
+                  itemContentSignature(snapshot.eventLists))) &&
+            handlers.current.observeSnapshot
+          ) {
+            await handlers.current.observeSnapshot(
+              snapshot as unknown as PersistedStateValues,
+              base as unknown as PersistedStateValues,
+            );
+            // Other stores may have changed in another tab during debounce.
+            // Adopt their latest durable values without writing them back.
+            try {
+              Object.assign(
+                snapshot,
+                (await persistence.readApplicationSnapshot()).snapshot,
+              );
+            } catch (error) {
+              throw new CommittedStateApplyError(error);
+            }
+          } else
+            await persistence.commitApplicationSnapshotAtomically(snapshot, {
+              expectedRoots,
+            });
         },
         apply: (snapshot, events) => {
           rawRef.current = snapshot as unknown as PersistedStateValues;

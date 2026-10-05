@@ -120,3 +120,39 @@ describe("focus map completion (I05)", () => {
     expect(result.candidates.size).toBe(0);
   });
 });
+
+describe("focus map status labels", () => {
+  it.each([
+    [["Postpone", "Late"], "後1・遅1"],
+    [["Purchased", "Postpone"], "後1・済1"],
+    [["None", "Late"], "未1・遅1"],
+    [["None", "Postpone", "Late", "Purchased"], "未1・後1・遅1・済1"],
+    [["Postpone", "Postpone"], "後"],
+    [["Late"], "遅"],
+    [["SoldOut", "Absent", "Purchased"], "済"],
+  ] as const)("shows %s as %s", (statuses, label) => {
+    expect(
+      summarizeFocusCell(
+        statuses.map((purchaseStatus, index) =>
+          item(String(index), { purchaseStatus }),
+        ),
+      ).statusLabel,
+    ).toBe(label);
+  });
+
+  it("deduplicates counts and keeps invalid limited quantities visibly incomplete", () => {
+    const postponed = item("a", { purchaseStatus: "Postpone" });
+    expect(
+      summarizeFocusCell([
+        postponed,
+        postponed,
+        item("b", { purchaseStatus: "LimitedPurchase" }),
+        item("c", {
+          purchaseStatus: "LimitedPurchase",
+          limitedPurchasedQuantity: 1,
+        }),
+      ]).statusLabel,
+    ).toBe("後1・限未1・済1");
+    expect(summarizeFocusCell([]).statusLabel).toBe("");
+  });
+});
