@@ -376,8 +376,7 @@ async function main() {
         await page.reload();
         await page
           .getByRole("heading", {
-            name: "保存データを安全に読み込めません",
-            exact: true,
+            name: /^保存データを安全に読み込めません(?:でした)?$/,
           })
           .waitFor();
         assert.equal(
