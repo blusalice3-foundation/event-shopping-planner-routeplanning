@@ -372,6 +372,50 @@ function Get-ArtifactEvidence {
   }
 }
 
+function Get-DatabaseCeiling {
+  param([string]$Root)
+  $contractPath = Join-Path $Root "config/db-compatibility-contract.json"
+  if (Test-Path -LiteralPath $contractPath) {
+    $contract = Get-Content -LiteralPath $contractPath -Raw -Encoding utf8 | ConvertFrom-Json
+    return [int]$contract.indexedDb.forwardCompatibilityCeiling
+  }
+  $legacyPath = Join-Path $Root "src/utils/indexedDB.ts"
+  $legacySource = Get-Content -LiteralPath $legacyPath -Raw -Encoding utf8
+  if ($legacySource -notmatch 'const MAX_FORWARD_COMPATIBLE_DB_VERSION = (\d+);') {
+    throw "Rollback predecessor has no verifiable database compatibility ceiling."
+  }
+  return [int]$Matches[1]
+}
+
+function Invoke-DatabaseBoundaryVerifier {
+  param(
+    [ValidateSet("seed", "upgrade", "blocked", "isolated", "forward")]
+    [string]$Stage,
+    [string]$ArtifactId,
+    [hashtable]$Evidence
+  )
+  Clear-TransitionEnvironment
+  $env:ESP_PREVIEW_URL = $PreviewUrl
+  $env:ESP_BROWSER_PROFILE_DIR = if ($Stage -eq "isolated") {
+    Join-Path $TempRoot "isolated-legacy-profile"
+  } else {
+    $ProfileDirectory
+  }
+  $env:ESP_DB_BOUNDARY_DIRECTORY = $TempRoot
+  $env:ESP_DB_BOUNDARY_STAGE = $Stage
+  $env:ESP_TARGET_ARTIFACT_ID = $ArtifactId
+  $env:ESP_EXPECTED_INDEX_SHA256 = $Evidence.IndexSha256
+  $env:ESP_EXPECTED_SW_SHA256 = $Evidence.ServiceWorkerSha256
+  $env:ESP_EXPECTED_MAIN_ASSET = $Evidence.MainAsset
+  Push-Location $ProjectRoot
+  try {
+    Invoke-CheckedCommand -Command { node scripts/rehearse-release-a-db-boundary.mjs } -FailureMessage "Database boundary verifier failed in $Stage stage"
+  } finally {
+    Pop-Location
+  }
+}
+
+
 function Clear-TransitionEnvironment {
   Remove-Item Env:ESP_TRANSITION_MODE -ErrorAction SilentlyContinue
   Remove-Item Env:ESP_ROLLBACK_MODE -ErrorAction SilentlyContinue
@@ -385,6 +429,8 @@ function Clear-TransitionEnvironment {
   Remove-Item Env:ESP_ROLLBACK_TARGET_CAPABILITY -ErrorAction SilentlyContinue
   Remove-Item Env:ESP_ROLLBACK_ACTIVATION -ErrorAction SilentlyContinue
   Remove-Item Env:ESP_ALLOW_DIRTY_BUILD -ErrorAction SilentlyContinue
+  Remove-Item Env:ESP_DB_BOUNDARY_STAGE -ErrorAction SilentlyContinue
+  Remove-Item Env:ESP_DB_BOUNDARY_DIRECTORY -ErrorAction SilentlyContinue
 }
 
 function Invoke-BrowserVerifier {
@@ -552,6 +598,25 @@ try {
     throw "Prompt-close drill requires a prompt-close-all-v1 predecessor."
   }
 
+  $CurrentDatabaseCeiling = Get-DatabaseCeiling -Root $ProjectRoot
+  $BaselineDatabaseCeiling = Get-DatabaseCeiling -Root $BaselineRoot
+  if ($BaselineDatabaseCeiling -lt $CurrentDatabaseCeiling) {
+    # An incompatible reader must reject the upgraded DB. Recovery uses a separate profile.
+    $PreviewProcess = Start-ArtifactPreview -WorkingDirectory $BaselineRoot
+    Invoke-DatabaseBoundaryVerifier -Stage "seed" -ArtifactId $BaselineCommit -Evidence $BaselineEvidence
+    Stop-ArtifactPreview -Process $PreviewProcess
+    $PreviewProcess = Start-ArtifactPreview -WorkingDirectory $ProjectRoot
+    Invoke-DatabaseBoundaryVerifier -Stage "upgrade" -ArtifactId $FinalBuildId -Evidence $FinalEvidence
+    Stop-ArtifactPreview -Process $PreviewProcess
+    $PreviewProcess = Start-ArtifactPreview -WorkingDirectory $BaselineRoot
+    Invoke-DatabaseBoundaryVerifier -Stage "blocked" -ArtifactId $BaselineCommit -Evidence $BaselineEvidence
+    Invoke-DatabaseBoundaryVerifier -Stage "isolated" -ArtifactId $BaselineCommit -Evidence $BaselineEvidence
+    Stop-ArtifactPreview -Process $PreviewProcess
+    $PreviewProcess = Start-ArtifactPreview -WorkingDirectory $ProjectRoot
+    Invoke-DatabaseBoundaryVerifier -Stage "forward" -ArtifactId $FinalBuildId -Evidence $FinalEvidence
+    Write-Output "Release A isolated rollback recovery PASS: DB v$CurrentDatabaseCeiling rejects predecessor ceiling v$BaselineDatabaseCeiling."
+  } else {
+
   $PreviewProcess = Start-ArtifactPreview -WorkingDirectory $ProjectRoot
   Invoke-BrowserVerifier -Mode "seed"
   Stop-ArtifactPreview -Process $PreviewProcess
@@ -574,6 +639,8 @@ try {
     -TargetArtifactId $FinalBuildId `
     -TargetBuildId $FinalBuildId `
     -Evidence $FinalEvidence
+
+  }
 
   Write-Output (
     "Release A rollback rehearsal PASS: {0} -> {1} -> {0}" -f `
