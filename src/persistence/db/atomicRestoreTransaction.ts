@@ -24,6 +24,7 @@ import {
 } from "../../utils/persistenceResilience";
 import {
   CONSISTENCY_ARCHIVE_KEY,
+  EVENT_GENERATIONS_KEY,
   CONSISTENCY_MIGRATION_KEY,
   DATA_KEY,
   STORES,
@@ -81,6 +82,7 @@ interface AppDataRestoreObservation {
   consistencyMissing: boolean;
   journal: unknown;
   archive: unknown;
+  eventGenerations: Record<string, number>;
   checkpoints: Map<StoreName, PersistenceCheckpoint | null>;
   runtimeCandidates: RuntimeCandidateSnapshot<unknown>[];
 }
@@ -215,6 +217,20 @@ function storedValuesEqual(left: unknown, right: unknown): boolean {
   return true;
 }
 
+function readEventGenerations(value: unknown): Record<string, number> {
+  if (value === undefined) return {};
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    Object.values(value).some(
+      (generation) => !Number.isSafeInteger(generation) || generation < 0,
+    )
+  )
+    throw new PersistenceConflictError("イベントの操作世代を検証できません。");
+  return value as Record<string, number>;
+}
+
 async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> {
   const database = await openDB();
   const transaction = openCoordinatedTransaction(
@@ -232,6 +248,9 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
   );
   const archiveRequest = requestResult(
     transaction.objectStore(STORES.SYNC_QUEUE).get(CONSISTENCY_ARCHIVE_KEY),
+  );
+  const generationsRequest = requestResult(
+    transaction.objectStore(STORES.SYNC_QUEUE).get(EVENT_GENERATIONS_KEY),
   );
   const reads = APPLICATION_SNAPSHOT_STORE_NAMES.map(async (storeName) => {
     const payloadPromise =
@@ -256,10 +275,12 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
     raw.set(storeName, { payload, metadata, checkpoint });
   });
   await Promise.all([...reads, finished]);
-  const [journal, archive] = await Promise.all([
+  const [journal, archive, rawGenerations] = await Promise.all([
     journalRequest,
     archiveRequest,
+    generationsRequest,
   ]);
+  const eventGenerations = readEventGenerations(rawGenerations);
   const consistencyMissing =
     raw.get(STORES.EVENT_CONSISTENCY)?.payload === undefined;
   await validateConsistencyMigrationEvidence(
@@ -368,6 +389,7 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
     consistencyMissing,
     journal,
     archive,
+    eventGenerations,
   };
 }
 
@@ -386,6 +408,7 @@ export async function readApplicationSnapshot(): Promise<ApplicationSnapshotRead
     snapshot: structuredClone(observation.snapshot),
     expectedRoots: observation,
     consistencyMissing: observation.consistencyMissing,
+    eventGenerations: structuredClone(observation.eventGenerations),
   };
 }
 export async function commitApplicationSnapshotAtomically(
@@ -501,7 +524,8 @@ export async function commitApplicationSnapshotAtomically(
     const currentMetadata = new Map<StoreName, unknown>();
     const currentCheckpoints = new Map<StoreName, unknown>();
     let currentMapEntries: Record<string, unknown> | null = null;
-    let remainingReads = APPLICATION_SNAPSHOT_STORE_NAMES.length * 3 + 2;
+    let remainingReads = APPLICATION_SNAPSHOT_STORE_NAMES.length * 3 + 3;
+    let currentEventGenerations: unknown;
     let currentJournal: unknown;
     let currentArchive: unknown;
     let writesQueued = false;
@@ -554,6 +578,33 @@ export async function commitApplicationSnapshotAtomically(
           throw new PersistenceConflictError(
             "計算後に移行記録が変更されました。",
           );
+        if (
+          !storedValuesEqual(
+            readEventGenerations(currentEventGenerations),
+            observation.eventGenerations,
+          )
+        )
+          throw new PersistenceConflictError(
+            "計算後にイベントの操作世代が変更されました。",
+          );
+        if (options.invalidatedEvents?.length) {
+          const generations = { ...observation.eventGenerations };
+          for (const event of new Set(options.invalidatedEvents)) {
+            const generation =
+              (Object.prototype.hasOwnProperty.call(generations, event)
+                ? generations[event]
+                : 0) + 1;
+            if (!Number.isSafeInteger(generation))
+              throw new Error("イベントの操作世代が上限に達しました。");
+            Object.defineProperty(generations, event, {
+              value: generation,
+              enumerable: true,
+              configurable: true,
+              writable: true,
+            });
+          }
+          trackRequest(controlStore.put(generations, EVENT_GENERATIONS_KEY));
+        }
         if (options.migration) {
           trackRequest(
             controlStore.put(
@@ -652,6 +703,14 @@ export async function commitApplicationSnapshotAtomically(
 
     try {
       const controlStore = transaction.objectStore(STORES.SYNC_QUEUE);
+      const generationsRead = controlStore.get(EVENT_GENERATIONS_KEY);
+      generationsRead.onerror = () => {
+        failure = generationsRead.error;
+      };
+      generationsRead.onsuccess = () => {
+        currentEventGenerations = generationsRead.result;
+        commitIfReady();
+      };
       const journalRead = controlStore.get(CONSISTENCY_MIGRATION_KEY);
       journalRead.onerror = () => {
         failure = journalRead.error;

@@ -314,7 +314,7 @@ export const useEventTransferCommands = ({
       );
       const nextData = await requestMutation({
         events: [targetEventName],
-        plan: (snapshot) =>
+        plan: (snapshot, choices) =>
           planEventRestore(
             snapshot,
             pendingBackup.data,
@@ -323,6 +323,7 @@ export const useEventTransferCommands = ({
             pendingBackup.notices?.map(
               (change) => `${change.path}: ${change.message}`,
             ),
+            choices,
           ),
       });
       const restoredItems = nextData.eventLists[

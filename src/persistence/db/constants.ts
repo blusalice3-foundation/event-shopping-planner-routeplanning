@@ -42,3 +42,5 @@ export const CONSISTENCY_MIGRATION_KEY =
   "__esp_internal__:migration:consistency:v1";
 export const CONSISTENCY_ARCHIVE_KEY =
   "__esp_internal__:migration-archive:consistency:v1";
+
+export const EVENT_GENERATIONS_KEY = "__esp_internal__:event-generations:v1";

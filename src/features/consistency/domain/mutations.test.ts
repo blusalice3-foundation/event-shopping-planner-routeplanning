@@ -16,7 +16,8 @@ import { planDayModeToggle } from "./dayMode";
 import { planItemEdit, previewItemEdit } from "./itemEdit";
 import { decodeHallRef, projectConsistencySnapshot } from "./projection";
 import { duplicateEventDays, planDayMerge } from "./dayMerge";
-import { planWithDayMerges } from "./dayMergeMutation";
+import { planWithDayMerges, dayMergeChoicePrefix } from "./dayMergeMutation";
+import { planEventRestore } from "./eventMutations";
 import { applyVisitHistory } from "./visitHistory";
 import {
   validateSnapshotReferences,
@@ -1742,5 +1743,80 @@ it("keeps remapped simple-hall choices isolated between events with the same sou
   expect(
     plan.snapshot.eventConsistency.other.days["1日目"].mapless!.assignments.C,
   ).toEqual({ ...hall, dayKey: "1日目" });
+  valid(plan.snapshot);
+});
+
+it("requires selectable day merging before restoring a new event with settings-only duplicates", () => {
+  const backup = snapshot();
+  backup.dayModes.event["1日目"] = "edit";
+  const original = structuredClone(backup);
+  const current = snapshot();
+  const plan = planEventRestore(current, backup, "event", "restored");
+  expect(plan.confirmation?.choices?.map((choice) => choice.label)).toEqual(
+    expect.arrayContaining(["統合先の日付表記", "統合後の表示モード"]),
+  );
+  const prefix = dayMergeChoicePrefix("restored", "1日目");
+  const chosen = planEventRestore(current, backup, "event", "restored", [], {
+    [`${prefix}destination`]: " 1日目　",
+    [`${prefix}mode`]: "focus",
+  });
+  expect(chosen.snapshot.dayModes.restored).toEqual({ " 1日目　": "focus" });
+  expect(chosen.snapshot.executeModeItems.restored).toEqual({
+    " 1日目　": ["B", "A"],
+  });
+  expect(chosen.snapshot.eventLists.restored).toEqual(backup.eventLists.event);
+  expect(chosen.snapshot.eventConsistency.event).toEqual(
+    current.eventConsistency.event,
+  );
+  expect(chosen.invalidatedEvents).toEqual(["restored"]);
+  expect(backup).toEqual(original);
+  valid(chosen.snapshot);
+});
+
+it("restoration merges all duplicated days with separate choices and deterministic proposals", () => {
+  const backup = snapshot();
+  backup.executeModeItems.event["1日目"] = ["A", "B"];
+  backup.dayModes.event["1日目"] = "edit";
+  backup.dayModes.event["2日目"] = "edit";
+  backup.dayModes.event[" 2日目　"] = "execute";
+  const choices = {
+    [`${dayMergeChoicePrefix("event", "1日目")}destination`]: " 1日目　",
+    [`${dayMergeChoicePrefix("event", "1日目")}executionOrder`]: " 1日目　",
+    [`${dayMergeChoicePrefix("event", "1日目")}mode`]: "execute",
+    [`${dayMergeChoicePrefix("event", "2日目")}destination`]: "2日目",
+    [`${dayMergeChoicePrefix("event", "2日目")}mode`]: "focus",
+  };
+  const plan = planEventRestore(
+    snapshot(),
+    backup,
+    "event",
+    "event",
+    ["参照整理済み"],
+    choices,
+  );
+  expect(plan.confirmation?.details).toContain("参照整理済み");
+  expect(duplicateEventDays(plan.snapshot, "event")).toEqual([]);
+  expect(plan.snapshot.dayModes.event).toEqual({
+    " 1日目　": "execute",
+    "2日目": "focus",
+  });
+  expect(plan.snapshot.eventLists).toEqual(backup.eventLists);
+  const reversed = structuredClone(backup);
+  reversed.dayModes.event = Object.fromEntries(
+    Object.entries(reversed.dayModes.event).reverse(),
+  );
+  expect(
+    planEventRestore(
+      snapshot(),
+      reversed,
+      "event",
+      "event",
+      ["参照整理済み"],
+      choices,
+    ).snapshot,
+  ).toEqual(plan.snapshot);
+  expect(
+    planEventRestore(snapshot(), plan.snapshot, "event", "event").snapshot,
+  ).toEqual(plan.snapshot);
   valid(plan.snapshot);
 });

@@ -417,6 +417,7 @@ const App: React.FC = () => {
     persistenceCommands: appRuntime.persistenceCommands,
     values: application.raw,
     setters: application.hydrationSetters,
+    onHydratedSnapshot: application.coordinator.initializeEventGenerations,
   });
 
   const commitApplicationSnapshotPatch = application.commitPatch;
@@ -442,7 +443,7 @@ const App: React.FC = () => {
         overlayCommands.mapImport.cancelReimport();
       }
       if (activeEventName && invalidatedEvents.includes(activeEventName)) {
-        overlayCommands.visitList.closePanel();
+        overlayCommands.visitList.endSession();
         setItemToEdit(null);
         overlayCommands.item.close();
         overlayCommands.mapEditor.close();
@@ -1326,7 +1327,7 @@ const App: React.FC = () => {
       openPanel: overlayCommands.visitList.open,
       setUnsaved: overlayCommands.visitList.setUnsaved,
       requestConfirmClose: overlayCommands.visitList.requestConfirmClose,
-      closePanel: overlayCommands.visitList.closePanel,
+      closePanel: overlayCommands.visitList.endSession,
       confirmClose: overlayCommands.visitList.confirmClose,
       discardClose: overlayCommands.visitList.discardClose,
     },

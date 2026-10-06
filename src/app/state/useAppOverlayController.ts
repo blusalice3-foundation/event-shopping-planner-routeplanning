@@ -122,6 +122,7 @@ export interface AppOverlayVisitListCommands {
   setUnsaved(hasUnsavedChanges: boolean): void;
   requestConfirmClose(pendingTabChange: string | null): void;
   closePanel(): void;
+  endSession(): void;
   confirmClose(): void;
   discardClose(): void;
 }
@@ -509,6 +510,16 @@ export const useAppOverlayController = (
           type: "visit-list/request-confirm-close",
           requestId: state.visitList.requestId,
           pendingTabChange,
+        });
+      },
+      endSession: () => {
+        if (state.visitList.kind === "inactive") return;
+        dispatch({
+          type:
+            state.visitList.kind === "confirm-close"
+              ? "visit-list/discard-close"
+              : "visit-list/close-panel",
+          requestId: state.visitList.requestId,
         });
       },
       closePanel: () => {

@@ -694,13 +694,21 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
             </p>
             <div className="flex justify-end gap-3">
               <button
-                onClick={handleVisitListDialogCancel}
+                onClick={() => {
+                  void Promise.resolve(handleVisitListDialogCancel()).catch(
+                    () => {},
+                  );
+                }}
                 className="px-4 py-2 text-sm font-semibold rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
               >
                 キャンセル（破棄）
               </button>
               <button
-                onClick={handleVisitListDialogConfirm}
+                onClick={() => {
+                  void Promise.resolve(handleVisitListDialogConfirm()).catch(
+                    () => {},
+                  );
+                }}
                 className="px-4 py-2 text-sm font-semibold rounded-md bg-blue-600 text-white hover:bg-blue-700"
               >
                 保存して確定

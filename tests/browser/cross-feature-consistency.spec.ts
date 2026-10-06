@@ -1,4 +1,7 @@
 import ExcelJS from "exceljs";
+import type { PersistenceSnapshot } from "../../src/app/ports/PersistenceCommandPort";
+import { planEventRestore } from "../../src/features/consistency/domain/eventMutations";
+import { duplicateEventDays } from "../../src/features/consistency/domain/dayMerge";
 import { createAppBackup } from "../../src/utils/appBackup";
 import { migrateLegacyConsistency } from "../../src/features/consistency/domain/migration";
 import type { EventConsistencyStore } from "../../src/types/consistency";
@@ -266,6 +269,96 @@ const mapBackup = () => {
     },
   };
 };
+
+// Existing-database scenarios must start from saved duplicates. Backup restore
+// now requires a merge review, so seed that legacy state with valid DB metadata.
+async function loadSavedSnapshot(page: Page, source: PersistenceSnapshot) {
+  const duplicates = duplicateEventDays(source, eventName);
+  const initial = duplicates.length
+    ? planEventRestore(source, source, eventName, eventName).snapshot
+    : source;
+  await restore(page, createAppBackup(initial));
+  if (!duplicates.length) return;
+  const writes = await Promise.all(
+    Object.entries(source)
+      .filter(
+        ([store, value]) =>
+          store !== "mapData" &&
+          JSON.stringify(value) !==
+            JSON.stringify(initial[store as keyof PersistenceSnapshot]),
+      )
+      .map(async ([store, value]) => {
+        const metadataKey = createPersistenceMetadataKey(store, "data");
+        const checkpointKey = createPersistenceCheckpointKey(store, "data");
+        const previous = (await stored(
+          page,
+          "syncQueue",
+          metadataKey,
+        )) as StoredPersistenceMetadata;
+        const previousCheckpoint = (await stored(
+          page,
+          "syncQueue",
+          checkpointKey,
+        )) as PersistenceCheckpoint | null;
+        const metadata = await prepareMetadataForPayload(
+          store,
+          "data",
+          value,
+          previous.revision,
+        );
+        const checkpoint = createNextPersistenceCheckpoint(
+          store,
+          "data",
+          metadata,
+          previousCheckpoint,
+        );
+        return {
+          store,
+          value,
+          metadataKey,
+          checkpointKey,
+          metadata,
+          checkpoint,
+        };
+      }),
+  );
+  await page.evaluate(async (writes) => {
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("EventShoppingPlannerDB");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const transaction = database.transaction(
+          [...new Set(["syncQueue", ...writes.map(({ store }) => store)])],
+          "readwrite",
+        );
+        for (const {
+          store,
+          value,
+          metadataKey,
+          checkpointKey,
+          metadata,
+          checkpoint,
+        } of writes) {
+          transaction.objectStore(store).put(value, "data");
+          transaction.objectStore("syncQueue").put(metadata, metadataKey);
+          transaction.objectStore("syncQueue").put(checkpoint, checkpointKey);
+        }
+        transaction.oncomplete = () => resolve();
+        transaction.onabort = () => reject(transaction.error);
+      });
+    } finally {
+      database.close();
+    }
+  }, writes);
+  await page.reload();
+  await page.getByText(eventName, { exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: eventName, exact: true }),
+  ).toBeVisible();
+}
 async function openVisitList(page: Page) {
   await page.getByTitle("リスト表示に切り替え", { exact: true }).hover();
   await page.mouse.down();
@@ -578,7 +671,7 @@ test("long press confirms settings-only duplicate days before changing the displ
   const source = backup();
   (source.data.dayModes[eventName] as Record<string, string>)[" 2日目　"] =
     "execute";
-  await restore(page, source);
+  await loadSavedSnapshot(page, migrateLegacyConsistency(source.data).data);
   const second = page.getByRole("button", { name: /^2日目/ });
   await second.hover();
   await page.mouse.down();
@@ -643,7 +736,7 @@ test("hall-order save preserves mixed legacy metadata on split lists and reload"
     ];
     context.hallOrder.push({ hall: null, priority: "none" });
   }
-  await restore(page, createAppBackup(source));
+  await loadSavedSnapshot(page, source);
   const check = async () => {
     const state = (await stored(
       page,
@@ -1116,7 +1209,7 @@ for (const kind of ["detailed", "simple"] as const) {
         { group: context.hallOrder[1], itemIds: ["2"] },
       ];
     }
-    await restore(page, createAppBackup(source));
+    await loadSavedSnapshot(page, source);
     await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
     await page.getByTitle("リスト表示に切り替え", { exact: true }).hover();
     await page.mouse.down();
@@ -1858,7 +1951,7 @@ test("day merge choices change the adopted order, mode, map and destination and 
   };
   source.executeModeItems[eventName][" 1日目　"] = ["2", "1"];
   source.dayModes[eventName][" 1日目　"] = "execute";
-  await restore(page, createAppBackup(source));
+  await loadSavedSnapshot(page, source);
   const beforeItems = await stored(page, "eventLists");
   const review = page.getByRole("button", {
     name: "統合内容を確認",
@@ -2013,7 +2106,7 @@ test("a standalone execute reorder writes only its store and survives reload", a
   // A standalone fixture has no saved visit lists or routes to reorder.
   // Legacy migration normally creates a visit context for these execution IDs.
   source.eventConsistency[eventName].days = {};
-  await restore(page, createAppBackup(source));
+  await loadSavedSnapshot(page, source);
   await page.evaluate(() => {
     const writes: string[][] = [];
     Object.assign(window, { __reorderTransactions: writes });
@@ -2312,7 +2405,7 @@ test("item edits require a map selection before saving and preserve both maps on
 async function openModeMergeReview(page: Page) {
   const source = migrateLegacyConsistency(backup().data).data;
   source.dayModes[eventName][" 1日目　"] = "execute";
-  await restore(page, createAppBackup(source));
+  await loadSavedSnapshot(page, source);
   const day = page.getByRole("button", { name: /^1日目/ });
   await day.hover();
   await page.mouse.down();
@@ -2495,7 +2588,7 @@ for (const duplicate of ["execution", "modes", "contexts"] as const) {
         source.eventConsistency[eventName].days["1日目"],
       );
     }
-    await restore(page, createAppBackup(source));
+    await loadSavedSnapshot(page, source);
     const beforeItems = await stored(page, "eventLists");
     const beforeExecute = await stored(page, "executeModeItems");
     const beforeModes = await stored(page, "dayModes");
@@ -2526,6 +2619,7 @@ for (const duplicate of ["execution", "modes", "contexts"] as const) {
       .click();
     await expect(review).toBeHidden();
     await expect(page.locator("[data-drag-item]")).toHaveCount(2);
+    await page.getByRole("button", { name: "左側に移動", exact: true }).click();
     await expect(
       page.getByTitle("元に戻す (Ctrl+Z)", { exact: true }),
     ).toBeDisabled();
@@ -2699,7 +2793,7 @@ for (const operation of ["opening", "reorder"] as const) {
     const source = migrateLegacyConsistency(mapBackup().data).data;
     if (operation === "opening")
       source.executeModeItems[eventName][" 1日目　"] = ["2", "1"];
-    await restore(page, createAppBackup(source));
+    await loadSavedSnapshot(page, source);
     await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
     if (operation === "reorder") {
       await openVisitList(page);
@@ -3023,11 +3117,11 @@ for (const timing of ["before apply", "confirmation"] as const) {
         else
           await page.getByRole("button", { name: "適用", exact: true }).click();
         await expect(confirmation).toBeHidden();
-        const alert = page.getByRole("alert");
-        await expect(alert).toBeVisible();
-        await expect(alert).toContainText(
-          "編集対象が削除されています。最新のイベント・マップを選び直して編集を開き直してください。",
-        );
+        // A lifecycle replacement now expires the whole editing session before
+        // its planner runs, including a review that was already open.
+        await expect(
+          page.getByRole("button", { name: "適用", exact: true }),
+        ).toHaveCount(0);
         expect(await storedMaps(page)).toEqual(beforeMaps);
         expect(
           await Promise.all(stores.map((store) => stored(page, store))),
@@ -3059,7 +3153,7 @@ for (const operation of ["ordinary reorder", "ordinary item edit"] as const) {
       ).data;
       source.dayModes[eventName]["1日目"] = "edit";
       source.dayModes[eventName][" 1日目　"] = "execute";
-      await restore(page, createAppBackup(source));
+      await loadSavedSnapshot(page, source);
       const before = {
         items: await stored(page, "eventLists"),
         execute: await stored(page, "executeModeItems"),
@@ -3203,7 +3297,7 @@ test("map reimport removes only dependent simple halls and preserves another sel
       },
     };
   }
-  await restore(page, createAppBackup(source));
+  await loadSavedSnapshot(page, source);
   const before = (await stored(
     page,
     "eventConsistency",
@@ -3299,7 +3393,7 @@ test("ordinary item edit carries its chosen simple hall through a selectable day
       },
     ],
   };
-  await restore(page, createAppBackup(source));
+  await loadSavedSnapshot(page, source);
   await editMemo(page, "所属指定付きの編集");
   const editor = page.getByRole("dialog", { name: "アイテム編集" });
   await editor
@@ -3351,7 +3445,7 @@ for (const selected of [undefined, "edit", "execute", "focus"] as const) {
     page.on("pageerror", (error) => errors.push(error.message));
     const source = migrateLegacyConsistency(backup().data).data;
     source.dayModes[eventName][" 1日目　"] = "focus";
-    await restore(page, createAppBackup(source));
+    await loadSavedSnapshot(page, source);
     const itemsBefore = await stored(page, "eventLists");
     const executeBefore = await stored(page, "executeModeItems");
     await page.getByTitle("実行モード", { exact: true }).click();
@@ -3405,7 +3499,7 @@ for (const outcome of ["save", "cancel", "abort"] as const) {
     const source = migrateLegacyConsistency(backup().data).data;
     source.dayModes[eventName]["1日目"] = "focus";
     source.dayModes[eventName][" 1日目　"] = "execute";
-    await restore(page, createAppBackup(source));
+    await loadSavedSnapshot(page, source);
     const stores = [
       "dayModes",
       "eventLists",
@@ -3522,7 +3616,7 @@ for (const outcome of ["save", "cancel"] as const) {
     }
     source.eventConsistency[eventName].days["1日目"].selectedMapKey =
       "1日目マップ";
-    await restore(page, createAppBackup(source));
+    await loadSavedSnapshot(page, source);
     await editMemo(page, "ユーザー登録");
     const editor = page.getByRole("dialog", { name: "アイテム編集" });
     await editor
@@ -3634,5 +3728,169 @@ for (const outcome of ["save", "cancel"] as const) {
         }),
       ]),
     });
+  });
+}
+
+for (const action of [
+  "cancel",
+  "undo",
+  "reorder",
+  "save",
+  "discard transition",
+] as const) {
+  test(`another-tab equal replacement expires the old visit ${action} and reopens from the restored baseline`, async ({
+    page,
+    context,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await restore(page, mapBackup());
+    await reorderVisitList(page);
+    if (action !== "discard transition")
+      await page
+        .getByRole("button", { name: "左側に移動", exact: true })
+        .click();
+    const other = await context.newPage();
+    const replacement = mapBackup();
+    replacement.data.executeModeItems[eventName]["1日目"] = ["2", "1"];
+    // Includes an exactly equal replacement: ID, day, order, and item content.
+    const savedBefore = await stored(page, "eventLists");
+    await restore(other, replacement, `「${eventName}」の復元内容を確認`);
+    const restoredItems = await stored(page, "eventLists");
+    expect(restoredItems).toEqual(savedBefore);
+    const restoredConsistency = await stored(page, "eventConsistency");
+    await page.bringToFront();
+    if (action === "undo")
+      await page.getByTitle("元に戻す (Ctrl+Z)", { exact: true }).click();
+    else if (action === "reorder") await dragSecondVisitFirst(page);
+    else if (action === "discard transition") {
+      await page
+        .getByRole("button", { name: "イベント一覧", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "キャンセル（破棄）", exact: true })
+        .click();
+    } else
+      await page
+        .getByRole("button", {
+          name: action === "save" ? "確定" : "キャンセル",
+          exact: true,
+        })
+        .click();
+    await expect(page.locator("[data-drag-item]")).toHaveCount(0);
+    expect(await stored(page, "executeModeItems")).toMatchObject({
+      [eventName]: { "1日目": ["2", "1"] },
+    });
+    expect(await stored(page, "eventLists")).toEqual(restoredItems);
+    expect(await stored(page, "eventConsistency")).toEqual(restoredConsistency);
+    await openVisitList(page);
+    if (action === "discard transition")
+      await page
+        .getByRole("button", { name: "左側に移動", exact: true })
+        .click();
+    await expect(page.locator("[data-drag-item]").first()).toContainText(
+      "サークル2",
+    );
+    await expect(
+      page.getByTitle("元に戻す (Ctrl+Z)", { exact: true }),
+    ).toBeDisabled();
+    await dragSecondVisitFirst(page);
+    await expect
+      .poll(() => stored(page, "executeModeItems"))
+      .toMatchObject({ [eventName]: { "1日目": ["1", "2"] } });
+    await page.getByRole("button", { name: "キャンセル", exact: true }).click();
+    await expect
+      .poll(() => stored(page, "executeModeItems"))
+      .toMatchObject({ [eventName]: { "1日目": ["2", "1"] } });
+    expect(errors).toEqual([]);
+    await other.close();
+  });
+}
+
+for (const outcome of ["save", "cancel", "abort"] as const) {
+  test(`JSON restore reviews duplicate day destination and mode before one atomic ${outcome}`, async ({
+    page,
+  }) => {
+    const source = backup([item("1"), item("2"), item("3", "2日目")]);
+    source.data.dayModes[eventName][" 1日目　"] = "execute";
+    await page.goto("/");
+    await page
+      .locator('input[aria-label="バックアップファイルを選択"]')
+      .setInputFiles({
+        name: "duplicate-days.json",
+        mimeType: "application/json",
+        buffer: Buffer.from(JSON.stringify(source), "utf8"),
+      });
+    const restoreDialog = page.getByRole("dialog", {
+      name: "バックアップからイベントを復元",
+    });
+    await restoreDialog.getByRole("radio", { name: /同名で置換/ }).check();
+    const beforeModes = await stored(page, "dayModes");
+    const beforeItems = await stored(page, "eventLists");
+    await restoreDialog.getByRole("button", { name: "置換して復元" }).click();
+    const review = page.getByRole("dialog", {
+      name: `「${eventName}」の復元内容を確認`,
+      exact: true,
+    });
+    await expect(review).toBeVisible();
+    const destination = review.getByRole("combobox", {
+      name: "統合先の日付表記",
+    });
+    await destination.selectOption(" 1日目　");
+    await expect(destination).toHaveValue(" 1日目　");
+    const mode = review.getByRole("combobox", { name: "統合後の表示モード" });
+    await mode.selectOption("execute");
+    await expect(mode).toHaveValue("execute");
+    expect(await stored(page, "dayModes")).toEqual(beforeModes);
+    expect(await stored(page, "eventLists")).toEqual(beforeItems);
+    if (outcome === "cancel") {
+      await review.getByRole("button", { name: "取消", exact: true }).click();
+      await expect(review).toBeHidden();
+    } else {
+      if (outcome === "abort")
+        await page.evaluate(() => {
+          const original = IDBObjectStore.prototype.put;
+          IDBObjectStore.prototype.put = function (
+            ...args: Parameters<typeof original>
+          ) {
+            if (this.name === "dayModes") {
+              IDBObjectStore.prototype.put = original;
+              throw new DOMException("復元の書き込み失敗", "AbortError");
+            }
+            return original.apply(this, args);
+          };
+        });
+      await review
+        .getByRole("button", { name: "確認して保存", exact: true })
+        .click();
+    }
+    if (outcome !== "save") {
+      if (outcome === "abort")
+        await expect(
+          page
+            .getByRole("alert")
+            .filter({ hasText: "復元の書き込み失敗" })
+            .first(),
+        ).toBeVisible();
+      expect(await stored(page, "dayModes")).toEqual(beforeModes);
+      expect(await stored(page, "eventLists")).toEqual(beforeItems);
+      return;
+    }
+    await expect(restoreDialog).toBeHidden();
+    const check = async () => {
+      expect(await stored(page, "dayModes")).toEqual({
+        [eventName]: { " 1日目　": "execute", "2日目": "edit" },
+      });
+      expect(await stored(page, "executeModeItems")).toEqual({
+        [eventName]: { " 1日目　": ["1", "2"], "2日目": ["3"] },
+      });
+      expect(await stored(page, "eventLists")).toEqual(source.data.eventLists);
+    };
+    await check();
+    await page.reload();
+    await expect(
+      page.locator('input[aria-label="バックアップファイルを選択"]'),
+    ).toBeAttached();
+    await check();
   });
 }

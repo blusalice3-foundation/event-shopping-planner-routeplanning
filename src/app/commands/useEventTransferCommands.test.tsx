@@ -1,3 +1,9 @@
+import type { EventWorkbookAdditionalData } from "../../xlsx/domain/eventWorkbook";
+import {
+  buildXlsxEventRestoreSource,
+  toImportedEventData,
+} from "../../features/events/fileImport";
+import { dayMergeChoicePrefix } from "../../features/consistency/domain/dayMergeMutation";
 import {
   createEventConsistency,
   createDayConsistency,
@@ -504,3 +510,70 @@ it("uses a fresh snapshot when reopening the export settings", async () => {
     }).sections.items.count,
   ).toBe(2);
 });
+
+it.each(["JSON", "Excel"])(
+  "forwards restored-day selections through the shared %s command",
+  async (format) => {
+    vi.spyOn(window, "alert").mockImplementation(() => {});
+    const backup = createBackup();
+    backup.data.executeModeItems.source = { "1日目": [eventItem.id] };
+    backup.data.dayModes.source = { "1日目": "edit", " 1日目　": "execute" };
+    if (format === "Excel") {
+      const blob = await exportToXlsx(
+        "source",
+        [eventItem],
+        {
+          includeItems: true,
+          includeLayoutInfo: true,
+          includeMapData: true,
+          includeRouteInfo: true,
+          format: "full",
+        },
+        backup.data as EventWorkbookAdditionalData,
+      );
+      const imported = await importFromXlsx(
+        new File([new Uint8Array(await blob.arrayBuffer())], "duplicate.xlsx"),
+      );
+      expect(imported.success).toBe(true);
+      backup.data = buildXlsxEventRestoreSource(
+        toImportedEventData(imported),
+      ).data;
+      expect(backup.data.dayModes.source).toEqual({
+        "1日目": "edit",
+        " 1日目　": "execute",
+      });
+    }
+    const ports = createPorts({
+      pendingBackup: backup,
+      pendingXlsxRestoreCompletion:
+        format === "Excel" ? { itemCount: 1, errors: [] } : null,
+    });
+    const prefix = dayMergeChoicePrefix("target", "1日目");
+    ports.requestMutation = vi.fn<EventTransferCommandPorts["requestMutation"]>(
+      async (intent) => {
+        const review = intent.plan(emptySnapshot());
+        expect(
+          review.confirmation?.choices?.map((choice) => choice.label),
+        ).toEqual(
+          expect.arrayContaining(["統合先の日付表記", "統合後の表示モード"]),
+        );
+        expect(ports.confirmBackupRestore).not.toHaveBeenCalled();
+        const selected = intent.plan(emptySnapshot(), {
+          [`${prefix}destination`]: " 1日目　",
+          [`${prefix}mode`]: "execute",
+        });
+        expect(selected.snapshot.dayModes.target).toEqual({
+          " 1日目　": "execute",
+        });
+        expect(selected.snapshot.executeModeItems.target).toEqual({
+          " 1日目　": [eventItem.id],
+        });
+        return selected.snapshot;
+      },
+    );
+    const { result } = renderHook(() => useEventTransferCommands(ports));
+    await act(() => result.current.handleBackupRestore("source", "target"));
+    expect(ports.requestMutation).toHaveBeenCalledOnce();
+    expect(ports.confirmBackupRestore).toHaveBeenCalledOnce();
+  },
+);

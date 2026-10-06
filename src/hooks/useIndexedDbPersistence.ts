@@ -47,7 +47,10 @@ import {
   bucketPersistenceStartupDuration,
   recordPersistenceReleaseAMetric,
 } from "../utils/persistenceReleaseAMetrics";
-import type { PersistenceCommandPort } from "../app/ports/PersistenceCommandPort";
+import type {
+  ApplicationSnapshotRead,
+  PersistenceCommandPort,
+} from "../app/ports/PersistenceCommandPort";
 
 export type PersistedStateValues = {
   eventConsistency: EventConsistencyStore;
@@ -394,6 +397,7 @@ type UseIndexedDbPersistenceParams = {
   persistenceCommands: PersistenceCommandPort;
   saveDelayMs?: number;
   externalMutations?: boolean;
+  onHydratedSnapshot?(read: ApplicationSnapshotRead): void;
 };
 
 export function useIndexedDbPersistence({
@@ -402,6 +406,7 @@ export function useIndexedDbPersistence({
   persistenceCommands,
   saveDelayMs = 500,
   externalMutations = false,
+  onHydratedSnapshot,
 }: UseIndexedDbPersistenceParams) {
   const [startupState, setStartupState] = useState<PersistenceStartupState>({
     status: "loading",
@@ -998,6 +1003,7 @@ export function useIndexedDbPersistence({
       ];
       if (validationErrors.length) throw new Error(validationErrors.join("\n"));
       if (!isMountedRef.current) return;
+      onHydratedSnapshot?.({ ...observation, snapshot });
       const hydratedValues = snapshot as unknown as PersistedStateValues;
       // 画面を操作可能にする前に復元値を保存済み基準として確定する。
       // 初回の保存タイマーより先に変更されても、その変更を差分として保存できる。
@@ -1062,6 +1068,7 @@ export function useIndexedDbPersistence({
     }
   }, [
     persistenceCommands,
+    onHydratedSnapshot,
     setDayModes,
     setEventConsistency,
     setEventLists,

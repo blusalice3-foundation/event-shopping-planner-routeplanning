@@ -46,9 +46,12 @@ export interface ApplicationSnapshotRead {
   snapshot: PersistenceSnapshot;
   expectedRoots: object;
   consistencyMissing: boolean;
+  /** Internal lifecycle counters; excluded from application backups. */
+  eventGenerations?: Readonly<Record<string, number>>;
 }
 export interface AtomicSnapshotOptions {
   expectedRoots?: object;
+  invalidatedEvents?: readonly string[];
   migration?: { source: unknown; blockDetectionSettingsRaw: string | null };
 }
 

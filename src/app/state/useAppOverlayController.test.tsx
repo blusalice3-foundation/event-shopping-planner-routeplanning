@@ -303,3 +303,24 @@ describe("useAppOverlayController", () => {
     expect(result.current.state.item.kind).toBe("inactive");
   });
 });
+
+it.each([false, true])(
+  "ends an invalidated visit session including pending confirmation: %s",
+  (confirming) => {
+    const { result } = renderHook(() => useAppOverlayController());
+    act(() =>
+      result.current.commands.visitList.open("1日目マップ", ["A", "B"]),
+    );
+    act(() => result.current.commands.visitList.setUnsaved(true));
+    if (confirming)
+      act(() =>
+        result.current.commands.visitList.requestConfirmClose("eventList"),
+      );
+    act(() => result.current.commands.visitList.endSession());
+    expect(result.current.state.visitList).toEqual({ kind: "inactive" });
+    expect(result.current.readModel.visitListPanelOpen).toBe(false);
+    expect(result.current.readModel.showVisitListConfirmDialog).toBe(false);
+    expect(result.current.readModel.visitListOriginalOrder).toEqual([]);
+    expect(result.current.readModel.pendingTabChange).toBeNull();
+  },
+);

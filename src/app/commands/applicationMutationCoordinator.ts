@@ -99,6 +99,7 @@ export interface MutationCoordinatorPorts {
     snapshot: PersistenceSnapshot,
     expectedRoots: object,
     base: PersistenceSnapshot,
+    invalidatedEvents?: readonly string[],
   ): Promise<void>;
   apply(snapshot: PersistenceSnapshot, invalidatedEvents: string[]): void;
   onApplyFailure?(error: CommittedStateApplyError): void;
@@ -157,6 +158,12 @@ export function createApplicationMutationCoordinator(
   let sequence = 0;
   let stopped = false;
   const generations = new Map<string, number>();
+  let durableGenerations: Readonly<Record<string, number>> = {};
+  const durableGeneration = (
+    values: Readonly<Record<string, number>>,
+    event: string,
+  ) =>
+    Object.prototype.hasOwnProperty.call(values, event) ? values[event] : 0;
   const pending = new Map<
     string,
     {
@@ -227,6 +234,32 @@ export function createApplicationMutationCoordinator(
       const beforeRead = validity();
       if (beforeRead) return beforeRead;
       const read = await ports.readDurable();
+      const nextGenerations = read.eventGenerations ?? durableGenerations;
+      const externallyInvalidated = [
+        ...new Set([
+          ...Object.keys(durableGenerations),
+          ...Object.keys(nextGenerations),
+        ]),
+      ].filter(
+        (event) =>
+          durableGeneration(durableGenerations, event) !==
+          durableGeneration(nextGenerations, event),
+      );
+      durableGenerations = { ...nextGenerations };
+      if (externallyInvalidated.length) {
+        invalidate(externallyInvalidated);
+        expirePending();
+        try {
+          ports.apply(structuredClone(read.snapshot), externallyInvalidated);
+        } catch (error) {
+          stopped = true;
+          const failure = new CommittedStateApplyError(error);
+          ports.onApplyFailure?.(failure);
+          throw failure;
+        }
+      }
+      if (operation.generation !== generation(operation.intent.events))
+        return { status: "expired" };
       const afterRead = validity();
       if (afterRead) return afterRead;
       // Planning includes retained edits as well as the latest other-tab values.
@@ -283,7 +316,12 @@ export function createApplicationMutationCoordinator(
       if (beforeCommit) return beforeCommit;
       try {
         operation.committing = true;
-        await ports.commit(plan.snapshot, read.expectedRoots, read.snapshot);
+        await ports.commit(
+          plan.snapshot,
+          read.expectedRoots,
+          read.snapshot,
+          plan.invalidatedEvents,
+        );
       } catch (error) {
         operation.committing = false;
         const afterFailure = validity();
@@ -301,6 +339,13 @@ export function createApplicationMutationCoordinator(
           continue;
         throw error;
       }
+      durableGenerations = Object.fromEntries([
+        ...Object.entries(durableGenerations),
+        ...[...new Set(plan.invalidatedEvents ?? [])].map((event) => [
+          event,
+          durableGeneration(durableGenerations, event) + 1,
+        ]),
+      ]);
       invalidate(plan.invalidatedEvents ?? []);
       const result: MutationResult = {
         status: "committed",
@@ -386,6 +431,9 @@ export function createApplicationMutationCoordinator(
       const operation = pending.get(token.operationId);
       if (operation?.token !== token || operation.committing) return false;
       return pending.delete(token.operationId);
+    },
+    initializeEventGenerations(read: ApplicationSnapshotRead): void {
+      durableGenerations = { ...read.eventGenerations };
     },
     invalidate,
     generation: (event: string): number => generations.get(event) ?? 0,

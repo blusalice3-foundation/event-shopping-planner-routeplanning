@@ -7,6 +7,7 @@ import {
   CONSISTENCY_ARCHIVE_KEY,
   CONSISTENCY_MIGRATION_KEY,
   DATA_KEY,
+  EVENT_GENERATIONS_KEY,
   DB_NAME,
   STORES,
 } from "./constants";
@@ -303,3 +304,93 @@ describe("pre-upgrade boundary", () => {
     oldConnection.close();
   });
 });
+
+it("commits event generations with lifecycle writes, keeps tombstones, and excludes them from backups", async () => {
+  const app = await import("./atomicRestoreTransaction");
+  const value = source();
+  for (const event of ["event", "other", "__proto__", "constructor"]) {
+    const before = await app.readApplicationSnapshot();
+    await app.commitApplicationSnapshotAtomically(value, {
+      expectedRoots: before.expectedRoots,
+      invalidatedEvents: [event, event],
+    });
+  }
+  const read = await app.readApplicationSnapshot();
+  expect(read.eventGenerations).toEqual(
+    JSON.parse('{"event":1,"other":1,"__proto__":1,"constructor":1}'),
+  );
+  expect(read.snapshot).toEqual(value);
+  await app.commitApplicationSnapshotAtomically(value, {
+    expectedRoots: read.expectedRoots,
+  });
+  expect((await app.readApplicationSnapshot()).eventGenerations).toEqual(
+    read.eventGenerations,
+  );
+  const { createAppBackup } = await import("../../utils/appBackup");
+  const backup = createAppBackup(value);
+  expect(JSON.stringify(backup)).not.toContain("eventGenerations");
+  const deleted = source();
+  deleted.eventLists = {};
+  deleted.eventConsistency = {};
+  await app.commitApplicationSnapshotAtomically(deleted, {
+    invalidatedEvents: ["event"],
+  });
+  expect((await app.readApplicationSnapshot()).eventGenerations?.event).toBe(2);
+  await app.commitApplicationSnapshotAtomically(value, {
+    invalidatedEvents: ["event"],
+  });
+  expect((await app.readApplicationSnapshot()).eventGenerations?.event).toBe(3);
+});
+
+it("rolls back lifecycle generations and all payloads when their atomic write fails", async () => {
+  const app = await import("./atomicRestoreTransaction");
+  await app.commitApplicationSnapshotAtomically(source(), {
+    invalidatedEvents: ["event"],
+  });
+  const before = await app.readApplicationSnapshot();
+  const next = structuredClone(before.snapshot);
+  next.eventMetadata.event = { title: "replacement" };
+  const original = IDBObjectStore.prototype.put;
+  vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(function (
+    this: IDBObjectStore,
+    value,
+    key,
+  ) {
+    if (this.name === STORES.EVENT_METADATA && key === DATA_KEY)
+      throw new Error("atomic write failure");
+    return original.call(this, value, key);
+  });
+  await expect(
+    app.commitApplicationSnapshotAtomically(next, {
+      expectedRoots: before.expectedRoots,
+      invalidatedEvents: ["event"],
+    }),
+  ).rejects.toThrow("atomic write failure");
+  const after = await app.readApplicationSnapshot();
+  expect(after.snapshot).toEqual(before.snapshot);
+  expect(after.eventGenerations).toEqual(before.eventGenerations);
+});
+
+it("CAS rejects a changed internal generation even when the application payloads did not change", async () => {
+  const app = await import("./atomicRestoreTransaction");
+  await app.commitApplicationSnapshotAtomically(source());
+  const before = await app.readApplicationSnapshot();
+  await raw(STORES.SYNC_QUEUE, EVENT_GENERATIONS_KEY, { value: { event: 1 } });
+  await expect(
+    app.commitApplicationSnapshotAtomically(before.snapshot, {
+      expectedRoots: before.expectedRoots,
+    }),
+  ).rejects.toThrow("操作世代");
+  expect((await app.readApplicationSnapshot()).snapshot).toEqual(
+    before.snapshot,
+  );
+});
+
+it.each([null, [], { event: -1 }, { event: 0.5 }, { event: "1" }])(
+  "refuses malformed lifecycle counters: %j",
+  async (value) => {
+    const app = await import("./atomicRestoreTransaction");
+    await raw(STORES.SYNC_QUEUE, EVENT_GENERATIONS_KEY, { value });
+    await expect(app.readApplicationSnapshot()).rejects.toThrow("操作世代");
+  },
+);

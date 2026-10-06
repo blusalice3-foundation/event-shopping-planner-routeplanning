@@ -140,18 +140,31 @@ export function createIndexedDbPersistenceCommandAdapter(
     saveMapViewportSettings: (value) => delegate.saveMapViewportSettings(value),
     saveEventConsistency: (value) => delegate.saveEventConsistency(value),
     commitApplicationSnapshotAtomically: commit,
-    restoreAppDataAtomically: commit,
+    restoreAppDataAtomically: (snapshot, options) =>
+      commit(snapshot, {
+        ...options,
+        invalidatedEvents: options?.invalidatedEvents ?? [
+          ...new Set([
+            ...Object.keys(read()?.eventLists ?? {}),
+            ...Object.keys(snapshot.eventLists),
+          ]),
+        ],
+      }),
     deleteEventAtomically: (snapshot, eventName) =>
-      commit(removeEventFromApplicationSnapshot(snapshot, eventName)),
+      commit(removeEventFromApplicationSnapshot(snapshot, eventName), {
+        invalidatedEvents: [eventName],
+      }),
     renameEventAtomically: (snapshot, oldName, newName) =>
-      commit(renameEventInApplicationSnapshot(snapshot, oldName, newName)),
+      commit(renameEventInApplicationSnapshot(snapshot, oldName, newName), {
+        invalidatedEvents: [oldName, newName],
+      }),
     restoreAppDataWithBlockDetectionSettings(snapshot, eventName, settings) {
       const next = structuredClone(snapshot);
       next.eventConsistency ??= {};
       next.eventConsistency[eventName] ??= createEventConsistency();
       next.eventConsistency[eventName].blockDetectionSettings =
         structuredClone(settings);
-      return commit(next);
+      return commit(next, { invalidatedEvents: [eventName] });
     },
   };
 }

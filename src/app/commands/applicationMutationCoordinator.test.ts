@@ -528,3 +528,99 @@ it("keeps a commit in progress valid when cancellation can no longer be accepted
   expect((await confirming).status).toBe("committed");
   expect(app.read().eventLists.event[0]).toMatchObject({ remarks: "backup" });
 });
+
+it.each(["cancel", "undo", "redo", "reorder", "save", "transition"])(
+  "expires another-tab replacement before planning an old %s, even when every payload is equal",
+  async (action) => {
+    const app = setup();
+    let durableGenerations = { event: 4, other: 2 };
+    app.coordinator.initializeEventGenerations({
+      snapshot: app.read(),
+      expectedRoots: {},
+      consistencyMissing: false,
+      eventGenerations: durableGenerations,
+    });
+    app.readDurable.mockImplementation(async () => ({
+      snapshot: structuredClone(app.durable()),
+      expectedRoots: {},
+      consistencyMissing: false,
+      eventGenerations: { ...durableGenerations },
+    }));
+    const plan = vi.fn((snapshot: PersistenceSnapshot) => ({ snapshot }));
+    durableGenerations = { event: 5, other: 2 };
+    expect(
+      await app.coordinator.request({
+        id: action,
+        events: ["event"],
+        expectedGenerations: { event: 0 },
+        plan,
+      }),
+    ).toEqual({ status: "expired" });
+    expect(plan).not.toHaveBeenCalled();
+    expect(app.commit).not.toHaveBeenCalled();
+    expect(app.coordinator.generation("event")).toBe(1);
+    expect(app.coordinator.generation("other")).toBe(0);
+    expect(
+      (
+        await app.coordinator.request({
+          id: "new-session",
+          events: ["event"],
+          expectedGenerations: { event: 1 },
+          plan,
+        })
+      ).status,
+    ).toBe("committed");
+  },
+);
+
+it("expires a pending review after another-tab replacement without touching an unrelated event", async () => {
+  const app = setup();
+  let eventGenerations = { event: 0 };
+  app.readDurable.mockImplementation(async () => ({
+    snapshot: structuredClone(app.durable()),
+    expectedRoots: {},
+    consistencyMissing: false,
+    eventGenerations,
+  }));
+  const review = await app.coordinator.request(app.restore);
+  if (review.status !== "confirmation-required")
+    throw new Error("missing review");
+  eventGenerations = { event: 1 };
+  expect(
+    (
+      await app.coordinator.request({
+        id: "other",
+        events: ["other"],
+        plan: (snapshot) => ({ snapshot }),
+      })
+    ).status,
+  ).toBe("committed");
+  expect(await app.coordinator.confirm(review.token)).toEqual({
+    status: "expired",
+  });
+  expect(app.commit).toHaveBeenCalledOnce();
+  expect(app.read().eventLists.event).toEqual(app.durable().eventLists.event);
+});
+
+it("expires a stale session if a CAS retry encounters an equal replacement", async () => {
+  const app = setup();
+  let eventGenerations = { event: 0 };
+  app.readDurable.mockImplementation(async () => ({
+    snapshot: structuredClone(app.durable()),
+    expectedRoots: {},
+    consistencyMissing: false,
+    eventGenerations,
+  }));
+  app.commit.mockImplementationOnce(async () => {
+    eventGenerations = { event: 1 };
+    throw Object.assign(new Error("another tab restored"), {
+      name: "PersistenceConflict",
+    });
+  });
+  const plan = vi.fn((snapshot: PersistenceSnapshot) => ({ snapshot }));
+  expect(
+    await app.coordinator.request({ id: "cancel", events: ["event"], plan }),
+  ).toEqual({ status: "expired" });
+  expect(plan).toHaveBeenCalledOnce();
+  expect(app.commit).toHaveBeenCalledOnce();
+});

@@ -284,7 +284,7 @@ export function useApplicationSnapshot(
           precedingBatches(id).some((batch) => retained.current.has(batch.id)),
         drain: () => handlers.current.drain(),
         readDurable: () => persistence.readApplicationSnapshot(),
-        commit: async (snapshot, expectedRoots, base) => {
+        commit: async (snapshot, expectedRoots, base, invalidatedEvents) => {
           const errors = [
             ...validateSnapshotStructure(snapshot),
             ...validateSnapshotReferences(snapshot),
@@ -294,6 +294,7 @@ export function useApplicationSnapshot(
           // Decide after reference repair: saved visit lists/routes make an
           // execution reorder a multi-store mutation, even with one setter.
           if (
+            !invalidatedEvents?.length &&
             changedStores.length === 1 &&
             (changedStores[0] === "executeModeItems" ||
               (changedStores[0] === "eventLists" &&
@@ -318,6 +319,7 @@ export function useApplicationSnapshot(
           } else
             await persistence.commitApplicationSnapshotAtomically(snapshot, {
               expectedRoots,
+              ...(invalidatedEvents?.length ? { invalidatedEvents } : {}),
             });
         },
         apply: (snapshot, events) => {
