@@ -134,6 +134,7 @@ async function loadArtifact(context, page, url, artifactId, mainAsset) {
         requireMarker: Boolean(process.env.ESP_EXPECTED_TARGET_BUILD_ID),
       },
     );
+  if (!(await matches())) await page.reload();
   if (!(await matches())) {
     const session = await context.newCDPSession(page);
     const versions = new Map();
@@ -150,34 +151,41 @@ async function loadArtifact(context, page, url, artifactId, mainAsset) {
           ),
         "Baseline active Service Worker",
       );
-      const baselineIds = new Set(versions.keys());
+      const baselineIds = new Set(
+        [...versions.values()]
+          .filter((version) => version.status === "activated")
+          .map((version) => version.versionId),
+      );
       await page.evaluate(async () =>
         (await navigator.serviceWorker.ready).update(),
       );
-      const candidates = () =>
-        [...versions.values()].filter(
-          (version) =>
-            !baselineIds.has(version.versionId) &&
-            ["installed", "activated"].includes(version.status),
+      await page.reload();
+      if (!(await matches())) {
+        const candidates = () =>
+          [...versions.values()].filter(
+            (version) =>
+              !baselineIds.has(version.versionId) &&
+              ["installed", "activated"].includes(version.status),
+          );
+        await waitUntil(
+          () => candidates().length > 0,
+          "Target Service Worker installation",
         );
-      await waitUntil(
-        () => candidates().length > 0,
-        "Target Service Worker installation",
-      );
-      assert.equal(
-        candidates().length,
-        1,
-        "Target Service Worker is ambiguous.",
-      );
-      const target = candidates()[0];
-      await Promise.all(
-        context.pages().map((client) => client.goto("about:blank")),
-      );
-      await waitUntil(
-        () => versions.get(target.versionId)?.status === "activated",
-        "Natural Service Worker activation after all clients close",
-      );
-      await page.goto(url);
+        assert.equal(
+          candidates().length,
+          1,
+          "Target Service Worker is ambiguous.",
+        );
+        const target = candidates()[0];
+        await Promise.all(
+          context.pages().map((client) => client.goto("about:blank")),
+        );
+        await waitUntil(
+          () => versions.get(target.versionId)?.status === "activated",
+          "Natural Service Worker activation after all clients close",
+        );
+        await page.goto(url);
+      }
     } finally {
       session.off("ServiceWorker.workerVersionUpdated", onVersions);
       await session.detach();
