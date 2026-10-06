@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
 import type { ShoppingItem } from "../../../types/item";
+import type { DayMapData } from "../../../types/map";
 import {
   createDayConsistency,
   createEventConsistency,
@@ -1819,4 +1820,86 @@ it("restoration merges all duplicated days with separate choices and determinist
     planEventRestore(snapshot(), plan.snapshot, "event", "event").snapshot,
   ).toEqual(plan.snapshot);
   valid(plan.snapshot);
+});
+
+it("reuses immutable maps only for plans which do not change them", () => {
+  const source = snapshot();
+  source.mapData = {
+    event: {
+      "1日目マップ": {
+        maxRow: 1,
+        maxCol: 1,
+        blocks: [],
+        mergedCells: [],
+        cells: [
+          {
+            row: 1,
+            col: 1,
+            value: "A",
+            backgroundColor: null,
+            borders: { top: null, right: null, bottom: null, left: null },
+          },
+        ],
+      },
+    },
+  };
+  const freeze = (value: object) => {
+    for (const child of Object.values(value))
+      if (child && typeof child === "object") freeze(child);
+    Object.freeze(value);
+  };
+  freeze(source.mapData);
+  const original = structuredClone(source);
+  const context = {
+    eventName: "event",
+    day: "1日目",
+    mergeDuplicateDays: false,
+  };
+  const projected = projectConsistencySnapshot(
+    source,
+    context.eventName,
+    context.day,
+  );
+  for (const patch of [
+    { dayModes: { event: { "1日目": "focus" } } },
+    {
+      eventLists: {
+        event: (projected.eventLists.event as ShoppingItem[]).map((entry) => ({
+          ...entry,
+          price: 700,
+          quantity: 2,
+          purchaseStatus: "Purchased" as const,
+        })),
+      },
+    },
+  ]) {
+    const expected = planProjectedMutation(source, patch, context);
+    const actual = planProjectedMutation(
+      source,
+      patch,
+      context,
+      {},
+      projected,
+      true,
+    );
+    expect(actual).toEqual(expected);
+    expect(actual.snapshot.mapData).toBe(source.mapData);
+    expect(expected.snapshot.mapData).not.toBe(source.mapData);
+    expect(source).toEqual(original);
+  }
+  const changedMap = structuredClone(source.mapData);
+  (changedMap.event["1日目マップ"] as DayMapData).cells[0].value = "B";
+  const patch = { mapData: changedMap };
+  const actual = planProjectedMutation(
+    source,
+    patch,
+    context,
+    {},
+    projected,
+    true,
+  );
+  expect(actual).toEqual(planProjectedMutation(source, patch, context));
+  expect(actual.snapshot.mapData).not.toBe(source.mapData);
+  expect(actual.snapshot.mapData).not.toBe(changedMap);
+  expect(source).toEqual(original);
 });

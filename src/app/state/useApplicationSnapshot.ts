@@ -1,3 +1,8 @@
+import {
+  semanticEqual,
+  jsonEqual,
+  reuseEqualReferences,
+} from "../../utils/semanticEquality";
 import type { ApplicationSnapshotCommitContext } from "../commands/ApplicationSnapshotCommitPort";
 import {
   useCallback,
@@ -35,7 +40,10 @@ import {
   planProjectedMutation,
   type MutationContext,
 } from "../../features/consistency/domain/mutations";
-import { projectConsistencySnapshot } from "../../features/consistency/domain/projection";
+import {
+  projectConsistencySnapshot,
+  createConsistencySnapshotProjector,
+} from "../../features/consistency/domain/projection";
 import { createEventConsistency } from "../../types/consistency";
 import {
   validateSnapshotStructure,
@@ -83,9 +91,7 @@ function changedSnapshotStores(
   base: PersistenceSnapshot,
   snapshot: PersistenceSnapshot,
 ) {
-  return keys.filter(
-    (key) => JSON.stringify(base[key]) !== JSON.stringify(snapshot[key]),
-  );
+  return keys.filter((key) => !jsonEqual(base[key], snapshot[key]));
 }
 function shouldRetainSetterBatch(
   batch: Batch,
@@ -132,15 +138,12 @@ function planBatch(
     "mapViewportSettings",
   ];
   for (const key of keys)
-    if (JSON.stringify(batch.base[key]) !== JSON.stringify(batch.draft[key])) {
+    if (!jsonEqual(batch.base[key], batch.draft[key])) {
       for (const event of new Set([
         ...Object.keys(batch.base[key]),
         ...Object.keys(batch.draft[key]),
       ])) {
-        if (
-          semanticSignature(batch.base[key][event]) ===
-          semanticSignature(batch.draft[key][event])
-        )
+        if (semanticEqual(batch.base[key][event], batch.draft[key][event]))
           continue;
         if (
           batch.base.eventLists[event] !== undefined &&
@@ -175,7 +178,14 @@ function planBatch(
       });
     }
   return confirmChangedFieldConflicts(
-    planProjectedMutation(latest, changed, batch.context, choices),
+    planProjectedMutation(
+      latest,
+      changed,
+      batch.context,
+      choices,
+      projected,
+      true,
+    ),
     changedFieldConflicts(batch.base, batch.draft, projected),
   );
 }
@@ -211,6 +221,7 @@ export function useApplicationSnapshot(
   day: string,
 ) {
   const [raw, setRaw] = useState(emptyApplicationSnapshot);
+  const projectForDisplay = useMemo(createConsistencySnapshotProjector, []);
   const rawRef = useRef(raw);
   const contextRef = useRef<MutationContext>({ eventName, day });
   contextRef.current = { eventName, day };
@@ -319,11 +330,15 @@ export function useApplicationSnapshot(
           } else
             await persistence.commitApplicationSnapshotAtomically(snapshot, {
               expectedRoots,
+              changedStoresOnly: true,
               ...(invalidatedEvents?.length ? { invalidatedEvents } : {}),
             });
         },
         apply: (snapshot, events) => {
-          rawRef.current = snapshot as unknown as PersistedStateValues;
+          rawRef.current = reuseEqualReferences(
+            rawRef.current,
+            snapshot as unknown as PersistedStateValues,
+          );
           setRaw(rawRef.current);
           handlers.current.applied(rawRef.current, events);
         },
@@ -356,28 +371,45 @@ export function useApplicationSnapshot(
       ...(eventName ? [eventName] : []),
     ].map((name) => [name, coordinator.generation(name)]),
   );
-  const rebuildPreview = useCallback(() => {
-    let next = projectConsistencySnapshot(
-      rawRef.current,
-      contextRef.current.eventName,
-      contextRef.current.day,
-    );
-    for (const batch of [
-      ...submitted.current,
-      ...(draft.current ? [draft.current] : []),
-    ]) {
-      if (suspended.current.has(batch.id) && !retained.current.has(batch.id))
-        continue;
-      next = applyChangedFields(
-        batch.acceptedBase ?? batch.base,
-        batch.acceptedDraft ?? batch.draft,
-        next,
-      ) as PersistenceSnapshot;
-    }
-    previewRef.current = next;
-  }, []);
+  const previewInputs = useRef<{
+    raw: PersistenceSnapshot;
+    eventName: string | null;
+    day: string;
+  }>();
+  const rebuildPreview = useCallback(
+    (force = true) => {
+      const context = contextRef.current;
+      if (
+        !force &&
+        previewInputs.current?.raw === rawRef.current &&
+        previewInputs.current.eventName === context.eventName &&
+        previewInputs.current.day === context.day
+      )
+        return;
+      let next = projectForDisplay(
+        rawRef.current,
+        contextRef.current.eventName,
+        contextRef.current.day,
+      );
+      for (const batch of [
+        ...submitted.current,
+        ...(draft.current ? [draft.current] : []),
+      ]) {
+        if (suspended.current.has(batch.id) && !retained.current.has(batch.id))
+          continue;
+        next = applyChangedFields(
+          batch.acceptedBase ?? batch.base,
+          batch.acceptedDraft ?? batch.draft,
+          next,
+        ) as PersistenceSnapshot;
+      }
+      previewRef.current = next;
+      previewInputs.current = { raw: rawRef.current, ...context };
+    },
+    [projectForDisplay],
+  );
   // Do not replace a synchronously accepted draft with an older render.
-  rebuildPreview();
+  rebuildPreview(false);
   const handleResult = useCallback(
     (id: string, result: MutationResult) => {
       if (!resolvers.current.has(id)) return;
@@ -552,20 +584,16 @@ export function useApplicationSnapshot(
       submitted.current.push(batch);
       const events = [
         ...new Set(
-          keys
-            .flatMap((key) => [
-              ...Object.keys(batch.base[key]),
-              ...Object.keys(batch.draft[key]),
-            ])
-            .filter((name) =>
-              keys.some(
-                (key) =>
-                  JSON.stringify(batch.base[key][name]) !==
-                  JSON.stringify(batch.draft[key][name]),
-              ),
-            ),
+          keys.flatMap((key) => [
+            ...Object.keys(batch.base[key]),
+            ...Object.keys(batch.draft[key]),
+          ]),
         ),
-      ];
+      ].filter((name) =>
+        keys.some(
+          (key) => !jsonEqual(batch.base[key][name], batch.draft[key][name]),
+        ),
+      );
       return request({
         id: batch.id,
         events,
@@ -598,24 +626,26 @@ export function useApplicationSnapshot(
         keys.map((key) => [
           `set${key[0].toUpperCase()}${key.slice(1)}`,
           (action: SetStateAction<PersistedStateValues[typeof key]>) => {
-            if (!draft.current) {
-              const base = structuredClone(previewRef.current);
-              draft.current = {
-                id: `application:${++sequence.current}`,
-                context: { ...contextRef.current },
-                base,
-                draft: structuredClone(base),
-                retryOnFailure: true,
-              };
-              queueMicrotask(flushDraft);
-            }
-            const current = draft.current.draft[
-              key
-            ] as PersistedStateValues[typeof key];
+            const previous = (draft.current?.draft ?? previewRef.current)[key];
+            const current = structuredClone(
+              previous,
+            ) as PersistedStateValues[typeof key];
             const next =
               typeof action === "function"
                 ? (action as (value: typeof current) => typeof current)(current)
                 : action;
+            if (!draft.current) {
+              const base = previewRef.current;
+              draft.current = {
+                id: `application:${++sequence.current}`,
+                context: { ...contextRef.current },
+                base,
+                draft: { ...base },
+                retryOnFailure: true,
+              };
+              queueMicrotask(flushDraft);
+            }
+
             Object.assign(draft.current.draft, { [key]: next });
             rebuildPreview();
             return next;
@@ -645,7 +675,7 @@ export function useApplicationSnapshot(
   );
   const values = useMemo(
     () =>
-      projectConsistencySnapshot(
+      projectForDisplay(
         applyAcceptedBatches(
           raw,
           submitted.current,
@@ -654,7 +684,7 @@ export function useApplicationSnapshot(
         eventName,
         day,
       ) as unknown as PersistedStateValues,
-    [raw, eventName, day, retainedOperationIds],
+    [raw, eventName, day, retainedOperationIds, projectForDisplay],
   );
   const commitPatch = useCallback(
     async (
@@ -665,7 +695,7 @@ export function useApplicationSnapshot(
       flushDraft();
       // The submitted patch was computed from this render, not the pending preview.
       // Capture only its changes; queued plans apply them to the latest snapshot.
-      const base = structuredClone(values);
+      const base = values;
       const next = { ...base, ...patch };
       if (settings) {
         next.eventConsistency = structuredClone(next.eventConsistency);

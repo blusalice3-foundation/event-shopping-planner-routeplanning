@@ -11,9 +11,9 @@ export const PERSISTENCE_RECOVERY_KIND =
 const CANONICALIZATION_VERSION = "esp-json-v1" as const;
 const DIGEST_ALGORITHM = "SHA-256" as const;
 const FALLBACK_SCHEMA_VERSION = 1 as const;
-const FNV_64_OFFSET_BASIS = 0xcbf29ce484222325n;
-const FNV_64_PRIME = 0x100000001b3n;
-const FNV_64_MASK = 0xffffffffffffffffn;
+const FNV_64_OFFSET_HIGH = 0xcbf29ce4;
+const FNV_64_OFFSET_LOW = 0x84222325;
+const FNV_64_PRIME_LOW = 0x1b3;
 const MAX_RECOVERY_SNAPSHOT_DEPTH = 100;
 const MAX_RECOVERY_ARRAY_ITEMS = 100_000;
 
@@ -207,6 +207,7 @@ const serializeCanonicalValue = (
   value: unknown,
   path: string,
   ancestors: WeakSet<object>,
+  propertyQuotes: Map<string, string>,
 ): string => {
   if (value === null) return "null";
 
@@ -245,15 +246,12 @@ const serializeCanonicalValue = (
       if (Object.getOwnPropertySymbols(value).length > 0) {
         return failSerialization(path, "symbol keys are not supported");
       }
-      const expectedKeys = Array.from({ length: value.length }, (_, index) =>
-        String(index),
-      );
       const actualKeys = Object.getOwnPropertyNames(value).filter(
         (key) => key !== "length",
       );
       if (
-        actualKeys.length !== expectedKeys.length ||
-        actualKeys.some((key, index) => key !== expectedKeys[index])
+        actualKeys.length !== value.length ||
+        actualKeys.some((key, index) => key !== String(index))
       ) {
         return failSerialization(
           path,
@@ -283,6 +281,7 @@ const serializeCanonicalValue = (
             descriptor.value,
             `${path}[${index}]`,
             ancestors,
+            propertyQuotes,
           ),
         );
       }
@@ -300,7 +299,7 @@ const serializeCanonicalValue = (
     const record = value as Record<string, unknown>;
     const propertyNames = Object.getOwnPropertyNames(record).sort();
     const serializedEntries: string[] = [];
-    propertyNames.forEach((key) => {
+    for (const key of propertyNames) {
       const descriptor = Object.getOwnPropertyDescriptor(record, key);
       if (!descriptor?.enumerable || !("value" in descriptor)) {
         return failSerialization(
@@ -308,17 +307,21 @@ const serializeCanonicalValue = (
           "non-enumerable and accessor properties are not supported",
         );
       }
-      if (descriptor.value === undefined) {
-        return;
+      if (descriptor.value === undefined) continue;
+      let quotedKey = propertyQuotes.get(key);
+      if (quotedKey === undefined) {
+        quotedKey = JSON.stringify(key);
+        propertyQuotes.set(key, quotedKey);
       }
       serializedEntries.push(
-        `${JSON.stringify(key)}:${serializeCanonicalValue(
+        `${quotedKey}:${serializeCanonicalValue(
           descriptor.value,
           `${path}.${key}`,
           ancestors,
+          propertyQuotes,
         )}`,
       );
-    });
+    }
     return `{${serializedEntries.join(",")}}`;
   } finally {
     ancestors.delete(objectValue);
@@ -326,7 +329,7 @@ const serializeCanonicalValue = (
 };
 
 export function canonicalStringifyPersistencePayload(value: unknown): string {
-  return serializeCanonicalValue(value, "$", new WeakSet<object>());
+  return serializeCanonicalValue(value, "$", new WeakSet<object>(), new Map());
 }
 
 const encodeHex = (bytes: Uint8Array): string =>
@@ -375,16 +378,26 @@ const createSynchronousFingerprintFromEncoded = ({
   canonical,
   bytes,
 }: EncodedCanonicalPersistencePayload): PersistenceSynchronousFingerprint => {
-  let hash = FNV_64_OFFSET_BASIS;
-  for (const byte of bytes) {
-    hash ^= BigInt(byte);
-    hash = (hash * FNV_64_PRIME) & FNV_64_MASK;
+  // The FNV prime is 2^40 + 0x1b3. Two 32-bit limbs retain the same
+  // modulo-2^64 product; every intermediate integer stays below 2^53.
+  let high = FNV_64_OFFSET_HIGH;
+  let low = FNV_64_OFFSET_LOW;
+  for (let index = 0; index < bytes.length; index++) {
+    low = (low ^ bytes[index]) >>> 0;
+    const product = low * FNV_64_PRIME_LOW;
+    high =
+      (high * FNV_64_PRIME_LOW +
+        Math.floor(product / 0x100000000) +
+        low * 0x100) >>>
+      0;
+    low = product >>> 0;
   }
   return {
     algorithm: "FNV-1A-64",
     canonicalization: CANONICALIZATION_VERSION,
     canonicalLength: canonical.length,
-    value: hash.toString(16).padStart(16, "0"),
+    value:
+      high.toString(16).padStart(8, "0") + low.toString(16).padStart(8, "0"),
   };
 };
 

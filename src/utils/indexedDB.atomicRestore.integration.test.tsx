@@ -290,3 +290,63 @@ describe("db.restoreAppDataAtomically", () => {
     expect(Storage.prototype.removeItem).not.toHaveBeenCalled();
   });
 });
+it("writes only changed stores while checking every durable root", async () => {
+  await db.restoreAppDataAtomically(makeAppData("差分保存"));
+  const before = await db.readApplicationSnapshot();
+  const next = {
+    ...before.snapshot,
+    dayModes: { 差分保存イベント: { "1日目": "execute" } },
+  };
+  const put = vi.spyOn(IDBObjectStore.prototype, "put");
+  try {
+    await db.commitApplicationSnapshotAtomically(next, {
+      expectedRoots: before.expectedRoots,
+      changedStoresOnly: true,
+    });
+    expect(
+      put.mock.instances.map((store) => (store as IDBObjectStore).name).sort(),
+    ).toEqual(
+      [db.STORES.DAY_MODES, db.STORES.SYNC_QUEUE, db.STORES.SYNC_QUEUE].sort(),
+    );
+    expect(await db.getAllAppData()).toEqual(next);
+    const after = await db.readApplicationSnapshot();
+    const roots = (read: typeof before) =>
+      (read.expectedRoots as { roots: Map<string, unknown> }).roots;
+    for (const store of RESTORE_STORE_NAMES) {
+      if (store === db.STORES.DAY_MODES)
+        expect(roots(after).get(store)).not.toEqual(roots(before).get(store));
+      else expect(roots(after).get(store)).toEqual(roots(before).get(store));
+    }
+    put.mockClear();
+    await db.commitApplicationSnapshotAtomically(after.snapshot, {
+      expectedRoots: after.expectedRoots,
+      changedStoresOnly: true,
+    });
+    expect(
+      put.mock.instances.map((store) => (store as IDBObjectStore).name).sort(),
+    ).toEqual(
+      [db.STORES.DAY_MODES, db.STORES.SYNC_QUEUE, db.STORES.SYNC_QUEUE].sort(),
+    );
+  } finally {
+    put.mockRestore();
+  }
+});
+
+it("rejects a changed unrelated store during an optimized atomic save", async () => {
+  await db.restoreAppDataAtomically(makeAppData("全領域競合"));
+  const before = await db.readApplicationSnapshot();
+  const remoteModes = { 全領域競合イベント: { "1日目": "focus" } };
+  await db.saveDayModes(remoteModes);
+  await expect(
+    db.commitApplicationSnapshotAtomically(
+      {
+        ...before.snapshot,
+        eventMetadata: { 全領域競合イベント: { source: "local" } },
+      },
+      { expectedRoots: before.expectedRoots, changedStoresOnly: true },
+    ),
+  ).rejects.toMatchObject({ name: "PersistenceConflict" });
+  const after = await db.getAllAppData();
+  expect(after.dayModes).toEqual(remoteModes);
+  expect(after.eventMetadata).toEqual(before.snapshot.eventMetadata);
+});

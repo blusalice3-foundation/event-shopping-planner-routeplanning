@@ -473,10 +473,28 @@ export async function commitApplicationSnapshotAtomically(
     [STORES.HALL_ROUTE_SETTINGS, stableData.hallRouteSettings],
     [STORES.MAP_VIEWPORT_SETTINGS, stableData.mapViewportSettings],
   ]);
+  const changedStores = new Set(
+    APPLICATION_SNAPSHOT_STORE_NAMES.filter(
+      (storeName) =>
+        !options.changedStoresOnly ||
+        options.migration ||
+        observation.roots.get(storeName)?.synthetic ||
+        !observation.checkpoints.get(storeName) ||
+        !storedValuesEqual(
+          observation.snapshot[storeName],
+          restorePayloads.get(storeName),
+        ),
+    ),
+  );
+  // A confirmed save remains a real write even when its values already match.
+  // Keep failure/retry behavior without rewriting large unchanged lists or maps.
+  if (changedStores.size === 0) changedStores.add(STORES.DAY_MODES);
   const preparedMetadata = new Map<StoreName, StoredPersistenceMetadata>();
   const preparedCheckpoints = new Map<StoreName, PersistenceCheckpoint>();
   await Promise.all(
-    APPLICATION_SNAPSHOT_STORE_NAMES.map(async (storeName) => {
+    APPLICATION_SNAPSHOT_STORE_NAMES.filter((storeName) =>
+      changedStores.has(storeName),
+    ).map(async (storeName) => {
       const observed = observation.roots.get(storeName);
       if (!observed) {
         throw new Error(`Missing restore observation for ${storeName}.`);
@@ -503,7 +521,9 @@ export async function commitApplicationSnapshotAtomically(
       );
     }),
   );
-  const mapPuts = buildMapDataPuts(stableMapData);
+  const mapPuts = changedStores.has(STORES.MAP_DATA)
+    ? buildMapDataPuts(stableMapData)
+    : [];
   const mapPutKeys = new Set(mapPuts.map(({ key }) => key));
 
   await new Promise<void>((resolve, reject) => {
@@ -632,36 +652,32 @@ export async function commitApplicationSnapshotAtomically(
         }
         APPLICATION_SNAPSHOT_STORE_NAMES.forEach((storeName) => {
           const observed = observation.roots.get(storeName);
-          const metadata = preparedMetadata.get(storeName);
-          const checkpoint = preparedCheckpoints.get(storeName);
-          if (!observed || !metadata || !checkpoint) {
+          if (!observed)
             throw new Error(`Missing restore state for ${storeName}.`);
-          }
-
+          const changed = changedStores.has(storeName);
           if (storeName === STORES.MAP_DATA) {
             const currentEntries = currentMapEntries;
-            if (currentEntries === null) {
+            if (currentEntries === null)
               throw new Error("Missing mapData restore CAS snapshot.");
-            }
             const knownKeys = assertCurrentMapMatchesExpected(
               currentEntries,
               currentMetadata.get(storeName),
               observed,
             );
-            const mapStore = transaction.objectStore(storeName);
-            knownKeys.forEach((storageKey) => {
-              if (!mapPutKeys.has(storageKey)) {
-                trackRequest(mapStore.delete(storageKey));
-              }
-            });
-            mapPuts.forEach(({ key, value }) => {
-              if (
-                !Object.prototype.hasOwnProperty.call(currentEntries, key) ||
-                !storedValuesEqual(currentEntries[key], value)
-              ) {
-                trackRequest(mapStore.put(value, key));
-              }
-            });
+            if (changed) {
+              const mapStore = transaction.objectStore(storeName);
+              knownKeys.forEach((storageKey) => {
+                if (!mapPutKeys.has(storageKey))
+                  trackRequest(mapStore.delete(storageKey));
+              });
+              mapPuts.forEach(({ key, value }) => {
+                if (
+                  !Object.prototype.hasOwnProperty.call(currentEntries, key) ||
+                  !storedValuesEqual(currentEntries[key], value)
+                )
+                  trackRequest(mapStore.put(value, key));
+              });
+            }
           } else {
             assertCurrentSnapshotMatchesExpected(
               storeName,
@@ -670,11 +686,12 @@ export async function commitApplicationSnapshotAtomically(
               currentMetadata.get(storeName),
               observed,
             );
-            trackRequest(
-              transaction
-                .objectStore(storeName)
-                .put(restorePayloads.get(storeName), DATA_KEY),
-            );
+            if (changed)
+              trackRequest(
+                transaction
+                  .objectStore(storeName)
+                  .put(restorePayloads.get(storeName), DATA_KEY),
+              );
           }
           assertCurrentCheckpointMatchesExpected(
             storeName,
@@ -682,7 +699,12 @@ export async function commitApplicationSnapshotAtomically(
             currentCheckpoints.get(storeName),
             observation.checkpoints.get(storeName) ?? null,
           );
-
+          // Unchanged stores are still observed and checked inside this same transaction.
+          if (!changed) return;
+          const metadata = preparedMetadata.get(storeName);
+          const checkpoint = preparedCheckpoints.get(storeName);
+          if (!metadata || !checkpoint)
+            throw new Error(`Missing prepared state for ${storeName}.`);
           trackRequest(
             controlStore.put(
               metadata,

@@ -195,3 +195,148 @@ export function projectConsistencySnapshot(
   }
   return result;
 }
+/** Cache only immutable UI snapshots. Mutation planners keep using the uncached adapter. */
+export function createConsistencySnapshotProjector() {
+  type Entry = {
+    items: PersistenceSnapshot["eventLists"][string];
+    maps: PersistenceSnapshot["mapData"][string];
+    definitions: PersistenceSnapshot["hallDefinitions"][string];
+    consistency: PersistenceSnapshot["eventConsistency"][string];
+    day: string;
+    projection: Pick<
+      PersistenceSnapshot,
+      "eventLists" | "hallDefinitions" | "hallRouteSettings" | "routeSettings"
+    >;
+  };
+  let previous: PersistenceSnapshot | undefined;
+  let previousResult: PersistenceSnapshot | undefined;
+  let previousEvent: string | null;
+  let previousDay: string;
+  let entries = new Map<string, Entry>();
+  return (
+    source: PersistenceSnapshot,
+    activeEvent: string | null,
+    activeDay: string,
+  ): PersistenceSnapshot => {
+    if (
+      source === previous &&
+      activeEvent === previousEvent &&
+      activeDay === previousDay
+    )
+      return previousResult!;
+    const nextEntries = new Map<string, Entry>();
+    const changed: PersistenceSnapshot["eventLists"] = {};
+    for (const [name, rawItems] of Object.entries(source.eventLists)) {
+      const cached = entries.get(name);
+      const displayDay =
+        activeEvent === name
+          ? activeDay
+          : ((rawItems as ShoppingItem[])[0]?.eventDate ?? "");
+      const sameContext =
+        cached &&
+        cached.maps === source.mapData[name] &&
+        cached.definitions === source.hallDefinitions[name] &&
+        cached.consistency === source.eventConsistency[name] &&
+        cached.day === displayDay;
+      let projection = sameContext ? cached.projection : undefined;
+      if (projection && rawItems !== cached!.items) {
+        const oldItems = cached!.items as ShoppingItem[];
+        const items = rawItems as ShoppingItem[];
+        const sameMembership =
+          items.length === oldItems.length &&
+          items.every((item, index) => {
+            const old = oldItems[index];
+            return (
+              item.id === old.id &&
+              item.eventDate === old.eventDate &&
+              item.block === old.block &&
+              item.number === old.number
+            );
+          });
+        if (sameMembership) {
+          const oldProjected = projection.eventLists[name] as ShoppingItem[];
+          projection = {
+            ...projection,
+            eventLists: {
+              [name]: items.map((item, index) => {
+                if (item === oldItems[index]) return oldProjected[index];
+                const value = { ...item };
+                delete value.manualHallId;
+                const membership = membershipByItem.get(oldProjected[index])!;
+                if (membership.hall)
+                  value.manualHallId = encodeHallRef(membership.hall);
+                membershipByItem.set(value, membership);
+                return value;
+              }),
+            },
+          };
+        } else projection = undefined;
+      }
+      if (!projection)
+        Object.defineProperty(changed, name, {
+          value: rawItems,
+          enumerable: true,
+        });
+      nextEntries.set(name, {
+        items: rawItems,
+        maps: source.mapData[name],
+        definitions: source.hallDefinitions[name],
+        consistency: source.eventConsistency[name],
+        day: displayDay,
+        projection: projection!,
+      });
+    }
+    const fresh = projectConsistencySnapshot(
+      { ...source, eventLists: changed },
+      activeEvent,
+      activeDay,
+    );
+    const projectedKeys = [
+      "eventLists",
+      "hallDefinitions",
+      "hallRouteSettings",
+      "routeSettings",
+    ] as const;
+    const result = {
+      ...source,
+      executeModeItems:
+        source.executeModeItems === previous?.executeModeItems
+          ? previousResult!.executeModeItems
+          : fresh.executeModeItems,
+      dayModes:
+        source.dayModes === previous?.dayModes
+          ? previousResult!.dayModes
+          : fresh.dayModes,
+    };
+    for (const [name, entry] of nextEntries) {
+      if (!entry.projection)
+        entry.projection = Object.fromEntries(
+          projectedKeys.map((key) => [key, { [name]: fresh[key][name] }]),
+        ) as Entry["projection"];
+    }
+    for (const key of projectedKeys) {
+      const values = Object.fromEntries(
+        [...nextEntries].map(([name, entry]) => [
+          name,
+          entry.projection[key][name],
+        ]),
+      );
+      const old = previousResult?.[key];
+      const oldKeys = old ? Object.keys(old) : [];
+      const unchanged =
+        old &&
+        Object.keys(old).length === nextEntries.size &&
+        Object.entries(values).every(
+          ([name, value], index) =>
+            oldKeys[index] === name && old[name] === value,
+        );
+      Object.assign(result, { [key]: unchanged ? old : values });
+    }
+    previous = source;
+    previousEvent = activeEvent;
+    previousDay = activeDay;
+    previousResult = result;
+    entries = nextEntries;
+    return result;
+  };
+}

@@ -10,7 +10,10 @@ import {
   normalizeBaseSpaceNumber,
   normalizeSpaceBlock,
 } from "../../space-navigation/domain/visitIdentity";
-import { findRouteLookupNumberCell } from "../../../utils/mapRoutingSignature";
+import {
+  findRouteLookupNumberCell,
+  getRouteLookupNumberCellEntries,
+} from "../../../utils/mapRoutingSignature";
 import { isPointInPolygonInclusive } from "../../../utils/mapRoutePolygon";
 import {
   hallRefKey,
@@ -49,13 +52,20 @@ export function resolveLocation(
   map: DayMapData,
   item: Pick<ShoppingItem, "block" | "number">,
 ): LocationResolution {
+  return resolveLocationWithLookup(map, item, findRouteLookupNumberCell);
+}
+function resolveLocationWithLookup(
+  map: DayMapData,
+  item: Pick<ShoppingItem, "block" | "number">,
+  lookup: typeof findRouteLookupNumberCell,
+): LocationResolution {
   const numberText = normalizeBaseSpaceNumber(item.number).match(/\d+/)?.[0];
   if (!numberText) return { status: "missing", candidates: [] };
   const numberValue = Number(numberText);
   const cells = new Map<string, ResolvedCell>();
   for (const block of resolveBlocks(map, item.block)) {
     // Preserve the established rule inside a block before comparing distinct blocks.
-    const cell = findRouteLookupNumberCell(block, numberValue);
+    const cell = lookup(block, numberValue);
     if (cell)
       cells.set(JSON.stringify([cell.row, cell.col]), {
         block,
@@ -97,10 +107,9 @@ export type MembershipInput = {
 export function membershipShareKey(
   item: ShoppingItem,
   map: MapResolution,
+  location = map.status === "resolved" ? resolveLocation(map.data, item) : null,
 ): string | null {
   if (map.status === "selection-required") return null;
-  const location =
-    map.status === "resolved" ? resolveLocation(map.data, item) : null;
   return JSON.stringify([
     item.eventDate.replace(/\u3000/g, " ").trim(),
     map.status === "resolved" ? map.key : null,
@@ -117,10 +126,9 @@ export function membershipCandidates(
   item: ShoppingItem,
   map: MapResolution,
   halls: SourcedHall[],
+  location = map.status === "resolved" ? resolveLocation(map.data, item) : null,
 ): HallRef[] {
   if (map.status === "selection-required") return [];
-  const location =
-    map.status === "resolved" ? resolveLocation(map.data, item) : null;
   const block = normalizeSpaceBlock(item.block);
   const simple = halls.filter((hall) =>
     hall.definition.blockNames?.some(
@@ -174,10 +182,33 @@ export function createMembershipResolver(
   input: MembershipInput,
 ): (item: ShoppingItem) => Membership {
   const { map, halls, context } = input;
+  // A resolver owns one immutable day. Index each block once and share location
+  // results between grouping, candidate detection, and the displayed membership.
+  const numberCells = new Map<
+    BlockDefinition,
+    Map<number, NonNullable<ReturnType<typeof findRouteLookupNumberCell>>>
+  >();
+  const locations = new WeakMap<ShoppingItem, LocationResolution>();
+  const locationFor = (item: ShoppingItem): LocationResolution | null => {
+    if (map.status !== "resolved") return null;
+    let location = locations.get(item);
+    if (!location) {
+      location = resolveLocationWithLookup(map.data, item, (block, value) => {
+        let index = numberCells.get(block);
+        if (!index) {
+          index = new Map(getRouteLookupNumberCellEntries(block));
+          numberCells.set(block, index);
+        }
+        return index.get(value);
+      });
+      locations.set(item, location);
+    }
+    return location;
+  };
   const groups = new Map<string, ShoppingItem[]>();
   for (const member of input.items) {
     if (!sameDay(member.eventDate, input.day)) continue;
-    const key = membershipShareKey(member, map);
+    const key = membershipShareKey(member, map, locationFor(member));
     if (key === null) continue;
     const group = groups.get(key) ?? [];
     group.push(member);
@@ -185,9 +216,8 @@ export function createMembershipResolver(
   }
   const resolved = new Map<string, Omit<Membership, "location">>();
   return (item) => {
-    const sharedKey = membershipShareKey(item, map);
-    const location =
-      map.status === "resolved" ? resolveLocation(map.data, item) : null;
+    const location = locationFor(item);
+    const sharedKey = membershipShareKey(item, map, location);
     if (sharedKey === null)
       return {
         status: "map-selection-required",
@@ -205,7 +235,9 @@ export function createMembershipResolver(
     const candidates = [
       ...new Map(
         [...members, item]
-          .flatMap((member) => membershipCandidates(member, map, halls))
+          .flatMap((member) =>
+            membershipCandidates(member, map, halls, locationFor(member)),
+          )
           .map((ref) => [hallRefKey(ref), ref]),
       ).values(),
     ];
