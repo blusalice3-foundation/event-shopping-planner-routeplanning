@@ -1,3 +1,4 @@
+import { isValidExportSetupStorageBinding } from "./lib/performance-export-setup-contract.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
@@ -420,4 +421,36 @@ test("performance contract hash excludes only the evidence envelope digest", asy
     projectPerformanceBudgetContract(left),
     projectPerformanceBudgetContract(right),
   );
+});
+
+test("keeps legacy and consistency-aware export setup storage contracts distinct", () => {
+  const legacy = {
+    method: "indexeddb-schema-exact-single-transaction-stage-v1",
+    databaseVersion: 5,
+    transactionStores: ["eventLists", "syncQueue"],
+  };
+  const modern = {
+    method: "indexeddb-schema-exact-single-transaction-stage-v2",
+    databaseVersion: 8,
+    transactionStores: ["eventLists", "eventConsistency", "syncQueue"],
+  };
+  assert.equal(isValidExportSetupStorageBinding(legacy), true);
+  assert.equal(
+    isValidExportSetupStorageBinding({ ...legacy, databaseVersion: 7 }),
+    true,
+  );
+  assert.equal(isValidExportSetupStorageBinding(modern), true);
+  for (const invalid of [
+    null,
+    { ...legacy, databaseVersion: 4 },
+    { ...legacy, databaseVersion: 8 },
+    { ...legacy, transactionStores: modern.transactionStores },
+    { ...modern, databaseVersion: 7 },
+    { ...modern, databaseVersion: 9 },
+    { ...modern, databaseVersion: 8.1 },
+    { ...modern, transactionStores: legacy.transactionStores },
+    { ...modern, transactionStores: [...modern.transactionStores, "unknown"] },
+    { ...modern, method: "unreviewed-stage" },
+  ])
+    assert.equal(isValidExportSetupStorageBinding(invalid), false);
 });

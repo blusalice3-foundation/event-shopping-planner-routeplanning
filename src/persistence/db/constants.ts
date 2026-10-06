@@ -1,6 +1,6 @@
 export const DB_NAME = "EventShoppingPlannerDB";
-export const DB_VERSION = 5;
-export const MAX_FORWARD_COMPATIBLE_DB_VERSION = 7;
+export const DB_VERSION = 8;
+export const MAX_FORWARD_COMPATIBLE_DB_VERSION = 8;
 export const DATABASE_OPEN_BLOCKED_TIMEOUT_MS = 5_000;
 export const DATA_KEY = "data";
 export const MAP_DATA_LEGACY_KEY = "data";
@@ -23,6 +23,7 @@ export const LEGACY_SYNC_QUEUE_LOCAL_STORAGE_KEY = "syncQueue";
 
 export const STORES = {
   EVENT_LISTS: "eventLists",
+  EVENT_CONSISTENCY: "eventConsistency",
   EVENT_METADATA: "eventMetadata",
   EXECUTE_MODE_ITEMS: "executeModeItems",
   DAY_MODES: "dayModes",
@@ -36,3 +37,10 @@ export const STORES = {
 } as const;
 
 export type StoreName = (typeof STORES)[keyof typeof STORES];
+
+export const CONSISTENCY_MIGRATION_KEY =
+  "__esp_internal__:migration:consistency:v1";
+export const CONSISTENCY_ARCHIVE_KEY =
+  "__esp_internal__:migration-archive:consistency:v1";
+
+export const EVENT_GENERATIONS_KEY = "__esp_internal__:event-generations:v1";

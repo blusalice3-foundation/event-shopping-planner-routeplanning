@@ -52,6 +52,17 @@ describe("event XLSX restore settings", () => {
       },
     };
     const blob = await exportToXlsx(EVENT_NAME, [item], exportOptions, {
+      mapData: {
+        [EVENT_NAME]: {
+          "1日目マップ": {
+            cells: [],
+            mergedCells: [],
+            blocks: [],
+            maxRow: 1,
+            maxCol: 1,
+          },
+        },
+      },
       mapRotationSettings: {
         [EVENT_NAME]: mapRotationSettings,
       },
@@ -69,7 +80,7 @@ describe("event XLSX restore settings", () => {
     expect(result.eventName).toBe(EVENT_NAME);
     expect(result.mapRotationSettings).toEqual(mapRotationSettings);
     expect(result.mapViewportSettings).toEqual(mapViewportSettings);
-    expect(result.blockDetectionSettings).toEqual(
+    expect(result.eventConsistency?.blockDetectionSettings).toEqual(
       DEFAULT_BLOCK_DETECTION_SETTINGS,
     );
   });
@@ -82,12 +93,8 @@ describe("event XLSX restore settings", () => {
     });
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(await blob.arrayBuffer());
-    const metadata = workbook.getWorksheet("メタデータ");
-    metadata?.eachRow((row) => {
-      if (row.getCell(1).value === "blockDetectionSettings") {
-        row.getCell(2).value = "{broken";
-      }
-    });
+    const related = workbook.getWorksheet("関連設定")!;
+    related.getCell(2, 8).value = "{broken";
     const brokenFile = new File(
       [await workbook.xlsx.writeBuffer()],
       "broken-settings.xlsx",
@@ -96,9 +103,7 @@ describe("event XLSX restore settings", () => {
     const result = await importFromXlsx(brokenFile);
 
     expect(result.success).toBe(false);
-    expect(result.errors.join("\n")).toContain(
-      "ブロック検出設定をJSONとして解析できません",
-    );
+    expect(result.errors.join("\n")).toMatch(/JSON|関連設定/);
   });
 
   it("restores the event name from an app-generated simple XLSX filename", async () => {

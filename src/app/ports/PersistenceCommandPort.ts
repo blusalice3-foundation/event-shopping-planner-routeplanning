@@ -1,3 +1,4 @@
+import type { EventConsistencyStore } from "../../types/consistency";
 import type {
   StartupRecoveryBundle,
   StartupRecoveryCandidate,
@@ -20,6 +21,7 @@ export class PersistenceSettingsRollbackError extends Error {
 }
 
 export interface PersistenceSnapshot {
+  eventConsistency: EventConsistencyStore;
   eventLists: Record<string, unknown[]>;
   eventMetadata: Record<string, unknown>;
   executeModeItems: Record<string, Record<string, string[]>>;
@@ -39,6 +41,19 @@ export interface PersistenceSnapshot {
  * adapters do not depend on one another for a type-only contract.
  */
 export type AppData = PersistenceSnapshot;
+/** Opaque revision/digest/checkpoint observation tied to the returned snapshot. */
+export interface ApplicationSnapshotRead {
+  snapshot: PersistenceSnapshot;
+  expectedRoots: object;
+  consistencyMissing: boolean;
+  /** Internal lifecycle counters; excluded from application backups. */
+  eventGenerations?: Readonly<Record<string, number>>;
+}
+export interface AtomicSnapshotOptions {
+  expectedRoots?: object;
+  invalidatedEvents?: readonly string[];
+  migration?: { source: unknown; blockDetectionSettingsRaw: string | null };
+}
 
 export type PersistenceMigrationCleanupStatus =
   | "not-needed"
@@ -68,7 +83,27 @@ export interface PreferencePersistencePort {
   savePreference(key: string, value: string): void;
 }
 
+export interface ConsistencyUpgradeArchive {
+  kind: "event-shopping-planner-pre-upgrade";
+  version: 1;
+  databaseVersion: number;
+  exportedAt: string;
+  stores: Record<string, Array<{ key: IDBValidKey; value: unknown }>>;
+  localStorage: Record<string, string>;
+}
 export interface PersistenceCommandPort extends PreferencePersistencePort {
+  inspectConsistencyUpgrade(): Promise<ConsistencyUpgradeArchive | null>;
+  bindApplicationSettings(access: {
+    read(): PersistenceSnapshot;
+    save(
+      eventName: string,
+      settings: BlockDetectionSettings | null,
+    ): Promise<void>;
+  }): () => void;
+  readApplicationSnapshot(): Promise<ApplicationSnapshotRead>;
+  saveEventConsistency(
+    value: PersistenceSnapshot["eventConsistency"],
+  ): Promise<void>;
   readBlockDetectionSettings(eventName: string): BlockDetectionSettings | null;
   readBlockDetectionSettingsForBackup(
     eventNames: readonly string[],
@@ -76,7 +111,7 @@ export interface PersistenceCommandPort extends PreferencePersistencePort {
   saveBlockDetectionSettings(
     eventName: string,
     settings: BlockDetectionSettings,
-  ): void;
+  ): Promise<void>;
   removeBlockDetectionSettingsForEvent(eventName: string): void;
   renameBlockDetectionSettingsForEvent(
     oldEventName: string,
@@ -107,9 +142,13 @@ export interface PersistenceCommandPort extends PreferencePersistencePort {
   saveMapViewportSettings(
     value: PersistenceSnapshot["mapViewportSettings"],
   ): Promise<void>;
-  restoreAppDataAtomically(snapshot: PersistenceSnapshot): Promise<void>;
+  restoreAppDataAtomically(
+    snapshot: PersistenceSnapshot,
+    options?: AtomicSnapshotOptions,
+  ): Promise<void>;
   commitApplicationSnapshotAtomically(
     snapshot: PersistenceSnapshot,
+    options?: AtomicSnapshotOptions,
   ): Promise<void>;
   deleteEventAtomically(
     snapshot: PersistenceSnapshot,

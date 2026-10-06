@@ -144,7 +144,7 @@ describe("event XLSX catalog fields", () => {
     expect(result.items.map(({ id }) => id)).toEqual(["transferred"]);
   });
 
-  it("exports version 2.2 with the two new columns at the end", async () => {
+  it("exports version 3.0 with the catalog columns retained", async () => {
     const blob = await exportToXlsx(
       "形式確認",
       [item("format", { source: "spreadsheet" })],
@@ -165,7 +165,7 @@ describe("event XLSX catalog fields", () => {
     expect(itemsSheet?.getCell(1, 17).value).toBe("カタログ価格");
     expect(itemsSheet?.getCell(1, 18).value).toBe("シート備考");
     expect(metaSheet?.getCell(2, 1).value).toBe("version");
-    expect(metaSheet?.getCell(2, 2).value).toBe("2.2");
+    expect(metaSheet?.getCell(2, 2).value).toBe("3.0");
   });
 
   it.each(["simple", "full"] as const)(

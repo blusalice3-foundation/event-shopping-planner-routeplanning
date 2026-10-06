@@ -1,5 +1,6 @@
 import type { ShoppingItem } from "../../../types/item";
 import { getSpaceKey } from "../../../utils/spaceGrouping";
+import { normalizeExecutionVisitDay } from "../../../utils/visitProjection";
 
 export type MovePlanExpansionPolicy = "exact" | "same-visit";
 
@@ -53,13 +54,14 @@ export function getCandidateSourceOrderedIds(
   dayName: string,
   executeOrderedIds: readonly string[],
 ): string[] {
+  const normalizedDayName = normalizeExecutionVisitDay(dayName);
   const executeIdSet = new Set(executeOrderedIds);
   const seenIds = new Set<string>();
   const candidateIds: string[] = [];
 
   for (const item of allItems) {
     if (
-      item.eventDate !== dayName ||
+      normalizeExecutionVisitDay(item.eventDate) !== normalizedDayName ||
       executeIdSet.has(item.id) ||
       seenIds.has(item.id)
     ) {
@@ -92,6 +94,7 @@ function getVisitGroupKey(item: ShoppingItem): string {
 export function buildMovePlan(input: BuildMovePlanInput): MovePlan {
   const { requestedIds, sourceOrderedIds, allItems, dayName, expansionPolicy } =
     input;
+  const normalizedDayName = normalizeExecutionVisitDay(dayName);
 
   const itemsById = new Map<string, ShoppingItem>();
   for (const item of allItems) {
@@ -115,7 +118,7 @@ export function buildMovePlan(input: BuildMovePlanInput): MovePlan {
       excluded.missing.push(requestedId);
       continue;
     }
-    if (item.eventDate !== dayName) {
+    if (normalizeExecutionVisitDay(item.eventDate) !== normalizedDayName) {
       excluded.wrongDate.push(requestedId);
       continue;
     }
@@ -144,8 +147,9 @@ export function buildMovePlan(input: BuildMovePlanInput): MovePlan {
   );
   const effective = orderedSourceIds.filter((id) => {
     const item = itemsById.get(id);
+    if (!item) return false;
     return (
-      item?.eventDate === dayName &&
+      normalizeExecutionVisitDay(item.eventDate) === normalizedDayName &&
       requestedVisitGroupKeys.has(getVisitGroupKey(item))
     );
   });

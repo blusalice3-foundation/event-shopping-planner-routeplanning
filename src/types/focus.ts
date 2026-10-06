@@ -1,5 +1,14 @@
 export type FocusPhase = "normal" | "postponed" | "late";
 
+export interface FocusModeAddItemResult {
+  newItemId: string;
+  placement?: "positioned" | "merged-into-existing-visit";
+  mergedIntoVisitItemIds?: string[];
+}
+
+/** Legacy string IDs remain accepted while callers migrate to placement metadata. */
+export type FocusModeAddItemReturn = string | FocusModeAddItemResult | void;
+
 export type FocusMapCenteringMode = "prevToCurrent" | "currentOnly";
 
 export interface FocusMapViewportSnapshot {

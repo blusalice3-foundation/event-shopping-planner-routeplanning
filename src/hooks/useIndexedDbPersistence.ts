@@ -1,3 +1,14 @@
+import type { EventConsistencyStore } from "../types/consistency";
+
+import {
+  createAppBackup,
+  validateSnapshotStructure,
+  validateSnapshotReferences,
+} from "../utils/appBackup";
+import {
+  isBlockDetectionSettings,
+  type BlockDetectionSettingsStore,
+} from "../types/map";
 import {
   Dispatch,
   SetStateAction,
@@ -12,7 +23,6 @@ import {
   ExecuteModeItems,
   ShoppingItem,
 } from "../types/item";
-import { normalizeLimitedPurchaseFields } from "../utils/purchaseQuantity";
 import {
   HallDefinitionsStore,
   HallRouteSettingsStore,
@@ -23,7 +33,6 @@ import {
 } from "../types/map";
 import {
   db,
-  type LoadResult,
   type PersistenceCleanupStatus as DbPersistenceCleanupStatus,
 } from "../utils/indexedDB";
 import {
@@ -38,9 +47,13 @@ import {
   bucketPersistenceStartupDuration,
   recordPersistenceReleaseAMetric,
 } from "../utils/persistenceReleaseAMetrics";
-import type { PersistenceCommandPort } from "../app/ports/PersistenceCommandPort";
+import type {
+  ApplicationSnapshotRead,
+  PersistenceCommandPort,
+} from "../app/ports/PersistenceCommandPort";
 
 export type PersistedStateValues = {
+  eventConsistency: EventConsistencyStore;
   eventLists: Record<string, ShoppingItem[]>;
   eventMetadata: Record<string, EventMetadata>;
   executeModeItems: Record<string, ExecuteModeItems>;
@@ -268,6 +281,14 @@ const createSaveTasks = (
   persistenceCommands: PersistenceCommandPort,
 ): SaveTask[] => {
   const saveTasks: SaveTask[] = [];
+  if (previousValues.eventConsistency !== currentValues.eventConsistency)
+    saveTasks.push({
+      label: "eventConsistency",
+      save: () =>
+        persistenceCommands.saveEventConsistency(
+          currentValues.eventConsistency,
+        ),
+    });
   if (previousValues.eventLists !== currentValues.eventLists) {
     saveTasks.push({
       label: "eventLists",
@@ -354,7 +375,8 @@ const createSaveTasks = (
   return saveTasks;
 };
 
-type PersistedStateSetters = {
+export type PersistedStateSetters = {
+  setEventConsistency: Dispatch<SetStateAction<EventConsistencyStore>>;
   setEventLists: Dispatch<SetStateAction<Record<string, ShoppingItem[]>>>;
   setEventMetadata: Dispatch<SetStateAction<Record<string, EventMetadata>>>;
   setExecuteModeItems: Dispatch<
@@ -374,6 +396,8 @@ type UseIndexedDbPersistenceParams = {
   setters: PersistedStateSetters;
   persistenceCommands: PersistenceCommandPort;
   saveDelayMs?: number;
+  externalMutations?: boolean;
+  onHydratedSnapshot?(read: ApplicationSnapshotRead): void;
 };
 
 export function useIndexedDbPersistence({
@@ -381,6 +405,8 @@ export function useIndexedDbPersistence({
   setters,
   persistenceCommands,
   saveDelayMs = 500,
+  externalMutations = false,
+  onHydratedSnapshot,
 }: UseIndexedDbPersistenceParams) {
   const [startupState, setStartupState] = useState<PersistenceStartupState>({
     status: "loading",
@@ -394,6 +420,7 @@ export function useIndexedDbPersistence({
   const [recoveryAdoptionError, setRecoveryAdoptionError] = useState<
     string | null
   >(null);
+  const [migrationNotices, setMigrationNotices] = useState<string[]>([]);
   const [failedStores, setFailedStores] = useState<PersistedStoreName[]>([]);
   const [failureDetails, setFailureDetails] = useState<
     PersistenceFailureDetail[]
@@ -401,6 +428,8 @@ export function useIndexedDbPersistence({
   const isSavingRef = useRef(false);
   const saveRequestedRef = useRef(false);
   const latestValuesRef = useRef<PersistedStateValues>(values);
+  const observedSnapshotRef = useRef<PersistedStateValues | null>(null);
+  const lastSaveErrorRef = useRef<unknown>(null);
   const previousSavedValuesRef = useRef<PersistedStateValues>(values);
   const hasObservedHydratedValuesRef = useRef(false);
   const restoreInProgressRef = useRef(false);
@@ -412,7 +441,7 @@ export function useIndexedDbPersistence({
   const failedStoresRef = useRef<PersistedStoreName[]>(failedStores);
   const failureDetailsRef = useRef<PersistenceFailureDetail[]>(failureDetails);
   const isInitializedRef = useRef(false);
-  latestValuesRef.current = values;
+  latestValuesRef.current = observedSnapshotRef.current ?? values;
   persistenceStatusRef.current = persistenceStatus;
   failedStoresRef.current = failedStores;
   failureDetailsRef.current = failureDetails;
@@ -429,6 +458,7 @@ export function useIndexedDbPersistence({
     hallDefinitions,
     hallRouteSettings,
     mapViewportSettings,
+    eventConsistency,
   } = values;
   const {
     setEventLists,
@@ -441,6 +471,7 @@ export function useIndexedDbPersistence({
     setHallDefinitions,
     setHallRouteSettings,
     setMapViewportSettings,
+    setEventConsistency,
   } = setters;
 
   const updatePersistenceStatus = useCallback((status: PersistenceStatus) => {
@@ -476,6 +507,7 @@ export function useIndexedDbPersistence({
   const drainSaveQueue = useCallback(async () => {
     if (isSavingRef.current || restoreInProgressRef.current) return;
     isSavingRef.current = true;
+    lastSaveErrorRef.current = null;
     try {
       while (saveRequestedRef.current && !restoreInProgressRef.current) {
         saveRequestedRef.current = false;
@@ -507,6 +539,7 @@ export function useIndexedDbPersistence({
             await save();
           } catch (error) {
             failed.push({ label, error });
+            lastSaveErrorRef.current = error;
           }
         }
 
@@ -551,6 +584,7 @@ export function useIndexedDbPersistence({
         }
       }
     } catch (error) {
+      lastSaveErrorRef.current = error;
       recordPersistenceReleaseAMetric({
         version: 1,
         name: "save",
@@ -650,6 +684,39 @@ export function useIndexedDbPersistence({
       }
     }
   }, [drainSaveQueue, isUpdateBlocked, waitForSaveIdle]);
+
+  // The application coordinator owns this observation until it settles.
+  // Reuse the debounced watcher and its per-store queue, rather than a second
+  // DB writer. Unchanged roots keep their baseline references.
+  const observeSnapshot = useCallback(
+    async (snapshot: PersistedStateValues, base: PersistedStateValues) => {
+      const previous = latestValuesRef.current;
+      const changedStores = (Object.keys(base) as PersistedStoreName[]).filter(
+        (key) => JSON.stringify(base[key]) !== JSON.stringify(snapshot[key]),
+      );
+      if (changedStores.length !== 1)
+        throw new Error("監視保存は単独の保存領域だけを対象とします。");
+      observedSnapshotRef.current = { ...base };
+      const store = changedStores[0];
+      Object.assign(observedSnapshotRef.current, { [store]: snapshot[store] });
+      previousSavedValuesRef.current = base;
+      latestValuesRef.current = observedSnapshotRef.current;
+      updatePersistenceStatus("unsaved");
+      try {
+        await new Promise<void>((resolve) => setTimeout(resolve, saveDelayMs));
+        await flushPendingSave();
+      } catch (error) {
+        // The coordinator retains the intent for replan/retry or explicit
+        // discard. Do not let the watcher independently resend a stale plan.
+        previousSavedValuesRef.current = previous;
+        throw lastSaveErrorRef.current ?? error;
+      } finally {
+        observedSnapshotRef.current = null;
+        latestValuesRef.current = previousSavedValuesRef.current;
+      }
+    },
+    [flushPendingSave, saveDelayMs, updatePersistenceStatus],
+  );
 
   const runExclusiveRestore = useCallback(
     async <T>(
@@ -801,6 +868,7 @@ export function useIndexedDbPersistence({
             : "not-needed");
 
       const [
+        loadedEventConsistency,
         loadedEventLists,
         loadedMetadata,
         loadedExecuteItems,
@@ -812,6 +880,7 @@ export function useIndexedDbPersistence({
         loadedHallRouteSettings,
         loadedMapViewportSettings,
       ] = await Promise.all([
+        db.loadEventConsistency(),
         db.loadEventLists(),
         db.loadEventMetadata(),
         db.loadExecuteModeItems(),
@@ -825,6 +894,7 @@ export function useIndexedDbPersistence({
       ]);
 
       const loadedStores = [
+        ["eventConsistency", loadedEventConsistency],
         ["eventLists", loadedEventLists],
         ["eventMetadata", loadedMetadata],
         ["executeModeItems", loadedExecuteItems],
@@ -878,65 +948,70 @@ export function useIndexedDbPersistence({
         return;
       }
 
-      const resolveLoadResult = <T extends Record<string, unknown>>(
-        result: LoadResult<T>,
-      ): T => (result.status === "ok" && result.data ? result.data : ({} as T));
-
-      const resolvedEventLists = resolveLoadResult(loadedEventLists);
-      const resolvedMetadata = resolveLoadResult(loadedMetadata);
-      const resolvedExecuteItems = resolveLoadResult(loadedExecuteItems);
-      const resolvedDayModes = resolveLoadResult(loadedDayModes);
-      const resolvedMapData = resolveLoadResult(loadedMapData);
-      const resolvedMapRotationSettings = resolveLoadResult(
-        loadedMapRotationSettings,
-      );
-      const resolvedRouteSettings = resolveLoadResult(loadedRouteSettings);
-      const resolvedHallDefinitions = resolveLoadResult(loadedHallDefinitions);
-      const resolvedHallRouteSettings = resolveLoadResult(
-        loadedHallRouteSettings,
-      );
-      const resolvedMapViewportSettings = resolveLoadResult(
-        loadedMapViewportSettings,
-      );
-
-      const migratedLists: Record<string, ShoppingItem[]> = {};
-      Object.keys(resolvedEventLists).forEach((eventName) => {
-        migratedLists[eventName] = (
-          resolvedEventLists[eventName] as ShoppingItem[]
-        ).map((item: ShoppingItem) =>
-          normalizeLimitedPurchaseFields({
-            ...item,
-            quantity: item.quantity ?? 1,
-          }),
+      // Read all application stores and revision roots in one transaction.
+      const observation = await persistenceCommands.readApplicationSnapshot();
+      let snapshot = observation.snapshot;
+      if (observation.consistencyMissing) {
+        const legacy = { ...snapshot } as Partial<typeof snapshot>;
+        delete legacy.eventConsistency;
+        const errors = validateSnapshotStructure(legacy, false);
+        if (errors.length) throw new Error(errors.join("\n"));
+        const raw = persistenceCommands.loadPreference(
+          "blockDetectionSettings",
         );
-      });
-
+        const settings: BlockDetectionSettingsStore =
+          raw === null ? {} : JSON.parse(raw);
+        if (
+          !settings ||
+          typeof settings !== "object" ||
+          Array.isArray(settings) ||
+          Object.values(settings).some(
+            (value) => !isBlockDetectionSettings(value),
+          )
+        )
+          throw new Error(
+            "旧ブロック検出設定が不正です。移行元を保全して確認してください。",
+          );
+        const migrated = createAppBackup(
+          legacy as typeof snapshot,
+          new Date(),
+          { blockDetectionSettings: settings },
+        );
+        snapshot = migrated.data;
+        const migrationErrors = [
+          ...validateSnapshotStructure(snapshot),
+          ...validateSnapshotReferences(snapshot),
+        ];
+        if (migrationErrors.length) throw new Error(migrationErrors.join("\n"));
+        await persistenceCommands.commitApplicationSnapshotAtomically(
+          snapshot,
+          {
+            expectedRoots: observation.expectedRoots,
+            migration: { source: legacy, blockDetectionSettingsRaw: raw },
+          },
+        );
+        if (isMountedRef.current)
+          setMigrationNotices(
+            migrated.notices?.map(
+              (change) => `${change.path}: ${change.message}`,
+            ) ?? [],
+          );
+      }
+      const validationErrors = [
+        ...validateSnapshotStructure(snapshot),
+        ...validateSnapshotReferences(snapshot),
+      ];
+      if (validationErrors.length) throw new Error(validationErrors.join("\n"));
       if (!isMountedRef.current) return;
-
-      const hydratedValues: PersistedStateValues = {
-        eventLists: migratedLists,
-        eventMetadata: resolvedMetadata as Record<string, EventMetadata>,
-        executeModeItems: resolvedExecuteItems as Record<
-          string,
-          ExecuteModeItems
-        >,
-        dayModes: resolvedDayModes as Record<string, DayModeState>,
-        mapData: resolvedMapData as MapDataStore,
-        mapRotationSettings:
-          resolvedMapRotationSettings as MapRotationSettingsStore,
-        routeSettings: resolvedRouteSettings as RouteSettingsStore,
-        hallDefinitions: resolvedHallDefinitions as HallDefinitionsStore,
-        hallRouteSettings: resolvedHallRouteSettings as HallRouteSettingsStore,
-        mapViewportSettings:
-          resolvedMapViewportSettings as MapViewportSettingsStore,
-      };
-
+      onHydratedSnapshot?.({ ...observation, snapshot });
+      const hydratedValues = snapshot as unknown as PersistedStateValues;
       // 画面を操作可能にする前に復元値を保存済み基準として確定する。
       // 初回の保存タイマーより先に変更されても、その変更を差分として保存できる。
       previousSavedValuesRef.current = hydratedValues;
       latestValuesRef.current = hydratedValues;
       hasObservedHydratedValuesRef.current = false;
 
+      setEventConsistency(hydratedValues.eventConsistency);
       setEventLists(hydratedValues.eventLists);
       setEventMetadata(hydratedValues.eventMetadata);
       setExecuteModeItems(hydratedValues.executeModeItems);
@@ -969,11 +1044,23 @@ export function useIndexedDbPersistence({
         message:
           "保存データの初期化中にエラーが発生しました。通常画面には反映していません。",
       };
-      const recoveryBundle = createRecoveryBundle([issue]);
+      const attachedBundle =
+        error && typeof error === "object" && "recoveryBundle" in error
+          ? (error.recoveryBundle as StartupRecoveryBundle)
+          : null;
+      const recoveryBundle = createRecoveryBundle([issue], [attachedBundle]);
       setStartupState({
         status: "recovery-required",
         message: "保存データを安全に読み込めませんでした。",
-        details: [issue.message],
+        details: [
+          ...new Set([
+            issue.message,
+            ...(readErrorField(error, "name") === "IndexedDBOpenBlocked"
+              ? ["旧版を含む他のタブを閉じて再試行してください。"]
+              : []),
+            ...recoveryBundle.issues.map((value) => value.message),
+          ]),
+        ],
         recoveryBundle,
         isRetrying: false,
       });
@@ -981,7 +1068,9 @@ export function useIndexedDbPersistence({
     }
   }, [
     persistenceCommands,
+    onHydratedSnapshot,
     setDayModes,
+    setEventConsistency,
     setEventLists,
     setEventMetadata,
     setExecuteModeItems,
@@ -1080,7 +1169,7 @@ export function useIndexedDbPersistence({
   }, [startInitialization]);
 
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized || externalMutations) return;
 
     // 初期復元による値の反映はユーザー編集ではないため保存対象にしない。
     // Reactは次の操作を処理する前にこのeffectを確定するため、その直後の編集は
@@ -1089,6 +1178,16 @@ export function useIndexedDbPersistence({
       hasObservedHydratedValuesRef.current = true;
       return;
     }
+
+    if (
+      observedSnapshotRef.current ||
+      createSaveTasks(
+        previousSavedValuesRef.current,
+        latestValuesRef.current,
+        persistenceCommands,
+      ).length === 0
+    )
+      return;
 
     saveRequestedRef.current = true;
     updatePersistenceStatus("unsaved");
@@ -1099,6 +1198,9 @@ export function useIndexedDbPersistence({
     return () => clearTimeout(timeoutId);
   }, [
     isInitialized,
+    externalMutations,
+    persistenceCommands,
+    eventConsistency,
     saveDelayMs,
     eventLists,
     eventMetadata,
@@ -1125,7 +1227,22 @@ export function useIndexedDbPersistence({
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isInitialized, persistenceStatus]);
 
+  const acceptCommittedSnapshot = useCallback(
+    (snapshot: PersistedStateValues) => {
+      previousSavedValuesRef.current = snapshot;
+      latestValuesRef.current = snapshot;
+      saveRequestedRef.current = false;
+      updateFailedStores([]);
+      updateFailureDetails([]);
+      updatePersistenceStatus("saved");
+    },
+    [updateFailedStores, updateFailureDetails, updatePersistenceStatus],
+  );
   return {
+    observeSnapshot,
+    acceptCommittedSnapshot,
+    migrationNotices,
+    dismissMigrationNotices: () => setMigrationNotices([]),
     isInitialized,
     startupState,
     persistenceStatus,

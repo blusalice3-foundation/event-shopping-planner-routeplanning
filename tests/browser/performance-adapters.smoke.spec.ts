@@ -199,7 +199,7 @@ test.describe("canonical public adapter smoke", () => {
       "single-atomic-download": true,
     });
     expect(result.executionBinding.setup).toMatchObject({
-      method: "indexeddb-schema-exact-single-transaction-stage-v1",
+      method: "indexeddb-schema-exact-single-transaction-stage-v2",
       timing: "excluded-from-measurement-v1",
       readback: "separate-readonly-transaction-v1",
       itemCount: 20,

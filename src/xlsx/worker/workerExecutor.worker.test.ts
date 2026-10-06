@@ -258,7 +258,7 @@ describe("bound XLSX Worker engine", () => {
     const progress: string[] = [];
     const exportController = new AbortController();
     const bytes = await xlsxWorkerExecutor.exportWorkbook(
-      semanticGolden.input,
+      { ...semanticGolden.input, schemaVersion: 2 },
       exportController.signal,
       ({ phase }) => progress.push(phase),
     );
@@ -282,7 +282,28 @@ describe("bound XLSX Worker engine", () => {
       () => undefined,
     );
 
-    expect(result).toEqual(semanticGolden.expectedImport);
+    const expected = structuredClone(semanticGolden.expectedImport);
+    for (const item of expected.value.items) delete item.manualHallId;
+    // This export omits related information, so legacy manual choices are not exported.
+    expect(result.kind).toBe("event-import");
+    if (result.kind !== "event-import") throw new Error("wrong result kind");
+    const { eventConsistency, contentManifest, ...retained } = result.value;
+    expect(retained).toEqual(expected.value);
+    expect(eventConsistency).toEqual({
+      schemaVersion: 1,
+      days: {},
+      legacyPending: [],
+      blockDetectionSettings: null,
+    });
+    expect(contentManifest).toMatchObject({
+      schemaVersion: 1,
+      requiredSheets: ["アイテムデータ", "メタデータ", "関連設定", "配置情報"],
+      sections: {
+        items: { included: true, count: 2 },
+        layout: { included: true, count: 4 },
+        mapAssignments: { included: false, count: 0 },
+      },
+    });
   });
 
   it.each(["map-preview", "map-import"] as const)(

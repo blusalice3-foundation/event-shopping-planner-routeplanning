@@ -1,3 +1,4 @@
+import { resolveLocation } from "../../features/consistency/domain/membership";
 import React, {
   useRef,
   useEffect,
@@ -19,8 +20,6 @@ import {
 } from "../../types/map";
 import { ShoppingItem } from "../../types/item";
 import { useCanvasViewport } from "../../features/map/canvas/useCanvasViewport";
-import { extractNumberFromItemNumber } from "../../xlsx/domain/itemNumber";
-import { findRouteLookupNumberCell } from "../../utils/mapRoutingSignature";
 import { generateRouteSegments, simplifyPath } from "../../utils/pathfinding";
 import {
   filterFirstRouteMarkers,
@@ -44,6 +43,7 @@ import MapCanvasPresentation from "./MapCanvasPresentation";
 interface MapCanvasProps {
   mapData: DayMapData;
   mapName: string;
+  eventDate?: string;
   items: ShoppingItem[];
   executeModeItemIds: string[];
   zoomLevel: ZoomLevel;
@@ -236,6 +236,7 @@ const isNumberLikeCellValue = (value: string | number | null): boolean => {
 const MapCanvas: React.FC<MapCanvasProps> = ({
   mapData,
   mapName,
+  eventDate,
   items,
   executeModeItemIds,
   zoomLevel,
@@ -429,7 +430,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
 
   const resolvedMapCellItems = useMemo(() => {
     const resolvedItems: ResolvedMapCellItem[] = [];
-    const dayName = extractDayNameFromMapName(mapName);
+    const dayName = eventDate ?? extractDayNameFromMapName(mapName);
     const normalizedDayName = normalizeMapRouteDayText(dayName);
     if (!normalizedDayName) return resolvedItems;
 
@@ -437,32 +438,14 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
       const itemEventDate = normalizeMapRouteDayText(item.eventDate);
       if (itemEventDate !== normalizedDayName) return;
 
-      const itemBlockName = item.block?.trim() || "";
-      let block = mapData.blocks.find((b) => b.name === itemBlockName);
-
-      if (!block) {
-        const candidates = mapData.blocks.filter(
-          (b) => b.name.toLowerCase() === itemBlockName.toLowerCase(),
-        );
-        if (candidates.length === 1) {
-          block = candidates[0];
-        }
-      }
-
-      if (!block) return;
-
-      const numStr = extractNumberFromItemNumber(item.number);
-      if (!numStr) return;
-
-      const num = parseInt(numStr, 10);
-      const cell = findRouteLookupNumberCell(block, num);
-      if (!cell) return;
-
+      const location = resolveLocation(mapData, item);
+      if (location.status !== "resolved") return;
+      const cell = location.location.cell;
       resolvedItems.push({ key: `${cell.row}-${cell.col}`, item });
     });
 
     return resolvedItems;
-  }, [mapData.blocks, items, mapName]);
+  }, [mapData, items, mapName, eventDate]);
 
   const cellStates = useMemo(() => {
     const states = new Map<string, MapCellStateDetail>();
@@ -536,12 +519,12 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     if (routePointsOverride) return routePointsOverride;
     if (routeInsertSelectionActive) return [];
 
-    const dayName = extractDayNameFromMapName(mapName);
+    const dayName = eventDate ?? extractDayNameFromMapName(mapName);
     const normalizedDayName = normalizeMapRouteDayText(dayName);
     if (!normalizedDayName) return [];
 
     const itemsMap = new Map(items.map((item) => [item.id, item]));
-    const executeModeItemIdsArray = Array.from(executeModeItemIds);
+    const executeModeItemIdsArray = Array.from(new Set(executeModeItemIds));
 
     const visitItems = executeModeItemIdsArray
       .map((id) => itemsMap.get(id))
@@ -559,24 +542,9 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     }> = [];
 
     visitItems.forEach((item, index) => {
-      const itemBlockName = item.block?.trim() || "";
-
-      let block = mapData.blocks.find((b) => b.name === itemBlockName);
-      if (!block) {
-        const candidates = mapData.blocks.filter(
-          (b) => b.name.toLowerCase() === itemBlockName.toLowerCase(),
-        );
-        if (candidates.length === 1) {
-          block = candidates[0];
-        }
-      }
-      if (!block) return;
-
-      const numStr = extractNumberFromItemNumber(item.number);
-      if (!numStr) return;
-
-      const num = parseInt(numStr, 10);
-      const cell = findRouteLookupNumberCell(block, num);
+      const location = resolveLocation(mapData, item);
+      const cell =
+        location.status === "resolved" ? location.location.cell : null;
       if (cell) {
         points.push({
           row: cell.row,
@@ -589,9 +557,10 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
 
     return points;
   }, [
-    mapData.blocks,
+    mapData,
     items,
     mapName,
+    eventDate,
     executeModeItemIds,
     effectiveRouteVisible,
     routePointsOverride,

@@ -5,18 +5,64 @@ import type {
 } from "../../../types/map";
 import type { ExecuteModeItems, ShoppingItem } from "../../../types/item";
 import { getSpaceKey } from "../../../utils/spaceGrouping";
+import {
+  buildExecutionVisitProjectionKey,
+  findExecutionDayBucketKey,
+  normalizeExecutionVisitDay,
+  projectItemsToExecutionVisits,
+  removeExecutionVisitMemberPreservingBasePosition,
+} from "../../../utils/visitProjection";
 import { findItemHallId } from "./geometry";
+
+export type ExecuteInsertPlacement =
+  | "positioned"
+  | "hall-order"
+  | "merged-into-existing-visit"
+  | "mixed";
+
+export type ExecuteInsertedItemIds = string[] & {
+  readonly placement?: ExecuteInsertPlacement;
+  readonly mergedIntoVisitItemIds?: readonly string[];
+};
+
+function attachInsertMetadata(
+  itemIds: string[],
+  placement: ExecuteInsertPlacement,
+  mergedIntoVisitItemIds: readonly string[],
+): ExecuteInsertedItemIds {
+  const result = itemIds as ExecuteInsertedItemIds;
+  Object.defineProperties(result, {
+    placement: { value: placement, enumerable: false },
+    mergedIntoVisitItemIds: {
+      value: [...mergedIntoVisitItemIds],
+      enumerable: false,
+    },
+  });
+  return result;
+}
 
 export interface MapExecuteInsertResult {
   accepted: boolean;
   executeModeItems: ExecuteModeItems;
-  insertedItemIds: string[];
+  insertedItemIds: ExecuteInsertedItemIds;
+  /** Additive metadata for callers that want to notify about automatic merge. */
+  placement?: ExecuteInsertPlacement;
+  mergedIntoVisitItemIds?: string[];
 }
 
 export interface ExecutePositionInsertResult {
   accepted: boolean;
   executeModeItems: ExecuteModeItems;
-  insertedItemIds: string[];
+  insertedItemIds: ExecuteInsertedItemIds;
+  /** Additive metadata; existing consumers may continue using insertedItemIds. */
+  placement?: ExecuteInsertPlacement;
+  mergedIntoVisitItemIds?: string[];
+}
+
+export interface ExecuteIdentityRepositionResult {
+  executeModeItems: ExecuteModeItems;
+  placement?: ExecuteInsertPlacement;
+  mergedIntoVisitItemIds?: string[];
 }
 
 export interface MapExecuteRemovalResult {
@@ -34,6 +80,9 @@ export function expandSameSpacePriorityItemIds(
     excludeSeedIdsFromSiblingExpansion?: boolean;
   } = {},
 ): string[] {
+  const normalizedDayName = options.dayName
+    ? normalizeExecutionVisitDay(options.dayName)
+    : null;
   const seedIdsSet = new Set(itemIds);
   const expandedIds: string[] = [];
   const expandedIdsSet = new Set<string>();
@@ -47,7 +96,11 @@ export function expandSameSpacePriorityItemIds(
   for (const itemId of itemIds) {
     const item = itemsById.get(itemId);
     if (!item) continue;
-    if (options.dayName && item.eventDate !== options.dayName) continue;
+    if (
+      normalizedDayName &&
+      normalizeExecutionVisitDay(item.eventDate) !== normalizedDayName
+    )
+      continue;
 
     const addIfAvailable = (id: string) => {
       if (options.excludedIds?.has(id) || expandedIdsSet.has(id)) return;
@@ -60,7 +113,7 @@ export function expandSameSpacePriorityItemIds(
 
     const spaceKey = getSpaceKey(item.block, item.number);
     const priorityLevel = item.priorityLevel || "none";
-    const groupKey = JSON.stringify([item.eventDate, spaceKey, priorityLevel]);
+    const groupKey = buildExecutionVisitProjectionKey(item);
     if (expandedGroupKeys.has(groupKey)) continue;
     expandedGroupKeys.add(groupKey);
 
@@ -70,8 +123,16 @@ export function expandSameSpacePriorityItemIds(
         seedIdsSet.has(sibling.id)
       )
         continue;
-      if (options.dayName && sibling.eventDate !== options.dayName) continue;
-      if (sibling.eventDate !== item.eventDate) continue;
+      if (
+        normalizedDayName &&
+        normalizeExecutionVisitDay(sibling.eventDate) !== normalizedDayName
+      )
+        continue;
+      if (
+        normalizeExecutionVisitDay(sibling.eventDate) !==
+        normalizeExecutionVisitDay(item.eventDate)
+      )
+        continue;
       if (getSpaceKey(sibling.block, sibling.number) !== spaceKey) continue;
       if ((sibling.priorityLevel || "none") !== priorityLevel) continue;
       addIfAvailable(sibling.id);
@@ -106,19 +167,188 @@ export function expandExecuteRemovalItemIds(
   });
 }
 
-function isSameSpacePriorityGroup(
-  id1: string,
-  id2: string,
+interface InsertVisitGroup {
+  key: string | null;
+  itemIds: string[];
+}
+
+function groupInsertItemIdsByVisit(
+  itemIds: readonly string[],
   itemsMap: Map<string, ShoppingItem>,
-): boolean {
-  const item1 = itemsMap.get(id1);
-  const item2 = itemsMap.get(id2);
-  if (!item1 || !item2) return false;
-  return (
-    getSpaceKey(item1.block, item1.number) ===
-      getSpaceKey(item2.block, item2.number) &&
-    (item1.priorityLevel || "none") === (item2.priorityLevel || "none")
+): InsertVisitGroup[] {
+  const knownItems = itemIds
+    .map((itemId) => itemsMap.get(itemId))
+    .filter((item): item is ShoppingItem => item !== undefined);
+  const knownGroups = projectItemsToExecutionVisits(knownItems);
+  const groupByItemId = new Map<string, InsertVisitGroup>();
+  knownGroups.forEach((visit) => {
+    const group = { key: visit.key, itemIds: [...visit.itemIds] };
+    visit.itemIds.forEach((itemId) => groupByItemId.set(itemId, group));
+  });
+
+  const result: InsertVisitGroup[] = [];
+  const seenGroups = new Set<InsertVisitGroup>();
+  itemIds.forEach((itemId) => {
+    const knownGroup = groupByItemId.get(itemId);
+    if (!knownGroup) {
+      result.push({ key: null, itemIds: [itemId] });
+      return;
+    }
+    if (seenGroups.has(knownGroup)) return;
+    seenGroups.add(knownGroup);
+    result.push(knownGroup);
+  });
+  return result;
+}
+
+function findFirstItemIdForVisit(
+  itemIds: readonly string[],
+  visitKey: string,
+  itemsMap: Map<string, ShoppingItem>,
+): string | null {
+  for (const itemId of itemIds) {
+    const item = itemsMap.get(itemId);
+    if (item && buildExecutionVisitProjectionKey(item) === visitKey)
+      return itemId;
+  }
+  return null;
+}
+
+function findLastIndexForVisit(
+  itemIds: readonly string[],
+  visitKey: string,
+  itemsMap: Map<string, ShoppingItem>,
+): number {
+  for (let index = itemIds.length - 1; index >= 0; index--) {
+    const item = itemsMap.get(itemIds[index]);
+    if (item && buildExecutionVisitProjectionKey(item) === visitKey)
+      return index;
+  }
+  return -1;
+}
+
+/**
+ * Keeps an existing destination visit at its current position when an edited
+ * execute item changes identity and joins it. A date change transfers the ID
+ * to the edited date, appending only when no destination visit exists.
+ */
+export function repositionExecuteItemAfterIdentityChangeWithResult(
+  executeModeItems: ExecuteModeItems,
+  previousItem: ShoppingItem,
+  updatedItem: ShoppingItem,
+  updatedAllItems: readonly ShoppingItem[],
+): ExecuteIdentityRepositionResult {
+  const previousKey = buildExecutionVisitProjectionKey(previousItem);
+  const updatedKey = buildExecutionVisitProjectionKey(updatedItem);
+  if (previousKey === updatedKey) return { executeModeItems };
+
+  const sourceDays = Object.keys(executeModeItems).filter((dayName) =>
+    (executeModeItems[dayName] || []).includes(updatedItem.id),
   );
+  if (sourceDays.length === 0) return { executeModeItems };
+
+  const itemsMap = new Map(updatedAllItems.map((item) => [item.id, item]));
+  itemsMap.set(updatedItem.id, updatedItem);
+  const normalizedPreviousDay = normalizeExecutionVisitDay(
+    previousItem.eventDate,
+  );
+  const normalizedDestinationDay = normalizeExecutionVisitDay(
+    updatedItem.eventDate,
+  );
+  const dateChanged = normalizedPreviousDay !== normalizedDestinationDay;
+  const destinationDay = dateChanged
+    ? (findExecutionDayBucketKey(
+        Object.keys(executeModeItems),
+        updatedItem.eventDate,
+      ) ?? normalizedDestinationDay)
+    : (sourceDays.find(
+        (dayName) =>
+          normalizeExecutionVisitDay(dayName) === normalizedPreviousDay,
+      ) ?? sourceDays[0]);
+
+  const nextExecuteModeItems: ExecuteModeItems = { ...executeModeItems };
+  let departedFirstSourceMember = false;
+  let sourceVisitSurvives = false;
+  sourceDays.forEach((dayName) => {
+    const sourceIds = executeModeItems[dayName] || [];
+    const sourceVisitMemberIds = sourceIds.filter((itemId) => {
+      if (itemId === updatedItem.id) return true;
+      const item = itemsMap.get(itemId);
+      return (
+        item !== undefined &&
+        buildExecutionVisitProjectionKey(item) === previousKey
+      );
+    });
+    if (
+      normalizeExecutionVisitDay(dayName) === normalizedPreviousDay ||
+      sourceDays.length === 1
+    ) {
+      departedFirstSourceMember = sourceVisitMemberIds[0] === updatedItem.id;
+      sourceVisitSurvives = sourceVisitMemberIds.some(
+        (itemId) => itemId !== updatedItem.id,
+      );
+    }
+    nextExecuteModeItems[dayName] =
+      removeExecutionVisitMemberPreservingBasePosition(
+        sourceIds,
+        previousItem,
+        updatedAllItems,
+      );
+  });
+
+  const nextDestinationIds = [
+    ...(nextExecuteModeItems[destinationDay] || []),
+  ].filter((itemId) => itemId !== updatedItem.id);
+  const destinationFirstItemId = findFirstItemIdForVisit(
+    nextDestinationIds,
+    updatedKey,
+    itemsMap,
+  );
+  const destinationLastIndex = findLastIndexForVisit(
+    nextDestinationIds,
+    updatedKey,
+    itemsMap,
+  );
+
+  if (
+    !dateChanged &&
+    destinationLastIndex < 0 &&
+    !(departedFirstSourceMember && sourceVisitSurvives)
+  ) {
+    return { executeModeItems };
+  }
+
+  const insertIndex =
+    destinationLastIndex >= 0
+      ? destinationLastIndex + 1
+      : nextDestinationIds.length;
+  nextDestinationIds.splice(insertIndex, 0, updatedItem.id);
+  nextExecuteModeItems[destinationDay] = nextDestinationIds;
+
+  const placement: ExecuteInsertPlacement = destinationFirstItemId
+    ? "merged-into-existing-visit"
+    : "positioned";
+  return {
+    executeModeItems: nextExecuteModeItems,
+    placement,
+    ...(destinationFirstItemId
+      ? { mergedIntoVisitItemIds: [destinationFirstItemId] }
+      : {}),
+  };
+}
+
+export function repositionExecuteItemAfterIdentityChange(
+  executeModeItems: ExecuteModeItems,
+  previousItem: ShoppingItem,
+  updatedItem: ShoppingItem,
+  updatedAllItems: readonly ShoppingItem[],
+): ExecuteModeItems {
+  return repositionExecuteItemAfterIdentityChangeWithResult(
+    executeModeItems,
+    previousItem,
+    updatedItem,
+    updatedAllItems,
+  ).executeModeItems;
 }
 
 export function computeInsertIntoExecuteAtPosition(
@@ -138,10 +368,6 @@ export function computeInsertIntoExecuteAtPosition(
   } = {},
 ): ExecutePositionInsertResult {
   const currentDayItems = [...(executeModeItems[dayName] || [])];
-  const refIndex = currentDayItems.indexOf(referenceItemId);
-  if (refIndex < 0 && options.requireReference !== false) {
-    return { accepted: false, executeModeItems, insertedItemIds: [] };
-  }
 
   const insertedItemIds =
     options.expandSiblings === false
@@ -156,58 +382,117 @@ export function computeInsertIntoExecuteAtPosition(
     return { accepted: false, executeModeItems, insertedItemIds: [] };
   }
 
+  const itemsMap = new Map(allItems.map((item) => [item.id, item]));
+  const insertGroups = groupInsertItemIdsByVisit(insertedItemIds, itemsMap);
+  const mergedTargets = new Map<InsertVisitGroup, string>();
+  const positionedGroups: InsertVisitGroup[] = [];
+  insertGroups.forEach((group) => {
+    const existingItemId = group.key
+      ? findFirstItemIdForVisit(currentDayItems, group.key, itemsMap)
+      : null;
+    if (existingItemId) mergedTargets.set(group, existingItemId);
+    else positionedGroups.push(group);
+  });
+
+  const refIndex = currentDayItems.indexOf(referenceItemId);
   if (
-    options.canInsertWithReference &&
-    refIndex >= 0 &&
-    insertedItemIds.some(
-      (id) => !options.canInsertWithReference!(id, referenceItemId),
-    )
+    positionedGroups.length > 0 &&
+    refIndex < 0 &&
+    options.requireReference !== false
   ) {
     return { accepted: false, executeModeItems, insertedItemIds: [] };
   }
 
-  const itemsMap = new Map(allItems.map((item) => [item.id, item]));
+  if (options.canInsertWithReference) {
+    const rejectedMerge = Array.from(mergedTargets).some(
+      ([group, mergeTargetId]) =>
+        group.itemIds.some(
+          (itemId) => !options.canInsertWithReference!(itemId, mergeTargetId),
+        ),
+    );
+    const rejectedPosition =
+      refIndex >= 0 &&
+      positionedGroups.some((group) =>
+        group.itemIds.some(
+          (itemId) => !options.canInsertWithReference!(itemId, referenceItemId),
+        ),
+      );
+    if (rejectedMerge || rejectedPosition) {
+      return { accepted: false, executeModeItems, insertedItemIds: [] };
+    }
+  }
+
+  // Do not rewrite legacy raw IDs. New members are appended after the last
+  // raw member of their existing visit; the shared view projection places the
+  // complete visit at its first logical position.
   const dayItems = currentDayItems.filter(
     (id) => !insertedItemIds.includes(id),
   );
-  let insertIndex = dayItems.length;
+  mergedTargets.forEach((mergeTargetId, group) => {
+    const visitKey = group.key!;
+    const lastVisitIndex = findLastIndexForVisit(dayItems, visitKey, itemsMap);
+    const insertIndex =
+      lastVisitIndex >= 0 ? lastVisitIndex + 1 : dayItems.length;
+    dayItems.splice(insertIndex, 0, ...group.itemIds);
+  });
 
-  const currentRefIndex = dayItems.indexOf(referenceItemId);
-  if (currentRefIndex >= 0) {
-    let groupStart = currentRefIndex;
-    let groupEnd = currentRefIndex;
+  if (positionedGroups.length > 0) {
+    let insertIndex = dayItems.length;
+    const referenceItem = itemsMap.get(referenceItemId);
+    const referenceKey = referenceItem
+      ? buildExecutionVisitProjectionKey(referenceItem)
+      : null;
+    const currentRefIndex = referenceKey
+      ? dayItems.findIndex((itemId) => {
+          const item = itemsMap.get(itemId);
+          return (
+            item && buildExecutionVisitProjectionKey(item) === referenceKey
+          );
+        })
+      : dayItems.indexOf(referenceItemId);
 
-    while (
-      groupStart > 0 &&
-      isSameSpacePriorityGroup(
-        dayItems[groupStart - 1],
-        referenceItemId,
-        itemsMap,
-      )
-    ) {
-      groupStart--;
+    if (currentRefIndex >= 0) {
+      let firstRunEnd = currentRefIndex;
+      if (referenceKey) {
+        while (firstRunEnd < dayItems.length - 1) {
+          const nextItem = itemsMap.get(dayItems[firstRunEnd + 1]);
+          if (
+            !nextItem ||
+            buildExecutionVisitProjectionKey(nextItem) !== referenceKey
+          )
+            break;
+          firstRunEnd++;
+        }
+      }
+      insertIndex = position === "before" ? currentRefIndex : firstRunEnd + 1;
+    } else if (options.requireReference !== false) {
+      return { accepted: false, executeModeItems, insertedItemIds: [] };
     }
-    while (
-      groupEnd < dayItems.length - 1 &&
-      isSameSpacePriorityGroup(
-        dayItems[groupEnd + 1],
-        referenceItemId,
-        itemsMap,
-      )
-    ) {
-      groupEnd++;
-    }
 
-    insertIndex = position === "before" ? groupStart : groupEnd + 1;
-  } else if (options.requireReference !== false) {
-    return { accepted: false, executeModeItems, insertedItemIds: [] };
+    dayItems.splice(
+      insertIndex,
+      0,
+      ...positionedGroups.flatMap((group) => group.itemIds),
+    );
   }
 
-  dayItems.splice(insertIndex, 0, ...insertedItemIds);
+  const mergedIntoVisitItemIds = Array.from(new Set(mergedTargets.values()));
+  const placement: ExecuteInsertPlacement =
+    mergedTargets.size === 0
+      ? "positioned"
+      : positionedGroups.length === 0
+        ? "merged-into-existing-visit"
+        : "mixed";
   return {
     accepted: true,
     executeModeItems: { ...executeModeItems, [dayName]: dayItems },
-    insertedItemIds,
+    insertedItemIds: attachInsertMetadata(
+      insertedItemIds,
+      placement,
+      mergedIntoVisitItemIds,
+    ),
+    placement,
+    ...(mergedIntoVisitItemIds.length > 0 ? { mergedIntoVisitItemIds } : {}),
   };
 }
 
@@ -251,15 +536,34 @@ export function computeAddToExecuteListFromMapWithResult(
   }
 
   const dayItems = [...(executeModeItems[dayName] || [])];
+  const itemsMap = new Map(allItems.map((item) => [item.id, item]));
+  const insertGroups = groupInsertItemIdsByVisit(insertItemIds, itemsMap);
+  const mergedIntoVisitItemIds: string[] = [];
+  let hallOrderedGroupCount = 0;
 
-  for (const insertItemId of insertItemIds) {
-    const item = allItems.find((i) => i.id === insertItemId);
+  for (const insertGroup of insertGroups) {
+    const existingItemId = insertGroup.key
+      ? findFirstItemIdForVisit(dayItems, insertGroup.key, itemsMap)
+      : null;
+    if (existingItemId && insertGroup.key) {
+      const lastVisitIndex = findLastIndexForVisit(
+        dayItems,
+        insertGroup.key,
+        itemsMap,
+      );
+      dayItems.splice(lastVisitIndex + 1, 0, ...insertGroup.itemIds);
+      mergedIntoVisitItemIds.push(existingItemId);
+      continue;
+    }
+
+    const item = itemsMap.get(insertGroup.itemIds[0]);
     if (!item) continue;
+    hallOrderedGroupCount++;
 
     const itemHallId = findItemHallId(item, halls, mapData);
 
     if (!itemHallId || halls.length === 0) {
-      dayItems.push(insertItemId);
+      dayItems.push(...insertGroup.itemIds);
       continue;
     }
 
@@ -268,7 +572,6 @@ export function computeAddToExecuteListFromMapWithResult(
         ? hallRouteSettingsForMap.hallOrder
         : halls.map((h) => h.id);
 
-    const itemsMap = new Map(allItems.map((i) => [i.id, i]));
     const getHallIdForItem = (id: string): string | null => {
       const targetItem = itemsMap.get(id);
       if (!targetItem) return null;
@@ -301,13 +604,99 @@ export function computeAddToExecuteListFromMapWithResult(
       }
     }
 
-    dayItems.splice(insertIndex, 0, insertItemId);
+    dayItems.splice(insertIndex, 0, ...insertGroup.itemIds);
   }
 
+  const placement: ExecuteInsertPlacement =
+    mergedIntoVisitItemIds.length === 0
+      ? "hall-order"
+      : hallOrderedGroupCount === 0
+        ? "merged-into-existing-visit"
+        : "mixed";
   return {
     accepted: true,
     executeModeItems: { ...executeModeItems, [dayName]: dayItems },
-    insertedItemIds: insertItemIds,
+    insertedItemIds: attachInsertMetadata(
+      insertItemIds,
+      placement,
+      mergedIntoVisitItemIds,
+    ),
+    placement,
+    ...(mergedIntoVisitItemIds.length > 0 ? { mergedIntoVisitItemIds } : {}),
+  };
+}
+
+/**
+ * Adds several map items while preserving merge metadata across every step.
+ * The single-item operation remains the source of truth because each accepted
+ * insertion changes the execution list used by the following item.
+ */
+export function computeBatchAddToExecuteListFromMapWithResult(
+  itemIds: readonly string[],
+  dayName: string,
+  allItems: ShoppingItem[],
+  executeModeItems: ExecuteModeItems,
+  halls: HallDefinition[],
+  hallRouteSettingsForMap: HallRouteSettings,
+  mapData: DayMapData | undefined,
+): MapExecuteInsertResult {
+  let current = executeModeItems;
+  const insertedItemIds: string[] = [];
+  const mergedIntoVisitItemIds: string[] = [];
+  let hasMergedPlacement = false;
+  let hasNonMergedPlacement = false;
+
+  itemIds.forEach((itemId) => {
+    const result = computeAddToExecuteListFromMapWithResult(
+      itemId,
+      dayName,
+      allItems,
+      current,
+      halls,
+      hallRouteSettingsForMap,
+      mapData,
+    );
+    if (!result.accepted) return;
+
+    current = result.executeModeItems;
+    insertedItemIds.push(...result.insertedItemIds);
+    mergedIntoVisitItemIds.push(...(result.mergedIntoVisitItemIds ?? []));
+    if (
+      result.placement === "merged-into-existing-visit" ||
+      result.placement === "mixed"
+    ) {
+      hasMergedPlacement = true;
+    }
+    if (result.placement !== "merged-into-existing-visit") {
+      hasNonMergedPlacement = true;
+    }
+  });
+
+  if (insertedItemIds.length === 0) {
+    return { accepted: false, executeModeItems, insertedItemIds: [] };
+  }
+
+  const uniqueMergedIntoVisitItemIds = Array.from(
+    new Set(mergedIntoVisitItemIds),
+  );
+  const placement: ExecuteInsertPlacement = hasMergedPlacement
+    ? hasNonMergedPlacement
+      ? "mixed"
+      : "merged-into-existing-visit"
+    : "hall-order";
+
+  return {
+    accepted: true,
+    executeModeItems: current,
+    insertedItemIds: attachInsertMetadata(
+      insertedItemIds,
+      placement,
+      uniqueMergedIntoVisitItemIds,
+    ),
+    placement,
+    ...(uniqueMergedIntoVisitItemIds.length > 0
+      ? { mergedIntoVisitItemIds: uniqueMergedIntoVisitItemIds }
+      : {}),
   };
 }
 
@@ -392,15 +781,18 @@ export function computeRemoveFromExecuteListFromMapWithResult(
 /**
  * 選択アイテムをexecute列に移動する。
  */
-export function computeMoveToExecuteColumn(
+export function computeMoveToExecuteColumnWithResult(
   itemIds: string[],
   dayName: string,
   allItems: ShoppingItem[],
   executeModeItems: ExecuteModeItems,
   selectedBlockFilters: Set<string>,
-): ExecuteModeItems {
+): ExecutePositionInsertResult {
   const executeIdsSet = new Set(executeModeItems[dayName] || []);
-  const currentTabItems = allItems.filter((item) => item.eventDate === dayName);
+  const normalizedDayName = normalizeExecutionVisitDay(dayName);
+  const currentTabItems = allItems.filter(
+    (item) => normalizeExecutionVisitDay(item.eventDate) === normalizedDayName,
+  );
 
   let candidateItems = currentTabItems.filter(
     (item) => !executeIdsSet.has(item.id),
@@ -418,46 +810,67 @@ export function computeMoveToExecuteColumn(
   const currentDayItems = [...(executeModeItems[dayName] || [])];
   const existingIdsSet = new Set(currentDayItems);
   const newItemIds = orderedItemIds.filter((id) => !existingIdsSet.has(id));
-
-  // 同一スペース+同一優先度の兄弟が既にいる場合、その直後に挿入する
-  const itemsMap = new Map(allItems.map((item) => [item.id, item]));
-  const resultIds = [...currentDayItems];
-
-  for (const newId of newItemIds) {
-    const newItem = itemsMap.get(newId);
-    if (!newItem) {
-      resultIds.push(newId);
-      continue;
-    }
-
-    const newSpaceKey = getSpaceKey(newItem.block, newItem.number);
-    const newPriority = newItem.priorityLevel || "none";
-
-    // resultIds内で同一spaceKey+priorityLevelの最後の兄弟を検索
-    let lastSiblingIndex = -1;
-    for (let i = resultIds.length - 1; i >= 0; i--) {
-      const existingItem = itemsMap.get(resultIds[i]);
-      if (!existingItem) continue;
-      if (
-        getSpaceKey(existingItem.block, existingItem.number) === newSpaceKey &&
-        (existingItem.priorityLevel || "none") === newPriority
-      ) {
-        lastSiblingIndex = i;
-        break;
-      }
-    }
-
-    if (lastSiblingIndex !== -1) {
-      resultIds.splice(lastSiblingIndex + 1, 0, newId);
-    } else {
-      resultIds.push(newId);
-    }
+  if (newItemIds.length === 0) {
+    return { accepted: false, executeModeItems, insertedItemIds: [] };
   }
 
+  const itemsMap = new Map(allItems.map((item) => [item.id, item]));
+  const resultIds = [...currentDayItems];
+  const mergedIntoVisitItemIds: string[] = [];
+  let positionedGroupCount = 0;
+
+  groupInsertItemIdsByVisit(newItemIds, itemsMap).forEach((group) => {
+    const existingTargetId = group.key
+      ? findFirstItemIdForVisit(currentDayItems, group.key, itemsMap)
+      : null;
+    if (existingTargetId && group.key) {
+      const lastVisitIndex = findLastIndexForVisit(
+        resultIds,
+        group.key,
+        itemsMap,
+      );
+      resultIds.splice(lastVisitIndex + 1, 0, ...group.itemIds);
+      mergedIntoVisitItemIds.push(existingTargetId);
+    } else {
+      resultIds.push(...group.itemIds);
+      positionedGroupCount++;
+    }
+  });
+
+  const placement: ExecuteInsertPlacement =
+    mergedIntoVisitItemIds.length === 0
+      ? "positioned"
+      : positionedGroupCount === 0
+        ? "merged-into-existing-visit"
+        : "mixed";
+
   return {
-    ...executeModeItems,
-    [dayName]: resultIds,
+    accepted: true,
+    executeModeItems: { ...executeModeItems, [dayName]: resultIds },
+    insertedItemIds: attachInsertMetadata(
+      newItemIds,
+      placement,
+      mergedIntoVisitItemIds,
+    ),
+    placement,
+    ...(mergedIntoVisitItemIds.length > 0 ? { mergedIntoVisitItemIds } : {}),
   };
+}
+
+export function computeMoveToExecuteColumn(
+  itemIds: string[],
+  dayName: string,
+  allItems: ShoppingItem[],
+  executeModeItems: ExecuteModeItems,
+  selectedBlockFilters: Set<string>,
+): ExecuteModeItems {
+  return computeMoveToExecuteColumnWithResult(
+    itemIds,
+    dayName,
+    allItems,
+    executeModeItems,
+    selectedBlockFilters,
+  ).executeModeItems;
 }
 
 // ────────────────────────────────────────────────

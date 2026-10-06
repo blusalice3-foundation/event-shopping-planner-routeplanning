@@ -91,7 +91,7 @@ const focusState = (
 describe("appMapViewSelectors", () => {
   it("derives hall counts from the current map polygon and execute order", () => {
     const items = [
-      item("inside"),
+      item("inside", { eventDate: "1日目\u3000" }),
       item("outside", { block: "B" }),
       item("other-day", { eventDate: "2日目" }),
     ];
@@ -111,7 +111,7 @@ describe("appMapViewSelectors", () => {
     expect(selectHallExecuteCount({ ...input, activeEventName: null })).toBe(0);
   });
 
-  it("resolves manual, polygon, and block-name fallback halls in precedence order", () => {
+  it("resolves valid manual choices and leaves overlapping automatic halls unresolved", () => {
     const mapless = hall("mapless", { vertices: [], blockNames: ["B"] });
     const halls = [hall("polygon"), hall("manual"), mapless];
 
@@ -124,7 +124,7 @@ describe("appMapViewSelectors", () => {
     ).toBe("manual");
     expect(
       selectItemHallId({ item: item("polygon-item"), halls, mapData }),
-    ).toBe("polygon");
+    ).toBeNull();
     expect(
       selectItemHallId({
         item: item("fallback-item", { block: "B" }),

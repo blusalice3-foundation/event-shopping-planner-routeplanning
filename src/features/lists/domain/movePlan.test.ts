@@ -203,6 +203,24 @@ describe("buildMovePlan", () => {
     expect(result.effective).toEqual(["implicit-none", "requested-omitted"]);
     expect(result.implicit).toEqual(["implicit-none"]);
   });
+
+  it("treats full-width date padding as the same execution day", () => {
+    const allItems = [
+      makeItem("seed", { eventDate: `${targetDay}\u3000` }),
+      makeItem("sibling", { eventDate: ` ${targetDay}` }),
+    ];
+
+    const result = buildMovePlan({
+      requestedIds: ["seed"],
+      sourceOrderedIds: ["seed", "sibling"],
+      allItems,
+      dayName: targetDay,
+      expansionPolicy: "same-visit",
+    });
+
+    expect(result.effective).toEqual(["seed", "sibling"]);
+    expect(result.excluded.wrongDate).toEqual([]);
+  });
 });
 
 describe("formatMovePlanCount", () => {

@@ -7,6 +7,8 @@ import {
   selectCandidateColumnItems,
   selectDuplicateCircleItemIds,
   selectExecuteColumnItems,
+  selectItemsForExecutionDay,
+  selectMapVisitListItems,
   selectMovePlanState,
   selectSearchMatches,
   selectSortDisplayLabel,
@@ -44,6 +46,47 @@ const sortLabels: Record<SortState, string> = {
 };
 
 describe("appListViewSelectors", () => {
+  it("keeps padded raw dates in the canonical list and MapVisitList material", () => {
+    const a1 = item("a1", { eventDate: "1日目\u3000", number: "01a" });
+    const b = item("b", { eventDate: "1日目\u3000", number: "02a" });
+    const a2 = item("a2", { eventDate: "1日目\u3000", number: "01a2" });
+    const items = [a1, b, a2];
+
+    expect(
+      selectItemsForExecutionDay(items, "1日目").map(({ id }) => id),
+    ).toEqual(["a1", "b", "a2"]);
+    expect(
+      selectMapVisitListItems({
+        activeEventName: "event",
+        mapTabName: "1日目マップ",
+        dayName: "1日目",
+        executeModeItems: { event: { "1日目": ["a1", "b", "a2"] } },
+        items,
+      }).map(({ id }) => id),
+    ).toEqual(["a1", "a2", "b"]);
+  });
+
+  it("projects a non-contiguous execute visit into its first list position", () => {
+    const a1 = item("a1", { number: "01a" });
+    const b = item("b", { number: "02a" });
+    const a2 = item("a2", { number: "01a2" });
+    const priority = item("priority", {
+      number: "01a3",
+      priorityLevel: "priority",
+    });
+
+    expect(
+      selectExecuteColumnItems({
+        activeEventName: "event",
+        activeEventDate: "1日目",
+        executeModeItems: {
+          event: { "1日目": ["a1", "b", "a2", "priority"] },
+        },
+        items: [a1, b, a2, priority],
+      }).map(({ id }) => id),
+    ).toEqual(["a1", "a2", "b", "priority"]);
+  });
+
   it("keeps execute order while applying status and temporary-visibility filters", () => {
     const none = item("none");
     const purchased = item("purchased", { purchaseStatus: "Purchased" });

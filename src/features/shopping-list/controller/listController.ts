@@ -2,6 +2,11 @@ import type { ShoppingListReadModel } from "../model/buildListRows";
 
 export type ListScrollAlignment = "start" | "center" | "end" | "nearest";
 
+export interface ItemScrollRequest {
+  readonly itemId: string;
+  readonly requestId: number;
+}
+
 export interface ListScrollRequest {
   readonly requestId: number;
   readonly rowKey: string;
@@ -16,6 +21,11 @@ export interface ShoppingListControllerState {
 }
 
 export type ShoppingListControllerCommand =
+  | {
+      type: "request-item-scroll";
+      itemId: string;
+      alignment?: ListScrollAlignment;
+    }
   | {
       type: "replace-selection";
       itemIds: readonly string[];
@@ -103,6 +113,16 @@ export const shoppingListControllerReducer = (
       }
       return { ...state, focusedRowKey: command.rowKey };
 
+    case "request-item-scroll": {
+      const row = model.itemRows.find((row) => row.itemId === command.itemId);
+      return row
+        ? shoppingListControllerReducer(model, state, {
+            type: "request-scroll",
+            rowKey: row.rowKey,
+            alignment: command.alignment ?? "center",
+          })
+        : state;
+    }
     case "request-scroll":
       if (!rowKeySet(model).has(command.rowKey)) return state;
       return {
@@ -154,6 +174,9 @@ export const shoppingListControllerReducer = (
 };
 
 export const shoppingListCommand = {
+  requestItemScroll(itemId: string): ShoppingListControllerCommand {
+    return { type: "request-item-scroll", itemId, alignment: "center" };
+  },
   replaceSelection(itemIds: readonly string[]): ShoppingListControllerCommand {
     return { type: "replace-selection", itemIds };
   },

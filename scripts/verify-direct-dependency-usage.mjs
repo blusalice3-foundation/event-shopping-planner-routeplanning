@@ -347,7 +347,7 @@ const allowedBuildConfigs = new Map([
     { loaderPackage: "vite", loaderScript: "dev", loaderBinary: "vite" },
   ],
   [
-    "postcss.config.cjs",
+    "postcss.config.mjs",
     { loaderPackage: "vite", loaderScript: "dev", loaderBinary: "vite" },
   ],
   [

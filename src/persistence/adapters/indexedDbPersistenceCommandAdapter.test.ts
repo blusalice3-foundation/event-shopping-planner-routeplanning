@@ -1,11 +1,9 @@
+import { createEventConsistency } from "../../types/consistency";
+import { DEFAULT_BLOCK_DETECTION_SETTINGS } from "../../types/map";
 import { describe, expect, it, vi } from "vitest";
-import {
-  PersistenceSettingsRollbackError,
-  type PersistenceSnapshot,
-} from "../../app/ports/PersistenceCommandPort";
+import { type PersistenceSnapshot } from "../../app/ports/PersistenceCommandPort";
 import type { BlockDetectionSettings } from "../../types/map";
 import type { StartupRecoveryCandidate } from "../../utils/persistenceResilience";
-import { BlockDetectionSettingsRollbackError } from "../../utils/blockDetectionSettingsStorage";
 import {
   createIndexedDbPersistenceCommandAdapter,
   type AuxiliaryPersistenceCommandDelegate,
@@ -23,6 +21,7 @@ const snapshot = (): PersistenceSnapshot => ({
   hallDefinitions: {},
   hallRouteSettings: {},
   mapViewportSettings: {},
+  eventConsistency: {},
 });
 
 const createDelegate = (
@@ -32,6 +31,12 @@ const createDelegate = (
     status: "not-needed" as const,
   })),
   adoptRecoveryCandidate: vi.fn(async () => ({ status: "adopted" })),
+  saveEventConsistency: vi.fn(async () => undefined),
+  readApplicationSnapshot: vi.fn(async () => ({
+    snapshot: snapshot(),
+    expectedRoots: {},
+    consistencyMissing: false,
+  })),
   saveEventLists: vi.fn(async () => undefined),
   saveEventMetadata: vi.fn(async () => undefined),
   saveExecuteModeItems: vi.fn(async () => undefined),
@@ -74,322 +79,324 @@ const createAuxiliaryDelegate = (
 };
 
 describe("IndexedDB persistence command adapter", () => {
-  it("routes preferences and event-scoped settings through the auxiliary port", async () => {
-    const delegate = createDelegate();
-    const settings = {} as BlockDetectionSettings;
-    const auxiliary = createAuxiliaryDelegate({
-      loadPreference: vi.fn(() => "stored"),
-      readBlockDetectionSettings: vi.fn(() => settings),
-      readBlockDetectionSettingsForBackup: vi.fn(() => ({
-        event: settings,
-      })),
-    });
+  it("uses the preference port for UI preferences and canonical state for event settings", async () => {
+    const delegate = createDelegate(),
+      auxiliary = createAuxiliaryDelegate({
+        loadPreference: vi.fn(() => "dark"),
+      });
     const adapter = createIndexedDbPersistenceCommandAdapter(
       delegate,
       auxiliary,
     );
-    const input = snapshot();
-
-    expect(adapter.loadPreference("themeMode")).toBe("stored");
-    adapter.savePreference("themeMode", "dark");
-    expect(adapter.readBlockDetectionSettings("event")).toBe(settings);
-    expect(adapter.readBlockDetectionSettingsForBackup(["event"])).toEqual({
-      event: settings,
-    });
-    adapter.saveBlockDetectionSettings("event", settings);
-    adapter.renameBlockDetectionSettingsForEvent("event", "renamed");
-    adapter.removeBlockDetectionSettingsForEvent("renamed");
-    await adapter.restoreAppDataWithBlockDetectionSettings(
-      input,
-      "event",
-      settings,
-    );
-
-    expect(auxiliary.savePreference).toHaveBeenCalledWith("themeMode", "dark");
-    expect(auxiliary.saveBlockDetectionSettings).toHaveBeenCalledWith(
-      "event",
-      settings,
-    );
-    expect(auxiliary.renameBlockDetectionSettingsForEvent).toHaveBeenCalledWith(
-      "event",
-      "renamed",
-    );
-    expect(auxiliary.removeBlockDetectionSettingsForEvent).toHaveBeenCalledWith(
-      "renamed",
-    );
-    expect(auxiliary.runWithBlockDetectionSettingsRestore).toHaveBeenCalledWith(
-      "event",
-      settings,
-      expect.any(Function),
-    );
-    expect(delegate.restoreAppDataAtomically).toHaveBeenCalledWith(input);
-  });
-
-  it("maps auxiliary rollback failure to the neutral application error", async () => {
-    const originalError = new Error("restore failed");
-    const rollbackError = new Error("rollback failed");
-    const auxiliary = createAuxiliaryDelegate({
-      runWithBlockDetectionSettingsRestore: vi.fn(async () => {
-        throw new BlockDetectionSettingsRollbackError(
-          originalError,
-          rollbackError,
-        );
-      }),
-    });
-    const adapter = createIndexedDbPersistenceCommandAdapter(
-      createDelegate(),
-      auxiliary,
-    );
-
-    await expect(
-      adapter.restoreAppDataWithBlockDetectionSettings(
-        snapshot(),
-        "event",
-        null,
-      ),
-    ).rejects.toMatchObject({
-      name: "PersistenceSettingsRollbackError",
-      originalError,
-      rollbackError,
-    } satisfies Partial<PersistenceSettingsRollbackError>);
-  });
-
-  it("maps a rename auxiliary rollback failure to the neutral application error", async () => {
-    const originalError = new Error("rename failed");
-    const rollbackError = new Error("rename rollback failed");
-    const auxiliary = createAuxiliaryDelegate({
-      runWithBlockDetectionSettingsRestore: vi.fn(async () => {
-        throw new BlockDetectionSettingsRollbackError(
-          originalError,
-          rollbackError,
-        );
-      }),
-    });
-    const adapter = createIndexedDbPersistenceCommandAdapter(
-      createDelegate(),
-      auxiliary,
-    );
-
-    await expect(
-      adapter.renameEventAtomically(snapshot(), "source", "target"),
-    ).rejects.toMatchObject({
-      name: "PersistenceSettingsRollbackError",
-      originalError,
-      rollbackError,
-    } satisfies Partial<PersistenceSettingsRollbackError>);
-  });
-
-  it("uses the default preference storage only when a browser window is available", () => {
-    const adapter = createIndexedDbPersistenceCommandAdapter(createDelegate());
-
-    expect(typeof window).toBe("undefined");
-    expect(adapter.loadPreference("themeMode")).toBeNull();
-    expect(() => adapter.savePreference("themeMode", "dark")).not.toThrow();
-
-    const localStorage = {
-      getItem: vi.fn(() => "light"),
-      setItem: vi.fn(),
+    const value = snapshot();
+    value.eventConsistency.event = {
+      ...createEventConsistency(),
+      blockDetectionSettings: DEFAULT_BLOCK_DETECTION_SETTINGS,
     };
-    vi.stubGlobal("window", { localStorage });
-    try {
-      expect(adapter.loadPreference("themeMode")).toBe("light");
-      adapter.savePreference("themeMode", "dark");
-      expect(localStorage.getItem).toHaveBeenCalledWith("themeMode");
-      expect(localStorage.setItem).toHaveBeenCalledWith("themeMode", "dark");
-    } finally {
-      vi.unstubAllGlobals();
-    }
+    const save = vi.fn(async () => {});
+    const unbind = adapter.bindApplicationSettings({ read: () => value, save });
+    expect(adapter.loadPreference("theme")).toBe("dark");
+    adapter.savePreference("theme", "light");
+    expect(auxiliary.savePreference).toHaveBeenCalledWith("theme", "light");
+    expect(adapter.readBlockDetectionSettings("event")).toEqual(
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(
+      adapter.readBlockDetectionSettingsForBackup(["event", "absent"]),
+    ).toEqual({ event: DEFAULT_BLOCK_DETECTION_SETTINGS });
+    await adapter.saveBlockDetectionSettings(
+      "event",
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(save).toHaveBeenCalledWith(
+      "event",
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(auxiliary.saveBlockDetectionSettings).not.toHaveBeenCalled();
+    unbind();
+    await expect(
+      adapter.saveBlockDetectionSettings(
+        "event",
+        DEFAULT_BLOCK_DETECTION_SETTINGS,
+      ),
+    ).rejects.toThrow("初期化");
   });
-
-  it("preserves a non-rollback failure from the auxiliary restore boundary", async () => {
-    const failure = new DOMException("restore failed", "AbortError");
-    const auxiliary = createAuxiliaryDelegate({
-      runWithBlockDetectionSettingsRestore: vi.fn(async () => {
+  it("carries application data and block settings through one atomic commit", async () => {
+    const delegate = createDelegate(),
+      auxiliary = createAuxiliaryDelegate(),
+      adapter = createIndexedDbPersistenceCommandAdapter(delegate, auxiliary);
+    const value = snapshot();
+    value.eventLists.event = [];
+    await adapter.restoreAppDataWithBlockDetectionSettings(
+      value,
+      "event",
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(delegate.commitApplicationSnapshotAtomically).toHaveBeenCalledOnce();
+    expect(
+      vi.mocked(delegate.commitApplicationSnapshotAtomically).mock.calls[0][0]
+        .eventConsistency.event.blockDetectionSettings,
+    ).toEqual(DEFAULT_BLOCK_DETECTION_SETTINGS);
+    expect(
+      auxiliary.runWithBlockDetectionSettingsRestore,
+    ).not.toHaveBeenCalled();
+    expect(value.eventConsistency).toEqual({});
+    expect(adapter.readBlockDetectionSettings("event")).toEqual(
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+  });
+  it("keeps observed state after failed commit without compensating localStorage writes", async () => {
+    const value = snapshot();
+    value.eventConsistency.event = {
+      ...createEventConsistency(),
+      blockDetectionSettings: DEFAULT_BLOCK_DETECTION_SETTINGS,
+    };
+    const failure = new Error("transaction aborted");
+    const delegate = createDelegate({
+      readApplicationSnapshot: vi.fn(async () => ({
+        snapshot: value,
+        expectedRoots: {},
+        consistencyMissing: false,
+      })),
+      commitApplicationSnapshotAtomically: vi.fn(async () => {
         throw failure;
       }),
     });
-    const adapter = createIndexedDbPersistenceCommandAdapter(
-      createDelegate(),
-      auxiliary,
-    );
-
+    const auxiliary = createAuxiliaryDelegate(),
+      adapter = createIndexedDbPersistenceCommandAdapter(delegate, auxiliary);
+    await adapter.readApplicationSnapshot();
     await expect(
-      adapter.restoreAppDataWithBlockDetectionSettings(
-        snapshot(),
-        "event",
-        null,
-      ),
+      adapter.restoreAppDataWithBlockDetectionSettings(value, "event", null),
     ).rejects.toBe(failure);
+    expect(adapter.readBlockDetectionSettings("event")).toEqual(
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(auxiliary.saveBlockDetectionSettings).not.toHaveBeenCalled();
+    expect(
+      auxiliary.runWithBlockDetectionSettingsRestore,
+    ).not.toHaveBeenCalled();
   });
-
-  it("restores auxiliary settings when the atomic delete transaction aborts", async () => {
-    const settings = { marker: "source" } as unknown as BlockDetectionSettings;
-    const stored = new Map<string, BlockDetectionSettings | null>([
-      ["source", settings],
-    ]);
-    const auxiliary = createAuxiliaryDelegate({
-      readBlockDetectionSettings: vi.fn(
-        (eventName) => stored.get(eventName) ?? null,
-      ),
-      runWithBlockDetectionSettingsRestore: vi.fn(
-        async (eventName, nextSettings, commit) => {
-          const previous = stored.get(eventName) ?? null;
-          stored.set(eventName, nextSettings);
-          try {
-            return await commit();
-          } catch (error) {
-            stored.set(eventName, previous);
-            throw error;
-          }
+  it("renames and deletes settings with the event in the same snapshot", async () => {
+    const delegate = createDelegate(),
+      adapter = createIndexedDbPersistenceCommandAdapter(
+        delegate,
+        createAuxiliaryDelegate(),
+      );
+    const value = snapshot();
+    value.eventLists.event = [];
+    value.eventConsistency.event = createEventConsistency();
+    await adapter.renameEventAtomically(value, "event", "renamed");
+    const renamed = vi.mocked(delegate.commitApplicationSnapshotAtomically).mock
+      .calls[0][0];
+    expect(renamed.eventConsistency).toEqual({
+      renamed: createEventConsistency(),
+    });
+    await adapter.deleteEventAtomically(renamed, "renamed");
+    expect(
+      vi.mocked(delegate.commitApplicationSnapshotAtomically).mock.calls[1][0]
+        .eventConsistency,
+    ).toEqual({});
+    expect(() => adapter.removeBlockDetectionSettingsForEvent("event")).toThrow(
+      "同じ操作",
+    );
+    expect(() =>
+      adapter.renameBlockDetectionSettingsForEvent("event", "other"),
+    ).toThrow("同じ操作");
+  });
+  it("passes caller-observed roots unchanged to the atomic boundary", async () => {
+    const delegate = createDelegate(),
+      adapter = createIndexedDbPersistenceCommandAdapter(
+        delegate,
+        createAuxiliaryDelegate(),
+      );
+    const value = snapshot(),
+      options = { expectedRoots: { observation: "captured" } };
+    await adapter.commitApplicationSnapshotAtomically(value, options);
+    expect(delegate.commitApplicationSnapshotAtomically).toHaveBeenCalledWith(
+      value,
+      options,
+    );
+  });
+  it("forwards each store save without changing its argument identity", async () => {
+    const delegate = createDelegate(),
+      adapter = createIndexedDbPersistenceCommandAdapter(
+        delegate,
+        createAuxiliaryDelegate(),
+      );
+    const value = snapshot();
+    for (const [method, key] of [
+      ["saveEventLists", "eventLists"],
+      ["saveEventMetadata", "eventMetadata"],
+      ["saveExecuteModeItems", "executeModeItems"],
+      ["saveDayModes", "dayModes"],
+      ["saveMapRotationSettings", "mapRotationSettings"],
+      ["saveRouteSettings", "routeSettings"],
+      ["saveHallDefinitions", "hallDefinitions"],
+      ["saveHallRouteSettings", "hallRouteSettings"],
+      ["saveMapViewportSettings", "mapViewportSettings"],
+      ["saveEventConsistency", "eventConsistency"],
+    ] as const) {
+      await (adapter[method] as (input: unknown) => Promise<void>)(value[key]);
+      expect(vi.mocked(delegate[method]).mock.calls[0][0]).toBe(value[key]);
+    }
+    await adapter.saveMapDataChanges({}, value.mapData);
+    expect(delegate.saveMapDataChanges).toHaveBeenCalledWith({}, value.mapData);
+    const candidate = {} as StartupRecoveryCandidate;
+    await adapter.adoptRecoveryCandidate(candidate);
+    expect(delegate.adoptRecoveryCandidate).toHaveBeenCalledWith(candidate);
+    await adapter.migrateFromLocalStorage();
+    expect(delegate.migrateFromLocalStorage).toHaveBeenCalledOnce();
+  });
+  it("uses browser preferences safely when a window is available or absent", () => {
+    const adapter = createIndexedDbPersistenceCommandAdapter(createDelegate());
+    const values = new Map<string, string>();
+    const browserWindow = {
+      localStorage: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => {
+          values.set(key, value);
         },
-      ),
-    });
-    const failure = new DOMException("transaction aborted", "AbortError");
-    const adapter = createIndexedDbPersistenceCommandAdapter(
-      createDelegate({
-        deleteEventAtomically: vi.fn(async () => {
-          throw failure;
-        }),
-      }),
-      auxiliary,
-    );
-
-    await expect(
-      adapter.deleteEventAtomically(snapshot(), "source"),
-    ).rejects.toBe(failure);
-    expect(stored.get("source")).toBe(settings);
-  });
-
-  it("moves auxiliary settings only for a successful atomic rename", async () => {
-    const settings = { marker: "source" } as unknown as BlockDetectionSettings;
-    const stored = new Map<string, BlockDetectionSettings | null>([
-      ["source", settings],
-    ]);
-    const auxiliary = createAuxiliaryDelegate({
-      readBlockDetectionSettings: vi.fn(
-        (eventName) => stored.get(eventName) ?? null,
-      ),
-      runWithBlockDetectionSettingsRestore: vi.fn(
-        async (eventName, nextSettings, commit) => {
-          const previous = stored.get(eventName) ?? null;
-          stored.set(eventName, nextSettings);
-          try {
-            return await commit();
-          } catch (error) {
-            stored.set(eventName, previous);
-            throw error;
-          }
+        removeItem: (key: string) => {
+          values.delete(key);
         },
-      ),
-    });
-    const delegate = createDelegate();
-    const adapter = createIndexedDbPersistenceCommandAdapter(
-      delegate,
-      auxiliary,
-    );
-
-    await adapter.renameEventAtomically(snapshot(), "source", "target");
-
-    expect(stored.get("source")).toBeNull();
-    expect(stored.get("target")).toBe(settings);
-    expect(delegate.renameEventAtomically).toHaveBeenCalledWith(
-      expect.any(Object),
-      "source",
-      "target",
-    );
+      },
+    };
+    vi.stubGlobal("window", browserWindow);
+    const key = "__adapter_preference_test__";
+    try {
+      adapter.savePreference(key, "dark");
+      expect(adapter.loadPreference(key)).toBe("dark");
+      vi.stubGlobal("window", undefined);
+      expect(adapter.loadPreference(key)).toBeNull();
+      expect(() => adapter.savePreference(key, "light")).not.toThrow();
+      expect(browserWindow.localStorage.getItem(key)).toBe("dark");
+    } finally {
+      vi.unstubAllGlobals();
+      browserWindow.localStorage.removeItem(key);
+    }
   });
-
-  it("rejects an auxiliary rename collision before the IDB transaction", async () => {
-    const settings = {} as BlockDetectionSettings;
-    const delegate = createDelegate();
-    const auxiliary = createAuxiliaryDelegate({
-      readBlockDetectionSettings: vi.fn((eventName) =>
-        eventName === "target" ? settings : null,
-      ),
-    });
-    const adapter = createIndexedDbPersistenceCommandAdapter(
-      delegate,
-      auxiliary,
-    );
-
-    await expect(
-      adapter.renameEventAtomically(snapshot(), "source", "target"),
-    ).rejects.toThrow("already exist");
-    expect(delegate.renameEventAtomically).not.toHaveBeenCalled();
-  });
-
-  it("forwards every persistence mutation without normalization", async () => {
+  it("restores into an unobserved adapter and invalidates incoming event histories", async () => {
     const delegate = createDelegate();
     const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
-    const input = snapshot();
-    const candidate = { id: "recovery-candidate" } as StartupRecoveryCandidate;
-
-    await expect(adapter.migrateFromLocalStorage()).resolves.toEqual({
-      status: "not-needed",
-    });
-    await expect(adapter.adoptRecoveryCandidate(candidate)).resolves.toBe(
-      undefined,
+    expect(adapter.readBlockDetectionSettings("missing")).toBeNull();
+    expect(adapter.readBlockDetectionSettingsForBackup(["missing"])).toEqual(
+      {},
     );
-    await adapter.saveEventLists(input.eventLists);
-    await adapter.saveEventMetadata(input.eventMetadata);
-    await adapter.saveExecuteModeItems(input.executeModeItems);
-    await adapter.saveDayModes(input.dayModes);
-    await adapter.saveMapDataChanges(input.mapData, input.mapData);
-    await adapter.saveMapRotationSettings(input.mapRotationSettings);
-    await adapter.saveRouteSettings(input.routeSettings);
-    await adapter.saveHallDefinitions(input.hallDefinitions);
-    await adapter.saveHallRouteSettings(input.hallRouteSettings);
-    await adapter.saveMapViewportSettings(input.mapViewportSettings);
-    await adapter.restoreAppDataAtomically(input);
-    await adapter.commitApplicationSnapshotAtomically(input);
-
-    expect(delegate.migrateFromLocalStorage).toHaveBeenCalledOnce();
-    expect(delegate.adoptRecoveryCandidate).toHaveBeenCalledWith(candidate);
-    expect(delegate.saveEventLists).toHaveBeenCalledWith(input.eventLists);
-    expect(delegate.saveEventMetadata).toHaveBeenCalledWith(
-      input.eventMetadata,
-    );
-    expect(delegate.saveExecuteModeItems).toHaveBeenCalledWith(
-      input.executeModeItems,
-    );
-    expect(delegate.saveDayModes).toHaveBeenCalledWith(input.dayModes);
-    expect(delegate.saveMapDataChanges).toHaveBeenCalledWith(
-      input.mapData,
-      input.mapData,
-    );
-    expect(delegate.saveMapRotationSettings).toHaveBeenCalledWith(
-      input.mapRotationSettings,
-    );
-    expect(delegate.saveRouteSettings).toHaveBeenCalledWith(
-      input.routeSettings,
-    );
-    expect(delegate.saveHallDefinitions).toHaveBeenCalledWith(
-      input.hallDefinitions,
-    );
-    expect(delegate.saveHallRouteSettings).toHaveBeenCalledWith(
-      input.hallRouteSettings,
-    );
-    expect(delegate.saveMapViewportSettings).toHaveBeenCalledWith(
-      input.mapViewportSettings,
-    );
-    expect(delegate.restoreAppDataAtomically).toHaveBeenCalledWith(input);
+    const incoming = snapshot();
+    incoming.eventLists.restored = [];
+    await adapter.restoreAppDataAtomically(incoming);
     expect(delegate.commitApplicationSnapshotAtomically).toHaveBeenCalledWith(
-      input,
+      incoming,
+      { invalidatedEvents: ["restored"] },
     );
   });
-
-  it("does not normalize a delegate failure", async () => {
-    const failure = new DOMException("restore failed", "AbortError");
-    const adapter = createIndexedDbPersistenceCommandAdapter(
-      createDelegate({
-        restoreAppDataAtomically: vi.fn(async () => {
-          throw failure;
-        }),
-      }),
+  it("keeps a replacement settings binding when the earlier binding disconnects", async () => {
+    const delegate = createDelegate();
+    const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+    const previous = snapshot();
+    const current = snapshot();
+    current.eventConsistency.event = {
+      ...createEventConsistency(),
+      blockDetectionSettings: DEFAULT_BLOCK_DETECTION_SETTINGS,
+    };
+    const previousSave = vi.fn(async () => {});
+    const currentSave = vi.fn(async () => {});
+    const disconnectPrevious = adapter.bindApplicationSettings({
+      read: () => previous,
+      save: previousSave,
+    });
+    const disconnectCurrent = adapter.bindApplicationSettings({
+      read: () => current,
+      save: currentSave,
+    });
+    disconnectPrevious();
+    expect(adapter.readBlockDetectionSettings("event")).toEqual(
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
     );
-
-    await expect(adapter.restoreAppDataAtomically(snapshot())).rejects.toBe(
-      failure,
+    await adapter.saveBlockDetectionSettings(
+      "event",
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(previousSave).not.toHaveBeenCalled();
+    expect(currentSave).toHaveBeenCalledOnce();
+    disconnectCurrent();
+    expect(adapter.readBlockDetectionSettings("event")).toBeNull();
+  });
+  it("invalidates the union of replaced and incoming events unless the caller supplies a scope", async () => {
+    const previous = snapshot();
+    previous.eventLists.removed = [];
+    previous.eventLists.retained = [];
+    const delegate = createDelegate({
+      readApplicationSnapshot: vi.fn(async () => ({
+        snapshot: previous,
+        expectedRoots: {},
+        consistencyMissing: false,
+      })),
+    });
+    const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+    await adapter.readApplicationSnapshot();
+    const incoming = snapshot();
+    incoming.eventLists.retained = [];
+    incoming.eventLists.added = [];
+    await adapter.restoreAppDataAtomically(incoming);
+    expect(
+      delegate.commitApplicationSnapshotAtomically,
+    ).toHaveBeenLastCalledWith(incoming, {
+      invalidatedEvents: ["removed", "retained", "added"],
+    });
+    const options = {
+      expectedRoots: { source: "caller" },
+      invalidatedEvents: [],
+    };
+    await adapter.restoreAppDataAtomically(incoming, options);
+    expect(
+      delegate.commitApplicationSnapshotAtomically,
+    ).toHaveBeenLastCalledWith(incoming, options);
+  });
+  it("creates canonical settings for legacy snapshots and updates existing settings without mutating input", async () => {
+    const delegate = createDelegate();
+    const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+    const legacy = snapshot();
+    delete (legacy as Partial<PersistenceSnapshot>).eventConsistency;
+    await adapter.restoreAppDataWithBlockDetectionSettings(
+      legacy,
+      "legacy",
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(legacy).not.toHaveProperty("eventConsistency");
+    expect(adapter.readBlockDetectionSettings("legacy")).toEqual(
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    const current = snapshot();
+    current.eventConsistency.legacy = createEventConsistency();
+    current.eventConsistency.other = {
+      ...createEventConsistency(),
+      blockDetectionSettings: DEFAULT_BLOCK_DETECTION_SETTINGS,
+    };
+    await adapter.restoreAppDataWithBlockDetectionSettings(
+      current,
+      "legacy",
+      null,
+    );
+    expect(adapter.readBlockDetectionSettings("legacy")).toBeNull();
+    expect(
+      adapter.readBlockDetectionSettingsForBackup(["legacy", "other"]),
+    ).toEqual({ other: DEFAULT_BLOCK_DETECTION_SETTINGS });
+    expect(current.eventConsistency.legacy).toEqual(createEventConsistency());
+    expect(
+      delegate.commitApplicationSnapshotAtomically,
+    ).toHaveBeenLastCalledWith(
+      {
+        ...current,
+        eventConsistency: {
+          ...current.eventConsistency,
+          legacy: {
+            ...current.eventConsistency.legacy,
+            blockDetectionSettings: null,
+          },
+        },
+      },
+      { invalidatedEvents: ["legacy"] },
     );
   });
 });

@@ -25,6 +25,7 @@ import {
   type PersistenceCheckpoint,
   type PersistenceCheckpointCommittedRoot,
   type PersistenceDigestDescriptor,
+  type StartupRecoveryBundle,
   type StartupRecoveryCandidate,
   type StartupRecoveryLegacyMigrationConflict,
 } from "../../utils/persistenceResilience";
@@ -38,6 +39,8 @@ import {
 } from "../../utils/persistenceCleanupCoordinator";
 import { recordPersistenceCleanupReleaseAMetric } from "../../utils/persistenceReleaseAMetrics";
 import {
+  CONSISTENCY_ARCHIVE_KEY,
+  CONSISTENCY_MIGRATION_KEY,
   DATA_KEY,
   LEGACY_MIGRATION_ARCHIVE_KEY_PREFIX,
   LEGACY_MIGRATION_ARCHIVE_SCHEMA_VERSION,
@@ -50,6 +53,7 @@ import {
   STORES,
   type StoreName,
 } from "../db/constants";
+import { readApplicationSnapshot } from "../db/atomicRestoreTransaction";
 import { PersistenceConflictError } from "../db/errors";
 import { ensureStoreExists, openDatabase as openDB } from "../db/openDatabase";
 import {
@@ -3478,6 +3482,34 @@ export async function migrateFromLocalStorage(
   // because localStorage cannot atomically prove that a value is still the
   // verified migration source at deletion time.
   void options.cleanupLegacySources;
+  // Completed consistency migration supersedes the legacy localStorage state machine.
+  // Validate its durable evidence and payloads before ignoring archival source values.
+  try {
+    const [journal, archive] = await Promise.all([
+      readInternalControlRecord(CONSISTENCY_MIGRATION_KEY),
+      readInternalControlRecord(CONSISTENCY_ARCHIVE_KEY),
+    ]);
+    if (journal !== undefined || archive !== undefined) {
+      await readApplicationSnapshot();
+      // The old sources remain preserved; bypassing migration never implies cleanup.
+      return {
+        status: "cleanup-pending",
+        migratedKeys: [],
+        dataMigrationStatus: "not-needed",
+        cleanupStatus: "deferred",
+      };
+    }
+  } catch (error) {
+    const recoveryBundle = (
+      error as { recoveryBundle?: StartupRecoveryBundle } | null
+    )?.recoveryBundle;
+    if (recoveryBundle) return { status: "recovery-required", recoveryBundle };
+    return migrationRecoveryResult(
+      "移行済み関連設定を確認できませんでした。",
+      error,
+      [],
+    );
+  }
   let capturedSources: LegacySourceState[];
   let capturedLegacySyncQueueRawValue: string | null;
   try {

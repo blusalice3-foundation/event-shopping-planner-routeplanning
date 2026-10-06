@@ -20,7 +20,7 @@
         "loaderBinary": "playwright"
       },
       {
-        "file": "postcss.config.cjs",
+        "file": "postcss.config.mjs",
         "loaderPackage": "vite",
         "loaderScript": "dev",
         "loaderBinary": "vite"
@@ -83,6 +83,17 @@
           "graph": "release-tool",
           "file": "scripts/collect-performance-samples.mjs",
           "specifier": "@playwright/test"
+        }
+      ]
+    },
+    "@tailwindcss/postcss": {
+      "scope": "devDependencies",
+      "evidence": [
+        {
+          "kind": "module-import",
+          "specifier": "@tailwindcss/postcss",
+          "file": "postcss.config.mjs",
+          "graph": "build"
         }
       ]
     },
@@ -232,11 +243,10 @@
       "scope": "devDependencies",
       "evidence": [
         {
-          "kind": "postcss-plugin",
-          "graph": "build",
-          "configFile": "postcss.config.cjs",
-          "configKey": "autoprefixer",
-          "loaderPackage": "postcss"
+          "kind": "module-import",
+          "specifier": "autoprefixer",
+          "file": "postcss.config.mjs",
+          "graph": "build"
         }
       ]
     },
@@ -363,7 +373,7 @@
         {
           "kind": "dependency-host",
           "graph": "build",
-          "configFile": "postcss.config.cjs",
+          "configFile": "postcss.config.mjs",
           "hostPackage": "vite"
         }
       ]
@@ -418,11 +428,10 @@
       "scope": "devDependencies",
       "evidence": [
         {
-          "kind": "postcss-plugin",
-          "graph": "build",
-          "configFile": "postcss.config.cjs",
-          "configKey": "tailwindcss",
-          "loaderPackage": "postcss"
+          "kind": "dependency-host",
+          "configFile": "postcss.config.mjs",
+          "hostPackage": "@tailwindcss/postcss",
+          "graph": "build"
         }
       ]
     },

@@ -1,3 +1,4 @@
+import { getHallIdForItem, parseGroupId } from "../../utils/hallGrouping";
 import React, {
   useState,
   useCallback,
@@ -20,16 +21,10 @@ import MapVisitListPanel from "./MapVisitListPanel";
 import HallOrderPanel from "./HallOrderPanel";
 import InsertPositionDialog, { InsertPosition } from "./InsertPositionDialog";
 import type { SmartInsertMode } from "../../features/app-shell/types";
-import {
-  extractNumberFromItemNumber,
-  extractNumberAlphaPrefix,
-} from "../../xlsx/domain/itemNumber";
-import {
-  resolveHallByBlockName,
-  resolveManualHallId,
-} from "../../utils/hallFallback";
+import { extractNumberFromItemNumber } from "../../xlsx/domain/itemNumber";
 import {
   buildMapRouteExecuteItemIds,
+  buildMapRouteVisitItemIds,
   normalizeMapRouteDayText,
   resolveMapRouteHallOrder,
 } from "../../utils/mapRouteOrder";
@@ -49,12 +44,19 @@ import {
 } from "./mapViewRouteCalculations";
 import { validateMapSmartInsert } from "../../utils/mapSmartInsert";
 import type { MapRouteHitResult } from "../../utils/mapRouteHitTest";
-import { expandSameSpacePriorityItemIds } from "../../features/events/itemOps";
+import {
+  expandSameSpacePriorityItemIds,
+  type ExecuteInsertedItemIds,
+} from "../../features/events/itemOps";
 import {
   buildRouteDiagnostics,
   hasRouteDiagnosticIssue,
 } from "../../utils/routeDiagnostics";
 import RouteDiagnosticsOverlay from "./RouteDiagnosticsOverlay";
+import {
+  EXECUTION_VISIT_MERGE_NOTICE,
+  buildExecutionVisitProjectionKey,
+} from "../../utils/visitProjection";
 
 const normalizeDisplayText = (value: string | null | undefined): string => {
   return (value || "").replace(/\u3000/g, " ").trim();
@@ -95,6 +97,7 @@ type MapRouteInsertPendingState = {
 interface MapViewProps {
   mapData: DayMapData;
   mapName: string;
+  eventDate?: string;
   items: ShoppingItem[];
   executeModeItemIds: string[];
   routeHallOrder?: string[];
@@ -167,6 +170,7 @@ interface MapViewProps {
 const MapView: React.FC<MapViewProps> = ({
   mapData,
   mapName,
+  eventDate,
   items,
   executeModeItemIds,
   routeHallOrder,
@@ -237,6 +241,8 @@ const MapView: React.FC<MapViewProps> = ({
     };
   }, []);
   const [internalIsRouteVisible, setInternalIsRouteVisible] = useState(true);
+  const [visitMergeNotice, setVisitMergeNotice] = useState<string | null>(null);
+  const [visitMergeNoticeRevision, setVisitMergeNoticeRevision] = useState(0);
   const [isVisitListOpen, setIsVisitListOpen] = useState(false);
   const [internalIsHallOrderOpen, setInternalIsHallOrderOpen] = useState(false);
   const [internalSelectedHallId, setInternalSelectedHallId] =
@@ -304,120 +310,16 @@ const MapView: React.FC<MapViewProps> = ({
     return indexedItems;
   }, [items]);
   const mapDayName = useMemo(
-    () => extractDayNameFromMapName(mapName),
-    [mapName],
-  );
-
-  const getHallIdsByCellPosition = useCallback(
-    (row: number, col: number): string[] => {
-      const ids: string[] = [];
-      for (const hall of halls) {
-        if (
-          hall.vertices.length >= 4 &&
-          isPointInPolygon(row, col, hall.vertices)
-        ) {
-          ids.push(hall.id);
-        }
-      }
-      return ids;
-    },
-    [halls],
-  );
-
-  const getCandidateBlocksForItem = useCallback(
-    (itemBlockName: string): BlockDefinition[] => {
-      if (!itemBlockName) return [];
-
-      const exactMatches = mapData.blocks.filter(
-        (block) => block.name === itemBlockName,
-      );
-      if (exactMatches.length > 0) {
-        return exactMatches;
-      }
-
-      const normalizedBlockName = itemBlockName.toLowerCase();
-      return mapData.blocks.filter(
-        (block) => block.name.toLowerCase() === normalizedBlockName,
-      );
-    },
-    [mapData.blocks],
+    () => normalizeDisplayText(eventDate ?? extractDayNameFromMapName(mapName)),
+    [mapName, eventDate],
   );
 
   const getHallCandidatesForItem = useCallback(
     (item: ShoppingItem): Set<string> => {
-      const hallIds = new Set<string>();
-
-      const manual = resolveManualHallId(item.manualHallId, halls);
-      if (manual) {
-        hallIds.add(manual);
-        return hallIds;
-      }
-
-      const itemBlockName = item.block?.trim() || "";
-      const candidateBlocks = getCandidateBlocksForItem(itemBlockName);
-      if (candidateBlocks.length === 0) {
-        const fallback = resolveHallByBlockName(item.block, halls);
-        if (fallback) hallIds.add(fallback);
-        return hallIds;
-      }
-
-      const numStr = extractNumberFromItemNumber(item.number);
-      if (numStr) {
-        const numValue = parseInt(numStr, 10);
-        candidateBlocks.forEach((block) => {
-          block.numberCells.forEach((numberCell) => {
-            if (numberCell.value !== numValue) return;
-            const matchedHallIds = getHallIdsByCellPosition(
-              numberCell.row,
-              numberCell.col,
-            );
-            matchedHallIds.forEach((matchedHallId) =>
-              hallIds.add(matchedHallId),
-            );
-          });
-        });
-      }
-
-      if (hallIds.size > 0) {
-        return hallIds;
-      }
-
-      const blockHallIds = new Set<string>();
-      candidateBlocks.forEach((block) => {
-        block.numberCells.forEach((numberCell) => {
-          const matchedHallIds = getHallIdsByCellPosition(
-            numberCell.row,
-            numberCell.col,
-          );
-          matchedHallIds.forEach((matchedHallId) =>
-            blockHallIds.add(matchedHallId),
-          );
-        });
-
-        if (blockHallIds.size === 1) {
-          blockHallIds.forEach((hallId) => hallIds.add(hallId));
-        }
-      });
-
-      if (hallIds.size > 0) {
-        return hallIds;
-      }
-
-      candidateBlocks.forEach((block) => {
-        const centerRow = (block.startRow + block.endRow) / 2;
-        const centerCol = (block.startCol + block.endCol) / 2;
-        const matchedHallIds = getHallIdsByCellPosition(centerRow, centerCol);
-        matchedHallIds.forEach((matchedHallId) => hallIds.add(matchedHallId));
-      });
-
-      if (hallIds.size === 0) {
-        const fallback = resolveHallByBlockName(item.block, halls);
-        if (fallback) hallIds.add(fallback);
-      }
-
-      return hallIds;
+      const hallId = getHallIdForItem(item, mapData, halls, items);
+      return new Set(hallId === null ? [] : [hallId]);
     },
-    [getCandidateBlocksForItem, getHallIdsByCellPosition, halls],
+    [mapData, halls, items],
   );
 
   const isItemInHall = useCallback(
@@ -428,44 +330,9 @@ const MapView: React.FC<MapViewProps> = ({
   );
 
   const getItemHallId = useCallback(
-    (item: ShoppingItem): string | null => {
-      const hallCandidates = getHallCandidatesForItem(item);
-      if (hallCandidates.size === 1) {
-        return Array.from(hallCandidates)[0];
-      }
-      if (
-        hallCandidates.size > 1 &&
-        selectedHallId !== "all" &&
-        hallCandidates.has(selectedHallId)
-      ) {
-        return selectedHallId;
-      }
-      return null;
-    },
-    [getHallCandidatesForItem, selectedHallId],
-  );
-
-  const parseGroupId = useCallback(
-    (
-      groupId: string | null,
-    ): { hallId: string | null; priority: "none" | "priority" | "highest" } => {
-      if (groupId === null) return { hallId: null, priority: "none" };
-      if (groupId === "undefined:highest")
-        return { hallId: null, priority: "highest" };
-      if (groupId === "undefined:priority")
-        return { hallId: null, priority: "priority" };
-      if (groupId.endsWith(":highest")) {
-        return { hallId: groupId.replace(":highest", ""), priority: "highest" };
-      }
-      if (groupId.endsWith(":priority")) {
-        return {
-          hallId: groupId.replace(":priority", ""),
-          priority: "priority",
-        };
-      }
-      return { hallId: groupId, priority: "none" };
-    },
-    [],
+    (item: ShoppingItem): string | null =>
+      getHallIdForItem(item, mapData, halls, items),
+    [mapData, halls, items],
   );
 
   const getItemCountInHall = useCallback(
@@ -486,7 +353,7 @@ const MapView: React.FC<MapViewProps> = ({
         return itemPriority === priority;
       }).length;
     },
-    [executeModeItemIds, itemsById, getItemHallId, isItemInHall, parseGroupId],
+    [executeModeItemIds, itemsById, getItemHallId, isItemInHall],
   );
 
   const getHallTotalExecuteCount = useCallback(
@@ -611,6 +478,25 @@ const MapView: React.FC<MapViewProps> = ({
 
   const displayRouteExecuteModeItemIds = useMemo(() => {
     return buildMapRouteExecuteItemIds({
+      executeModeItemIds: filteredExecuteModeItemIds,
+      items: filteredItems,
+      mapData: filteredMapData,
+      hallDefinitions: halls,
+      hallOrder: effectiveRouteHallOrder,
+      dayName: mapDayName || normalizeDisplayText(mapName),
+    });
+  }, [
+    filteredExecuteModeItemIds,
+    filteredItems,
+    filteredMapData,
+    halls,
+    effectiveRouteHallOrder,
+    mapDayName,
+    mapName,
+  ]);
+
+  const displayRouteVisitItemIds = useMemo(() => {
+    return buildMapRouteVisitItemIds({
       executeModeItemIds: filteredExecuteModeItemIds,
       items: filteredItems,
       mapData: filteredMapData,
@@ -803,8 +689,6 @@ const MapView: React.FC<MapViewProps> = ({
     ],
   );
 
-  const routeExecuteModeItemIds = displayRouteExecuteModeItemIds;
-
   const isCellInBlock = useCallback(
     (row: number, col: number, block: BlockDefinition): boolean => {
       if (block.cellGroups && block.cellGroups.length > 0) {
@@ -939,12 +823,28 @@ const MapView: React.FC<MapViewProps> = ({
       result: string[] | boolean | void,
       fallbackIds: string[],
     ): string[] | null => {
-      if (Array.isArray(result)) return result.length > 0 ? result : null;
+      if (Array.isArray(result)) {
+        const annotatedResult = result as ExecuteInsertedItemIds;
+        if (
+          annotatedResult.placement === "merged-into-existing-visit" ||
+          annotatedResult.placement === "mixed"
+        ) {
+          setVisitMergeNotice(EXECUTION_VISIT_MERGE_NOTICE);
+          setVisitMergeNoticeRevision((previous) => previous + 1);
+        }
+        return result.length > 0 ? result : null;
+      }
       if (result === false) return null;
       return fallbackIds;
     },
     [],
   );
+
+  useEffect(() => {
+    if (!visitMergeNotice) return;
+    const timeoutId = window.setTimeout(() => setVisitMergeNotice(null), 5000);
+    return () => window.clearTimeout(timeoutId);
+  }, [visitMergeNotice, visitMergeNoticeRevision]);
 
   const normalizeAffectedItemIds = useCallback(
     (result: string[] | void, fallbackIds: string[]): string[] => {
@@ -1136,25 +1036,20 @@ const MapView: React.FC<MapViewProps> = ({
       const item = itemsById.get(itemId);
       if (!item) return;
 
-      const newItemPrefix = extractNumberAlphaPrefix(item.number);
-      if (newItemPrefix && onAddToExecuteListAtPosition) {
-        const itemBlock = item.block?.trim() || "";
-        let lastMatchId: string | null = null;
+      const newVisitKey = buildExecutionVisitProjectionKey(item);
+      if (onAddToExecuteListAtPosition) {
+        const existingVisitItemId =
+          executeModeItemIds.find((executeItemId) => {
+            const existingItem = itemsById.get(executeItemId);
+            return (
+              existingItem !== undefined &&
+              buildExecutionVisitProjectionKey(existingItem) === newVisitKey
+            );
+          }) ?? null;
 
-        executeModeItemIds.forEach((eid) => {
-          const existingItem = itemsById.get(eid);
-          if (!existingItem) return;
-          const existingBlock = existingItem.block?.trim() || "";
-          if (existingBlock !== itemBlock) return;
-          const existingPrefix = extractNumberAlphaPrefix(existingItem.number);
-          if (existingPrefix === newItemPrefix) {
-            lastMatchId = eid;
-          }
-        });
-
-        if (lastMatchId) {
+        if (existingVisitItemId) {
           const insertedIds = normalizeInsertedItemIds(
-            onAddToExecuteListAtPosition(itemId, lastMatchId, "after"),
+            onAddToExecuteListAtPosition(itemId, existingVisitItemId, "after"),
             [itemId],
           );
           if (insertedIds) {
@@ -1524,25 +1419,26 @@ const MapView: React.FC<MapViewProps> = ({
       const firstItem = itemsById.get(sortedIds[0]);
       if (!firstItem) return;
 
-      const newItemPrefix = extractNumberAlphaPrefix(firstItem.number);
+      const newVisitKey = buildExecutionVisitProjectionKey(firstItem);
       const itemBlock = firstItem.block?.trim() || "";
 
-      if (newItemPrefix && onBatchAddToExecuteListAtPosition) {
-        let lastMatchId: string | null = null;
-        executeModeItemIds.forEach((eid) => {
-          const existingItem = itemsById.get(eid);
-          if (!existingItem) return;
-          const existingBlock = existingItem.block?.trim() || "";
-          if (existingBlock !== itemBlock) return;
-          const existingPrefix = extractNumberAlphaPrefix(existingItem.number);
-          if (existingPrefix === newItemPrefix) {
-            lastMatchId = eid;
-          }
-        });
+      if (onBatchAddToExecuteListAtPosition) {
+        const existingVisitItemId =
+          executeModeItemIds.find((executeItemId) => {
+            const existingItem = itemsById.get(executeItemId);
+            return (
+              existingItem !== undefined &&
+              buildExecutionVisitProjectionKey(existingItem) === newVisitKey
+            );
+          }) ?? null;
 
-        if (lastMatchId) {
+        if (existingVisitItemId) {
           const insertedIds = normalizeInsertedItemIds(
-            onBatchAddToExecuteListAtPosition(sortedIds, lastMatchId, "after"),
+            onBatchAddToExecuteListAtPosition(
+              sortedIds,
+              existingVisitItemId,
+              "after",
+            ),
             sortedIds,
           );
           if (insertedIds) {
@@ -1875,7 +1771,7 @@ const MapView: React.FC<MapViewProps> = ({
             <select
               value={selectedHallId}
               onChange={(e) => setSelectedHallId(e.target.value)}
-              className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm shadow-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">全ホール</option>
               {halls.map((hall) => (
@@ -1939,6 +1835,14 @@ const MapView: React.FC<MapViewProps> = ({
           </button>
         </div>
       )}
+      {visitMergeNotice && (
+        <div
+          role="status"
+          className="absolute left-4 top-4 z-30 max-w-sm rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 shadow-lg dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100"
+        >
+          {visitMergeNotice}
+        </div>
+      )}
       {mapRouteInsertPending &&
         mapRouteInsertPending.duplicateCandidates.length > 0 && (
           <div className="absolute left-4 top-28 z-20 max-w-sm rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
@@ -1961,8 +1865,9 @@ const MapView: React.FC<MapViewProps> = ({
       <MapCanvas
         mapData={mapDataForCanvas}
         mapName={mapName}
+        eventDate={mapDayName}
         items={filteredItems}
-        executeModeItemIds={routeExecuteModeItemIds}
+        executeModeItemIds={filteredExecuteModeItemIds}
         zoomLevel={zoomLevel}
         isRouteVisible={
           isRouteVisible && (halls.length === 0 || selectedHallId !== "all")
@@ -2019,7 +1924,7 @@ const MapView: React.FC<MapViewProps> = ({
         isOpen={isVisitListOpen}
         onClose={() => setIsVisitListOpen(false)}
         items={filteredItems}
-        executeModeItemIds={routeExecuteModeItemIds}
+        executeModeItemIds={displayRouteVisitItemIds}
         blocks={filteredMapData.blocks}
         onJumpToCell={handleJumpToCell}
       />

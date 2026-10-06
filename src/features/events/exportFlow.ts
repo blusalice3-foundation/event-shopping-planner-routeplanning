@@ -1,3 +1,5 @@
+export { selectWorkbookContent as selectEventExportContent } from "../../xlsx/domain/consistencyWorkbook";
+import type { EventConsistencyStore } from "../../types/consistency";
 import type {
   DayModeState,
   EventMetadata,
@@ -22,6 +24,7 @@ import type { XlsxExecutionPort } from "../../xlsx/port/XlsxExecutionPort";
 import type { XlsxProgressListener } from "../../xlsx/port/XlsxExecutionPort";
 
 type ExportStores = {
+  eventConsistency?: EventConsistencyStore;
   executeModeItems: Record<string, ExecuteModeItems>;
   dayModes: Record<string, DayModeState>;
   mapData: MapDataStore;
@@ -52,6 +55,7 @@ export async function buildEventExportFile(
 ): Promise<{ bytes: Uint8Array; filename: string }> {
   const snapshot = buildEventWorkbookExportSnapshot(eventName, items, options, {
     metadata,
+    eventConsistency: stores.eventConsistency,
     executeModeItems: stores.executeModeItems,
     dayModes: stores.dayModes,
     mapData: stores.mapData,

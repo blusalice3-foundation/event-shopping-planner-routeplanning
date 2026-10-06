@@ -610,7 +610,7 @@ describe("ShoppingList purchase status control mode", () => {
     fireEvent.click(
       screen.getAllByRole("button", {
         name: "スペースを閉じて次のスペースを展開",
-      })[0],
+      })[1],
     );
 
     expect(onCollapseAndOpenNext).not.toHaveBeenCalled();

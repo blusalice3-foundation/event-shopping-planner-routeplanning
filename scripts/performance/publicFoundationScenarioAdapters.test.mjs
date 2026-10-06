@@ -11,6 +11,7 @@ const sha = (character) => character.repeat(64);
 const sourceSha = "a".repeat(40);
 const requiredStores = [
   "dayModes",
+  "eventConsistency",
   "eventLists",
   "eventMetadata",
   "executeModeItems",
@@ -130,7 +131,7 @@ const makeHarness = ({
           durationMs: 2,
           matched: indexedDbMatched,
           storeNames: requiredStores,
-          version: 5,
+          version: 8,
         };
       }
       if (request.operation === "measure-indexeddb") {
@@ -138,7 +139,7 @@ const makeHarness = ({
           durationMs: 7,
           matched: indexedDbMatched,
           storeNames: requiredStores,
-          version: 5,
+          version: 8,
         };
       }
       throw new Error(`Unexpected browser operation ${request.operation}`);

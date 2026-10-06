@@ -345,8 +345,16 @@ const RuntimeVirtualListRenderer = ({
         behavior: "auto",
       });
     }
-    onScrollRequestConsumed?.(scrollRequest.requestId);
-  }, [onScrollRequestConsumed, rowIndexByKey, scrollRequest, virtualizer]);
+  }, [rowIndexByKey, scrollRequest, virtualizer]);
+  useLayoutEffect(() => {
+    if (!scrollRequest) return;
+    const rowIndex = rowIndexByKey.get(scrollRequest.rowKey);
+    if (
+      rowIndex !== undefined &&
+      virtualItems.some((item) => item.index === rowIndex)
+    )
+      onScrollRequestConsumed?.(scrollRequest.requestId);
+  }, [onScrollRequestConsumed, rowIndexByKey, scrollRequest, virtualItems]);
 
   useLayoutEffect(() => {
     const previousSignature = previousRowKeySignatureRef.current;

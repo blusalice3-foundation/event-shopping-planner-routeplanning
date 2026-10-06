@@ -101,7 +101,7 @@ describe("hallOperations regressions", () => {
     ]);
   });
 
-  it("reorders execute ids by hall priority groups and visit-list order", () => {
+  it("reorders hall priority groups while preserving current execution order", () => {
     const items = [
       makeItem("a-normal", "A"),
       makeItem("a-priority-2", "A", "priority"),
@@ -127,11 +127,35 @@ describe("hallOperations regressions", () => {
     });
 
     expect(result).toEqual([
-      "a-priority-1",
       "a-priority-2",
+      "a-priority-1",
       "b-normal",
       "a-normal",
     ]);
+  });
+
+  it("keeps a legacy non-contiguous visit together after an explicit hall reorder", () => {
+    const items = [
+      { ...makeItem("a1", "A"), number: "01a" },
+      { ...makeItem("other", "A"), number: "02a" },
+      { ...makeItem("a2", "A"), number: "01a2" },
+    ];
+
+    expect(
+      reorderExecuteIdsByHallOrder({
+        hallOrder: ["hall-a"],
+        dayItems: ["a1", "other", "a2"],
+        items,
+        halls,
+        mapData: undefined,
+        hallRouteSettings: {
+          hallOrder: ["hall-a"],
+          hallVisitLists: [
+            { hallId: "hall-a", itemIds: ["a1", "other", "a2"] },
+          ],
+        },
+      }),
+    ).toEqual(["a1", "a2", "other"]);
   });
 
   it("indexes item ids while preserving the first-match counting behavior", () => {
@@ -176,3 +200,35 @@ describe("hallOperations regressions", () => {
     });
   });
 });
+
+it.each(["west:priority", "west:highest", "west:priority:highest"])(
+  "keeps hall ID %s through splitting, remapping and counting",
+  (id) => {
+    const settings = {
+      hallOrder: [`${id}:priority`, `${id}:highest`],
+      hallVisitLists: [{ hallId: `${id}:priority`, itemIds: ["one"] }],
+    };
+    const split = splitGlobalHallRouteSettings({
+      settings,
+      mapHallIds: new Set([id]),
+      maplessHallIds: new Set(),
+      hasMapTab: true,
+    });
+    expect(split.mapSettings).toEqual(settings);
+    expect(split.maplessSettings.hallOrder).toEqual([]);
+    expect(
+      remapHallRouteSettings(settings, new Map([[id, "next:priority"]])),
+    ).toEqual({
+      hallOrder: ["next:priority:priority", "next:priority:highest"],
+      hallVisitLists: [{ hallId: "next:priority:priority", itemIds: ["one"] }],
+    });
+    expect(
+      getGlobalHallItemCount({
+        groupId: `${id}:priority`,
+        executeIds: ["one"],
+        items: [makeItem("one", "A", "priority")],
+        getItemHallId: () => id,
+      }),
+    ).toBe(1);
+  },
+);

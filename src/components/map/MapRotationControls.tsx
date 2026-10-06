@@ -121,7 +121,7 @@ const MapRotationControls: React.FC<MapRotationControlsProps> = ({
           ref={compactToggleRef}
           type="button"
           onClick={() => setIsExpanded((prev) => !prev)}
-          className="flex h-full min-w-[4.5rem] touch-manipulation items-center justify-center gap-1 rounded px-1.5 text-xs font-semibold leading-none text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-200 dark:hover:bg-slate-700"
+          className="flex h-full min-w-[4.5rem] touch-manipulation items-center justify-center gap-1 rounded px-1.5 text-xs font-semibold leading-none text-slate-700 hover:bg-slate-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-200 dark:hover:bg-slate-700"
           title={toggleTitle}
           aria-label={`回転 ${normalizedAngle}°`}
           aria-expanded={isExpanded}

@@ -1,32 +1,30 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
+import { LegacyConsistencyReview } from "./components/LegacyConsistencyReview";
+import { planLegacyResolution } from "./features/consistency/domain/legacyResolution";
 import {
-  ShoppingItem,
-  EventMetadata,
-  DayModeState,
-  ExecuteModeItems,
-} from "./types/item";
+  planItemEdit,
+  previewItemEdit,
+} from "./features/consistency/domain/itemEdit";
+import DayTabButton from "./components/DayTabButton";
 import {
-  MapDataStore,
-  RouteSettingsStore,
-  HallDefinition,
-  HallDefinitionsStore,
-  HallRouteSettingsStore,
-  MapRotationSettingsStore,
-  MapViewportSettingsStore,
-} from "./types/map";
+  duplicateEventDays,
+  planDayMerge,
+} from "./features/consistency/domain/dayMerge";
+import {
+  ensureDayConsistency,
+  getDayConsistency,
+  resolveDayMap,
+} from "./features/consistency/domain/context";
+import { useSearchScrollRequest } from "./app/state/useSearchScrollRequest";
+import React, { useEffect, useCallback, useMemo, useRef } from "react";
+import { ShoppingItem, EventMetadata, ExecuteModeItems } from "./types/item";
+import { MapDataStore, HallDefinition } from "./types/map";
 import { FocusModeSessionState } from "./types/focus";
 import { getMaplessKey } from "./types/map";
 import { extractEventDates } from "./utils/eventDates";
 import { getSpaceKey } from "./utils/spaceGrouping";
+import { normalizeExecutionVisitDay } from "./utils/visitProjection";
 import { type EventUpdateCommitState } from "./features/events/updateFlow";
 import { getGlobalHallItemCount as computeGlobalHallItemCount } from "./features/map/domain/hallOperations";
-import { normalizeHydratedHallState } from "./features/map/domain/normalizeHydratedHallState";
 import { useMapSelectors } from "./features/map/hooks/useMapSelectors";
 import { useListInteractionState } from "./features/lists/hooks/useListInteractionState";
 import AppHeaderShell from "./features/app-shell/components/AppHeaderShell";
@@ -55,6 +53,8 @@ import {
   selectDuplicateCircleItemIds,
   selectExecuteColumnItems,
   selectMovePlanState,
+  selectItemsForExecutionDay,
+  selectMapVisitListItems,
   selectSearchMatches,
   selectSortDisplayLabel,
   selectTemporaryVisibleItems,
@@ -77,7 +77,7 @@ import { useAppNavigationController } from "./app/navigation";
 import { selectNavigationReadModel } from "./app/navigation/navigationSelectors";
 import { useAppUiState } from "./app/state/useAppUiState";
 import { useAppOverlayController } from "./app/state/useAppOverlayController";
-import { useCommittedState } from "./app/state/useCommittedState";
+import { useApplicationSnapshot } from "./app/state/useApplicationSnapshot";
 import { useMapWorkspaceState } from "./app/state/useMapWorkspaceState";
 import { useThemeMode } from "./hooks/useThemeMode";
 import {
@@ -96,7 +96,6 @@ import { usePurchaseStatusControlMode } from "./hooks/usePurchaseStatusControlMo
 import { usePostEventDistributionCheck } from "./hooks/usePostEventDistributionCheck";
 import { useIndexedDbPersistence } from "./hooks/useIndexedDbPersistence";
 import type { ActiveTab, SortState } from "./features/app-shell/types";
-import type { PersistenceSnapshot } from "./app/ports/PersistenceCommandPort";
 
 const sortCycle: SortState[] = [
   "Manual",
@@ -120,39 +119,91 @@ const sortLabels: Record<SortState, string> = {
 };
 
 const App: React.FC = () => {
-  const {
-    value: eventLists,
-    valueRef: eventListsRef,
-    commit: commitEventLists,
-    set: setEventLists,
-  } = useCommittedState<Record<string, ShoppingItem[]>>({});
-  const {
-    value: eventMetadata,
-    valueRef: eventMetadataRef,
-    commit: commitEventMetadata,
-    set: setEventMetadata,
-  } = useCommittedState<Record<string, EventMetadata>>({});
-  const {
-    value: executeModeItems,
-    valueRef: executeModeItemsRef,
-    commit: commitExecuteModeItems,
-    set: setExecuteModeItemsCommitted,
-    update: updateExecuteModeItems,
-  } = useCommittedState<Record<string, ExecuteModeItems>>({});
-  const commitExecuteModeItemsForEvent = useCallback(
-    (eventName: string, nextEventItems: ExecuteModeItems) => {
-      commitExecuteModeItems({
-        ...executeModeItemsRef.current,
-        [eventName]: nextEventItems,
-      });
-    },
-    [commitExecuteModeItems, executeModeItemsRef],
-  );
-  const [dayModes, setDayModes] = useState<Record<string, DayModeState>>({});
-
   const navigation = useAppNavigationController();
   const { activeEventName, activeTab, mapViewActive } =
     selectNavigationReadModel(navigation.state);
+  const application = useApplicationSnapshot(
+    appRuntime.persistenceCommands,
+    activeEventName,
+    activeTab,
+  );
+  const conflictRetryButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (application.retryableFailures.length)
+      conflictRetryButtonRef.current?.focus();
+  }, [application.retryableFailures]);
+  const {
+    eventLists,
+    eventMetadata,
+    executeModeItems,
+    dayModes,
+    mapData,
+    mapRotationSettings,
+    mapViewportSettings,
+    routeSettings,
+    hallDefinitions,
+    hallRouteSettings,
+    eventConsistency,
+  } = application.values;
+  const {
+    setEventLists,
+    setEventMetadata,
+    setExecuteModeItems: setExecuteModeItemsCommitted,
+    setDayModes,
+    setMapData,
+    setMapRotationSettings,
+    setMapViewportSettings,
+    setRouteSettings,
+    setHallDefinitions,
+    setHallRouteSettings,
+  } = application.setters;
+  const eventListsRef = useMemo(
+    () => ({
+      get current() {
+        return application.previewRef.current.eventLists as Record<
+          string,
+          ShoppingItem[]
+        >;
+      },
+    }),
+    [application.previewRef],
+  );
+  const eventMetadataRef = useMemo(
+    () => ({
+      get current() {
+        return application.previewRef.current.eventMetadata as Record<
+          string,
+          EventMetadata
+        >;
+      },
+    }),
+    [application.previewRef],
+  );
+  const executeModeItemsRef = useMemo(
+    () => ({
+      get current() {
+        return application.previewRef.current.executeModeItems;
+      },
+    }),
+    [application.previewRef],
+  );
+  const updateExecuteModeItems = useCallback(
+    (
+      updater: (
+        value: Record<string, ExecuteModeItems>,
+      ) => Record<string, ExecuteModeItems>,
+    ) => {
+      setExecuteModeItemsCommitted(updater);
+      return executeModeItemsRef.current;
+    },
+    [setExecuteModeItemsCommitted, executeModeItemsRef],
+  );
+  const commitExecuteModeItemsForEvent = useCallback(
+    (name: string, next: ExecuteModeItems) => {
+      setExecuteModeItemsCommitted((current) => ({ ...current, [name]: next }));
+    },
+    [setExecuteModeItemsCommitted],
+  );
   const navigationCommands = navigation.commands;
   const navigateToTab = useCallback(
     (tab: ActiveTab) => {
@@ -341,17 +392,6 @@ const App: React.FC = () => {
     appRuntime.persistenceCommands,
   );
 
-  const [mapData, setMapData] = useState<MapDataStore>({});
-  const [mapRotationSettings, setMapRotationSettings] =
-    useState<MapRotationSettingsStore>({});
-  const [mapViewportSettings, setMapViewportSettings] =
-    useState<MapViewportSettingsStore>({});
-  const [routeSettings, setRouteSettings] = useState<RouteSettingsStore>({});
-  const [hallDefinitions, setHallDefinitions] = useState<HallDefinitionsStore>(
-    {},
-  );
-  const [hallRouteSettings, setHallRouteSettings] =
-    useState<HallRouteSettingsStore>({});
   const mapFileInputRef = useRef<HTMLInputElement>(null);
   const exportFileInputRef = useRef<HTMLInputElement>(null);
   const {
@@ -369,111 +409,71 @@ const App: React.FC = () => {
     isUpdateBlocked,
     flushPendingSave,
     runExclusiveRestore,
+    acceptCommittedSnapshot,
+    observeSnapshot,
+    migrationNotices,
+    dismissMigrationNotices,
   } = useIndexedDbPersistence({
     persistenceCommands: appRuntime.persistenceCommands,
-    values: {
-      eventLists,
-      eventMetadata,
-      executeModeItems,
-      dayModes,
-      mapData,
-      mapRotationSettings,
-      routeSettings,
-      hallDefinitions,
-      hallRouteSettings,
-      mapViewportSettings,
-    },
-    setters: {
-      setEventLists,
-      setEventMetadata,
-      setExecuteModeItems: setExecuteModeItemsCommitted,
-      setDayModes,
-      setMapData,
-      setMapRotationSettings,
-      setRouteSettings,
-      setHallDefinitions,
-      setHallRouteSettings,
-      setMapViewportSettings,
-    },
+    values: application.raw,
+    setters: application.hydrationSetters,
+    onHydratedSnapshot: application.coordinator.initializeEventGenerations,
   });
 
-  const commitApplicationSnapshotPatch = useCallback(
-    async (
-      patch: Partial<PersistenceSnapshot>,
-      blockDetectionSettings?: {
-        eventName: string;
-        settings: import("./types/map").BlockDetectionSettings | null;
-      },
-    ): Promise<void> => {
-      const nextSnapshot = {
-        eventLists,
-        eventMetadata,
-        executeModeItems,
-        dayModes,
-        mapData,
-        mapRotationSettings,
-        routeSettings,
-        hallDefinitions,
-        hallRouteSettings,
-        mapViewportSettings,
-        ...patch,
-      } as unknown as PersistenceSnapshot;
-      await runExclusiveRestore(
-        nextSnapshot as Parameters<typeof runExclusiveRestore>[0],
-        () =>
-          blockDetectionSettings
-            ? appRuntime.persistenceCommands.restoreAppDataWithBlockDetectionSettings(
-                nextSnapshot,
-                blockDetectionSettings.eventName,
-                blockDetectionSettings.settings,
-              )
-            : appRuntime.persistenceCommands.commitApplicationSnapshotAtomically(
-                nextSnapshot,
-              ),
-      );
+  const commitApplicationSnapshotPatch = application.commitPatch;
+  const { flush: flushApplication, isPending: isApplicationPending } =
+    application;
+  application.handlers.current = {
+    drain: flushPendingSave,
+    observeSnapshot,
+    applied: (snapshot, invalidatedEvents) => {
+      acceptCommittedSnapshot(snapshot);
+      if (
+        (pendingEventUpdate &&
+          invalidatedEvents.includes(pendingEventUpdate.eventName)) ||
+        (pendingUpdateEventName &&
+          invalidatedEvents.includes(pendingUpdateEventName))
+      )
+        overlayCommands.event.close();
+      if (
+        mapImportPendingEventName &&
+        invalidatedEvents.includes(mapImportPendingEventName)
+      ) {
+        overlayCommands.mapImport.closeDialog();
+        overlayCommands.mapImport.cancelReimport();
+      }
+      if (activeEventName && invalidatedEvents.includes(activeEventName)) {
+        overlayCommands.visitList.endSession();
+        setItemToEdit(null);
+        overlayCommands.item.close();
+        overlayCommands.mapEditor.close();
+        clearSearchScrollRequest();
+        setHighlightedItemId(null);
+        pendingEventUpdateBaseItemsRef.current = null;
+        setFocusModeSessions((current) =>
+          Object.fromEntries(
+            Object.entries(current).filter(
+              ([key]) =>
+                !invalidatedEvents.some((name) => key.startsWith(`${name}::`)),
+            ),
+          ),
+        );
+      }
     },
-    [
-      dayModes,
-      eventLists,
-      eventMetadata,
-      executeModeItems,
-      hallDefinitions,
-      hallRouteSettings,
-      mapData,
-      mapRotationSettings,
-      mapViewportSettings,
-      routeSettings,
-      runExclusiveRestore,
-    ],
-  );
-
+  };
   useEffect(
     () =>
       appRuntime.registerUpdateBlocker({
         id: "event-autosave",
         label: "イベントを保存中",
-        isBlocking: isUpdateBlocked,
-        flush: flushPendingSave,
+        isBlocking: () => isUpdateBlocked() || isApplicationPending(),
+        flush: async () => {
+          await flushApplication();
+          await flushPendingSave();
+        },
       }),
-    [flushPendingSave, isUpdateBlocked],
+    [flushPendingSave, isUpdateBlocked, flushApplication, isApplicationPending],
   );
-
-  const hallDefinitionsMigratedRef = useRef(false);
-  useEffect(() => {
-    if (!isInitialized || hallDefinitionsMigratedRef.current) return;
-    hallDefinitionsMigratedRef.current = true;
-    const normalized = normalizeHydratedHallState({
-      eventLists,
-      hallDefinitions,
-      hallRouteSettings,
-    });
-    if (normalized.hallDefinitions !== hallDefinitions) {
-      setHallDefinitions(normalized.hallDefinitions);
-    }
-    if (normalized.hallRouteSettings !== hallRouteSettings) {
-      setHallRouteSettings(normalized.hallRouteSettings);
-    }
-  }, [eventLists, hallDefinitions, hallRouteSettings, isInitialized]);
 
   const items = useMemo(
     () => (activeEventName ? eventLists[activeEventName] || [] : []),
@@ -514,6 +514,7 @@ const App: React.FC = () => {
     getMapDataForDate,
     getHallOrderForDate,
   } = useMapSelectors({
+    eventConsistency,
     activeEventName,
     activeTab,
     activeEventDate: activeEventDate || null,
@@ -575,8 +576,9 @@ const App: React.FC = () => {
         item,
         halls: getHallsForDate(eventDate),
         mapData: getMapDataForDate(eventDate),
+        allItems: items,
       }),
-    [getHallsForDate, getMapDataForDate],
+    [getHallsForDate, getMapDataForDate, items],
   );
 
   const areItemsInSameHall = useCallback(
@@ -743,6 +745,7 @@ const App: React.FC = () => {
       activeEventName,
       activeEventDate,
       eventLists,
+      eventListsRef,
       eventMetadata,
       dayModes,
       items,
@@ -786,7 +789,6 @@ const App: React.FC = () => {
     }, 100);
   }, []);
   const {
-    toggleMode: handleToggleMode,
     setViewMode: handleSetViewMode,
     selectItem: handleSelectItem,
     selectSpaceGroup: handleSelectSpaceGroupForRange,
@@ -848,6 +850,7 @@ const App: React.FC = () => {
     requestRename: handleRenameEvent,
     confirmRename: handleConfirmRename,
   } = useEventLifecycleCommands({
+    requestMutation: application.request,
     persistenceCommands: appRuntime.persistenceCommands,
     flushPendingSave,
     runExclusiveRestore,
@@ -931,12 +934,12 @@ const App: React.FC = () => {
       if (activeEventName) {
         navigationCommands.openEvent(activeEventName, itemToEdit.eventDate);
       } else {
-        navigationCommands.showEventList();
+        handleShowEventList();
       }
     } else {
       setItemToEdit(null);
       alert("参加日がないため処理を停止しました。");
-      navigationCommands.showEventList();
+      handleShowEventList();
     }
   };
 
@@ -968,7 +971,11 @@ const App: React.FC = () => {
       } else {
         const allGroupKeys = new Set<string>();
         items
-          .filter((item) => item.eventDate === activeEventDate)
+          .filter(
+            (item) =>
+              normalizeExecutionVisitDay(item.eventDate) ===
+              normalizeExecutionVisitDay(activeEventDate),
+          )
           .forEach((item) => {
             const spaceKey = getSpaceKey(item.block, item.number);
             const priority = item.priorityLevel || "none";
@@ -1028,6 +1035,7 @@ const App: React.FC = () => {
     backupFileInputRef,
     cancelXlsxOperation,
     handleExportEvent,
+    previewEventExport,
     handleBackupExport,
     handlePersistenceRecoveryExport,
     handleBackupRestoreRequest,
@@ -1036,6 +1044,12 @@ const App: React.FC = () => {
     handleConfirmExport,
     handleExportFileImport,
   } = useEventTransferCommands({
+    requestMutation: application.request,
+    readExportSnapshot: () => {
+      application.flushDraft();
+      return application.coordinator.readExportSnapshot();
+    },
+    eventConsistency,
     appRuntime,
     eventLists,
     eventMetadata,
@@ -1084,17 +1098,10 @@ const App: React.FC = () => {
         alert("イベントを保存できませんでした。表示内容は変更されていません。");
         return false;
       }
-      commitEventLists(nextState.eventLists);
-      commitEventMetadata(nextState.eventMetadata);
-      commitExecuteModeItems(nextState.executeModeItems);
+
       return true;
     },
-    [
-      commitApplicationSnapshotPatch,
-      commitEventLists,
-      commitEventMetadata,
-      commitExecuteModeItems,
-    ],
+    [commitApplicationSnapshotPatch],
   );
   const {
     handleUpdateEvent,
@@ -1106,6 +1113,7 @@ const App: React.FC = () => {
   } = useEventUpdateCommands({
     state: {
       eventLists,
+      getEventGeneration: application.coordinator.generation,
       eventMetadata,
       pendingDuplicateEvent,
       pendingEventUpdate,
@@ -1149,6 +1157,7 @@ const App: React.FC = () => {
       hallRouteSettings,
       mapViewportSettings,
       pendingEventName: mapImportPendingEventName,
+      eventConsistency,
       pendingReimport: pendingMapReimport,
       mapViewActive,
     },
@@ -1167,6 +1176,7 @@ const App: React.FC = () => {
       confirmReimport: overlayCommands.mapImport.confirmReimport,
     },
     settings: {
+      requestMutation: application.request,
       commitApplicationSnapshotPatch,
     },
     navigation: {
@@ -1244,7 +1254,7 @@ const App: React.FC = () => {
       getItemHallId,
       areItemsInSameHallGroup,
     },
-    effects: { selectionEventTarget: window },
+    effects: { selectionEventTarget: window, notify: alert },
     persistence: { commitApplicationSnapshotPatch },
   });
 
@@ -1258,7 +1268,7 @@ const App: React.FC = () => {
 
   const currentTabItems = useMemo(() => {
     if (!activeEventName || !eventDates.includes(activeTab)) return [];
-    return items.filter((item) => item.eventDate === activeTab);
+    return selectItemsForExecutionDay(items, activeTab);
   }, [items, activeTab, activeEventName, eventDates]);
 
   React.useEffect(() => {
@@ -1283,21 +1293,28 @@ const App: React.FC = () => {
   const smartInsertLongPressTriggeredRef = React.useRef(false);
 
   const {
+    historyVersion: visitListHistoryVersion,
     openPanel: openVisitListPanel,
     updateOrder: handleVisitListOrderUpdate,
     saveChanges: handleVisitListConfirm,
     discardChanges: handleVisitListCancel,
     requestClose: handleVisitListClose,
     requestTabChange: requestVisitListTabChange,
+    requestDayModeChange: requestVisitListDayModeChange,
     confirmPendingTransition: handleVisitListDialogConfirm,
     discardPendingTransition: handleVisitListDialogCancel,
   } = useMapVisitListCommands({
+    readCurrentSnapshot: () => application.rawRef.current,
+    requestMutation: application.request,
     state: {
+      generation: activeEventName
+        ? application.coordinator.generation(activeEventName)
+        : 0,
       activeEventName,
       activeEventDate,
       isMapTab,
       currentMapTabName,
-      executeModeItems,
+      executeModeItems: application.raw.executeModeItems,
       panelOpen: visitListPanelOpen,
       panelMapTab: visitListPanelMapTab,
       hasUnsavedChanges: visitListHasUnsavedChanges,
@@ -1310,7 +1327,7 @@ const App: React.FC = () => {
       openPanel: overlayCommands.visitList.open,
       setUnsaved: overlayCommands.visitList.setUnsaved,
       requestConfirmClose: overlayCommands.visitList.requestConfirmClose,
-      closePanel: overlayCommands.visitList.closePanel,
+      closePanel: overlayCommands.visitList.endSession,
       confirmClose: overlayCommands.visitList.confirmClose,
       discardClose: overlayCommands.visitList.discardClose,
     },
@@ -1318,6 +1335,10 @@ const App: React.FC = () => {
       navigateToTab,
     },
   });
+
+  const handleShowEventList = useCallback(() => {
+    requestVisitListTabChange("eventList");
+  }, [requestVisitListTabChange]);
 
   const handleHighlightMapCell = useCallback(
     (row: number, col: number) => {
@@ -1333,23 +1354,20 @@ const App: React.FC = () => {
   const visitListItems = useMemo(() => {
     if (!visitListPanelMapTab || !activeEventName) return [];
 
-    const dayMatch = visitListPanelMapTab.match(/^(.+)マップ$/);
-    if (!dayMatch) return [];
-    const dayName = dayMatch[1];
-
-    const dayItemsById = new Map<string, ShoppingItem>();
-    items.forEach((item) => {
-      if (item.eventDate === dayName && !dayItemsById.has(item.id)) {
-        dayItemsById.set(item.id, item);
-      }
+    return selectMapVisitListItems({
+      activeEventName,
+      mapTabName: visitListPanelMapTab,
+      dayName: activeEventDate,
+      executeModeItems,
+      items,
     });
-    const executeIds = executeModeItems[activeEventName]?.[dayName] || [];
-
-    return executeIds.flatMap((id: string) => {
-      const item = dayItemsById.get(id);
-      return item ? [item] : [];
-    });
-  }, [visitListPanelMapTab, activeEventName, items, executeModeItems]);
+  }, [
+    visitListPanelMapTab,
+    activeEventName,
+    activeEventDate,
+    items,
+    executeModeItems,
+  ]);
 
   const visitListHallOrder = useMemo(() => {
     if (!visitListPanelMapTab || !activeEventName) return [];
@@ -1420,70 +1438,62 @@ const App: React.FC = () => {
     [activeEventName, activeEventDate, executeModeItems, items, getItemHallId],
   );
 
-  const TabButton: React.FC<{
-    tab: ActiveTab;
-    label: string;
-    count?: number;
-    onClick?: () => void;
-  }> = ({ tab, label, count, onClick }) => {
-    const longPressTimeout = React.useRef<number | null>(null);
-
-    const handlePointerDown = () => {
-      if (!activeEventName) return;
-
-      longPressTimeout.current = window.setTimeout(() => {
-        if (eventDates.includes(tab)) {
-          handleToggleMode();
-        }
-        longPressTimeout.current = null;
-      }, 500);
-    };
-
-    const handlePointerUp = () => {
-      if (longPressTimeout.current) {
-        clearTimeout(longPressTimeout.current);
-        longPressTimeout.current = null;
+  const tabActionsRef = useRef({
+    activeTab,
+    activeEventName,
+    eventDates,
+    select: (_tab: ActiveTab, _callback?: () => void) => {},
+    longPress: (_tab: ActiveTab) => {},
+  });
+  tabActionsRef.current = {
+    activeTab,
+    activeEventName,
+    eventDates,
+    select: (tab, callback) => {
+      setMapTabMenuOpen(null);
+      if (callback) {
+        callback();
+        return;
       }
-    };
-
-    const handleClick = () => {
-      if (mapTabMenuOpen) {
-        setMapTabMenuOpen(null);
-      }
-      if (onClick) {
-        onClick();
-      } else {
-        setItemToEdit(null);
-        clearSelection();
-        setSelectedBlockFilters(new Set());
-        setCandidateNumberSortDirection(null);
-        setCollapsedSpaces(new Set());
-        requestVisitListTabChange(tab);
-      }
-    };
-
-    return (
-      <button
-        onClick={handleClick}
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 whitespace-nowrap ${
-          activeTab === tab
-            ? "bg-blue-600 text-white"
-            : "text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-        }`}
-      >
-        {label}{" "}
-        {typeof count !== "undefined" && (
-          <span className="text-xs bg-slate-200 dark:text-slate-700 rounded-full px-2 py-0.5 ml-1">
-            {count}
-          </span>
-        )}
-      </button>
-    );
+      setItemToEdit(null);
+      clearSelection();
+      setSelectedBlockFilters(new Set());
+      setCandidateNumberSortDirection(null);
+      setCollapsedSpaces(new Set());
+      requestVisitListTabChange(tab);
+    },
+    longPress: (tab) => {
+      requestVisitListDayModeChange(tab);
+    },
   };
-
+  const TabButton = useMemo<
+    React.FC<{
+      tab: ActiveTab;
+      label: string;
+      count?: number;
+      onClick?: () => void;
+    }>
+  >(
+    () =>
+      function Tab({ tab, label, count, onClick }) {
+        const current = tabActionsRef.current;
+        return (
+          <DayTabButton
+            tab={tab}
+            label={label}
+            count={count}
+            active={current.activeTab === tab}
+            onSelect={() => tabActionsRef.current.select(tab, onClick)}
+            onLongPress={
+              current.activeEventName && current.eventDates.includes(tab)
+                ? () => tabActionsRef.current.longPress(tab)
+                : undefined
+            }
+          />
+        );
+      },
+    [],
+  );
   const baseFilteredItems = useMemo(
     () =>
       selectBaseFilteredItems({
@@ -1574,30 +1584,6 @@ const App: React.FC = () => {
     [activeEventName, activeTab, currentTabItems, eventDates, searchKeyword],
   );
 
-  useEffect(() => {
-    if (searchKeyword.trim()) {
-      if (searchMatches.length > 0) {
-        setCurrentSearchIndex(0);
-      } else {
-        setCurrentSearchIndex(-1);
-        setHighlightedItemId(null);
-      }
-    } else {
-      setCurrentSearchIndex(-1);
-      setHighlightedItemId(null);
-    }
-  }, [
-    searchKeyword,
-    searchMatches,
-    setCurrentSearchIndex,
-    setHighlightedItemId,
-  ]);
-
-  useEffect(() => {
-    setCurrentSearchIndex(-1);
-    setHighlightedItemId(null);
-  }, [activeTab, setCurrentSearchIndex, setHighlightedItemId]);
-
   const duplicateCircleItemIds = useMemo(
     () =>
       selectDuplicateCircleItemIds({
@@ -1676,6 +1662,27 @@ const App: React.FC = () => {
     ],
   );
 
+  const searchContextKey = JSON.stringify([
+    activeEventName,
+    activeTab,
+    activeEventDate,
+    searchKeyword,
+    currentMode,
+    sortState,
+    candidateNumberSortDirection,
+    [...selectedBlockFilters].sort(),
+    visibleSearchMatches,
+  ]);
+  const {
+    searchScrollRequest,
+    request: requestSearchScroll,
+    consume: consumeSearchScrollRequest,
+    clear: clearSearchScrollRequest,
+  } = useSearchScrollRequest(searchContextKey);
+  useEffect(() => {
+    setCurrentSearchIndex(-1);
+    setHighlightedItemId(null);
+  }, [searchContextKey, setCurrentSearchIndex, setHighlightedItemId]);
   const handleSearchNext = useCallback(() => {
     if (!searchKeyword.trim() || visibleSearchMatches.length === 0) {
       if (searchMatches.length > 0 && visibleSearchMatches.length === 0) {
@@ -1691,12 +1698,7 @@ const App: React.FC = () => {
     const nextItemId = visibleSearchMatches[nextIndex];
     setHighlightedItemId(nextItemId);
 
-    setTimeout(() => {
-      const element = document.querySelector(`[data-item-id="${nextItemId}"]`);
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }, 100);
+    requestSearchScroll(nextItemId);
   }, [
     searchKeyword,
     visibleSearchMatches,
@@ -1704,6 +1706,7 @@ const App: React.FC = () => {
     setCurrentSearchIndex,
     setHighlightedItemId,
     searchMatches.length,
+    requestSearchScroll,
   ]);
 
   const {
@@ -1761,6 +1764,18 @@ const App: React.FC = () => {
   }
 
   const mainContentVisible = eventDates.includes(activeTab);
+  const duplicateDays = activeEventName
+    ? duplicateEventDays(application.raw, activeEventName)
+    : [];
+  const selectedMap =
+    activeEventName && activeEventDate
+      ? resolveDayMap(
+          mapData[activeEventName],
+          activeEventDate,
+          getDayConsistency(eventConsistency[activeEventName], activeEventDate)
+            ?.selectedMapKey,
+        )
+      : null;
 
   const handleZoomChange = (newZoom: number) => {
     setZoomLevel(Math.max(15, Math.min(150, newZoom)));
@@ -1768,6 +1783,215 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-200 font-sans">
+      {application.confirmations.slice(0, 1).map(({ token, confirmation }) => (
+        <div
+          key={token.operationId}
+          className="fixed inset-0 z-[21000] bg-black/50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={confirmation.title}
+          aria-busy={application.isConfirmationBusy}
+        >
+          <section className="bg-white dark:bg-slate-800 rounded p-5 max-w-3xl w-full max-h-[85vh] overflow-auto">
+            <h2 className="text-lg font-bold">{confirmation.title}</h2>
+            {confirmation.choices?.map((choice) => (
+              <label key={choice.id} className="block my-3 text-sm">
+                <span className="block font-medium mb-1">{choice.label}</span>
+                <select
+                  className="w-full rounded border p-2 bg-white text-slate-900 dark:bg-slate-700 dark:text-slate-100"
+                  value={choice.value}
+                  disabled={application.isConfirmationBusy}
+                  onChange={(event) =>
+                    application.choose(token, choice.id, event.target.value)
+                  }
+                >
+                  {choice.options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+            {confirmation.details.map((detail, index) => (
+              <pre
+                key={index}
+                className="whitespace-pre-wrap break-all text-sm my-3"
+              >
+                {detail}
+              </pre>
+            ))}
+            <div className="flex gap-3">
+              <button
+                disabled={application.isConfirmationBusy}
+                onClick={() => application.cancel(token)}
+              >
+                取消
+              </button>
+              <button
+                className="bg-blue-600 text-white rounded px-4 py-2"
+                disabled={application.isConfirmationBusy}
+                onClick={() => application.confirm(token)}
+              >
+                確認して保存
+              </button>
+            </div>
+          </section>
+        </div>
+      ))}
+      {migrationNotices.length > 0 && (
+        <section role="status" className="bg-amber-50 text-amber-950 p-3">
+          <h2 className="font-bold">保存データの移行内容</h2>
+          <ul>
+            {migrationNotices.map((notice, index) => (
+              <li key={index}>{notice}</li>
+            ))}
+          </ul>
+          <button onClick={dismissMigrationNotices}>確認しました</button>
+        </section>
+      )}
+      {application.retryableFailures.length > 0 && (
+        <div
+          role="alert"
+          className="fixed bottom-4 left-4 right-4 z-[22000] bg-amber-100 text-amber-950 p-3 rounded shadow-lg"
+        >
+          保存に失敗しました。{application.retryableFailures.length}
+          件の操作を未保存のまま保留しています。
+          <button
+            ref={conflictRetryButtonRef}
+            onClick={application.retryPending}
+            className="ml-4 underline"
+          >
+            保留中の保存を再試行
+          </button>
+          <button onClick={handleBackupExport} className="ml-4 underline">
+            JSONバックアップを保存
+          </button>
+          <button
+            onClick={application.discardPending}
+            className="ml-4 underline"
+          >
+            保留中の操作を取り消す
+          </button>
+        </div>
+      )}
+      {application.failure && (
+        <div role="alert" className="bg-red-100 text-red-900 p-3">
+          {application.failure}
+          {application.requiresReload ? (
+            <button onClick={() => window.location.reload()} className="ml-4">
+              再読み込み
+            </button>
+          ) : (
+            <button onClick={application.clearFailure} className="ml-4">
+              閉じる
+            </button>
+          )}
+        </div>
+      )}
+      {activeEventName && (
+        <LegacyConsistencyReview
+          snapshot={application.raw}
+          eventName={activeEventName}
+          resolve={(identity, choice) =>
+            application.request({
+              events: [activeEventName],
+              plan: (snapshot) =>
+                planLegacyResolution(
+                  snapshot,
+                  activeEventName,
+                  identity,
+                  choice,
+                ),
+            })
+          }
+        />
+      )}
+      {activeEventName &&
+        duplicateDays.map((day) => (
+          <div key={day} className="bg-amber-100 text-amber-950 p-3">
+            {day} に複数の保存先があります。
+            <button
+              className="underline ml-3"
+              onClick={() => {
+                void application
+                  .request({
+                    events: [activeEventName],
+                    plan: (snapshot, choices) =>
+                      planDayMerge(
+                        snapshot,
+                        activeEventName,
+                        day,
+                        undefined,
+                        choices,
+                      ),
+                  })
+                  .catch(() => {});
+              }}
+            >
+              統合内容を確認
+            </button>
+          </div>
+        ))}
+      {activeEventName &&
+        selectedMap &&
+        (selectedMap.status === "selection-required" ||
+          selectedMap.candidates.length > 1) && (
+          <label className="block p-3 bg-amber-50 dark:bg-slate-800">
+            利用するマップ
+            <select
+              aria-label="利用するマップ"
+              className="ml-3 border rounded p-2 dark:bg-slate-700"
+              value={selectedMap.status === "resolved" ? selectedMap.key : ""}
+              onChange={(event) => {
+                const key = event.target.value;
+                if (!key) return;
+                requestVisitListTabChange(activeTab, () => {
+                  void application
+                    .request({
+                      events: [activeEventName],
+                      plan: (snapshot) => {
+                        const day = ensureDayConsistency(
+                          snapshot.eventConsistency[activeEventName],
+                          activeEventDate,
+                          [
+                            snapshot.executeModeItems[activeEventName],
+                            snapshot.dayModes[activeEventName],
+                          ],
+                        );
+                        const found = resolveDayMap(
+                          snapshot.mapData[
+                            activeEventName
+                          ] as MapDataStore[string],
+                          activeEventDate,
+                          key,
+                        );
+                        if (found.status !== "resolved")
+                          throw new Error("選択したマップが見つかりません。");
+                        day.selectedMapKey = key;
+                        return { snapshot };
+                      },
+                    })
+                    .catch(() => {});
+                });
+              }}
+            >
+              <option value="">選択が必要です</option>
+              {selectedMap.candidates.map((key) => (
+                <option key={key} value={key}>
+                  {key}
+                </option>
+              ))}
+            </select>
+            {selectedMap.status === "selection-required" &&
+              selectedMap.invalidSelection && (
+                <span className="ml-2">
+                  保存済みの選択先が失効しています:{" "}
+                  {selectedMap.invalidSelection}
+                </span>
+              )}
+          </label>
+        )}
       <AppHeaderShell
         model={{
           navigation: {
@@ -1843,7 +2067,7 @@ const App: React.FC = () => {
           navigation: {
             getMapTabForDate,
             handleSetViewMode,
-            onShowEventList: navigationCommands.showEventList,
+            onShowEventList: handleShowEventList,
             onShowImport: navigationCommands.showImport,
             onToggleEventSurface: navigationCommands.toggleEventSurface,
           },
@@ -2026,9 +2250,12 @@ const App: React.FC = () => {
             getHallOrderForDate,
             getHallsForDate,
             getMapDataForDate,
+            getMapTabForDate,
             hallDefinitions,
             hallRouteSettings,
             highlightedItemId,
+            searchScrollRequest,
+            onSearchScrollRequestConsumed: consumeSearchScrollRequest,
             highlightedMapCell,
             mapData,
             mapIsHallOrderOpen,
@@ -2160,6 +2387,7 @@ const App: React.FC = () => {
             vertexGuideOptions,
           },
           visitList: {
+            visitListHistoryVersion,
             layoutMode,
             visitListHallOrder,
             visitListItems,
@@ -2193,13 +2421,61 @@ const App: React.FC = () => {
             handleConfirmDelete,
             handleConfirmUpdate,
             handleUpdateHallOrderForPriorityChangeFromEdit,
+            saveItemEdit: async (baseline, edited, selection) => {
+              if (!activeEventName) return;
+              await application.request({
+                events: [activeEventName],
+                retainOnConflict:
+                  selection.kind === "unchanged" &&
+                  (baseline.priorityLevel ?? "none") ===
+                    (edited.priorityLevel ?? "none") &&
+                  (
+                    [
+                      "eventDate",
+                      "block",
+                      "number",
+                      "circle",
+                      "manualHallId",
+                    ] as const
+                  ).every(
+                    (field) =>
+                      (baseline[field] ?? "") === (edited[field] ?? ""),
+                  ),
+                plan: (snapshot, choices) =>
+                  planItemEdit(
+                    snapshot,
+                    activeEventName,
+                    baseline,
+                    edited,
+                    selection,
+                    choices,
+                  ),
+              });
+            },
+            previewItemEdit: (baseline, edited, selection) =>
+              activeEventName
+                ? previewItemEdit(
+                    application.raw,
+                    activeEventName,
+                    baseline,
+                    edited,
+                    selection,
+                  )
+                : {
+                    mapSelectionRequired: true,
+                    status: "イベントが未選択です",
+                    locationStatus: "確認できません",
+                    halls: [],
+                    details: [],
+                  },
             handleUpdateItem,
           },
           event: {
             handleConfirmExport,
+            previewEventExport,
             handleConfirmRename,
             handleUrlUpdate,
-            onShowEventList: navigationCommands.showEventList,
+            onShowEventList: handleShowEventList,
           },
           mapEditor: {
             handleCancelCellSelection,
@@ -2284,6 +2560,11 @@ const App: React.FC = () => {
           pendingBackup ? Object.keys(pendingBackup.data.eventLists).sort() : []
         }
         currentEventNames={Object.keys(eventLists)}
+        notices={
+          pendingBackup?.notices?.map(
+            (change) => `${change.path}: ${change.message}`,
+          ) ?? []
+        }
         onClose={overlayCommands.backup.close}
         onRestore={handleBackupRestore}
       />
@@ -2304,7 +2585,13 @@ const App: React.FC = () => {
         />
       )}
       <PersistenceStatusIndicator
-        status={persistenceStatus}
+        status={
+          application.retryableFailures.length
+            ? "unsaved"
+            : application.pendingCount
+              ? "saving"
+              : persistenceStatus
+        }
         legacyCleanupStatus={legacyCleanupStatus}
         showRoutineStatus={uiVisibilitySettings.showPersistenceStatus}
         failedStores={failedStores}

@@ -92,7 +92,7 @@ describe("map routing signatures", () => {
     );
   });
 
-  it("does not change visit lookup signature when only non-selected duplicate numberCells change", () => {
+  it("changes visit lookup signature when any conflicting number cell changes", () => {
     const a = makeMap();
     const b = makeMap({
       blocks: [
@@ -107,7 +107,7 @@ describe("map routing signatures", () => {
       ],
     });
 
-    expect(buildDayMapVisitLookupSignature(a)).toBe(
+    expect(buildDayMapVisitLookupSignature(a)).not.toBe(
       buildDayMapVisitLookupSignature(b),
     );
   });

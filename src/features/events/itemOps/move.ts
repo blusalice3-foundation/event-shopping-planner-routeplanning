@@ -3,12 +3,21 @@ import type {
   ShoppingItem,
   ViewMode,
 } from "../../../types/item";
-import { getSpaceKey } from "../../../utils/spaceGrouping";
-import { expandSameSpacePriorityItemIds } from "./executeList";
+import {
+  buildExecutionVisitProjectionKey,
+  normalizeExecutionVisitDay,
+  projectItemsToExecutionVisits,
+} from "../../../utils/visitProjection";
+import {
+  expandSameSpacePriorityItemIds,
+  type ExecuteInsertPlacement,
+} from "./executeList";
 
 export interface MoveItemResult {
   eventListItems?: ShoppingItem[];
   executeModeItems?: ExecuteModeItems;
+  placement?: ExecuteInsertPlacement;
+  mergedIntoVisitItemIds?: string[];
 }
 
 /**
@@ -47,6 +56,7 @@ export function computeMoveItem(params: {
   const isDragInEffectiveSelection = effectiveSelectedIds.has(dragId);
   const isAppendToEnd = hoverId === "__END_OF_LIST__";
   const executeIdsSet = new Set(executeModeItems[dayName] || []);
+  const normalizedDayName = normalizeExecutionVisitDay(dayName);
 
   // ---- editモード列間移動 ----
   if (
@@ -58,7 +68,8 @@ export function computeMoveItem(params: {
     if (sourceColumn === "candidate" && targetColumn === "execute") {
       // candidate → execute
       const currentTabItems = allItems.filter(
-        (item) => item.eventDate === dayName,
+        (item) =>
+          normalizeExecutionVisitDay(item.eventDate) === normalizedDayName,
       );
       let candidateItems = currentTabItems.filter(
         (item) => !executeIdsSet.has(item.id),
@@ -96,40 +107,81 @@ export function computeMoveItem(params: {
 
       if (itemsToMove.length === 0) return {};
 
-      const itemIdsToMove = itemsToMove.map((item) => item.id);
       const dayItems = [...(executeModeItems[dayName] || [])];
+      const itemsMap = new Map(allItems.map((item) => [item.id, item]));
+      const positionedItemIds: string[] = [];
+      const mergedIntoVisitItemIds: string[] = [];
 
-      if (isAppendToEnd) {
-        return {
-          executeModeItems: {
-            ...executeModeItems,
-            [dayName]: [...dayItems, ...itemIdsToMove],
-          },
-        };
-      } else {
-        const hoverIndex = dayItems.findIndex((id) => id === hoverId);
-        if (hoverIndex === -1) {
-          return {
-            executeModeItems: {
-              ...executeModeItems,
-              [dayName]: [...dayItems, ...itemIdsToMove],
-            },
-          };
+      projectItemsToExecutionVisits(itemsToMove).forEach((visit) => {
+        let firstExistingItemId: string | null = null;
+        let lastExistingIndex = -1;
+        for (let index = 0; index < dayItems.length; index++) {
+          const existingItem = itemsMap.get(dayItems[index]);
+          if (
+            !existingItem ||
+            buildExecutionVisitProjectionKey(existingItem) !== visit.key
+          ) {
+            continue;
+          }
+          firstExistingItemId ??= existingItem.id;
+          lastExistingIndex = index;
         }
-        dayItems.splice(hoverIndex, 0, ...itemIdsToMove);
-        return {
-          executeModeItems: { ...executeModeItems, [dayName]: dayItems },
-        };
+
+        if (lastExistingIndex >= 0 && firstExistingItemId) {
+          dayItems.splice(lastExistingIndex + 1, 0, ...visit.itemIds);
+          mergedIntoVisitItemIds.push(firstExistingItemId);
+          return;
+        }
+        positionedItemIds.push(...visit.itemIds);
+      });
+
+      if (positionedItemIds.length > 0) {
+        const hoverItem = itemsMap.get(hoverId);
+        const hoverVisitKey = hoverItem
+          ? buildExecutionVisitProjectionKey(hoverItem)
+          : null;
+        const hoverIndex = isAppendToEnd
+          ? -1
+          : hoverVisitKey
+            ? dayItems.findIndex((id) => {
+                const item = itemsMap.get(id);
+                return (
+                  item !== undefined &&
+                  buildExecutionVisitProjectionKey(item) === hoverVisitKey
+                );
+              })
+            : dayItems.findIndex((id) => id === hoverId);
+        if (hoverIndex < 0) {
+          dayItems.push(...positionedItemIds);
+        } else {
+          dayItems.splice(hoverIndex, 0, ...positionedItemIds);
+        }
       }
+
+      const placement: ExecuteInsertPlacement =
+        mergedIntoVisitItemIds.length === 0
+          ? "positioned"
+          : positionedItemIds.length === 0
+            ? "merged-into-existing-visit"
+            : "mixed";
+      return {
+        executeModeItems: { ...executeModeItems, [dayName]: dayItems },
+        placement,
+        ...(mergedIntoVisitItemIds.length > 0
+          ? { mergedIntoVisitItemIds }
+          : {}),
+      };
     } else if (sourceColumn === "execute" && targetColumn === "candidate") {
       // execute → candidate
       const executeItems = allItems.filter(
         (item) =>
-          item.eventDate.includes(dayName) && executeIdsSet.has(item.id),
+          normalizeExecutionVisitDay(item.eventDate) === normalizedDayName &&
+          executeIdsSet.has(item.id),
       );
       const candidateItems = allItems.filter(
         (item) =>
-          item.eventDate.includes(dayName) && !executeIdsSet.has(item.id),
+          normalizeExecutionVisitDay(item.eventDate) === normalizedDayName &&
+          !executeIdsSet.has(item.id),
       );
 
       let itemsToMove: ShoppingItem[] = [];
@@ -190,7 +242,8 @@ export function computeMoveItem(params: {
       const candShift = [...newCandidateList];
 
       const newItems = allItems.map((item) => {
-        if (!item.eventDate.includes(dayName)) return item;
+        if (normalizeExecutionVisitDay(item.eventDate) !== normalizedDayName)
+          return item;
         if (executeIdsSet.has(item.id) && !itemIdsToMove.includes(item.id)) {
           return execShift.shift() || item;
         } else if (
@@ -235,9 +288,7 @@ export function computeMoveItem(params: {
     // 同一スペース+同一優先度キー取得ヘルパー
     const getIdSpacePriorityKey = (id: string): string => {
       const item = allItems.find((i) => i.id === id);
-      return item
-        ? `${getSpaceKey(item.block, item.number)}::${item.priorityLevel || "none"}`
-        : "";
+      return item ? buildExecutionVisitProjectionKey(item) : `unknown:${id}`;
     };
 
     // 選択を同一スペース+同一優先度グループ全体に展開
@@ -265,19 +316,12 @@ export function computeMoveItem(params: {
       };
     }
 
-    // 挿入先をスペースグループ境界にスナップ
-    let targetIndex = listWithoutSelection.findIndex((id) => id === hoverId);
-    if (targetIndex === -1) return {};
-
-    // hoverIdの同一スペース+同一優先度グループの先頭にスナップ（途中に割り込まない）
+    // hoverIdのExecution訪問のglobal先頭へスナップ（非連続memberにも割り込まない）
     const hoverGroupKey = getIdSpacePriorityKey(hoverId);
-    while (
-      targetIndex > 0 &&
-      getIdSpacePriorityKey(listWithoutSelection[targetIndex - 1]) ===
-        hoverGroupKey
-    ) {
-      targetIndex--;
-    }
+    const targetIndex = listWithoutSelection.findIndex(
+      (id) => getIdSpacePriorityKey(id) === hoverGroupKey,
+    );
+    if (targetIndex === -1) return {};
 
     listWithoutSelection.splice(targetIndex, 0, ...selectedBlock);
 
@@ -292,19 +336,23 @@ export function computeMoveItem(params: {
   // ---- editモード同列リオーダー: candidate列内 ----
   if (mode === "edit" && targetColumn === "candidate") {
     const candidateItems = allItems.filter(
-      (item) => item.eventDate.includes(dayName) && !executeIdsSet.has(item.id),
+      (item) =>
+        normalizeExecutionVisitDay(item.eventDate) === normalizedDayName &&
+        !executeIdsSet.has(item.id),
     );
 
     const rebuildItems = (newCandidateList: ShoppingItem[]): ShoppingItem[] => {
       const executeItems = allItems.filter(
         (item) =>
-          item.eventDate.includes(dayName) && executeIdsSet.has(item.id),
+          normalizeExecutionVisitDay(item.eventDate) === normalizedDayName &&
+          executeIdsSet.has(item.id),
       );
       const execShift = [...executeItems];
       const candShift = [...newCandidateList];
 
       return allItems.map((item) => {
-        if (!item.eventDate.includes(dayName)) return item;
+        if (normalizeExecutionVisitDay(item.eventDate) !== normalizedDayName)
+          return item;
         if (executeIdsSet.has(item.id)) {
           return execShift.shift() || item;
         } else {

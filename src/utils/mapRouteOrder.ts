@@ -5,6 +5,7 @@ import {
   sortItemsByGroupOrderWithResolver,
   sortItemsByHallOrder,
 } from "./hallGrouping";
+import { projectItemsToExecutionVisits } from "./visitProjection";
 
 export const normalizeMapRouteDayText = (
   value: string | null | undefined,
@@ -27,6 +28,30 @@ export function buildMapRouteExecuteItemIds(params: {
   dayName: string;
   selectedHallId?: string;
 }): string[] {
+  return buildMapRouteExecuteVisits(params).map((visit) => visit.items[0].id);
+}
+
+export function buildMapRouteVisitItemIds(params: {
+  executeModeItemIds: string[];
+  items: ShoppingItem[];
+  mapData: DayMapData | null;
+  hallDefinitions: HallDefinition[];
+  hallOrder: string[];
+  dayName: string;
+  selectedHallId?: string;
+}): string[] {
+  return buildMapRouteExecuteVisits(params).flatMap((visit) => visit.itemIds);
+}
+
+function buildMapRouteExecuteVisits(params: {
+  executeModeItemIds: string[];
+  items: ShoppingItem[];
+  mapData: DayMapData | null;
+  hallDefinitions: HallDefinition[];
+  hallOrder: string[];
+  dayName: string;
+  selectedHallId?: string;
+}) {
   const normalizedDayName = normalizeMapRouteDayText(params.dayName);
   const itemsById = new Map(params.items.map((item) => [item.id, item]));
 
@@ -54,7 +79,7 @@ export function buildMapRouteExecuteItemIds(params: {
           params.hallOrder,
         );
 
-  return sortedItems.map((item) => item.id);
+  return projectItemsToExecutionVisits(sortedItems);
 }
 
 export function sortItemsByMapRouteGroupOrder(

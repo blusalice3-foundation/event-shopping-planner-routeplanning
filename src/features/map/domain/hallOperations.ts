@@ -1,3 +1,4 @@
+import { isCompleteHallOrder } from "../../consistency/domain/projection";
 import type {
   DayMapData,
   HallDefinition,
@@ -7,10 +8,8 @@ import type {
 } from "../../../types/map";
 import type { ShoppingItem } from "../../../types/item";
 import { getMaplessKey } from "../../../types/map";
-import {
-  resolveHallByBlockName,
-  resolveManualHallId,
-} from "../../../utils/hallFallback";
+import { getHallIdForItem, parseGroupId } from "../../../utils/hallGrouping";
+import { coalesceExecutionVisitItemIdsForExplicitReorder } from "../../../utils/visitProjection";
 
 type PriorityLevel = "none" | "priority" | "highest";
 
@@ -19,11 +18,8 @@ export const emptyHallRouteSettings = (): HallRouteSettings => ({
   hallVisitLists: [],
 });
 
-export const extractHallIdFromGroupId = (groupId: string): string => {
-  if (groupId.endsWith(":highest")) return groupId.replace(":highest", "");
-  if (groupId.endsWith(":priority")) return groupId.replace(":priority", "");
-  return groupId;
-};
+export const extractHallIdFromGroupId = (groupId: string): string =>
+  parseGroupId(groupId).hallId ?? "undefined";
 
 export const buildHallGroupId = (
   hallId: string | null,
@@ -64,6 +60,19 @@ export const mergeHallOrder = (
     (id) => !existingOrder.some((existingId) => existingId === id),
   ),
 ];
+
+// Projected settings contain the complete mixed order. Definition edits only
+// append new groups; canonical reference reconciliation removes deleted halls.
+const mergeHallOrderForDefinitions = (
+  settings: HallRouteSettings,
+  hallIds: string[],
+): string[] =>
+  isCompleteHallOrder(settings)
+    ? [
+        ...settings.hallOrder,
+        ...hallIds.filter((id) => !settings.hallOrder.includes(id)),
+      ]
+    : mergeHallOrder(settings.hallOrder, hallIds);
 
 export const updateHallDefinitionsForHalls = ({
   previous,
@@ -119,7 +128,12 @@ export const updateHallRouteSettingsForHalls = ({
       ...previousEvent,
       [mapTabName]: {
         ...previousMapTab,
-        hallOrder: mergeHallOrder(previousMapTab.hallOrder, polygonIds),
+        hallOrder: mergeHallOrderForDefinitions(
+          previousMapTab,
+          isCompleteHallOrder(previousMapTab) && maplessKey
+            ? [...polygonIds, ...maplessIds]
+            : polygonIds,
+        ),
       },
     },
   };
@@ -129,7 +143,7 @@ export const updateHallRouteSettingsForHalls = ({
       previousEvent[maplessKey] || emptyHallRouteSettings();
     updated[eventName][maplessKey] = {
       ...previousMapless,
-      hallOrder: mergeHallOrder(previousMapless.hallOrder, maplessIds),
+      hallOrder: mergeHallOrderForDefinitions(previousMapless, maplessIds),
     };
   }
 
@@ -176,7 +190,7 @@ export const updateMaplessHallRouteSettings = ({
       ...previousEvent,
       [maplessKey]: {
         ...previousSettings,
-        hallOrder: mergeHallOrder(previousSettings.hallOrder, hallIds),
+        hallOrder: mergeHallOrderForDefinitions(previousSettings, hallIds),
       },
     },
   };
@@ -290,27 +304,8 @@ export const getGlobalHallItemCount = ({
 }): number => {
   if (executeIds.length === 0) return 0;
 
-  let targetHallId: string | null;
-  let targetPriority: PriorityLevel;
-  if (groupId === "undefined" || groupId === "undefined:none") {
-    targetHallId = null;
-    targetPriority = "none";
-  } else if (groupId === "undefined:highest") {
-    targetHallId = null;
-    targetPriority = "highest";
-  } else if (groupId === "undefined:priority") {
-    targetHallId = null;
-    targetPriority = "priority";
-  } else if (groupId.endsWith(":highest")) {
-    targetHallId = groupId.replace(":highest", "");
-    targetPriority = "highest";
-  } else if (groupId.endsWith(":priority")) {
-    targetHallId = groupId.replace(":priority", "");
-    targetPriority = "priority";
-  } else {
-    targetHallId = groupId;
-    targetPriority = "none";
-  }
+  const { hallId: targetHallId, priority: targetPriority } =
+    parseGroupId(groupId);
 
   const itemsById = new Map<string, ShoppingItem>();
   items.forEach((item) => {
@@ -325,78 +320,21 @@ export const getGlobalHallItemCount = ({
   }).length;
 };
 
-const isPointInPolygon = (
-  row: number,
-  col: number,
-  vertices: { row: number; col: number }[],
-): boolean => {
-  if (vertices.length < 3) return false;
-  let inside = false;
-  for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
-    const xi = vertices[i].col;
-    const yi = vertices[i].row;
-    const xj = vertices[j].col;
-    const yj = vertices[j].row;
-    if (
-      yi > row !== yj > row &&
-      col < ((xj - xi) * (row - yi)) / (yj - yi) + xi
-    ) {
-      inside = !inside;
-    }
-  }
-  return inside;
-};
-
 export const resolveItemHallGroupId = ({
   item,
   halls,
   mapData,
+  allItems,
 }: {
   item: ShoppingItem | undefined;
   halls: HallDefinition[];
   mapData: DayMapData | undefined;
+  allItems?: ShoppingItem[];
 }): string => {
   if (!item) return "undefined";
-
-  let hallId: string | null = null;
-  const manual = resolveManualHallId(item.manualHallId, halls);
-  if (manual) {
-    hallId = manual;
-  } else if (mapData) {
-    const blockName = item.block?.trim() || "";
-    let block = mapData.blocks.find(
-      (candidate) => candidate.name === blockName,
-    );
-    if (!block) {
-      const candidates = mapData.blocks.filter(
-        (candidate) => candidate.name.toLowerCase() === blockName.toLowerCase(),
-      );
-      if (candidates.length === 1) {
-        block = candidates[0];
-      }
-    }
-    if (block) {
-      const centerRow = (block.startRow + block.endRow) / 2;
-      const centerCol = (block.startCol + block.endCol) / 2;
-      for (const hall of halls) {
-        if (
-          hall.vertices.length >= 4 &&
-          isPointInPolygon(centerRow, centerCol, hall.vertices)
-        ) {
-          hallId = hall.id;
-          break;
-        }
-      }
-    }
-  }
-
-  if (hallId === null) {
-    hallId = resolveHallByBlockName(item.block, halls);
-  }
-
   return buildHallGroupId(
-    hallId,
-    (item.priorityLevel || "none") as PriorityLevel,
+    getHallIdForItem(item, mapData ?? null, halls, allItems),
+    item.priorityLevel ?? "none",
   );
 };
 
@@ -406,7 +344,6 @@ export const reorderExecuteIdsByHallOrder = ({
   items,
   halls,
   mapData,
-  hallRouteSettings,
 }: {
   hallOrder: string[];
   dayItems: string[];
@@ -421,6 +358,7 @@ export const reorderExecuteIdsByHallOrder = ({
   dayItems.forEach((itemId) => {
     const groupId = resolveItemHallGroupId({
       item: itemsMap.get(itemId),
+      allItems: items,
       halls,
       mapData,
     });
@@ -430,22 +368,8 @@ export const reorderExecuteIdsByHallOrder = ({
     itemsByGroup.get(groupId)!.add(itemId);
   });
 
-  const visitOrderMap = new Map<string, number>();
-  hallRouteSettings.hallVisitLists.forEach((list) => {
-    list.itemIds.forEach((itemId, index) => {
-      visitOrderMap.set(itemId, index);
-    });
-  });
-
   const sortItemsInGroup = (itemIds: Set<string>): string[] =>
-    Array.from(itemIds).sort((a, b) => {
-      const orderA = visitOrderMap.get(a);
-      const orderB = visitOrderMap.get(b);
-      if (orderA !== undefined && orderB !== undefined) return orderA - orderB;
-      if (orderA !== undefined) return -1;
-      if (orderB !== undefined) return 1;
-      return dayItems.indexOf(a) - dayItems.indexOf(b);
-    });
+    Array.from(itemIds);
 
   const reorderedItems: string[] = [];
   hallOrder.forEach((groupId) => {
@@ -462,14 +386,17 @@ export const reorderExecuteIdsByHallOrder = ({
     }
   });
 
-  return reorderedItems;
+  // This command already performs an explicit persisted reorder. Keep every
+  // visit adjacent in that result so per-item legacy visit-list positions
+  // cannot split one logical visit again.
+  return coalesceExecutionVisitItemIdsForExplicitReorder(reorderedItems, items);
 };
 
 export const getCombinedHallRouteSettingsForDate = ({
+  hallRouteSettings,
   eventName,
   dayName,
   mapTabName,
-  hallRouteSettings,
 }: {
   eventName: string;
   dayName: string;
@@ -481,6 +408,9 @@ export const getCombinedHallRouteSettingsForDate = ({
     ? hallRouteSettings[eventName]?.[mapTabName]
     : undefined;
   const maplessSettings = hallRouteSettings[eventName]?.[maplessKey];
+  if (isCompleteHallOrder(mapSettings)) return mapSettings!;
+  if (!mapTabName && isCompleteHallOrder(maplessSettings))
+    return maplessSettings!;
 
   return {
     hallOrder: [

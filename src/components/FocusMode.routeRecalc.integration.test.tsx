@@ -69,7 +69,6 @@ const makeMap = (overrides: Partial<DayMapData> = {}): DayMapData => ({
         { row: 1, col: 1, value: 1 },
         { row: 2, col: 2, value: 2 },
         { row: 3, col: 3, value: 3 },
-        { row: 9, col: 9, value: 2 },
       ],
     },
     {
@@ -127,6 +126,142 @@ const renderFocusMode = (params: {
 describe("FocusMode route recalculation cache", () => {
   beforeEach(() => {
     mockedGenerateRouteSegmentsStrict.mockClear();
+  });
+
+  it("uses one normal route stop for non-contiguous members and a distinct phase revisit", () => {
+    renderFocusMode({
+      items: [
+        makeItem({
+          id: "a1",
+          number: "01a",
+          purchaseStatus: "Postpone",
+        }),
+        makeItem({ id: "b", number: "02a" }),
+        makeItem({ id: "a2", number: "01a2" }),
+      ],
+      executeModeItemIds: ["a1", "b", "a2"],
+    });
+
+    const visitPoints =
+      mockedGenerateRouteSegmentsStrict.mock.calls.at(-1)?.[1];
+    expect(visitPoints).toHaveLength(3);
+    expect(visitPoints?.map((point) => point.itemId)).toEqual([
+      expect.stringContaining("normal"),
+      expect.stringContaining("normal"),
+      expect.stringContaining("postponed"),
+    ]);
+    expect(new Set(visitPoints?.map((point) => point.itemId)).size).toBe(3);
+  });
+
+  it("uses the existing route cell inside a block regardless of duplicate-number order", () => {
+    const map = makeMap();
+    map.blocks[0].numberCells.unshift(
+      { row: 9, col: 1, value: 2 },
+      { row: 2, col: 3, value: 2 },
+    );
+    const { rerender } = renderFocusMode({ map });
+    expect(
+      mockedGenerateRouteSegmentsStrict.mock.calls.at(-1)?.[1],
+    ).toMatchObject([
+      { row: 1, col: 1 },
+      { row: 2, col: 2 },
+    ]);
+    const reversed = structuredClone(map);
+    reversed.blocks[0].numberCells.reverse();
+    rerender(
+      <FocusMode
+        {...minimalProps({
+          items: [
+            makeItem({ id: "item-1", number: "01a" }),
+            makeItem({ id: "item-2", number: "02a" }),
+          ],
+          executeModeItemIds: ["item-1", "item-2"],
+        })}
+        mapData={{ Day1マップ: reversed }}
+        hallDefinitions={halls}
+        hallOrder={["hall-1"]}
+      />,
+    );
+    expect(
+      mockedGenerateRouteSegmentsStrict.mock.calls.at(-1)?.[1],
+    ).toMatchObject([
+      { row: 1, col: 1 },
+      { row: 2, col: 2 },
+    ]);
+  });
+  it("omits distinct locations across duplicate blocks and restores the route when the duplicate block is removed", () => {
+    const map = makeMap();
+    map.blocks.push({
+      ...map.blocks[0],
+      name: "Ａ",
+      numberCells: [{ row: 9, col: 9, value: 2 }],
+    });
+    const third = makeItem({ id: "item-3", number: "03a" });
+    const items = [
+      makeItem({ id: "item-1" }),
+      makeItem({ id: "item-2", number: "02a" }),
+      third,
+    ];
+    const { rerender } = renderFocusMode({ map, items });
+    expect(
+      mockedGenerateRouteSegmentsStrict.mock.calls.at(-1)?.[1],
+    ).toHaveLength(2);
+    rerender(
+      <FocusMode
+        {...minimalProps({
+          items,
+          executeModeItemIds: items.map((item) => item.id),
+        })}
+        mapData={{ Day1マップ: makeMap() }}
+        hallDefinitions={halls}
+        hallOrder={["hall-1"]}
+      />,
+    );
+    expect(
+      mockedGenerateRouteSegmentsStrict.mock.calls.at(-1)?.[1],
+    ).toHaveLength(3);
+  });
+
+  it("resolves the canonical map key for padded raw event dates", () => {
+    renderFocusMode({
+      items: [
+        makeItem({ id: "padded-1", eventDate: "Day1\u3000", number: "01a" }),
+        makeItem({ id: "padded-2", eventDate: "Day1\u3000", number: "02a" }),
+      ],
+      executeModeItemIds: ["padded-1", "padded-2"],
+    });
+
+    expect(mockedGenerateRouteSegmentsStrict).toHaveBeenCalled();
+    expect(
+      mockedGenerateRouteSegmentsStrict.mock.calls.at(-1)?.[1],
+    ).toHaveLength(2);
+  });
+
+  it("does not regenerate route segments when a member joins an existing visit", () => {
+    const a1 = makeItem({ id: "a1", number: "01a" });
+    const b = makeItem({ id: "b", number: "02a" });
+    const a2 = makeItem({ id: "a2", number: "01a2" });
+    const { rerender } = renderFocusMode({
+      items: [a1, b],
+      executeModeItemIds: ["a1", "b"],
+    });
+    const callsBefore = mockedGenerateRouteSegmentsStrict.mock.calls.length;
+
+    rerender(
+      <FocusMode
+        {...minimalProps({
+          items: [a1, b, a2],
+          executeModeItemIds: ["a1", "b", "a2"],
+        })}
+        mapData={{ Day1マップ: makeMap() }}
+        hallDefinitions={halls}
+        hallOrder={["hall-1"]}
+      />,
+    );
+
+    expect(mockedGenerateRouteSegmentsStrict.mock.calls.length).toBe(
+      callsBefore,
+    );
   });
 
   it.each([

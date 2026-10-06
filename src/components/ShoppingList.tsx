@@ -20,7 +20,6 @@ import {
   buildGroupId,
   getHallIdForItem,
   groupItemsByHallOrder,
-  sortItemsByHallOrder,
 } from "../utils/hallGrouping";
 import ShoppingItemCard from "./ShoppingItemCard";
 import LimitedPurchaseDialog from "./LimitedPurchaseDialog";
@@ -30,6 +29,7 @@ import type {
   LimitedBulkNotificationOwner,
   LimitedPurchaseDialogResult,
 } from "../types/limitedPurchase";
+import type { FocusModeAddItemReturn } from "../types/focus";
 import GripVerticalIcon from "./icons/GripVerticalIcon";
 import ChevronUpIcon from "./icons/ChevronUpIcon";
 import ChevronDownIcon from "./icons/ChevronDownIcon";
@@ -150,6 +150,8 @@ interface ShoppingListProps {
   onToggleRangeSelection?: (rangeItemIds: readonly string[]) => void;
   duplicateCircleItemIds?: Set<string>;
   highlightedItemId?: string | null;
+  searchScrollRequest?: { itemId: string; requestId: number } | null;
+  onSearchScrollRequestConsumed?: (requestId: number) => void;
   layoutMode?: "pc" | "smartphone";
   viewMode?: "edit" | "execute" | "focus";
   // ホールグループ化用のprops
@@ -170,7 +172,7 @@ interface ShoppingListProps {
   ) => void;
   onAddItem?: (
     item: Omit<ShoppingItem, "id"> & { purchaseStatus?: PurchaseStatus },
-  ) => void;
+  ) => FocusModeAddItemReturn;
   // 実行モード用: スペース内一括ステータス変更
   onBulkStatusChange?: (
     groupKey: string,
@@ -445,22 +447,6 @@ const calculateBlockColors = (items: ShoppingItem[]): Map<string, string> => {
   return colorMap;
 };
 
-const compareItemsByBlockAndNumber = (
-  a: ShoppingItem,
-  b: ShoppingItem,
-): number => {
-  const blockComparison = a.block.localeCompare(b.block, "ja", {
-    numeric: true,
-    sensitivity: "base",
-  });
-  if (blockComparison !== 0) return blockComparison;
-
-  return a.number.localeCompare(b.number, "ja", {
-    numeric: true,
-    sensitivity: "base",
-  });
-};
-
 const getSpaceGroupKeyForItem = (
   item: ShoppingItem,
   columnType: "execute" | "candidate" | undefined,
@@ -501,6 +487,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   onToggleRangeSelection,
   duplicateCircleItemIds = EMPTY_DUPLICATE_CIRCLE_ITEM_IDS,
   highlightedItemId = null,
+  searchScrollRequest = null,
+  onSearchScrollRequestConsumed,
   layoutMode = "pc",
   viewMode = "edit",
   showHallGroups = false,
@@ -617,21 +605,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     },
     [],
   );
-  const displayOrderedItems = useMemo(() => {
-    if (!showSpaceGroups && !showHallGroups) return items;
-    if (showSpaceGroups && columnType === "candidate") {
-      return [...items].sort(compareItemsByBlockAndNumber);
-    }
-    return sortItemsByHallOrder(items, mapData, hallDefinitions, hallOrder);
-  }, [
-    columnType,
-    hallDefinitions,
-    hallOrder,
-    items,
-    mapData,
-    showHallGroups,
-    showSpaceGroups,
-  ]);
+  const displayOrderedItems = items;
   const handleExecutionNavigationGuardFeedback = useCallback(
     (feedback: ExecutionNavigationGuardFeedback) => {
       setPriceHighlightItemIds(new Set(feedback.priceItemIds));
@@ -1418,7 +1392,15 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       ];
     }
     // ホール定義なしでも groupItemsByHallOrder 内で priority 別に 3 バケットに分けて返す
-    return groupItemsByHallOrder(items, mapData, hallDefinitions, hallOrder);
+    const firstIndex = new Map(items.map((item, index) => [item.id, index]));
+    return groupItemsByHallOrder(
+      items,
+      mapData,
+      hallDefinitions,
+      hallOrder,
+    ).sort(
+      (a, b) => firstIndex.get(a.items[0].id)! - firstIndex.get(b.items[0].id)!,
+    );
   }, [items, showHallGroups, hallDefinitions, hallOrder, mapData]);
 
   const blockColorMap = useMemo(() => calculateBlockColors(items), [items]);
@@ -1426,7 +1408,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const spaceGroups = useMemo((): SpaceGroup[] => {
     if (!showSpaceGroups) return [];
 
-    // 候補列は優先度で分割せず、スペース単位でブロック/番号昇順にまとめる
+    // 入力順の最初の位置でグループ化し、訪問内の品目順も維持する
     const groupMap = new Map<
       string,
       {
@@ -1612,6 +1594,45 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     }
   }, []);
 
+  const consumedSearchRequest = useRef<number | null>(null);
+  const expandedSearchRequest = useRef<number | null>(null);
+  useEffect(() => {
+    if (
+      !searchScrollRequest ||
+      consumedSearchRequest.current === searchScrollRequest.requestId ||
+      !items.some((item) => item.id === searchScrollRequest.itemId)
+    )
+      return;
+    const group = listRowGroups?.find((group) =>
+      group.items.some((item) => item.id === searchScrollRequest.itemId),
+    );
+    if (group?.collapsed) {
+      if (expandedSearchRequest.current !== searchScrollRequest.requestId) {
+        expandedSearchRequest.current = searchScrollRequest.requestId;
+        onToggleSpaceCollapse?.(group.key);
+      }
+      return;
+    }
+    if (
+      !listControllerModel.itemRows.some(
+        (row) => row.itemId === searchScrollRequest.itemId,
+      )
+    )
+      return;
+    consumedSearchRequest.current = searchScrollRequest.requestId;
+    dispatchListController(
+      shoppingListCommand.requestItemScroll(searchScrollRequest.itemId),
+    );
+    onSearchScrollRequestConsumed?.(searchScrollRequest.requestId);
+  }, [
+    searchScrollRequest,
+    onSearchScrollRequestConsumed,
+    items,
+    listRowGroups,
+    listControllerModel,
+    onToggleSpaceCollapse,
+  ]);
+
   const handleScrollRequestConsumed = useCallback((requestId: number) => {
     dispatchListController(shoppingListCommand.consumeScroll(requestId));
   }, []);
@@ -1689,7 +1710,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       block: scrollRequest.alignment,
       behavior: "auto",
     });
-    handleScrollRequestConsumed(scrollRequest.requestId);
+    if (rowElement) handleScrollRequestConsumed(scrollRequest.requestId);
   }, [
     handleScrollRequestConsumed,
     listControllerState.scrollRequest,

@@ -1,3 +1,41 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss" source(none);
+@config "../../tailwind.config.mjs";
+@source "../../index.html";
+@source "../";
+
+@theme {
+  --default-ring-width: 3px;
+  --default-ring-color: rgb(59 130 246 / 50%);
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: #e5e7eb;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  dialog {
+    margin: auto;
+  }
+}
+
+@utility flex-shrink-* {
+  flex-shrink: --value(integer);
+}
+
+@utility flex-grow-* {
+  flex-grow: --value(integer);
+}

@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { IDBFactory } from "fake-indexeddb";
 import { fileURLToPath } from "node:url";
 import {
   buildCanonicalItems,
@@ -14,6 +15,7 @@ import {
   PUBLIC_XLSX_SCENARIO_IDS,
   publicXlsxScenarioAdapters,
   resolveSourceBoundWorkerAsset,
+  stageCanonicalExportEventLists,
 } from "./publicXlsxScenarioAdapters.mjs";
 
 const root = path.resolve(
@@ -297,14 +299,14 @@ test("round-trips the production UI export download through the public Worker", 
         return {
           contract: argument.contract,
           databaseName: "EventShoppingPlannerDB",
-          databaseVersion: 5,
+          databaseVersion: 8,
           storeName: "eventLists",
           controlStoreName: "syncQueue",
           key: "data",
           payloadSha256: argument.payloadSha256,
           semanticSha256: argument.expectedSemanticSha256,
           itemCount: argument.itemCount,
-          transactionStores: ["eventLists", "syncQueue"],
+          transactionStores: ["eventLists", "eventConsistency", "syncQueue"],
         };
       }
       return callback(argument);
@@ -445,15 +447,15 @@ test("round-trips the production UI export download through the public Worker", 
       "event-export-idb-stage-v1",
     );
     assert.deepEqual(result.executionBinding.setup, {
-      method: "indexeddb-schema-exact-single-transaction-stage-v1",
+      method: "indexeddb-schema-exact-single-transaction-stage-v2",
       timing: "excluded-from-measurement-v1",
       readback: "separate-readonly-transaction-v1",
       databaseName: "EventShoppingPlannerDB",
-      databaseVersion: 5,
+      databaseVersion: 8,
       storeName: "eventLists",
       controlStoreName: "syncQueue",
       key: "data",
-      transactionStores: ["eventLists", "syncQueue"],
+      transactionStores: ["eventLists", "eventConsistency", "syncQueue"],
       payloadSha256: result.executionBinding.fixturePayload.payloadSha256,
       semanticSha256: result.executionBinding.fixturePayload.semanticSha256,
       itemCount: 50_000,
@@ -484,4 +486,213 @@ test("keeps the XLSX adapter free of synthetic download and legacy target hooks"
   assert.match(source, /getByRole\("button", \{\s*name: "Excel形式で出力"/);
   assert.match(source, /waitForEvent\("download"\)/);
   assert.match(source, /await readFile\(downloadPath\)/);
+});
+
+test("stages an initialized empty DB v8 root while preserving its parent revision", async (t) => {
+  const originalIndexedDb = globalThis.indexedDB;
+  const metadataKey = "__esp_internal__:meta:v1:eventLists:data";
+  const checkpointKey = "__esp_internal__:checkpoint:v1:eventLists:data";
+  const initializedMetadata = {
+    kind: "event-shopping-planner-persistence-metadata",
+    version: 1,
+    storeName: "eventLists",
+    key: "data",
+    revision: "initialized-empty-root",
+    baseRevision: null,
+    payloadDigest: {
+      algorithm: "SHA-256",
+      canonicalization: "esp-json-v1",
+      value: sha256Bytes(Buffer.from("{}")),
+    },
+    payloadFingerprint: {
+      algorithm: "FNV-1A-64",
+      canonicalization: "esp-json-v1",
+      canonicalLength: 2,
+      value: "08f44b07b5901a25",
+    },
+    writerId: "application-startup",
+    committedAt: "2026-10-06T00:00:00.000Z",
+  };
+  const initializedCheckpoint = {
+    kind: "event-shopping-planner-persistence-checkpoint",
+    version: 1,
+    storeName: "eventLists",
+    key: "data",
+    committedRoot: {
+      revision: initializedMetadata.revision,
+      baseRevision: null,
+      digest: initializedMetadata.payloadDigest,
+      writerId: initializedMetadata.writerId,
+      committedAt: initializedMetadata.committedAt,
+    },
+    absorbedCandidates: [],
+    updatedAt: "2026-10-06T00:00:00.001Z",
+  };
+  const items = buildCanonicalItems({ rowCount: 2, seed: 1967 });
+  const eventName = "canonical-worker-roundtrip";
+  const stageOptions = {
+    eventName,
+    eventLists: { [eventName]: items },
+    expectedSemanticSha256: canonicalEventItemsSemanticSha256(eventName, items),
+    page: { evaluate: (callback, argument) => callback(argument) },
+  };
+  const read = (database, storeName, key) =>
+    new Promise((resolve, reject) => {
+      const request = database
+        .transaction(storeName, "readonly")
+        .objectStore(storeName)
+        .get(key);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  try {
+    for (const mutation of [
+      "none",
+      "data",
+      "digest",
+      "checkpoint",
+      "partial",
+      "consistency-data",
+      "consistency-digest",
+      "timestamp",
+    ]) {
+      await t.test(mutation, async () => {
+        globalThis.indexedDB = new IDBFactory();
+        const database = await new Promise((resolve, reject) => {
+          const request = globalThis.indexedDB.open(
+            "EventShoppingPlannerDB",
+            8,
+          );
+          request.onupgradeneeded = () => {
+            for (const storeName of [
+              "dayModes",
+              "eventConsistency",
+              "eventLists",
+              "eventMetadata",
+              "executeModeItems",
+              "hallDefinitions",
+              "hallRouteSettings",
+              "mapData",
+              "mapRotationSettings",
+              "mapViewportSettings",
+              "routeSettings",
+              "syncQueue",
+            ])
+              request.result.createObjectStore(storeName);
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+        try {
+          const metadata = structuredClone(initializedMetadata);
+          const checkpoint = structuredClone(initializedCheckpoint);
+          const payload = mutation === "data" ? { "existing-event": [] } : {};
+          const consistencyMetadata = {
+            ...structuredClone(initializedMetadata),
+            storeName: "eventConsistency",
+            revision: "initialized-empty-consistency",
+          };
+          const consistencyCheckpoint = {
+            ...structuredClone(initializedCheckpoint),
+            storeName: "eventConsistency",
+            committedRoot: {
+              ...structuredClone(initializedCheckpoint.committedRoot),
+              revision: consistencyMetadata.revision,
+            },
+          };
+          if (mutation === "consistency-digest") {
+            consistencyMetadata.payloadDigest.value = "0".repeat(64);
+          }
+          if (mutation === "timestamp") checkpoint.updatedAt = "invalid";
+          if (mutation === "digest")
+            metadata.payloadDigest.value = "0".repeat(64);
+          if (mutation === "checkpoint")
+            checkpoint.committedRoot.revision = "stale-root";
+          await new Promise((resolve, reject) => {
+            const transaction = database.transaction(
+              ["eventLists", "eventConsistency", "syncQueue"],
+              "readwrite",
+            );
+            transaction.objectStore("eventLists").put(payload, "data");
+            transaction.objectStore("syncQueue").put(metadata, metadataKey);
+            if (mutation !== "partial")
+              transaction
+                .objectStore("syncQueue")
+                .put(checkpoint, checkpointKey);
+            transaction
+              .objectStore("eventConsistency")
+              .put(
+                mutation === "consistency-data" ? { "existing-event": {} } : {},
+                "data",
+              );
+            transaction
+              .objectStore("syncQueue")
+              .put(
+                consistencyMetadata,
+                "__esp_internal__:meta:v1:eventConsistency:data",
+              );
+            transaction
+              .objectStore("syncQueue")
+              .put(
+                consistencyCheckpoint,
+                "__esp_internal__:checkpoint:v1:eventConsistency:data",
+              );
+            transaction.oncomplete = resolve;
+            transaction.onabort = () => reject(transaction.error);
+          });
+          const snapshot = () =>
+            Promise.all([
+              read(database, "eventLists", "data"),
+              read(database, "syncQueue", metadataKey),
+              read(database, "syncQueue", checkpointKey),
+              read(database, "eventConsistency", "data"),
+              read(
+                database,
+                "syncQueue",
+                "__esp_internal__:meta:v1:eventConsistency:data",
+              ),
+              read(
+                database,
+                "syncQueue",
+                "__esp_internal__:checkpoint:v1:eventConsistency:data",
+              ),
+            ]);
+          if (mutation === "none") {
+            const staged = await stageCanonicalExportEventLists(stageOptions);
+            assert.equal(staged.receipt.databaseVersion, 8);
+            const [
+              payload,
+              metadata,
+              checkpoint,
+              consistency,
+              storedConsistencyMetadata,
+            ] = await snapshot();
+            assert.equal(consistency[eventName].schemaVersion, 1);
+            assert.equal(
+              storedConsistencyMetadata.baseRevision,
+              consistencyMetadata.revision,
+            );
+            assert.deepEqual(payload, stageOptions.eventLists);
+            assert.equal(metadata.baseRevision, initializedMetadata.revision);
+            assert.equal(
+              checkpoint.committedRoot.baseRevision,
+              initializedMetadata.revision,
+            );
+          } else {
+            const before = await snapshot();
+            await assert.rejects(
+              stageCanonicalExportEventLists(stageOptions),
+              /requires an empty fresh-context root/,
+            );
+            assert.deepEqual(await snapshot(), before);
+          }
+        } finally {
+          database.close();
+        }
+      });
+    }
+  } finally {
+    if (originalIndexedDb === undefined) delete globalThis.indexedDB;
+    else globalThis.indexedDB = originalIndexedDb;
+  }
 });

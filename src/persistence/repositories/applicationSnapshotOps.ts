@@ -11,6 +11,7 @@ const EVENT_SCOPED_SNAPSHOT_KEYS = [
   "hallDefinitions",
   "hallRouteSettings",
   "mapViewportSettings",
+  "eventConsistency",
 ] as const satisfies readonly (keyof PersistenceSnapshot)[];
 
 export class EventSnapshotCollisionError extends Error {

@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { encodeHallRef } from "../features/consistency/domain/projection";
 import type { ShoppingItem } from "../types/item";
 import type { DayMapData, HallDefinition } from "../types/map";
 import { findItemHallIdByCell } from "../features/events/itemOps/geometry";
 import { buildMergedHallRouteSettings } from "./mergedHallRouteSettings";
 import {
   buildItemRoutingSignature,
+  parseGroupId,
+  buildGroupId,
   getHallIdForItem,
   sortItemsByHallOrder,
 } from "./hallGrouping";
@@ -232,4 +235,36 @@ describe("deterministic duplicate number cell hall grouping", () => {
       }).mergedSettings,
     );
   });
+});
+
+describe("priority suffixes inside hall identities", () => {
+  it.each([
+    "west:priority",
+    "west:highest",
+    "west:priority:highest",
+    "west:unknown",
+  ])("preserves the entire hall ID %s", (id) => {
+    for (const priority of ["priority", "highest"] as const) {
+      expect(parseGroupId(buildGroupId(id, priority))).toEqual({
+        hallId: id,
+        priority,
+      });
+      for (const hallId of [
+        encodeHallRef({ kind: "simple", dayKey: "1日目", hallId: id }),
+        encodeHallRef({ kind: "map", mapKey: "西マップ:priority", hallId: id }),
+      ]) {
+        for (const level of ["none", "priority", "highest"] as const)
+          expect(parseGroupId(buildGroupId(hallId, level))).toEqual({
+            hallId,
+            priority: level,
+          });
+      }
+    }
+  });
+  it.each([null, "undefined", "undefined:none"])(
+    "shares the unassigned interpretation for %s",
+    (group) => {
+      expect(parseGroupId(group)).toEqual({ hallId: null, priority: "none" });
+    },
+  );
 });

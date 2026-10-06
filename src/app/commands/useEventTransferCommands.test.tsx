@@ -1,3 +1,19 @@
+import type { EventWorkbookAdditionalData } from "../../xlsx/domain/eventWorkbook";
+import {
+  buildXlsxEventRestoreSource,
+  toImportedEventData,
+} from "../../features/events/fileImport";
+import { dayMergeChoicePrefix } from "../../features/consistency/domain/dayMergeMutation";
+import {
+  createEventConsistency,
+  createDayConsistency,
+  createVisitContext,
+} from "../../types/consistency";
+import {
+  exportToXlsx,
+  importFromXlsx,
+} from "../../xlsx/engine/eventWorkbookEngine";
+import type { ExportOptions } from "../../types/export";
 // @vitest-environment jsdom
 
 import { act, renderHook } from "@testing-library/react";
@@ -37,9 +53,18 @@ const emptySnapshot = () => ({
   hallDefinitions: {},
   hallRouteSettings: {},
   mapViewportSettings: {},
+  eventConsistency: {},
 });
 
 const createPersistenceCommands = (): PersistenceCommandPort => ({
+  inspectConsistencyUpgrade: vi.fn(async () => null),
+  bindApplicationSettings: vi.fn(() => () => {}),
+  readApplicationSnapshot: vi.fn(async () => ({
+    snapshot: emptySnapshot(),
+    expectedRoots: {},
+    consistencyMissing: false,
+  })),
+  saveEventConsistency: vi.fn(async () => {}),
   loadPreference: vi.fn(() => null),
   savePreference: vi.fn(),
   readBlockDetectionSettings: vi.fn(() => null),
@@ -70,16 +95,19 @@ const createPersistenceCommands = (): PersistenceCommandPort => ({
 
 const createBackup = (items: ShoppingItem[] = [eventItem]): AppBackupV1 => ({
   kind: "event-shopping-planner-backup",
-  version: 1,
+  version: 2,
   exportedAt: "2026-08-09T00:00:00.000Z",
-  eventSettings: {
-    blockDetectionSettings: {
-      source: structuredClone(DEFAULT_BLOCK_DETECTION_SETTINGS),
-    },
-  },
   data: {
     ...emptySnapshot(),
     eventLists: { source: items },
+    eventConsistency: {
+      source: {
+        ...createEventConsistency(),
+        blockDetectionSettings: structuredClone(
+          DEFAULT_BLOCK_DETECTION_SETTINGS,
+        ),
+      },
+    },
   },
 });
 
@@ -87,7 +115,32 @@ const createPorts = (
   overrides: Partial<EventTransferCommandPorts> = {},
 ): EventTransferCommandPorts => {
   const persistenceCommands = createPersistenceCommands();
-  return {
+  const ports: EventTransferCommandPorts = {
+    requestMutation: vi.fn(
+      async (intent) =>
+        (
+          await intent.plan(
+            structuredClone(
+              Object.fromEntries(
+                Object.keys(emptySnapshot()).map((key) => [
+                  key,
+                  ports[key as keyof EventTransferCommandPorts],
+                ]),
+              ) as ReturnType<typeof emptySnapshot>,
+            ),
+          )
+        ).snapshot,
+    ),
+    readExportSnapshot: vi.fn(async () =>
+      structuredClone(
+        Object.fromEntries(
+          Object.keys(emptySnapshot()).map((key) => [
+            key,
+            ports[key as keyof EventTransferCommandPorts],
+          ]),
+        ) as ReturnType<typeof emptySnapshot>,
+      ),
+    ),
     appRuntime: {
       persistenceCommands,
       xlsxCommands: {
@@ -126,14 +179,15 @@ const createPorts = (
     setMapViewportSettings: vi.fn(),
     ...overrides,
   };
+  return ports;
 };
 
 describe("useEventTransferCommands", () => {
-  it("opens export options only for an event with exportable items", () => {
+  it("opens export options only for an event with exportable items", async () => {
     const ports = createPorts({ eventLists: { event: [eventItem] } });
     const { result } = renderHook(() => useEventTransferCommands(ports));
 
-    act(() => result.current.handleExportEvent("event"));
+    await act(() => result.current.handleExportEvent("event"));
 
     expect(ports.openExport).toHaveBeenCalledWith("event");
   });
@@ -149,19 +203,13 @@ describe("useEventTransferCommands", () => {
       await result.current.handleBackupRestore("source", "target");
     });
 
-    expect(
-      ports.appRuntime.persistenceCommands
-        .restoreAppDataWithBlockDetectionSettings,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({
-        eventLists: { target: [eventItem] },
-      }),
-      "target",
+    expect(ports.requestMutation).toHaveBeenCalledOnce();
+    const saved = await vi.mocked(ports.requestMutation).mock.results[0].value;
+    expect(saved.eventLists).toEqual({ target: [eventItem] });
+    expect(saved.eventConsistency.target.blockDetectionSettings).toEqual(
       settings,
     );
-    expect(ports.setEventLists).toHaveBeenCalledWith({
-      target: [eventItem],
-    });
+    expect(ports.setEventLists).not.toHaveBeenCalled();
     expect(ports.navigationCommands.openEvent).toHaveBeenCalledWith(
       "target",
       "1日目",
@@ -191,10 +239,7 @@ describe("useEventTransferCommands", () => {
       await result.current.handleBackupRestore("source", "large-import");
     });
 
-    expect(
-      ports.appRuntime.persistenceCommands
-        .restoreAppDataWithBlockDetectionSettings,
-    ).toHaveBeenCalledOnce();
+    expect(ports.requestMutation).toHaveBeenCalledOnce();
     expect(ports.navigationCommands.openEvent).not.toHaveBeenCalled();
     expect(ports.navigationCommands.showEventList).toHaveBeenCalledOnce();
     expect(alertSpy).toHaveBeenCalledWith(
@@ -266,8 +311,9 @@ describe("useEventTransferCommands", () => {
     );
     const { result } = renderHook(() => useEventTransferCommands(ports));
 
+    await act(() => result.current.handleExportEvent("event"));
     let operation!: Promise<void>;
-    act(() => {
+    await act(async () => {
       operation = result.current.handleConfirmExport({
         includeItems: true,
         includeLayoutInfo: false,
@@ -320,3 +366,214 @@ describe("useEventTransferCommands", () => {
     expect(ports.updateXlsxOperation).toHaveBeenCalledTimes(updateCount);
   });
 });
+
+it.each([
+  ...Array.from(
+    { length: 8 },
+    (_, bits): ExportOptions => ({
+      includeItems: true,
+      includeLayoutInfo: !!(bits & 1),
+      includeMapData: !!(bits & 2),
+      includeRouteInfo: !!(bits & 4),
+      format: "full",
+    }),
+  ),
+  {
+    includeItems: true,
+    includeLayoutInfo: false,
+    includeMapData: false,
+    includeRouteInfo: false,
+    format: "simple",
+  } satisfies ExportOptions,
+])(
+  "uses the preview snapshot for the exported workbook with options %j",
+  async (options) => {
+    const ports = createPorts({
+      exportEventName: "event",
+      eventLists: { event: [{ ...eventItem, remarks: "表示時のメモ" }] },
+      eventConsistency: { event: createEventConsistency() },
+    });
+    let exportedBytes!: Uint8Array;
+    ports.appRuntime.xlsxCommands.exportWorkbook = vi.fn(async (value) => {
+      const blob = await exportToXlsx(
+        value.eventName,
+        value.items,
+        value.options,
+        value.additionalData,
+      );
+      return new Uint8Array(await blob.arrayBuffer());
+    });
+    vi.mocked(ports.appRuntime.downloadXlsx).mockImplementation((bytes) => {
+      exportedBytes = bytes;
+    });
+    const { result } = renderHook(() => useEventTransferCommands(ports));
+    await act(() => result.current.handleExportEvent("event"));
+    const preview = result.current.previewEventExport(options);
+    // Another accepted save completes after the options were displayed.
+    ports.hallDefinitions.event = {
+      "__mapless__:1日目": [
+        { id: "hall", name: "東", blockNames: ["A"], vertices: [] },
+      ],
+    };
+    ports.eventConsistency.event.days["1日目"] = {
+      ...createDayConsistency(),
+      mapless: {
+        ...createVisitContext(),
+        assignments: {
+          "item-1": { kind: "simple", dayKey: "1日目", hallId: "hall" },
+        },
+      },
+    };
+    ports.eventLists.event[0].remarks = "後から更新したメモ";
+    await act(() => result.current.handleConfirmExport(options));
+    expect(ports.readExportSnapshot).toHaveBeenCalledOnce();
+    expect(result.current.previewEventExport(options)).toEqual(preview);
+    const workbook = await importFromXlsx(
+      new File([new Uint8Array(exportedBytes)], "event.xlsx"),
+    );
+    expect(workbook.success).toBe(true);
+    expect(workbook.items[0].remarks).toBe("表示時のメモ");
+    if (options.format === "full")
+      expect(workbook.contentManifest).toEqual(preview);
+    expect(
+      preview.omissions.find((entry) => entry.section === "maplessAssignments"),
+    ).toBeUndefined();
+  },
+);
+it("waits for earlier saves before opening the preview, including its actual omission count", async () => {
+  const ports = createPorts({
+    exportEventName: "event",
+    eventLists: { event: [eventItem] },
+    eventConsistency: { event: createEventConsistency() },
+  });
+  const read = vi.mocked(ports.readExportSnapshot).getMockImplementation()!;
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  vi.mocked(ports.readExportSnapshot).mockImplementation(async () => {
+    await gate;
+    return read();
+  });
+  const { result } = renderHook(() => useEventTransferCommands(ports));
+  let pending!: Promise<void>;
+  act(() => {
+    pending = result.current.handleExportEvent("event");
+  });
+  expect(ports.openExport).not.toHaveBeenCalled();
+  ports.hallDefinitions.event = {
+    "__mapless__:1日目": [
+      { id: "hall", name: "東", blockNames: ["A"], vertices: [] },
+    ],
+  };
+  ports.eventConsistency.event.days["1日目"] = {
+    ...createDayConsistency(),
+    mapless: {
+      ...createVisitContext(),
+      assignments: {
+        "item-1": { kind: "simple", dayKey: "1日目", hallId: "hall" },
+      },
+    },
+  };
+  await act(async () => {
+    release();
+    await pending;
+  });
+  const options: ExportOptions = {
+    includeItems: true,
+    includeLayoutInfo: false,
+    includeMapData: false,
+    includeRouteInfo: false,
+    format: "full",
+  };
+  expect(result.current.previewEventExport(options).omissions).toContainEqual(
+    expect.objectContaining({ section: "maplessAssignments", count: 1 }),
+  );
+  expect(ports.openExport).toHaveBeenCalledOnce();
+});
+it("uses a fresh snapshot when reopening the export settings", async () => {
+  const ports = createPorts({
+    exportEventName: "event",
+    eventLists: { event: [eventItem] },
+  });
+  const { result } = renderHook(() => useEventTransferCommands(ports));
+  await act(() => result.current.handleExportEvent("event"));
+  ports.eventLists.event.push({ ...eventItem, id: "item-2" });
+  await act(() => result.current.handleExportEvent("event"));
+  expect(
+    result.current.previewEventExport({
+      includeItems: true,
+      includeLayoutInfo: false,
+      includeMapData: false,
+      includeRouteInfo: false,
+      format: "full",
+    }).sections.items.count,
+  ).toBe(2);
+});
+
+it.each(["JSON", "Excel"])(
+  "forwards restored-day selections through the shared %s command",
+  async (format) => {
+    vi.spyOn(window, "alert").mockImplementation(() => {});
+    const backup = createBackup();
+    backup.data.executeModeItems.source = { "1日目": [eventItem.id] };
+    backup.data.dayModes.source = { "1日目": "edit", " 1日目　": "execute" };
+    if (format === "Excel") {
+      const blob = await exportToXlsx(
+        "source",
+        [eventItem],
+        {
+          includeItems: true,
+          includeLayoutInfo: true,
+          includeMapData: true,
+          includeRouteInfo: true,
+          format: "full",
+        },
+        backup.data as EventWorkbookAdditionalData,
+      );
+      const imported = await importFromXlsx(
+        new File([new Uint8Array(await blob.arrayBuffer())], "duplicate.xlsx"),
+      );
+      expect(imported.success).toBe(true);
+      backup.data = buildXlsxEventRestoreSource(
+        toImportedEventData(imported),
+      ).data;
+      expect(backup.data.dayModes.source).toEqual({
+        "1日目": "edit",
+        " 1日目　": "execute",
+      });
+    }
+    const ports = createPorts({
+      pendingBackup: backup,
+      pendingXlsxRestoreCompletion:
+        format === "Excel" ? { itemCount: 1, errors: [] } : null,
+    });
+    const prefix = dayMergeChoicePrefix("target", "1日目");
+    ports.requestMutation = vi.fn<EventTransferCommandPorts["requestMutation"]>(
+      async (intent) => {
+        const review = intent.plan(emptySnapshot());
+        expect(
+          review.confirmation?.choices?.map((choice) => choice.label),
+        ).toEqual(
+          expect.arrayContaining(["統合先の日付表記", "統合後の表示モード"]),
+        );
+        expect(ports.confirmBackupRestore).not.toHaveBeenCalled();
+        const selected = intent.plan(emptySnapshot(), {
+          [`${prefix}destination`]: " 1日目　",
+          [`${prefix}mode`]: "execute",
+        });
+        expect(selected.snapshot.dayModes.target).toEqual({
+          " 1日目　": "execute",
+        });
+        expect(selected.snapshot.executeModeItems.target).toEqual({
+          " 1日目　": [eventItem.id],
+        });
+        return selected.snapshot;
+      },
+    );
+    const { result } = renderHook(() => useEventTransferCommands(ports));
+    await act(() => result.current.handleBackupRestore("source", "target"));
+    expect(ports.requestMutation).toHaveBeenCalledOnce();
+    expect(ports.confirmBackupRestore).toHaveBeenCalledOnce();
+  },
+);

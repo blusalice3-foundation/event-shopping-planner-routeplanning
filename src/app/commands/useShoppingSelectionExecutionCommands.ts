@@ -14,12 +14,19 @@ import type {
 } from "../../types/item";
 import { clearLimitedPurchase } from "../../utils/purchaseQuantity";
 import { getSpaceKey } from "../../utils/spaceGrouping";
+import {
+  buildExecutionVisitProjectionKey,
+  normalizeExecutionVisitDay,
+} from "../../utils/visitProjection";
 import type { MutableCommandValue } from "./useShoppingItemMutationCommands";
 
 type EventLists = Record<string, ShoppingItem[]>;
 type DayModesByEvent = Record<string, DayModeState>;
 type ExecuteModeItemsByEvent = Record<string, ExecuteModeItems>;
 type StateAction<T> = T | ((current: T) => T);
+
+const isSameExecutionVisitDay = (eventDate: string, dayName: string): boolean =>
+  normalizeExecutionVisitDay(eventDate) === normalizeExecutionVisitDay(dayName);
 
 export interface ShoppingSelectionExecutionStatePort {
   readonly activeEventName: string | null;
@@ -78,7 +85,7 @@ export interface ShoppingSelectionExecutionCommandPorts {
 }
 
 export interface ShoppingSelectionExecutionCommands {
-  toggleMode(): void;
+  toggleMode(day?: string): void;
   setViewMode(mode: ViewMode, scrollToItemId?: string): void;
   selectItem(
     itemId: string,
@@ -153,7 +160,7 @@ export const useShoppingSelectionExecutionCommands = ({
     updateExecuteModeItems,
     updateItem,
   } = actions;
-  const { notify, scheduleCenteredItemScroll } = effects;
+  const { scheduleCenteredItemScroll } = effects;
 
   const executeSpaceGroupOrderRef = useRef<readonly string[]>([]);
   const executeColumnItemsRef =
@@ -180,40 +187,30 @@ export const useShoppingSelectionExecutionCommands = ({
     sortState,
   ]);
 
-  const toggleMode = useCallback(() => {
-    if (!activeEventName) return;
-    if (!activeEventDate) {
-      notify(
-        "参加日タブが選択されていないため、表示モードを切り替えできません。",
-      );
-      return;
-    }
-
-    const currentModeValue = dayModes[activeEventName]?.[activeEventDate];
-    if (!currentModeValue) {
-      notify("表示モードが未設定のため、表示モードを切り替えできません。");
-      return;
-    }
-    const nextMode: ViewMode = currentModeValue === "edit" ? "execute" : "edit";
-    setDayModes((current) => ({
-      ...current,
-      [activeEventName]: {
-        ...(current[activeEventName] || {}),
-        [activeEventDate]: nextMode,
-      },
-    }));
-    clearSelection();
-    setCandidateNumberSortDirection(null);
-  }, [
-    activeEventDate,
-    activeEventName,
-    clearSelection,
-    dayModes,
-    notify,
-    setCandidateNumberSortDirection,
-    setDayModes,
-  ]);
-
+  const toggleMode = useCallback(
+    (targetDay = activeEventDate) => {
+      if (!activeEventName || !targetDay) return;
+      setDayModes((current) => {
+        const mode = current[activeEventName]?.[targetDay];
+        return {
+          ...current,
+          [activeEventName]: {
+            ...current[activeEventName],
+            [targetDay]: mode === "execute" ? "edit" : "execute",
+          },
+        };
+      });
+      clearSelection();
+      setCandidateNumberSortDirection(null);
+    },
+    [
+      activeEventName,
+      activeEventDate,
+      setDayModes,
+      clearSelection,
+      setCandidateNumberSortDirection,
+    ],
+  );
   const setViewMode = useCallback(
     (mode: ViewMode, scrollToItemId?: string) => {
       if (!activeEventName) return;
@@ -459,29 +456,56 @@ export const useShoppingSelectionExecutionCommands = ({
             const eventItems = current[activeEventName] || {};
             const dayItems = [...(eventItems[activeEventDate] || [])];
             const itemsMap = new Map(items.map((item) => [item.id, item]));
-            const selectedExecuteItems = dayItems
-              .filter((id) => selectedItemIds.has(id))
-              .map((id) => itemsMap.get(id))
-              .filter((item): item is ShoppingItem => item !== undefined)
-              .sort((first, second) => {
-                const comparison = first.number.localeCompare(
-                  second.number,
-                  undefined,
-                  { numeric: true, sensitivity: "base" },
-                );
-                return direction === "asc" ? comparison : -comparison;
-              });
-            const firstSelectedIndex = dayItems.findIndex((id) =>
-              selectedItemIds.has(id),
+            const selectedVisitKeys = new Set(
+              dayItems.flatMap((itemId) => {
+                if (!selectedItemIds.has(itemId)) return [];
+                const selectedItem = itemsMap.get(itemId);
+                return selectedItem
+                  ? [buildExecutionVisitProjectionKey(selectedItem)]
+                  : [];
+              }),
+            );
+            const selectedVisitBlocks = new Map<string, ShoppingItem[]>();
+            dayItems.forEach((itemId) => {
+              const item = itemsMap.get(itemId);
+              if (!item) return;
+              const visitKey = buildExecutionVisitProjectionKey(item);
+              if (!selectedVisitKeys.has(visitKey)) return;
+              const visitItems = selectedVisitBlocks.get(visitKey);
+              if (visitItems) {
+                visitItems.push(item);
+              } else {
+                selectedVisitBlocks.set(visitKey, [item]);
+              }
+            });
+            const sortedSelectedVisitBlocks = Array.from(
+              selectedVisitBlocks.values(),
+            ).sort((firstVisit, secondVisit) => {
+              const comparison = firstVisit[0].number.localeCompare(
+                secondVisit[0].number,
+                undefined,
+                { numeric: true, sensitivity: "base" },
+              );
+              return direction === "asc" ? comparison : -comparison;
+            });
+            const selectedVisitMemberIds = new Set(
+              sortedSelectedVisitBlocks.flatMap((visitItems) =>
+                visitItems.map((item) => item.id),
+              ),
+            );
+            const firstSelectedIndex = dayItems.findIndex((itemId) =>
+              selectedVisitMemberIds.has(itemId),
             );
             if (firstSelectedIndex === -1) return current;
             const nextDayItems = dayItems.filter(
-              (id) => !selectedItemIds.has(id),
+              (itemId) => !selectedVisitMemberIds.has(itemId),
             );
             nextDayItems.splice(
               firstSelectedIndex,
               0,
-              ...selectedExecuteItems.map((item) => item.id),
+              ...sortedSelectedVisitBlocks.flatMap((visitItems) =>
+                visitItems.map((item) => item.id),
+              ),
             );
             return {
               ...current,
@@ -499,7 +523,8 @@ export const useShoppingSelectionExecutionCommands = ({
             const allItems = [...(current[activeEventName] || [])];
             const candidateItems = allItems.filter(
               (item) =>
-                item.eventDate === activeEventDate && !executeIds.has(item.id),
+                isSameExecutionVisitDay(item.eventDate, activeEventDate) &&
+                !executeIds.has(item.id),
             );
             const selectedCandidateItems = candidateItems
               .filter((item) => selectedItemIds.has(item.id))
@@ -525,12 +550,15 @@ export const useShoppingSelectionExecutionCommands = ({
             );
             const executeItems = allItems.filter(
               (item) =>
-                item.eventDate === activeEventDate && executeIds.has(item.id),
+                isSameExecutionVisitDay(item.eventDate, activeEventDate) &&
+                executeIds.has(item.id),
             );
             return {
               ...current,
               [activeEventName]: allItems.map((item) => {
-                if (item.eventDate !== activeEventDate) return item;
+                if (!isSameExecutionVisitDay(item.eventDate, activeEventDate)) {
+                  return item;
+                }
                 return executeIds.has(item.id)
                   ? executeItems.shift() || item
                   : sortedCandidateItems.shift() || item;

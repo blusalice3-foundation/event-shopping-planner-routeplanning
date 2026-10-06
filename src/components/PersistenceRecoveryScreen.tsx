@@ -198,7 +198,7 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
               id="persistence-recovery-safe-exit-title"
               ref={safeExitTitleRef}
               tabIndex={-1}
-              className="mt-2 text-2xl font-bold text-slate-900 outline-none dark:text-white sm:text-3xl"
+              className="mt-2 text-2xl font-bold text-slate-900 outline-hidden dark:text-white sm:text-3xl"
             >
               何も削除せず終了しました
             </h1>
@@ -441,7 +441,7 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
               )}
               <button
                 type="button"
-                className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-red-700 px-4 py-2.5 font-semibold text-white hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-slate-900"
+                className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-red-700 px-4 py-2.5 font-semibold text-white hover:bg-red-800 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-slate-900"
                 onClick={handleAdopt}
                 disabled={isBusy || !selectedCandidate || !onAdopt}
                 aria-describedby={adoptionDescriptionIds}
@@ -456,7 +456,7 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
-              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-blue-700 px-4 py-2.5 font-semibold text-white hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-slate-900"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-blue-700 px-4 py-2.5 font-semibold text-white hover:bg-blue-800 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-slate-900"
               onClick={onRetry}
               disabled={isBusy}
             >
@@ -464,7 +464,7 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
             </button>
             <button
               type="button"
-              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-400 bg-white px-4 py-2.5 font-semibold text-slate-800 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:focus-visible:ring-offset-slate-900"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-400 bg-white px-4 py-2.5 font-semibold text-slate-800 hover:bg-slate-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:focus-visible:ring-offset-slate-900"
               onClick={() => {
                 void handleExport();
               }}
@@ -477,7 +477,7 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
             </button>
             <button
               type="button"
-              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-400 bg-white px-4 py-2.5 font-semibold text-slate-800 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:focus-visible:ring-offset-slate-900"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-400 bg-white px-4 py-2.5 font-semibold text-slate-800 hover:bg-slate-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:focus-visible:ring-offset-slate-900"
               onClick={() => setHasSafelyExited(true)}
               disabled={isBusy}
             >

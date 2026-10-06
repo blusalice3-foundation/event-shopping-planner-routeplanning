@@ -289,8 +289,8 @@ export const FocusModeHeader: React.FC<FocusModeHeaderProps> = React.memo(
       size === "expanded" ? "text-xl font-bold" : "text-lg font-bold";
     const selectClassName =
       size === "expanded"
-        ? "text-xl font-bold bg-white/20 hover:bg-white/30 rounded-md py-1 px-2 text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors"
-        : "text-lg font-bold bg-white/20 hover:bg-white/30 rounded-md py-1 px-2 text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors";
+        ? "text-xl font-bold bg-white/20 hover:bg-white/30 rounded-md py-1 px-2 text-white appearance-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-white/50 transition-colors"
+        : "text-lg font-bold bg-white/20 hover:bg-white/30 rounded-md py-1 px-2 text-white appearance-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-white/50 transition-colors";
     const nextClassName =
       size === "expanded"
         ? "text-sm opacity-80 mt-1"
@@ -304,11 +304,11 @@ export const FocusModeHeader: React.FC<FocusModeHeaderProps> = React.memo(
       .join(" ");
     const nextVisitDisplayText = nextVisitText || "-";
     const smartphoneSelectClassName =
-      "h-8 w-full max-w-[6.75rem] rounded-md bg-white/20 py-0.5 pl-2 pr-6 text-sm font-bold text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors";
+      "h-8 w-full max-w-[6.75rem] rounded-md bg-white/20 py-0.5 pl-2 pr-6 text-sm font-bold text-white appearance-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-white/50 transition-colors";
     const bulkStatusButtonClassName =
       "inline-flex h-auto min-h-0 flex-shrink-0 items-center whitespace-nowrap rounded px-2 py-px text-xs font-medium leading-none transition-colors";
     const smartphoneBulkStatusButtonClassName =
-      "inline-flex h-auto min-h-0 flex-shrink-0 items-center whitespace-nowrap rounded px-1.5 py-px text-[10px] font-medium leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
+      "inline-flex h-auto min-h-0 flex-shrink-0 items-center whitespace-nowrap rounded px-1.5 py-px text-[10px] font-medium leading-none transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/70";
 
     const renderPhaseSelect = (className: string) => (
       <select
@@ -594,7 +594,7 @@ export const FocusModeMapControls: React.FC<FocusModeMapControlsProps> =
           <button
             type="button"
             onClick={() => onMapCenteringModeChange("prevToCurrent")}
-            className={`${compact ? "h-full min-w-0 flex-1 px-1 text-[11px] leading-none" : "px-2 py-1 text-xs"} whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300 ${
+            className={`${compact ? "h-full min-w-0 flex-1 px-1 text-[11px] leading-none" : "px-2 py-1 text-xs"} whitespace-nowrap focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300 ${
               mapCenteringMode === "prevToCurrent"
                 ? "bg-blue-600 text-white"
                 : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
@@ -607,7 +607,7 @@ export const FocusModeMapControls: React.FC<FocusModeMapControlsProps> =
           <button
             type="button"
             onClick={() => onMapCenteringModeChange("currentOnly")}
-            className={`${compact ? "h-full min-w-0 flex-1 px-1 text-[11px] leading-none" : "px-2 py-1 text-xs"} whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300 ${
+            className={`${compact ? "h-full min-w-0 flex-1 px-1 text-[11px] leading-none" : "px-2 py-1 text-xs"} whitespace-nowrap focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300 ${
               mapCenteringMode === "currentOnly"
                 ? "bg-blue-600 text-white"
                 : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300"

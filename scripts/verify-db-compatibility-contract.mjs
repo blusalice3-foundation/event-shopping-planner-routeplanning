@@ -184,6 +184,7 @@ if (
 
 const expectedStores = [
   "dayModes",
+  "eventConsistency",
   "eventLists",
   "eventMetadata",
   "executeModeItems",
@@ -200,12 +201,12 @@ if (
   actualStores.length !== expectedStores.length ||
   actualStores.some((store, index) => store !== expectedStores[index])
 ) {
-  throw new Error("IndexedDB store contract differs from the version 5 schema");
+  throw new Error("IndexedDB store contract differs from the version 8 schema");
 }
 if (
   contract.indexedDb.name !== "EventShoppingPlannerDB" ||
-  contract.indexedDb.version !== 5 ||
-  contract.indexedDb.forwardCompatibilityCeiling !== 7
+  contract.indexedDb.version !== 8 ||
+  contract.indexedDb.forwardCompatibilityCeiling !== 8
 ) {
   throw new Error("IndexedDB identity/version contract is invalid");
 }

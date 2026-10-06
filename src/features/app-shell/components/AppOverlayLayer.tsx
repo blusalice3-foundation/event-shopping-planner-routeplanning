@@ -1,3 +1,6 @@
+import type { HallSelectionIntent } from "../../../types/consistency";
+import type { ItemMembershipPreview } from "../../consistency/domain/itemEdit";
+import { applyChangedFields } from "../../consistency/domain/mutations";
 import React from "react";
 import DeleteConfirmationModal from "../../../components/DeleteConfirmationModal";
 import { ItemEditDialog } from "../../../components/ItemEditDialog";
@@ -64,6 +67,16 @@ type MapImportDialogProps = React.ComponentProps<typeof MapImportDialog>;
 
 type AppOverlayLayerFields = {
   items: ShoppingItem[];
+  saveItemEdit?: (
+    baseline: ShoppingItem,
+    edited: ShoppingItem,
+    selection: HallSelectionIntent,
+  ) => Promise<void>;
+  previewItemEdit?: (
+    baseline: ShoppingItem,
+    edited: ShoppingItem,
+    selection: HallSelectionIntent,
+  ) => ItemMembershipPreview;
   getHallsForDate: (eventDate: string) => HallDefinition[];
   handleUpdateItem: (item: ShoppingItem) => void;
   handleUpdateHallOrderForPriorityChangeFromEdit: (
@@ -79,6 +92,7 @@ type AppOverlayLayerFields = {
   onShowEventList: () => void;
   handleConfirmRename: EventRenameDialogProps["onConfirm"];
   handleConfirmExport: ExportOptionsDialogProps["onExport"];
+  previewEventExport?: ExportOptionsDialogProps["previewManifest"];
   mapData: MapDataStore;
   currentMapData: BlockDefinitionPanelProps["mapData"] | null;
   handleUpdateBlocks: BlockDefinitionPanelProps["onUpdateBlocks"];
@@ -109,6 +123,7 @@ type AppOverlayLayerFields = {
   >;
   handleVisitListClose: VisitListPanelProps["onClose"];
   visitListItems: ShoppingItem[];
+  visitListHistoryVersion?: number;
   handleVisitListOrderUpdate: VisitListPanelProps["onUpdateOrder"];
   visitListHallOrder: string[];
   layoutMode: LayoutMode;
@@ -180,7 +195,10 @@ export type AppOverlayLayerModel = {
   >;
   readonly visitList: Pick<
     AppOverlayLayerFields,
-    "layoutMode" | "visitListHallOrder" | "visitListItems"
+    | "layoutMode"
+    | "visitListHallOrder"
+    | "visitListItems"
+    | "visitListHistoryVersion"
   >;
   readonly imports: Pick<
     AppOverlayLayerFields,
@@ -210,10 +228,13 @@ export type AppOverlayLayerActions = {
     | "handleConfirmUpdate"
     | "handleUpdateHallOrderForPriorityChangeFromEdit"
     | "handleUpdateItem"
+    | "saveItemEdit"
+    | "previewItemEdit"
   >;
   readonly event: Pick<
     AppOverlayLayerFields,
     | "handleConfirmExport"
+    | "previewEventExport"
     | "handleConfirmRename"
     | "handleUrlUpdate"
     | "onShowEventList"
@@ -294,7 +315,12 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       mapTabDates,
       vertexGuideOptions,
     },
-    visitList: { layoutMode, visitListHallOrder, visitListItems },
+    visitList: {
+      layoutMode,
+      visitListHallOrder,
+      visitListItems,
+      visitListHistoryVersion,
+    },
     imports: { exportFileInputRef, mapFileInputRef, mapImportSavedSettings },
     list: {
       candidateMovePlan,
@@ -315,11 +341,13 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       handleCancelUpdate,
       handleConfirmDelete,
       handleConfirmUpdate,
-      handleUpdateHallOrderForPriorityChangeFromEdit,
       handleUpdateItem,
+      saveItemEdit,
+      previewItemEdit,
     },
     event: {
       handleConfirmExport,
+      previewEventExport,
       handleConfirmRename,
       handleUrlUpdate,
       onShowEventList,
@@ -384,6 +412,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
     hallDefinitionMode,
     pendingVertexSelection,
     visitListPanelOpen,
+    visitListPanelMapTab,
     visitListHasUnsavedChanges,
     showVisitListConfirmDialog,
     vertexSelectionMode,
@@ -406,32 +435,27 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
           item={editDialogItem}
           allItems={items}
           halls={getHallsForDate(editDialogItem.eventDate)}
-          onSave={(updatedItem) => {
-            const prevPriority = (editDialogItem.priorityLevel || "none") as
-              | "none"
-              | "priority"
-              | "highest";
-            const nextPriority = (updatedItem.priorityLevel || "none") as
-              | "none"
-              | "priority"
-              | "highest";
-            handleUpdateItem(updatedItem);
-            if (prevPriority !== nextPriority) {
-              handleUpdateHallOrderForPriorityChangeFromEdit(
-                updatedItem.id,
-                nextPriority,
-                prevPriority,
+          previewMembership={
+            previewItemEdit
+              ? (edited, intent) =>
+                  previewItemEdit(editDialogItem, edited, intent)
+              : undefined
+          }
+          onSave={async (updatedItem, intent) => {
+            if (saveItemEdit)
+              await saveItemEdit(editDialogItem, updatedItem, intent);
+            else {
+              const latest = items.find((item) => item.id === updatedItem.id);
+              if (!latest) return;
+              handleUpdateItem(
+                applyChangedFields(
+                  editDialogItem,
+                  updatedItem,
+                  latest,
+                ) as ShoppingItem,
               );
             }
             itemOverlayCommands.confirm();
-            setTimeout(() => {
-              const element = document.querySelector(
-                `[data-item-id="${updatedItem.id}"]`,
-              );
-              if (element) {
-                element.scrollIntoView({ behavior: "smooth", block: "center" });
-              }
-            }, 100);
           }}
           onPriorityChange={() => {
             /* no-op: priority 変更は onSave 内で統合処理済み */
@@ -503,6 +527,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
           isOpen={showExportOptions}
           onClose={eventOverlayCommands.close}
           onExport={handleConfirmExport}
+          previewManifest={previewEventExport}
           hasMapData={
             !!(
               exportEventName &&
@@ -635,6 +660,12 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
 
       {visitListPanelOpen && currentMapData && (
         <VisitListPanel
+          key={JSON.stringify([
+            activeEventName,
+            activeEventDate,
+            visitListPanelMapTab,
+            visitListHistoryVersion,
+          ])}
           isOpen={visitListPanelOpen}
           onClose={handleVisitListClose}
           items={visitListItems}
@@ -663,13 +694,21 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
             </p>
             <div className="flex justify-end gap-3">
               <button
-                onClick={handleVisitListDialogCancel}
+                onClick={() => {
+                  void Promise.resolve(handleVisitListDialogCancel()).catch(
+                    () => {},
+                  );
+                }}
                 className="px-4 py-2 text-sm font-semibold rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
               >
                 キャンセル（破棄）
               </button>
               <button
-                onClick={handleVisitListDialogConfirm}
+                onClick={() => {
+                  void Promise.resolve(handleVisitListDialogConfirm()).catch(
+                    () => {},
+                  );
+                }}
                 className="px-4 py-2 text-sm font-semibold rounded-md bg-blue-600 text-white hover:bg-blue-700"
               >
                 保存して確定

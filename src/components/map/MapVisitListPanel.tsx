@@ -1,8 +1,12 @@
 import React from "react";
 import { ShoppingItem } from "../../types/item";
 import { BlockDefinition } from "../../types/map";
-import { extractNumberFromItemNumber } from "../../xlsx/domain/itemNumber";
-import { findRouteLookupNumberCell } from "../../utils/mapRoutingSignature";
+import { resolveLocation } from "../../features/consistency/domain/membership";
+import { projectItemsToExecutionVisits } from "../../utils/visitProjection";
+import {
+  normalizeBaseSpaceNumber,
+  normalizeSpaceBlock,
+} from "../../features/space-navigation/domain/visitIdentity";
 
 interface MapVisitListPanelProps {
   isOpen: boolean;
@@ -14,10 +18,11 @@ interface MapVisitListPanelProps {
 }
 
 interface VisitCellInfo {
+  key: string;
   row: number;
   col: number;
-  blockName: string;
-  number: number;
+  displayLabel: string;
+  priorityLabel: string | null;
   order: number;
   circles: string[];
 }
@@ -33,47 +38,42 @@ const MapVisitListPanel: React.FC<MapVisitListPanelProps> = ({
   // 訪問先のセル情報を計算
   const visitCells: VisitCellInfo[] = React.useMemo(() => {
     const cells: VisitCellInfo[] = [];
-    const processedCells = new Set<string>();
+    const itemsById = new Map(items.map((item) => [item.id, item]));
+    const visits = projectItemsToExecutionVisits(
+      executeModeItemIds
+        .map((itemId) => itemsById.get(itemId))
+        .filter((item): item is ShoppingItem => item !== undefined),
+    );
 
-    executeModeItemIds.forEach((itemId, routeIndex) => {
-      const item = items.find((i) => i.id === itemId);
-      if (!item) return;
+    visits.forEach((visit, visitIndex) => {
+      const item = visit.items[0];
 
-      // 該当するブロックを探す
-      const block = blocks.find((b) => b.name === item.block);
-      if (!block) return;
+      const location = resolveLocation(
+        { blocks, cells: [], mergedCells: [], maxRow: 0, maxCol: 0 },
+        item,
+      );
+      if (location.status !== "resolved") return;
+      const numberCell = location.location.cell;
 
-      // ナンバーの数値部分を抽出
-      const numStr = extractNumberFromItemNumber(item.number);
-      if (!numStr) return;
-      const numValue = parseInt(numStr, 10);
-
-      // ブロック内の該当する数値セルを探す
-      const numberCell = findRouteLookupNumberCell(block, numValue);
-      if (!numberCell) return;
-
-      const key = `${numberCell.row}-${numberCell.col}`;
-
-      // 同じセルは1回のみ追加
-      if (processedCells.has(key)) {
-        // 既存のエントリにサークル名を追加
-        const existingCell = cells.find(
-          (c) => c.row === numberCell.row && c.col === numberCell.col,
-        );
-        if (existingCell && !existingCell.circles.includes(item.circle)) {
-          existingCell.circles.push(item.circle);
-        }
-        return;
-      }
-
-      processedCells.add(key);
       cells.push({
+        key: visit.key,
         row: numberCell.row,
         col: numberCell.col,
-        blockName: item.block,
-        number: numValue,
-        order: routeIndex + 1,
-        circles: [item.circle],
+        displayLabel: `${normalizeSpaceBlock(item.block)}-${normalizeBaseSpaceNumber(item.number).toUpperCase()}`,
+        priorityLabel:
+          item.priorityLevel === "highest"
+            ? "最優先"
+            : item.priorityLevel === "priority"
+              ? "優先"
+              : null,
+        order: visitIndex + 1,
+        circles: Array.from(
+          new Set(
+            visit.items
+              .map((visitItem) => visitItem.circle)
+              .filter((circle) => circle.length > 0),
+          ),
+        ),
       });
     });
 
@@ -119,7 +119,7 @@ const MapVisitListPanel: React.FC<MapVisitListPanelProps> = ({
           <div className="divide-y divide-slate-200 dark:divide-slate-700">
             {visitCells.map((cell) => (
               <button
-                key={`${cell.row}-${cell.col}`}
+                key={cell.key}
                 onClick={() => onJumpToCell(cell.row, cell.col)}
                 className="w-full px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
               >
@@ -128,8 +128,13 @@ const MapVisitListPanel: React.FC<MapVisitListPanelProps> = ({
                     {cell.order}
                   </span>
                   <div className="flex-1">
-                    <div className="font-medium text-slate-900 dark:text-white">
-                      {cell.blockName}-{cell.number}
+                    <div className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>{cell.displayLabel}</span>
+                      {cell.priorityLabel && (
+                        <span className="text-xs rounded bg-amber-100 px-1.5 py-0.5 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                          {cell.priorityLabel}
+                        </span>
+                      )}
                     </div>
                     <div className="text-sm text-slate-500 dark:text-slate-400 truncate">
                       {cell.circles.join(", ")}

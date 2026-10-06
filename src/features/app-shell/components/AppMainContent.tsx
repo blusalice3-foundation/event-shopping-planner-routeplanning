@@ -5,6 +5,7 @@ import SortAscendingIcon from "../../../components/icons/SortAscendingIcon";
 import SortDescendingIcon from "../../../components/icons/SortDescendingIcon";
 import { MapView } from "../../../components/map";
 import { getSpaceKey } from "../../../utils/spaceGrouping";
+import { normalizeExecutionVisitDay } from "../../../utils/visitProjection";
 import type { BulkAddMetadata } from "../../../features/events/bulkAdd";
 import type {
   DayMapData,
@@ -91,6 +92,7 @@ type AppMainContentFields = {
   getHallOrderForDate: (eventDate: string) => string[];
   getHallsForDate: (eventDate: string) => HallDefinition[];
   getMapDataForDate: (eventDate: string) => DayMapData | null;
+  getMapTabForDate?: (eventDate: string) => string | null;
   hallDefinitions: HallDefinitionsStore;
   hallRouteSettings: HallRouteSettingsStore;
   handleActivateLateFilter: () => void;
@@ -191,6 +193,8 @@ type AppMainContentFields = {
     MapViewProps["onUpdateItemPriority"]
   >;
   highlightedItemId: string | null;
+  searchScrollRequest?: { itemId: string; requestId: number } | null;
+  onSearchScrollRequestConsumed?: (requestId: number) => void;
   highlightedMapCell: { row: number; col: number } | null;
   isMapTab: boolean;
   items: ShoppingItem[];
@@ -279,9 +283,12 @@ export type AppMainContentModel = {
     | "getHallOrderForDate"
     | "getHallsForDate"
     | "getMapDataForDate"
+    | "getMapTabForDate"
     | "hallDefinitions"
     | "hallRouteSettings"
     | "highlightedItemId"
+    | "searchScrollRequest"
+    | "onSearchScrollRequestConsumed"
     | "highlightedMapCell"
     | "mapData"
     | "mapIsHallOrderOpen"
@@ -442,9 +449,12 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
       getHallOrderForDate,
       getHallsForDate,
       getMapDataForDate,
+      getMapTabForDate,
       hallDefinitions,
       hallRouteSettings,
       highlightedItemId,
+      searchScrollRequest,
+      onSearchScrollRequestConsumed,
       highlightedMapCell,
       mapData,
       mapIsHallOrderOpen,
@@ -553,8 +563,14 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
 
   const editSpaceGroupKeys = React.useMemo(() => {
     const groupKeys = new Set<string>();
+    const normalizedActiveEventDate =
+      normalizeExecutionVisitDay(activeEventDate);
     items
-      .filter((item) => item.eventDate === activeEventDate)
+      .filter(
+        (item) =>
+          normalizeExecutionVisitDay(item.eventDate) ===
+          normalizedActiveEventDate,
+      )
       .forEach((item) => {
         const spaceKey = getSpaceKey(item.block, item.number);
         const priority = item.priorityLevel || "none";
@@ -609,6 +625,7 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
         <MapView
           mapData={currentMapData}
           mapName={currentMapTabName}
+          eventDate={activeEventDate}
           items={items}
           executeModeItemIds={currentMapExecuteItemIds}
           routeHallOrder={currentMapRouteHallOrder}
@@ -722,6 +739,8 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
                   onToggleRangeSelection={handleToggleRangeSelection}
                   duplicateCircleItemIds={duplicateCircleItemIds}
                   highlightedItemId={highlightedItemId}
+                  searchScrollRequest={searchScrollRequest}
+                  onSearchScrollRequestConsumed={onSearchScrollRequestConsumed}
                   layoutMode={layoutMode}
                   viewMode="edit"
                   showHallGroups={!spaceGroupingEnabled}
@@ -835,6 +854,8 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
                   onToggleRangeSelection={handleToggleRangeSelection}
                   duplicateCircleItemIds={duplicateCircleItemIds}
                   highlightedItemId={highlightedItemId}
+                  searchScrollRequest={searchScrollRequest}
+                  onSearchScrollRequestConsumed={onSearchScrollRequestConsumed}
                   layoutMode={layoutMode}
                   viewMode="edit"
                   showSpaceGroups={spaceGroupingEnabled}
@@ -866,6 +887,7 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
                 items={items}
                 executeModeItems={executeModeItems}
                 mapData={mapData}
+                resolvedMapKey={getMapTabForDate?.(activeEventDate)}
                 hallDefinitions={hallDefinitions}
                 hallRouteSettings={hallRouteSettings}
                 onUpdateItem={handleUpdateItem}
@@ -917,6 +939,8 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
               onToggleRangeSelection={handleToggleRangeSelection}
               duplicateCircleItemIds={duplicateCircleItemIds}
               highlightedItemId={highlightedItemId}
+              searchScrollRequest={searchScrollRequest}
+              onSearchScrollRequestConsumed={onSearchScrollRequestConsumed}
               layoutMode={layoutMode}
               viewMode="execute"
               showSpaceGroups={executeSpaceGroupingEnabled}

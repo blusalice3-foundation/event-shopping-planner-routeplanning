@@ -1,10 +1,12 @@
 import { ShoppingItem } from "../types/item";
+import { normalizeExecutionVisitDay } from "./visitProjection";
 
 export function extractEventDates(items: ShoppingItem[]): string[] {
   const eventDates = new Set<string>();
   items.forEach((item) => {
-    if (item.eventDate && item.eventDate.trim()) {
-      eventDates.add(item.eventDate.trim());
+    const eventDate = normalizeExecutionVisitDay(item.eventDate);
+    if (eventDate) {
+      eventDates.add(eventDate);
     }
   });
 

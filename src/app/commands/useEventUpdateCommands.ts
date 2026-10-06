@@ -12,6 +12,7 @@ import type {
 import type { EventUpdateApplyOptions } from "../../features/events/updateApply";
 import {
   applyPendingEventUpdate,
+  eventUpdateItemsMatch,
   buildEventUpdateDiffFromSpreadsheet,
   resolveSpreadsheetSource,
   type EventUpdateCommitState,
@@ -27,6 +28,7 @@ export interface MutableEventUpdateValue<T> {
 
 export interface EventUpdateStatePort {
   readonly eventLists: Record<string, ShoppingItem[]>;
+  readonly getEventGeneration?: (eventName: string) => number;
   readonly eventMetadata: Record<string, EventMetadata>;
   readonly pendingDuplicateEvent: PendingDuplicateEventImport | null;
   readonly pendingEventUpdate: PendingEventUpdate | null;
@@ -94,7 +96,7 @@ export const useEventUpdateCommands = ({
   effects,
 }: EventUpdateCommandPorts): EventUpdateCommands => {
   const {
-    eventLists,
+    getEventGeneration,
     eventMetadata,
     pendingDuplicateEvent,
     pendingEventUpdate,
@@ -126,12 +128,15 @@ export const useEventUpdateCommands = ({
       closeEventOverlay();
       pendingEventUpdateBaseItemsRef.current = null;
 
-      const currentItems = eventLists[eventName];
-      if (!currentItems) return;
+      const latestItems = eventListsRef.current[eventName];
+      if (!latestItems) return;
+      const currentItems = structuredClone(latestItems);
       const requestEpoch = eventUpdatePreviewEpochRef.current;
+      const eventGeneration = getEventGeneration?.(eventName);
       const isCurrentRequest = () =>
         eventUpdatePreviewEpochRef.current === requestEpoch &&
-        eventListsRef.current[eventName] === currentItems;
+        getEventGeneration?.(eventName) === eventGeneration &&
+        eventUpdateItemsMatch(eventListsRef.current[eventName], currentItems);
 
       await settleEventUpdatePreviewIfCurrent({
         loadPreview: () =>
@@ -145,12 +150,14 @@ export const useEventUpdateCommands = ({
                   kind,
                   eventName,
                   diff: updateDiff,
+                  ...(eventGeneration === undefined ? {} : { eventGeneration }),
                   nextSource: source,
                 }
               : {
                   kind,
                   eventName,
                   diff: updateDiff,
+                  ...(eventGeneration === undefined ? {} : { eventGeneration }),
                 },
           );
         },
@@ -158,7 +165,7 @@ export const useEventUpdateCommands = ({
       });
     },
     [
-      eventLists,
+      getEventGeneration,
       eventListsRef,
       eventUpdatePreviewEpochRef,
       closeEventOverlay,
@@ -290,16 +297,22 @@ export const useEventUpdateCommands = ({
     async (options: EventUpdateApplyOptions): Promise<void> => {
       if (!pendingEventUpdate) return;
 
-      const nextState = applyPendingEventUpdate({
-        state: {
-          eventLists: eventListsRef.current,
-          eventMetadata: eventMetadataRef.current,
-          executeModeItems: executeModeItemsRef.current,
-        },
-        pending: pendingEventUpdate,
-        baseItems: pendingEventUpdateBaseItemsRef.current,
-        options,
-      });
+      const generationMatches =
+        pendingEventUpdate.eventGeneration === undefined ||
+        pendingEventUpdate.eventGeneration ===
+          getEventGeneration?.(pendingEventUpdate.eventName);
+      const nextState = generationMatches
+        ? applyPendingEventUpdate({
+            state: {
+              eventLists: eventListsRef.current,
+              eventMetadata: eventMetadataRef.current,
+              executeModeItems: executeModeItemsRef.current,
+            },
+            pending: pendingEventUpdate,
+            baseItems: pendingEventUpdateBaseItemsRef.current,
+            options,
+          })
+        : null;
       if (!nextState) {
         closeEventOverlay();
         notify(
@@ -322,6 +335,7 @@ export const useEventUpdateCommands = ({
       executeModeItemsRef,
       notify,
       pendingEventUpdate,
+      getEventGeneration,
       pendingEventUpdateBaseItemsRef,
     ],
   );

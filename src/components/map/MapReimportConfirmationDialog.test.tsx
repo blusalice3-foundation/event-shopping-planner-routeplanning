@@ -62,7 +62,7 @@ describe("MapReimportConfirmationDialog", () => {
     );
 
     expect(
-      screen.getByText(/買い物リスト、購入状態、実行順/),
+      screen.getByText(/同じマップを使う全日付の所属と巡回情報を再判定/),
     ).toBeInTheDocument();
     expect(screen.getByText("1日目（1日目マップ）")).toBeInTheDocument();
     const preserve = screen.getByRole("checkbox", {
@@ -72,10 +72,13 @@ describe("MapReimportConfirmationDialog", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "理解してマップを入れ替える",
+        name: "影響範囲を確認する",
       }),
     );
-    expect(onConfirm).toHaveBeenCalledWith({ preserveMaplessHalls: true });
+    expect(onConfirm).toHaveBeenCalledWith({
+      preserveMaplessHalls: true,
+      targetMapKeys: {},
+    });
   });
 
   it("shows the additional impact when mapless halls are not preserved", () => {
@@ -100,10 +103,13 @@ describe("MapReimportConfirmationDialog", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "理解してマップを入れ替える",
+        name: "影響範囲を確認する",
       }),
     );
-    expect(onConfirm).toHaveBeenCalledWith({ preserveMaplessHalls: false });
+    expect(onConfirm).toHaveBeenCalledWith({
+      preserveMaplessHalls: false,
+      targetMapKeys: {},
+    });
   });
 
   it("cancels without confirming", () => {

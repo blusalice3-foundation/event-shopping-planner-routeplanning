@@ -16,12 +16,13 @@ const createItem = (eventDate: string, id: string): ShoppingItem => ({
 });
 
 describe("extractEventDates", () => {
-  it("deduplicates and sorts dates after trimming", () => {
+  it("deduplicates and sorts dates after execution-day normalization", () => {
     const items: ShoppingItem[] = [
       createItem(" 2日目 ", "1"),
       createItem("1日目", "2"),
       createItem("10日目", "3"),
       createItem("1日目", "4"),
+      createItem("1日目\u3000", "full-width-padding"),
       createItem("", "5"),
       createItem("  ", "6"),
       createItem("A日目", "7"),

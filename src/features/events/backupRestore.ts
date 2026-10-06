@@ -11,6 +11,7 @@ const APP_DATA_SECTIONS = [
   "hallDefinitions",
   "hallRouteSettings",
   "mapViewportSettings",
+  "eventConsistency",
 ] as const satisfies readonly (keyof AppData)[];
 
 function hasOwn(record: Record<string, unknown>, key: string): boolean {

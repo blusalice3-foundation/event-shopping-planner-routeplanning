@@ -257,7 +257,7 @@ test.describe("enforced CSP full runtime flows", () => {
     expect(workerResult.contentType).toMatch(/javascript/);
     expect(workerResult.message).toEqual({
       type: "XLSX_ERROR",
-      protocolVersion: 1,
+      protocolVersion: 2,
       requestId: "00000000-0000-4000-8000-000000000001",
       kind: "unknown",
       errorCode: "INVALID_REQUEST",

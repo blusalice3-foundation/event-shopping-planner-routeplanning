@@ -1,15 +1,16 @@
+import { resolveLocation } from "../features/consistency/domain/membership";
 import React, {
   useState,
   useCallback,
   useMemo,
   useEffect,
+  useLayoutEffect,
   useRef,
 } from "react";
 import { ShoppingItem } from "../types/item";
-import { DayMapData, HallDefinition, BlockDefinition } from "../types/map";
+import { DayMapData, HallDefinition } from "../types/map";
 import { getSpaceKey } from "../utils/spaceGrouping";
 import { parseGroupId, groupItemsByHallOrder } from "../utils/hallGrouping";
-import { findRouteLookupNumberCell } from "../utils/mapRoutingSignature";
 import { acquireBodyScrollLock } from "../utils/bodyScrollLock";
 import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
 import GripVerticalIcon from "./icons/GripVerticalIcon";
@@ -21,7 +22,7 @@ interface VisitListPanelProps {
   isOpen: boolean;
   onClose: () => void;
   items: ShoppingItem[]; // 実行列のアイテム（訪問順）
-  onUpdateOrder: (newOrder: ShoppingItem[]) => void;
+  onUpdateOrder: (newOrder: ShoppingItem[]) => void | Promise<void>;
   mapData: DayMapData | null;
   hallDefinitions: HallDefinition[];
   hallOrder: string[]; // グループIDの訪問順序（{hallId}, {hallId}:priority, {hallId}:highest）
@@ -29,8 +30,8 @@ interface VisitListPanelProps {
   onHighlightCell: (row: number, col: number) => void;
   onClearHighlight: () => void;
   hasUnsavedChanges: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
+  onConfirm: () => void | Promise<void>;
+  onCancel: () => void | Promise<void>;
   selectedHallId?: string; // 選択中のホールID（'all'は全ホール）
   onUpdateItemPriority?: (itemId: string, priorityLevel: PriorityLevel) => void; // 優先度変更コールバック
 }
@@ -243,29 +244,49 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
     [historyIndex],
   );
 
+  const historyWritePending = useRef(false);
+  const applyHistoryOrder = useCallback(
+    async (next: ShoppingItem[], accepted: () => void) => {
+      if (historyWritePending.current) return;
+      historyWritePending.current = true;
+      try {
+        await onUpdateOrder(next);
+        accepted();
+      } catch {
+        /* The application displays the save failure. */
+      } finally {
+        historyWritePending.current = false;
+      }
+    },
+    [onUpdateOrder],
+  );
   // Undo
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
       const prevState = history[historyIndex - 1];
-      onUpdateOrder(prevState.items);
-      setHistoryIndex((prev) => prev - 1);
+      void applyHistoryOrder(prevState.items, () =>
+        setHistoryIndex(historyIndex - 1),
+      );
     }
-  }, [history, historyIndex, onUpdateOrder]);
+  }, [history, historyIndex, applyHistoryOrder]);
 
   // Redo
   const handleRedo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       const nextState = history[historyIndex + 1];
-      onUpdateOrder(nextState.items);
-      setHistoryIndex((prev) => prev + 1);
+      void applyHistoryOrder(nextState.items, () =>
+        setHistoryIndex(historyIndex + 1),
+      );
     }
-  }, [history, historyIndex, onUpdateOrder]);
+  }, [history, historyIndex, applyHistoryOrder]);
 
+  const currentItems = useRef(items);
+  currentItems.current = items;
   // 履歴クリア
   const clearHistory = useCallback(() => {
-    setHistory([{ items: [...items] }]);
+    setHistory([{ items: [...currentItems.current] }]);
     setHistoryIndex(0);
-  }, [items]);
+  }, []);
 
   // パネルを開いたときに初期履歴を設定
   useEffect(() => {
@@ -275,20 +296,27 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
     }
   }, [isOpen, items, history.length]);
 
+  const [historyReset, setHistoryReset] = useState(0);
+  useLayoutEffect(() => {
+    if (historyReset > 0) clearHistory();
+  }, [historyReset, clearHistory]);
+  const resetAcceptedHistory = useCallback(
+    () => setHistoryReset((value) => value + 1),
+    [],
+  );
   // 確定
   const handleConfirm = useCallback(() => {
-    clearHistory();
-    onConfirm();
-  }, [clearHistory, onConfirm]);
+    void Promise.resolve(onConfirm())
+      .then(resetAcceptedHistory)
+      .catch(() => {});
+  }, [resetAcceptedHistory, onConfirm]);
 
   // キャンセル
   const handleCancel = useCallback(() => {
-    if (history.length > 0) {
-      onUpdateOrder(history[0].items);
-    }
-    clearHistory();
-    onCancel();
-  }, [history, onUpdateOrder, clearHistory, onCancel]);
+    void Promise.resolve(onCancel())
+      .then(resetAcceptedHistory)
+      .catch(() => {});
+  }, [resetAcceptedHistory, onCancel]);
   const { dialogRef: mobileDialogRef, onDialogKeyDown: onMobileDialogKeyDown } =
     useModalDialogBehavior({
       isOpen: isOpen && layoutMode === "smartphone",
@@ -353,8 +381,7 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
           return g;
         });
         const newItems = rebuildItemsFromGroups(newGroups);
-        pushHistory(newItems);
-        onUpdateOrder(newItems);
+        void applyHistoryOrder(newItems, () => pushHistory(newItems));
       } else {
         // 異なるスペース間：移動元スペースグループを抜き出してドロップ先に挿入
         const hallItems = [...group.items];
@@ -432,11 +459,10 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
           return g;
         });
         const newItems = rebuildItemsFromGroups(newGroups);
-        pushHistory(newItems);
-        onUpdateOrder(newItems);
+        void applyHistoryOrder(newItems, () => pushHistory(newItems));
       }
     },
-    [groupedItems, rebuildItemsFromGroups, pushHistory, onUpdateOrder],
+    [groupedItems, rebuildItemsFromGroups, pushHistory, applyHistoryOrder],
   );
 
   // グループ内で2つのアイテムを入れ替え（異スペース間はスペースグループ丸ごと入れ替え）
@@ -485,8 +511,7 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
       });
 
       const newItems = rebuildItemsFromGroups(newGroups);
-      pushHistory(newItems);
-      onUpdateOrder(newItems);
+      void applyHistoryOrder(newItems, () => pushHistory(newItems));
 
       // 範囲選択をクリア
       setRangeStartHallId(null);
@@ -494,7 +519,7 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
       setRangeEndIndex(null);
       setRangeSelectionMode(false);
     },
-    [groupedItems, rebuildItemsFromGroups, pushHistory, onUpdateOrder],
+    [groupedItems, rebuildItemsFromGroups, pushHistory, applyHistoryOrder],
   );
 
   // グループの折りたたみ切り替え
@@ -597,19 +622,9 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
     (item: ShoppingItem) => {
       if (!mapData) return;
 
-      // 完全一致でブロックを検索（大文字/小文字を区別）
-      const block = mapData.blocks.find(
-        (b: BlockDefinition) => b.name === item.block,
-      );
-      if (!block) return;
-
-      const numMatch = item.number?.match(/\d+/);
-      if (!numMatch) return;
-      const num = parseInt(numMatch[0], 10);
-
-      const cell = findRouteLookupNumberCell(block, num);
-      if (cell) {
-        onHighlightCell(cell.row, cell.col);
+      const location = resolveLocation(mapData, item);
+      if (location.status === "resolved") {
+        onHighlightCell(location.location.cell.row, location.location.cell.col);
       }
     },
     [mapData, onHighlightCell],

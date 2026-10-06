@@ -1,3 +1,4 @@
+import { isCompleteHallOrder } from "../features/consistency/domain/projection";
 import type { ShoppingItem } from "../types/item";
 import type {
   HallDefinition,
@@ -84,7 +85,14 @@ export function buildMergedHallRouteSettings(params: {
       ? maplessSettings.hallOrder
       : maplessHalls.map((h) => h.id);
 
-  const mergedOrder = [...mapOrder, ...maplessOrder];
+  const completeSettings = isCompleteHallOrder(mapSettings)
+    ? mapSettings
+    : !hasMap && isCompleteHallOrder(maplessSettings)
+      ? maplessSettings
+      : undefined;
+  const mergedOrder = completeSettings
+    ? [...completeSettings.hallOrder]
+    : [...mapOrder, ...maplessOrder];
 
   // ===== 動的注入: ストアに無い優先度グループをアイテムから計算して補完 =====
   if (executeIds.length > 0) {
@@ -140,10 +148,12 @@ export function buildMergedHallRouteSettings(params: {
     mergedHalls,
     mergedSettings: {
       hallOrder: mergedOrder,
-      hallVisitLists: [
-        ...(mapSettings?.hallVisitLists || []),
-        ...(maplessSettings?.hallVisitLists || []),
-      ],
+      hallVisitLists: completeSettings
+        ? completeSettings.hallVisitLists
+        : [
+            ...(mapSettings?.hallVisitLists || []),
+            ...(maplessSettings?.hallVisitLists || []),
+          ],
     },
     dayMapData,
   };

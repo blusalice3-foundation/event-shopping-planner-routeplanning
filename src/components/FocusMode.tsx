@@ -1,3 +1,5 @@
+import { resolveDayMap } from "../features/consistency/domain/context";
+import { resolveLocation } from "../features/consistency/domain/membership";
 import React, {
   useState,
   useMemo,
@@ -18,6 +20,7 @@ import {
 } from "../types/map";
 import {
   FocusModeSessionState,
+  FocusModeAddItemReturn,
   FocusPhase,
   FocusMapCenteringMode,
   FocusMapViewportRestoreRequest,
@@ -59,15 +62,14 @@ import { resolveResumeChoice } from "./focus/resumeChoice";
 import { useAutoSkipEmptyVisit } from "./focus/hooks/useAutoSkipEmptyVisit";
 import { useFocusSessionState } from "./focus/hooks/useFocusSessionState";
 import { useResumeFlow } from "./focus/hooks/useResumeFlow";
-import { extractNumberFromItemNumber } from "../xlsx/domain/itemNumber";
 import {
   buildItemRoutingSignature,
+  getHallIdForItem,
   sortItemsByHallOrder,
 } from "../utils/hallGrouping";
 import {
   buildDayMapPathfindingSignature,
   buildDayMapVisitLookupSignature,
-  findRouteLookupNumberCell,
 } from "../utils/mapRoutingSignature";
 import { buildHallDefinitionsRoutingSignature } from "../utils/hallRoutingSignature";
 import {
@@ -118,6 +120,13 @@ import {
   normalizeSpaceBlock,
 } from "../features/space-navigation/domain/visitIdentity";
 import {
+  buildExecutionVisitProjectionKey,
+  buildPhaseVisitProjectionKey,
+  EXECUTION_VISIT_MERGE_NOTICE,
+  normalizeExecutionVisitDay,
+  projectItemsToExecutionVisits,
+} from "../utils/visitProjection";
+import {
   aggregateNavigatorSpace,
   groupCellItemsBySpace,
 } from "../features/space-navigation/domain/opportunisticNavigation";
@@ -139,7 +148,7 @@ interface FocusModeProps {
   // 新規アイテム追加（purchaseStatusを含めることが可能）
   onAddItem?: (
     item: Omit<ShoppingItem, "id"> & { purchaseStatus?: PurchaseStatus },
-  ) => void;
+  ) => FocusModeAddItemReturn;
   // アイテム編集・削除
   onEditRequest?: (item: ShoppingItem) => void;
   onDeleteRequest?: (item: ShoppingItem) => void;
@@ -166,12 +175,23 @@ const SWIPE_THRESHOLD = 50;
 const FOOTER_HEIGHT_SP = 56;
 const FOOTER_HEIGHT_PC = 64;
 const FOOTER_OVERLAP_GUARD_PX = 1;
-const getVisitKey = (item: ShoppingItem): string => {
-  const priority = item.priorityLevel || "none";
-  return `${item.eventDate.trim()}-${buildSpaceKey(item.block, item.number)}-${priority}`;
+const getVisitKey = (item: ShoppingItem): string =>
+  buildExecutionVisitProjectionKey(item);
+const getMapVisitKey = (item: ShoppingItem): string =>
+  `${normalizeExecutionVisitDay(item.eventDate)}-${buildSpaceKey(item.block, item.number)}`;
+const resolveFocusDayMapKey = (
+  maps: { [dayMapName: string]: DayMapData } | undefined,
+  eventDate: string,
+): string | null => {
+  const result = resolveDayMap(maps, eventDate);
+  return result.status === "resolved" ? result.key : null;
 };
-const getMapVisitKey = (item: ShoppingItem): string => {
-  return `${item.eventDate.trim()}-${buildSpaceKey(item.block, item.number)}`;
+const resolveFocusDayMapData = (
+  maps: { [dayMapName: string]: DayMapData } | undefined,
+  eventDate: string,
+): DayMapData | null => {
+  const mapKey = resolveFocusDayMapKey(maps, eventDate);
+  return mapKey ? maps?.[mapKey] || null : null;
 };
 const getSpaceDisplayLabel = (item: ShoppingItem): string => {
   return `${normalizeSpaceBlock(item.block)}-${normalizeBaseSpaceNumber(item.number).toUpperCase()}`;
@@ -234,6 +254,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     savedPhaseIndices,
     setSavedPhaseIndices,
   } = useFocusSessionState(resumeState);
+  const [notificationRevision, setNotificationRevision] = useState(0);
   const clearAutoAdvanceTimer = useCallback(() => {}, []);
   const [blinkingLimitedMissingItemIds, setBlinkingLimitedMissingItemIds] =
     useState<Set<string>>(new Set());
@@ -383,9 +404,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     // ホール定義 0 件でも sortItemsByHallOrder は未定義+優先度バケットで並べ替える
     const firstItem = rawItems[0];
     if (!firstItem) return rawItems;
-    const dayMapData = mapData
-      ? mapData[`${firstItem.eventDate}マップ`] || null
-      : null;
+    const dayMapData = resolveFocusDayMapData(mapData, firstItem.eventDate);
     return sortItemsByHallOrder(
       rawItems,
       dayMapData,
@@ -418,7 +437,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
       .find((item): item is ShoppingItem => item !== undefined);
 
     if (!firstItem || !mapData) return null;
-    return mapData[`${firstItem.eventDate}マップ`] || null;
+    return resolveFocusDayMapData(mapData, firstItem.eventDate);
   }, [executeModeItemIds, itemsById, mapData]);
 
   const routeVisitLookupMapSignature = useMemo(() => {
@@ -457,7 +476,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     const sortedItems = firstItem
       ? sortItemsByHallOrder(
           rawItems,
-          mapData ? mapData[`${firstItem.eventDate}マップ`] || null : null,
+          resolveFocusDayMapData(mapData, firstItem.eventDate),
           hallDefinitions || [],
           hallOrder,
         )
@@ -478,20 +497,12 @@ const FocusMode: React.FC<FocusModeProps> = ({
   ]);
   // 全訪問先リストを実行列順序で生成
   const allVisits = useMemo(() => {
-    const visitKeyOrder: string[] = [];
-    const visitMap = new Map<string, ShoppingItem[]>();
-    executeItems.forEach((item) => {
-      const key = getVisitKey(item);
-      if (!visitMap.has(key)) {
-        visitMap.set(key, []);
-        visitKeyOrder.push(key);
-      }
-      visitMap.get(key)!.push(item);
-    });
-    return visitKeyOrder.map((key) => ({
-      key,
-      items: visitMap.get(key)!,
-    }));
+    return projectItemsToExecutionVisits(executeItems).map(
+      ({ key, items }) => ({
+        key,
+        items,
+      }),
+    );
   }, [executeItems]);
   const currentPostponedItemIds = useMemo(() => {
     return new Set(
@@ -851,7 +862,9 @@ const FocusMode: React.FC<FocusModeProps> = ({
           const firstItem = entry.itemIds
             .map((itemId) => itemsById.get(itemId))
             .find((item): item is ShoppingItem => item !== undefined);
-          return firstItem ? getVisitKey(firstItem) : null;
+          return firstItem
+            ? buildPhaseVisitProjectionKey(firstItem, entry.phase || "normal")
+            : null;
         })
         .filter((visitKey): visitKey is string => visitKey !== null),
     [baseNavigatorEntries, itemsById],
@@ -1123,9 +1136,8 @@ const FocusMode: React.FC<FocusModeProps> = ({
   // 現在のマップ名
   const currentMapName = useMemo(() => {
     if (!currentVisit || currentVisit.items.length === 0) return null;
-    const eventDate = currentVisit.items[0].eventDate;
-    return `${eventDate}マップ`;
-  }, [currentVisit]);
+    return resolveFocusDayMapKey(mapData, currentVisit.items[0].eventDate);
+  }, [currentVisit, mapData]);
   // 現在のマップデータ
   const currentMapData = useMemo(() => {
     if (!currentMapName || !mapData) return null;
@@ -1191,38 +1203,18 @@ const FocusMode: React.FC<FocusModeProps> = ({
     return currentMapData;
   }, [currentMapData, currentMapName, currentRouteMapDataSignature]);
 
-  // マップ用のdayName（マップ名からサフィックスを除去）
-  const mapDayName = useMemo(() => {
-    if (!currentMapName) return "";
-    const dayMatch = currentMapName.match(/^(.+)マップ$/);
-    return dayMatch ? dayMatch[1].trim() : "";
-  }, [currentMapName]);
-  const visitKeyCellMap = useMemo(() => {
+  const mapDayName = normalizeExecutionVisitDay(
+    currentVisit?.items[0]?.eventDate ?? "",
+  );
+  const executionVisitCellMap = useMemo(() => {
     const map = new Map<string, { row: number; col: number; key: string }>();
     if (!mapDayName || !currentVisitLookupMapData) return map;
     routePositionItems.forEach((item) => {
-      const itemEventDate = item.eventDate?.trim() || "";
+      const itemEventDate = normalizeExecutionVisitDay(item.eventDate || "");
       if (itemEventDate !== mapDayName) return;
-      const itemBlockName = normalizeSpaceBlock(item.block || "");
-      let block = currentVisitLookupMapData.blocks.find(
-        (candidate) => normalizeSpaceBlock(candidate.name) === itemBlockName,
-      );
-      if (!block) {
-        const candidates = currentVisitLookupMapData.blocks.filter(
-          (candidate) =>
-            normalizeSpaceBlock(candidate.name).toLowerCase() ===
-            itemBlockName.toLowerCase(),
-        );
-        if (candidates.length === 1) block = candidates[0];
-      }
-      if (!block) return;
-      const numStr = extractNumberFromItemNumber(
-        normalizeBaseSpaceNumber(item.number),
-      );
-      if (!numStr) return;
-      const num = parseInt(numStr, 10);
-      const cell = findRouteLookupNumberCell(block, num);
-      if (!cell) return;
+      const location = resolveLocation(currentVisitLookupMapData, item);
+      if (location.status !== "resolved") return;
+      const cell = location.location.cell;
       const visitKey = getVisitKey(item);
       if (!map.has(visitKey)) {
         map.set(visitKey, {
@@ -1234,6 +1226,27 @@ const FocusMode: React.FC<FocusModeProps> = ({
     });
     return map;
   }, [routePositionItems, currentVisitLookupMapData, mapDayName]);
+  const visitKeyCellMap = useMemo(() => {
+    const map = new Map<string, { row: number; col: number; key: string }>();
+    baseNavigatorEntries.forEach((entry) => {
+      const firstItem = entry.itemIds
+        .map((itemId) => itemsById.get(itemId))
+        .find((item): item is ShoppingItem => item !== undefined);
+      if (!firstItem) return;
+      const coord = executionVisitCellMap.get(getVisitKey(firstItem));
+      if (!coord) return;
+      const phase = entry.phase || "normal";
+      map.set(buildPhaseVisitProjectionKey(firstItem, phase), coord);
+
+      // FocusModeMapCanvas の従来キー契約も残す。ルート計算は phase を含む
+      // PhaseVisitIdentity を使い、互換キーは既存の表示位置参照だけに供する。
+      const legacyExecutionVisitKey = `${getMapVisitKey(firstItem)}-${firstItem.priorityLevel || "none"}`;
+      if (!map.has(legacyExecutionVisitKey)) {
+        map.set(legacyExecutionVisitKey, coord);
+      }
+    });
+    return map;
+  }, [baseNavigatorEntries, executionVisitCellMap, itemsById]);
   const routeCoordsSignature = useMemo(() => {
     return JSON.stringify(
       allVisitKeys.map((visitKey) => {
@@ -1309,13 +1322,23 @@ const FocusMode: React.FC<FocusModeProps> = ({
     () => new Set(precomputedRouteCalculation.missingVisitKeys),
     [precomputedRouteCalculation.missingVisitKeys],
   );
-  const missingRouteItemIds = useMemo(
-    () =>
-      routePositionItems
-        .filter((item) => missingRouteVisitKeys.has(getVisitKey(item)))
-        .map((item) => item.id),
-    [missingRouteVisitKeys, routePositionItems],
-  );
+  const missingRouteItemIds = useMemo(() => {
+    const missingIds = new Set<string>();
+    baseNavigatorEntries.forEach((entry) => {
+      const firstItem = entry.itemIds
+        .map((itemId) => itemsById.get(itemId))
+        .find((item): item is ShoppingItem => item !== undefined);
+      if (
+        firstItem &&
+        missingRouteVisitKeys.has(
+          buildPhaseVisitProjectionKey(firstItem, entry.phase || "normal"),
+        )
+      ) {
+        entry.itemIds.forEach((itemId) => missingIds.add(itemId));
+      }
+    });
+    return Array.from(missingIds);
+  }, [baseNavigatorEntries, itemsById, missingRouteVisitKeys]);
   const routeDiagnostics = useMemo(
     () =>
       buildRouteDiagnostics({
@@ -1327,44 +1350,16 @@ const FocusMode: React.FC<FocusModeProps> = ({
     [missingRouteItemIds, precomputedRouteCalculation, routePositionItems],
   );
   const followHall = useMemo(() => {
-    if (
-      !hallDefinitions ||
-      hallDefinitions.length === 0 ||
-      !currentVisit ||
-      !currentMapData
-    )
-      return null;
-    const currentItem = currentVisit.items[0];
-    if (!currentItem) return null;
-    const block = currentMapData.blocks.find(
-      (b) => b.name === currentItem.block,
+    const currentItem = currentVisit?.items[0];
+    if (!hallDefinitions || !currentItem) return null;
+    const hallId = getHallIdForItem(
+      currentItem,
+      currentMapData,
+      hallDefinitions,
+      items,
     );
-    if (!block) return null;
-    const numStr = currentItem.number.match(/^(\d+)/)?.[1];
-    if (!numStr) return null;
-    const num = parseInt(numStr, 10);
-    const cell = findRouteLookupNumberCell(block, num);
-    if (!cell) return null;
-    for (const hall of hallDefinitions) {
-      if (hall.vertices.length < 3) continue;
-      let inside = false;
-      const vertices = hall.vertices;
-      for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
-        const xi = vertices[i].col,
-          yi = vertices[i].row;
-        const xj = vertices[j].col,
-          yj = vertices[j].row;
-        if (
-          yi > cell.row !== yj > cell.row &&
-          cell.col < ((xj - xi) * (cell.row - yi)) / (yj - yi) + xi
-        ) {
-          inside = !inside;
-        }
-      }
-      if (inside) return hall;
-    }
-    return null;
-  }, [hallDefinitions, currentVisit, currentMapData]);
+    return hallDefinitions.find((hall) => hall.id === hallId) ?? null;
+  }, [hallDefinitions, currentVisit, currentMapData, items]);
   // 選択されたホール
   const selectedHall = useMemo(() => {
     if (selectedHallId === "follow") {
@@ -1663,7 +1658,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
       const timer = setTimeout(() => setNotification(null), 2000);
       return () => clearTimeout(timer);
     }
-  }, [notification, setNotification]);
+  }, [notification, notificationRevision, setNotification]);
 
   useEffect(() => {
     if (!bulkLimitedMessage) return;
@@ -2549,7 +2544,8 @@ const FocusMode: React.FC<FocusModeProps> = ({
       const scopedItems = matchingItems.filter((item) => {
         if (
           !executeModeItemIdSet.has(item.id) ||
-          item.eventDate.trim() !== mapDayName ||
+          normalizeExecutionVisitDay(item.eventDate) !==
+            normalizeExecutionVisitDay(mapDayName) ||
           seenItemIds.has(item.id)
         ) {
           return false;
@@ -2686,7 +2682,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     if (!onAddItem || isInspecting) return;
     const price =
       newItemForm.price === "" ? null : parseInt(newItemForm.price, 10) || 0;
-    onAddItem({
+    const newItem = {
       eventDate: addItemDialog.eventDate,
       block: addItemDialog.block,
       number: addItemDialog.number,
@@ -2697,7 +2693,17 @@ const FocusMode: React.FC<FocusModeProps> = ({
       remarks: newItemForm.remarks,
       url: newItemForm.url || undefined,
       purchaseStatus: newItemForm.purchaseStatus,
-    });
+    } satisfies Omit<ShoppingItem, "id"> & {
+      purchaseStatus?: PurchaseStatus;
+    };
+    const addResult = onAddItem(newItem);
+    const newItemId =
+      typeof addResult === "string" ? addResult : addResult?.newItemId;
+    if (newItemId && newItemForm.purchaseStatus === "Postpone") {
+      setPostponedPhaseItemIds((previous) => new Set(previous).add(newItemId));
+    } else if (newItemId && newItemForm.purchaseStatus === "Late") {
+      setLatePhaseItemIds((previous) => new Set(previous).add(newItemId));
+    }
     // 購入状態に応じたメッセージ
     const statusText =
       newItemForm.purchaseStatus === "Purchased"
@@ -2705,9 +2711,15 @@ const FocusMode: React.FC<FocusModeProps> = ({
         : newItemForm.purchaseStatus === "Postpone"
           ? "後回しフェーズ"
           : "遅参フェーズ";
+    const isMergedResult =
+      typeof addResult !== "string" &&
+      addResult?.placement === "merged-into-existing-visit";
     setNotification(
-      `${addItemDialog.block}-${addItemDialog.number} を${statusText}に追加しました`,
+      isMergedResult
+        ? EXECUTION_VISIT_MERGE_NOTICE
+        : `${addItemDialog.block}-${addItemDialog.number} を${statusText}に追加しました`,
     );
+    setNotificationRevision((previous) => previous + 1);
     closeAddItemDialog();
   }, [
     onAddItem,
@@ -2715,7 +2727,9 @@ const FocusMode: React.FC<FocusModeProps> = ({
     newItemForm,
     closeAddItemDialog,
     isInspecting,
+    setLatePhaseItemIds,
     setNotification,
+    setPostponedPhaseItemIds,
   ]);
   // 価格のクイック選択オプション
   const priceOptions = useMemo(() => {

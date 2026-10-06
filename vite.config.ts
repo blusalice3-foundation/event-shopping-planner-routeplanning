@@ -719,6 +719,18 @@ export default defineConfig(({ command, mode }) => {
             }
             return "assets/[name]-[hash].js";
           },
+          ...(identity.buildPurpose === "qa-xlsx-main"
+            ? {
+                codeSplitting: {
+                  groups: [
+                    {
+                      name: "xlsx-main-vendor",
+                      test: /node_modules[\\/]exceljs[\\/]/,
+                    },
+                  ],
+                },
+              }
+            : {}),
           chunkFileNames: "assets/[name]-[hash].js",
           assetFileNames: "assets/[name]-[hash][extname]",
         },

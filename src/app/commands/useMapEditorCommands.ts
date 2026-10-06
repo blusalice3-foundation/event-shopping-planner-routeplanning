@@ -15,12 +15,13 @@ import type { AppNavigationCommands } from "../navigation";
 import type { NewItemDefaults } from "../state/useAppUiState";
 import {
   computeAddItemFromFocusMode,
+  computeBatchAddToExecuteListFromMapWithResult,
   computeAddToExecuteListFromMapWithResult,
   computeHallOrderForPriorityChange,
   computeInsertIntoExecuteAtPosition,
   computeRemoveFromExecuteListFromMapWithResult,
   computeUpdateItemPriority,
-  reorderExecuteIdsForSpaceAdjacency,
+  repositionExecuteItemAfterIdentityChangeWithResult,
 } from "../../features/events/itemOps";
 import {
   cloneHallsForDates,
@@ -46,7 +47,12 @@ import type {
   PurchaseStatus,
   ShoppingItem,
 } from "../../types/item";
+import type { FocusModeAddItemResult } from "../../types/focus";
 import type { ApplicationSnapshotCommitPort } from "./ApplicationSnapshotCommitPort";
+import {
+  buildExecutionVisitProjectionKey,
+  EXECUTION_VISIT_MERGE_NOTICE,
+} from "../../utils/visitProjection";
 
 type StateSetter<T> = Dispatch<SetStateAction<T>>;
 
@@ -115,6 +121,7 @@ export interface MapEditorEffectPort {
     EventTarget,
     "addEventListener" | "removeEventListener"
   >;
+  notify(message: string): void;
 }
 
 export interface MapEditorCommandPorts {
@@ -149,7 +156,7 @@ export interface MapEditorCommands {
   ): void;
   handleAddItemFromFocusMode(
     item: Omit<ShoppingItem, "id"> & { purchaseStatus?: PurchaseStatus },
-  ): void;
+  ): FocusModeAddItemResult | undefined;
   handleMoveToFirstFromMap(itemId: string): void;
   handleMoveToLastFromMap(itemId: string): void;
   handleUpdateItemPriority(
@@ -231,7 +238,6 @@ export const useMapEditorCommands = ({
   } = state;
   const {
     setMapData,
-    setHallDefinitions,
     setHallRouteSettings,
     setEventLists,
     updateExecuteModeItems,
@@ -249,7 +255,7 @@ export const useMapEditorCommands = ({
   const { commitApplicationSnapshotPatch } = persistence;
   const { getMapTabForDate, getItemHallId, areItemsInSameHallGroup } =
     selectors;
-  const { selectionEventTarget } = effects;
+  const { notify, selectionEventTarget } = effects;
 
   const handleAddToExecuteListFromMap = useCallback(
     (itemId: string): string[] => {
@@ -368,25 +374,18 @@ export const useMapEditorCommands = ({
         currentMapTabName
       ] ?? { hallOrder: [], hallVisitLists: [] };
       const currentMap = mapData[activeEventName]?.[currentMapTabName];
-      let current = executeModeItemsRef.current[activeEventName] ?? {};
-      const insertedItemIds: string[] = [];
-      for (const itemId of itemIds) {
-        const result = computeAddToExecuteListFromMapWithResult(
-          itemId,
-          activeEventDate,
-          items,
-          current,
-          halls,
-          routeSettings,
-          currentMap,
-        );
-        if (result.accepted) {
-          current = result.executeModeItems;
-          insertedItemIds.push(...result.insertedItemIds);
-        }
-      }
-      commitExecuteModeItemsForEvent(activeEventName, current);
-      return insertedItemIds;
+      const result = computeBatchAddToExecuteListFromMapWithResult(
+        itemIds,
+        activeEventDate,
+        items,
+        executeModeItemsRef.current[activeEventName] ?? {},
+        halls,
+        routeSettings,
+        currentMap,
+      );
+      if (!result.accepted) return [];
+      commitExecuteModeItemsForEvent(activeEventName, result.executeModeItems);
+      return result.insertedItemIds;
     },
     [
       activeEventDate,
@@ -476,7 +475,7 @@ export const useMapEditorCommands = ({
       newItem: Omit<ShoppingItem, "id"> & {
         purchaseStatus?: PurchaseStatus;
       },
-    ): void => {
+    ): FocusModeAddItemResult | undefined => {
       if (!activeEventName) return;
       const result = computeAddItemFromFocusMode(
         eventLists[activeEventName] ?? [],
@@ -491,6 +490,13 @@ export const useMapEditorCommands = ({
         ...previous,
         [activeEventName]: result.executeModeItems,
       }));
+      return {
+        newItemId: result.newItemId,
+        ...(result.placement ? { placement: result.placement } : {}),
+        ...(result.mergedIntoVisitItemIds
+          ? { mergedIntoVisitItemIds: result.mergedIntoVisitItemIds }
+          : {}),
+      };
     },
     [
       activeEventName,
@@ -506,19 +512,33 @@ export const useMapEditorCommands = ({
       if (!activeEventName || !isMapTab || !activeEventDate) return;
       updateExecuteModeItems((previous) => {
         const eventItems = previous[activeEventName] ?? {};
-        const remaining = (eventItems[activeEventDate] ?? []).filter(
-          (currentId) => currentId !== itemId,
+        const dayItemIds = eventItems[activeEventDate] ?? [];
+        const targetItem = items.find((item) => item.id === itemId);
+        const targetVisitKey = targetItem
+          ? buildExecutionVisitProjectionKey(targetItem)
+          : null;
+        const visitItemIds = dayItemIds.filter((currentId) => {
+          if (!targetVisitKey) return currentId === itemId;
+          const currentItem = items.find((item) => item.id === currentId);
+          return (
+            currentItem !== undefined &&
+            buildExecutionVisitProjectionKey(currentItem) === targetVisitKey
+          );
+        });
+        const visitItemIdSet = new Set(visitItemIds);
+        const remaining = dayItemIds.filter(
+          (currentId) => !visitItemIdSet.has(currentId),
         );
         return {
           ...previous,
           [activeEventName]: {
             ...eventItems,
-            [activeEventDate]: [itemId, ...remaining],
+            [activeEventDate]: [...visitItemIds, ...remaining],
           },
         };
       });
     },
-    [activeEventDate, activeEventName, isMapTab, updateExecuteModeItems],
+    [activeEventDate, activeEventName, isMapTab, items, updateExecuteModeItems],
   );
 
   const handleMoveToLastFromMap = useCallback(
@@ -526,19 +546,33 @@ export const useMapEditorCommands = ({
       if (!activeEventName || !isMapTab || !activeEventDate) return;
       updateExecuteModeItems((previous) => {
         const eventItems = previous[activeEventName] ?? {};
-        const remaining = (eventItems[activeEventDate] ?? []).filter(
-          (currentId) => currentId !== itemId,
+        const dayItemIds = eventItems[activeEventDate] ?? [];
+        const targetItem = items.find((item) => item.id === itemId);
+        const targetVisitKey = targetItem
+          ? buildExecutionVisitProjectionKey(targetItem)
+          : null;
+        const visitItemIds = dayItemIds.filter((currentId) => {
+          if (!targetVisitKey) return currentId === itemId;
+          const currentItem = items.find((item) => item.id === currentId);
+          return (
+            currentItem !== undefined &&
+            buildExecutionVisitProjectionKey(currentItem) === targetVisitKey
+          );
+        });
+        const visitItemIdSet = new Set(visitItemIds);
+        const remaining = dayItemIds.filter(
+          (currentId) => !visitItemIdSet.has(currentId),
         );
         return {
           ...previous,
           [activeEventName]: {
             ...eventItems,
-            [activeEventDate]: [...remaining, itemId],
+            [activeEventDate]: [...remaining, ...visitItemIds],
           },
         };
       });
     },
-    [activeEventDate, activeEventName, isMapTab, updateExecuteModeItems],
+    [activeEventDate, activeEventName, isMapTab, items, updateExecuteModeItems],
   );
 
   const handleUpdateItemPriority = useCallback(
@@ -572,14 +606,18 @@ export const useMapEditorCommands = ({
 
       const changedItem = items.find((item) => item.id === itemId);
       if (!changedItem) return;
+      const updatedItem = result.items.find((item) => item.id === itemId);
+      if (!updatedItem) return;
+      const repositionResult =
+        repositionExecuteItemAfterIdentityChangeWithResult(
+          executeModeItemsRef.current[activeEventName] ?? {},
+          changedItem,
+          updatedItem,
+          result.items,
+        );
       const nextExecuteModeItems = {
         ...executeModeItemsRef.current,
-        [activeEventName]: reorderExecuteIdsForSpaceAdjacency(
-          itemId,
-          result.items,
-          executeModeItemsRef.current[activeEventName] ?? {},
-          changedItem.eventDate,
-        ),
+        [activeEventName]: repositionResult.executeModeItems,
       };
       try {
         await commitApplicationSnapshotPatch({
@@ -590,9 +628,9 @@ export const useMapEditorCommands = ({
       } catch {
         return;
       }
-      setEventLists(() => nextEventLists);
-      setHallRouteSettings(() => nextHallRouteSettings);
-      updateExecuteModeItems(() => nextExecuteModeItems);
+      if (repositionResult.placement === "merged-into-existing-visit") {
+        notify(EXECUTION_VISIT_MERGE_NOTICE);
+      }
     },
     [
       activeEventName,
@@ -603,9 +641,7 @@ export const useMapEditorCommands = ({
       hallRouteSettings,
       items,
       mapData,
-      setEventLists,
-      setHallRouteSettings,
-      updateExecuteModeItems,
+      notify,
       visitListPanelMapTab,
     ],
   );
@@ -654,14 +690,18 @@ export const useMapEditorCommands = ({
           [targetKey]: result.hallRouteSettings,
         },
       };
+      const updatedItem = result.items.find((item) => item.id === itemId);
+      if (!updatedItem) return;
+      const repositionResult =
+        repositionExecuteItemAfterIdentityChangeWithResult(
+          executeModeItemsRef.current[activeEventName] ?? {},
+          changedItem,
+          updatedItem,
+          result.items,
+        );
       const nextExecuteModeItems = {
         ...executeModeItemsRef.current,
-        [activeEventName]: reorderExecuteIdsForSpaceAdjacency(
-          itemId,
-          result.items,
-          executeModeItemsRef.current[activeEventName] ?? {},
-          changedItem.eventDate,
-        ),
+        [activeEventName]: repositionResult.executeModeItems,
       };
       try {
         await commitApplicationSnapshotPatch({
@@ -672,9 +712,9 @@ export const useMapEditorCommands = ({
       } catch {
         return;
       }
-      setEventLists(() => nextEventLists);
-      setHallRouteSettings(() => nextHallRouteSettings);
-      updateExecuteModeItems(() => nextExecuteModeItems);
+      if (repositionResult.placement === "merged-into-existing-visit") {
+        notify(EXECUTION_VISIT_MERGE_NOTICE);
+      }
     },
     [
       activeEventName,
@@ -686,9 +726,7 @@ export const useMapEditorCommands = ({
       hallDefinitions,
       hallRouteSettings,
       mapData,
-      setEventLists,
-      setHallRouteSettings,
-      updateExecuteModeItems,
+      notify,
     ],
   );
 
@@ -739,15 +777,6 @@ export const useMapEditorCommands = ({
           [targetKey]: nextSettings,
         },
       }));
-      updateExecuteModeItems((previous) => ({
-        ...previous,
-        [activeEventName]: reorderExecuteIdsForSpaceAdjacency(
-          itemId,
-          itemsAfter,
-          previous[activeEventName] ?? {},
-          changedItem.eventDate,
-        ),
-      }));
     },
     [
       activeEventName,
@@ -758,7 +787,6 @@ export const useMapEditorCommands = ({
       hallRouteSettings,
       mapData,
       setHallRouteSettings,
-      updateExecuteModeItems,
     ],
   );
 
@@ -820,8 +848,6 @@ export const useMapEditorCommands = ({
       } catch {
         return;
       }
-      setHallDefinitions(() => nextHallDefinitions);
-      setHallRouteSettings(() => nextHallRouteSettings);
     },
     [
       activeEventDate,
@@ -831,8 +857,6 @@ export const useMapEditorCommands = ({
       hallDefinitions,
       hallRouteSettings,
       isMapTab,
-      setHallDefinitions,
-      setHallRouteSettings,
     ],
   );
 
@@ -861,8 +885,6 @@ export const useMapEditorCommands = ({
       } catch {
         return;
       }
-      setHallDefinitions(() => nextHallDefinitions);
-      setHallRouteSettings(() => nextHallRouteSettings);
     },
     [
       activeEventDate,
@@ -870,8 +892,6 @@ export const useMapEditorCommands = ({
       commitApplicationSnapshotPatch,
       hallDefinitions,
       hallRouteSettings,
-      setHallDefinitions,
-      setHallRouteSettings,
     ],
   );
 
@@ -918,15 +938,23 @@ export const useMapEditorCommands = ({
         return updated;
       })();
       try {
-        await commitApplicationSnapshotPatch({
-          hallDefinitions: nextHallDefinitions,
-          hallRouteSettings: nextHallRouteSettings,
-        });
+        await commitApplicationSnapshotPatch(
+          {
+            hallDefinitions: nextHallDefinitions,
+            hallRouteSettings: nextHallRouteSettings,
+          },
+          undefined,
+          {
+            routeDays: {
+              [activeEventName]: Object.fromEntries(
+                targetDates.map((date) => [getMaplessKey(date), [date]]),
+              ),
+            },
+          },
+        );
       } catch {
         return;
       }
-      setHallDefinitions(() => nextHallDefinitions);
-      setHallRouteSettings(() => nextHallRouteSettings);
     },
     [
       activeEventDate,
@@ -934,8 +962,6 @@ export const useMapEditorCommands = ({
       commitApplicationSnapshotPatch,
       hallDefinitions,
       hallRouteSettings,
-      setHallDefinitions,
-      setHallRouteSettings,
     ],
   );
 
@@ -951,6 +977,9 @@ export const useMapEditorCommands = ({
         const targetMapTab = getMapTabForDate(date);
         if (targetMapTab) targetMapTabsByDate.set(date, targetMapTab);
       }
+      const routeDays: Record<string, string[]> = {};
+      for (const [date, mapKey] of targetMapTabsByDate)
+        (routeDays[mapKey] ??= []).push(date);
       const clonedByDate = cloneHallsForDates(
         sourceHalls,
         Array.from(targetMapTabsByDate.keys()),
@@ -987,15 +1016,17 @@ export const useMapEditorCommands = ({
         return updated;
       })();
       try {
-        await commitApplicationSnapshotPatch({
-          hallDefinitions: nextHallDefinitions,
-          hallRouteSettings: nextHallRouteSettings,
-        });
+        await commitApplicationSnapshotPatch(
+          {
+            hallDefinitions: nextHallDefinitions,
+            hallRouteSettings: nextHallRouteSettings,
+          },
+          undefined,
+          { routeDays: { [activeEventName]: routeDays } },
+        );
       } catch {
         return;
       }
-      setHallDefinitions(() => nextHallDefinitions);
-      setHallRouteSettings(() => nextHallRouteSettings);
     },
     [
       activeEventName,
@@ -1005,8 +1036,6 @@ export const useMapEditorCommands = ({
       hallDefinitions,
       hallRouteSettings,
       isMapTab,
-      setHallDefinitions,
-      setHallRouteSettings,
     ],
   );
 

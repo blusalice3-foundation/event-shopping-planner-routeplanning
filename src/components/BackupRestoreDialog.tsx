@@ -6,6 +6,7 @@ interface BackupRestoreDialogProps {
   isOpen: boolean;
   backupEventNames: string[];
   currentEventNames: string[];
+  notices?: string[];
   onClose: () => void;
   onRestore: (
     sourceEventName: string,
@@ -32,6 +33,7 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
   isOpen,
   backupEventNames,
   currentEventNames,
+  notices = [],
   onClose,
   onRestore,
 }) => {
@@ -158,6 +160,16 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
           </select>
         </label>
 
+        {notices.length > 0 && (
+          <section className="mt-4 rounded border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950">
+            <h3 className="font-semibold">復元時に整理・保全する内容</h3>
+            <ul className="mt-2 list-disc pl-5">
+              {notices.map((notice, index) => (
+                <li key={index}>{notice}</li>
+              ))}
+            </ul>
+          </section>
+        )}
         <fieldset className="mt-5 space-y-3">
           <legend className="text-sm font-medium text-slate-700 dark:text-slate-200">
             復元方法

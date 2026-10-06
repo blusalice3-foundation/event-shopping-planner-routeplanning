@@ -304,16 +304,31 @@
             "semanticSha256"
           ],
           "properties": {
-            "generator": { "type": "string", "minLength": 1 },
-            "seed": { "type": ["integer", "null"], "minimum": 0 },
-            "cardinality": { "type": ["integer", "null"], "minimum": 0 },
-            "payloadSha256": { "$ref": "#/$defs/sha256" },
-            "semanticSha256": { "$ref": "#/$defs/sha256" }
+            "generator": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seed": {
+              "type": ["integer", "null"],
+              "minimum": 0
+            },
+            "cardinality": {
+              "type": ["integer", "null"],
+              "minimum": 0
+            },
+            "payloadSha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "semanticSha256": {
+              "$ref": "#/$defs/sha256"
+            }
           }
         },
         "faultInjection": {
           "oneOf": [
-            { "type": "null" },
+            {
+              "type": "null"
+            },
             {
               "type": "object",
               "additionalProperties": false,
@@ -326,15 +341,21 @@
                 "method": {
                   "const": "playwright-exact-worker-response-substitution-v1"
                 },
-                "originalWorkerSha256": { "$ref": "#/$defs/sha256" },
-                "replacementWorkerSha256": { "$ref": "#/$defs/sha256" }
+                "originalWorkerSha256": {
+                  "$ref": "#/$defs/sha256"
+                },
+                "replacementWorkerSha256": {
+                  "$ref": "#/$defs/sha256"
+                }
               }
             }
           ]
         },
         "setup": {
           "oneOf": [
-            { "type": "null" },
+            {
+              "type": "null"
+            },
             {
               "type": "object",
               "additionalProperties": false,
@@ -357,32 +378,127 @@
                 "method": {
                   "const": "indexeddb-schema-exact-single-transaction-stage-v1"
                 },
-                "timing": { "const": "excluded-from-measurement-v1" },
+                "timing": {
+                  "const": "excluded-from-measurement-v1"
+                },
                 "readback": {
                   "const": "separate-readonly-transaction-v1"
                 },
-                "databaseName": { "const": "EventShoppingPlannerDB" },
+                "databaseName": {
+                  "const": "EventShoppingPlannerDB"
+                },
                 "databaseVersion": {
                   "type": "integer",
                   "minimum": 5,
                   "maximum": 7
                 },
-                "storeName": { "const": "eventLists" },
-                "controlStoreName": { "const": "syncQueue" },
-                "key": { "const": "data" },
+                "storeName": {
+                  "const": "eventLists"
+                },
+                "controlStoreName": {
+                  "const": "syncQueue"
+                },
+                "key": {
+                  "const": "data"
+                },
                 "transactionStores": {
                   "type": "array",
                   "prefixItems": [
-                    { "const": "eventLists" },
-                    { "const": "syncQueue" }
+                    {
+                      "const": "eventLists"
+                    },
+                    {
+                      "const": "syncQueue"
+                    }
                   ],
                   "items": false,
                   "minItems": 2,
                   "maxItems": 2
                 },
-                "payloadSha256": { "$ref": "#/$defs/sha256" },
-                "semanticSha256": { "$ref": "#/$defs/sha256" },
-                "itemCount": { "const": 50000 },
+                "payloadSha256": {
+                  "$ref": "#/$defs/sha256"
+                },
+                "semanticSha256": {
+                  "$ref": "#/$defs/sha256"
+                },
+                "itemCount": {
+                  "const": 50000
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^performance-stage:[0-9a-f]{64}$"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "method",
+                "timing",
+                "readback",
+                "databaseName",
+                "databaseVersion",
+                "storeName",
+                "controlStoreName",
+                "key",
+                "transactionStores",
+                "payloadSha256",
+                "semanticSha256",
+                "itemCount",
+                "revision"
+              ],
+              "properties": {
+                "method": {
+                  "const": "indexeddb-schema-exact-single-transaction-stage-v2"
+                },
+                "timing": {
+                  "const": "excluded-from-measurement-v1"
+                },
+                "readback": {
+                  "const": "separate-readonly-transaction-v1"
+                },
+                "databaseName": {
+                  "const": "EventShoppingPlannerDB"
+                },
+                "databaseVersion": {
+                  "const": 8
+                },
+                "storeName": {
+                  "const": "eventLists"
+                },
+                "controlStoreName": {
+                  "const": "syncQueue"
+                },
+                "key": {
+                  "const": "data"
+                },
+                "transactionStores": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "const": "eventLists"
+                    },
+                    {
+                      "const": "eventConsistency"
+                    },
+                    {
+                      "const": "syncQueue"
+                    }
+                  ],
+                  "items": false,
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "payloadSha256": {
+                  "$ref": "#/$defs/sha256"
+                },
+                "semanticSha256": {
+                  "$ref": "#/$defs/sha256"
+                },
+                "itemCount": {
+                  "const": 50000
+                },
                 "revision": {
                   "type": "string",
                   "pattern": "^performance-stage:[0-9a-f]{64}$"

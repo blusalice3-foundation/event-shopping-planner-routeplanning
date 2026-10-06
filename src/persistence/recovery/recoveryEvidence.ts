@@ -1,3 +1,4 @@
+import { assertEventConsistency } from "../../types/consistencyValidation";
 import type { MapDataStore } from "../../types/map";
 import { normalizeMapDataForPersistence } from "../../utils/mapDataPersistence";
 import {
@@ -39,6 +40,7 @@ export function normalizeRecoveryAdoptionPayload(
     );
   }
 
+  if (storeName === STORES.EVENT_CONSISTENCY) assertEventConsistency(payload);
   const stablePayload = structuredClone(payload);
   createSynchronousFingerprint(stablePayload);
   return stablePayload;

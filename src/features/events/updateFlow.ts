@@ -3,9 +3,9 @@ import type {
   ExecuteModeItems,
   ShoppingItem,
 } from "../../types/item";
+import { removeExecutionVisitMemberPreservingBasePosition } from "../../utils/visitProjection";
 import {
   applyEventUpdateToItems,
-  removeDeletedIdsFromExecuteModeItems,
   type EventUpdateApplyOptions,
 } from "./updateApply";
 import { fetchEventItemsFromSpreadsheet } from "./sheetImport";
@@ -25,11 +25,13 @@ export type PendingEventUpdate =
       kind: "items-only";
       eventName: string;
       diff: EventUpdateDiff;
+      eventGeneration?: number;
     }
   | {
       kind: "source-switch";
       eventName: string;
       diff: EventUpdateDiff;
+      eventGeneration?: number;
       nextSource: SpreadsheetSource;
     };
 
@@ -38,6 +40,26 @@ export type EventUpdateCommitState = {
   eventMetadata: Record<string, EventMetadata>;
   executeModeItems: Record<string, ExecuteModeItems>;
 };
+
+/** Projections may allocate new arrays and items without changing their values. */
+export function eventUpdateItemsMatch(
+  current: ShoppingItem[] | undefined,
+  base: ShoppingItem[] | null,
+): boolean {
+  return (
+    !!current &&
+    !!base &&
+    current.length === base.length &&
+    current.every((item, index) => {
+      const previous = base[index];
+      const fields = new Set([
+        ...Object.keys(item),
+        ...Object.keys(previous),
+      ]) as Set<keyof ShoppingItem>;
+      return [...fields].every((field) => item[field] === previous[field]);
+    })
+  );
+}
 
 export function applyPendingEventUpdate({
   state,
@@ -51,18 +73,27 @@ export function applyPendingEventUpdate({
   options: EventUpdateApplyOptions;
 }): EventUpdateCommitState | null {
   const currentItems = state.eventLists[pending.eventName];
-  if (!currentItems || currentItems !== baseItems) {
+  if (!currentItems || !eventUpdateItemsMatch(currentItems, baseItems)) {
     return null;
   }
 
-  const deleteIds = new Set(pending.diff.itemsToDelete.map((item) => item.id));
   const currentExecuteModeItems = state.executeModeItems[pending.eventName];
   const nextExecuteModeItems = currentExecuteModeItems
     ? {
         ...state.executeModeItems,
-        [pending.eventName]: removeDeletedIdsFromExecuteModeItems(
-          currentExecuteModeItems,
-          deleteIds,
+        [pending.eventName]: Object.fromEntries(
+          Object.entries(currentExecuteModeItems).map(([dayName, itemIds]) => [
+            dayName,
+            pending.diff.itemsToDelete.reduce(
+              (remainingItemIds, deletedItem) =>
+                removeExecutionVisitMemberPreservingBasePosition(
+                  remainingItemIds,
+                  deletedItem,
+                  currentItems,
+                ),
+              itemIds,
+            ),
+          ]),
         ),
       }
     : state.executeModeItems;

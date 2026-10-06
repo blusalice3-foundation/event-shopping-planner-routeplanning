@@ -1,13 +1,14 @@
+import {
+  resolveLocation,
+  resolveBlocks,
+  resolveMembership,
+} from "../features/consistency/domain/membership";
+import {
+  projectedMembership,
+  encodeHallRef,
+} from "../features/consistency/domain/projection";
 import type { ShoppingItem } from "../types/item";
 import type { HallDefinition, DayMapData, BlockDefinition } from "../types/map";
-import {
-  resolveManualHallId,
-  resolveHallByBlockName,
-  normalizeBlockName,
-} from "./hallFallback";
-import { findRouteLookupNumberCell } from "./mapRoutingSignature";
-import { extractNumberFromItemNumber } from "../xlsx/domain/itemNumber";
-import { isPointInPolygonInclusive } from "./mapRoutePolygon";
 
 export type PriorityLevel = "none" | "priority" | "highest";
 
@@ -22,16 +23,21 @@ export function parseGroupId(groupId: string | null): {
   hallId: string | null;
   priority: PriorityLevel;
 } {
-  if (groupId === null) return { hallId: null, priority: "none" };
+  if (
+    groupId === null ||
+    groupId === "undefined" ||
+    groupId === "undefined:none"
+  )
+    return { hallId: null, priority: "none" };
   if (groupId === "undefined:highest")
     return { hallId: null, priority: "highest" };
   if (groupId === "undefined:priority")
     return { hallId: null, priority: "priority" };
   if (groupId.endsWith(":highest")) {
-    return { hallId: groupId.replace(":highest", ""), priority: "highest" };
+    return { hallId: groupId.slice(0, -8), priority: "highest" };
   }
   if (groupId.endsWith(":priority")) {
-    return { hallId: groupId.replace(":priority", ""), priority: "priority" };
+    return { hallId: groupId.slice(0, -9), priority: "priority" };
   }
   return { hallId: groupId, priority: "none" };
 }
@@ -60,20 +66,22 @@ export function buildItemRoutingSignature(
   const itemsById = new Map(items.map((item) => [item.id, item]));
 
   return JSON.stringify(
-    itemIds.map((itemId) => {
-      const item = itemsById.get(itemId);
-      if (!item) return ["missing", itemId];
+    [...new Set([...itemIds, ...items.map((item) => item.id).sort()])].map(
+      (itemId) => {
+        const item = itemsById.get(itemId);
+        if (!item) return ["missing", itemId];
 
-      return [
-        "item",
-        item.id,
-        item.eventDate ?? "",
-        item.block ?? "",
-        item.number ?? "",
-        item.priorityLevel || "none",
-        item.manualHallId || "",
-      ];
-    }),
+        return [
+          "item",
+          item.id,
+          item.eventDate ?? "",
+          item.block ?? "",
+          item.number ?? "",
+          item.priorityLevel || "none",
+          item.manualHallId || "",
+        ];
+      },
+    ),
   );
 }
 
@@ -88,67 +96,36 @@ export function getHallIdForItem(
   item: ShoppingItem,
   dayMapData: DayMapData | null,
   hallDefinitions: HallDefinition[],
+  allItems: ShoppingItem[] = [item],
 ): string | null {
-  // 1. 手動ホール設定
-  const manual = resolveManualHallId(item.manualHallId, hallDefinitions);
-  if (manual) return manual;
-
-  // 2. numberセル位置によるポリゴン判定
-  if (dayMapData) {
-    const block = dayMapData.blocks.find(
-      (b: BlockDefinition) => b.name === item.block,
-    );
-    if (block) {
-      const numMatch = item.number?.match(/\d+/);
-      if (numMatch) {
-        const num = parseInt(numMatch[0], 10);
-        const cell = findRouteLookupNumberCell(block, num);
-        if (cell) {
-          const isPointInPoly = (
-            row: number,
-            col: number,
-            vertices: { row: number; col: number }[],
-          ): boolean => {
-            if (vertices.length < 3) return false;
-            let inside = false;
-            for (
-              let i = 0, j = vertices.length - 1;
-              i < vertices.length;
-              j = i++
-            ) {
-              const xi = vertices[i].col,
-                yi = vertices[i].row;
-              const xj = vertices[j].col,
-                yj = vertices[j].row;
-              if (
-                yi > row !== yj > row &&
-                col < ((xj - xi) * (row - yi)) / (yj - yi) + xi
-              ) {
-                inside = !inside;
-              }
-            }
-            return inside;
-          };
-
-          for (const hall of hallDefinitions) {
-            for (const vertex of hall.vertices) {
-              if (vertex.row === cell.row && vertex.col === cell.col) {
-                return hall.id;
-              }
-            }
-            if (isPointInPoly(cell.row, cell.col, hall.vertices)) {
-              return hall.id;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // 3. blockNames フォールバック
-  return resolveHallByBlockName(item.block, hallDefinitions);
+  const projected = projectedMembership(item);
+  if (projected) return projected.hall ? encodeHallRef(projected.hall) : null;
+  const result = resolveMembership(item, {
+    items: allItems,
+    day: item.eventDate,
+    map: dayMapData
+      ? { status: "resolved", key: "", data: dayMapData, candidates: [""] }
+      : { status: "none", candidates: [] },
+    halls: hallDefinitions.map((definition) => ({
+      ref: { kind: "map", mapKey: "", hallId: definition.id },
+      definition,
+    })),
+    context: {
+      assignments: Object.fromEntries(
+        allItems
+          .filter((member) => member.manualHallId)
+          .map((member) => [
+            member.id,
+            { kind: "map", mapKey: "", hallId: member.manualHallId! },
+          ]),
+      ),
+      hallOrder: [],
+      hallVisitLists: [],
+      route: null,
+    },
+  });
+  return result.hall?.hallId ?? null;
 }
-
 /**
  * アイテムのグループID（ホールID + 優先度）を取得する。
  */
@@ -197,40 +174,21 @@ export function resolveMapRouteBlockCandidates(
   mapData: DayMapData,
   itemBlockName: string | null | undefined,
 ): BlockDefinition[] {
-  const blockName = normalizeBlockName(itemBlockName || "");
-  if (!blockName) return [];
-
-  const exactMatches = mapData.blocks.filter(
-    (block) => normalizeBlockName(block.name) === blockName,
-  );
-  if (exactMatches.length > 0) return exactMatches;
-
-  const loweredBlockName = blockName.toLowerCase();
-  const caseInsensitiveMatches = mapData.blocks.filter(
-    (block) =>
-      normalizeBlockName(block.name).toLowerCase() === loweredBlockName,
-  );
-  return caseInsensitiveMatches.length === 1 ? caseInsensitiveMatches : [];
+  return resolveBlocks(mapData, itemBlockName ?? "");
 }
-
 export function resolveMapRouteCellCandidatesForItem({
   mapData,
   item,
   requireCellInMap = false,
 }: ResolveMapRouteCellForItemParams): ResolvedMapRouteCell[] {
-  const numStr = extractNumberFromItemNumber(item.number);
-  if (!numStr) return [];
-
-  const numberValue = parseInt(numStr, 10);
-  const candidates: ResolvedMapRouteCell[] = [];
-  for (const block of resolveMapRouteBlockCandidates(mapData, item.block)) {
-    const cell = findRouteLookupNumberCell(block, numberValue);
-    if (!cell) continue;
-    if (requireCellInMap && !isRouteCellResolvableOnMap(mapData, cell))
-      continue;
-    candidates.push({ block, cell, numberValue });
-  }
-  return candidates;
+  const resolved = resolveLocation(mapData, item);
+  if (resolved.status !== "resolved") return [];
+  if (
+    requireCellInMap &&
+    !isRouteCellResolvableOnMap(mapData, resolved.location.cell)
+  )
+    return [];
+  return [resolved.location];
 }
 
 export function resolveMapRouteCellForItem(
@@ -238,100 +196,46 @@ export function resolveMapRouteCellForItem(
 ): ResolvedMapRouteCell | null {
   return resolveMapRouteCellCandidatesForItem(params)[0] ?? null;
 }
-
 export function isManualHallCompatibleForMapRoute(params: {
   item: ShoppingItem;
   hallDefinitions: HallDefinition[];
+  dayMapData?: DayMapData | null;
+  allItems?: ShoppingItem[];
   selectedHallId?: string;
 }): boolean {
-  const { item, hallDefinitions, selectedHallId = "all" } = params;
+  const {
+    item,
+    hallDefinitions,
+    selectedHallId = "all",
+    dayMapData = null,
+    allItems,
+  } = params;
   if (selectedHallId === "all") return true;
-  if (hallDefinitions.length === 0) return true;
-  const manual = resolveManualHallId(item.manualHallId, hallDefinitions);
-  return manual === null || manual === selectedHallId;
+  const hallId = getHallIdForItem(item, dayMapData, hallDefinitions, allItems);
+  return hallId === null || hallId === selectedHallId;
 }
 
 export interface GetHallCandidatesForMapRouteParams {
   item: ShoppingItem;
   dayMapData: DayMapData | null;
   hallDefinitions: HallDefinition[];
+  allItems?: ShoppingItem[];
   resolvedRouteCell?: ResolvedMapRouteCell | null;
   resolvedRouteCellCandidates?: ResolvedMapRouteCell[];
-}
-
-function collectHallCandidatesForResolvedRouteCell(
-  polygonCandidates: Set<string>,
-  blockNameCandidates: Set<string>,
-  resolved: ResolvedMapRouteCell,
-  hallDefinitions: HallDefinition[],
-): void {
-  const normalizedResolvedBlockName = normalizeBlockName(resolved.block.name);
-  for (const hall of hallDefinitions) {
-    if (
-      isPointInPolygonInclusive(
-        resolved.cell.row,
-        resolved.cell.col,
-        hall.vertices,
-      )
-    ) {
-      polygonCandidates.add(hall.id);
-    }
-    if (
-      hall.blockNames?.some(
-        (blockName) =>
-          normalizeBlockName(blockName) === normalizedResolvedBlockName,
-      )
-    ) {
-      blockNameCandidates.add(hall.id);
-    }
-  }
 }
 
 export function getHallCandidatesForMapRoute({
   item,
   dayMapData,
   hallDefinitions,
-  resolvedRouteCell,
-  resolvedRouteCellCandidates,
+  allItems,
 }: GetHallCandidatesForMapRouteParams): string[] {
-  const manual = resolveManualHallId(item.manualHallId, hallDefinitions);
-  if (manual) return [manual];
-
-  if (!dayMapData) {
-    const fallback = resolveHallByBlockName(item.block, hallDefinitions);
-    return fallback ? [fallback] : [];
-  }
-
-  const routeCells =
-    resolvedRouteCellCandidates ??
-    (resolvedRouteCell
-      ? [resolvedRouteCell]
-      : resolveMapRouteCellCandidatesForItem({
-          mapData: dayMapData,
-          item,
-          requireCellInMap: false,
-        }));
-
-  const polygonCandidates = new Set<string>();
-  const blockNameCandidates = new Set<string>();
-  for (const routeCell of routeCells) {
-    collectHallCandidatesForResolvedRouteCell(
-      polygonCandidates,
-      blockNameCandidates,
-      routeCell,
-      hallDefinitions,
-    );
-  }
-
-  if (polygonCandidates.size > 0) return [...polygonCandidates];
-  if (blockNameCandidates.size > 0) return [...blockNameCandidates];
-  if (resolvedRouteCell || resolvedRouteCellCandidates) return [];
-
-  const fallback = resolveHallByBlockName(item.block, hallDefinitions);
-  return fallback ? [fallback] : [];
+  const hallId = getHallIdForItem(item, dayMapData, hallDefinitions, allItems);
+  return hallId === null ? [] : [hallId];
 }
 
 export interface ResolveItemGroupIdForMapRouteParams {
+  allItems?: ShoppingItem[];
   item: ShoppingItem;
   dayMapData: DayMapData | null;
   hallDefinitions: HallDefinition[];
@@ -344,42 +248,11 @@ export function resolveItemGroupIdForMapRoute({
   item,
   dayMapData,
   hallDefinitions,
-  selectedHallId = "all",
-  resolvedRouteCell,
-  resolvedRouteCellCandidates,
+  allItems,
 }: ResolveItemGroupIdForMapRouteParams): string | null {
-  const priority = (item.priorityLevel || "none") as PriorityLevel;
-  const hallCandidates = getHallCandidatesForMapRoute({
-    item,
-    dayMapData,
-    hallDefinitions,
-    resolvedRouteCell,
-    resolvedRouteCellCandidates,
-  });
-
-  if (
-    selectedHallId !== "all" &&
-    hallCandidates.length > 1 &&
-    hallCandidates.includes(selectedHallId)
-  ) {
-    return buildGroupId(selectedHallId, priority);
-  }
-
-  if (selectedHallId === "all" && hallCandidates.length > 1) {
-    return buildGroupId(null, priority);
-  }
-
-  if (hallCandidates.length === 1) {
-    return buildGroupId(hallCandidates[0], priority);
-  }
-
-  if (resolvedRouteCell || resolvedRouteCellCandidates) {
-    return buildGroupId(null, priority);
-  }
-
   return buildGroupId(
-    getHallIdForItem(item, dayMapData, hallDefinitions),
-    priority,
+    getHallIdForItem(item, dayMapData, hallDefinitions, allItems),
+    item.priorityLevel || "none",
   );
 }
 

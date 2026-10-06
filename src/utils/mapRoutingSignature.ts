@@ -89,11 +89,16 @@ export function buildDayMapVisitLookupSignature(
   return JSON.stringify(
     blocks.map((block) => [
       block.name,
-      getRouteLookupNumberCellEntries(block).map(([value, cell]) => [
-        value,
-        cell.row,
-        cell.col,
-      ]),
+      [
+        ...new Map(
+          block.numberCells.map((cell) => [
+            JSON.stringify([cell.value, cell.row, cell.col]),
+            cell,
+          ]),
+        ).values(),
+      ]
+        .sort((a, b) => a.value - b.value || a.row - b.row || a.col - b.col)
+        .map((cell) => [cell.value, cell.row, cell.col]),
     ]),
   );
 }

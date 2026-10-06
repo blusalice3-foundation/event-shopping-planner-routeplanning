@@ -13,6 +13,7 @@ import {
 } from "../utils/persistenceReleaseAMetrics";
 
 const dbMock = vi.hoisted(() => ({
+  loadEventConsistency: vi.fn(),
   loadEventLists: vi.fn(),
   loadEventMetadata: vi.fn(),
   loadExecuteModeItems: vi.fn(),
@@ -27,6 +28,10 @@ const dbMock = vi.hoisted(() => ({
 }));
 
 const persistenceCommandMock = vi.hoisted(() => ({
+  inspectConsistencyUpgrade: vi.fn(async () => null),
+  bindApplicationSettings: vi.fn(),
+  readApplicationSnapshot: vi.fn(),
+  saveEventConsistency: vi.fn(),
   loadPreference: vi.fn(),
   savePreference: vi.fn(),
   readBlockDetectionSettings: vi.fn(),
@@ -83,6 +88,7 @@ const createValues = (): PersistedValues => ({
   hallDefinitions: {},
   hallRouteSettings: {},
   mapViewportSettings: {},
+  eventConsistency: {},
 });
 
 const createSetters = (): PersistedSetters => ({
@@ -96,10 +102,11 @@ const createSetters = (): PersistedSetters => ({
   setHallDefinitions: vi.fn(),
   setHallRouteSettings: vi.fn(),
   setMapViewportSettings: vi.fn(),
+  setEventConsistency: vi.fn(),
 });
 
 const flushMicrotasks = async () => {
-  for (let index = 0; index < 5; index += 1) {
+  for (let index = 0; index < 30; index += 1) {
     await Promise.resolve();
   }
 };
@@ -217,6 +224,7 @@ describe("useIndexedDbPersistence", () => {
     persistenceCommandMock.adoptRecoveryCandidate.mockResolvedValue({
       status: "adopted",
     });
+    dbMock.loadEventConsistency.mockResolvedValue(missing);
     dbMock.loadEventLists.mockResolvedValue(missing);
     dbMock.loadEventMetadata.mockResolvedValue(missing);
     dbMock.loadExecuteModeItems.mockResolvedValue(missing);
@@ -228,6 +236,25 @@ describe("useIndexedDbPersistence", () => {
     dbMock.loadHallRouteSettings.mockResolvedValue(missing);
     dbMock.loadMapViewportSettings.mockResolvedValue(missing);
     dbMock.loadSyncQueue.mockResolvedValue(missing);
+    persistenceCommandMock.loadPreference.mockReturnValue(null);
+    persistenceCommandMock.readApplicationSnapshot.mockImplementation(
+      async () => {
+        const snapshot = createValues();
+        for (const key of Object.keys(snapshot).filter(
+          (key) => key !== "eventConsistency",
+        )) {
+          const method =
+            `load${key[0].toUpperCase()}${key.slice(1)}` as keyof typeof dbMock;
+          const result = await dbMock[method].mock.results.at(-1)?.value;
+          Object.assign(snapshot, { [key]: result?.data ?? {} });
+        }
+        return { snapshot, expectedRoots: {}, consistencyMissing: true };
+      },
+    );
+    persistenceCommandMock.saveEventConsistency.mockResolvedValue(undefined);
+    persistenceCommandMock.commitApplicationSnapshotAtomically.mockResolvedValue(
+      undefined,
+    );
 
     persistenceCommandMock.saveEventLists.mockResolvedValue(undefined);
     persistenceCommandMock.saveEventMetadata.mockResolvedValue(undefined);
@@ -312,6 +339,7 @@ describe("useIndexedDbPersistence", () => {
       message: "保存データを安全に読み込めませんでした。",
       details: [
         "保存データの初期化中にエラーが発生しました。通常画面には反映していません。",
+        "旧版を含む他のタブを閉じて再試行してください。",
       ],
     });
     expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -587,7 +615,14 @@ describe("useIndexedDbPersistence", () => {
       digest: "a".repeat(64),
       digestAlgorithm: "SHA-256" as const,
       digestCanonicalization: "esp-json-v1" as const,
-      payload: { 明示採用イベント: { generation: "selected" } },
+      payload: {
+        明示採用イベント: {
+          generation: "selected",
+          spreadsheetUrl: "",
+          spreadsheetSheetName: "",
+          lastImportDate: "",
+        },
+      },
     };
     const sameIdDifferentCandidate = {
       ...candidate,
@@ -619,6 +654,10 @@ describe("useIndexedDbPersistence", () => {
         dataMigrationStatus: "verified",
         cleanupStatus: "deferred",
       });
+    dbMock.loadEventLists.mockResolvedValue({
+      status: "ok",
+      data: { 明示採用イベント: [] },
+    });
     dbMock.loadEventMetadata.mockResolvedValue({
       status: "ok",
       data: candidate.payload,

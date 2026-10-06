@@ -160,6 +160,7 @@ describe("ItemEditDialog accessibility", () => {
 
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({ eventDate: "2日目", price: 1200, quantity: 2 }),
+      { kind: "unchanged" },
     );
   });
 
@@ -188,6 +189,55 @@ describe("ItemEditDialog accessibility", () => {
       dialog,
       dialogQueries.getByRole("textbox", { name: "購入予定量" }),
       "購入予定量",
+    );
+  });
+});
+
+describe("ItemEditDialog map selection", () => {
+  it("blocks saving while a map is unselected and enables saving after selection", () => {
+    const onSave = vi.fn();
+    let mapSelectionRequired = true;
+    const previewMembership = vi.fn(() => ({
+      mapSelectionRequired,
+      status: mapSelectionRequired
+        ? "利用するマップを選択してください"
+        : "自動判定",
+      locationStatus: mapSelectionRequired
+        ? "マップ選択待ち"
+        : "場所を特定済み",
+      halls: [],
+      details: [],
+    }));
+    const view = render(
+      <ItemEditDialog
+        item={item}
+        onSave={onSave}
+        onClose={vi.fn()}
+        previewMembership={previewMembership}
+      />,
+    );
+    fireEvent.change(screen.getByRole("textbox", { name: "ナンバー" }), {
+      target: { value: "02a" },
+    });
+    const save = screen.getByRole("button", { name: "保存" });
+    expect(save).toBeDisabled();
+    fireEvent.click(save);
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText(/利用するマップを選択してください/)).toBeVisible();
+    mapSelectionRequired = false;
+    view.rerender(
+      <ItemEditDialog
+        item={item}
+        onSave={onSave}
+        onClose={vi.fn()}
+        previewMembership={() => previewMembership()}
+      />,
+    );
+    expect(save).toBeEnabled();
+    fireEvent.click(save);
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ number: "02a" }),
+      { kind: "unchanged" },
     );
   });
 });

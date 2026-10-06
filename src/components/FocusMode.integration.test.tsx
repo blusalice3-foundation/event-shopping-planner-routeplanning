@@ -8,6 +8,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useCallback, useState } from "react";
 import FocusMode from "./FocusMode";
 import {
   StatefulFocusModeHarness,
@@ -18,6 +19,7 @@ import {
   singleVisitNoneItemFixture,
 } from "./FocusMode.fixtures";
 import type { ShoppingItem } from "../types/item";
+import type { FocusModeSessionState } from "../types/focus";
 
 // fake timers は必要なテストだけでスコープを絞る。
 // runAllTimersAsync は setInterval 等も一気に走って過剰進行するため、pending な timer だけを複数回 drain する。
@@ -106,7 +108,77 @@ const expectCurrentVisitBlockedByLimited = async () => {
   expect(screen.getByText("A-01A")).toBeInTheDocument();
 };
 
+const FocusDeferredAddHarness = ({
+  onSessionStateChange,
+}: {
+  onSessionStateChange: (state: FocusModeSessionState) => void;
+}) => {
+  const [items, setItems] = useState(singleVisitNoneItemFixture.items);
+  const [executeIds, setExecuteIds] = useState(
+    singleVisitNoneItemFixture.executeModeItemIds,
+  );
+  const handleAddItem = useCallback(
+    (
+      newItem: Omit<ShoppingItem, "id">,
+    ): {
+      newItemId: string;
+      placement: "merged-into-existing-visit";
+      mergedIntoVisitItemIds: string[];
+    } => {
+      const addedItem = { ...newItem, id: "focus-added" } as ShoppingItem;
+      setItems((previous) => [...previous, addedItem]);
+      setExecuteIds((previous) => [...previous, addedItem.id]);
+      return {
+        newItemId: addedItem.id,
+        placement: "merged-into-existing-visit",
+        mergedIntoVisitItemIds: ["item-1"],
+      };
+    },
+    [],
+  );
+
+  return (
+    <FocusMode
+      {...minimalProps({
+        items,
+        executeModeItemIds: executeIds,
+        onSessionStateChange,
+      })}
+      onAddItem={handleAddItem}
+    />
+  );
+};
+
 describe("FocusMode resume dialog - integration", () => {
+  it("adds a merged Postpone item to the remembered phase and shows one merge notice", async () => {
+    const onSessionStateChange = vi.fn();
+    render(
+      <FocusDeferredAddHarness onSessionStateChange={onSessionStateChange} />,
+    );
+
+    fireEvent.click(screen.getByTitle("新規アイテム追加"));
+    fireEvent.change(screen.getByLabelText("タイトル"), {
+      target: { value: "追加した後回し品" },
+    });
+    fireEvent.change(screen.getByLabelText("購入状態"), {
+      target: { value: "Postpone" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "リストに追加" }));
+
+    expect(
+      screen.getByText(
+        "同じ訪問先の商品として追加しました。訪問順は変更していません。",
+      ),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(onSessionStateChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          postponedItemIds: expect.arrayContaining(["focus-added"]),
+        }),
+      ),
+    );
+  });
+
   it("completed resume state with no visits renders the empty visit state", () => {
     render(<FocusMode {...minimalProps({ resumeState: completedFixture })} />);
 

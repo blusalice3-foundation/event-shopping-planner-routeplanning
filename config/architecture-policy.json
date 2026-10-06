@@ -146,7 +146,7 @@
         "src/app/selectors/appListViewSelectors.ts",
         "src/app/selectors/appMapViewSelectors.ts",
         "src/app/state/useAppOverlayController.ts",
-        "src/features/map/domain/normalizeHydratedHallState.ts"
+        "src/app/state/useApplicationSnapshot.ts"
       ]
     },
     {

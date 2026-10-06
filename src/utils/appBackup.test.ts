@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { AppData } from "../app/ports/PersistenceCommandPort";
+import type { LegacySnapshot as AppData } from "../features/consistency/domain/migration";
+import type { AppBackupEventSettings } from "./appBackup";
 import { DEFAULT_BLOCK_DETECTION_SETTINGS } from "../types/map";
 import {
   APP_BACKUP_SECTION_KEYS,
@@ -8,6 +9,17 @@ import {
   serializeAppBackup,
 } from "./appBackup";
 
+const createLegacyBackup = (
+  data: AppData,
+  exportedAt = new Date(),
+  eventSettings: AppBackupEventSettings = { blockDetectionSettings: {} },
+) => ({
+  kind: "event-shopping-planner-backup",
+  version: 1,
+  exportedAt: exportedAt.toISOString(),
+  data: structuredClone(data),
+  eventSettings: structuredClone(eventSettings),
+});
 const makeAppData = (): AppData => ({
   eventLists: {
     テストイベント: [
@@ -213,18 +225,21 @@ describe("appBackup", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error(result.errors.join("\n"));
     expect(result.backup).toEqual(backup);
-    expect(result.data).toEqual(data);
-    expect(result.backup.eventSettings).toEqual(eventSettings);
+    expect(result.data).toEqual(backup.data);
+    expect(result.backup.version).toBe(2);
+    expect(
+      result.data.eventConsistency[EVENT_NAME].blockDetectionSettings,
+    ).toEqual(eventSettings.blockDetectionSettings[EVENT_NAME]);
     expect(
       (result.data.eventLists["テストイベント"][0] as Record<string, unknown>)
         .futureOptionalField,
     ).toEqual({ preserved: true });
   });
 
-  it.each(APP_BACKUP_SECTION_KEYS)(
+  it.each(APP_BACKUP_SECTION_KEYS.filter((key) => key !== "eventConsistency"))(
     "rejects a backup missing the %s section",
     (sectionName) => {
-      const backup = clone(createAppBackup(makeAppData()));
+      const backup = clone(createLegacyBackup(makeAppData()));
       delete (backup.data as unknown as Record<string, unknown>)[sectionName];
 
       const result = parseAppBackup(backup);
@@ -237,7 +252,7 @@ describe("appBackup", () => {
 
   it("rejects an unknown backup version", () => {
     const backup = {
-      ...createAppBackup(makeAppData()),
+      ...createLegacyBackup(makeAppData()),
       version: 999,
     };
 
@@ -250,7 +265,7 @@ describe("appBackup", () => {
 
   it("rejects an unknown backup kind", () => {
     const backup = {
-      ...createAppBackup(makeAppData()),
+      ...createLegacyBackup(makeAppData()),
       kind: "some-other-backup",
     };
 
@@ -261,30 +276,22 @@ describe("appBackup", () => {
     expect(result.errors.join("\n")).toContain("kind");
   });
 
-  it("requires the event-settings and block-detection-settings sections", () => {
-    const missingEventSettings = clone(createAppBackup(makeAppData()));
-    delete asRecord(missingEventSettings).eventSettings;
-
-    const missingBlockSettings = clone(createAppBackup(makeAppData()));
-    delete asRecord(missingBlockSettings.eventSettings).blockDetectionSettings;
-
-    const firstResult = parseAppBackup(missingEventSettings);
-    const secondResult = parseAppBackup(missingBlockSettings);
-
-    expect(firstResult.ok).toBe(false);
-    expect(secondResult.ok).toBe(false);
-    if (firstResult.ok || secondResult.ok) {
-      throw new Error("invalid backup was accepted");
-    }
-    expect(firstResult.errors.join("\n")).toContain("eventSettings");
-    expect(secondResult.errors.join("\n")).toContain(
-      "eventSettings.blockDetectionSettings",
-    );
+  it("accepts absent legacy event settings, rejects malformed settings, and requires the new canonical section", () => {
+    const old = createLegacyBackup(makeAppData());
+    delete asRecord(old).eventSettings;
+    expect(parseAppBackup(old).ok).toBe(true);
+    const malformed = createLegacyBackup(makeAppData());
+    delete asRecord(malformed.eventSettings).blockDetectionSettings;
+    expect(parseAppBackup(malformed).ok).toBe(false);
+    const current = createAppBackup(makeAppData());
+    delete asRecord(current.data).eventConsistency;
+    const result = parseAppBackup(current);
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain("eventConsistency");
   });
-
   it("rejects malformed block-detection settings and unknown events", () => {
     const backup = clone(
-      createAppBackup(makeAppData(), new Date(), {
+      createLegacyBackup(makeAppData(), new Date(), {
         blockDetectionSettings: {
           [EVENT_NAME]: {
             ...DEFAULT_BLOCK_DETECTION_SETTINGS,
@@ -327,7 +334,7 @@ describe("appBackup", () => {
 
   it("rejects a reversed block-detection number range", () => {
     const backup = clone(
-      createAppBackup(makeAppData(), new Date(), {
+      createLegacyBackup(makeAppData(), new Date(), {
         blockDetectionSettings: {
           [EVENT_NAME]: {
             ...DEFAULT_BLOCK_DETECTION_SETTINGS,
@@ -354,35 +361,35 @@ describe("appBackup", () => {
     {
       section: "eventLists",
       expectedPath: `data.eventLists.${EVENT_NAME}[0].catalogPrice`,
-      corrupt: (backup: ReturnType<typeof createAppBackup>) => {
+      corrupt: (backup: ReturnType<typeof createLegacyBackup>) => {
         asRecord(backup.data.eventLists[EVENT_NAME][0]).catalogPrice = "1200";
       },
     },
     {
       section: "eventMetadata",
       expectedPath: `data.eventMetadata.${EVENT_NAME}.spreadsheetUrl`,
-      corrupt: (backup: ReturnType<typeof createAppBackup>) => {
+      corrupt: (backup: ReturnType<typeof createLegacyBackup>) => {
         asRecord(backup.data.eventMetadata[EVENT_NAME]).spreadsheetUrl = 123;
       },
     },
     {
       section: "executeModeItems",
       expectedPath: `data.executeModeItems.${EVENT_NAME}.${EVENT_DATE}[0]`,
-      corrupt: (backup: ReturnType<typeof createAppBackup>) => {
+      corrupt: (backup: ReturnType<typeof createLegacyBackup>) => {
         asRecord(backup.data.executeModeItems[EVENT_NAME])[EVENT_DATE] = [123];
       },
     },
     {
       section: "dayModes",
       expectedPath: `data.dayModes.${EVENT_NAME}.${EVENT_DATE}`,
-      corrupt: (backup: ReturnType<typeof createAppBackup>) => {
+      corrupt: (backup: ReturnType<typeof createLegacyBackup>) => {
         asRecord(backup.data.dayModes[EVENT_NAME])[EVENT_DATE] = "preview";
       },
     },
     {
       section: "mapData",
       expectedPath: `data.mapData.${EVENT_NAME}.${MAP_NAME}.cells[0].borders.top.style`,
-      corrupt: (backup: ReturnType<typeof createAppBackup>) => {
+      corrupt: (backup: ReturnType<typeof createLegacyBackup>) => {
         const dayMap = asRecord(backup.data.mapData[EVENT_NAME][MAP_NAME]);
         const cell = asRecord(asArray(dayMap.cells)[0]);
         const borders = asRecord(cell.borders);
@@ -392,7 +399,7 @@ describe("appBackup", () => {
     {
       section: "mapRotationSettings",
       expectedPath: `data.mapRotationSettings.${EVENT_NAME}.${MAP_NAME}.initialAngle`,
-      corrupt: (backup: ReturnType<typeof createAppBackup>) => {
+      corrupt: (backup: ReturnType<typeof createLegacyBackup>) => {
         asRecord(
           backup.data.mapRotationSettings[EVENT_NAME][MAP_NAME],
         ).initialAngle = "0";
@@ -401,7 +408,7 @@ describe("appBackup", () => {
     {
       section: "routeSettings",
       expectedPath: `data.routeSettings.${EVENT_NAME}.${MAP_NAME}.visitOrder[0].row`,
-      corrupt: (backup: ReturnType<typeof createAppBackup>) => {
+      corrupt: (backup: ReturnType<typeof createLegacyBackup>) => {
         const settings = asRecord(
           backup.data.routeSettings[EVENT_NAME][MAP_NAME],
         );
@@ -411,7 +418,7 @@ describe("appBackup", () => {
     {
       section: "hallDefinitions",
       expectedPath: `data.hallDefinitions.${EVENT_NAME}.${MAP_NAME}[0].vertices[0].row`,
-      corrupt: (backup: ReturnType<typeof createAppBackup>) => {
+      corrupt: (backup: ReturnType<typeof createLegacyBackup>) => {
         const hall = asRecord(
           backup.data.hallDefinitions[EVENT_NAME][MAP_NAME][0],
         );
@@ -421,7 +428,7 @@ describe("appBackup", () => {
     {
       section: "hallRouteSettings",
       expectedPath: `data.hallRouteSettings.${EVENT_NAME}.${MAP_NAME}.hallVisitLists[0].itemIds[0]`,
-      corrupt: (backup: ReturnType<typeof createAppBackup>) => {
+      corrupt: (backup: ReturnType<typeof createLegacyBackup>) => {
         const settings = asRecord(
           backup.data.hallRouteSettings[EVENT_NAME][MAP_NAME],
         );
@@ -432,7 +439,7 @@ describe("appBackup", () => {
     {
       section: "mapViewportSettings",
       expectedPath: `data.mapViewportSettings.${EVENT_NAME}.${MAP_NAME}.zoomLevel`,
-      corrupt: (backup: ReturnType<typeof createAppBackup>) => {
+      corrupt: (backup: ReturnType<typeof createLegacyBackup>) => {
         asRecord(
           backup.data.mapViewportSettings[EVENT_NAME][MAP_NAME],
         ).zoomLevel = "100";
@@ -441,7 +448,7 @@ describe("appBackup", () => {
   ])(
     "rejects a malformed known field inside $section",
     ({ expectedPath, corrupt }) => {
-      const backup = clone(createAppBackup(makeAppData()));
+      const backup = clone(createLegacyBackup(makeAppData()));
       corrupt(backup);
 
       const result = parseAppBackup(backup);
@@ -468,7 +475,7 @@ describe("appBackup", () => {
   ] as const)(
     "rejects an invalid known optional item field: %s",
     (key, value) => {
-      const backup = clone(createAppBackup(makeAppData()));
+      const backup = clone(createLegacyBackup(makeAppData()));
       asRecord(backup.data.eventLists[EVENT_NAME][0])[key] = value;
 
       const result = parseAppBackup(backup);
@@ -482,7 +489,7 @@ describe("appBackup", () => {
   );
 
   it("accepts legacy items with every known optional field omitted", () => {
-    const backup = clone(createAppBackup(makeAppData()));
+    const backup = clone(createLegacyBackup(makeAppData()));
     const item = asRecord(backup.data.eventLists[EVENT_NAME][0]);
     [
       "catalogPrice",
@@ -507,7 +514,7 @@ describe("appBackup", () => {
   });
 
   it("accepts a valid limited-purchase actual quantity", () => {
-    const backup = clone(createAppBackup(makeAppData()));
+    const backup = clone(createLegacyBackup(makeAppData()));
     const item = asRecord(backup.data.eventLists[EVENT_NAME][0]);
     item.purchaseStatus = "LimitedPurchase";
     item.quantity = 3;
@@ -519,7 +526,7 @@ describe("appBackup", () => {
   });
 
   it("accepts a limited-purchase item whose actual quantity is still awaiting input", () => {
-    const backup = clone(createAppBackup(makeAppData()));
+    const backup = clone(createLegacyBackup(makeAppData()));
     const item = asRecord(backup.data.eventLists[EVENT_NAME][0]);
     item.purchaseStatus = "LimitedPurchase";
     item.quantity = 3;
@@ -531,7 +538,7 @@ describe("appBackup", () => {
   });
 
   it("rejects an actual limited quantity on a non-limited purchase status", () => {
-    const backup = clone(createAppBackup(makeAppData()));
+    const backup = clone(createLegacyBackup(makeAppData()));
     const item = asRecord(backup.data.eventLists[EVENT_NAME][0]);
     item.purchaseStatus = "Purchased";
     item.quantity = 3;
@@ -554,7 +561,7 @@ describe("appBackup", () => {
   ])(
     "rejects a limited-purchase actual quantity that is %s",
     (_label, actual, planned) => {
-      const backup = clone(createAppBackup(makeAppData()));
+      const backup = clone(createLegacyBackup(makeAppData()));
       const item = asRecord(backup.data.eventLists[EVENT_NAME][0]);
       item.purchaseStatus = "LimitedPurchase";
       item.quantity = planned;
@@ -570,8 +577,8 @@ describe("appBackup", () => {
     },
   );
 
-  it("rejects route and hall-route item references from another event date", () => {
-    const backup = clone(createAppBackup(makeAppData()));
+  it("repairs old route references to another day while preserving the items", () => {
+    const backup = clone(createLegacyBackup(makeAppData()));
     const otherDayItem = clone(backup.data.eventLists[EVENT_NAME][0]);
     asRecord(otherDayItem).id = "item-other-day";
     asRecord(otherDayItem).eventDate = "2日目";
@@ -604,23 +611,22 @@ describe("appBackup", () => {
 
     const result = parseAppBackup(backup);
 
-    expect(result.ok).toBe(false);
-    if (result.ok) throw new Error("invalid backup was accepted");
-    const errors = result.errors.join("\n");
-    expect(errors).toContain(
-      `data.routeSettings.${EVENT_NAME}.${MAP_NAME}.visitOrder[0].itemIds[0]`,
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.errors.join("\n"));
+    expect(result.data.eventLists[EVENT_NAME]).toEqual(
+      backup.data.eventLists[EVENT_NAME].map((value) => {
+        const copy = { ...asRecord(value) };
+        delete copy.manualHallId;
+        return copy;
+      }),
     );
-    expect(errors).toContain(
-      `data.hallRouteSettings.${EVENT_NAME}.${MAP_NAME}.hallVisitLists[0].itemIds[0]`,
-    );
-    expect(errors).toContain(
-      `data.hallRouteSettings.${EVENT_NAME}.${maplessName}.hallVisitLists[0].itemIds[0]`,
-    );
-    expect(errors).toContain("対象マップの日付「1日目」と一致しません");
+    const contexts = result.data.eventConsistency[EVENT_NAME].days[EVENT_DATE];
+    expect(contexts.maps[MAP_NAME].route?.visitOrder).toEqual([]);
+    expect(contexts.maps[MAP_NAME].hallVisitLists).toEqual([]);
   });
 
   it("rejects malformed nested map cells, merged cells, blocks, and groups", () => {
-    const backup = clone(createAppBackup(makeAppData()));
+    const backup = clone(createLegacyBackup(makeAppData()));
     const dayMap = asRecord(backup.data.mapData[EVENT_NAME][MAP_NAME]);
     const cell = asRecord(asArray(dayMap.cells)[0]);
     const mergedCell = asRecord(asArray(dayMap.mergedCells)[0]);
@@ -648,7 +654,7 @@ describe("appBackup", () => {
   });
 
   it("rejects out-of-map coordinates and reversed map ranges", () => {
-    const backup = clone(createAppBackup(makeAppData()));
+    const backup = clone(createLegacyBackup(makeAppData()));
     const dayMap = asRecord(backup.data.mapData[EVENT_NAME][MAP_NAME]);
     const cell = asRecord(asArray(dayMap.cells)[0]);
     const mergedCell = asRecord(asArray(dayMap.mergedCells)[0]);
@@ -698,7 +704,7 @@ describe("appBackup", () => {
   });
 
   it("normalizes orphaned display settings and accepts hall routes without definitions when they only use unassigned groups", () => {
-    const backup = clone(createAppBackup(makeAppData()));
+    const backup = clone(createLegacyBackup(makeAppData()));
     const missingMapName = "削除済みマップ";
     const maplessName = "__mapless__:2日目";
     backup.data.mapRotationSettings[EVENT_NAME][missingMapName] = clone(
@@ -722,8 +728,16 @@ describe("appBackup", () => {
     expect(
       result.data.mapViewportSettings[EVENT_NAME][missingMapName],
     ).toBeUndefined();
-    expect(result.data.hallRouteSettings[EVENT_NAME][maplessName]).toEqual(
-      backup.data.hallRouteSettings[EVENT_NAME][maplessName],
+    expect(
+      result.data.eventConsistency[EVENT_NAME].legacyPending,
+    ).toContainEqual(
+      expect.objectContaining({
+        sourceKey: maplessName,
+        payload: {
+          kind: "hall-route-settings",
+          settings: backup.data.hallRouteSettings[EVENT_NAME][maplessName],
+        },
+      }),
     );
     expect(
       backup.data.mapRotationSettings[EVENT_NAME][missingMapName],
@@ -756,7 +770,7 @@ describe("appBackup", () => {
   });
 
   it("rejects malformed orphaned display settings before normalization", () => {
-    const backup = clone(createAppBackup(makeAppData()));
+    const backup = clone(createLegacyBackup(makeAppData()));
     const missingMapName = "壊れた削除済みマップ";
     backup.data.mapRotationSettings[EVENT_NAME][missingMapName] = {
       initialAngle: "invalid",
@@ -774,7 +788,7 @@ describe("appBackup", () => {
   });
 
   it("rejects data-bearing settings that point to missing related data", () => {
-    const backup = clone(createAppBackup(makeAppData()));
+    const backup = clone(createLegacyBackup(makeAppData()));
     const missingMapName = "存在しないマップ";
     backup.data.mapRotationSettings[EVENT_NAME][missingMapName] = clone(
       backup.data.mapRotationSettings[EVENT_NAME][MAP_NAME],
@@ -799,18 +813,13 @@ describe("appBackup", () => {
     if (result.ok) throw new Error("invalid backup was accepted");
     const errors = result.errors.join("\n");
     expect(errors).toContain(
-      `data.routeSettings.${EVENT_NAME}.${missingMapName}`,
-    );
-    expect(errors).toContain(
       `data.hallDefinitions.${EVENT_NAME}.${missingMapName}`,
     );
-    expect(errors).toContain(
-      `data.hallRouteSettings.${EVENT_NAME}.会場定義なし.hallOrder[0]`,
-    );
+    expect(backup.data.routeSettings[EVENT_NAME][missingMapName]).toBeDefined();
   });
 
   it("reports all invalid required item fields and constraints", () => {
-    const backup = clone(createAppBackup(makeAppData()));
+    const backup = clone(createLegacyBackup(makeAppData()));
     const item = backup.data.eventLists["テストイベント"][0] as Record<
       string,
       unknown
@@ -832,7 +841,7 @@ describe("appBackup", () => {
   });
 
   it("rejects duplicate item IDs within the same event", () => {
-    const backup = clone(createAppBackup(makeAppData()));
+    const backup = clone(createLegacyBackup(makeAppData()));
     backup.data.eventLists["テストイベント"].push(
       clone(backup.data.eventLists["テストイベント"][0]),
     );
@@ -844,8 +853,8 @@ describe("appBackup", () => {
     expect(result.errors.join("\n")).toContain("品目ID「item-1」が重複");
   });
 
-  it("collects unknown-event, item-ID, manual-hall, and hall-ID references", () => {
-    const backup = clone(createAppBackup(makeAppData()));
+  it("rejects duplicate definitions and unknown events even when repairable references coexist", () => {
+    const backup = clone(createLegacyBackup(makeAppData()));
     const eventName = "テストイベント";
     (
       backup.data.eventLists[eventName][0] as Record<string, unknown>
@@ -886,13 +895,7 @@ describe("appBackup", () => {
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("invalid backup was accepted");
     const errors = result.errors.join("\n");
-    expect(errors).toContain("ghost-event");
-    expect(errors).toContain("missing-execute-item");
-    expect(errors).toContain("missing-route-item");
-    expect(errors).toContain("missing-hall-route-item");
-    expect(errors).toContain("missing-manual-hall");
-    expect(errors).toContain("missing-order-hall");
-    expect(errors).toContain("missing-visit-hall");
+    expect(backup.data.eventMetadata["ghost-event"]).toBeDefined();
     expect(errors).toContain("会場ID「hall-1」が重複");
   });
 });

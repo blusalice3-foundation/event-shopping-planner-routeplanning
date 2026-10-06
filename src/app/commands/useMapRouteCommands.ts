@@ -20,7 +20,6 @@ import {
 import {
   getCombinedHallRouteSettingsForDate,
   reorderExecuteIdsByHallOrder,
-  splitGlobalHallRouteSettings,
 } from "../../features/map/domain/hallOperations";
 import { buildMergedHallRouteSettings } from "../../utils/mergedHallRouteSettings";
 
@@ -269,43 +268,16 @@ export const useMapRouteCommands = ({
   const updateGlobalHallRouteSettings = useCallback(
     (settings: HallRouteSettings) => {
       if (!activeEventName) return;
-      const mapHallIds = new Set(
-        globalMapTabName
-          ? (hallDefinitions[activeEventName]?.[globalMapTabName] || []).map(
-              (hall) => hall.id,
-            )
-          : [],
-      );
-      const maplessKey = activeEventDate
-        ? getMaplessKey(activeEventDate)
-        : null;
-      const maplessHallIds = new Set(
-        (maplessKey
-          ? hallDefinitions[activeEventName]?.[maplessKey] || []
-          : []
-        ).map((hall) => hall.id),
-      );
-      const { mapSettings, maplessSettings } = splitGlobalHallRouteSettings({
-        settings,
-        mapHallIds,
-        maplessHallIds,
-        hasMapTab: globalMapTabName !== null,
-      });
-
-      setHallRouteSettings((current) => {
-        const eventSettings = { ...(current[activeEventName] || {}) };
-        if (globalMapTabName) eventSettings[globalMapTabName] = mapSettings;
-        if (maplessKey) eventSettings[maplessKey] = maplessSettings;
-        return { ...current, [activeEventName]: eventSettings };
-      });
+      const key =
+        globalMapTabName ??
+        (activeEventDate ? getMaplessKey(activeEventDate) : null);
+      if (!key) return;
+      setHallRouteSettings((current) => ({
+        ...current,
+        [activeEventName]: { ...current[activeEventName], [key]: settings },
+      }));
     },
-    [
-      activeEventDate,
-      activeEventName,
-      globalMapTabName,
-      hallDefinitions,
-      setHallRouteSettings,
-    ],
+    [activeEventDate, activeEventName, globalMapTabName, setHallRouteSettings],
   );
 
   const reorderExecuteListByHallOrder = useCallback(

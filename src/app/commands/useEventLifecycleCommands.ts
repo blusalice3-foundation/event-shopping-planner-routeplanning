@@ -1,3 +1,8 @@
+import type { ApplicationMutationPort } from "../ports/ApplicationMutationPort";
+import {
+  planEventDelete,
+  planEventRename,
+} from "../../features/consistency/domain/eventMutations";
 import { useCallback, type Dispatch, type SetStateAction } from "react";
 import type { AppNavigationCommands } from "../navigation";
 import type {
@@ -15,14 +20,7 @@ import type {
   MapViewportSettingsStore,
   RouteSettingsStore,
 } from "../../types/map";
-import type {
-  PersistenceCommandPort,
-  PersistenceSnapshot,
-} from "../ports/PersistenceCommandPort";
-import {
-  removeRecordKey,
-  renameRecordKey,
-} from "../../features/events/recordOps";
+import type { PersistenceCommandPort } from "../ports/PersistenceCommandPort";
 import { resolveEventListTab } from "../../features/events/uiOrchestration";
 
 type StateSetter<T> = Dispatch<SetStateAction<T>>;
@@ -79,7 +77,10 @@ export const renameFocusModeSessionKeys = (
   return changed ? next : sessions;
 };
 
-export interface EventLifecycleCommandPorts extends EventLifecyclePersistenceValues {
+export interface EventLifecycleCommandPorts
+  extends
+    EventLifecyclePersistenceValues,
+    Pick<ApplicationMutationPort, "requestMutation"> {
   persistenceCommands: Pick<
     PersistenceCommandPort,
     "deleteEventAtomically" | "renameEventAtomically"
@@ -122,461 +123,97 @@ export interface EventLifecycleCommands {
   confirmRename(newName: string): Promise<void>;
 }
 
-const toPersistenceSnapshot = (
-  values: EventLifecyclePersistenceValues,
-): PersistenceSnapshot => values as unknown as PersistenceSnapshot;
-
-const removeEventFromPersistenceValues = (
-  values: EventLifecyclePersistenceValues,
-  eventName: string,
-): EventLifecyclePersistenceValues => ({
-  eventLists: removeRecordKey(values.eventLists, eventName),
-  eventMetadata: removeRecordKey(values.eventMetadata, eventName),
-  executeModeItems: removeRecordKey(values.executeModeItems, eventName),
-  dayModes: removeRecordKey(values.dayModes, eventName),
-  mapData: removeRecordKey(values.mapData, eventName),
-  mapRotationSettings: removeRecordKey(values.mapRotationSettings, eventName),
-  routeSettings: removeRecordKey(values.routeSettings, eventName),
-  hallDefinitions: removeRecordKey(values.hallDefinitions, eventName),
-  hallRouteSettings: removeRecordKey(values.hallRouteSettings, eventName),
-  mapViewportSettings: removeRecordKey(values.mapViewportSettings, eventName),
-});
-
-const renameEventInPersistenceValues = (
-  values: EventLifecyclePersistenceValues,
-  oldEventName: string,
-  newEventName: string,
-): EventLifecyclePersistenceValues => ({
-  eventLists: renameRecordKey(values.eventLists, oldEventName, newEventName),
-  eventMetadata: renameRecordKey(
-    values.eventMetadata,
-    oldEventName,
-    newEventName,
-  ),
-  executeModeItems: renameRecordKey(
-    values.executeModeItems,
-    oldEventName,
-    newEventName,
-  ),
-  dayModes: renameRecordKey(values.dayModes, oldEventName, newEventName),
-  mapData: renameRecordKey(values.mapData, oldEventName, newEventName),
-  mapRotationSettings: renameRecordKey(
-    values.mapRotationSettings,
-    oldEventName,
-    newEventName,
-  ),
-  routeSettings: renameRecordKey(
-    values.routeSettings,
-    oldEventName,
-    newEventName,
-  ),
-  hallDefinitions: renameRecordKey(
-    values.hallDefinitions,
-    oldEventName,
-    newEventName,
-  ),
-  hallRouteSettings: renameRecordKey(
-    values.hallRouteSettings,
-    oldEventName,
-    newEventName,
-  ),
-  mapViewportSettings: renameRecordKey(
-    values.mapViewportSettings,
-    oldEventName,
-    newEventName,
-  ),
-});
-
-const resolveCommittedRecord = <T>(
-  current: Record<string, T>,
-  operationSource: Record<string, T>,
-  committed: Record<string, T>,
-  update: (currentValue: Record<string, T>) => Record<string, T>,
-): Record<string, T> =>
-  current === operationSource ? committed : update(current);
-
 export const useEventLifecycleCommands = ({
-  persistenceCommands,
-  flushPendingSave,
-  runExclusiveRestore,
-  activeEventName,
-  eventToRename,
+  requestMutation,
   eventLists,
-  eventMetadata,
-  executeModeItems,
-  dayModes,
-  mapData,
-  mapRotationSettings,
-  routeSettings,
-  hallDefinitions,
-  hallRouteSettings,
-  mapViewportSettings,
+  eventToRename,
+  activeEventName,
   navigation,
   notify,
   clearSelection,
   setSelectedBlockFilters,
   closeEventUpdateForEvent,
-  setEventLists,
-  setEventMetadata,
-  updateExecuteModeItems,
-  setDayModes,
-  setMapData,
-  setMapRotationSettings,
-  setRouteSettings,
-  setHallDefinitions,
-  setHallRouteSettings,
-  setMapViewportSettings,
   setFocusModeSessions,
   openRename,
   confirmEventOverlay,
 }: EventLifecycleCommandPorts): EventLifecycleCommands => {
   const selectEvent = useCallback(
     (eventName: string) => {
-      const nextTab = resolveEventListTab(eventLists[eventName] || []);
-      if (!nextTab) {
+      const tab = resolveEventListTab(eventLists[eventName] || []);
+      if (!tab) {
         notify("参加日がないため処理を停止しました。");
         return;
       }
-
-      navigation.openEvent(eventName, nextTab);
+      navigation.openEvent(eventName, tab);
       clearSelection();
       setSelectedBlockFilters(new Set());
     },
-    [clearSelection, eventLists, navigation, notify, setSelectedBlockFilters],
+    [eventLists, navigation, notify, clearSelection, setSelectedBlockFilters],
   );
-
   const deleteEvent = useCallback(
-    async (eventName: string): Promise<void> => {
-      const operationSource: EventLifecyclePersistenceValues = {
-        eventLists,
-        eventMetadata,
-        executeModeItems,
-        dayModes,
-        mapData,
-        mapRotationSettings,
-        routeSettings,
-        hallDefinitions,
-        hallRouteSettings,
-        mapViewportSettings,
-      };
-      const committedValues = removeEventFromPersistenceValues(
-        operationSource,
-        eventName,
-      );
-
+    async (name: string) => {
       try {
-        await flushPendingSave();
-        await runExclusiveRestore(committedValues, () =>
-          persistenceCommands.deleteEventAtomically(
-            toPersistenceSnapshot(operationSource),
-            eventName,
-          ),
-        );
-      } catch {
-        notify(
-          "イベントを削除できませんでした。保存状態は変更されていません。",
-        );
+        await requestMutation({
+          events: [name],
+          plan: (snapshot) => planEventDelete(snapshot, name),
+        });
+      } catch (error) {
+        if (!(error instanceof Error && error.name === "MutationCancelled"))
+          notify("イベントを削除できませんでした。");
         return;
       }
-      closeEventUpdateForEvent(eventName);
-      setEventLists((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.eventLists,
-          committedValues.eventLists,
-          (latest) => removeRecordKey(latest, eventName),
-        ),
-      );
-      setEventMetadata((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.eventMetadata,
-          committedValues.eventMetadata,
-          (latest) => removeRecordKey(latest, eventName),
-        ),
-      );
-      updateExecuteModeItems((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.executeModeItems,
-          committedValues.executeModeItems,
-          (latest) => removeRecordKey(latest, eventName),
-        ),
-      );
-      setDayModes((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.dayModes,
-          committedValues.dayModes,
-          (latest) => removeRecordKey(latest, eventName),
-        ),
-      );
-      setMapData((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.mapData,
-          committedValues.mapData,
-          (latest) => removeRecordKey(latest, eventName),
-        ),
-      );
-      setMapRotationSettings((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.mapRotationSettings,
-          committedValues.mapRotationSettings,
-          (latest) => removeRecordKey(latest, eventName),
-        ),
-      );
-      setRouteSettings((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.routeSettings,
-          committedValues.routeSettings,
-          (latest) => removeRecordKey(latest, eventName),
-        ),
-      );
-      setHallDefinitions((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.hallDefinitions,
-          committedValues.hallDefinitions,
-          (latest) => removeRecordKey(latest, eventName),
-        ),
-      );
-      setHallRouteSettings((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.hallRouteSettings,
-          committedValues.hallRouteSettings,
-          (latest) => removeRecordKey(latest, eventName),
-        ),
-      );
-      setMapViewportSettings((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.mapViewportSettings,
-          committedValues.mapViewportSettings,
-          (latest) => removeRecordKey(latest, eventName),
-        ),
-      );
+      closeEventUpdateForEvent(name);
       setFocusModeSessions((current) =>
-        removeFocusModeSessionByEvent(current, eventName),
+        removeFocusModeSessionByEvent(current, name),
       );
-      navigation.removeEvent(eventName);
+      navigation.removeEvent(name);
     },
     [
-      navigation,
-      dayModes,
-      eventLists,
-      eventMetadata,
-      executeModeItems,
-      flushPendingSave,
-      hallDefinitions,
-      hallRouteSettings,
-      mapData,
-      mapRotationSettings,
-      mapViewportSettings,
+      requestMutation,
       notify,
-      persistenceCommands,
-      routeSettings,
-      runExclusiveRestore,
-      setDayModes,
-      setEventLists,
-      setEventMetadata,
-      setFocusModeSessions,
-      setHallDefinitions,
-      setHallRouteSettings,
-      setMapData,
-      setMapRotationSettings,
-      setMapViewportSettings,
       closeEventUpdateForEvent,
-      setRouteSettings,
-      updateExecuteModeItems,
+      setFocusModeSessions,
+      navigation,
     ],
   );
-
-  const requestRename = useCallback(
-    (eventName: string) => {
-      openRename(eventName);
-    },
-    [openRename],
-  );
-
   const confirmRename = useCallback(
-    async (newName: string): Promise<void> => {
+    async (newName: string) => {
       if (!eventToRename) return;
-
-      if (eventToRename === newName) {
+      if (newName === eventToRename) {
         confirmEventOverlay();
         return;
       }
-
-      if (eventLists[newName]) {
-        notify("同名のイベントが既に存在します。別の名前を指定してください。");
-        return;
-      }
-
-      const operationSource: EventLifecyclePersistenceValues = {
-        eventLists,
-        eventMetadata,
-        executeModeItems,
-        dayModes,
-        mapData,
-        mapRotationSettings,
-        routeSettings,
-        hallDefinitions,
-        hallRouteSettings,
-        mapViewportSettings,
-      };
-      const committedValues = renameEventInPersistenceValues(
-        operationSource,
-        eventToRename,
-        newName,
-      );
-
       try {
-        await flushPendingSave();
-        await runExclusiveRestore(committedValues, () =>
-          persistenceCommands.renameEventAtomically(
-            toPersistenceSnapshot(operationSource),
-            eventToRename,
-            newName,
-          ),
-        );
-      } catch {
+        await requestMutation({
+          events: [eventToRename, newName],
+          plan: (snapshot) => planEventRename(snapshot, eventToRename, newName),
+        });
+      } catch (error) {
         notify(
-          "イベント名を変更できませんでした。保存状態は変更されていません。",
+          error instanceof Error
+            ? error.message
+            : "イベント名を変更できませんでした。",
         );
         return;
       }
-
-      setEventLists((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.eventLists,
-          committedValues.eventLists,
-          (latest) => renameRecordKey(latest, eventToRename, newName),
-        ),
-      );
-      setEventMetadata((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.eventMetadata,
-          committedValues.eventMetadata,
-          (latest) => renameRecordKey(latest, eventToRename, newName),
-        ),
-      );
-      setDayModes((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.dayModes,
-          committedValues.dayModes,
-          (latest) => renameRecordKey(latest, eventToRename, newName),
-        ),
-      );
-      updateExecuteModeItems((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.executeModeItems,
-          committedValues.executeModeItems,
-          (latest) => renameRecordKey(latest, eventToRename, newName),
-        ),
-      );
-      setMapData((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.mapData,
-          committedValues.mapData,
-          (latest) => renameRecordKey(latest, eventToRename, newName),
-        ),
-      );
-      setMapRotationSettings((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.mapRotationSettings,
-          committedValues.mapRotationSettings,
-          (latest) => renameRecordKey(latest, eventToRename, newName),
-        ),
-      );
-      setRouteSettings((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.routeSettings,
-          committedValues.routeSettings,
-          (latest) => renameRecordKey(latest, eventToRename, newName),
-        ),
-      );
-      setHallDefinitions((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.hallDefinitions,
-          committedValues.hallDefinitions,
-          (latest) => renameRecordKey(latest, eventToRename, newName),
-        ),
-      );
-      setHallRouteSettings((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.hallRouteSettings,
-          committedValues.hallRouteSettings,
-          (latest) => renameRecordKey(latest, eventToRename, newName),
-        ),
-      );
-      setMapViewportSettings((current) =>
-        resolveCommittedRecord(
-          current,
-          operationSource.mapViewportSettings,
-          committedValues.mapViewportSettings,
-          (latest) => renameRecordKey(latest, eventToRename, newName),
-        ),
-      );
+      closeEventUpdateForEvent(eventToRename);
       setFocusModeSessions((current) =>
-        renameFocusModeSessionKeys(current, eventToRename, newName),
+        removeFocusModeSessionByEvent(current, eventToRename),
       );
-
-      if (activeEventName === eventToRename) {
+      if (activeEventName === eventToRename)
         navigation.renameActiveEvent(eventToRename, newName);
-      }
-
       confirmEventOverlay();
     },
     [
-      activeEventName,
-      dayModes,
-      eventLists,
-      eventMetadata,
       eventToRename,
-      executeModeItems,
-      flushPendingSave,
-      hallDefinitions,
-      hallRouteSettings,
-      mapData,
-      mapRotationSettings,
-      mapViewportSettings,
-      confirmEventOverlay,
-      navigation,
+      activeEventName,
+      requestMutation,
       notify,
-      persistenceCommands,
-      routeSettings,
-      runExclusiveRestore,
-      setDayModes,
-      setEventLists,
-      setEventMetadata,
+      closeEventUpdateForEvent,
       setFocusModeSessions,
-      setHallDefinitions,
-      setHallRouteSettings,
-      setMapData,
-      setMapRotationSettings,
-      setMapViewportSettings,
-      setRouteSettings,
-      updateExecuteModeItems,
+      navigation,
+      confirmEventOverlay,
     ],
   );
-
-  return {
-    selectEvent,
-    deleteEvent,
-    requestRename,
-    confirmRename,
-  };
+  return { selectEvent, deleteEvent, requestRename: openRename, confirmRename };
 };

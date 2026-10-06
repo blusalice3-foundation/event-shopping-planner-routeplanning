@@ -7,11 +7,11 @@ describe("closed XLSX Worker protocol", () => {
   it("accepts a complete export snapshot with absent optional metadata", () => {
     const request = {
       type: "XLSX_EXPORT_REQUEST",
-      protocolVersion: 1,
+      protocolVersion: 2,
       requestId: REQUEST_ID,
       kind: "export",
       snapshot: {
-        schemaVersion: 1,
+        schemaVersion: 2,
         eventName: "イベント",
         items: [],
         options: {
@@ -35,7 +35,7 @@ describe("closed XLSX Worker protocol", () => {
       name: "path-bearing file name",
       value: {
         type: "XLSX_IMPORT_REQUEST",
-        protocolVersion: 1,
+        protocolVersion: 2,
         requestId: REQUEST_ID,
         kind: "event-import",
         input: new ArrayBuffer(1),
@@ -46,7 +46,7 @@ describe("closed XLSX Worker protocol", () => {
       name: "unknown request field",
       value: {
         type: "XLSX_IMPORT_REQUEST",
-        protocolVersion: 1,
+        protocolVersion: 2,
         requestId: REQUEST_ID,
         kind: "event-import",
         input: new ArrayBuffer(1),
@@ -62,12 +62,46 @@ describe("closed XLSX Worker protocol", () => {
     expect(
       parseXlsxWorkerResponse({
         type: "XLSX_IMPORT_RESULT",
-        protocolVersion: 1,
+        protocolVersion: 2,
         requestId: REQUEST_ID,
         kind: "event-import",
         result: {
           kind: "event-import",
           value: { success: true },
+        },
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("consistency fields at the Worker boundary", () => {
+  it.each([
+    { eventConsistency: { schemaVersion: 99 } },
+    {
+      eventConsistency: {
+        schemaVersion: 1,
+        blockDetectionSettings: null,
+        days: { day: { maps: [], mapless: null, selectedMapKey: null } },
+        legacyPending: [],
+      },
+    },
+    { contentManifest: { schemaVersion: 99 } },
+  ])("rejects malformed nested settings %j", (invalid) => {
+    expect(
+      parseXlsxWorkerResponse({
+        type: "XLSX_IMPORT_RESULT",
+        protocolVersion: 2,
+        requestId: REQUEST_ID,
+        kind: "event-import",
+        result: {
+          kind: "event-import",
+          value: {
+            success: true,
+            eventName: "event",
+            items: [],
+            errors: [],
+            ...invalid,
+          },
         },
       }),
     ).toBeNull();

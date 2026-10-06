@@ -10,7 +10,7 @@ import {
 export class IndexedDBOpenBlockedError extends Error {
   constructor(timeoutMs: number) {
     super(
-      `IndexedDB open request remained blocked for ${timeoutMs} milliseconds.`,
+      `IndexedDB open request remained blocked for ${timeoutMs} milliseconds. 旧版を含む他のタブを閉じて再試行してください。`,
     );
     this.name = "IndexedDBOpenBlocked";
   }

@@ -44,7 +44,7 @@ const importRequest = (
   input = new ArrayBuffer(1),
 ): Record<string, unknown> => ({
   type: "XLSX_IMPORT_REQUEST",
-  protocolVersion: 1,
+  protocolVersion: 2,
   requestId: REQUEST_ID,
   kind: "event-import",
   input,
@@ -53,11 +53,11 @@ const importRequest = (
 
 const exportRequest = (): Record<string, unknown> => ({
   type: "XLSX_EXPORT_REQUEST",
-  protocolVersion: 1,
+  protocolVersion: 2,
   requestId: REQUEST_ID,
   kind: "export",
   snapshot: {
-    schemaVersion: 1,
+    schemaVersion: 2,
     eventName: "event",
     items: [],
     options: {
@@ -98,14 +98,14 @@ describe("XLSX worker server protocol", () => {
     expect(endpoint.responses).toEqual([
       {
         type: "XLSX_PROGRESS",
-        protocolVersion: 1,
+        protocolVersion: 2,
         requestId: REQUEST_ID,
         kind: "event-import",
         progress: { phase: "parse", completed: 1, total: 1 },
       },
       {
         type: "XLSX_IMPORT_RESULT",
-        protocolVersion: 1,
+        protocolVersion: 2,
         requestId: REQUEST_ID,
         kind: "event-import",
         result: { kind: "event-import", value: { ok: true } },
@@ -131,7 +131,7 @@ describe("XLSX worker server protocol", () => {
     endpoint.send(importRequest());
     endpoint.send({
       type: "XLSX_CANCEL_REQUEST",
-      protocolVersion: 1,
+      protocolVersion: 2,
       requestId: REQUEST_ID,
     });
     deferred.resolve?.({
@@ -151,7 +151,7 @@ describe("XLSX worker server protocol", () => {
     expect(terminal).toEqual([
       {
         type: "XLSX_ERROR",
-        protocolVersion: 1,
+        protocolVersion: 2,
         requestId: REQUEST_ID,
         kind: "event-import",
         errorCode: "ABORTED",
@@ -175,7 +175,7 @@ describe("XLSX worker server protocol", () => {
     expect(endpoint.responses).toEqual([
       {
         type: "XLSX_ERROR",
-        protocolVersion: 1,
+        protocolVersion: 2,
         requestId: REQUEST_ID,
         kind: "event-import",
         errorCode: "DUPLICATE_REQUEST_ID",
@@ -203,14 +203,14 @@ describe("XLSX worker server protocol", () => {
     expect(endpoint.responses).toEqual([
       {
         type: "XLSX_PROGRESS",
-        protocolVersion: 1,
+        protocolVersion: 2,
         requestId: REQUEST_ID,
         kind: "export",
         progress: { phase: "serialize", completed: 1, total: 1 },
       },
       {
         type: "XLSX_EXPORT_RESULT",
-        protocolVersion: 1,
+        protocolVersion: 2,
         requestId: REQUEST_ID,
         kind: "export",
         bytes: new Uint8Array([1, 2, 3]),
@@ -249,7 +249,7 @@ describe("XLSX worker server protocol", () => {
 
     endpoint.send({
       type: "XLSX_IMPORT_REQUEST",
-      protocolVersion: 1,
+      protocolVersion: 2,
       requestId: REQUEST_ID,
       kind: "map-preview",
       input,
@@ -269,7 +269,7 @@ describe("XLSX worker server protocol", () => {
     expect(endpoint.responses).toEqual([
       {
         type: "XLSX_ERROR",
-        protocolVersion: 1,
+        protocolVersion: 2,
         requestId: REQUEST_ID,
         kind: "map-preview",
         errorCode: "PROTOCOL_MISMATCH",
@@ -314,7 +314,7 @@ describe("XLSX worker server protocol", () => {
       expect(endpoint.responses).toEqual([
         {
           type: "XLSX_ERROR",
-          protocolVersion: 1,
+          protocolVersion: 2,
           requestId: REQUEST_ID,
           kind: "event-import",
           errorCode: expectedCode,
@@ -340,14 +340,14 @@ describe("XLSX worker server protocol", () => {
 
     expect(endpoint.responses[0]).toEqual({
       type: "XLSX_ERROR",
-      protocolVersion: 1,
+      protocolVersion: 2,
       requestId: REQUEST_ID,
       kind: "unknown",
       errorCode: "INVALID_REQUEST",
     });
     expect(endpoint.responses[1]).toMatchObject({
       type: "XLSX_ERROR",
-      protocolVersion: 1,
+      protocolVersion: 2,
       kind: "unknown",
       errorCode: "INVALID_REQUEST",
     });
@@ -370,7 +370,7 @@ describe("XLSX worker server protocol", () => {
 
     endpoint.send({
       type: "XLSX_CANCEL_REQUEST",
-      protocolVersion: 1,
+      protocolVersion: 2,
       requestId: REQUEST_ID,
     });
 

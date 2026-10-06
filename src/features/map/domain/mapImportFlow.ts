@@ -93,21 +93,11 @@ export const commitPreparedMapImport = async ({
     preparedImport.settings,
   );
 
-  if (nextState.eventLists !== state.eventLists) {
-    effects.setEventLists(nextState.eventLists);
-  }
-  effects.setMapData(nextState.mapData);
-  effects.setMapRotationSettings(nextState.mapRotationSettings);
-  effects.setRouteSettings(nextState.routeSettings);
-  effects.setHallDefinitions(nextState.hallDefinitions);
-  effects.setHallRouteSettings(nextState.hallRouteSettings);
-  effects.setMapViewportSettings(nextState.mapViewportSettings);
-
   const firstTarget = preparedImport.plan.targets[0];
   if (firstTarget) {
     effects.activateTarget(
       preparedImport.plan.eventName,
-      firstTarget.mapTabName,
+      firstTarget.eventDate,
     );
   }
 
