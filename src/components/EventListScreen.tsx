@@ -53,13 +53,13 @@ interface EventListScreenProps {
 }
 
 const importActionColorClassName =
-  "bg-green-700 text-white transition-colors hover:bg-green-800 focus-visible:bg-green-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 dark:focus-visible:ring-green-400 dark:focus-visible:ring-offset-slate-900";
+  "bg-green-700 text-white transition-colors hover:bg-green-800 focus-visible:bg-green-800 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 dark:focus-visible:ring-green-400 dark:focus-visible:ring-offset-slate-900";
 
 const exportBackupActionColorClassName =
-  "bg-blue-600 text-white transition-colors hover:bg-blue-700 focus-visible:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-900";
+  "bg-blue-600 text-white transition-colors hover:bg-blue-700 focus-visible:bg-blue-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-900";
 
 const restoreBackupActionColorClassName =
-  "border border-blue-500 text-blue-700 transition-colors hover:bg-blue-50 focus-visible:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 dark:text-blue-300 dark:hover:bg-blue-950/40 dark:focus-visible:bg-blue-950/40 dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-900";
+  "border border-blue-500 text-blue-700 transition-colors hover:bg-blue-50 focus-visible:bg-blue-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 dark:text-blue-300 dark:hover:bg-blue-950/40 dark:focus-visible:bg-blue-950/40 dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-900";
 
 const EventListScreen: React.FC<EventListScreenProps> = ({
   eventNames,

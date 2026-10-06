@@ -339,7 +339,7 @@ const PurchaseStatusRadialMenu: React.FC<PurchaseStatusRadialMenuProps> = ({
                 title={config.label}
                 data-status={status}
                 onClick={() => onSelect(status)}
-                className={`absolute flex h-10 w-10 items-center justify-center rounded-full border shadow-md transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 ${RADIAL_MENU_POSITION_CLASSES[index]} ${
+                className={`absolute flex h-10 w-10 items-center justify-center rounded-full border shadow-md transition-transform hover:scale-110 focus:outline-hidden focus:ring-2 focus:ring-blue-500 ${RADIAL_MENU_POSITION_CLASSES[index]} ${
                   selected
                     ? "bg-blue-600 border-blue-500 text-white"
                     : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
@@ -356,7 +356,7 @@ const PurchaseStatusRadialMenu: React.FC<PurchaseStatusRadialMenuProps> = ({
         <button
           type="button"
           onClick={onCancel}
-          className="absolute -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-slate-700 text-white shadow-lg border border-slate-500 hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="absolute -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-slate-700 text-white shadow-lg border border-slate-500 hover:bg-slate-600 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           aria-label="キャンセル"
           title="キャンセル"
         >
@@ -1168,7 +1168,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
           disabled={readOnly}
           onChange={handleQuantityChange}
           aria-label="購入予定数量"
-          className="h-8 w-10 appearance-none rounded bg-slate-100 px-0.5 text-center text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700"
+          className="h-8 w-10 appearance-none rounded bg-slate-100 px-0.5 text-center text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-blue-500 dark:bg-slate-700"
         >
           {quantityOptions.map((num) => (
             <option key={num} value={num}>
@@ -1190,7 +1190,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
           disabled={readOnly}
           onChange={handlePriceChange}
           aria-label="購入金額"
-          className={`h-8 w-16 appearance-none rounded bg-slate-100 px-0.5 text-right text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 ${
+          className={`h-8 w-16 appearance-none rounded bg-slate-100 px-0.5 text-right text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 ${
             item.price === null ? "text-red-600 dark:text-red-400" : ""
           } ${highlightPrice && item.price === null ? "ring-2 ring-red-500 ring-offset-1 bg-red-50 dark:bg-red-900/30 animate-attention-outline attention-outline-red" : ""}`}
         >
@@ -1324,7 +1324,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
                   aria-label="利用者メモ"
                   onChange={handleRemarksChange}
                   placeholder="利用者メモ"
-                  className="h-8 min-w-0 flex-1 rounded bg-slate-100 px-1.5 text-xs transition focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700"
+                  className="h-8 min-w-0 flex-1 rounded bg-slate-100 px-1.5 text-xs transition focus:outline-hidden focus:ring-2 focus:ring-blue-500 dark:bg-slate-700"
                 />
                 <span className="sr-only">数量</span>
                 {compactQuantityControl}
@@ -1471,7 +1471,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
                 aria-label="利用者メモ"
                 onChange={handleRemarksChange}
                 placeholder="利用者メモ"
-                className="text-xs bg-slate-100 dark:bg-slate-700 rounded py-0.5 px-1.5 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                className="text-xs bg-slate-100 dark:bg-slate-700 rounded py-0.5 px-1.5 w-full focus:ring-2 focus:ring-blue-500 focus:outline-hidden transition"
               />
               <div className="flex items-center justify-end gap-1">
                 {compactQuantityControl}
@@ -1722,7 +1722,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
               aria-label="利用者メモ"
               onChange={handleRemarksChange}
               placeholder="利用者メモ"
-              className="flex-1 min-w-0 text-sm bg-slate-100 dark:bg-slate-700 rounded-md py-1 px-2 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+              className="flex-1 min-w-0 text-sm bg-slate-100 dark:bg-slate-700 rounded-md py-1 px-2 focus:ring-2 focus:ring-blue-500 focus:outline-hidden transition"
             />
             {itemUrlHref && (
               <a
@@ -1797,7 +1797,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
               disabled={readOnly}
               onChange={handleQuantityChange}
               aria-label="購入予定数量"
-              className="flex-1 text-base font-semibold bg-slate-100 dark:bg-slate-700 rounded-md py-1 pl-2 pr-8 text-center focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none tabular-nums"
+              className="flex-1 text-base font-semibold bg-slate-100 dark:bg-slate-700 rounded-md py-1 pl-2 pr-8 text-center focus:ring-2 focus:ring-blue-500 focus:outline-hidden appearance-none tabular-nums"
             >
               {quantityOptions.map((num) => (
                 <option key={num} value={num}>
@@ -1821,7 +1821,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
             disabled={readOnly}
             onChange={handlePriceChange}
             aria-label="購入金額"
-            className={`flex-1 text-base font-semibold bg-slate-100 dark:bg-slate-700 rounded-md py-1 pl-2 pr-8 text-right focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none tabular-nums ${
+            className={`flex-1 text-base font-semibold bg-slate-100 dark:bg-slate-700 rounded-md py-1 pl-2 pr-8 text-right focus:ring-2 focus:ring-blue-500 focus:outline-hidden appearance-none tabular-nums ${
               item.price === null ? "text-red-600 dark:text-red-400" : ""
             } ${highlightPrice && item.price === null ? "ring-2 ring-red-500 ring-offset-1 bg-red-50 dark:bg-red-900/30 animate-attention-outline attention-outline-red" : ""}`}
           >

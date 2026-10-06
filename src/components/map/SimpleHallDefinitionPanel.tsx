@@ -239,7 +239,7 @@ export const SimpleHallDefinitionPanel: React.FC<
                     setEditing({ ...editing, name: e.target.value })
                   }
                   placeholder="例: 東1ホール"
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-hidden"
                 />
               </div>
 

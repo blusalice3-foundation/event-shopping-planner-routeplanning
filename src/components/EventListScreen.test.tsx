@@ -34,7 +34,7 @@ const expectAccessibleActionColors = () => {
     restoreBackupButton,
   ]) {
     expect(actionButton).toHaveClass(
-      "focus-visible:outline-none",
+      "focus-visible:outline-hidden",
       "focus-visible:ring-2",
       "focus-visible:ring-offset-2",
       "dark:focus-visible:ring-offset-slate-900",

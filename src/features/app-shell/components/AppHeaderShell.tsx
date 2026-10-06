@@ -934,7 +934,7 @@ const AppHeaderShell: React.FC<AppHeaderShellProps> = ({ model, actions }) => {
                               onChange={(event) =>
                                 handleZoomChange(Number(event.target.value))
                               }
-                              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:border-blue-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
                             >
                               {APP_ZOOM_OPTIONS.map((zoom) => (
                                 <option key={zoom} value={zoom}>

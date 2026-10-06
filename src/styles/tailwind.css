@@ -14,12 +14,12 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: #e5e7eb;
   }
 
   input::placeholder,
   textarea::placeholder {
-    color: var(--color-gray-400);
+    color: #9ca3af;
   }
 
   button:not(:disabled),
@@ -38,10 +38,4 @@
 
 @utility flex-grow-* {
   flex-grow: --value(integer);
-}
-
-@utility outline-none {
-  --tw-outline-style: solid;
-  outline: 2px solid transparent;
-  outline-offset: 2px;
 }

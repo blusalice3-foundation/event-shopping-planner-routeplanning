@@ -1771,7 +1771,7 @@ const MapView: React.FC<MapViewProps> = ({
             <select
               value={selectedHallId}
               onChange={(e) => setSelectedHallId(e.target.value)}
-              className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm shadow-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">全ホール</option>
               {halls.map((hall) => (

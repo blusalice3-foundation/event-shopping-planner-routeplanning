@@ -122,7 +122,7 @@ const PostEventDistributionCheckDialog: React.FC<
                 aria-label={isBulk ? "一括回答" : "回答内容"}
                 value={selectedAnswer}
                 onChange={(event) => setSelectedAnswer(event.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500/30 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
               >
                 <option value="">未確認</option>
                 {POST_EVENT_DISTRIBUTION_OPTIONS.map((option) => (
@@ -179,7 +179,7 @@ const PostEventDistributionCheckDialog: React.FC<
                         setItemAnswer(item.id, event.target.value)
                       }
                       disabled={!selectedItemIds.has(item.id)}
-                      className="col-span-2 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:disabled:bg-slate-800 sm:col-span-1"
+                      className="col-span-2 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500/30 disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:disabled:bg-slate-800 sm:col-span-1"
                     >
                       <option value="">未確認</option>
                       {POST_EVENT_DISTRIBUTION_OPTIONS.map((option) => (
