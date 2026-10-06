@@ -114,10 +114,26 @@ async function waitUntil(read, label) {
 // Release every origin client; never skipWaiting or reset the database.
 async function loadArtifact(context, page, url, artifactId, mainAsset) {
   await page.goto(url);
-  const matches = async () =>
-    (await page
-      .locator('meta[name="event-shopping-planner-build-id"]')
-      .getAttribute("content")) === artifactId;
+  const matches = () =>
+    page.evaluate(
+      ({ artifactId, mainAsset, requireMarker }) => {
+        const marker = globalThis.document.querySelector(
+          'meta[name="event-shopping-planner-build-id"]',
+        );
+        return (
+          (!requireMarker || marker?.content === artifactId) &&
+          [...globalThis.document.scripts].some(
+            (script) =>
+              script.src && new URL(script.src).pathname === mainAsset,
+          )
+        );
+      },
+      {
+        artifactId,
+        mainAsset,
+        requireMarker: Boolean(process.env.ESP_EXPECTED_TARGET_BUILD_ID),
+      },
+    );
   if (!(await matches())) {
     const session = await context.newCDPSession(page);
     const versions = new Map();

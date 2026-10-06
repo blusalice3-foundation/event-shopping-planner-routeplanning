@@ -403,6 +403,9 @@ function Invoke-DatabaseBoundaryVerifier {
   }
   $env:ESP_DB_BOUNDARY_DIRECTORY = $TempRoot
   $env:ESP_DB_BOUNDARY_STAGE = $Stage
+  if ($Evidence.TargetBuildId) {
+    $env:ESP_EXPECTED_TARGET_BUILD_ID = $Evidence.TargetBuildId
+  }
   $env:ESP_TARGET_ARTIFACT_ID = $ArtifactId
   $env:ESP_EXPECTED_INDEX_SHA256 = $Evidence.IndexSha256
   $env:ESP_EXPECTED_SW_SHA256 = $Evidence.ServiceWorkerSha256
