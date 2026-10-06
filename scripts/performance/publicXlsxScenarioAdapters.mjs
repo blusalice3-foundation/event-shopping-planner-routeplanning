@@ -390,13 +390,14 @@ export const stageCanonicalExportEventLists = async ({
   const receipt = await page.evaluate(
     async (input) => {
       const DATABASE_NAME = "EventShoppingPlannerDB";
-      const MIN_DATABASE_VERSION = 5;
-      const MAX_DATABASE_VERSION = 7;
+      const MIN_DATABASE_VERSION = 8;
+      const MAX_DATABASE_VERSION = 8;
       const DATA_KEY = "data";
       const EVENT_STORE = "eventLists";
       const CONTROL_STORE = "syncQueue";
       const REQUIRED_STORES = [
         "dayModes",
+        "eventConsistency",
         "eventLists",
         "eventMetadata",
         "executeModeItems",
@@ -682,8 +683,8 @@ export const stageCanonicalExportEventLists = async ({
   if (
     !isRecord(receipt) ||
     !Number.isSafeInteger(receipt.databaseVersion) ||
-    receipt.databaseVersion < 5 ||
-    receipt.databaseVersion > 7 ||
+    receipt.databaseVersion < 8 ||
+    receipt.databaseVersion > 8 ||
     Object.entries(expectedReceipt).some(
       ([key, value]) => JSON.stringify(receipt[key]) !== JSON.stringify(value),
     )
@@ -774,8 +775,9 @@ export const readCommittedEventListsReceipt = async ({
       });
       try {
         if (
-          database.version < 5 ||
-          database.version > 7 ||
+          database.version < 8 ||
+          database.version > 8 ||
+          !database.objectStoreNames.contains("eventConsistency") ||
           !database.objectStoreNames.contains("eventLists") ||
           !database.objectStoreNames.contains("syncQueue")
         ) {
@@ -882,8 +884,8 @@ export const readCommittedEventListsReceipt = async ({
     !isRecord(receipt) ||
     receipt.databaseName !== "EventShoppingPlannerDB" ||
     !Number.isSafeInteger(receipt.databaseVersion) ||
-    receipt.databaseVersion < 5 ||
-    receipt.databaseVersion > 7 ||
+    receipt.databaseVersion < 8 ||
+    receipt.databaseVersion > 8 ||
     receipt.storeName !== "eventLists" ||
     receipt.controlStoreName !== "syncQueue" ||
     receipt.key !== "data" ||
@@ -959,7 +961,7 @@ const collectDownloads = (page) => {
 
 const workerImportRequest = (scenarioId) => ({
   type: "XLSX_IMPORT_REQUEST",
-  protocolVersion: 1,
+  protocolVersion: 2,
   requestId: uuidFor(scenarioId),
   kind: "event-import",
   fileName: `${scenarioId}.xlsx`,
