@@ -3,6 +3,16 @@ import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DayMapData } from "../types/map";
 import { db, type AppData } from "./indexedDB";
+import * as mapPersistence from "./mapDataPersistence";
+import { openDatabase } from "../persistence/db/openDatabase";
+import {
+  createNextPersistenceCheckpoint,
+  prepareMetadataForPayload,
+} from "../persistence/internal/persistenceCore";
+import {
+  createPersistenceMetadataKey,
+  createPersistenceCheckpointKey,
+} from "./persistenceResilience";
 
 const RESTORE_STORE_NAMES = [
   db.STORES.EVENT_CONSISTENCY,
@@ -349,4 +359,209 @@ it("rejects a changed unrelated store during an optimized atomic save", async ()
   const after = await db.getAllAppData();
   expect(after.dayModes).toEqual(remoteModes);
   expect(after.eventMetadata).toEqual(before.snapshot.eventMetadata);
+});
+
+it("reuses only a private unchanged map and captures caller edits before awaiting", async () => {
+  await db.restoreAppDataAtomically(makeAppData("準備省略"));
+  const before = await db.readApplicationSnapshot();
+  const expectedMap = structuredClone(before.snapshot.mapData);
+  const next = {
+    ...before.snapshot,
+    dayModes: { 準備省略イベント: { "1日目": "execute" } },
+  };
+  // Diagnostic roots are detached from the actual observed CAS baseline.
+  (before.expectedRoots as { roots: Map<string, unknown> }).roots.clear();
+  const normalize = vi.spyOn(mapPersistence, "normalizeMapDataForPersistence");
+  const clone = vi.spyOn(globalThis, "structuredClone");
+  try {
+    const saving = db.commitApplicationSnapshotAtomically(next, {
+      expectedRoots: before.expectedRoots,
+      changedStoresOnly: true,
+    });
+    next.mapData.準備省略イベント["1日目マップ"] = makeDayMap("後から変更");
+    next.dayModes.準備省略イベント["1日目"] = "focus";
+    await saving;
+    expect(normalize).not.toHaveBeenCalled();
+    expect(
+      clone.mock.calls.some(
+        ([value]) => value === next || value === next.mapData,
+      ),
+    ).toBe(false);
+  } finally {
+    normalize.mockRestore();
+    clone.mockRestore();
+  }
+  const saved = await db.getAllAppData();
+  expect(saved.mapData).toEqual(expectedMap);
+  expect(saved.dayModes).toEqual({ 準備省略イベント: { "1日目": "execute" } });
+});
+
+it("fully prepares changed maps and full restores even when observed roots exist", async () => {
+  await db.restoreAppDataAtomically(makeAppData("全面準備"));
+  const before = await db.readApplicationSnapshot();
+  before.snapshot.mapData.全面準備イベント["1日目マップ"] =
+    makeDayMap("変更されたマップ");
+  const normalize = vi.spyOn(mapPersistence, "normalizeMapDataForPersistence");
+  try {
+    await db.commitApplicationSnapshotAtomically(before.snapshot, {
+      expectedRoots: before.expectedRoots,
+      changedStoresOnly: true,
+    });
+    expect(normalize).toHaveBeenCalledTimes(1);
+    const after = await db.readApplicationSnapshot();
+    normalize.mockClear();
+    await db.restoreAppDataAtomically(after.snapshot, {
+      expectedRoots: after.expectedRoots,
+    });
+    expect(normalize).toHaveBeenCalledTimes(1);
+  } finally {
+    normalize.mockRestore();
+  }
+  expect((await db.getAllAppData()).mapData).toEqual(before.snapshot.mapData);
+});
+
+it("rejects raw map tampering during a save that skips unchanged-map preparation", async () => {
+  await db.restoreAppDataAtomically(makeAppData("map競合"));
+  const before = await db.readApplicationSnapshot();
+  const entries = await db.getAllData(db.STORES.MAP_DATA);
+  const key = Object.keys(entries)[0];
+  const value = structuredClone(entries[key]) as DayMapData;
+  value.cells[0].value = "他の書き込み";
+  const database = await openDatabase();
+  await new Promise<void>((resolve, reject) => {
+    const tx = database.transaction(db.STORES.MAP_DATA, "readwrite");
+    tx.objectStore(db.STORES.MAP_DATA).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onabort = () => reject(tx.error);
+  });
+  const normalize = vi.spyOn(mapPersistence, "normalizeMapDataForPersistence");
+  try {
+    await expect(
+      db.commitApplicationSnapshotAtomically(
+        {
+          ...before.snapshot,
+          eventMetadata: { map競合イベント: { source: "local" } },
+        },
+        { expectedRoots: before.expectedRoots, changedStoresOnly: true },
+      ),
+    ).rejects.toMatchObject({ name: "PersistenceConflict" });
+    expect(normalize).not.toHaveBeenCalled();
+  } finally {
+    normalize.mockRestore();
+  }
+  expect(await db.getAllData(db.STORES.EVENT_METADATA)).toEqual({
+    data: before.snapshot.eventMetadata,
+  });
+  expect((await db.getAllData(db.STORES.MAP_DATA))[key]).toEqual(value);
+  // Leave the shared test database valid for subsequent restore tests.
+  await new Promise<void>((resolve, reject) => {
+    const tx = database.transaction(db.STORES.MAP_DATA, "readwrite");
+    tx.objectStore(db.STORES.MAP_DATA).put(entries[key], key);
+    tx.oncomplete = () => resolve();
+    tx.onabort = () => reject(tx.error);
+  });
+});
+
+it("retains rollback and retry behavior when unchanged-map preparation is skipped", async () => {
+  await db.restoreAppDataAtomically(makeAppData("軽量再試行"));
+  const before = await db.readApplicationSnapshot();
+  const next = {
+    ...before.snapshot,
+    eventMetadata: { 軽量再試行イベント: { source: "retry" } },
+  };
+  const originalPut = IDBObjectStore.prototype.put;
+  const put = vi
+    .spyOn(IDBObjectStore.prototype, "put")
+    .mockImplementation(function (
+      this: IDBObjectStore,
+      value: unknown,
+      key?: IDBValidKey,
+    ) {
+      if (this.name === db.STORES.EVENT_METADATA)
+        throw new DOMException("simulated save failure", "DataCloneError");
+      return originalPut.call(this, value, key);
+    });
+  try {
+    await expect(
+      db.commitApplicationSnapshotAtomically(next, {
+        expectedRoots: before.expectedRoots,
+        changedStoresOnly: true,
+      }),
+    ).rejects.toMatchObject({ name: "DataCloneError" });
+  } finally {
+    put.mockRestore();
+  }
+  expect(await db.getAllAppData()).toEqual(before.snapshot);
+  await db.commitApplicationSnapshotAtomically(next, {
+    expectedRoots: before.expectedRoots,
+    changedStoresOnly: true,
+  });
+  expect(await db.getAllAppData()).toEqual(next);
+});
+
+it("keeps legacy map normalization even when a caller leaves the map unchanged", async () => {
+  await db.restoreAppDataAtomically(makeAppData("旧形式準備"));
+  const initial = await db.readApplicationSnapshot();
+  const legacyMap = structuredClone(initial.snapshot.mapData);
+  const day = legacyMap.旧形式準備イベント["1日目マップ"] as DayMapData;
+  day.cells[0].backgroundColor = "#FFFFFF";
+  const metadata = await prepareMetadataForPayload(
+    db.STORES.MAP_DATA,
+    "data",
+    legacyMap,
+    null,
+  );
+  const checkpoint = createNextPersistenceCheckpoint(
+    db.STORES.MAP_DATA,
+    "data",
+    metadata,
+    null,
+    [],
+  );
+  const database = await openDatabase();
+  await new Promise<void>((resolve, reject) => {
+    const tx = database.transaction(
+      [db.STORES.MAP_DATA, db.STORES.SYNC_QUEUE],
+      "readwrite",
+    );
+    for (const [event, maps] of Object.entries(legacyMap))
+      for (const [name, map] of Object.entries(maps)) {
+        tx.objectStore(db.STORES.MAP_DATA).put(
+          map,
+          `mapData:${JSON.stringify([event, name])}`,
+        );
+      }
+    tx.objectStore(db.STORES.SYNC_QUEUE).put(
+      metadata,
+      createPersistenceMetadataKey(db.STORES.MAP_DATA, "data"),
+    );
+    tx.objectStore(db.STORES.SYNC_QUEUE).put(
+      checkpoint,
+      createPersistenceCheckpointKey(db.STORES.MAP_DATA, "data"),
+    );
+    tx.oncomplete = () => resolve();
+    tx.onabort = () => reject(tx.error);
+  });
+  const before = await db.readApplicationSnapshot();
+  const normalize = vi.spyOn(mapPersistence, "normalizeMapDataForPersistence");
+  try {
+    await db.commitApplicationSnapshotAtomically(
+      {
+        ...before.snapshot,
+        dayModes: { 旧形式準備イベント: { "1日目": "execute" } },
+      },
+      { expectedRoots: before.expectedRoots, changedStoresOnly: true },
+    );
+    expect(normalize).toHaveBeenCalledTimes(1);
+  } finally {
+    normalize.mockRestore();
+  }
+  const saved = await db.getAllAppData();
+  expect(
+    (saved.mapData.旧形式準備イベント["1日目マップ"] as DayMapData).cells[0]
+      .backgroundColor,
+  ).toBeNull();
+  expect(saved.dayModes).toEqual({
+    旧形式準備イベント: { "1日目": "execute" },
+  });
 });

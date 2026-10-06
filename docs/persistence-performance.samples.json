@@ -1,0 +1,308 @@
+{
+  "scope": "Isolated persistence API diagnostic; UI and queue waiting excluded; not release performance acceptance evidence",
+  "baselineSummaries": [
+    {
+      "mapCells": 10000,
+      "runs": 9,
+      "readMs": 90.10000000149012,
+      "commitMs": 104.5,
+      "totalMs": 194.60000000149012,
+      "durableVerified": true
+    },
+    {
+      "mapCells": 40000,
+      "runs": 9,
+      "readMs": 388.69999999925494,
+      "commitMs": 468.30000000074506,
+      "totalMs": 861.4000000022352,
+      "durableVerified": true
+    }
+  ],
+  "optimizedSamples": [
+    {
+      "mapCells": 10000,
+      "round": 0,
+      "readMs": 63.30000000074506,
+      "commitMs": 73.5,
+      "totalMs": 136.80000000074506
+    },
+    {
+      "mapCells": 10000,
+      "round": 1,
+      "readMs": 64.39999999850988,
+      "commitMs": 76.40000000223517,
+      "totalMs": 140.80000000074506
+    },
+    {
+      "mapCells": 10000,
+      "round": 2,
+      "readMs": 65.19999999925494,
+      "commitMs": 78.60000000149012,
+      "totalMs": 143.80000000074506
+    },
+    {
+      "mapCells": 10000,
+      "round": 3,
+      "readMs": 64.09999999776483,
+      "commitMs": 72.40000000223517,
+      "totalMs": 136.5
+    },
+    {
+      "mapCells": 10000,
+      "round": 4,
+      "readMs": 65.59999999776483,
+      "commitMs": 74.30000000074506,
+      "totalMs": 139.89999999850988
+    },
+    {
+      "mapCells": 10000,
+      "round": 5,
+      "readMs": 60.099999997764826,
+      "commitMs": 69.5,
+      "totalMs": 129.59999999776483
+    },
+    {
+      "mapCells": 10000,
+      "round": 6,
+      "readMs": 68.79999999701977,
+      "commitMs": 82.90000000223517,
+      "totalMs": 151.69999999925494
+    },
+    {
+      "mapCells": 10000,
+      "round": 7,
+      "readMs": 59.5,
+      "commitMs": 74.69999999925494,
+      "totalMs": 134.19999999925494
+    },
+    {
+      "mapCells": 10000,
+      "round": 8,
+      "readMs": 61,
+      "commitMs": 68.90000000223517,
+      "totalMs": 129.90000000223517
+    },
+    {
+      "mapCells": 40000,
+      "round": 0,
+      "readMs": 252.40000000223517,
+      "commitMs": 299,
+      "totalMs": 551.4000000022352
+    },
+    {
+      "mapCells": 40000,
+      "round": 1,
+      "readMs": 286,
+      "commitMs": 311,
+      "totalMs": 597
+    },
+    {
+      "mapCells": 40000,
+      "round": 2,
+      "readMs": 253.5,
+      "commitMs": 292.5,
+      "totalMs": 546
+    },
+    {
+      "mapCells": 40000,
+      "round": 3,
+      "readMs": 285.30000000074506,
+      "commitMs": 311.30000000074506,
+      "totalMs": 596.6000000014901
+    },
+    {
+      "mapCells": 40000,
+      "round": 4,
+      "readMs": 264.30000000074506,
+      "commitMs": 311.3999999985099,
+      "totalMs": 575.6999999992549
+    },
+    {
+      "mapCells": 40000,
+      "round": 5,
+      "readMs": 272.5,
+      "commitMs": 306.80000000074506,
+      "totalMs": 579.3000000007451
+    },
+    {
+      "mapCells": 40000,
+      "round": 6,
+      "readMs": 268.8999999985099,
+      "commitMs": 325.19999999925494,
+      "totalMs": 594.0999999977648
+    },
+    {
+      "mapCells": 40000,
+      "round": 7,
+      "readMs": 268.29999999701977,
+      "commitMs": 301,
+      "totalMs": 569.2999999970198
+    },
+    {
+      "mapCells": 40000,
+      "round": 8,
+      "readMs": 271.80000000074506,
+      "commitMs": 337.69999999925494,
+      "totalMs": 609.5
+    }
+  ],
+  "environment": {
+    "playwright": "1.62.1",
+    "items": 150,
+    "os": "Windows 11",
+    "samplesPerCase": 9,
+    "node": "24.19.0",
+    "warmups": 2,
+    "filledMapCells": [10000, 40000],
+    "storage": "Native Chromium IndexedDB",
+    "pageDelivery": "Standalone HTTP page and external script"
+  },
+  "optimizedSummaries": [
+    {
+      "mapCells": 10000,
+      "runs": 9,
+      "readMs": 64.09999999776483,
+      "commitMs": 74.30000000074506,
+      "totalMs": 136.80000000074506,
+      "durableVerified": true
+    },
+    {
+      "mapCells": 40000,
+      "runs": 9,
+      "readMs": 268.8999999985099,
+      "commitMs": 311,
+      "totalMs": 579.3000000007451,
+      "durableVerified": true
+    }
+  ],
+  "baselineCommit": "92420a73ea25a927c1624c70f1def6c495e124e5",
+  "baselineSamples": [
+    {
+      "mapCells": 10000,
+      "round": 0,
+      "readMs": 92.89999999850988,
+      "commitMs": 101.10000000149012,
+      "totalMs": 194
+    },
+    {
+      "mapCells": 10000,
+      "round": 1,
+      "readMs": 87.30000000074506,
+      "commitMs": 103,
+      "totalMs": 190.30000000074506
+    },
+    {
+      "mapCells": 10000,
+      "round": 2,
+      "readMs": 90.20000000298023,
+      "commitMs": 105.09999999776483,
+      "totalMs": 195.30000000074506
+    },
+    {
+      "mapCells": 10000,
+      "round": 3,
+      "readMs": 87.80000000074506,
+      "commitMs": 104.09999999776483,
+      "totalMs": 191.89999999850988
+    },
+    {
+      "mapCells": 10000,
+      "round": 4,
+      "readMs": 97.69999999925494,
+      "commitMs": 119.30000000074506,
+      "totalMs": 217
+    },
+    {
+      "mapCells": 10000,
+      "round": 5,
+      "readMs": 87.69999999925494,
+      "commitMs": 102.40000000223517,
+      "totalMs": 190.10000000149012
+    },
+    {
+      "mapCells": 10000,
+      "round": 6,
+      "readMs": 90.10000000149012,
+      "commitMs": 104.5,
+      "totalMs": 194.60000000149012
+    },
+    {
+      "mapCells": 10000,
+      "round": 7,
+      "readMs": 87.5,
+      "commitMs": 115.09999999776483,
+      "totalMs": 202.59999999776483
+    },
+    {
+      "mapCells": 10000,
+      "round": 8,
+      "readMs": 94.5,
+      "commitMs": 109,
+      "totalMs": 203.5
+    },
+    {
+      "mapCells": 40000,
+      "round": 0,
+      "readMs": 398.5,
+      "commitMs": 462.9000000022352,
+      "totalMs": 861.4000000022352
+    },
+    {
+      "mapCells": 40000,
+      "round": 1,
+      "readMs": 399.0999999977648,
+      "commitMs": 468.30000000074506,
+      "totalMs": 867.3999999985099
+    },
+    {
+      "mapCells": 40000,
+      "round": 2,
+      "readMs": 405.1000000014901,
+      "commitMs": 508,
+      "totalMs": 913.1000000014901
+    },
+    {
+      "mapCells": 40000,
+      "round": 3,
+      "readMs": 373.30000000074506,
+      "commitMs": 500.80000000074506,
+      "totalMs": 874.1000000014901
+    },
+    {
+      "mapCells": 40000,
+      "round": 4,
+      "readMs": 388.69999999925494,
+      "commitMs": 459.70000000298023,
+      "totalMs": 848.4000000022352
+    },
+    {
+      "mapCells": 40000,
+      "round": 5,
+      "readMs": 418.3999999985099,
+      "commitMs": 486.8999999985099,
+      "totalMs": 905.2999999970198
+    },
+    {
+      "mapCells": 40000,
+      "round": 6,
+      "readMs": 374.30000000074506,
+      "commitMs": 462.80000000074506,
+      "totalMs": 837.1000000014901
+    },
+    {
+      "mapCells": 40000,
+      "round": 7,
+      "readMs": 372.20000000298023,
+      "commitMs": 474.69999999925494,
+      "totalMs": 846.9000000022352
+    },
+    {
+      "mapCells": 40000,
+      "round": 8,
+      "readMs": 385.30000000074506,
+      "commitMs": 450.69999999925494,
+      "totalMs": 836
+    }
+  ],
+  "schemaVersion": 1
+}

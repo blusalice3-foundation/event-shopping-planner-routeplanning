@@ -673,6 +673,34 @@ export function expandMapDataFromStorage(value: unknown): MapDataStore {
   return expanded;
 }
 
+/**
+ * Called only for validated maps returned by expandMapDataFromStorage.
+ * Check round-trip stability without allocating another expanded cell array.
+ */
+export function isExpandedMapDataNormalizedForPersistence(
+  data: MapDataStore,
+): boolean {
+  for (const eventMap of Object.values(data)) {
+    if (Object.keys(eventMap).length === 0) return false;
+    for (const dayMap of Object.values(eventMap)) {
+      const importantCellKeys = getImportantCellKeys(dayMap);
+      for (const cell of dayMap.cells) {
+        if (
+          !hasPersistableCellContent(cell, importantCellKeys) ||
+          (cell.backgroundColor !== null &&
+            (!cell.backgroundColor ||
+              isDefaultWhiteColor(cell.backgroundColor))) ||
+          (cell.fontColor !== null && !cell.fontColor) ||
+          (Object.prototype.hasOwnProperty.call(cell, "mergeParent") &&
+            !cell.mergeParent)
+        )
+          return false;
+      }
+    }
+  }
+  return true;
+}
+
 export function normalizeMapDataForPersistence(
   data: MapDataStore,
 ): MapDataStore {
