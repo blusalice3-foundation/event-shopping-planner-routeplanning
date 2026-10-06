@@ -10,7 +10,6 @@ import { validateEventConsistency } from "../../types/consistencyValidation";
 import { InvalidMapPayloadError } from "../../utils/mapDataPersistence";
 import {
   createPersistenceCheckpointKey,
-  createPersistenceDigest,
   createPersistenceIntegrityDescriptors,
   createPersistenceMetadataKey,
   createPersistenceRevision,
@@ -474,14 +473,15 @@ export async function createSyntheticRoot(
   payload: unknown,
   missing = false,
 ): Promise<ObservedRevisionRoot> {
-  const payloadDigest = await createPersistenceDigest(payload);
+  const { digest: payloadDigest, fingerprint: payloadFingerprint } =
+    await createPersistenceIntegrityDescriptors(payload);
   return {
     storeName,
     key,
     revision: createSyntheticRevision(storeName, key, payloadDigest),
     baseRevision: null,
     payloadDigest,
-    payloadFingerprint: createSynchronousFingerprint(payload),
+    payloadFingerprint,
     writerId: "synthetic",
     committedAt: "",
     synthetic: true,
@@ -661,12 +661,13 @@ export async function validatePersistenceSnapshot<T>(
   let digestValid = false;
   let fingerprintValid = false;
   try {
-    digestValid = await verifyPersistenceDigest(
+    // The IndexedDB read owns this payload. Both checks describe the same bytes.
+    const { digest, fingerprint } = await createPersistenceIntegrityDescriptors(
       snapshot.payload,
-      snapshot.metadata.payloadDigest,
     );
+    digestValid = digest.value === snapshot.metadata.payloadDigest.value;
     fingerprintValid = fingerprintsEqual(
-      createSynchronousFingerprint(snapshot.payload),
+      fingerprint,
       snapshot.metadata.payloadFingerprint,
     );
   } catch {

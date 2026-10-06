@@ -12,7 +12,10 @@ import type {
   AtomicSnapshotOptions,
 } from "../../app/ports/PersistenceCommandPort";
 import type { MapDataStore } from "../../types/map";
-import { normalizeMapDataForPersistence } from "../../utils/mapDataPersistence";
+import {
+  isExpandedMapDataNormalizedForPersistence,
+  normalizeMapDataForPersistence,
+} from "../../utils/mapDataPersistence";
 import {
   createPersistenceCheckpointKey,
   createPersistenceDigest,
@@ -80,12 +83,20 @@ interface AppDataRestoreObservation {
   roots: Map<StoreName, ObservedRevisionRoot>;
   snapshot: AppData;
   consistencyMissing: boolean;
+  mapDataNormalized: boolean;
   journal: unknown;
   archive: unknown;
   eventGenerations: Record<string, number>;
   checkpoints: Map<StoreName, PersistenceCheckpoint | null>;
   runtimeCandidates: RuntimeCandidateSnapshot<unknown>[];
 }
+
+// Opaque read handles keep the verified baseline private. Caller snapshots and
+// diagnostic roots can be changed without mutating the data reused at commit.
+const applicationSnapshotObservations = new WeakMap<
+  object,
+  AppDataRestoreObservation
+>();
 
 async function validateConsistencyMigrationEvidence(
   journal: unknown,
@@ -386,6 +397,9 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
     checkpoints,
     runtimeCandidates,
     snapshot,
+    mapDataNormalized: isExpandedMapDataNormalizedForPersistence(
+      snapshot.mapData as MapDataStore,
+    ),
     consistencyMissing,
     journal,
     archive,
@@ -404,9 +418,11 @@ export async function readApplicationSnapshot(): Promise<ApplicationSnapshotRead
       checkpoint,
     ),
   );
+  const expectedRoots = { roots: structuredClone(observation.roots) };
+  applicationSnapshotObservations.set(expectedRoots, observation);
   return {
     snapshot: structuredClone(observation.snapshot),
-    expectedRoots: observation,
+    expectedRoots,
     consistencyMissing: observation.consistencyMissing,
     eventGenerations: structuredClone(observation.eventGenerations),
   };
@@ -416,15 +432,38 @@ export async function commitApplicationSnapshotAtomically(
   options: AtomicSnapshotOptions = {},
 ): Promise<void> {
   assertEventConsistency(data.eventConsistency);
-  const stableData = structuredClone(data);
-  const stableMapData = normalizeMapDataForPersistence(
-    stableData.mapData as MapDataStore,
-  );
+  const ownedObservation = options.expectedRoots
+    ? applicationSnapshotObservations.get(options.expectedRoots)
+    : undefined;
+  const mapDescriptor = Object.getOwnPropertyDescriptor(data, "mapData");
+  const reuseUnchangedMap =
+    options.changedStoresOnly &&
+    !options.migration &&
+    ownedObservation !== undefined &&
+    ownedObservation.mapDataNormalized &&
+    !ownedObservation.roots.get(STORES.MAP_DATA)?.synthetic &&
+    ownedObservation.checkpoints.get(STORES.MAP_DATA) != null &&
+    mapDescriptor?.enumerable === true &&
+    "value" in mapDescriptor &&
+    storedValuesEqual(mapDescriptor.value, ownedObservation.snapshot.mapData);
+  // Capture all mutable caller data before awaiting. Only a private, previously
+  // validated and unchanged map may bypass full restore preparation.
+  const stableData: AppData = reuseUnchangedMap
+    ? {
+        ...structuredClone({ ...data, mapData: {} }),
+        mapData: ownedObservation.snapshot.mapData,
+      }
+    : structuredClone(data);
+  const stableMapData = reuseUnchangedMap
+    ? (stableData.mapData as MapDataStore)
+    : normalizeMapDataForPersistence(stableData.mapData as MapDataStore);
   stableData.mapData = stableMapData;
   const rememberedRoots = new Map(expectedRevisionRoots);
-  const observation = options.expectedRoots
-    ? (options.expectedRoots as AppDataRestoreObservation)
-    : await observeAppDataRestoreState();
+  const observation =
+    ownedObservation ??
+    (options.expectedRoots
+      ? (options.expectedRoots as AppDataRestoreObservation)
+      : await observeAppDataRestoreState());
   if (
     !(observation.roots instanceof Map) ||
     !(observation.checkpoints instanceof Map)

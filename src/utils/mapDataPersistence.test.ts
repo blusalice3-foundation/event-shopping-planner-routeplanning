@@ -5,6 +5,7 @@ import {
   compactMapDataForStorage,
   expandMapDataFromStorage,
   normalizeMapDataForPersistence,
+  isExpandedMapDataNormalizedForPersistence,
 } from "./mapDataPersistence";
 
 const emptyBorders = {
@@ -350,5 +351,84 @@ describe("mapDataPersistence", () => {
     expect(
       Object.prototype.hasOwnProperty.call(compacted["__proto__"], "__proto__"),
     ).toBe(true);
+  });
+});
+
+describe("expanded map preparation eligibility", () => {
+  it.each([
+    {},
+    { value: "内容" },
+    { value: "内容", backgroundColor: " #ffffff " },
+    { value: "内容", backgroundColor: "" },
+    { value: "内容", fontColor: "" },
+    { backgroundColor: "#ff0000" },
+    { fontColor: "#000000" },
+    { isVerticalText: true },
+    {
+      borders: {
+        ...emptyBorders,
+        top: { style: "thin" as const, color: "#000000" },
+      },
+    },
+    { isMerged: true, mergeParent: { row: 1, col: 1 } },
+  ] as Partial<CellData>[])(
+    "matches full normalization for legacy cell %j",
+    (overrides) => {
+      const expanded = expandMapDataFromStorage({
+        Event: { day: makePersistedDayMap({ cells: [makeCell(overrides)] }) },
+      });
+      const normalized = normalizeMapDataForPersistence(expanded);
+      expect(isExpandedMapDataNormalizedForPersistence(expanded)).toBe(
+        JSON.stringify(expanded) === JSON.stringify(normalized),
+      );
+      expect(isExpandedMapDataNormalizedForPersistence(normalized)).toBe(true);
+    },
+  );
+
+  it("keeps empty cells referenced by block numbers and merged anchors", () => {
+    for (const references of [
+      {
+        blocks: [
+          {
+            name: "A",
+            startRow: 1,
+            startCol: 1,
+            endRow: 1,
+            endCol: 1,
+            numberCells: [{ row: 1, col: 1, value: 1 }],
+          },
+        ],
+      },
+      {
+        blocks: [
+          {
+            name: "A",
+            startRow: 1,
+            startCol: 1,
+            endRow: 1,
+            endCol: 1,
+            numberCells: [],
+            nameCells: [{ row: 1, col: 1 }],
+          },
+        ],
+      },
+      {
+        mergedCells: [
+          { startRow: 1, startCol: 1, endRow: 1, endCol: 1, value: "結合" },
+        ],
+      },
+    ]) {
+      const expanded = expandMapDataFromStorage({
+        Event: {
+          day: makePersistedDayMap({ cells: [makeCell()], ...references }),
+        },
+      });
+      expect(isExpandedMapDataNormalizedForPersistence(expanded)).toBe(true);
+      expect(normalizeMapDataForPersistence(expanded)).toEqual(expanded);
+    }
+    expect(isExpandedMapDataNormalizedForPersistence({})).toBe(true);
+    expect(isExpandedMapDataNormalizedForPersistence({ Event: {} })).toBe(
+      false,
+    );
   });
 });

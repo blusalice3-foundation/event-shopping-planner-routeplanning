@@ -10,7 +10,7 @@ import {
   createPersistenceCheckpointKey,
   createPersistenceMetadataKey,
   createSynchronousFingerprint,
-  verifyPersistenceDigest,
+  createPersistenceIntegrityDescriptors,
   type PersistenceCheckpoint,
 } from "../../utils/persistenceResilience";
 import type { LoadResult } from "../contracts/persistence";
@@ -393,12 +393,11 @@ export async function validateMapSnapshot(
   let digestValid = false;
   let fingerprintValid = false;
   try {
-    digestValid = await verifyPersistenceDigest(
-      logicalData,
-      snapshot.metadata.payloadDigest,
-    );
+    const { digest, fingerprint } =
+      await createPersistenceIntegrityDescriptors(logicalData);
+    digestValid = digest.value === snapshot.metadata.payloadDigest.value;
     fingerprintValid = fingerprintsEqual(
-      createSynchronousFingerprint(logicalData),
+      fingerprint,
       snapshot.metadata.payloadFingerprint,
     );
   } catch {
