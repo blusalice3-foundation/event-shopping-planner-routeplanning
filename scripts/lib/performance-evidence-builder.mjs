@@ -1,3 +1,4 @@
+import { isValidExportSetupStorageBinding } from "./performance-export-setup-contract.mjs";
 import {
   calculatePerformanceStatistics,
   calculateSamplesSha256,
@@ -111,19 +112,13 @@ const validateExecutionBinding = (binding, path, errors, scenarioId) => {
         `${path}.setup`,
         errors,
       ) ||
-      binding.setup.method !==
-        "indexeddb-schema-exact-single-transaction-stage-v1" ||
+      !isValidExportSetupStorageBinding(binding.setup) ||
       binding.setup.timing !== "excluded-from-measurement-v1" ||
       binding.setup.readback !== "separate-readonly-transaction-v1" ||
       binding.setup.databaseName !== "EventShoppingPlannerDB" ||
-      !Number.isSafeInteger(binding.setup.databaseVersion) ||
-      binding.setup.databaseVersion < 5 ||
-      binding.setup.databaseVersion > 7 ||
       binding.setup.storeName !== "eventLists" ||
       binding.setup.controlStoreName !== "syncQueue" ||
       binding.setup.key !== "data" ||
-      JSON.stringify(binding.setup.transactionStores) !==
-        JSON.stringify(["eventLists", "syncQueue"]) ||
       binding.setup.payloadSha256 !== payload.payloadSha256 ||
       binding.setup.semanticSha256 !== payload.semanticSha256 ||
       binding.setup.itemCount !== payload.cardinality ||

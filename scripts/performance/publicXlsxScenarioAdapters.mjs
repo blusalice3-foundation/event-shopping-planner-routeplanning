@@ -395,6 +395,7 @@ export const stageCanonicalExportEventLists = async ({
       const DATA_KEY = "data";
       const EVENT_STORE = "eventLists";
       const CONTROL_STORE = "syncQueue";
+      const CONSISTENCY_STORE = "eventConsistency";
       const REQUIRED_STORES = [
         "dayModes",
         "eventConsistency",
@@ -411,7 +412,7 @@ export const stageCanonicalExportEventLists = async ({
       ].sort();
       const metadataKey = "__esp_internal__:meta:v1:eventLists:data";
       const checkpointKey = "__esp_internal__:checkpoint:v1:eventLists:data";
-      const committedAt = "2026-08-09T00:00:00.000Z";
+      const committedAt = new Date().toISOString();
       const writerId = "performance-collector-idb-stage-v1";
 
       const canonicalize = (value) => {
@@ -563,6 +564,48 @@ export const stageCanonicalExportEventLists = async ({
         absorbedCandidates: [],
         updatedAt: committedAt,
       };
+      const emptyPayloadDigest = {
+        algorithm: "SHA-256",
+        canonicalization: "esp-json-v1",
+        value: await sha256("{}"),
+      };
+      const consistencyPayload = Object.fromEntries(
+        Object.keys(input.eventLists).map((event) => [
+          event,
+          {
+            schemaVersion: 1,
+            blockDetectionSettings: null,
+            days: {},
+            legacyPending: [],
+          },
+        ]),
+      );
+      const consistencyCanonical = canonicalize(consistencyPayload);
+      const consistencyDigest = {
+        ...payloadDigest,
+        value: await sha256(consistencyCanonical),
+      };
+      const consistencyMetadata = {
+        ...metadata,
+        storeName: CONSISTENCY_STORE,
+        revision: `performance-stage:${consistencyDigest.value}`,
+        payloadDigest: consistencyDigest,
+        payloadFingerprint: fingerprint(consistencyCanonical),
+      };
+      const consistencyCheckpoint = {
+        ...checkpoint,
+        storeName: CONSISTENCY_STORE,
+        committedRoot: {
+          ...checkpoint.committedRoot,
+          revision: consistencyMetadata.revision,
+          digest: consistencyDigest,
+        },
+      };
+      const consistencyMetadataKey =
+        "__esp_internal__:meta:v1:eventConsistency:data";
+      const consistencyCheckpointKey =
+        "__esp_internal__:checkpoint:v1:eventConsistency:data";
+      const transactionStores = [EVENT_STORE, CONSISTENCY_STORE, CONTROL_STORE];
       const database = await openDatabase();
       try {
         const stores = [...database.objectStoreNames].sort();
@@ -573,7 +616,7 @@ export const stageCanonicalExportEventLists = async ({
         ) {
           throw new Error("Canonical export staging database schema drifted");
         }
-        for (const storeName of [EVENT_STORE, CONTROL_STORE]) {
+        for (const storeName of transactionStores) {
           const transaction = database.transaction(storeName, "readonly");
           const store = transaction.objectStore(storeName);
           if (store.keyPath !== null || store.autoIncrement !== false) {
@@ -584,18 +627,78 @@ export const stageCanonicalExportEventLists = async ({
         }
 
         const transaction = database.transaction(
-          [EVENT_STORE, CONTROL_STORE],
+          transactionStores,
           "readwrite",
         );
         const completion = transactionFinished(transaction);
         const eventStore = transaction.objectStore(EVENT_STORE);
         const controlStore = transaction.objectStore(CONTROL_STORE);
+        const consistencyStore = transaction.objectStore(CONSISTENCY_STORE);
         const existing = await Promise.all([
           requestResult(eventStore.get(DATA_KEY)),
           requestResult(controlStore.get(metadataKey)),
           requestResult(controlStore.get(checkpointKey)),
+          requestResult(consistencyStore.get(DATA_KEY)),
+          requestResult(controlStore.get(consistencyMetadataKey)),
+          requestResult(controlStore.get(consistencyCheckpointKey)),
         ]);
-        if (existing.some((value) => value !== undefined)) {
+        const isInitializedEmptyRoot = (
+          [existingPayload, existingMetadata, existingCheckpoint],
+          storeName,
+        ) =>
+          canonicalize(existingPayload ?? null) === "{}" &&
+          existingMetadata?.kind === metadata.kind &&
+          existingMetadata.version === 1 &&
+          existingMetadata.storeName === storeName &&
+          existingMetadata.key === DATA_KEY &&
+          typeof existingMetadata.revision === "string" &&
+          existingMetadata.revision.length > 0 &&
+          existingMetadata.baseRevision === null &&
+          typeof existingMetadata.writerId === "string" &&
+          existingMetadata.writerId.length > 0 &&
+          Number.isFinite(Date.parse(existingMetadata.committedAt)) &&
+          canonicalize(existingMetadata.payloadDigest ?? null) ===
+            canonicalize(emptyPayloadDigest) &&
+          canonicalize(existingMetadata.payloadFingerprint ?? null) ===
+            canonicalize(fingerprint("{}")) &&
+          existingCheckpoint?.kind === checkpoint.kind &&
+          existingCheckpoint.version === 1 &&
+          existingCheckpoint.storeName === storeName &&
+          existingCheckpoint.key === DATA_KEY &&
+          Array.isArray(existingCheckpoint.absorbedCandidates) &&
+          existingCheckpoint.absorbedCandidates.length === 0 &&
+          Number.isFinite(Date.parse(existingCheckpoint.updatedAt)) &&
+          Date.parse(existingCheckpoint.updatedAt) >=
+            Date.parse(existingMetadata.committedAt) &&
+          canonicalize(existingCheckpoint.committedRoot ?? null) ===
+            canonicalize({
+              revision: existingMetadata.revision,
+              baseRevision: null,
+              digest: emptyPayloadDigest,
+              writerId: existingMetadata.writerId,
+              committedAt: existingMetadata.committedAt,
+            });
+        const roots = [
+          {
+            existing: existing.slice(0, 3),
+            storeName: EVENT_STORE,
+            metadata,
+            checkpoint,
+          },
+          {
+            existing: existing.slice(3, 6),
+            storeName: CONSISTENCY_STORE,
+            metadata: consistencyMetadata,
+            checkpoint: consistencyCheckpoint,
+          },
+        ];
+        if (
+          roots.some(
+            (root) =>
+              root.existing.some((value) => value !== undefined) &&
+              !isInitializedEmptyRoot(root.existing, root.storeName),
+          )
+        ) {
           transaction.abort();
           try {
             await completion;
@@ -606,25 +709,46 @@ export const stageCanonicalExportEventLists = async ({
             "Canonical export staging requires an empty fresh-context root",
           );
         }
+        for (const root of roots) {
+          if (isInitializedEmptyRoot(root.existing, root.storeName)) {
+            root.metadata.baseRevision = root.existing[1].revision;
+            root.checkpoint.committedRoot.baseRevision =
+              root.existing[1].revision;
+          }
+        }
         eventStore.put(input.eventLists, DATA_KEY);
         controlStore.put(metadata, metadataKey);
         controlStore.put(checkpoint, checkpointKey);
+        consistencyStore.put(consistencyPayload, DATA_KEY);
+        controlStore.put(consistencyMetadata, consistencyMetadataKey);
+        controlStore.put(consistencyCheckpoint, consistencyCheckpointKey);
         await completion;
 
         const readbackTransaction = database.transaction(
-          [EVENT_STORE, CONTROL_STORE],
+          transactionStores,
           "readonly",
         );
         const readbackCompletion = transactionFinished(readbackTransaction);
         const readbackEventStore = readbackTransaction.objectStore(EVENT_STORE);
         const readbackControlStore =
           readbackTransaction.objectStore(CONTROL_STORE);
-        const [readbackPayload, readbackMetadata, readbackCheckpoint] =
-          await Promise.all([
-            requestResult(readbackEventStore.get(DATA_KEY)),
-            requestResult(readbackControlStore.get(metadataKey)),
-            requestResult(readbackControlStore.get(checkpointKey)),
-          ]);
+        const [
+          readbackPayload,
+          readbackMetadata,
+          readbackCheckpoint,
+          readbackConsistency,
+          readbackConsistencyMetadata,
+          readbackConsistencyCheckpoint,
+        ] = await Promise.all([
+          requestResult(readbackEventStore.get(DATA_KEY)),
+          requestResult(readbackControlStore.get(metadataKey)),
+          requestResult(readbackControlStore.get(checkpointKey)),
+          requestResult(
+            readbackTransaction.objectStore(CONSISTENCY_STORE).get(DATA_KEY),
+          ),
+          requestResult(readbackControlStore.get(consistencyMetadataKey)),
+          requestResult(readbackControlStore.get(consistencyCheckpointKey)),
+        ]);
         await readbackCompletion;
         const readbackCanonical = canonicalize(readbackPayload);
         const readbackDigest = await sha256(readbackCanonical);
@@ -640,7 +764,12 @@ export const stageCanonicalExportEventLists = async ({
           JSON.stringify(fingerprint(readbackCanonical)) !==
             JSON.stringify(metadata.payloadFingerprint) ||
           JSON.stringify(readbackMetadata) !== JSON.stringify(metadata) ||
-          JSON.stringify(readbackCheckpoint) !== JSON.stringify(checkpoint)
+          JSON.stringify(readbackCheckpoint) !== JSON.stringify(checkpoint) ||
+          canonicalize(readbackConsistency) !== consistencyCanonical ||
+          canonicalize(readbackConsistencyMetadata) !==
+            canonicalize(consistencyMetadata) ||
+          canonicalize(readbackConsistencyCheckpoint) !==
+            canonicalize(consistencyCheckpoint)
         ) {
           throw new Error("Canonical export staging readback drifted");
         }
@@ -654,7 +783,7 @@ export const stageCanonicalExportEventLists = async ({
           payloadSha256: readbackDigest,
           semanticSha256: readbackSemanticSha256,
           itemCount,
-          transactionStores: [EVENT_STORE, CONTROL_STORE],
+          transactionStores,
         };
       } finally {
         database.close();
@@ -678,7 +807,7 @@ export const stageCanonicalExportEventLists = async ({
     payloadSha256,
     semanticSha256: expectedSemanticSha256,
     itemCount: eventLists[eventName]?.length ?? -1,
-    transactionStores: ["eventLists", "syncQueue"],
+    transactionStores: ["eventLists", "eventConsistency", "syncQueue"],
   };
   if (
     !isRecord(receipt) ||
@@ -1292,7 +1421,7 @@ const runExportRoundTrip = async (options) => {
         payloadBytes: staged.payloadBytes,
         semanticSha256: generated.semanticSha256,
         setup: {
-          method: "indexeddb-schema-exact-single-transaction-stage-v1",
+          method: "indexeddb-schema-exact-single-transaction-stage-v2",
           timing: "excluded-from-measurement-v1",
           readback: "separate-readonly-transaction-v1",
           databaseName: staged.receipt.databaseName,

@@ -1,3 +1,4 @@
+import { isValidExportSetupStorageBinding } from "./performance-export-setup-contract.mjs";
 import { parseJsonStrict, sha256Bytes } from "./canonical-json.mjs";
 import { resolveGateScenarioIds } from "../verify-performance-policy.mjs";
 import {
@@ -93,19 +94,13 @@ const validateExecutionBinding = (value, scenarioId) => {
       `${scenarioId} setup binding`,
     );
     if (
-      value.setup.method !==
-        "indexeddb-schema-exact-single-transaction-stage-v1" ||
+      !isValidExportSetupStorageBinding(value.setup) ||
       value.setup.timing !== "excluded-from-measurement-v1" ||
       value.setup.readback !== "separate-readonly-transaction-v1" ||
       value.setup.databaseName !== "EventShoppingPlannerDB" ||
-      !Number.isSafeInteger(value.setup.databaseVersion) ||
-      value.setup.databaseVersion < 5 ||
-      value.setup.databaseVersion > 7 ||
       value.setup.storeName !== "eventLists" ||
       value.setup.controlStoreName !== "syncQueue" ||
       value.setup.key !== "data" ||
-      JSON.stringify(value.setup.transactionStores) !==
-        JSON.stringify(["eventLists", "syncQueue"]) ||
       value.setup.payloadSha256 !== value.fixturePayload.payloadSha256 ||
       value.setup.semanticSha256 !== value.fixturePayload.semanticSha256 ||
       value.setup.itemCount !== value.fixturePayload.cardinality ||
