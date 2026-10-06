@@ -14,6 +14,7 @@ import {
   buildArtifactDrillReleaseContext,
   buildReleaseContext,
   createArtifactManifestFromOutput,
+  calculateBuildInputClosure,
   createBootstrapInput,
   createBootstrapStaging,
   assertIndependentBuildReproducibility,
@@ -77,6 +78,118 @@ const fixtureApplicationStylesheet = Buffer.from(
   "#loading-screen{display:flex}#loading-screen.hidden{display:none;visibility:hidden}\n",
   "utf8",
 );
+
+test("build input closure binds stylesheet configuration and committed bytes", async (t) => {
+  const temporaryRoot = await mkdtemp(
+    path.join(os.tmpdir(), "foundation-build-input-closure-"),
+  );
+  try {
+    const git = (...args) =>
+      execFileSync(
+        "git",
+        [
+          "-c",
+          "core.autocrlf=false",
+          "-c",
+          "core.hooksPath=.git/no-hooks",
+          ...args,
+        ],
+        { cwd: temporaryRoot, encoding: "utf8" },
+      ).trim();
+    const commit = (message) => {
+      git("add", "--all");
+      git(
+        "-c",
+        "user.name=Fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit",
+        "--quiet",
+        "-m",
+        message,
+      );
+      return git("rev-parse", "HEAD");
+    };
+    const stylesheetInputs = [
+      "postcss.config.cjs",
+      "postcss.config.mjs",
+      "tailwind.config.cjs",
+      "tailwind.config.mjs",
+      "tailwind-legacy-theme.json",
+    ];
+    const includedFiles = new Map([
+      ["index.html", "<html><body></body></html>\n"],
+      ...stylesheetInputs.map((file) => [file, `fixture: ${file}\n`]),
+    ]);
+    git("init", "--quiet");
+    for (const [file, content] of includedFiles) {
+      await writeFile(path.join(temporaryRoot, file), content, "utf8");
+    }
+    await writeFile(
+      path.join(temporaryRoot, "README.md"),
+      "documentation\n",
+      "utf8",
+    );
+    const originalSource = commit("stylesheet fixture");
+    const originalClosure = calculateBuildInputClosure({
+      repositoryRoot: temporaryRoot,
+      sourceSha: originalSource,
+    });
+    const expectedEntries = [...includedFiles]
+      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+      .map(([file, content]) => ({
+        path: file,
+        byteLength: Buffer.byteLength(content, "utf8"),
+        sha256: sha256Bytes(Buffer.from(content, "utf8")),
+      }));
+    assert.equal(originalClosure.fileCount, includedFiles.size);
+    assert.equal(originalClosure.sha256, sha256Json(expectedEntries));
+    let previousClosure = originalClosure;
+    for (const file of stylesheetInputs) {
+      await t.test(
+        `committed ${file} changes the artifact binding`,
+        async () => {
+          await writeFile(
+            path.join(temporaryRoot, file),
+            `changed: ${file}\n`,
+            "utf8",
+          );
+          assert.deepEqual(
+            calculateBuildInputClosure({
+              repositoryRoot: temporaryRoot,
+              sourceSha: originalSource,
+            }),
+            originalClosure,
+            "uncommitted edits must not replace the selected source bytes",
+          );
+          const sourceSha = commit(`change ${file}`);
+          const updatedClosure = calculateBuildInputClosure({
+            repositoryRoot: temporaryRoot,
+            sourceSha,
+          });
+          assert.equal(updatedClosure.fileCount, originalClosure.fileCount);
+          assert.notEqual(updatedClosure.sha256, previousClosure.sha256);
+          previousClosure = updatedClosure;
+        },
+      );
+    }
+    await writeFile(
+      path.join(temporaryRoot, "README.md"),
+      "changed documentation\n",
+      "utf8",
+    );
+    assert.deepEqual(
+      calculateBuildInputClosure({
+        repositoryRoot: temporaryRoot,
+        sourceSha: commit("documentation only"),
+      }),
+      previousClosure,
+      "documentation changes must not alter the build input closure",
+    );
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
 
 test("Vercel build launcher passes only closed build authority", () => {
   let invocation = null;
