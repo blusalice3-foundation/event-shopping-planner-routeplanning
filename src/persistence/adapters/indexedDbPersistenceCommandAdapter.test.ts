@@ -247,4 +247,156 @@ describe("IndexedDB persistence command adapter", () => {
     await adapter.migrateFromLocalStorage();
     expect(delegate.migrateFromLocalStorage).toHaveBeenCalledOnce();
   });
+  it("uses browser preferences safely when a window is available or absent", () => {
+    const adapter = createIndexedDbPersistenceCommandAdapter(createDelegate());
+    const values = new Map<string, string>();
+    const browserWindow = {
+      localStorage: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => {
+          values.set(key, value);
+        },
+        removeItem: (key: string) => {
+          values.delete(key);
+        },
+      },
+    };
+    vi.stubGlobal("window", browserWindow);
+    const key = "__adapter_preference_test__";
+    try {
+      adapter.savePreference(key, "dark");
+      expect(adapter.loadPreference(key)).toBe("dark");
+      vi.stubGlobal("window", undefined);
+      expect(adapter.loadPreference(key)).toBeNull();
+      expect(() => adapter.savePreference(key, "light")).not.toThrow();
+      expect(browserWindow.localStorage.getItem(key)).toBe("dark");
+    } finally {
+      vi.unstubAllGlobals();
+      browserWindow.localStorage.removeItem(key);
+    }
+  });
+  it("restores into an unobserved adapter and invalidates incoming event histories", async () => {
+    const delegate = createDelegate();
+    const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+    expect(adapter.readBlockDetectionSettings("missing")).toBeNull();
+    expect(adapter.readBlockDetectionSettingsForBackup(["missing"])).toEqual(
+      {},
+    );
+    const incoming = snapshot();
+    incoming.eventLists.restored = [];
+    await adapter.restoreAppDataAtomically(incoming);
+    expect(delegate.commitApplicationSnapshotAtomically).toHaveBeenCalledWith(
+      incoming,
+      { invalidatedEvents: ["restored"] },
+    );
+  });
+  it("keeps a replacement settings binding when the earlier binding disconnects", async () => {
+    const delegate = createDelegate();
+    const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+    const previous = snapshot();
+    const current = snapshot();
+    current.eventConsistency.event = {
+      ...createEventConsistency(),
+      blockDetectionSettings: DEFAULT_BLOCK_DETECTION_SETTINGS,
+    };
+    const previousSave = vi.fn(async () => {});
+    const currentSave = vi.fn(async () => {});
+    const disconnectPrevious = adapter.bindApplicationSettings({
+      read: () => previous,
+      save: previousSave,
+    });
+    const disconnectCurrent = adapter.bindApplicationSettings({
+      read: () => current,
+      save: currentSave,
+    });
+    disconnectPrevious();
+    expect(adapter.readBlockDetectionSettings("event")).toEqual(
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    await adapter.saveBlockDetectionSettings(
+      "event",
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(previousSave).not.toHaveBeenCalled();
+    expect(currentSave).toHaveBeenCalledOnce();
+    disconnectCurrent();
+    expect(adapter.readBlockDetectionSettings("event")).toBeNull();
+  });
+  it("invalidates the union of replaced and incoming events unless the caller supplies a scope", async () => {
+    const previous = snapshot();
+    previous.eventLists.removed = [];
+    previous.eventLists.retained = [];
+    const delegate = createDelegate({
+      readApplicationSnapshot: vi.fn(async () => ({
+        snapshot: previous,
+        expectedRoots: {},
+        consistencyMissing: false,
+      })),
+    });
+    const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+    await adapter.readApplicationSnapshot();
+    const incoming = snapshot();
+    incoming.eventLists.retained = [];
+    incoming.eventLists.added = [];
+    await adapter.restoreAppDataAtomically(incoming);
+    expect(
+      delegate.commitApplicationSnapshotAtomically,
+    ).toHaveBeenLastCalledWith(incoming, {
+      invalidatedEvents: ["removed", "retained", "added"],
+    });
+    const options = {
+      expectedRoots: { source: "caller" },
+      invalidatedEvents: [],
+    };
+    await adapter.restoreAppDataAtomically(incoming, options);
+    expect(
+      delegate.commitApplicationSnapshotAtomically,
+    ).toHaveBeenLastCalledWith(incoming, options);
+  });
+  it("creates canonical settings for legacy snapshots and updates existing settings without mutating input", async () => {
+    const delegate = createDelegate();
+    const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+    const legacy = snapshot();
+    delete (legacy as Partial<PersistenceSnapshot>).eventConsistency;
+    await adapter.restoreAppDataWithBlockDetectionSettings(
+      legacy,
+      "legacy",
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(legacy).not.toHaveProperty("eventConsistency");
+    expect(adapter.readBlockDetectionSettings("legacy")).toEqual(
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    const current = snapshot();
+    current.eventConsistency.legacy = createEventConsistency();
+    current.eventConsistency.other = {
+      ...createEventConsistency(),
+      blockDetectionSettings: DEFAULT_BLOCK_DETECTION_SETTINGS,
+    };
+    await adapter.restoreAppDataWithBlockDetectionSettings(
+      current,
+      "legacy",
+      null,
+    );
+    expect(adapter.readBlockDetectionSettings("legacy")).toBeNull();
+    expect(
+      adapter.readBlockDetectionSettingsForBackup(["legacy", "other"]),
+    ).toEqual({ other: DEFAULT_BLOCK_DETECTION_SETTINGS });
+    expect(current.eventConsistency.legacy).toEqual(createEventConsistency());
+    expect(
+      delegate.commitApplicationSnapshotAtomically,
+    ).toHaveBeenLastCalledWith(
+      {
+        ...current,
+        eventConsistency: {
+          ...current.eventConsistency,
+          legacy: {
+            ...current.eventConsistency.legacy,
+            blockDetectionSettings: null,
+          },
+        },
+      },
+      { invalidatedEvents: ["legacy"] },
+    );
+  });
 });
