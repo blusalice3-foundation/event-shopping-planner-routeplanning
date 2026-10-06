@@ -1295,3 +1295,20 @@ it("keeps a confirmed day merge out of accepted state after a standalone mode wr
   act(() => h.result.current.discardPending());
   h.unmount();
 });
+it("still adopts another tab changes when a setter returns unchanged values", async () => {
+  const h = harness();
+  const metadata = {
+    event: {
+      spreadsheetUrl: "remote",
+      spreadsheetSheetName: "シート",
+      lastImportDate: "2026-10-06",
+    },
+  };
+  h.durable().eventMetadata = structuredClone(metadata);
+  await act(async () => {
+    h.result.current.setters.setDayModes((current) => current);
+    await h.result.current.flush();
+  });
+  expect(h.result.current.raw.eventMetadata).toEqual(metadata);
+  expect(h.result.current.isPending()).toBe(false);
+});

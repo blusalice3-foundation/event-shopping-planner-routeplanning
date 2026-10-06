@@ -5,11 +5,15 @@ import type { HallRef } from "../../../types/consistency";
 import { normalizeMapDay, resolveHallDefinition, sameDay } from "./context";
 import { mapContextEntries, type ConsistencyChange } from "./migration";
 
-export function reconcileConsistencyReferences(source: PersistenceSnapshot): {
+export function reconcileConsistencyReferences(
+  source: PersistenceSnapshot,
+  clone = true,
+): {
   data: PersistenceSnapshot;
   changes: ConsistencyChange[];
 } {
-  const data = structuredClone(source);
+  // Planners already own a private snapshot; public callers retain copy isolation.
+  const data = clone ? structuredClone(source) : source;
   const changes: ConsistencyChange[] = [];
   const changed = (path: string, message: string) =>
     changes.push({ path, message });

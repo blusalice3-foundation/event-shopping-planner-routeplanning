@@ -51,6 +51,8 @@ export interface ApplicationSnapshotRead {
 }
 export interface AtomicSnapshotOptions {
   expectedRoots?: object;
+  /** Keep CAS checks for all stores, but write only changed initialized payloads. */
+  changedStoresOnly?: boolean;
   invalidatedEvents?: readonly string[];
   migration?: { source: unknown; blockDetectionSettingsRaw: string | null };
 }

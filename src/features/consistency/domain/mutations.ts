@@ -1,13 +1,11 @@
+import { semanticEqual } from "../../../utils/semanticEquality";
 import type { ApplicationSnapshotCommitContext } from "../../../app/commands/ApplicationSnapshotCommitPort";
 import { interpretLegacyGroup } from "./context";
 import { preserveDayBucketKeys } from "./dayBuckets";
 import { resolveSimpleKey } from "./context";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
 import type { MutationPlan } from "../../../app/commands/applicationMutationCoordinator";
-import {
-  MutationTargetMissingError,
-  semanticSignature,
-} from "../../../app/commands/applicationMutationCoordinator";
+import { MutationTargetMissingError } from "../../../app/commands/applicationMutationCoordinator";
 import type { ShoppingItem } from "../../../types/item";
 import type {
   DayMapData,
@@ -60,8 +58,7 @@ import {
 import { duplicateEventDays } from "./dayMerge";
 import type { MutationChoices } from "../../../app/commands/applicationMutationCoordinator";
 
-const equal = (a: unknown, b: unknown): boolean =>
-  semanticSignature(a) === semanticSignature(b);
+const equal = semanticEqual;
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
 /** Captures changed fields instead of carrying an old whole snapshot into the queue. */
@@ -262,17 +259,14 @@ function projectedMutationDays(
   source: PersistenceSnapshot,
   patch: Partial<PersistenceSnapshot>,
   input: MutationContext,
+  projected: PersistenceSnapshot,
 ): MutationDay[] {
   if (input.mergeDuplicateDays === false) return [];
   const targets: MutationDay[] = [];
   const add = (eventName: string, day: string) =>
     targets.push({ eventName, day });
   if (input.eventName) add(input.eventName, input.day);
-  const projected = projectConsistencySnapshot(
-    source,
-    input.eventName,
-    input.day,
-  );
+
   for (const [eventName, items] of Object.entries(patch.eventLists ?? {})) {
     const old = (projected.eventLists[eventName] ?? []) as ShoppingItem[];
     const next = items as ShoppingItem[];
@@ -436,13 +430,14 @@ export function planProjectedMutation(
   patch: Partial<PersistenceSnapshot>,
   input: MutationContext,
   choices: MutationChoices = {},
+  currentProjection?: PersistenceSnapshot,
+  reuseUnchangedMapData = false,
 ): MutationPlan {
-  const targets = projectedMutationDays(source, patch, input);
-  const projection = projectConsistencySnapshot(
-    source,
-    input.eventName,
-    input.day,
-  );
+  // All stages read the same unmodified source until a day merge replaces it.
+  const projection =
+    currentProjection ??
+    projectConsistencySnapshot(source, input.eventName, input.day);
+  const targets = projectedMutationDays(source, patch, input, projection);
   const reviewedPatch = { ...patch };
   // Retain an explicit reviewed mode if another writer has already resolved
   // the duplicate buckets before this operation is recalculated.
@@ -474,7 +469,13 @@ export function planProjectedMutation(
     choices,
     (merged, remapHall) => {
       if (merged === source)
-        return planProjectedMutationAfterMerge(source, reviewedPatch, input);
+        return planProjectedMutationAfterMerge(
+          source,
+          reviewedPatch,
+          input,
+          projection,
+          reuseUnchangedMapData,
+        );
       const before = remapProjectedHalls(projection, merged, remapHall);
       const after = projectConsistencySnapshot(
         merged,
@@ -540,14 +541,21 @@ function planProjectedMutationAfterMerge(
   source: PersistenceSnapshot,
   patch: Partial<PersistenceSnapshot>,
   input: MutationContext,
-): MutationPlan {
-  const beforeProjection = projectConsistencySnapshot(
+  beforeProjection = projectConsistencySnapshot(
     source,
     input.eventName,
     input.day,
-  );
+  ),
+  reuseUnchangedMapData = false,
+): MutationPlan {
   const proposed = { ...beforeProjection, ...patch };
-  const next = structuredClone(source);
+  // The state layer owns immutable geometry. Map edits and public callers
+  // retain the original copy isolation; other UI edits do not copy all cells.
+  const keepMapData = reuseUnchangedMapData && patch.mapData === undefined;
+  const next = structuredClone(
+    keepMapData ? { ...source, mapData: {} } : source,
+  );
+  if (keepMapData) next.mapData = source.mapData;
   const details: string[] = [];
   const comparisons: unknown[] = [];
   const affectedContexts: Array<{
@@ -1235,7 +1243,11 @@ function planProjectedMutationAfterMerge(
       }
     }
   }
-  const repaired = reconcileConsistencyReferences(next);
+  // Deep-copy the smaller reference-bearing stores before repair. Map geometry
+  // is already privately cloned above or explicitly shared as immutable data.
+  const referenceInput = structuredClone({ ...next, mapData: {} });
+  referenceInput.mapData = next.mapData;
+  const repaired = reconcileConsistencyReferences(referenceInput, false);
   // Compare source values and final repaired results across all affected days and maps.
   // Purchase records and unrelated contexts do not participate in this approval.
   const describeAffectedContexts =

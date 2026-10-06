@@ -1201,3 +1201,74 @@ describe("startup recovery bundle", () => {
     ).not.toThrow();
   });
 });
+
+it("keeps FNV-1A-64 values identical to BigInt arithmetic across carries and UTF-8 bytes", () => {
+  const values: unknown[] = [
+    null,
+    false,
+    0,
+    -0,
+    1e200,
+    "",
+    "日本語🛒",
+    String.fromCharCode(...Array.from({ length: 256 }, (_, index) => index)),
+    "a".repeat(8192),
+    Array.from({ length: 128 }, (_, index) => ({
+      row: index,
+      col: index ** 3,
+      value: "新刊" + index,
+    })),
+  ];
+  let state = 0x12345678;
+  for (let length = 1; length < 64; length++) {
+    values.push(
+      Array.from({ length }, () => {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        return { value: state, text: String.fromCharCode(state % 0xd800) };
+      }),
+    );
+  }
+  for (const payload of values) {
+    const canonical = canonicalStringifyPersistencePayload(payload);
+    let expected = 0xcbf29ce484222325n;
+    for (const byte of new TextEncoder().encode(canonical))
+      expected =
+        ((expected ^ BigInt(byte)) * 0x100000001b3n) & 0xffffffffffffffffn;
+    expect(createSynchronousFingerprint(payload)).toEqual({
+      algorithm: "FNV-1A-64",
+      canonicalization: "esp-json-v1",
+      canonicalLength: canonical.length,
+      value: expected.toString(16).padStart(16, "0"),
+    });
+  }
+});
+
+it("preserves escaped canonical keys and validates every repeated property descriptor", () => {
+  const values = [
+    { 'a"': 1, "b\\": 2, "c\u0000": 3 },
+    { "c\u0000": 6, "b\\": 5, 'a"': 4 },
+  ];
+  const expected = JSON.stringify(
+    values.map((value) =>
+      Object.fromEntries(
+        Object.entries(value).sort(([left], [right]) =>
+          left < right ? -1 : left > right ? 1 : 0,
+        ),
+      ),
+    ),
+  );
+  expect(canonicalStringifyPersistencePayload(values)).toBe(expected);
+  const accessor = {};
+  let invoked = false;
+  Object.defineProperty(accessor, "same", {
+    enumerable: true,
+    get() {
+      invoked = true;
+      return 2;
+    },
+  });
+  expect(() =>
+    canonicalStringifyPersistencePayload([{ same: 1 }, accessor]),
+  ).toThrow(PersistenceSerializationError);
+  expect(invoked).toBe(false);
+});
