@@ -617,28 +617,28 @@ try {
     Write-Output "Release A isolated rollback recovery PASS: DB v$CurrentDatabaseCeiling rejects predecessor ceiling v$BaselineDatabaseCeiling."
   } else {
 
-  $PreviewProcess = Start-ArtifactPreview -WorkingDirectory $ProjectRoot
-  Invoke-BrowserVerifier -Mode "seed"
-  Stop-ArtifactPreview -Process $PreviewProcess
-  $PreviewProcess = $null
+    $PreviewProcess = Start-ArtifactPreview -WorkingDirectory $ProjectRoot
+    Invoke-BrowserVerifier -Mode "seed"
+    Stop-ArtifactPreview -Process $PreviewProcess
+    $PreviewProcess = $null
 
-  $PreviewProcess = Start-ArtifactPreview -WorkingDirectory $BaselineRoot
-  Invoke-BrowserVerifier `
-    -Mode "rollback" `
-    -FromArtifactId $FinalBuildId `
-    -TargetArtifactId $BaselineCommit `
-    -TargetBuildId $BaselineEvidence.TargetBuildId `
-    -Evidence $BaselineEvidence
-  Stop-ArtifactPreview -Process $PreviewProcess
-  $PreviewProcess = $null
+    $PreviewProcess = Start-ArtifactPreview -WorkingDirectory $BaselineRoot
+    Invoke-BrowserVerifier `
+      -Mode "rollback" `
+      -FromArtifactId $FinalBuildId `
+      -TargetArtifactId $BaselineCommit `
+      -TargetBuildId $BaselineEvidence.TargetBuildId `
+      -Evidence $BaselineEvidence
+    Stop-ArtifactPreview -Process $PreviewProcess
+    $PreviewProcess = $null
 
-  $PreviewProcess = Start-ArtifactPreview -WorkingDirectory $ProjectRoot
-  Invoke-BrowserVerifier `
-    -Mode "forward" `
-    -FromArtifactId $BaselineCommit `
-    -TargetArtifactId $FinalBuildId `
-    -TargetBuildId $FinalBuildId `
-    -Evidence $FinalEvidence
+    $PreviewProcess = Start-ArtifactPreview -WorkingDirectory $ProjectRoot
+    Invoke-BrowserVerifier `
+      -Mode "forward" `
+      -FromArtifactId $BaselineCommit `
+      -TargetArtifactId $FinalBuildId `
+      -TargetBuildId $FinalBuildId `
+      -Evidence $FinalEvidence
 
   }
 

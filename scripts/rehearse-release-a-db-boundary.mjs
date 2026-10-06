@@ -56,7 +56,7 @@ export function assertRestoredBackup(expected, actual) {
 const snapshotDatabase = (page) =>
   page.evaluate(async () => {
     const database = await new Promise((resolve, reject) => {
-      const request = indexedDB.open("EventShoppingPlannerDB");
+      const request = globalThis.indexedDB.open("EventShoppingPlannerDB");
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result);
     });
@@ -127,21 +127,33 @@ async function loadArtifact(context, page, url, artifactId, mainAsset) {
     session.on("ServiceWorker.workerVersionUpdated", onVersions);
     try {
       await session.send("ServiceWorker.enable");
-      await page.evaluate(async () =>
-        (await navigator.serviceWorker.ready).update(),
-      );
       await waitUntil(
         () =>
           [...versions.values()].some(
-            (version) => version.status === "installed",
+            (version) => version.status === "activated",
           ),
+        "Baseline active Service Worker",
+      );
+      const baselineIds = new Set(versions.keys());
+      await page.evaluate(async () =>
+        (await navigator.serviceWorker.ready).update(),
+      );
+      const candidates = () =>
+        [...versions.values()].filter(
+          (version) =>
+            !baselineIds.has(version.versionId) &&
+            ["installed", "activated"].includes(version.status),
+        );
+      await waitUntil(
+        () => candidates().length > 0,
         "Target Service Worker installation",
       );
-      const installed = [...versions.values()].filter(
-        (version) => version.status === "installed",
+      assert.equal(
+        candidates().length,
+        1,
+        "Target Service Worker is ambiguous.",
       );
-      assert.equal(installed.length, 1, "Target Service Worker is ambiguous.");
-      const target = installed[0];
+      const target = candidates()[0];
       await Promise.all(
         context.pages().map((client) => client.goto("about:blank")),
       );
@@ -159,11 +171,18 @@ async function loadArtifact(context, page, url, artifactId, mainAsset) {
   await page
     .locator('script[type="module"][src="' + mainAsset + '"]')
     .waitFor({ state: "attached" });
+  await page.evaluate(async () => navigator.serviceWorker.ready);
+  if (
+    !(await page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
+  ) {
+    await page.reload();
+  }
   await waitUntil(
     () => page.evaluate(() => Boolean(navigator.serviceWorker.controller)),
     "Service Worker controller",
   );
 }
+
 async function downloadJson(page, button) {
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: button, exact: true }).click();
@@ -242,7 +261,7 @@ async function main() {
       await context.addInitScript(
         ({ origin, sources }) => {
           if (
-            location.origin !== origin ||
+            globalThis.location.origin !== origin ||
             localStorage.getItem("__esp_internal__:boundary-seeded")
           )
             return;
