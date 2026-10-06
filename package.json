@@ -180,7 +180,7 @@
     "path-to-regexp@6.1.0": "6.3.0",
     "path-to-regexp@8.2.0": "8.4.2",
     "path-to-regexp@8.3.0": "8.4.2",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "smol-toml": "1.7.1",
     "tar": "7.5.22",
     "undici@5.28.4": "6.28.1",
