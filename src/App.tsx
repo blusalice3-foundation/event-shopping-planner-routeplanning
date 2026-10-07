@@ -2593,7 +2593,11 @@ const App: React.FC = () => {
               : persistenceStatus
         }
         legacyCleanupStatus={legacyCleanupStatus}
-        showRoutineStatus={uiVisibilitySettings.showPersistenceStatus}
+        showRoutineStatus={
+          uiSettingsPanelOpen
+            ? draftUIVisibilitySettings.showPersistenceStatus
+            : uiVisibilitySettings.showPersistenceStatus
+        }
         failedStores={failedStores}
         failureDetails={failureDetails}
         onRetry={retrySave}
