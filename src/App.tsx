@@ -1792,36 +1792,45 @@ const App: React.FC = () => {
           aria-label={confirmation.title}
           aria-busy={application.isConfirmationBusy}
         >
-          <section className="bg-white dark:bg-slate-800 rounded p-5 max-w-3xl w-full max-h-[85vh] overflow-auto">
-            <h2 className="text-lg font-bold">{confirmation.title}</h2>
-            {confirmation.choices?.map((choice) => (
-              <label key={choice.id} className="block my-3 text-sm">
-                <span className="block font-medium mb-1">{choice.label}</span>
-                <select
-                  className="w-full rounded border p-2 bg-white text-slate-900 dark:bg-slate-700 dark:text-slate-100"
-                  value={choice.value}
-                  disabled={application.isConfirmationBusy}
-                  onChange={(event) =>
-                    application.choose(token, choice.id, event.target.value)
-                  }
+          <section className="flex max-h-[85dvh] w-full max-w-3xl flex-col overflow-hidden rounded bg-white p-5 dark:bg-slate-800">
+            <h2 className="mb-3 shrink-0 text-lg font-bold">
+              {confirmation.title}
+            </h2>
+            <div
+              role="region"
+              aria-label="確認内容"
+              tabIndex={0}
+              className="min-h-0 flex-1 overflow-y-auto"
+            >
+              {confirmation.choices?.map((choice) => (
+                <label key={choice.id} className="block my-3 text-sm">
+                  <span className="block font-medium mb-1">{choice.label}</span>
+                  <select
+                    className="w-full rounded border p-2 bg-white text-slate-900 dark:bg-slate-700 dark:text-slate-100"
+                    value={choice.value}
+                    disabled={application.isConfirmationBusy}
+                    onChange={(event) =>
+                      application.choose(token, choice.id, event.target.value)
+                    }
+                  >
+                    {choice.options.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+              {confirmation.details.map((detail, index) => (
+                <pre
+                  key={index}
+                  className="whitespace-pre-wrap break-all text-sm my-3"
                 >
-                  {choice.options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
-            {confirmation.details.map((detail, index) => (
-              <pre
-                key={index}
-                className="whitespace-pre-wrap break-all text-sm my-3"
-              >
-                {detail}
-              </pre>
-            ))}
-            <div className="flex gap-3">
+                  {detail}
+                </pre>
+              ))}
+            </div>
+            <div className="mt-4 flex shrink-0 gap-3 border-t border-slate-200 pt-4 dark:border-slate-700">
               <button
                 disabled={application.isConfirmationBusy}
                 onClick={() => application.cancel(token)}

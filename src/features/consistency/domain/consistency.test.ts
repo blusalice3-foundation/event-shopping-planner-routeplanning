@@ -968,6 +968,7 @@ describe("map reimport respects actual day dependencies (R33/R36)", () => {
   const reimport = (
     source: ReturnType<typeof sourceWithOtherDay>,
     preserveMaplessHalls = false,
+    skipImpactConfirmation = false,
   ) =>
     planMapReimport(
       source,
@@ -980,7 +981,7 @@ describe("map reimport respects actual day dependencies (R33/R36)", () => {
           initialAngle: 90,
         },
       ],
-      { preserveMaplessHalls },
+      { preserveMaplessHalls, skipImpactConfirmation },
       DEFAULT_BLOCK_DETECTION_SETTINGS,
     );
 
@@ -1002,6 +1003,27 @@ describe("map reimport respects actual day dependencies (R33/R36)", () => {
       expect(plan.snapshot.eventLists).toEqual(source.eventLists);
       expect(source).toEqual(before);
       expect(validateSnapshotReferences(plan.snapshot)).toEqual([]);
+    },
+  );
+
+  it.each([false, true])(
+    "imports without impact review using the same validated snapshot with preservation=%s",
+    (preserve) => {
+      const source = sourceWithOtherDay();
+      const before = structuredClone(source);
+      const reviewed = reimport(source, preserve);
+      const direct = reimport(source, preserve, true);
+      expect(reviewed.confirmation).toBeDefined();
+      expect(direct.confirmation).toBeUndefined();
+      expect(direct.snapshot).toEqual(reviewed.snapshot);
+      expect(direct.snapshot.mapData.event["1日目マップ"]).toMatchObject({
+        maxRow: 20,
+      });
+      expect([
+        ...validateSnapshotStructure(direct.snapshot),
+        ...validateSnapshotReferences(direct.snapshot),
+      ]).toEqual([]);
+      expect(source).toEqual(before);
     },
   );
 
