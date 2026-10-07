@@ -27,9 +27,14 @@ import { areSameItemSnapshot } from "./itemSnapshot";
 import LimitedPurchaseDialog from "./LimitedPurchaseDialog";
 import SingleQuantityLimitedPurchaseChoiceDialog from "./SingleQuantityLimitedPurchaseChoiceDialog";
 import {
-  buildQuantityOptions,
-  isStandardQuantityOption,
-} from "./quantityOptions";
+  updatePriceSelectOptions,
+  updateQuantitySelectOptions,
+} from "./shoppingItemNativeSelectOptions";
+import {
+  getPriceOptionElements,
+  getQuantityOptionElements,
+} from "./ShoppingItemSelectOptions";
+import { observeBatchedElementMeasurements } from "./batchedElementMeasurements";
 import type { LimitedPurchaseDialogResult } from "../types/limitedPurchase";
 import {
   applyLimitedPurchase,
@@ -88,6 +93,7 @@ export interface ShoppingItemCardProps {
   purchaseStatusControlMode?: PurchaseStatusControlMode;
   skipLimitedPurchaseForSingleQuantity: boolean;
   readOnly?: boolean;
+  preferNativeOptions?: boolean;
 }
 
 const statusConfig: Record<
@@ -396,6 +402,7 @@ export const SHOPPING_ITEM_CARD_COMPARISON_KEYS = [
   "purchaseStatusControlMode",
   "skipLimitedPurchaseForSingleQuantity",
   "readOnly",
+  "preferNativeOptions",
 ] as const satisfies readonly (keyof ShoppingItemCardProps)[];
 
 export const areSameShoppingItemCardProps = (
@@ -430,7 +437,8 @@ export const areSameShoppingItemCardProps = (
   prev.purchaseStatusControlMode === next.purchaseStatusControlMode &&
   prev.skipLimitedPurchaseForSingleQuantity ===
     next.skipLimitedPurchaseForSingleQuantity &&
-  prev.readOnly === next.readOnly;
+  prev.readOnly === next.readOnly &&
+  prev.preferNativeOptions === next.preferNativeOptions;
 
 const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   item: sourceItem,
@@ -460,6 +468,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   purchaseStatusControlMode = "cycle",
   skipLimitedPurchaseForSingleQuantity,
   readOnly = false,
+  preferNativeOptions = false,
 }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [optimisticItem, setOptimisticItem] = useState(sourceItem);
@@ -506,6 +515,8 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
     title: false,
   });
 
+  const publishedTruncation = useRef(truncatedMap);
+
   const toggleExpand = useCallback((key: "circle" | "title") => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -515,36 +526,39 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
     });
   }, []);
 
-  // truncate 判定: scrollWidth > clientWidth で実際にはみ出しているかを検出
-  useLayoutEffect(() => {
-    const update = () => {
-      const circleEl = circleTextRef.current;
-      const titleEl = titleTextRef.current;
-      const nextTruncatedMap = {
-        circle:
-          !!circleEl &&
-          !expanded.has("circle") &&
-          circleEl.scrollWidth > circleEl.clientWidth + 1,
-        title:
-          !!titleEl &&
-          !expanded.has("title") &&
-          titleEl.scrollWidth > titleEl.clientWidth + 1,
-      };
-      setTruncatedMap((prev) =>
-        prev.circle === nextTruncatedMap.circle &&
-        prev.title === nextTruncatedMap.title
-          ? prev
-          : nextTruncatedMap,
-      );
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    if (circleTextRef.current) ro.observe(circleTextRef.current);
-    if (titleTextRef.current) ro.observe(titleTextRef.current);
-    // 親の幅変化も捕捉するためカード全体も observe
-    if (cardRef.current) ro.observe(cardRef.current);
-    return () => ro.disconnect();
-  }, [item.circle, item.title, expanded]);
+  // 全カードの幅を先に読み取り、判定結果の更新でレイアウトを繰り返さない。
+  useLayoutEffect(
+    () =>
+      observeBatchedElementMeasurements(
+        [circleTextRef.current, titleTextRef.current, cardRef.current],
+        () => {
+          const circleEl = circleTextRef.current;
+          const titleEl = titleTextRef.current;
+          const nextTruncatedMap = {
+            circle:
+              !!circleEl &&
+              !expanded.has("circle") &&
+              circleEl.scrollWidth > circleEl.clientWidth + 1,
+            title:
+              !!titleEl &&
+              !expanded.has("title") &&
+              titleEl.scrollWidth > titleEl.clientWidth + 1,
+          };
+          const previous = publishedTruncation.current;
+          if (
+            previous.circle === nextTruncatedMap.circle &&
+            previous.title === nextTruncatedMap.title
+          ) {
+            return;
+          }
+          return () => {
+            publishedTruncation.current = nextTruncatedMap;
+            setTruncatedMap(nextTruncatedMap);
+          };
+        },
+      ),
+    [item.circle, item.title, expanded, layoutMode, viewMode],
+  );
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -969,24 +983,25 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
     };
   }, [purchaseStatusMenuOpen, closePurchaseStatusMenu]);
 
-  const priceOptions = useMemo(() => {
-    const options = new Set<number | null>();
-    options.add(null); // 価格未定を最初に追加
-    options.add(0); // 0円を追加
-    for (let i = 1; i <= 100; i++) {
-      options.add(i * 100);
-    }
-    if (item.price !== null) {
-      options.add(item.price); // Ensure current price is always an option
-    }
-    return Array.from(options).sort((a, b) => {
-      if (a === null) return -1;
-      if (b === null) return 1;
-      return a - b;
-    });
-  }, [item.price]);
+  // Keep child ownership and focus stable for this card's entire lifetime.
+  const [nativeOptions] = useState(preferNativeOptions);
+  const priceOptions = useMemo(
+    () => (nativeOptions ? undefined : getPriceOptionElements(item.price)),
+    [item.price, nativeOptions],
+  );
   const quantityOptions = useMemo(
-    () => buildQuantityOptions(item.quantity),
+    () =>
+      nativeOptions ? undefined : getQuantityOptionElements(item.quantity),
+    [item.quantity, nativeOptions],
+  );
+  const priceOptionsRef = useCallback(
+    (select: HTMLSelectElement | null) =>
+      updatePriceSelectOptions(select, item.price),
+    [item.price],
+  );
+  const quantityOptionsRef = useCallback(
+    (select: HTMLSelectElement | null) =>
+      updateQuantitySelectOptions(select, item.quantity),
     [item.quantity],
   );
   const sheetReferenceDetails =
@@ -1164,17 +1179,14 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
         </button>
       ) : (
         <select
+          ref={nativeOptions ? quantityOptionsRef : undefined}
           value={item.quantity}
           disabled={readOnly}
           onChange={handleQuantityChange}
           aria-label="購入予定数量"
           className="h-8 w-10 appearance-none rounded bg-slate-100 px-0.5 text-center text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-blue-500 dark:bg-slate-700"
         >
-          {quantityOptions.map((num) => (
-            <option key={num} value={num}>
-              {isStandardQuantityOption(num) ? num : `${num}（現在値）`}
-            </option>
-          ))}
+          {quantityOptions}
         </select>
       );
 
@@ -1186,6 +1198,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
           </span>
         )}
         <select
+          ref={nativeOptions ? priceOptionsRef : undefined}
           value={item.price === null ? "" : item.price}
           disabled={readOnly}
           onChange={handlePriceChange}
@@ -1194,11 +1207,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
             item.price === null ? "text-red-600 dark:text-red-400" : ""
           } ${highlightPrice && item.price === null ? "ring-2 ring-red-500 ring-offset-1 bg-red-50 dark:bg-red-900/30 animate-attention-outline attention-outline-red" : ""}`}
         >
-          {priceOptions.map((p) => (
-            <option key={p === null ? "" : p} value={p === null ? "" : p}>
-              {p === null ? "価格未定" : p === 0 ? "0" : p.toLocaleString()}
-            </option>
-          ))}
+          {priceOptions}
         </select>
       </div>
     );
@@ -1793,17 +1802,14 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
             </button>
           ) : (
             <select
+              ref={nativeOptions ? quantityOptionsRef : undefined}
               value={item.quantity}
               disabled={readOnly}
               onChange={handleQuantityChange}
               aria-label="購入予定数量"
               className="flex-1 text-base font-semibold bg-slate-100 dark:bg-slate-700 rounded-md py-1 pl-2 pr-8 text-center focus:ring-2 focus:ring-blue-500 focus:outline-hidden appearance-none tabular-nums"
             >
-              {quantityOptions.map((num) => (
-                <option key={num} value={num}>
-                  {isStandardQuantityOption(num) ? num : `${num}（現在値）`}
-                </option>
-              ))}
+              {quantityOptions}
             </select>
           )}
         </div>
@@ -1817,6 +1823,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
             </span>
           )}
           <select
+            ref={nativeOptions ? priceOptionsRef : undefined}
             value={item.price === null ? "" : item.price}
             disabled={readOnly}
             onChange={handlePriceChange}
@@ -1825,11 +1832,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
               item.price === null ? "text-red-600 dark:text-red-400" : ""
             } ${highlightPrice && item.price === null ? "ring-2 ring-red-500 ring-offset-1 bg-red-50 dark:bg-red-900/30 animate-attention-outline attention-outline-red" : ""}`}
           >
-            {priceOptions.map((p) => (
-              <option key={p === null ? "" : p} value={p === null ? "" : p}>
-                {p === null ? "価格未定" : p === 0 ? "0" : p.toLocaleString()}
-              </option>
-            ))}
+            {priceOptions}
           </select>
         </div>
       </div>

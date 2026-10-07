@@ -63,6 +63,7 @@ const representativeShoppingItemCardProps = {
   purchaseStatusControlMode: "cycle",
   skipLimitedPurchaseForSingleQuantity: true,
   readOnly: false,
+  preferNativeOptions: false,
 } satisfies Required<ShoppingItemCardProps>;
 
 const changeProp = (
