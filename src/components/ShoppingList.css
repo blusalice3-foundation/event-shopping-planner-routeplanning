@@ -28,3 +28,24 @@
   left: 0;
   width: 100%;
 }
+
+.esp-viewport-placeholder {
+  position: relative;
+  overflow: hidden;
+}
+.esp-viewport-placeholder-pc {
+  height: 220px;
+}
+.esp-viewport-placeholder-phone {
+  height: 136px;
+}
+.esp-viewport-placeholder-heading {
+  position: relative;
+  height: 44px;
+}
+.esp-viewport-placeholder-label {
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  pointer-events: none;
+}

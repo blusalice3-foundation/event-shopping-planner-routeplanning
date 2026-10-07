@@ -7,6 +7,10 @@ import {
 import type { FocusMapCenteringMode, FocusPhase } from "../../types/focus";
 import { hasMissingLimitedQuantity } from "../../features/space-navigation/domain/statusSegments";
 import ShoppingItemCard from "../ShoppingItemCard";
+import {
+  ViewportContent,
+  focusPendingViewportContent,
+} from "../../features/shopping-list/renderers/ViewportContent";
 import MapRotationControls from "../map/MapRotationControls";
 
 interface FocusModeItemListProps {
@@ -190,6 +194,8 @@ export const FocusModeItemList: React.FC<FocusModeItemListProps> = React.memo(
   }) => (
     <div
       ref={itemListRef}
+      role="list"
+      aria-label="現在のスペースの品目"
       className={
         containerClassName ||
         `${layoutMode === "smartphone" ? "space-y-2" : "space-y-4"} pb-24 ${
@@ -201,43 +207,102 @@ export const FocusModeItemList: React.FC<FocusModeItemListProps> = React.memo(
         }`
       }
     >
-      {currentVisitDisplayItems.map((item, index) => (
-        <div
-          key={item.id}
-          data-item-id={item.id}
-          className={`relative ${
-            blinkingPriceItemIds.has(item.id)
-              ? "ring-2 ring-red-500 rounded-lg animate-attention-outline attention-outline-red"
-              : blinkingLimitedMissingItemIds.has(item.id)
-                ? "ring-2 ring-orange-500 rounded-lg animate-attention-outline attention-outline-orange"
-                : ""
-          }`}
-        >
-          <ShoppingItemCard
-            item={item}
-            onUpdate={onUpdateItem}
-            isStriped={index % 2 === 1}
-            onEditRequest={onEditRequest || noopShoppingItemHandler}
-            onDeleteRequest={onDeleteRequest || noopShoppingItemHandler}
-            isSelected={false}
-            onSelectItem={noopSelectItem}
-            layoutMode={layoutMode}
-            viewMode="focus"
-            purchaseStatusControlMode={purchaseStatusControlMode}
-            skipLimitedPurchaseForSingleQuantity={
-              skipLimitedPurchaseForSingleQuantity
+      {currentVisitDisplayItems.map((item, index) => {
+        const content = (
+          <div
+            key={item.id}
+            data-item-id={item.id}
+            data-row-key={"focus:" + item.id}
+            role="listitem"
+            aria-label={[
+              item.block + item.number,
+              item.circle,
+              item.title,
+            ].join(" ")}
+            aria-posinset={index + 1}
+            aria-setsize={currentVisitDisplayItems.length}
+            className={`relative ${
+              blinkingPriceItemIds.has(item.id)
+                ? "ring-2 ring-red-500 rounded-lg animate-attention-outline attention-outline-red"
+                : blinkingLimitedMissingItemIds.has(item.id)
+                  ? "ring-2 ring-orange-500 rounded-lg animate-attention-outline attention-outline-orange"
+                  : ""
+            }`}
+          >
+            <ShoppingItemCard
+              item={item}
+              onUpdate={onUpdateItem}
+              isStriped={index % 2 === 1}
+              onEditRequest={onEditRequest || noopShoppingItemHandler}
+              onDeleteRequest={onDeleteRequest || noopShoppingItemHandler}
+              isSelected={false}
+              onSelectItem={noopSelectItem}
+              layoutMode={layoutMode}
+              viewMode="focus"
+              purchaseStatusControlMode={purchaseStatusControlMode}
+              skipLimitedPurchaseForSingleQuantity={
+                skipLimitedPurchaseForSingleQuantity
+              }
+              readOnly={readOnly}
+              highlightLimitedMissing={blinkingLimitedMissingItemIds.has(
+                item.id,
+              )}
+              getLatestItemById={getLatestItemById}
+              onNotify={onNotify}
+              onLimitedPurchaseDefer={onLimitedPurchaseDefer}
+              onPostEventDistributionCheckRequest={
+                onPostEventDistributionCheckRequest
+              }
+            />
+          </div>
+        );
+        return (
+          <ViewportContent
+            key={item.id}
+            rowKey={"focus:" + item.id}
+            defer={
+              currentVisitDisplayItems.length >= 80 &&
+              typeof IntersectionObserver === "function" &&
+              typeof ResizeObserver === "function"
             }
-            readOnly={readOnly}
-            highlightLimitedMissing={blinkingLimitedMissingItemIds.has(item.id)}
-            getLatestItemById={getLatestItemById}
-            onNotify={onNotify}
-            onLimitedPurchaseDefer={onLimitedPurchaseDefer}
-            onPostEventDistributionCheckRequest={
-              onPostEventDistributionCheckRequest
+            placeholder={
+              <div
+                className={
+                  layoutMode === "pc"
+                    ? "esp-viewport-placeholder esp-viewport-placeholder-pc"
+                    : "esp-viewport-placeholder esp-viewport-placeholder-phone"
+                }
+                role="listitem"
+                data-row-key={"focus:" + item.id}
+                aria-label={[
+                  item.block + item.number,
+                  item.circle,
+                  item.title,
+                ].join(" ")}
+                aria-posinset={index + 1}
+                aria-setsize={currentVisitDisplayItems.length}
+                tabIndex={0}
+                data-viewport-focus-sentinel
+                onFocus={(event) =>
+                  focusPendingViewportContent(event.currentTarget)
+                }
+              >
+                <span className="esp-viewport-placeholder-label">
+                  {[
+                    item.block + item.number,
+                    item.circle,
+                    item.title,
+                    item.remarks,
+                    item.price ?? "価格未定",
+                    item.quantity,
+                  ].join(" ")}
+                </span>
+              </div>
             }
+            render={() => content}
           />
-        </div>
-      ))}
+        );
+      })}
       {onAddItem && (
         <div className="flex justify-center py-4">
           <button

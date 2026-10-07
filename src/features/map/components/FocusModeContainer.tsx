@@ -7,7 +7,7 @@ import React, { useEffect, useMemo, useRef } from "react";
 import FocusMode from "../../../components/FocusMode";
 import { buildMergedHallRouteSettings } from "../../../utils/mergedHallRouteSettings";
 import { buildItemRoutingSignature } from "../../../utils/hallGrouping";
-import { buildDayMapVisitLookupSignature } from "../../../utils/mapRoutingSignature";
+import { getMapVisitLookupRenderingSignature } from "../canvas/mapRenderingSnapshot";
 import {
   buildActiveHallDefinitionsStore,
   buildActiveHallRouteSettingsStore,
@@ -193,7 +193,7 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
   }, [activeEventMapData, mapTabName, hasMapTab]);
 
   const activeDayMapVisitLookupSignature = useMemo(() => {
-    return buildDayMapVisitLookupSignature(activeDayMapData);
+    return getMapVisitLookupRenderingSignature(activeDayMapData);
   }, [activeDayMapData]);
 
   const focusMapDataStoreRef = useRef<{

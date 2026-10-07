@@ -7,3 +7,6 @@ export * from "./renderers/rowAccessibility";
 export * from "./renderers/rendererSelector";
 export * from "./renderers/virtualEligibility";
 export * from "./renderers/VirtualListRenderer";
+export * from "./renderers/RetainedViewportListRenderer";
+export * from "./renderers/retainedViewportEligibility";
+export * from "./renderers/ViewportContent";

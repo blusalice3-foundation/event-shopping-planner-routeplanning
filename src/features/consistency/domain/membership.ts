@@ -54,6 +54,25 @@ export function resolveLocation(
 ): LocationResolution {
   return resolveLocationWithLookup(map, item, findRouteLookupNumberCell);
 }
+/** For a single immutable UI map snapshot; mutation planning uses resolveLocation. */
+export function createLocationResolver(
+  map: DayMapData,
+): (item: Pick<ShoppingItem, "block" | "number">) => LocationResolution {
+  const indexes = new Map<
+    BlockDefinition,
+    Map<number, NonNullable<ReturnType<typeof findRouteLookupNumberCell>>>
+  >();
+  return (item) =>
+    resolveLocationWithLookup(map, item, (block, value) => {
+      let index = indexes.get(block);
+      if (!index) {
+        index = new Map(getRouteLookupNumberCellEntries(block));
+        indexes.set(block, index);
+      }
+      return index.get(value);
+    });
+}
+
 function resolveLocationWithLookup(
   map: DayMapData,
   item: Pick<ShoppingItem, "block" | "number">,

@@ -12,6 +12,7 @@ export function collectFocusCellItems(
   executeIds: readonly string[],
   day: string,
   mapData: DayMapData,
+  resolveItemLocation: typeof resolveLocation = resolveLocation,
 ): {
   execution: Map<string, ShoppingItem[]>;
   candidates: Map<string, ShoppingItem[]>;
@@ -28,7 +29,7 @@ export function collectFocusCellItems(
     )
       continue;
     seen.add(item.id);
-    const location = resolveLocation(mapData, item);
+    const location = resolveItemLocation(mapData, item);
     if (location.status !== "resolved") continue;
     const cell = location.location.cell;
     const key = [cell.row, cell.col].join("-");
