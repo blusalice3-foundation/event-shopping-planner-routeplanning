@@ -404,14 +404,12 @@ const colorPalette: Array<{ light: string; dark: string }> = [
   },
 ];
 
-const calculateBlockColors = (items: ShoppingItem[]): Map<string, string> => {
+export const calculateBlockColors = (
+  items: ShoppingItem[],
+): Map<string, string> => {
   const colorMap = new Map<string, string>();
-  const uniqueBlocks = new Set<string>();
-  items.forEach((item) => {
-    if (item.purchaseStatus === "None") {
-      uniqueBlocks.add(item.block);
-    }
-  });
+  // Purchases do not shift the palette or stripes of unrelated cards.
+  const uniqueBlocks = new Set(items.map((item) => item.block));
   const sortedBlocks = Array.from(uniqueBlocks).sort((a, b) => {
     const numA = Number(a);
     const numB = Number(b);
@@ -425,26 +423,15 @@ const calculateBlockColors = (items: ShoppingItem[]): Map<string, string> => {
     const colorIndex = index % colorPalette.length;
     blockColorMap.set(block, colorPalette[colorIndex]);
   });
-  items.forEach((item, index) => {
+  let previousBlock: string | undefined;
+  let useDark = false;
+  items.forEach((item) => {
+    useDark = item.block === previousBlock ? !useDark : false;
+    previousBlock = item.block;
     if (item.purchaseStatus === "None") {
-      const block = item.block;
-      const blockColor = blockColorMap.get(block);
+      const blockColor = blockColorMap.get(item.block);
       if (blockColor) {
-        const prevItem = index > 0 ? items[index - 1] : null;
-        const isSameBlockAsPrev =
-          prevItem &&
-          prevItem.block === block &&
-          prevItem.purchaseStatus === "None";
-        if (isSameBlockAsPrev) {
-          const prevColor = colorMap.get(items[index - 1].id) || "";
-          const shouldUseDark = prevColor === blockColor.light;
-          colorMap.set(
-            item.id,
-            shouldUseDark ? blockColor.dark : blockColor.light,
-          );
-        } else {
-          colorMap.set(item.id, blockColor.light);
-        }
+        colorMap.set(item.id, useDark ? blockColor.dark : blockColor.light);
       }
     }
   });
@@ -1761,7 +1748,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     [items],
   );
   const preferNativeOptions =
-    listRendererSelection.engine === "full" &&
+    (listRendererSelection.engine === "full" || useRetainedViewport) &&
     listReadModel.itemRows.length >= VIRTUAL_LIST_MINIMUM_ROW_COUNT;
 
   useLayoutEffect(() => {

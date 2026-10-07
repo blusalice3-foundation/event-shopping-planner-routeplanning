@@ -10,6 +10,7 @@ import {
   useMemo,
   useRef,
   useState,
+  startTransition,
   type SetStateAction,
 } from "react";
 import type {
@@ -50,6 +51,15 @@ import {
   validateSnapshotReferences,
 } from "../../utils/appBackup";
 import type { BlockDetectionSettings } from "../../types/map";
+import {
+  applyItemContentEdits,
+  collectItemContentEdits,
+  isMemoOnlyItemContentEdit,
+  type ItemContentEdit,
+} from "./itemContentEdits";
+
+export const MEMO_SAVE_DELAY_MS = 300;
+export const MEMO_SAVE_MAX_WAIT_MS = 1000;
 
 export const emptyApplicationSnapshot = (): PersistedStateValues => ({
   eventLists: {},
@@ -86,6 +96,7 @@ type Batch = {
   retryOnFailure?: boolean;
   acceptedBase?: PersistenceSnapshot;
   acceptedDraft?: PersistenceSnapshot;
+  itemContentEdits?: readonly ItemContentEdit[];
 };
 function changedSnapshotStores(
   base: PersistenceSnapshot,
@@ -258,6 +269,9 @@ export function useApplicationSnapshot(
   const draft = useRef<Batch | null>(null);
   const flushDraftRef = useRef(() => {});
   const submitted = useRef<Batch[]>([]);
+  const memoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const memoMaxWaitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [, setItemDraftRevision] = useState(0);
   const previewRef = useRef<PersistenceSnapshot>(raw);
   const suspended = useRef(new Set<string>());
   const retained = useRef(new Set<string>());
@@ -269,10 +283,50 @@ export function useApplicationSnapshot(
     const index = submitted.current.findIndex((batch) => batch.id === id);
     return index < 0 ? submitted.current : submitted.current.slice(0, index);
   }, []);
+  const itemContentOverlayCache = useRef<{
+    source: PersistenceSnapshot;
+    edits: readonly (readonly ItemContentEdit[])[];
+    value: PersistenceSnapshot;
+  }>();
+  const overlayPendingItemContent = useCallback(
+    (snapshot: PersistenceSnapshot) => {
+      const edits = [
+        ...submitted.current,
+        ...(draft.current ? [draft.current] : []),
+      ]
+        .filter(
+          (batch) =>
+            !retained.current.has(batch.id) && !suspended.current.has(batch.id),
+        )
+        .flatMap((batch) =>
+          batch.itemContentEdits?.length ? [batch.itemContentEdits] : [],
+        );
+      const cached = itemContentOverlayCache.current;
+      if (
+        cached?.source === snapshot &&
+        cached.edits.length === edits.length &&
+        edits.every((edit, index) => edit === cached.edits[index])
+      )
+        return cached.value;
+      const value = edits.reduce(
+        (current, edit) => applyItemContentEdits(current, edit),
+        snapshot,
+      );
+      itemContentOverlayCache.current = { source: snapshot, edits, value };
+      return value;
+    },
+    [],
+  );
   const readAcceptedSnapshot = useCallback(
     () =>
-      applyAcceptedBatches(rawRef.current, submitted.current, retained.current),
-    [],
+      overlayPendingItemContent(
+        applyAcceptedBatches(
+          rawRef.current,
+          submitted.current,
+          retained.current,
+        ),
+      ),
+    [overlayPendingItemContent],
   );
   const releasePending = useCallback((id: string) => {
     if (suspended.current.delete(id))
@@ -397,11 +451,14 @@ export function useApplicationSnapshot(
       ]) {
         if (suspended.current.has(batch.id) && !retained.current.has(batch.id))
           continue;
-        next = applyChangedFields(
-          batch.acceptedBase ?? batch.base,
-          batch.acceptedDraft ?? batch.draft,
-          next,
-        ) as PersistenceSnapshot;
+        next =
+          batch.itemContentEdits && !batch.acceptedDraft
+            ? applyItemContentEdits(next, batch.itemContentEdits)
+            : (applyChangedFields(
+                batch.acceptedBase ?? batch.base,
+                batch.acceptedDraft ?? batch.draft,
+                next,
+              ) as PersistenceSnapshot);
       }
       previewRef.current = next;
       previewInputs.current = { raw: rawRef.current, ...context };
@@ -614,6 +671,11 @@ export function useApplicationSnapshot(
     [request],
   );
   const flushDraft = useCallback(() => {
+    if (memoSaveTimer.current !== null) clearTimeout(memoSaveTimer.current);
+    if (memoMaxWaitTimer.current !== null)
+      clearTimeout(memoMaxWaitTimer.current);
+    memoSaveTimer.current = null;
+    memoMaxWaitTimer.current = null;
     const batch = draft.current;
     if (!batch) return;
     draft.current = null;
@@ -634,6 +696,17 @@ export function useApplicationSnapshot(
               typeof action === "function"
                 ? (action as (value: typeof current) => typeof current)(current)
                 : action;
+            // Submit accepted memo input before combining it with a structural proposal.
+            if (
+              draft.current &&
+              isMemoOnlyItemContentEdit(draft.current.itemContentEdits) &&
+              collectItemContentEdits(draft.current.base, {
+                ...draft.current.draft,
+                [key]: next,
+              }) === undefined
+            ) {
+              flushDraft();
+            }
             if (!draft.current) {
               const base = previewRef.current;
               draft.current = {
@@ -643,11 +716,32 @@ export function useApplicationSnapshot(
                 draft: { ...base },
                 retryOnFailure: true,
               };
-              queueMicrotask(flushDraft);
             }
 
             Object.assign(draft.current.draft, { [key]: next });
+            draft.current.itemContentEdits = collectItemContentEdits(
+              draft.current.base,
+              draft.current.draft,
+            );
             rebuildPreview();
+            if (isMemoOnlyItemContentEdit(draft.current.itemContentEdits)) {
+              // Keep the input urgent while the shared list catches up.
+              startTransition(() =>
+                setItemDraftRevision((revision) => revision + 1),
+              );
+              if (memoSaveTimer.current !== null)
+                clearTimeout(memoSaveTimer.current);
+              memoSaveTimer.current = setTimeout(
+                flushDraft,
+                MEMO_SAVE_DELAY_MS,
+              );
+              memoMaxWaitTimer.current ??= setTimeout(
+                flushDraft,
+                MEMO_SAVE_MAX_WAIT_MS,
+              );
+            } else {
+              queueMicrotask(flushDraft);
+            }
             return next;
           },
         ]),
@@ -673,19 +767,20 @@ export function useApplicationSnapshot(
       ) as unknown as PersistedStateSetters,
     [rebuildPreview],
   );
-  const values = useMemo(
+  const retainedSnapshot = useMemo(
     () =>
-      projectForDisplay(
-        applyAcceptedBatches(
-          raw,
-          submitted.current,
-          new Set(retainedOperationIds),
-        ),
-        eventName,
-        day,
-      ) as unknown as PersistedStateValues,
-    [raw, eventName, day, retainedOperationIds, projectForDisplay],
+      applyAcceptedBatches(
+        raw,
+        submitted.current,
+        new Set(retainedOperationIds),
+      ),
+    [raw, retainedOperationIds],
   );
+  const values = projectForDisplay(
+    overlayPendingItemContent(retainedSnapshot),
+    eventName,
+    day,
+  ) as unknown as PersistedStateValues;
   const commitPatch = useCallback(
     async (
       patch: Partial<PersistenceSnapshot>,
@@ -798,9 +893,24 @@ export function useApplicationSnapshot(
       event.preventDefault();
       event.returnValue = "";
     };
+    const flushMemo = () => {
+      if (memoSaveTimer.current !== null) flushDraft();
+    };
+    const visibilityChange = () => {
+      if (document.visibilityState === "hidden") flushMemo();
+    };
+    document.addEventListener("focusout", flushMemo);
+    document.addEventListener("visibilitychange", visibilityChange);
     window.addEventListener("beforeunload", beforeUnload);
-    return () => window.removeEventListener("beforeunload", beforeUnload);
-  }, [isPending]);
+    return () => {
+      document.removeEventListener("focusout", flushMemo);
+      document.removeEventListener("visibilitychange", visibilityChange);
+      window.removeEventListener("beforeunload", beforeUnload);
+      if (memoSaveTimer.current !== null) clearTimeout(memoSaveTimer.current);
+      if (memoMaxWaitTimer.current !== null)
+        clearTimeout(memoMaxWaitTimer.current);
+    };
+  }, [isPending, flushDraft]);
   return {
     raw,
     rawRef,
@@ -819,7 +929,7 @@ export function useApplicationSnapshot(
     choose,
     confirm,
     cancel,
-    pendingCount,
+    pendingCount: pendingCount + (draft.current ? 1 : 0),
     isUpdatingChoices: pendingChoices > 0,
     isConfirmationBusy: pendingChoices > 0 || pendingConfirmations > 0,
     retryableFailures,
