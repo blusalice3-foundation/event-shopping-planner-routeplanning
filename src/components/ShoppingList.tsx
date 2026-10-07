@@ -1699,6 +1699,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     virtualListEligibility,
     { forceFull: forceFullListRenderer },
   );
+  const preferNativeOptions =
+    listRendererSelection.engine === "full" &&
+    listReadModel.itemRows.length >= VIRTUAL_LIST_MINIMUM_ROW_COUNT;
+
   useLayoutEffect(() => {
     const scrollRequest = listControllerState.scrollRequest;
     if (!scrollRequest || listRendererSelection.engine !== "full") return;
@@ -3545,6 +3549,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                         )}
 
                       <ShoppingItemCard
+                        preferNativeOptions={preferNativeOptions}
                         item={item}
                         onUpdate={updateItemWithDeferredCleanup}
                         isStriped={globalIndex % 2 !== 0}
@@ -4306,6 +4311,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     )}
 
                   <ShoppingItemCard
+                    preferNativeOptions={preferNativeOptions}
                     item={item}
                     onUpdate={handleCardUpdateItem}
                     isStriped={globalIndex % 2 !== 0}
@@ -4571,6 +4577,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           )}
 
         <ShoppingItemCard
+          preferNativeOptions={preferNativeOptions}
           item={item}
           onUpdate={handleCardUpdateItem}
           isStriped={index % 2 !== 0}
