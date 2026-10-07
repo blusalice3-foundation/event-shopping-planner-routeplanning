@@ -37,6 +37,22 @@ export default function MapReimportConfirmationDialog({
   if (!isOpen || !plan) return null;
 
   const { impact } = plan;
+  const confirmationDisabled =
+    busy ||
+    plan.targets.some(
+      (target) =>
+        target.targetChoiceRequired && !targetMapKeys[target.eventDate],
+    );
+  const confirmImport = (skipImpactConfirmation = false) => {
+    setBusy(true);
+    void Promise.resolve(
+      onConfirm({
+        preserveMaplessHalls,
+        targetMapKeys,
+        ...(skipImpactConfirmation ? { skipImpactConfirmation: true } : {}),
+      }),
+    ).finally(() => setBusy(false));
+  };
 
   return (
     <div
@@ -58,7 +74,8 @@ export default function MapReimportConfirmationDialog({
 
         <p className="mb-3 leading-[1.7]">
           新しいマップに入れ替えると、古い地図上の位置を使う設定はそのまま使えません。
-          同じマップを使う全日付の所属と巡回情報を再判定します。次の画面で最新の影響範囲を確認します。
+          同じマップを使う全日付の所属と巡回情報を再判定します。
+          次の画面で最新の影響範囲を確認するか、この画面からそのまま取り込むかを選べます。
         </p>
 
         <div className="mb-4 rounded-lg bg-gray-100 p-3">
@@ -152,29 +169,25 @@ export default function MapReimportConfirmationDialog({
           </div>
         )}
 
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
           <button type="button" disabled={busy} onClick={onCancel}>
             キャンセル
           </button>
           <button
             type="button"
-            disabled={
-              busy ||
-              plan.targets.some(
-                (target) =>
-                  target.targetChoiceRequired &&
-                  !targetMapKeys[target.eventDate],
-              )
-            }
-            onClick={() => {
-              setBusy(true);
-              void Promise.resolve(
-                onConfirm({ preserveMaplessHalls, targetMapKeys }),
-              ).finally(() => setBusy(false));
-            }}
+            disabled={confirmationDisabled}
+            onClick={() => confirmImport()}
             className="rounded-md border-0 bg-amber-700 px-3.5 py-2 font-bold text-white"
           >
             影響範囲を確認する
+          </button>
+          <button
+            type="button"
+            disabled={confirmationDisabled}
+            onClick={() => confirmImport(true)}
+            className="rounded-md border-0 bg-blue-700 px-3.5 py-2 font-bold text-white"
+          >
+            影響を確認せずに取り込む
           </button>
         </div>
       </section>

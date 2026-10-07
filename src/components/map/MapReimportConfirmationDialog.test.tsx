@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { MapReimportPlan } from "../../features/map/domain/mapReimport";
 import MapReimportConfirmationDialog from "./MapReimportConfirmationDialog";
@@ -110,6 +110,80 @@ describe("MapReimportConfirmationDialog", () => {
       preserveMaplessHalls: false,
       targetMapKeys: {},
     });
+  });
+
+  it.each([true, false])(
+    "imports directly with mapless hall preservation=%s",
+    async (preserve) => {
+      const onConfirm = vi.fn();
+      render(
+        <MapReimportConfirmationDialog
+          isOpen
+          plan={plan}
+          onCancel={vi.fn()}
+          onConfirm={onConfirm}
+        />,
+      );
+      if (!preserve)
+        fireEvent.click(
+          screen.getByRole("checkbox", {
+            name: /マップを使わない会場設定を残す/,
+          }),
+        );
+      const direct = screen.getByRole("button", {
+        name: "影響を確認せずに取り込む",
+      });
+      fireEvent.click(direct);
+      expect(onConfirm).toHaveBeenCalledOnce();
+      expect(onConfirm).toHaveBeenCalledWith({
+        preserveMaplessHalls: preserve,
+        targetMapKeys: {},
+        skipImpactConfirmation: true,
+      });
+      expect(direct).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "影響範囲を確認する" }),
+      ).toBeDisabled();
+      await waitFor(() => expect(direct).toBeEnabled());
+    },
+  );
+
+  it("requires an actual map choice before either import action", async () => {
+    const onConfirm = vi.fn();
+    render(
+      <MapReimportConfirmationDialog
+        isOpen
+        plan={{
+          ...plan,
+          targets: plan.targets.map((target) => ({
+            ...target,
+            targetChoiceRequired: true,
+            targetCandidates: ["１日目マップ", "1 日目マップ"],
+          })),
+        }}
+        onCancel={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+    const direct = screen.getByRole("button", {
+      name: "影響を確認せずに取り込む",
+    });
+    const review = screen.getByRole("button", { name: "影響範囲を確認する" });
+    expect(direct).toBeDisabled();
+    expect(review).toBeDisabled();
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "1日目の更新先マップ" }),
+      { target: { value: "1 日目マップ" } },
+    );
+    expect(direct).toBeEnabled();
+    expect(review).toBeEnabled();
+    fireEvent.click(direct);
+    expect(onConfirm).toHaveBeenCalledWith({
+      preserveMaplessHalls: true,
+      targetMapKeys: { "1日目": "1 日目マップ" },
+      skipImpactConfirmation: true,
+    });
+    await waitFor(() => expect(direct).toBeEnabled());
   });
 
   it("cancels without confirming", () => {

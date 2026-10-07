@@ -2260,6 +2260,9 @@ test("map reimport saves the chosen actual map and displays it after reload", as
   sheet.getCell("A1").border = { top: border, bottom: border, left: border };
   sheet.getCell("B1").value = 1;
   sheet.getCell("B1").border = { top: border, bottom: border, right: border };
+  for (let row = 2; row <= 40; row++)
+    for (let col = 1; col <= 20; col++)
+      sheet.getCell(row, col).value = `確認用セル ${row}:${col}`;
   await page.getByRole("button", { name: "イベント一覧", exact: true }).click();
   await page.getByRole("button", { name: "メニュー", exact: true }).click();
   const chooserPromise = page.waitForEvent("filechooser");
@@ -2290,6 +2293,39 @@ test("map reimport saves the chosen actual map and displays it after reload", as
     name: "マップ再取り込みの影響を確認",
   });
   await expect(confirmation).toBeVisible();
+  const save = confirmation.getByRole("button", {
+    name: "確認して保存",
+    exact: true,
+  });
+  const cancel = confirmation.getByRole("button", {
+    name: "取消",
+    exact: true,
+  });
+  for (const viewport of [
+    { width: 1280, height: 720 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expect(save).toBeInViewport({ ratio: 1 });
+    await expect(cancel).toBeInViewport({ ratio: 1 });
+    const content = confirmation.getByRole("region", { name: "確認内容" });
+    expect(
+      await content.evaluate(
+        (element) => element.scrollHeight > element.clientHeight,
+      ),
+    ).toBe(true);
+    await content.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await expect(save).toBeInViewport({ ratio: 1 });
+    await expect(cancel).toBeInViewport({ ratio: 1 });
+    await expect(
+      confirmation.getByRole("heading", {
+        name: "マップ再取り込みの影響を確認",
+      }),
+    ).toBeInViewport({ ratio: 1 });
+  }
+  await page.setViewportSize({ width: 1280, height: 720 });
   expect(await stored(page, "eventConsistency")).toEqual(before);
   expect(await storedMaps(page)).toEqual(mapsBefore);
   await confirmation
@@ -3265,7 +3301,7 @@ for (const operation of ["ordinary reorder", "ordinary item edit"] as const) {
   }
 }
 
-test("map reimport removes only dependent simple halls and preserves another selected map day", async ({
+test("map reimport skips impact review and preserves another selected map day", async ({
   page,
 }) => {
   const source = migrateLegacyConsistency(mapBackup().data).data;
@@ -3334,21 +3370,21 @@ test("map reimport removes only dependent simple halls and preserves another sel
   await target
     .getByRole("checkbox", { name: /マップを使わない会場設定を残す/ })
     .uncheck();
-  await target
-    .getByRole("button", { name: "影響範囲を確認する", exact: true })
-    .click();
-  const review = page.getByRole("dialog", {
-    name: "マップ再取り込みの影響を確認",
-  });
-  await expect(review).toContainText("簡易ホールを削除: __mapless__:1日目");
-  await expect(review).not.toContainText(
-    "簡易ホールを削除: __mapless__:１日目",
-  );
   expect(await stored(page, "eventConsistency")).toEqual(before);
-  await review
-    .getByRole("button", { name: "確認して保存", exact: true })
+  await target
+    .getByRole("button", { name: "影響を確認せずに取り込む", exact: true })
     .click();
-  await expect(review).toBeHidden();
+  await expect(target).toBeHidden();
+  await expect(
+    page.getByRole("dialog", { name: "マップ再取り込みの影響を確認" }),
+  ).toHaveCount(0);
+  const mapsAfter = await storedMaps(page);
+  expect(mapsAfter[eventName]["1日目マップ"]).not.toEqual(
+    source.mapData[eventName]["1日目マップ"],
+  );
+  expect(mapsAfter[eventName]["１日目マップ"]).toEqual(
+    source.mapData[eventName]["１日目マップ"],
+  );
   const after = (await stored(
     page,
     "eventConsistency",
@@ -3369,6 +3405,7 @@ test("map reimport removes only dependent simple halls and preserves another sel
   );
   expect(await stored(page, "eventLists")).toEqual(itemsBefore);
   await page.reload();
+  expect(await storedMaps(page)).toEqual(mapsAfter);
   expect(
     ((await stored(page, "eventConsistency")) as EventConsistencyStore)[
       eventName

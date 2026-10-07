@@ -61,6 +61,7 @@ export interface MapReimportPlan {
 export interface MapReimportOptions {
   preserveMaplessHalls: boolean;
   targetMapKeys?: Record<string, string>;
+  skipImpactConfirmation?: boolean;
 }
 
 const clonePlainValue = <T>(value: T): T => {

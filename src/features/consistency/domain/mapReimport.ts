@@ -135,6 +135,8 @@ export function planMapReimport(
   ))
     if (mapKey !== null && changedMaps.has(mapKey) && context.route)
       context.route.visitOrder = [];
+  if (options.skipImpactConfirmation) return { snapshot: plan.snapshot };
+
   const affected = (snapshot: PersistenceSnapshot) => ({
     maps: Object.fromEntries(
       [...changedMaps].map((key) => [
