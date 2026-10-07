@@ -65,6 +65,29 @@ const renderHeader = (
 };
 
 describe("FocusModeItemList purchase status control mode", () => {
+  it("keeps the add action outside the semantic item list", () => {
+    const onAddItem = vi.fn();
+    const view = render(
+      <FocusModeItemList
+        itemListRef={{ current: null }}
+        layoutMode="pc"
+        isMapVisible={false}
+        currentVisitDisplayItems={[baseItem]}
+        blinkingPriceItemIds={new Set()}
+        onUpdateItem={vi.fn()}
+        onAddItem={onAddItem}
+        skipLimitedPurchaseForSingleQuantity
+      />,
+    );
+    const list = view.getByRole("list", { name: "現在のスペースの品目" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(1);
+    const add = view.getByTitle("新規アイテム追加");
+    expect(list.contains(add)).toBe(false);
+    expect(list).toHaveClass("space-y-4");
+    fireEvent.click(add);
+    expect(onAddItem).toHaveBeenCalledTimes(1);
+  });
+
   it("passes radial purchase status control mode to item cards", () => {
     render(
       <FocusModeItemList
