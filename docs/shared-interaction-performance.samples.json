@@ -1,0 +1,2097 @@
+{
+  "schemaVersion": 1,
+  "measuredOn": "2026-10-07",
+  "sourceSha": "80ff9da20439b845553758acccaf95effd2de1da",
+  "environment": {
+    "os": "Windows 11",
+    "browser": "Playwright 1.62.1 headless Chromium",
+    "physicalAndroid": false,
+    "desktopViewport": [1280, 900],
+    "smartphoneViewport": [390, 844],
+    "items": 150,
+    "mapCells": 10000,
+    "mode": "execute",
+    "grouped": true,
+    "serviceWorkers": "blocked"
+  },
+  "artifacts": {
+    "beforeBundleSha256": "28a6a7e35400be0d7958deaa5c0eb109d044d1f7748d53cdbb8dd22d51094c55",
+    "afterBundleSha256": "9f55f50a58f4339a18d26e965e9d1239733eaa8f01d42ba9a0956a957c04d3f8",
+    "afterSourceState": "dirty"
+  },
+  "methodology": {
+    "rounds": 2,
+    "order": "before, after, before, after",
+    "operationsPerKindPerStage": 10,
+    "warmupsOmittedFromFrameSamples": 2,
+    "pauseBetweenOperationsMs": 180,
+    "scriptMetric": "CDP ScriptDuration difference / 10 operations; includes delayed saves within the measurement interval",
+    "frameMetric": "time until second requestAnimationFrame; central upper order statistic; does not measure physical display paint",
+    "typingCharacters": "abcdefghijklmnopqrst",
+    "typingDelayMs": 40,
+    "memoryMetric": "Runtime.getHeapUsage after visiting all rows and HeapProfiler.collectGarbage; memory-only fresh contexts; no purchase/memo actions before sampling",
+    "testData": "fresh independent browser contexts; synthetic backup imported using public UI"
+  },
+  "measurements": [
+    {
+      "version": "before",
+      "round": 1,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "initial",
+      "dom": {
+        "cards": 5,
+        "options": 610,
+        "nodes": 2380,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 16.1438,
+      "metrics": {
+        "LayoutCount": 30,
+        "RecalcStyleCount": 30,
+        "LayoutDuration": 0.007953,
+        "RecalcStyleDuration": 0.002516,
+        "ScriptDuration": 0.161438,
+        "TaskDuration": 0.36340500000000003
+      },
+      "median": {
+        "handlerMs": 0.8999999910593033,
+        "frame1Ms": 1.7000000029802322,
+        "frame2Ms": 18.599999994039536
+      },
+      "frame2MsSamples": [20.0, 6.2, 19.5, 16.7, 18.3, 18.6, 16.9, 19.8],
+      "handlerMsSamples": [0.8, 0.8, 0.8, 0.9, 0.9, 0.8, 1.0, 0.9],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 1,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "initial",
+      "dom": {
+        "cards": 5,
+        "options": 610,
+        "nodes": 2380,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 23.4179,
+      "metrics": {
+        "LayoutCount": 37,
+        "RecalcStyleCount": 135,
+        "LayoutDuration": 0.016037000000000003,
+        "RecalcStyleDuration": 0.023289999999999998,
+        "ScriptDuration": 0.234179,
+        "TaskDuration": 0.569583
+      },
+      "median": {
+        "handlerMs": 0.6000000089406967,
+        "frame1Ms": 5.9000000059604645,
+        "frame2Ms": 25.5
+      },
+      "frame2MsSamples": [23.5, 25.5, 26.0, 33.4, 30.5, 25.4, 24.3, 23.7],
+      "handlerMsSamples": [0.6, 0.7, 0.6, 0.5, 0.6, 0.5, 0.6, 0.6],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 1,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 29352,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 33.6554,
+      "metrics": {
+        "LayoutCount": 30,
+        "RecalcStyleCount": 30,
+        "LayoutDuration": 0.012823000000000001,
+        "RecalcStyleDuration": 0.0025519999999999987,
+        "ScriptDuration": 0.336554,
+        "TaskDuration": 0.6761349999999999
+      },
+      "median": {
+        "handlerMs": 0.9000000059604645,
+        "frame1Ms": 1.5999999940395355,
+        "frame2Ms": 26.299999997019768
+      },
+      "frame2MsSamples": [30.5, 26.3, 27.9, 18.9, 16.9, 16.0, 15.6, 26.5],
+      "handlerMsSamples": [1.0, 0.9, 0.9, 0.9, 1.1, 0.8, 1.0, 0.8],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 1,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 29352,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 52.88650000000001,
+      "metrics": {
+        "LayoutCount": 34,
+        "RecalcStyleCount": 125,
+        "LayoutDuration": 0.024738999999999983,
+        "RecalcStyleDuration": 0.11383199999999999,
+        "ScriptDuration": 0.5288650000000001,
+        "TaskDuration": 1.3177340000000002
+      },
+      "median": {
+        "handlerMs": 0.7999999970197678,
+        "frame1Ms": 19,
+        "frame2Ms": 30.400000005960464
+      },
+      "frame2MsSamples": [30.3, 30.4, 27.7, 26.1, 26.9, 42.6, 33.7, 31.2],
+      "handlerMsSamples": [0.6, 0.6, 0.8, 0.6, 0.7, 0.8, 0.8, 0.8],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 1,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "typing",
+      "actual": "ユーザー登録 109abcdefghijklmnprt",
+      "expected": "ユーザー登録 109abcdefghijklmnopqrst",
+      "allCharactersPresent": false,
+      "events": 20,
+      "medianFrame2Ms": 29.200000002980232
+    },
+    {
+      "version": "before",
+      "round": 1,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "persistence",
+      "persisted": "ユーザー登録 1009",
+      "verified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 1,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "initial",
+      "dom": {
+        "cards": 8,
+        "options": 976,
+        "nodes": 2740,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 17.011599999999998,
+      "metrics": {
+        "LayoutCount": 30,
+        "RecalcStyleCount": 30,
+        "LayoutDuration": 0.007627,
+        "RecalcStyleDuration": 0.00297,
+        "ScriptDuration": 0.170116,
+        "TaskDuration": 0.382063
+      },
+      "median": {
+        "handlerMs": 0.8999999910593033,
+        "frame1Ms": 1.699999988079071,
+        "frame2Ms": 17.400000005960464
+      },
+      "frame2MsSamples": [7.4, 7.1, 7.8, 17.4, 18.4, 17.7, 17.7, 6.7],
+      "handlerMsSamples": [1.2, 0.9, 0.9, 0.8, 0.8, 0.8, 1.0, 0.9],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 1,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "initial",
+      "dom": {
+        "cards": 8,
+        "options": 976,
+        "nodes": 2740,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 22.640700000000002,
+      "metrics": {
+        "LayoutCount": 34,
+        "RecalcStyleCount": 135,
+        "LayoutDuration": 0.014986999999999999,
+        "RecalcStyleDuration": 0.023803,
+        "ScriptDuration": 0.22640700000000002,
+        "TaskDuration": 0.56138
+      },
+      "median": {
+        "handlerMs": 0.5999999940395355,
+        "frame1Ms": 20,
+        "frame2Ms": 29.400000005960464
+      },
+      "frame2MsSamples": [24.0, 27.3, 30.1, 38.1, 32.7, 29.4, 26.5, 23.5],
+      "handlerMsSamples": [0.6, 0.5, 0.6, 0.5, 0.6, 0.5, 0.6, 0.5],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 1,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 25604,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 33.10669999999999,
+      "metrics": {
+        "LayoutCount": 30,
+        "RecalcStyleCount": 30,
+        "LayoutDuration": 0.01336000000000001,
+        "RecalcStyleDuration": 0.0024440000000000017,
+        "ScriptDuration": 0.3310669999999999,
+        "TaskDuration": 0.6428830000000003
+      },
+      "median": {
+        "handlerMs": 0.8999999910593033,
+        "frame1Ms": 1.7000000029802322,
+        "frame2Ms": 16.200000002980232
+      },
+      "frame2MsSamples": [16.2, 14.7, 27.2, 26.7, 17.1, 15.8, 15.9, 15.2],
+      "handlerMsSamples": [0.9, 0.8, 0.8, 0.9, 1.3, 0.9, 1.1, 0.8],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 1,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 25604,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 49.07140000000001,
+      "metrics": {
+        "LayoutCount": 36,
+        "RecalcStyleCount": 134,
+        "LayoutDuration": 0.02498699999999998,
+        "RecalcStyleDuration": 0.10231599999999999,
+        "ScriptDuration": 0.4907140000000001,
+        "TaskDuration": 1.202699
+      },
+      "median": {
+        "handlerMs": 0.5999999940395355,
+        "frame1Ms": 19,
+        "frame2Ms": 28.599999994039536
+      },
+      "frame2MsSamples": [33.6, 28.6, 27.1, 26.3, 26.6, 39.3, 41.0, 26.4],
+      "handlerMsSamples": [0.8, 0.5, 0.5, 0.8, 0.6, 0.6, 0.6, 0.7],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 1,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "typing",
+      "actual": "ユーザー登録 109abcdefghijklmnopqrst",
+      "expected": "ユーザー登録 109abcdefghijklmnopqrst",
+      "allCharactersPresent": true,
+      "events": 20,
+      "medianFrame2Ms": 27.200000002980232
+    },
+    {
+      "version": "before",
+      "round": 1,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "persistence",
+      "persisted": "ユーザー登録 1009",
+      "verified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 2,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "initial",
+      "dom": {
+        "cards": 5,
+        "options": 610,
+        "nodes": 2380,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 16.362099999999998,
+      "metrics": {
+        "LayoutCount": 30,
+        "RecalcStyleCount": 30,
+        "LayoutDuration": 0.007566,
+        "RecalcStyleDuration": 0.002649,
+        "ScriptDuration": 0.163621,
+        "TaskDuration": 0.369015
+      },
+      "median": {
+        "handlerMs": 0.800000011920929,
+        "frame1Ms": 1.6000000089406967,
+        "frame2Ms": 17.100000008940697
+      },
+      "frame2MsSamples": [7.1, 6.7, 19.8, 17.5, 18.7, 17.1, 7.3, 6.5],
+      "handlerMsSamples": [0.8, 0.8, 1.0, 0.9, 0.8, 0.8, 1.0, 0.8],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 2,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "initial",
+      "dom": {
+        "cards": 5,
+        "options": 610,
+        "nodes": 2380,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 22.7963,
+      "metrics": {
+        "LayoutCount": 34,
+        "RecalcStyleCount": 131,
+        "LayoutDuration": 0.01638,
+        "RecalcStyleDuration": 0.024605000000000002,
+        "ScriptDuration": 0.227963,
+        "TaskDuration": 0.566516
+      },
+      "median": {
+        "handlerMs": 0.6000000089406967,
+        "frame1Ms": 11.399999991059303,
+        "frame2Ms": 28.099999994039536
+      },
+      "frame2MsSamples": [25.1, 25.9, 36.7, 34.2, 30.0, 28.1, 26.3, 24.7],
+      "handlerMsSamples": [0.6, 0.6, 0.7, 0.4, 0.8, 0.6, 0.6, 0.6],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 2,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 29352,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 33.459799999999994,
+      "metrics": {
+        "LayoutCount": 30,
+        "RecalcStyleCount": 30,
+        "LayoutDuration": 0.013311000000000017,
+        "RecalcStyleDuration": 0.002622000000000013,
+        "ScriptDuration": 0.33459799999999995,
+        "TaskDuration": 0.669962
+      },
+      "median": {
+        "handlerMs": 1,
+        "frame1Ms": 2.1000000089406967,
+        "frame2Ms": 17.700000002980232
+      },
+      "frame2MsSamples": [17.8, 15.8, 15.9, 17.7, 17.6, 16.7, 29.5, 27.3],
+      "handlerMsSamples": [1.2, 0.8, 0.9, 1.4, 0.9, 1.0, 1.4, 0.9],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 2,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 29352,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 58.65000000000003,
+      "metrics": {
+        "LayoutCount": 36,
+        "RecalcStyleCount": 130,
+        "LayoutDuration": 0.025672,
+        "RecalcStyleDuration": 0.128568,
+        "ScriptDuration": 0.5865000000000002,
+        "TaskDuration": 1.4606860000000004
+      },
+      "median": {
+        "handlerMs": 0.5999999940395355,
+        "frame1Ms": 18.5,
+        "frame2Ms": 34.099999994039536
+      },
+      "frame2MsSamples": [31.7, 39.1, 40.8, 37.1, 30.6, 32.4, 34.1, 32.8],
+      "handlerMsSamples": [0.9, 0.9, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 2,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "typing",
+      "actual": "ユーザー登録 109abcdefghijklmnopqrst",
+      "expected": "ユーザー登録 109abcdefghijklmnopqrst",
+      "allCharactersPresent": true,
+      "events": 20,
+      "medianFrame2Ms": 29.5
+    },
+    {
+      "version": "before",
+      "round": 2,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "persistence",
+      "persisted": "ユーザー登録 1009",
+      "verified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 2,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "initial",
+      "dom": {
+        "cards": 8,
+        "options": 976,
+        "nodes": 2740,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 17.0973,
+      "metrics": {
+        "LayoutCount": 30,
+        "RecalcStyleCount": 30,
+        "LayoutDuration": 0.008243,
+        "RecalcStyleDuration": 0.002671,
+        "ScriptDuration": 0.170973,
+        "TaskDuration": 0.37993400000000005
+      },
+      "median": {
+        "handlerMs": 0.8999999910593033,
+        "frame1Ms": 1.7000000029802322,
+        "frame2Ms": 19.399999991059303
+      },
+      "frame2MsSamples": [19.4, 19.4, 19.7, 17.1, 7.5, 6.8, 18.3, 19.8],
+      "handlerMsSamples": [0.9, 1.3, 0.8, 0.8, 0.9, 0.7, 0.9, 0.8],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 2,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "initial",
+      "dom": {
+        "cards": 8,
+        "options": 976,
+        "nodes": 2740,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 22.972,
+      "metrics": {
+        "LayoutCount": 36,
+        "RecalcStyleCount": 140,
+        "LayoutDuration": 0.015995,
+        "RecalcStyleDuration": 0.024941,
+        "ScriptDuration": 0.22972,
+        "TaskDuration": 0.576522
+      },
+      "median": {
+        "handlerMs": 0.5999999940395355,
+        "frame1Ms": 8.900000005960464,
+        "frame2Ms": 28.700000002980232
+      },
+      "frame2MsSamples": [27.4, 26.5, 28.7, 22.0, 38.7, 38.7, 28.0, 29.4],
+      "handlerMsSamples": [0.6, 0.6, 0.8, 0.5, 0.5, 0.5, 0.6, 0.5],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 2,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 25604,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 31.122700000000002,
+      "metrics": {
+        "LayoutCount": 30,
+        "RecalcStyleCount": 30,
+        "LayoutDuration": 0.013341999999999993,
+        "RecalcStyleDuration": 0.0025550000000000017,
+        "ScriptDuration": 0.31122700000000003,
+        "TaskDuration": 0.6205960000000004
+      },
+      "median": {
+        "handlerMs": 0.9000000059604645,
+        "frame1Ms": 1.800000011920929,
+        "frame2Ms": 25.700000002980232
+      },
+      "frame2MsSamples": [28.7, 25.7, 27.6, 15.9, 17.5, 14.8, 15.5, 26.9],
+      "handlerMsSamples": [0.9, 1.1, 1.1, 0.9, 0.9, 0.9, 0.9, 0.9],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 2,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 25604,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 50.858000000000004,
+      "metrics": {
+        "LayoutCount": 37,
+        "RecalcStyleCount": 133,
+        "LayoutDuration": 0.02343500000000001,
+        "RecalcStyleDuration": 0.10739400000000002,
+        "ScriptDuration": 0.50858,
+        "TaskDuration": 1.2672940000000001
+      },
+      "median": {
+        "handlerMs": 0.7000000029802322,
+        "frame1Ms": 18.5,
+        "frame2Ms": 31.599999994039536
+      },
+      "frame2MsSamples": [38.5, 31.6, 31.1, 27.8, 37.4, 26.7, 33.1, 29.4],
+      "handlerMsSamples": [0.6, 0.7, 0.7, 0.6, 0.8, 0.7, 0.7, 0.5],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "before",
+      "round": 2,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "typing",
+      "actual": "ユーザー登録 109abcdefghijklmnopqrst",
+      "expected": "ユーザー登録 109abcdefghijklmnopqrst",
+      "allCharactersPresent": true,
+      "events": 20,
+      "medianFrame2Ms": 28.400000005960464
+    },
+    {
+      "version": "before",
+      "round": 2,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "persistence",
+      "persisted": "ユーザー登録 1009",
+      "verified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 1,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "initial",
+      "dom": {
+        "cards": 5,
+        "options": 610,
+        "nodes": 2380,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 10.8205,
+      "metrics": {
+        "LayoutCount": 11,
+        "RecalcStyleCount": 11,
+        "LayoutDuration": 0.004474,
+        "RecalcStyleDuration": 0.000996,
+        "ScriptDuration": 0.108205,
+        "TaskDuration": 0.160915
+      },
+      "median": {
+        "handlerMs": 1.0999999940395355,
+        "frame1Ms": 1.2000000029802322,
+        "frame2Ms": 15.200000002980232
+      },
+      "frame2MsSamples": [18.1, 15.3, 15.2, 9.1, 9.0, 9.3, 15.9, 13.0],
+      "handlerMsSamples": [1.0, 0.8, 1.0, 0.9, 1.5, 1.3, 1.2, 1.1],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 1,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "initial",
+      "dom": {
+        "cards": 5,
+        "options": 610,
+        "nodes": 2380,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 25.300100000000004,
+      "metrics": {
+        "LayoutCount": 31,
+        "RecalcStyleCount": 125,
+        "LayoutDuration": 0.01355,
+        "RecalcStyleDuration": 0.019583,
+        "ScriptDuration": 0.25300100000000003,
+        "TaskDuration": 0.5938789999999999
+      },
+      "median": {
+        "handlerMs": 0.5,
+        "frame1Ms": 9.399999991059303,
+        "frame2Ms": 28.100000008940697
+      },
+      "frame2MsSamples": [27.7, 25.6, 30.8, 41.1, 32.4, 28.1, 12.5, 27.1],
+      "handlerMsSamples": [0.5, 0.5, 0.6, 0.5, 0.4, 0.5, 0.4, 0.5],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 1,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 29352,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 25.05759999999999,
+      "metrics": {
+        "LayoutCount": 13,
+        "RecalcStyleCount": 13,
+        "LayoutDuration": 0.009193000000000007,
+        "RecalcStyleDuration": 0.0011009999999999909,
+        "ScriptDuration": 0.2505759999999999,
+        "TaskDuration": 0.39262700000000006
+      },
+      "median": {
+        "handlerMs": 1,
+        "frame1Ms": 1.2999999970197678,
+        "frame2Ms": 21.100000008940697
+      },
+      "frame2MsSamples": [11.4, 21.3, 21.8, 18.2, 15.9, 21.1, 22.4, 11.2],
+      "handlerMsSamples": [1.1, 0.9, 0.9, 0.6, 1.2, 0.9, 1.0, 1.1],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 1,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 29352,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 47.35060000000002,
+      "metrics": {
+        "LayoutCount": 37,
+        "RecalcStyleCount": 129,
+        "LayoutDuration": 0.01924400000000001,
+        "RecalcStyleDuration": 0.019174000000000024,
+        "ScriptDuration": 0.4735060000000002,
+        "TaskDuration": 1.095536
+      },
+      "median": {
+        "handlerMs": 0.5,
+        "frame1Ms": 10.5,
+        "frame2Ms": 30.099999994039536
+      },
+      "frame2MsSamples": [41.0, 26.3, 28.0, 30.1, 28.0, 45.3, 42.4, 28.4],
+      "handlerMsSamples": [0.5, 0.5, 0.6, 0.5, 0.5, 0.5, 0.5, 0.5],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 1,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "typing",
+      "actual": "ユーザー登録 109abcdefghijklmnopqrst",
+      "expected": "ユーザー登録 109abcdefghijklmnopqrst",
+      "allCharactersPresent": true,
+      "events": 20,
+      "medianFrame2Ms": 24.799999997019768
+    },
+    {
+      "version": "after",
+      "round": 1,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "persistence",
+      "persisted": "ユーザー登録 1009",
+      "verified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 1,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "initial",
+      "dom": {
+        "cards": 8,
+        "options": 976,
+        "nodes": 2740,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 11.931899999999999,
+      "metrics": {
+        "LayoutCount": 11,
+        "RecalcStyleCount": 11,
+        "LayoutDuration": 0.004471,
+        "RecalcStyleDuration": 0.000992,
+        "ScriptDuration": 0.119319,
+        "TaskDuration": 0.185388
+      },
+      "median": {
+        "handlerMs": 1.2000000029802322,
+        "frame1Ms": 1.2999999970197678,
+        "frame2Ms": 13.100000008940697
+      },
+      "frame2MsSamples": [10.6, 10.4, 9.9, 24.4, 9.6, 17.3, 15.3, 13.1],
+      "handlerMsSamples": [0.8, 0.9, 1.2, 0.7, 1.7, 1.2, 1.3, 1.2],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 1,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "initial",
+      "dom": {
+        "cards": 8,
+        "options": 976,
+        "nodes": 2740,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 25.0392,
+      "metrics": {
+        "LayoutCount": 34,
+        "RecalcStyleCount": 128,
+        "LayoutDuration": 0.012988,
+        "RecalcStyleDuration": 0.019611,
+        "ScriptDuration": 0.250392,
+        "TaskDuration": 0.589673
+      },
+      "median": {
+        "handlerMs": 0.5999999940395355,
+        "frame1Ms": 7.299999997019768,
+        "frame2Ms": 27.600000008940697
+      },
+      "frame2MsSamples": [27.6, 25.9, 32.2, 16.1, 31.0, 28.6, 15.1, 14.6],
+      "handlerMsSamples": [0.6, 0.4, 0.5, 0.6, 0.5, 0.6, 0.6, 0.5],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 1,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 25604,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 24.603600000000004,
+      "metrics": {
+        "LayoutCount": 14,
+        "RecalcStyleCount": 14,
+        "LayoutDuration": 0.01654,
+        "RecalcStyleDuration": 0.0011449999999999794,
+        "ScriptDuration": 0.24603600000000003,
+        "TaskDuration": 0.4038640000000002
+      },
+      "median": {
+        "handlerMs": 0.800000011920929,
+        "frame1Ms": 1,
+        "frame2Ms": 20.599999994039536
+      },
+      "frame2MsSamples": [21.8, 21.5, 10.1, 33.8, 10.4, 11.7, 10.1, 20.6],
+      "handlerMsSamples": [0.9, 0.8, 0.8, 0.7, 1.1, 0.8, 0.8, 1.0],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 1,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 25604,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 45.324600000000004,
+      "metrics": {
+        "LayoutCount": 35,
+        "RecalcStyleCount": 136,
+        "LayoutDuration": 0.018813999999999997,
+        "RecalcStyleDuration": 0.020192000000000015,
+        "ScriptDuration": 0.45324600000000004,
+        "TaskDuration": 1.0355280000000002
+      },
+      "median": {
+        "handlerMs": 0.5999999940395355,
+        "frame1Ms": 10.700000002980232,
+        "frame2Ms": 37.3999999910593
+      },
+      "frame2MsSamples": [35.2, 38.6, 37.8, 27.8, 30.5, 37.4, 39.3, 27.3],
+      "handlerMsSamples": [0.5, 0.6, 0.4, 0.4, 0.6, 0.5, 0.6, 0.6],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 1,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "typing",
+      "actual": "ユーザー登録 109abcdefghijklmnopqrst",
+      "expected": "ユーザー登録 109abcdefghijklmnopqrst",
+      "allCharactersPresent": true,
+      "events": 20,
+      "medianFrame2Ms": 28.799999997019768
+    },
+    {
+      "version": "after",
+      "round": 1,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "persistence",
+      "persisted": "ユーザー登録 1009",
+      "verified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 2,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "initial",
+      "dom": {
+        "cards": 5,
+        "options": 610,
+        "nodes": 2380,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 11.6513,
+      "metrics": {
+        "LayoutCount": 11,
+        "RecalcStyleCount": 11,
+        "LayoutDuration": 0.004485,
+        "RecalcStyleDuration": 0.00098,
+        "ScriptDuration": 0.116513,
+        "TaskDuration": 0.180884
+      },
+      "median": {
+        "handlerMs": 1.2000000029802322,
+        "frame1Ms": 1.2000000029802322,
+        "frame2Ms": 10.099999994039536
+      },
+      "frame2MsSamples": [10.0, 7.3, 9.7, 24.1, 15.1, 11.6, 10.1, 9.5],
+      "handlerMsSamples": [0.9, 0.9, 1.0, 0.8, 1.8, 1.2, 1.4, 1.3],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 2,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "initial",
+      "dom": {
+        "cards": 5,
+        "options": 610,
+        "nodes": 2380,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 24.4706,
+      "metrics": {
+        "LayoutCount": 31,
+        "RecalcStyleCount": 123,
+        "LayoutDuration": 0.013262,
+        "RecalcStyleDuration": 0.019326000000000003,
+        "ScriptDuration": 0.244706,
+        "TaskDuration": 0.572121
+      },
+      "median": {
+        "handlerMs": 0.5,
+        "frame1Ms": 20.599999994039536,
+        "frame2Ms": 33.79999999701977
+      },
+      "frame2MsSamples": [27.8, 40.0, 39.0, 30.2, 30.3, 33.8, 36.6, 27.8],
+      "handlerMsSamples": [0.4, 0.4, 0.5, 0.5, 0.6, 0.5, 0.5, 0.5],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 2,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 29352,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 25.372600000000013,
+      "metrics": {
+        "LayoutCount": 14,
+        "RecalcStyleCount": 14,
+        "LayoutDuration": 0.010302000000000006,
+        "RecalcStyleDuration": 0.0010919999999999819,
+        "ScriptDuration": 0.2537260000000001,
+        "TaskDuration": 0.4060579999999998
+      },
+      "median": {
+        "handlerMs": 0.9000000059604645,
+        "frame1Ms": 1.0999999940395355,
+        "frame2Ms": 21.599999994039536
+      },
+      "frame2MsSamples": [11.0, 10.7, 21.4, 32.8, 22.6, 21.3, 21.6, 21.8],
+      "handlerMsSamples": [0.9, 1.0, 0.8, 1.1, 1.0, 0.9, 0.8, 0.9],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 2,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 29352,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 47.06359999999998,
+      "metrics": {
+        "LayoutCount": 34,
+        "RecalcStyleCount": 124,
+        "LayoutDuration": 0.019522999999999985,
+        "RecalcStyleDuration": 0.018950000000000022,
+        "ScriptDuration": 0.47063599999999983,
+        "TaskDuration": 1.1321210000000002
+      },
+      "median": {
+        "handlerMs": 0.5,
+        "frame1Ms": 19,
+        "frame2Ms": 39
+      },
+      "frame2MsSamples": [39.0, 26.9, 29.2, 28.6, 29.5, 41.4, 64.8, 40.1],
+      "handlerMsSamples": [0.6, 0.4, 0.5, 0.5, 0.4, 0.5, 0.5, 1.0],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 2,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "typing",
+      "actual": "ユーザー登録 109abcdefghijklmnopqrst",
+      "expected": "ユーザー登録 109abcdefghijklmnopqrst",
+      "allCharactersPresent": true,
+      "events": 20,
+      "medianFrame2Ms": 28.900000005960464
+    },
+    {
+      "version": "after",
+      "round": 2,
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "persistence",
+      "persisted": "ユーザー登録 1009",
+      "verified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 2,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "initial",
+      "dom": {
+        "cards": 8,
+        "options": 976,
+        "nodes": 2740,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 11.7575,
+      "metrics": {
+        "LayoutCount": 11,
+        "RecalcStyleCount": 11,
+        "LayoutDuration": 0.004649,
+        "RecalcStyleDuration": 0.000913,
+        "ScriptDuration": 0.117575,
+        "TaskDuration": 0.182875
+      },
+      "median": {
+        "handlerMs": 1.0999999940395355,
+        "frame1Ms": 1.199999988079071,
+        "frame2Ms": 14.299999997019768
+      },
+      "frame2MsSamples": [9.6, 15.0, 14.3, 25.6, 9.8, 8.0, 10.2, 17.0],
+      "handlerMsSamples": [0.8, 0.7, 0.9, 0.7, 1.5, 1.1, 1.2, 1.1],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 2,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "initial",
+      "dom": {
+        "cards": 8,
+        "options": 976,
+        "nodes": 2740,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 23.933,
+      "metrics": {
+        "LayoutCount": 33,
+        "RecalcStyleCount": 133,
+        "LayoutDuration": 0.012953,
+        "RecalcStyleDuration": 0.019583,
+        "ScriptDuration": 0.23933,
+        "TaskDuration": 0.55976
+      },
+      "median": {
+        "handlerMs": 0.5,
+        "frame1Ms": 6.899999991059303,
+        "frame2Ms": 25.400000005960464
+      },
+      "frame2MsSamples": [25.4, 13.8, 24.8, 14.5, 27.7, 24.8, 26.9, 26.4],
+      "handlerMsSamples": [0.5, 0.4, 0.5, 0.5, 0.5, 0.5, 0.6, 0.5],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 2,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "memo",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 25604,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 25.00859999999999,
+      "metrics": {
+        "LayoutCount": 13,
+        "RecalcStyleCount": 13,
+        "LayoutDuration": 0.008709999999999996,
+        "RecalcStyleDuration": 0.0011470000000000091,
+        "ScriptDuration": 0.2500859999999999,
+        "TaskDuration": 0.37794400000000006
+      },
+      "median": {
+        "handlerMs": 1,
+        "frame1Ms": 1.2000000029802322,
+        "frame2Ms": 22.799999997019768
+      },
+      "frame2MsSamples": [23.6, 20.8, 21.7, 31.1, 23.6, 16.0, 21.3, 22.8],
+      "handlerMsSamples": [1.3, 0.9, 1.0, 0.8, 0.9, 0.8, 1.0, 1.3],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 2,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "status",
+      "stage": "visited",
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 25604,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "scriptMsPerOperation": 43.5324,
+      "metrics": {
+        "LayoutCount": 36,
+        "RecalcStyleCount": 136,
+        "LayoutDuration": 0.022724999999999995,
+        "RecalcStyleDuration": 0.020524999999999988,
+        "ScriptDuration": 0.43532400000000004,
+        "TaskDuration": 0.985903
+      },
+      "median": {
+        "handlerMs": 0.5,
+        "frame1Ms": 10.799999997019768,
+        "frame2Ms": 35.599999994039536
+      },
+      "frame2MsSamples": [37.5, 26.1, 25.3, 29.4, 27.2, 39.5, 35.6, 38.8],
+      "handlerMsSamples": [0.6, 0.5, 0.6, 0.5, 0.6, 0.5, 0.5, 0.4],
+      "allDisplayChangesVerified": true,
+      "errors": []
+    },
+    {
+      "version": "after",
+      "round": 2,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "typing",
+      "actual": "ユーザー登録 109abcdefghijklmnopqrst",
+      "expected": "ユーザー登録 109abcdefghijklmnopqrst",
+      "allCharactersPresent": true,
+      "events": 20,
+      "medianFrame2Ms": 27
+    },
+    {
+      "version": "after",
+      "round": 2,
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000
+      },
+      "kind": "persistence",
+      "persisted": "ユーザー登録 1009",
+      "verified": true,
+      "errors": []
+    }
+  ],
+  "keyboardPersistence": [
+    {
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000,
+        "typingOnly": true
+      },
+      "kind": "typingPersistence",
+      "actual": "ユーザー登録abcdefghijklmnopqrst",
+      "expected": "ユーザー登録abcdefghijklmnopqrst",
+      "verified": true,
+      "errors": []
+    },
+    {
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000,
+        "typingOnly": true
+      },
+      "kind": "typingPersistence",
+      "actual": "ユーザー登録abcdefghijklmnopqrst",
+      "expected": "ユーザー登録abcdefghijklmnopqrst",
+      "verified": true,
+      "errors": []
+    },
+    {
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000,
+        "typingOnly": true,
+        "typingDelay": 100
+      },
+      "kind": "typingPersistence",
+      "actual": "ユーザー登録abcdefghijklmnopqrst",
+      "expected": "ユーザー登録abcdefghijklmnopqrst",
+      "verified": true,
+      "errors": []
+    },
+    {
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000,
+        "typingOnly": true,
+        "typingDelay": 100
+      },
+      "kind": "typingPersistence",
+      "actual": "ユーザー登録abcdefghijklmnopqrst",
+      "expected": "ユーザー登録abcdefghijklmnopqrst",
+      "verified": true,
+      "errors": []
+    },
+    {
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "typingOnly": true
+      },
+      "kind": "typingPersistence",
+      "actual": "ユーザー登録abcdefghijklmnopqrst",
+      "expected": "ユーザー登録abcdefghijklmnopqrst",
+      "verified": true,
+      "errors": []
+    },
+    {
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "typingOnly": true
+      },
+      "kind": "typingPersistence",
+      "actual": "ユーザー登録abcdefghijklmnopqrst",
+      "expected": "ユーザー登録abcdefghijklmnopqrst",
+      "verified": true,
+      "errors": []
+    }
+  ],
+  "memory": [
+    {
+      "version": "before",
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000,
+        "memoryOnly": true
+      },
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 29350,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "usage": {
+        "usedSize": 20063812,
+        "totalSize": 21610496,
+        "embedderHeapUsedSize": 58951056,
+        "backingStorageSize": 1220342
+      },
+      "errors": []
+    },
+    {
+      "version": "before",
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000,
+        "memoryOnly": true
+      },
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 25602,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "usage": {
+        "usedSize": 18948712,
+        "totalSize": 19775488,
+        "embedderHeapUsedSize": 52126144,
+        "backingStorageSize": 1219158
+      },
+      "errors": []
+    },
+    {
+      "version": "after",
+      "case": {
+        "layout": "pc",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000,
+        "memoryOnly": true
+      },
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 29350,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "usage": {
+        "usedSize": 17483464,
+        "totalSize": 19513344,
+        "embedderHeapUsedSize": 57672616,
+        "backingStorageSize": 1223173
+      },
+      "errors": []
+    },
+    {
+      "version": "after",
+      "case": {
+        "layout": "smartphone",
+        "count": 150,
+        "mode": "execute",
+        "grouped": true,
+        "mapCells": 10000,
+        "memoryOnly": true
+      },
+      "dom": {
+        "cards": 150,
+        "options": 18300,
+        "nodes": 25602,
+        "renderers": [
+          {
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "reason": "virtual-eligible",
+            "rows": "300"
+          }
+        ],
+        "scale": 1,
+        "statusStyle": {
+          "transition": "0.15s",
+          "property": "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to"
+        }
+      },
+      "usage": {
+        "usedSize": 16523776,
+        "totalSize": 17940480,
+        "embedderHeapUsedSize": 50790544,
+        "backingStorageSize": 1222092
+      },
+      "errors": []
+    }
+  ]
+}

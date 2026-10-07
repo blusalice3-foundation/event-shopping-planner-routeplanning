@@ -109,7 +109,7 @@ const PersistenceStatusIndicator: React.FC<PersistenceStatusIndicatorProps> = ({
     legacyCleanupStatus === "deferred" ||
     legacyCleanupStatus === "in-progress";
 
-  if (!showRoutineStatus && !isLegacyDataRetained) {
+  if (!showRoutineStatus) {
     return null;
   }
 

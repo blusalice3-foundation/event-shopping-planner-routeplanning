@@ -11,7 +11,7 @@ describe("PersistenceStatusIndicator", () => {
       <PersistenceStatusIndicator
         status="saved"
         legacyCleanupStatus="deferred"
-        showRoutineStatus={false}
+        showRoutineStatus
         failedStores={[]}
         onRetry={vi.fn()}
         onExportBackup={vi.fn()}
@@ -44,17 +44,36 @@ describe("PersistenceStatusIndicator", () => {
     expect(screen.getByRole("status")).toHaveTextContent(label);
   });
 
-  it.each(["unsaved", "saving", "saved"] as const)(
-    "設定がオフなら %s 状態を表示しない",
-    (status) => {
-      render(
-        <PersistenceStatusIndicator
-          status={status}
-          showRoutineStatus={false}
-          failedStores={[]}
-          onRetry={vi.fn()}
-          onExportBackup={vi.fn()}
-        />,
+  it.each(
+    (["not-needed", "ready", "deferred", "in-progress"] as const).flatMap(
+      (legacyCleanupStatus) =>
+        (["unsaved", "saving", "saved"] as const).map(
+          (status) => [legacyCleanupStatus, status] as const,
+        ),
+    ),
+  )(
+    "旧データ処理が %s でも %s 状態の表示・非表示を切り替えられる",
+    (legacyCleanupStatus, status) => {
+      const props = {
+        status,
+        legacyCleanupStatus,
+        failedStores: [],
+        onRetry: vi.fn(),
+        onExportBackup: vi.fn(),
+      };
+      const { rerender } = render(
+        <PersistenceStatusIndicator {...props} showRoutineStatus={false} />,
+      );
+
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+
+      rerender(<PersistenceStatusIndicator {...props} showRoutineStatus />);
+
+      expect(screen.getByRole("status")).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+      rerender(
+        <PersistenceStatusIndicator {...props} showRoutineStatus={false} />,
       );
 
       expect(screen.queryByRole("status")).not.toBeInTheDocument();

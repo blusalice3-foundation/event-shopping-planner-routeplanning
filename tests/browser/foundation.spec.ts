@@ -377,3 +377,69 @@ test("@a11y has no moderate, serious, or critical automated accessibility violat
 
   expect(violations).toEqual([]);
 });
+
+test("persistence status visibility changes immediately and survives reload", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    if (localStorage.getItem("eventShoppingLists")) return;
+    localStorage.setItem(
+      "eventShoppingLists",
+      JSON.stringify({
+        表示設定テスト: [
+          {
+            id: "persistence-status-item",
+            eventDate: "1日目",
+            circle: "テストサークル",
+            title: "テスト新刊",
+            block: "A",
+            number: "1",
+            price: 500,
+            purchaseStatus: "None",
+            quantity: 1,
+            remarks: "",
+          },
+        ],
+      }),
+    );
+  });
+  await waitForApplication(page);
+  await page.getByRole("button", { name: "移行前データを保存" }).click();
+  await page.getByRole("button", { name: "保存形式を更新して開く" }).click();
+  await page.getByText("表示設定テスト", { exact: true }).click();
+
+  const status = page.getByRole("status", { name: /^保存済み/ });
+  const settingsButton = page.getByRole("button", { name: "表示項目の設定" });
+  const checkbox = page.getByRole("checkbox", { name: /保存状態を表示/ });
+  const closeSettings = () =>
+    page.locator(".fixed.inset-0.z-40").click({ position: { x: 1, y: 1 } });
+
+  await expect(status).toBeVisible();
+  await settingsButton.click();
+  await expect(checkbox).toBeChecked();
+
+  await checkbox.uncheck();
+  await expect(status).toHaveCount(0);
+  await checkbox.check();
+  await expect(status).toBeVisible();
+  await checkbox.uncheck();
+  await expect(status).toHaveCount(0);
+
+  await closeSettings();
+  await expect(checkbox).toHaveCount(0);
+  await page.reload();
+  await page.getByText("表示設定テスト", { exact: true }).click();
+  await expect(status).toHaveCount(0);
+  await settingsButton.click();
+  await expect(checkbox).not.toBeChecked();
+
+  await checkbox.check();
+  await expect(status).toBeVisible();
+  await closeSettings();
+  await expect(checkbox).toHaveCount(0);
+  await page.reload();
+  await page.getByText("表示設定テスト", { exact: true }).click();
+  await expect(status).toBeVisible();
+  await settingsButton.click();
+  await expect(checkbox).toBeChecked();
+});

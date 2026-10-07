@@ -1312,3 +1312,181 @@ it("still adopts another tab changes when a setter returns unchanged values", as
   expect(h.result.current.raw.eventMetadata).toEqual(metadata);
   expect(h.result.current.isPending()).toBe(false);
 });
+
+const memoTestItem = {
+  id: "memo-item",
+  circle: "ユーザー登録",
+  eventDate: "1日目",
+  block: "A",
+  number: "1",
+  title: "新刊",
+  price: 500,
+  quantity: 1,
+  purchaseStatus: "None" as const,
+  remarks: "",
+};
+
+function memoHarness() {
+  const h = harness();
+  h.durable().eventLists.event = [memoTestItem];
+  act(() =>
+    h.result.current.hydrationSetters.setEventLists({ event: [memoTestItem] }),
+  );
+  const writeMemo = (remarks: string) => {
+    act(() =>
+      h.result.current.setters.setEventLists((current) => ({
+        ...current,
+        event: current.event.map((item) => ({ ...item, remarks })),
+      })),
+    );
+  };
+  return { ...h, writeMemo };
+}
+
+describe("accepted memo input and batched saving", () => {
+  it("keeps newer input visible when an earlier save finishes", async () => {
+    const h = memoHarness();
+    const originalCommit = h.commit.getMockImplementation()!;
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    h.commit.mockImplementationOnce(async (snapshot) => {
+      await barrier;
+      await originalCommit(snapshot);
+    });
+    h.writeMemo("a");
+    act(() => h.result.current.flushDraft());
+    await waitFor(() => expect(h.commit).toHaveBeenCalledTimes(1));
+    h.writeMemo("ab");
+    expect(h.result.current.values.eventLists.event[0].remarks).toBe("ab");
+    await act(async () => {
+      release();
+      await h.result.current.coordinator.enqueue(() => undefined);
+    });
+    expect(h.result.current.raw.eventLists.event[0].remarks).toBe("a");
+    expect(h.result.current.values.eventLists.event[0].remarks).toBe("ab");
+    await act(async () => h.result.current.flush());
+    expect(h.durable().eventLists.event[0]).toMatchObject({ remarks: "ab" });
+    h.unmount();
+  });
+
+  it("collects successive input into one save while keeping it visible and guarded", async () => {
+    vi.useFakeTimers();
+    const h = memoHarness();
+    try {
+      for (const value of ["a", "ab", "abc"]) {
+        h.writeMemo(value);
+        await act(async () => vi.advanceTimersByTimeAsync(40));
+      }
+      expect(h.commit).not.toHaveBeenCalled();
+      expect(h.result.current.values.eventLists.event[0].remarks).toBe("abc");
+      expect(h.result.current.isPending()).toBe(true);
+      expect(h.result.current.pendingCount).toBe(1);
+      const unload = new Event("beforeunload", { cancelable: true });
+      window.dispatchEvent(unload);
+      expect(unload.defaultPrevented).toBe(true);
+      const exported = await h.result.current.coordinator.readExportSnapshot();
+      expect(exported.eventLists.event[0]).toMatchObject({ remarks: "abc" });
+      await act(async () => vi.advanceTimersByTimeAsync(300));
+      expect(h.commit).toHaveBeenCalledTimes(1);
+      expect(h.durable().eventLists.event[0]).toMatchObject({ remarks: "abc" });
+      expect(h.result.current.isPending()).toBe(false);
+    } finally {
+      h.unmount();
+      vi.useRealTimers();
+    }
+  });
+
+  it("saves during continuous input without waiting indefinitely", async () => {
+    vi.useFakeTimers();
+    const h = memoHarness();
+    try {
+      for (const value of ["a", "ab", "abc", "abcd"]) {
+        h.writeMemo(value);
+        await act(async () => vi.advanceTimersByTimeAsync(250));
+      }
+      expect(h.commit).toHaveBeenCalledTimes(1);
+      expect(h.durable().eventLists.event[0]).toMatchObject({
+        remarks: "abcd",
+      });
+    } finally {
+      h.unmount();
+      vi.useRealTimers();
+    }
+  });
+
+  it("flushes a memo on focus change and preserves a simultaneous purchase", async () => {
+    const h = memoHarness();
+    h.writeMemo("最新のメモ");
+    act(() => document.dispatchEvent(new Event("focusout")));
+    await act(async () =>
+      h.result.current.coordinator.enqueue(() => undefined),
+    );
+    expect(h.durable().eventLists.event[0]).toMatchObject({
+      remarks: "最新のメモ",
+    });
+    h.writeMemo("次のメモ");
+    act(() =>
+      h.result.current.setters.setEventLists((current) => ({
+        ...current,
+        event: current.event.map((item) => ({
+          ...item,
+          purchaseStatus: "Purchased",
+        })),
+      })),
+    );
+    await act(async () => h.result.current.flush());
+    expect(h.durable().eventLists.event[0]).toMatchObject({
+      remarks: "次のメモ",
+      purchaseStatus: "Purchased",
+    });
+    h.unmount();
+  });
+
+  it("submits memo input before an unrelated multi-store proposal", async () => {
+    const h = memoHarness();
+    h.writeMemo("保存するメモ");
+    act(() => {
+      h.result.current.setters.setDayModes({ event: { "1日目": "execute" } });
+      h.result.current.setters.setExecuteModeItems({
+        event: { "1日目": ["memo-item"] },
+      });
+    });
+    expect(h.result.current.raw.dayModes).toEqual({});
+    expect(h.result.current.values.eventLists.event[0].remarks).toBe(
+      "保存するメモ",
+    );
+    await act(async () => h.result.current.flush());
+    expect(h.commit).toHaveBeenCalledTimes(2);
+    expect(h.commit.mock.calls[0][0].dayModes).toEqual({});
+    expect(h.durable().dayModes).toEqual({ event: { "1日目": "execute" } });
+    h.unmount();
+  });
+
+  it("retains a failed memo save for export and retry", async () => {
+    const h = memoHarness();
+    h.commit.mockRejectedValueOnce(new Error("save aborted"));
+    h.writeMemo("再試行するメモ");
+    act(() => h.result.current.flushDraft());
+    await waitFor(() =>
+      expect(h.result.current.retryableFailures).toHaveLength(1),
+    );
+    expect(h.result.current.values.eventLists.event[0].remarks).toBe(
+      "再試行するメモ",
+    );
+    expect(h.durable().eventLists.event[0]).toMatchObject({ remarks: "" });
+    const exported = await h.result.current.coordinator.readExportSnapshot();
+    expect(exported.eventLists.event[0]).toMatchObject({
+      remarks: "再試行するメモ",
+    });
+    await act(async () => {
+      h.result.current.retryPending();
+      await h.result.current.flush();
+    });
+    expect(h.durable().eventLists.event[0]).toMatchObject({
+      remarks: "再試行するメモ",
+    });
+    h.unmount();
+  });
+});
