@@ -1,3 +1,4 @@
+import { revealViewportContent } from "../../shopping-list/renderers/ViewportContent";
 import {
   useCallback,
   useEffect,
@@ -366,8 +367,11 @@ export function useExecutionSpaceNavigator(
     async (entry: NavigatorEntry, behavior: ScrollBehavior = "smooth") => {
       await ensureEntryExpanded(entry);
       await nextFrame();
-      const anchor = findPreferredAnchor(entry.id);
+      let anchor = findPreferredAnchor(entry.id);
       if (!anchor) return;
+      revealViewportContent(anchor);
+      await nextFrame();
+      anchor = findPreferredAnchor(entry.id) ?? anchor;
 
       if (typeof anchor.scrollIntoView === "function") {
         await scrollElementIntoViewAndWait(anchor, behavior);

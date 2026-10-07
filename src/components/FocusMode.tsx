@@ -1,5 +1,5 @@
 import { resolveDayMap } from "../features/consistency/domain/context";
-import { resolveLocation } from "../features/consistency/domain/membership";
+
 import React, {
   useState,
   useMemo,
@@ -68,9 +68,10 @@ import {
   sortItemsByHallOrder,
 } from "../utils/hallGrouping";
 import {
-  buildDayMapPathfindingSignature,
-  buildDayMapVisitLookupSignature,
-} from "../utils/mapRoutingSignature";
+  getMapPathfindingRenderingSignature,
+  getMapVisitLookupRenderingSignature,
+  getMapRenderingSnapshot,
+} from "../features/map/canvas/mapRenderingSnapshot";
 import { buildHallDefinitionsRoutingSignature } from "../utils/hallRoutingSignature";
 import {
   calculateStrictFocusRoute,
@@ -397,28 +398,6 @@ const FocusMode: React.FC<FocusModeProps> = ({
     return new Map(items.map((item) => [item.id, item]));
   }, [items]);
 
-  const executeItems = useMemo(() => {
-    const rawItems = executeModeItemIds
-      .map((id) => itemsById.get(id))
-      .filter((item): item is ShoppingItem => item !== undefined);
-    // ホール定義 0 件でも sortItemsByHallOrder は未定義+優先度バケットで並べ替える
-    const firstItem = rawItems[0];
-    if (!firstItem) return rawItems;
-    const dayMapData = resolveFocusDayMapData(mapData, firstItem.eventDate);
-    return sortItemsByHallOrder(
-      rawItems,
-      dayMapData,
-      hallDefinitions || [],
-      hallOrder,
-    );
-  }, [itemsById, executeModeItemIds, hallDefinitions, hallOrder, mapData]);
-  const executeItemsById = useMemo(() => {
-    return new Map(executeItems.map((item) => [item.id, item]));
-  }, [executeItems]);
-  const executeModeItemIdSet = useMemo(() => {
-    return new Set(executeModeItemIds);
-  }, [executeModeItemIds]);
-
   const executeItemsRoutingSignature = useMemo(() => {
     return buildItemRoutingSignature(items, executeModeItemIds);
   }, [items, executeModeItemIds]);
@@ -441,7 +420,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
   }, [executeModeItemIds, itemsById, mapData]);
 
   const routeVisitLookupMapSignature = useMemo(() => {
-    return buildDayMapVisitLookupSignature(routeDayMapData);
+    return getMapVisitLookupRenderingSignature(routeDayMapData);
   }, [routeDayMapData]);
 
   const routePositionSignature = useMemo(() => {
@@ -458,6 +437,53 @@ const FocusMode: React.FC<FocusModeProps> = ({
     routeVisitLookupMapSignature,
   ]);
 
+  const executeOrderingSignature = useMemo(
+    () => JSON.stringify([routePositionSignature, executeModeItemIds]),
+    [routePositionSignature, executeModeItemIds],
+  );
+  const executeOrderingRef = useRef<{
+    signature: string;
+    ids: string[];
+  } | null>(null);
+
+  const executeItems = useMemo(() => {
+    if (executeOrderingRef.current?.signature !== executeOrderingSignature) {
+      const rawItems = executeModeItemIds
+        .map((id) => itemsById.get(id))
+        .filter((item): item is ShoppingItem => item !== undefined);
+      const firstItem = rawItems[0];
+      const sorted = firstItem
+        ? sortItemsByHallOrder(
+            rawItems,
+            resolveFocusDayMapData(mapData, firstItem.eventDate),
+            hallDefinitions || [],
+            hallOrder,
+          )
+        : rawItems;
+      executeOrderingRef.current = {
+        signature: executeOrderingSignature,
+        ids: sorted.map((item) => item.id),
+      };
+    }
+    return executeOrderingRef.current.ids
+      .map((id) => itemsById.get(id))
+      .filter((item): item is ShoppingItem => item !== undefined);
+  }, [
+    itemsById,
+    executeModeItemIds,
+    hallDefinitions,
+    hallOrder,
+    mapData,
+    executeOrderingSignature,
+  ]);
+
+  const executeItemsById = useMemo(() => {
+    return new Map(executeItems.map((item) => [item.id, item]));
+  }, [executeItems]);
+  const executeModeItemIdSet = useMemo(() => {
+    return new Set(executeModeItemIds);
+  }, [executeModeItemIds]);
+
   const routePositionItemsRef = useRef<{
     signature: string;
     items: ShoppingItem[];
@@ -468,33 +494,14 @@ const FocusMode: React.FC<FocusModeProps> = ({
       return routePositionItemsRef.current.items;
     }
 
-    const rawItems = executeModeItemIds
-      .map((id) => itemsById.get(id))
-      .filter((item): item is ShoppingItem => item !== undefined);
-
-    const firstItem = rawItems[0];
-    const sortedItems = firstItem
-      ? sortItemsByHallOrder(
-          rawItems,
-          resolveFocusDayMapData(mapData, firstItem.eventDate),
-          hallDefinitions || [],
-          hallOrder,
-        )
-      : rawItems;
+    const sortedItems = executeItems;
 
     routePositionItemsRef.current = {
       signature: routePositionSignature,
       items: sortedItems,
     };
     return sortedItems;
-  }, [
-    routePositionSignature,
-    executeModeItemIds,
-    itemsById,
-    hallDefinitions,
-    hallOrder,
-    mapData,
-  ]);
+  }, [routePositionSignature, executeItems]);
   // 全訪問先リストを実行列順序で生成
   const allVisits = useMemo(() => {
     return projectItemsToExecutionVisits(executeItems).map(
@@ -1147,7 +1154,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
   const currentVisitLookupMapSignature = useMemo(() => {
     return JSON.stringify([
       currentMapName || "",
-      buildDayMapVisitLookupSignature(currentMapData),
+      getMapVisitLookupRenderingSignature(currentMapData),
     ]);
   }, [currentMapName, currentMapData]);
 
@@ -1177,7 +1184,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
   const currentRouteMapDataSignature = useMemo(() => {
     return JSON.stringify([
       currentMapName || "",
-      buildDayMapPathfindingSignature(currentMapData),
+      getMapPathfindingRenderingSignature(currentMapData),
     ]);
   }, [currentMapName, currentMapData]);
 
@@ -1206,13 +1213,20 @@ const FocusMode: React.FC<FocusModeProps> = ({
   const mapDayName = normalizeExecutionVisitDay(
     currentVisit?.items[0]?.eventDate ?? "",
   );
+  const currentMapLocationResolver = useMemo(
+    () =>
+      currentVisitLookupMapData
+        ? getMapRenderingSnapshot(currentVisitLookupMapData).resolveLocation
+        : null,
+    [currentVisitLookupMapData],
+  );
   const executionVisitCellMap = useMemo(() => {
     const map = new Map<string, { row: number; col: number; key: string }>();
     if (!mapDayName || !currentVisitLookupMapData) return map;
     routePositionItems.forEach((item) => {
       const itemEventDate = normalizeExecutionVisitDay(item.eventDate || "");
       if (itemEventDate !== mapDayName) return;
-      const location = resolveLocation(currentVisitLookupMapData, item);
+      const location = currentMapLocationResolver!(item);
       if (location.status !== "resolved") return;
       const cell = location.location.cell;
       const visitKey = getVisitKey(item);
@@ -1225,7 +1239,12 @@ const FocusMode: React.FC<FocusModeProps> = ({
       }
     });
     return map;
-  }, [routePositionItems, currentVisitLookupMapData, mapDayName]);
+  }, [
+    routePositionItems,
+    currentVisitLookupMapData,
+    currentMapLocationResolver,
+    mapDayName,
+  ]);
   const visitKeyCellMap = useMemo(() => {
     const map = new Map<string, { row: number; col: number; key: string }>();
     baseNavigatorEntries.forEach((entry) => {

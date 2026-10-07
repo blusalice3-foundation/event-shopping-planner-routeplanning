@@ -1,10 +1,12 @@
 import { normalizeExecutionVisitDay } from "../utils/visitProjection";
-import { resolveLocation } from "../features/consistency/domain/membership";
+
 import {
   collectFocusCellItems,
   summarizeFocusCell,
 } from "../features/map/domain/focusCellState";
 import React, { useRef, useEffect, useCallback, useMemo } from "react";
+import { getMapRenderingSnapshot } from "../features/map/canvas/mapRenderingSnapshot";
+import { CanvasCellLayerCache } from "../features/map/canvas/CanvasCellLayerCache";
 import {
   DayMapData,
   CellData,
@@ -343,6 +345,14 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
 
   const prevSelectedHallRef = useRef<HallDefinition | null>(null);
 
+  const mapRenderingSnapshot = useMemo(
+    () => getMapRenderingSnapshot(mapData),
+    [mapData],
+  );
+  const cellViewportIndex = useMemo(
+    () => mapRenderingSnapshot.cellViewportIndex(),
+    [mapRenderingSnapshot],
+  );
   const cellsMap = useMemo(() => {
     const map = new Map<string, CellData>();
     mapData.cells.forEach((cell) => {
@@ -365,8 +375,15 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
   }, [mapName, eventDate]);
 
   const cellItems = useMemo(
-    () => collectFocusCellItems(items, executeModeItemIds, dayName, mapData),
-    [items, executeModeItemIds, dayName, mapData],
+    () =>
+      collectFocusCellItems(
+        items,
+        executeModeItemIds,
+        dayName,
+        mapData,
+        (_map, item) => mapRenderingSnapshot.resolveLocation(item),
+      ),
+    [items, executeModeItemIds, dayName, mapData, mapRenderingSnapshot],
   );
   const cellStates = useMemo(() => {
     const states = new Map<
@@ -969,19 +986,25 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     return { crossingLookup, bridgeParams };
   }, [routeSegments, cellSize]);
 
+  const cellLayerCacheRef = useRef<CanvasCellLayerCache | null>(null);
+  if (!cellLayerCacheRef.current)
+    cellLayerCacheRef.current = new CanvasCellLayerCache();
   const drawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const mainContext = canvas.getContext("2d");
+    if (!mainContext) return;
+    let ctx: CanvasRenderingContext2D = mainContext;
 
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
 
-    canvas.width = containerWidth * dpr;
-    canvas.height = containerHeight * dpr;
+    const pixelWidth = Math.trunc(containerWidth * dpr);
+    const pixelHeight = Math.trunc(containerHeight * dpr);
+    if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
+    if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, containerWidth, containerHeight);
@@ -1039,6 +1062,22 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       mapData.maxRow,
       Math.ceil(visibleMaxY / cellSize) + 1,
     );
+
+    const visibleCells = cellViewportIndex.select(
+      {
+        minRow: visMinRow,
+        maxRow: visMaxRow,
+        minCol: visMinCol,
+        maxCol: visMaxCol,
+      },
+      true,
+    );
+    const visibleBorderCells = cellViewportIndex.select({
+      minRow: visMinRow,
+      maxRow: visMaxRow,
+      minCol: visMinCol,
+      maxCol: visMaxCol,
+    });
 
     const isCellVisible = (
       row: number,
@@ -1348,275 +1387,42 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       ctx.textBaseline = "middle";
     };
 
-    // 番号セルのスタイル値はループ外で解決する。
-    const outlineStyle = numberCellOutlineStyle;
-    const useInset = outlineStyle !== "none";
-    const ncPad = useInset ? cellSize * 0.1 : 0;
-    const ncRadius =
-      outlineStyle === "rounded" ? Math.max(2, cellSize * 0.18) : 0;
-    const ncBg = isDarkMode ? "#1E293B" : "#FFFFFF";
-    const ncBorder = isDarkMode ? "#475569" : "#CBD5E1";
-    const ncBorderWidth = Math.max(1, cellSize * 0.055);
-    const drawStroke = outlineStyle !== "none";
-    const isDashed = outlineStyle === "dashed";
+    const renderCellLayer = () => {
+      // 番号セルのスタイル値はループ外で解決する。
+      const outlineStyle = numberCellOutlineStyle;
+      const useInset = outlineStyle !== "none";
+      const ncPad = useInset ? cellSize * 0.1 : 0;
+      const ncRadius =
+        outlineStyle === "rounded" ? Math.max(2, cellSize * 0.18) : 0;
+      const ncBg = isDarkMode ? "#1E293B" : "#FFFFFF";
+      const ncBorder = isDarkMode ? "#475569" : "#CBD5E1";
+      const ncBorderWidth = Math.max(1, cellSize * 0.055);
+      const drawStroke = outlineStyle !== "none";
+      const isDashed = outlineStyle === "dashed";
 
-    // セルのパス生成処理をスタイルごとにまとめる。
-    const drawCellPath =
-      ncRadius > 0
-        ? (rx: number, ry: number, rw: number, rh: number) =>
-            ctx.roundRect(
-              rx + ncPad,
-              ry + ncPad,
-              rw - ncPad * 2,
-              rh - ncPad * 2,
-              ncRadius,
-            )
-        : (rx: number, ry: number, rw: number, rh: number) =>
-            ctx.rect(rx + ncPad, ry + ncPad, rw - ncPad * 2, rh - ncPad * 2);
+      // セルのパス生成処理をスタイルごとにまとめる。
+      const drawCellPath =
+        ncRadius > 0
+          ? (rx: number, ry: number, rw: number, rh: number) =>
+              ctx.roundRect(
+                rx + ncPad,
+                ry + ncPad,
+                rw - ncPad * 2,
+                rh - ncPad * 2,
+                ncRadius,
+              )
+          : (rx: number, ry: number, rw: number, rh: number) =>
+              ctx.rect(rx + ncPad, ry + ncPad, rw - ncPad * 2, rh - ncPad * 2);
 
-    // 一括描画用にジオメトリを収集する。
-    const ncRects: { x: number; y: number; w: number; h: number }[] = [];
-    const overlayGroups = new Map<
-      string,
-      { x: number; y: number; w: number; h: number }[]
-    >();
+      // 一括描画用にジオメトリを収集する。
+      const ncRects: { x: number; y: number; w: number; h: number }[] = [];
+      const overlayGroups = new Map<
+        string,
+        { x: number; y: number; w: number; h: number }[]
+      >();
 
-    mapData.cells.forEach((cell) => {
-      if (cell.isMerged) return;
-
-      const merge = mergedCellsMap.get(`${cell.row}-${cell.col}`);
-      const spanCols = merge ? merge.endCol - merge.startCol + 1 : 1;
-      const spanRows = merge ? merge.endRow - merge.startRow + 1 : 1;
-      if (!isCellVisible(cell.row, cell.col, spanRows, spanCols)) return;
-
-      const x = (cell.col - 1) * cellSize;
-      const y = (cell.row - 1) * cellSize;
-      const width = spanCols * cellSize;
-      const height = spanRows * cellSize;
-
-      const cellKey = `${cell.row}-${cell.col}`;
-      const isNumberCell = numberCellSet.has(cellKey);
-
-      if (isNumberCell) {
-        ncRects.push({ x, y, w: width, h: height });
-      } else if (cell.backgroundColor) {
-        ctx.fillStyle = cell.backgroundColor;
-        ctx.fillRect(x, y, width, height);
-      }
-
-      const state = cellStates.get(cellKey);
-      if (state && state.hasItems) {
-        const label = cellLabels.get(cellKey);
-        if (label) {
-          if (isNumberCell) {
-            const color = label.bgColor;
-            if (!overlayGroups.has(color)) overlayGroups.set(color, []);
-            overlayGroups.get(color)!.push({ x, y, w: width, h: height });
-          } else {
-            ctx.fillStyle = label.bgColor;
-            ctx.fillRect(x, y, width, height);
-          }
-        } else if (state.isVisited) {
-          if (isNumberCell) {
-            const color = "rgba(158, 158, 158, 0.5)";
-            if (!overlayGroups.has(color)) overlayGroups.set(color, []);
-            overlayGroups.get(color)!.push({ x, y, w: width, h: height });
-          } else {
-            ctx.fillStyle = "rgba(158, 158, 158, 0.5)";
-            ctx.fillRect(x, y, width, height);
-          }
-        } else if (state.hasPostponed && resolvedFormalPhase !== "postponed") {
-          if (isNumberCell) {
-            const color = "rgba(156, 39, 176, 0.4)";
-            if (!overlayGroups.has(color)) overlayGroups.set(color, []);
-            overlayGroups.get(color)!.push({ x, y, w: width, h: height });
-          } else {
-            ctx.fillStyle = "rgba(156, 39, 176, 0.4)";
-            ctx.fillRect(x, y, width, height);
-          }
-        } else if (state.hasLate && resolvedFormalPhase !== "late") {
-          if (isNumberCell) {
-            const color = "rgba(33, 150, 243, 0.4)";
-            if (!overlayGroups.has(color)) overlayGroups.set(color, []);
-            overlayGroups.get(color)!.push({ x, y, w: width, h: height });
-          } else {
-            ctx.fillStyle = "rgba(33, 150, 243, 0.4)";
-            ctx.fillRect(x, y, width, height);
-          }
-        }
-      }
-    });
-
-    // 収集したジオメトリをまとめて描画する。
-    if (ncRects.length > 0) {
-      ctx.beginPath();
-      for (const r of ncRects) drawCellPath(r.x, r.y, r.w, r.h);
-      ctx.fillStyle = ncBg;
-      ctx.fill();
-
-      // 枠線を描画する。
-      if (drawStroke) {
-        ctx.strokeStyle = ncBorder;
-        ctx.lineWidth = ncBorderWidth;
-        if (isDashed) {
-          // 破線枠はセルごとに破線の開始位置をリセットする。
-          const dashLen = Math.max(2, cellSize * 0.12);
-          ctx.setLineDash([dashLen, dashLen]);
-          for (const r of ncRects) {
-            ctx.beginPath();
-            drawCellPath(r.x, r.y, r.w, r.h);
-            ctx.stroke();
-          }
-          ctx.setLineDash([]);
-        } else {
-          // 角丸と四角の枠線はまとめたパスを一度だけ stroke する。
-          ctx.stroke();
-        }
-      }
-
-      // オーバーレイもまとめて描画する。
-      for (const [color, rects] of overlayGroups) {
-        ctx.beginPath();
-        for (const r of rects) drawCellPath(r.x, r.y, r.w, r.h);
-        ctx.fillStyle = color;
-        ctx.fill();
-      }
-    }
-
-    // セル境界線を描画する。
-    if (showBorders && !isRotationInteracting) {
-      type DrawnBorder = NonNullable<CellData["borders"]["top"]>;
-      type BorderEdge = {
-        orientation: "h" | "v";
-        gridX: number;
-        gridY: number;
-        border: DrawnBorder;
-      };
-
-      const borderWeight = (border: DrawnBorder): number => {
-        switch (border.style) {
-          case "double":
-            return 4;
-          case "thick":
-            return 3;
-          case "medium":
-            return 2;
-          case "thin":
-          default:
-            return 1;
-        }
-      };
-
-      const pickBorder = (
-        current: DrawnBorder | undefined,
-        candidate: DrawnBorder,
-      ): DrawnBorder => {
-        if (!current) return candidate;
-
-        const currentWeight = borderWeight(current);
-        const candidateWeight = borderWeight(candidate);
-        if (candidateWeight > currentWeight) return candidate;
-        if (candidateWeight < currentWeight) return current;
-
-        if (current.color === "#000000" && candidate.color !== "#000000") {
-          return candidate;
-        }
-
-        return current;
-      };
-
-      const edgeMap = new Map<string, BorderEdge>();
-      const upsertEdge = (
-        orientation: "h" | "v",
-        gridX: number,
-        gridY: number,
-        border: DrawnBorder | null,
-      ) => {
-        if (!border) return;
-        const key = `${orientation}-${gridX}-${gridY}`;
-        const existing = edgeMap.get(key);
-        const selected = pickBorder(existing?.border, border);
-        edgeMap.set(key, { orientation, gridX, gridY, border: selected });
-      };
-
-      mapData.cells.forEach((cell) => {
-        const merge = mergedCellsMap.get(`${cell.row}-${cell.col}`);
-        if (!isCellVisible(cell.row, cell.col, 1, 1)) return;
-
-        const startCol = cell.col - 1;
-        const endCol = startCol + 1;
-        const startRow = cell.row - 1;
-        const endRow = startRow + 1;
-
-        const topBorder = cell.borders.top;
-        let rightBorder = cell.borders.right;
-        let bottomBorder = cell.borders.bottom;
-        const leftBorder = cell.borders.left;
-
-        if (merge) {
-          if (merge.endCol > merge.startCol) {
-            rightBorder = null;
-          }
-          if (merge.endRow > merge.startRow) {
-            bottomBorder = null;
-          }
-        }
-
-        if (topBorder) {
-          upsertEdge("h", startCol, startRow, topBorder);
-        }
-        if (bottomBorder) {
-          upsertEdge("h", startCol, endRow, bottomBorder);
-        }
-        if (leftBorder) {
-          upsertEdge("v", startCol, startRow, leftBorder);
-        }
-        if (rightBorder) {
-          upsertEdge("v", endCol, startRow, rightBorder);
-        }
-      });
-
-      const softBorderColor = (color: string | undefined): string => {
-        const c = color || "#000000";
-        if (c === "#000000") return isDarkMode ? "#666666" : "#555555";
-        return c;
-      };
-
-      edgeMap.forEach(({ orientation, gridX, gridY, border }) => {
-        let lineWidth = 1;
-        switch (border.style) {
-          case "double":
-          case "thick":
-            lineWidth = 3;
-            break;
-          case "medium":
-            lineWidth = 2;
-            break;
-          case "thin":
-          default:
-            lineWidth = 1;
-            break;
-        }
-
-        const startX = gridX * cellSize;
-        const startY = gridY * cellSize;
-        const endX = orientation === "h" ? (gridX + 1) * cellSize : startX;
-        const endY = orientation === "v" ? (gridY + 1) * cellSize : startY;
-
-        ctx.beginPath();
-        ctx.strokeStyle = softBorderColor(border.color);
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.lineWidth = lineWidth;
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
-        ctx.stroke();
-      });
-    }
-
-    if (showNumbers) {
-      mapData.cells.forEach((cell) => {
-        if (cell.isMerged || cell.value === null) return;
+      visibleCells.forEach((cell) => {
+        if (cell.isMerged) return;
 
         const merge = mergedCellsMap.get(`${cell.row}-${cell.col}`);
         const spanCols = merge ? merge.endCol - merge.startCol + 1 : 1;
@@ -1628,82 +1434,378 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
         const width = spanCols * cellSize;
         const height = spanRows * cellSize;
 
-        const text = String(cell.value);
-        const isVertical = cell.isVerticalText;
+        const cellKey = `${cell.row}-${cell.col}`;
+        const isNumberCell = numberCellSet.has(cellKey);
 
-        let fontSize: number;
-        if (merge) {
-          if (isVertical) {
-            const charCount = text.replace(/\n/g, "").length;
-            fontSize = Math.min(
-              width * 0.6,
-              (height / (charCount + 1)) * 0.9,
-              16,
-            );
-          } else {
-            fontSize = Math.min(width, height) * (isDetailedView ? 0.5 : 0.4);
-          }
-        } else if (typeof cell.value === "number") {
-          fontSize = Math.min(cellSize * 0.45, 14);
-        } else {
-          fontSize = Math.min(cellSize * 0.4, 12);
-        }
-        fontSize = Math.max(fontSize, 8);
-
-        ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        const state = cellStates.get(`${cell.row}-${cell.col}`);
-        const explicitFontColor = cell.fontColor?.trim();
-        if (explicitFontColor) {
-          ctx.fillStyle = resolveMapTextColorForTheme(
-            explicitFontColor,
-            isDarkMode,
-          );
-        } else if (state?.isCurrentPosition) {
-          ctx.fillStyle = "#E65100";
-        } else if (state?.isVisited) {
-          ctx.fillStyle = resolveMapTextColorForTheme("#616161", isDarkMode);
-        } else if (state?.hasItems) {
-          ctx.fillStyle = "#1565C0";
-        } else if (numberCellSet.has(`${cell.row}-${cell.col}`)) {
-          ctx.fillStyle = isDarkMode ? "#E2E8F0" : "#334155";
-        } else {
-          ctx.fillStyle = resolveMapTextColorForTheme(
-            cell.fontColor,
-            isDarkMode,
-          );
+        if (isNumberCell) {
+          ncRects.push({ x, y, w: width, h: height });
+        } else if (cell.backgroundColor) {
+          ctx.fillStyle = cell.backgroundColor;
+          ctx.fillRect(x, y, width, height);
         }
 
-        if (isVertical) {
-          if (rotationRadians !== 0) {
-            drawFittedVerticalTextInCell(text, x, y, width, height, fontSize);
-          } else {
-            const lines = text.split(/\n/);
-            const lineSpacing = fontSize * 1.2;
-            const totalWidth = lines.length * lineSpacing;
-            const startX = x + width / 2 + (totalWidth - lineSpacing) / 2;
-
-            lines.forEach((line, lineIndex) => {
-              const chars = line.split("");
-              const totalHeight = chars.length * fontSize * 1.1;
-              const startY = y + (height - totalHeight) / 2 + fontSize / 2;
-              const lineX = startX - lineIndex * lineSpacing;
-
-              chars.forEach((char, charIndex) => {
-                const charY = startY + charIndex * fontSize * 1.1;
-                drawUprightText(char, lineX, charY);
-              });
-            });
+        const state = cellStates.get(cellKey);
+        if (state && state.hasItems) {
+          const label = cellLabels.get(cellKey);
+          if (label) {
+            if (isNumberCell) {
+              const color = label.bgColor;
+              if (!overlayGroups.has(color)) overlayGroups.set(color, []);
+              overlayGroups.get(color)!.push({ x, y, w: width, h: height });
+            } else {
+              ctx.fillStyle = label.bgColor;
+              ctx.fillRect(x, y, width, height);
+            }
+          } else if (state.isVisited) {
+            if (isNumberCell) {
+              const color = "rgba(158, 158, 158, 0.5)";
+              if (!overlayGroups.has(color)) overlayGroups.set(color, []);
+              overlayGroups.get(color)!.push({ x, y, w: width, h: height });
+            } else {
+              ctx.fillStyle = "rgba(158, 158, 158, 0.5)";
+              ctx.fillRect(x, y, width, height);
+            }
+          } else if (
+            state.hasPostponed &&
+            resolvedFormalPhase !== "postponed"
+          ) {
+            if (isNumberCell) {
+              const color = "rgba(156, 39, 176, 0.4)";
+              if (!overlayGroups.has(color)) overlayGroups.set(color, []);
+              overlayGroups.get(color)!.push({ x, y, w: width, h: height });
+            } else {
+              ctx.fillStyle = "rgba(156, 39, 176, 0.4)";
+              ctx.fillRect(x, y, width, height);
+            }
+          } else if (state.hasLate && resolvedFormalPhase !== "late") {
+            if (isNumberCell) {
+              const color = "rgba(33, 150, 243, 0.4)";
+              if (!overlayGroups.has(color)) overlayGroups.set(color, []);
+              overlayGroups.get(color)!.push({ x, y, w: width, h: height });
+            } else {
+              ctx.fillStyle = "rgba(33, 150, 243, 0.4)";
+              ctx.fillRect(x, y, width, height);
+            }
           }
-        } else if (rotationRadians !== 0) {
-          drawFittedHorizontalTextInCell(text, x, y, width, height, fontSize);
-        } else {
-          drawUprightText(text, x + width / 2, y + height / 2);
         }
       });
-    }
+
+      // 収集したジオメトリをまとめて描画する。
+      if (ncRects.length > 0) {
+        ctx.beginPath();
+        for (const r of ncRects) drawCellPath(r.x, r.y, r.w, r.h);
+        ctx.fillStyle = ncBg;
+        ctx.fill();
+
+        // 枠線を描画する。
+        if (drawStroke) {
+          ctx.strokeStyle = ncBorder;
+          ctx.lineWidth = ncBorderWidth;
+          if (isDashed) {
+            // 破線枠はセルごとに破線の開始位置をリセットする。
+            const dashLen = Math.max(2, cellSize * 0.12);
+            ctx.setLineDash([dashLen, dashLen]);
+            for (const r of ncRects) {
+              ctx.beginPath();
+              drawCellPath(r.x, r.y, r.w, r.h);
+              ctx.stroke();
+            }
+            ctx.setLineDash([]);
+          } else {
+            // 角丸と四角の枠線はまとめたパスを一度だけ stroke する。
+            ctx.stroke();
+          }
+        }
+
+        // オーバーレイもまとめて描画する。
+        for (const [color, rects] of overlayGroups) {
+          ctx.beginPath();
+          for (const r of rects) drawCellPath(r.x, r.y, r.w, r.h);
+          ctx.fillStyle = color;
+          ctx.fill();
+        }
+      }
+
+      // セル境界線を描画する。
+      if (showBorders && !isRotationInteracting) {
+        type DrawnBorder = NonNullable<CellData["borders"]["top"]>;
+        type BorderEdge = {
+          orientation: "h" | "v";
+          gridX: number;
+          gridY: number;
+          border: DrawnBorder;
+        };
+
+        const borderWeight = (border: DrawnBorder): number => {
+          switch (border.style) {
+            case "double":
+              return 4;
+            case "thick":
+              return 3;
+            case "medium":
+              return 2;
+            case "thin":
+            default:
+              return 1;
+          }
+        };
+
+        const pickBorder = (
+          current: DrawnBorder | undefined,
+          candidate: DrawnBorder,
+        ): DrawnBorder => {
+          if (!current) return candidate;
+
+          const currentWeight = borderWeight(current);
+          const candidateWeight = borderWeight(candidate);
+          if (candidateWeight > currentWeight) return candidate;
+          if (candidateWeight < currentWeight) return current;
+
+          if (current.color === "#000000" && candidate.color !== "#000000") {
+            return candidate;
+          }
+
+          return current;
+        };
+
+        const edgeMap = new Map<string, BorderEdge>();
+        const upsertEdge = (
+          orientation: "h" | "v",
+          gridX: number,
+          gridY: number,
+          border: DrawnBorder | null,
+        ) => {
+          if (!border) return;
+          const key = `${orientation}-${gridX}-${gridY}`;
+          const existing = edgeMap.get(key);
+          const selected = pickBorder(existing?.border, border);
+          edgeMap.set(key, { orientation, gridX, gridY, border: selected });
+        };
+
+        visibleBorderCells.forEach((cell) => {
+          const merge = mergedCellsMap.get(`${cell.row}-${cell.col}`);
+          if (!isCellVisible(cell.row, cell.col, 1, 1)) return;
+
+          const startCol = cell.col - 1;
+          const endCol = startCol + 1;
+          const startRow = cell.row - 1;
+          const endRow = startRow + 1;
+
+          const topBorder = cell.borders.top;
+          let rightBorder = cell.borders.right;
+          let bottomBorder = cell.borders.bottom;
+          const leftBorder = cell.borders.left;
+
+          if (merge) {
+            if (merge.endCol > merge.startCol) {
+              rightBorder = null;
+            }
+            if (merge.endRow > merge.startRow) {
+              bottomBorder = null;
+            }
+          }
+
+          if (topBorder) {
+            upsertEdge("h", startCol, startRow, topBorder);
+          }
+          if (bottomBorder) {
+            upsertEdge("h", startCol, endRow, bottomBorder);
+          }
+          if (leftBorder) {
+            upsertEdge("v", startCol, startRow, leftBorder);
+          }
+          if (rightBorder) {
+            upsertEdge("v", endCol, startRow, rightBorder);
+          }
+        });
+
+        const softBorderColor = (color: string | undefined): string => {
+          const c = color || "#000000";
+          if (c === "#000000") return isDarkMode ? "#666666" : "#555555";
+          return c;
+        };
+
+        edgeMap.forEach(({ orientation, gridX, gridY, border }) => {
+          let lineWidth = 1;
+          switch (border.style) {
+            case "double":
+            case "thick":
+              lineWidth = 3;
+              break;
+            case "medium":
+              lineWidth = 2;
+              break;
+            case "thin":
+            default:
+              lineWidth = 1;
+              break;
+          }
+
+          const startX = gridX * cellSize;
+          const startY = gridY * cellSize;
+          const endX = orientation === "h" ? (gridX + 1) * cellSize : startX;
+          const endY = orientation === "v" ? (gridY + 1) * cellSize : startY;
+
+          ctx.beginPath();
+          ctx.strokeStyle = softBorderColor(border.color);
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.lineWidth = lineWidth;
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+        });
+      }
+
+      if (showNumbers) {
+        visibleCells.forEach((cell) => {
+          if (cell.isMerged || cell.value === null) return;
+
+          const merge = mergedCellsMap.get(`${cell.row}-${cell.col}`);
+          const spanCols = merge ? merge.endCol - merge.startCol + 1 : 1;
+          const spanRows = merge ? merge.endRow - merge.startRow + 1 : 1;
+          if (!isCellVisible(cell.row, cell.col, spanRows, spanCols)) return;
+
+          const x = (cell.col - 1) * cellSize;
+          const y = (cell.row - 1) * cellSize;
+          const width = spanCols * cellSize;
+          const height = spanRows * cellSize;
+
+          const text = String(cell.value);
+          const isVertical = cell.isVerticalText;
+
+          let fontSize: number;
+          if (merge) {
+            if (isVertical) {
+              const charCount = text.replace(/\n/g, "").length;
+              fontSize = Math.min(
+                width * 0.6,
+                (height / (charCount + 1)) * 0.9,
+                16,
+              );
+            } else {
+              fontSize = Math.min(width, height) * (isDetailedView ? 0.5 : 0.4);
+            }
+          } else if (typeof cell.value === "number") {
+            fontSize = Math.min(cellSize * 0.45, 14);
+          } else {
+            fontSize = Math.min(cellSize * 0.4, 12);
+          }
+          fontSize = Math.max(fontSize, 8);
+
+          ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+
+          const state = cellStates.get(`${cell.row}-${cell.col}`);
+          const explicitFontColor = cell.fontColor?.trim();
+          if (explicitFontColor) {
+            ctx.fillStyle = resolveMapTextColorForTheme(
+              explicitFontColor,
+              isDarkMode,
+            );
+          } else if (state?.isCurrentPosition) {
+            ctx.fillStyle = "#E65100";
+          } else if (state?.isVisited) {
+            ctx.fillStyle = resolveMapTextColorForTheme("#616161", isDarkMode);
+          } else if (state?.hasItems) {
+            ctx.fillStyle = "#1565C0";
+          } else if (numberCellSet.has(`${cell.row}-${cell.col}`)) {
+            ctx.fillStyle = isDarkMode ? "#E2E8F0" : "#334155";
+          } else {
+            ctx.fillStyle = resolveMapTextColorForTheme(
+              cell.fontColor,
+              isDarkMode,
+            );
+          }
+
+          if (isVertical) {
+            if (rotationRadians !== 0) {
+              drawFittedVerticalTextInCell(text, x, y, width, height, fontSize);
+            } else {
+              const lines = text.split(/\n/);
+              const lineSpacing = fontSize * 1.2;
+              const totalWidth = lines.length * lineSpacing;
+              const startX = x + width / 2 + (totalWidth - lineSpacing) / 2;
+
+              lines.forEach((line, lineIndex) => {
+                const chars = line.split("");
+                const totalHeight = chars.length * fontSize * 1.1;
+                const startY = y + (height - totalHeight) / 2 + fontSize / 2;
+                const lineX = startX - lineIndex * lineSpacing;
+
+                chars.forEach((char, charIndex) => {
+                  const charY = startY + charIndex * fontSize * 1.1;
+                  drawUprightText(char, lineX, charY);
+                });
+              });
+            }
+          } else if (rotationRadians !== 0) {
+            drawFittedHorizontalTextInCell(text, x, y, width, height, fontSize);
+          } else {
+            drawUprightText(text, x + width / 2, y + height / 2);
+          }
+        });
+      }
+    };
+    const visiblePaintState = visibleCells.map((cell) => {
+      const key = cell.row + "-" + cell.col;
+      const state = cellStates.get(key);
+      return [
+        key,
+        state?.hasItems ?? false,
+        state?.isVisited ?? false,
+        state?.hasPostponed ?? false,
+        state?.hasLate ?? false,
+        state?.isCurrentPosition ?? false,
+        cellLabels.get(key)?.bgColor ?? null,
+      ];
+    });
+    const layerSignature = JSON.stringify([
+      containerWidth,
+      containerHeight,
+      dpr,
+      currentOffset.x,
+      currentOffset.y,
+      cellSize,
+      rotationRadians,
+      mapCenterX,
+      mapCenterY,
+      isDetailedView,
+      showNumbers,
+      showBorders,
+      isRotationInteracting,
+      isDarkMode,
+      resolvedFormalPhase,
+      numberCellOutlineStyle,
+      visiblePaintState,
+    ]);
+    const usedLayer = cellLayerCacheRef.current?.paint(
+      mainContext,
+      [mapData.cells, mapData.mergedCells, numberCellSet, mergedCellsMap],
+      layerSignature,
+      pixelWidth,
+      pixelHeight,
+      (layerContext) => {
+        const previousContext = ctx;
+        ctx = layerContext;
+        try {
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.translate(currentOffset.x, currentOffset.y);
+          if (rotationRadians !== 0) {
+            ctx.translate(mapCenterX, mapCenterY);
+            ctx.rotate(rotationRadians);
+            ctx.translate(-mapCenterX, -mapCenterY);
+          }
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          renderCellLayer();
+        } finally {
+          ctx = previousContext;
+        }
+      },
+    );
+    if (!usedLayer) renderCellLayer();
 
     // ドラッグ中の再描画で再計算しないよう、ルート交差データをキャッシュする。
     if (
@@ -1950,6 +2052,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
 
     ctx.restore();
   }, [
+    cellViewportIndex,
     canvasRef,
     containerRef,
     mapData,
@@ -2216,7 +2319,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
           const matchingItems = items.filter((item) => {
             if (normalizeExecutionVisitDay(item.eventDate) !== dayName)
               return false;
-            const location = resolveLocation(mapData, item);
+            const location = mapRenderingSnapshot.resolveLocation(item);
             return (
               location.status === "resolved" &&
               location.location.cell.row === resolvedRow &&
@@ -2236,6 +2339,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       cellsMap,
       items,
       dayName,
+      mapRenderingSnapshot,
       toMapCoordinates,
     ],
   );

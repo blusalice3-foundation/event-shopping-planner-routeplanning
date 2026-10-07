@@ -74,6 +74,9 @@ import {
   createShoppingListControllerState,
   createLocalStorageListRendererPreferenceAdapter,
   evaluateVirtualListEligibility,
+  evaluateRetainedViewportEligibility,
+  RetainedViewportListRenderer,
+  revealViewportContent,
   FullListRenderer,
   resolveListRendererPreference,
   selectListRenderer,
@@ -253,6 +256,7 @@ const EMPTY_DUPLICATE_CIRCLE_ITEM_IDS = new Set<string>();
 const DEFAULT_LIST_RENDERER_PREFERENCE_PORT =
   createLocalStorageListRendererPreferenceAdapter();
 const VIRTUAL_LIST_MINIMUM_ROW_COUNT = 80;
+const RETAINED_VIEWPORT_MINIMUM_ROW_COUNT = 32;
 const VIRTUAL_LIST_ESTIMATED_ROW_HEIGHT_PX = 136;
 const VIRTUAL_LIST_SUPPORTED_ZOOM_PERCENTS = [100] as const;
 
@@ -1499,6 +1503,22 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     spaceGroups,
   ]);
 
+  const groupVisitIdByKey = useMemo(
+    () =>
+      new Map(
+        listRowGroups?.map((group) => [
+          group.key,
+          group.items[0]
+            ? getExecutionVisitIdForItem(group.items[0])
+            : undefined,
+        ]),
+      ),
+    [listRowGroups],
+  );
+  const getGroupVisitId = useCallback(
+    (groupKey: string) => groupVisitIdByKey.get(groupKey),
+    [groupVisitIdByKey],
+  );
   const listControllerModel = useMemo(() => {
     const visibleModel = buildListRows({
       items,
@@ -1694,10 +1714,51 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     focusRestorationReady: virtualRuntimeAvailable,
     stableRowKeys: listReadModel.hasStableRowKeys,
   });
+  const retainedViewportActivatedRef = useRef(false);
+  const retainedViewportCapabilities = {
+    runtimeAvailable:
+      virtualRuntimeAvailable &&
+      typeof IntersectionObserver === "function" &&
+      !isSingleColumnVirtualShape,
+    zoomPercent: viewportZoomPercent,
+    recoveryActive,
+    rowCount: listReadModel.rows.length,
+    minimumRowCount: retainedViewportActivatedRef.current
+      ? 1
+      : RETAINED_VIEWPORT_MINIMUM_ROW_COUNT,
+    estimatedRowHeightPx: VIRTUAL_LIST_ESTIMATED_ROW_HEIGHT_PX,
+    stableRowKeys: listReadModel.hasStableRowKeys,
+  };
+  const retainedViewportEligibility = evaluateRetainedViewportEligibility(
+    retainedViewportCapabilities,
+  );
+  // Keep the same normal-flow structure across the row-count threshold.
+  const useRetainedViewportStructure =
+    selectListRenderer(
+      listRendererPreference,
+      evaluateRetainedViewportEligibility({
+        ...retainedViewportCapabilities,
+        minimumRowCount: 0,
+      }),
+      { forceFull: forceFullListRenderer },
+    ).engine === "virtual";
   const listRendererSelection = selectListRenderer(
     listRendererPreference,
-    virtualListEligibility,
+    retainedViewportEligibility.eligible
+      ? retainedViewportEligibility
+      : virtualListEligibility,
     { forceFull: forceFullListRenderer },
+  );
+  const useRetainedViewport =
+    listRendererSelection.engine === "virtual" &&
+    retainedViewportEligibility.eligible;
+  if (useRetainedViewport) retainedViewportActivatedRef.current = true;
+  const GroupedListRenderer = useRetainedViewportStructure
+    ? RetainedViewportListRenderer
+    : FullListRenderer;
+  const itemIndexById = useMemo(
+    () => new Map(items.map((item, index) => [item.id, index])),
+    [items],
   );
   const preferNativeOptions =
     listRendererSelection.engine === "full" &&
@@ -1705,11 +1766,31 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
   useLayoutEffect(() => {
     const scrollRequest = listControllerState.scrollRequest;
-    if (!scrollRequest || listRendererSelection.engine !== "full") return;
+    if (
+      !scrollRequest ||
+      (listRendererSelection.engine !== "full" && !useRetainedViewport)
+    )
+      return;
     const rowElement = Array.from(
       containerRef.current?.querySelectorAll<HTMLElement>("[data-row-key]") ??
         [],
     ).find((element) => element.dataset.rowKey === scrollRequest.rowKey);
+    if (useRetainedViewportStructure && rowElement) {
+      revealViewportContent(rowElement);
+      const frame = requestAnimationFrame(() => {
+        const actual = Array.from(
+          containerRef.current?.querySelectorAll<HTMLElement>(
+            "[data-row-key]",
+          ) ?? [],
+        ).find((element) => element.dataset.rowKey === scrollRequest.rowKey);
+        actual?.scrollIntoView?.({
+          block: scrollRequest.alignment,
+          behavior: "auto",
+        });
+        if (actual) handleScrollRequestConsumed(scrollRequest.requestId);
+      });
+      return () => cancelAnimationFrame(frame);
+    }
     rowElement?.scrollIntoView?.({
       block: scrollRequest.alignment,
       behavior: "auto",
@@ -1719,6 +1800,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     handleScrollRequestConsumed,
     listControllerState.scrollRequest,
     listRendererSelection.engine,
+    useRetainedViewport,
+    useRetainedViewportStructure,
   ]);
 
   const rangePresentation = useMemo((): RangePresentation => {
@@ -2507,7 +2590,12 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
   if (items.length === 0) {
     return (
-      <FullListRenderer
+      <GroupedListRenderer
+        defer={useRetainedViewport}
+        engine={listRendererSelection.engine}
+        layoutMode={layoutMode}
+        getVisitId={getExecutionVisitIdForItem}
+        getGroupVisitId={getGroupVisitId}
         model={listReadModel}
         selectionReason={listRendererSelection.reason}
         accessibleLabel="買い物リスト"
@@ -3481,7 +3569,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
               >
                 {renderedItemRows.map((renderedItemRow, spaceItemIndex) => {
                   const item = renderedItemRow.row.item;
-                  const globalIndex = items.findIndex((i) => i.id === item.id);
+                  const globalIndex = itemIndexById.get(item.id) ?? -1;
 
                   const isThisGroupInRange =
                     spaceGroupRangeInfo &&
@@ -3828,7 +3916,12 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     };
 
     return (
-      <FullListRenderer
+      <GroupedListRenderer
+        defer={useRetainedViewport}
+        engine={listRendererSelection.engine}
+        layoutMode={layoutMode}
+        getVisitId={getExecutionVisitIdForItem}
+        getGroupVisitId={getGroupVisitId}
         model={listReadModel}
         selectionReason={listRendererSelection.reason}
         accessibleLabel="買い物リスト"
@@ -4250,7 +4343,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           >
             {renderedItemRows.map((renderedItemRow, hallIndex) => {
               const item = renderedItemRow.row.item;
-              const globalIndex = items.findIndex((i) => i.id === item.id);
+              const globalIndex = itemIndexById.get(item.id) ?? -1;
 
               const isInRange =
                 isThisGroupInRange &&
@@ -4516,7 +4609,12 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     };
 
     return (
-      <FullListRenderer
+      <GroupedListRenderer
+        defer={useRetainedViewport}
+        engine={listRendererSelection.engine}
+        layoutMode={layoutMode}
+        getVisitId={getExecutionVisitIdForItem}
+        getGroupVisitId={getGroupVisitId}
         model={listReadModel}
         selectionReason={listRendererSelection.reason}
         accessibleLabel="買い物リスト"
@@ -4866,6 +4964,34 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     );
   };
 
+  if (useRetainedViewportStructure) {
+    return (
+      <RetainedViewportListRenderer
+        defer={useRetainedViewport}
+        engine={listRendererSelection.engine}
+        model={listReadModel}
+        selectionReason={listRendererSelection.reason}
+        accessibleLabel="買い物リスト"
+        focusedRowKey={listControllerState.focusedRowKey}
+        rootRef={containerRef}
+        layoutMode={layoutMode}
+        getVisitId={getExecutionVisitIdForItem}
+        getGroupVisitId={getGroupVisitId}
+        rootProps={{
+          className: "relative space-y-4 pb-[var(--footer-height,96px)]",
+          onBlurCapture: handleFullListBlurCapture,
+          onFocusCapture: handleFullListFocusCapture,
+          onDragOver: !isInspecting ? handleContainerDragOver : undefined,
+          onDrop: !isInspecting ? handleDrop : undefined,
+          onDragLeave: () => setActiveDropTarget(null),
+        }}
+        beforeContent={limitedPurchaseOverlays}
+        renderRow={(row, index) =>
+          row.kind === "item" ? renderUngroupedItemRow(row, index) : null
+        }
+      />
+    );
+  }
   if (listRendererSelection.engine === "virtual") {
     return (
       <VirtualListRenderer

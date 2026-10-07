@@ -2,7 +2,7 @@
 import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
 const eventName = "参加日切替計測";
-function fixture({ itemsPerDay, cellsPerMap, mode }) {
+function fixture({ itemsPerDay, cellsPerMap, mode, itemsPerVisit = 1 }) {
   const days = ["1日目", "2日目"];
   const items = days.flatMap((day, d) =>
     Array.from({ length: itemsPerDay }, (_, i) => ({
@@ -11,7 +11,7 @@ function fixture({ itemsPerDay, cellsPerMap, mode }) {
       circle: day + "サークル" + (i + 1),
       title: day + "新刊" + (i + 1),
       block: "A",
-      number: String(i + 1),
+      number: String(Math.floor(i / itemsPerVisit) + 1),
       price: 500,
       purchaseStatus: "None",
       quantity: 1,
@@ -250,23 +250,33 @@ try {
       await page.locator("canvas").first().waitFor();
     }
     if (c.layout === "smartphone") {
-      await page.getByTitle("表示項目の設定", { exact: true }).click();
+      if (c.mode !== "focus")
+        await page.getByTitle("表示項目の設定", { exact: true }).click();
       await page
         .getByTitle("スマートフォンモードに切替", { exact: true })
         .click();
       await page.setViewportSize({ width: 390, height: 844 });
+      if (c.mode !== "focus")
+        await page
+          .locator("div.fixed.inset-0.z-40")
+          .first()
+          .click({ position: { x: 2, y: 100 } });
+      if (c.mode !== "focus") {
+        const grouping = page.getByRole("button", {
+          name: "スペース別",
+          exact: true,
+        });
+        const isGrouped = (await grouping.getAttribute("class")).includes(
+          "bg-blue-600",
+        );
+        if (isGrouped !== c.grouped) await grouping.click();
+      }
+    }
+    if (c.mode === "focus" && c.focusMapVisible) {
       await page
-        .locator("div.fixed.inset-0.z-40")
-        .first()
-        .click({ position: { x: 2, y: 100 } });
-      const grouping = page.getByRole("button", {
-        name: "スペース別",
-        exact: true,
-      });
-      const isGrouped = (await grouping.getAttribute("class")).includes(
-        "bg-blue-600",
-      );
-      if (isGrouped !== c.grouped) await grouping.click();
+        .getByTitle("マップを表示", { exact: true })
+        .evaluate((button) => button.click());
+      await page.locator("canvas").first().waitFor();
     }
     await page.waitForTimeout(700);
 
@@ -328,13 +338,57 @@ try {
     }
     const samples = [];
     for (let round = 0; round < (c.rounds ?? 10); round++) {
-      const day = round % 2 === 0 ? "2日目" : "1日目",
-        prefix = round % 2 === 0 ? "day2-" : "day1-";
+      const operation = c.operation ?? "day-switch";
+      const day =
+        operation === "day-switch"
+          ? round % 2 === 0
+            ? "2日目"
+            : "1日目"
+          : "1日目";
+      const prefix =
+        operation === "day-switch"
+          ? round % 2 === 0
+            ? "day2-"
+            : "day1-"
+          : "day1-";
+      const forward = round % 2 === 0;
+      // Focus day switching deliberately remounts the existing hidden-map view.
+      // Restore the initial shown-map condition outside the measured operation.
+      if (
+        operation === "day-switch" &&
+        c.mode === "focus" &&
+        c.focusMapVisible
+      ) {
+        const showMap = page.getByTitle("マップを表示", { exact: true });
+        if (await showMap.count()) {
+          await showMap.evaluate((button) => button.click());
+          await page.locator("canvas").first().waitFor();
+          await page.waitForTimeout(700);
+        }
+      }
       const before = await cd.send("Performance.getMetrics");
       const sample = await page.evaluate(
-        async ({ day, prefix, surface }) => {
+        async ({
+          day,
+          prefix,
+          surface,
+          operation,
+          forward,
+          focusMapVisible,
+        }) => {
+          const expectedTitle =
+            operation === "focus-map-toggle"
+              ? forward
+                ? "マップを表示"
+                : "マップを非表示"
+              : forward
+                ? "次の訪問先"
+                : "前の訪問先";
           const tab = [...globalThis.document.querySelectorAll("button")].find(
-            (b) => b.textContent.trim().startsWith(day) && !b.title,
+            (b) =>
+              operation === "day-switch"
+                ? b.textContent.trim().startsWith(day) && !b.title
+                : b.title === expectedTitle,
           );
           if (!tab) throw new Error("Day tab is missing: " + day);
           const start = performance.now();
@@ -345,7 +399,14 @@ try {
             await new Promise((resolve) =>
               globalThis.requestAnimationFrame(resolve),
             );
-            const active = tab.className.includes("bg-blue-600");
+            const canvasCount =
+              globalThis.document.querySelectorAll("canvas").length;
+            const active =
+              operation === "day-switch"
+                ? tab.className.includes("bg-blue-600")
+                : operation === "focus-map-toggle"
+                  ? canvasCount > 0 === forward
+                  : true;
             const rows = [
               ...globalThis.document.querySelectorAll("[data-item-id]"),
             ].filter((n) => n.getClientRects().length > 0);
@@ -356,7 +417,16 @@ try {
                   rows.every((n) =>
                     n.getAttribute("data-item-id").startsWith(prefix),
                   );
-            if (active && ready) {
+            const focusedTargetReady =
+              operation !== "focus-visit-toggle" ||
+              rows.some(
+                (n) =>
+                  n.getAttribute("data-item-id") ===
+                  (forward ? "day1-item2" : "day1-item1"),
+              );
+            const mapReady =
+              operation === "day-switch" || !focusMapVisible || canvasCount > 0;
+            if (active && ready && focusedTargetReady && mapReady) {
               readyAt = performance.now();
               break;
             }
@@ -368,6 +438,8 @@ try {
           );
           return {
             day,
+            operation,
+            forward,
             clickMs,
             readyMs: readyAt - start,
             paintMs: performance.now() - start,
@@ -385,7 +457,14 @@ try {
             optionCount: globalThis.document.querySelectorAll("option").length,
           };
         },
-        { day, prefix, surface: c.surface },
+        {
+          day,
+          prefix,
+          surface: c.surface,
+          operation,
+          forward,
+          focusMapVisible: c.focusMapVisible ?? false,
+        },
       );
       const after = await cd.send("Performance.getMetrics");
       const get = (m, n) => m.metrics.find((v) => v.name === n)?.value ?? 0;

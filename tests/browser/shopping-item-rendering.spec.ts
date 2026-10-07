@@ -120,6 +120,12 @@ for (const layout of ["pc", "smartphone"]) {
       await quantity.selectOption("20");
       await expect(price.locator("option")).toHaveCount(102);
       await expect(quantity.locator("option")).toHaveCount(20);
+      await page
+        .getByRole("listitem", {
+          name: ["A2", first.circle, first.title].join(" "),
+          exact: true,
+        })
+        .scrollIntoViewIfNeeded();
       await expect(
         other.getByRole("combobox", { name: "購入金額" }),
       ).toHaveValue("2000");
