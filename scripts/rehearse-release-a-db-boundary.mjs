@@ -103,99 +103,138 @@ const readLegacySources = (page) =>
       Object.fromEntries(keys.map((key) => [key, localStorage.getItem(key)])),
     Object.keys(LEGACY_SOURCES),
   );
-async function waitUntil(read, label) {
-  const deadline = Date.now() + 60_000;
+const withTimeout = async (operation, milliseconds, label) => {
+  let timer;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(label + " timed out.")),
+          milliseconds,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+};
+export async function waitUntil(read, label, timeoutMs = 60_000) {
+  const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    if (await read()) return;
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    if (
+      await withTimeout(
+        Promise.resolve().then(read),
+        Math.max(1, deadline - Date.now()),
+        label,
+      )
+    )
+      return;
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.min(100, Math.max(0, deadline - Date.now()))),
+    );
   }
   throw new Error(label + " was not observed.");
 }
-// Release every origin client; never skipWaiting or reset the database.
-async function loadArtifact(context, page, url, artifactId, mainAsset) {
-  await page.goto(url);
-  const matches = () =>
-    page.evaluate(
-      ({ artifactId, mainAsset, requireMarker }) => {
-        const marker = globalThis.document.querySelector(
-          'meta[name="event-shopping-planner-build-id"]',
-        );
-        return (
-          (!requireMarker || marker?.content === artifactId) &&
-          [...globalThis.document.scripts].some(
-            (script) =>
-              script.src && new URL(script.src).pathname === mainAsset,
-          )
-        );
-      },
-      {
-        artifactId,
-        mainAsset,
-        requireMarker: Boolean(process.env.ESP_EXPECTED_TARGET_BUILD_ID),
-      },
+// Release every origin client before updating; never skipWaiting or reset the database.
+export async function activateArtifactServiceWorker(
+  context,
+  page,
+  url,
+  timeoutMs = 60_000,
+) {
+  const session = await context.newCDPSession(page);
+  const workerUrl = new URL("/sw.js", url).href;
+  const origin = new URL(url).origin;
+  const versions = new Map();
+  const onVersions = ({ versions: updated }) => {
+    for (const version of updated) versions.set(version.versionId, version);
+  };
+  const activeVersions = () =>
+    [...versions.values()].filter(
+      (version) =>
+        version.scriptURL === workerUrl && version.status === "activated",
     );
-  if (!(await matches())) await page.reload();
-  if (!(await matches())) {
-    const session = await context.newCDPSession(page);
-    const versions = new Map();
-    const onVersions = ({ versions: updated }) => {
-      for (const version of updated) versions.set(version.versionId, version);
-    };
-    session.on("ServiceWorker.workerVersionUpdated", onVersions);
-    try {
-      await session.send("ServiceWorker.enable");
-      await waitUntil(
-        () =>
-          [...versions.values()].some(
-            (version) => version.status === "activated",
-          ),
-        "Baseline active Service Worker",
-      );
-      const baselineIds = new Set(
-        [...versions.values()]
-          .filter((version) => version.status === "activated")
-          .map((version) => version.versionId),
-      );
-      await page.evaluate(async () =>
-        (await navigator.serviceWorker.ready).update(),
-      );
-      await page.reload();
-      if (!(await matches())) {
-        const candidates = () =>
-          [...versions.values()].filter(
-            (version) =>
-              !baselineIds.has(version.versionId) &&
-              ["installed", "activated"].includes(version.status),
-          );
-        await waitUntil(
-          () => candidates().length > 0,
-          "Target Service Worker installation",
+  session.on("ServiceWorker.workerVersionUpdated", onVersions);
+  try {
+    await withTimeout(
+      session.send("ServiceWorker.enable"),
+      timeoutMs,
+      "Service Worker observation",
+    );
+    await waitUntil(
+      () => activeVersions().length > 0,
+      "Baseline active Service Worker",
+      timeoutMs,
+    );
+    const baselineIds = new Set(versions.keys());
+    await Promise.all(
+      context.pages().map(async (client) => {
+        if (new URL(client.url()).origin === origin)
+          await client.goto("about:blank");
+      }),
+    );
+    await withTimeout(
+      session.send("ServiceWorker.updateRegistration", {
+        scopeURL: new URL("/", url).href,
+      }),
+      timeoutMs,
+      "Target Service Worker update",
+    );
+    await waitUntil(
+      () => {
+        const activated = activeVersions().filter(
+          (version) => !baselineIds.has(version.versionId),
         );
-        assert.equal(
-          candidates().length,
-          1,
-          "Target Service Worker is ambiguous.",
-        );
-        const target = candidates()[0];
-        await Promise.all(
-          context.pages().map((client) => client.goto("about:blank")),
-        );
-        await waitUntil(
-          () => versions.get(target.versionId)?.status === "activated",
-          "Natural Service Worker activation after all clients close",
-        );
-        await page.goto(url);
-      }
-    } finally {
-      session.off("ServiceWorker.workerVersionUpdated", onVersions);
-      await session.detach();
-    }
+        assert.ok(activated.length <= 1, "Target Service Worker is ambiguous.");
+        return activated.length === 1;
+      },
+      "Natural Service Worker activation after all clients close",
+      timeoutMs,
+    );
+  } finally {
+    session.off("ServiceWorker.workerVersionUpdated", onVersions);
+    await session.detach();
   }
-  await waitUntil(matches, "Expected artifact build marker");
+}
+async function loadArtifact(context, page, url, artifactId, mainAsset, stage) {
+  if (["upgrade", "blocked", "forward"].includes(stage))
+    await activateArtifactServiceWorker(context, page, url);
+  await page.goto(url);
+  await waitUntil(
+    () =>
+      page.evaluate(
+        ({ artifactId, mainAsset, requireMarker }) => {
+          const marker = globalThis.document.querySelector(
+            'meta[name="event-shopping-planner-build-id"]',
+          );
+          return (
+            (!requireMarker || marker?.content === artifactId) &&
+            [...globalThis.document.scripts].some(
+              (script) =>
+                script.src && new URL(script.src).pathname === mainAsset,
+            )
+          );
+        },
+        {
+          artifactId,
+          mainAsset,
+          requireMarker: Boolean(process.env.ESP_EXPECTED_TARGET_BUILD_ID),
+        },
+      ),
+    "Expected artifact build marker",
+  );
   await page
     .locator('script[type="module"][src="' + mainAsset + '"]')
     .waitFor({ state: "attached" });
-  await page.evaluate(async () => navigator.serviceWorker.ready);
+  await waitUntil(
+    () =>
+      page.evaluate(async () => {
+        const registration = await navigator.serviceWorker.getRegistration();
+        return registration?.active?.state === "activated";
+      }),
+    "Active Service Worker registration",
+  );
   if (
     !(await page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
   ) {
@@ -233,6 +272,7 @@ async function restoreBackup(page, backup) {
 }
 async function main() {
   const stage = process.env.ESP_DB_BOUNDARY_STAGE;
+  process.stdout.write("DB boundary rehearsal " + stage + " START.\n");
   assert.ok(
     ["seed", "upgrade", "blocked", "isolated", "forward"].includes(stage),
   );
@@ -304,6 +344,7 @@ async function main() {
       url,
       artifactId,
       process.env.ESP_EXPECTED_MAIN_ASSET,
+      stage,
     );
     if (stage === "seed") {
       await page
