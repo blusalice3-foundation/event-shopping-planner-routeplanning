@@ -1,4 +1,9 @@
 import {
+  changedItemPositions,
+  indexedItemsSource,
+} from "../../../utils/itemIndex";
+import { navigatorEntryIndex } from "./navigatorEntryIndex";
+import {
   NAVIGATOR_PHASE_ORDER,
   type NavigatorEntry,
   type NavigatorItem,
@@ -306,7 +311,8 @@ export function aggregateNavigatorSpace(
   const circles: string[] = [];
   const circleSet = new Set<string>();
 
-  for (const entry of entries) {
+  for (const entry of navigatorEntryIndex(entries).bySpace.get(spaceKey) ??
+    []) {
     if (
       entry.spaceKey !== spaceKey ||
       !isUsableEntry(entry, options.latestItemsById)
@@ -350,27 +356,6 @@ export function aggregateNavigatorSpace(
   };
 }
 
-function getPhaseSpacePositions(
-  entries: readonly NavigatorEntry[],
-  phase: NavigatorPhase,
-  latestItemsById: ReadonlyMap<string, NavigatorItem> | undefined,
-): PhaseSpacePosition[] {
-  const positions: PhaseSpacePosition[] = [];
-  const seenSpaceKeys = new Set<string>();
-  entries.forEach((entry, entryIndex) => {
-    if (
-      entry.phase !== phase ||
-      seenSpaceKeys.has(entry.spaceKey) ||
-      !isUsableEntry(entry, latestItemsById)
-    ) {
-      return;
-    }
-    seenSpaceKeys.add(entry.spaceKey);
-    positions.push({ entry, entryIndex });
-  });
-  return positions;
-}
-
 function toSpaceTarget(position: PhaseSpacePosition): OpportunisticSpaceTarget {
   const phase = position.entry.phase;
   if (!phase) {
@@ -396,36 +381,42 @@ export function findAdjacentSpaceTarget(
   input: FindAdjacentSpaceTargetInput,
 ): OpportunisticSpaceTarget | null {
   if (!isUsableId(input.currentSpaceKey)) return null;
-  const phasePositions = getPhaseSpacePositions(
-    entries,
-    input.phase,
-    input.latestItemsById,
-  );
-  const currentPositionIndex = phasePositions.findIndex(
-    (position) => position.entry.spaceKey === input.currentSpaceKey,
-  );
-  if (currentPositionIndex < 0) return null;
-
-  if (input.direction === "next") {
-    const next = phasePositions[currentPositionIndex + 1];
-    return next ? toSpaceTarget(next) : null;
+  const index = navigatorEntryIndex(entries);
+  const currentPosition = index.spacePositionsByPhase
+    .get(input.phase)
+    ?.get(input.currentSpaceKey);
+  const resolve = (phase: NavigatorPhase, spaceKey: string) => {
+    const entry = index.byPhaseAndSpace
+      .get(phase)
+      ?.get(spaceKey)
+      ?.find((candidate) => isUsableEntry(candidate, input.latestItemsById));
+    return entry ? { entry, entryIndex: entry.index } : null;
+  };
+  if (
+    currentPosition === undefined ||
+    !resolve(input.phase, input.currentSpaceKey)
+  )
+    return null;
+  const keys = index.spaceOrderByPhase.get(input.phase)!;
+  const step = input.direction === "next" ? 1 : -1;
+  for (
+    let position = currentPosition + step;
+    position >= 0 && position < keys.length;
+    position += step
+  ) {
+    const target = resolve(input.phase, keys[position]);
+    if (target) return toSpaceTarget(target);
   }
-
-  const previous = phasePositions[currentPositionIndex - 1];
-  if (previous) return toSpaceTarget(previous);
-
+  if (input.direction === "next") return null;
   const phaseOrderIndex = NAVIGATOR_PHASE_ORDER.indexOf(input.phase);
-  for (let index = phaseOrderIndex - 1; index >= 0; index -= 1) {
-    const previousPhase = NAVIGATOR_PHASE_ORDER[index];
-    const previousPhasePositions = getPhaseSpacePositions(
-      entries,
-      previousPhase,
-      input.latestItemsById,
-    );
-    const boundaryTarget = [...previousPhasePositions]
-      .reverse()
-      .find((position) => position.entry.spaceKey !== input.currentSpaceKey);
-    if (boundaryTarget) return toSpaceTarget(boundaryTarget);
+  for (let phaseIndex = phaseOrderIndex - 1; phaseIndex >= 0; phaseIndex--) {
+    const phase = NAVIGATOR_PHASE_ORDER[phaseIndex];
+    const previousKeys = index.spaceOrderByPhase.get(phase) ?? [];
+    for (let position = previousKeys.length - 1; position >= 0; position--) {
+      if (previousKeys[position] === input.currentSpaceKey) continue;
+      const target = resolve(phase, previousKeys[position]);
+      if (target) return toSpaceTarget(target);
+    }
   }
   return null;
 }
@@ -464,7 +455,7 @@ function buildRemainingPhaseList(
   const groups = new Map<string, MutableRemainingSpace>();
   const seenItemIds = new Set<string>();
 
-  entries.forEach((entry) => {
+  (navigatorEntryIndex(entries).byPhase.get(phase) ?? []).forEach((entry) => {
     if (
       entry.phase !== phase ||
       !isUsableEntry(entry, options.latestItemsById)
@@ -536,5 +527,96 @@ export function buildRemainingSpaceLists(
     normal: buildRemainingPhaseList(entries, "normal", options),
     postponed: buildRemainingPhaseList(entries, "postponed", options),
     late: buildRemainingPhaseList(entries, "late", options),
+  };
+}
+
+/** Remaining-phase lists recheck changed spaces, including live indexed updates. */
+export function createRemainingSpaceListsProjector() {
+  let previous: readonly NavigatorEntry[] | undefined;
+  let previousSource: readonly NavigatorItem[] | undefined;
+  let previousCurrent: string | undefined;
+  let cached = new Map<NavigatorPhase, Map<string, RemainingSpaceCandidate>>();
+  let value: RemainingSpaceLists;
+  return (
+    entries: readonly NavigatorEntry[],
+    options: BuildRemainingSpaceListsOptions = {},
+  ) => {
+    const changes = previous ? changedItemPositions(previous, entries) : null;
+    const source = options.latestItemsById
+      ? indexedItemsSource(options.latestItemsById)
+      : undefined;
+    const liveChanges =
+      source && previousSource
+        ? changedItemPositions(previousSource, source)
+        : source === previousSource
+          ? []
+          : null;
+    if (
+      changes?.length === 0 &&
+      liveChanges?.length === 0 &&
+      options.currentSpaceKey === previousCurrent &&
+      (!options.latestItemsById || source)
+    )
+      return value;
+    const affected = new Set<string>();
+    const index = navigatorEntryIndex(entries);
+    if (
+      changes === null ||
+      liveChanges === null ||
+      (options.latestItemsById && !source)
+    ) {
+      value = buildRemainingSpaceLists(entries, options);
+      cached = new Map(
+        NAVIGATOR_PHASE_ORDER.map((phase) => [
+          phase,
+          new Map(value[phase].map((space) => [space.spaceKey, space])),
+        ]),
+      );
+    } else {
+      for (const position of changes) affected.add(entries[position].spaceKey);
+      for (const position of liveChanges) {
+        const member = source![position];
+        affected.add(buildSpaceKey(member.block, member.number));
+      }
+      const next = { ...value };
+      for (const phase of NAVIGATOR_PHASE_ORDER) {
+        const groups = new Map(cached.get(phase));
+        let dirty = false;
+        for (const key of affected) {
+          const members = index.byPhaseAndSpace.get(phase)?.get(key) ?? [];
+          const candidate = buildRemainingPhaseList(members, phase, options)[0];
+          if (candidate) {
+            groups.set(key, candidate);
+            dirty = true;
+          } else if (groups.delete(key)) dirty = true;
+        }
+        if (options.currentSpaceKey !== previousCurrent) {
+          for (const key of [previousCurrent, options.currentSpaceKey]) {
+            const candidate = key ? groups.get(key) : undefined;
+            if (
+              candidate &&
+              candidate.isCurrent !== (key === options.currentSpaceKey)
+            ) {
+              groups.set(key!, {
+                ...candidate,
+                isCurrent: key === options.currentSpaceKey,
+              });
+              dirty = true;
+            }
+          }
+        }
+        if (dirty) {
+          next[phase] = [...groups.values()].sort(
+            (a, b) => a.representativeEntry.index - b.representativeEntry.index,
+          );
+          cached.set(phase, groups);
+        }
+      }
+      value = next;
+    }
+    previous = entries;
+    previousSource = source;
+    previousCurrent = options.currentSpaceKey;
+    return value;
   };
 }

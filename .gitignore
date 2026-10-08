@@ -20,3 +20,6 @@ Thumbs.db
 
 /artifacts/playwright/
 /artifacts/playwright-report/
+
+# Local shopping performance runs; final evidence is added explicitly.
+/artifacts/shopping-operation-completion-*/

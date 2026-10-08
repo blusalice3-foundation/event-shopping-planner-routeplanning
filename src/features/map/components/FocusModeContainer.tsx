@@ -55,6 +55,7 @@ type FocusModeContainerProps = {
   ) => FocusModeAddItemReturn;
   onEditRequest?: (item: ShoppingItem) => void;
   onDeleteRequest?: (item: ShoppingItem) => void;
+  retainedItemIds?: readonly string[];
   appZoomLevel?: number;
   resumeState?: FocusModeSessionState | null;
   onSessionStateChange?: (state: FocusModeSessionState) => void;
@@ -87,6 +88,7 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
   onAddItem,
   onEditRequest,
   onDeleteRequest,
+  retainedItemIds,
   appZoomLevel,
   resumeState,
   onSessionStateChange,
@@ -393,6 +395,7 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
       onAddItem={onAddItem}
       onEditRequest={onEditRequest}
       onDeleteRequest={onDeleteRequest}
+      retainedItemIds={retainedItemIds}
       appZoomLevel={appZoomLevel}
       resumeState={resumeState}
       onSessionStateChange={onSessionStateChange}

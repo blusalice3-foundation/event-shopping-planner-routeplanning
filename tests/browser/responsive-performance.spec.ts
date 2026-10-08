@@ -569,9 +569,11 @@ for (const count of [150, 500, 1500])
       await diagnostics("reset");
       const timings: Record<string, number[]> = {
         execute: [],
+        executeRecord: [],
         focus: [],
         record: [],
         next: [],
+        back: [],
       };
       const clickResponse = async (
         locator: ReturnType<Page["locator"]>,
@@ -663,6 +665,47 @@ for (const count of [150, 500, 1500])
         });
         await profiler.detach();
       }
+      await diagnostics("reset");
+      const executionRow = page.locator('[data-item-id="perf-19"]');
+      await executionRow.scrollIntoViewIfNeeded();
+      await executionRow
+        .getByRole("button", { name: /Current status:/ })
+        .click();
+      const executionDialog = page.getByRole("dialog", {
+        name: "事後通販･頒布可否確認",
+      });
+      await expect(executionDialog).toBeVisible();
+      for (let sample = 0; sample < 20; sample++) {
+        if (sample > 0) {
+          await executionRow.evaluate(async (root) => {
+            const button = root.querySelector<HTMLButtonElement>(
+              'button[aria-label^="Current status:"]',
+            )!;
+            for (let transition = 0; transition < 6; transition++)
+              button.click();
+            await new Promise(requestAnimationFrame);
+          });
+          await expect(executionDialog).toBeVisible();
+        }
+        await executionDialog
+          .getByRole("combobox", { name: "回答内容", exact: true })
+          .selectOption({ index: 1 + (sample % 2) });
+        await clickResponse(
+          executionDialog.getByRole("button", { name: "記録", exact: true }),
+          "button",
+          "executeRecord",
+        );
+        await expect(executionDialog).toBeHidden();
+        await expect(
+          executionRow.getByRole("button", { name: /Current status: 売切/ }),
+        ).toBeVisible();
+      }
+      await expect
+        .poll(async () => (await durableItem(page, "perf-19")).remarks, {
+          timeout: 60000,
+        })
+        .toContain("通販･頒布確認");
+      const executionRecordDiagnostic = await diagnostics("read");
       await page.getByTitle("集中モード", { exact: true }).click();
       if (!concentrated)
         for (let index = 0; index < 20; index++)
@@ -706,11 +749,33 @@ for (const count of [150, 500, 1500])
         name: "事後通販･頒布可否確認",
       });
       await expect(dialog).toBeVisible();
-      await clickResponse(
-        dialog.getByRole("button", { name: "記録", exact: true }),
-        "button",
-        "record",
-      );
+      for (let sample = 0; sample < 20; sample++) {
+        if (sample > 0) {
+          // Exercise all six transitions before React renders; the final intent
+          // equals the rendered status and must still be accepted in order.
+          await row.evaluate(async (root) => {
+            const button = root.querySelector<HTMLButtonElement>(
+              'button[aria-label^="Current status:"]',
+            )!;
+            for (let transition = 0; transition < 6; transition++)
+              button.click();
+            await new Promise(requestAnimationFrame);
+          });
+          await expect(dialog).toBeVisible();
+        }
+        await dialog
+          .getByRole("combobox", { name: "回答内容", exact: true })
+          .selectOption({ index: 1 + (sample % 2) });
+        await clickResponse(
+          dialog.getByRole("button", { name: "記録", exact: true }),
+          "button",
+          "record",
+        );
+        await expect(dialog).toBeHidden();
+        await expect(
+          row.getByRole("button", { name: /Current status: 売切/ }),
+        ).toBeVisible();
+      }
       await clickResponse(
         page.locator('[title="次の訪問先"]').locator(".."),
         'button[title="次の訪問先"]',
@@ -725,6 +790,32 @@ for (const count of [150, 500, 1500])
       await expect
         .poll(async () => (await durableItem(page, target)).purchaseStatus)
         .toBe("SoldOut");
+      const backProfiler = process.env.ESP_PROFILE_FOCUS_BACK
+        ? await page.context().newCDPSession(page)
+        : undefined;
+      await backProfiler?.send("Profiler.enable");
+      await backProfiler?.send("Profiler.start");
+      // Returning to the large first space also exercises retained input state.
+      for (let sample = 0; sample < 20; sample++) {
+        await clickResponse(
+          page.getByTitle("前の訪問先", { exact: true }),
+          "button",
+          "back",
+        );
+        await clickResponse(
+          page.getByTitle("次の訪問先", { exact: true }),
+          "button",
+          "next",
+        );
+      }
+      if (backProfiler) {
+        const profile = await backProfiler.send("Profiler.stop");
+        await testInfo.attach("focus-back-cpu-profile", {
+          body: JSON.stringify(profile),
+          contentType: "application/json",
+        });
+        await backProfiler.detach();
+      }
       const diagnostic = await diagnostics("read");
       const summary = Object.fromEntries(
         Object.entries(timings).map(([operation, values]) => {
@@ -750,6 +841,7 @@ for (const count of [150, 500, 1500])
             summary,
             diagnostic,
             executionDiagnostic,
+            executionRecordDiagnostic,
             errors,
           },
           null,
@@ -758,5 +850,28 @@ for (const count of [150, 500, 1500])
         contentType: "application/json",
       });
       expect(errors).toEqual([]);
+      if (process.env.ESP_ENFORCE_SHOPPING_BUDGET === "1" && count === 1500) {
+        for (const operation of [
+          "execute",
+          "executeRecord",
+          "focus",
+          "record",
+          "next",
+          "back",
+        ]) {
+          expect(
+            summary[operation].count,
+            operation + " sample count",
+          ).toBeGreaterThanOrEqual(20);
+          expect(
+            summary[operation].medianMs,
+            operation + " median",
+          ).toBeLessThanOrEqual(50);
+          expect(
+            summary[operation].p95Ms,
+            operation + " p95",
+          ).toBeLessThanOrEqual(100);
+        }
+      }
     });
   }

@@ -24,6 +24,10 @@ interface FocusModeItemListProps {
   isMapVisible: boolean;
   containerClassName?: string;
   currentVisitDisplayItems: ShoppingItem[];
+  prewarmedItems?: readonly ShoppingItem[];
+  visitId?: string;
+  prewarmedVisitId?: string;
+  cachePreviousVisit?: boolean;
   blinkingPriceItemIds: Set<string>;
   retainedItemIds?: ReadonlySet<string>;
   blinkingLimitedMissingItemIds?: Set<string>;
@@ -197,6 +201,7 @@ type FocusItemRowProps = Pick<
   blinkPrice: boolean;
   blinkLimited: boolean;
   retain?: boolean;
+  prewarm?: boolean;
 };
 const FocusItemRow = React.memo(
   ({
@@ -207,6 +212,7 @@ const FocusItemRow = React.memo(
     blinkPrice,
     blinkLimited,
     retain,
+    prewarm = false,
     onUpdateItem,
     onEditRequest,
     onDeleteRequest,
@@ -264,55 +270,115 @@ const FocusItemRow = React.memo(
       </div>
     );
     return (
-      <ViewportContent
-        key={item.id}
-        rowKey={"focus:" + item.id}
-        defer={
-          size >= 80 &&
-          typeof IntersectionObserver === "function" &&
-          typeof ResizeObserver === "function"
-        }
-        placeholder={
-          <div
-            className={
-              layoutMode === "pc"
-                ? "esp-viewport-placeholder esp-viewport-placeholder-pc"
-                : "esp-viewport-placeholder esp-viewport-placeholder-phone"
-            }
-            role="listitem"
-            data-row-key={"focus:" + item.id}
-            aria-label={[
-              item.block + item.number,
-              item.circle,
-              item.title,
-            ].join(" ")}
-            aria-posinset={index + 1}
-            aria-setsize={size}
-            tabIndex={0}
-            data-viewport-focus-sentinel
-            onFocus={(event) =>
-              focusPendingViewportContent(event.currentTarget)
-            }
-          >
-            <span className="esp-viewport-placeholder-label">
-              {[
+      <div
+        hidden={prewarm}
+        aria-hidden={prewarm || undefined}
+        data-focus-prewarm={prewarm ? "true" : undefined}
+      >
+        <ViewportContent
+          key={item.id}
+          rowKey={"focus:" + item.id}
+          estimatedHeight={layoutMode === "pc" ? 220 : 136}
+          defer={
+            !prewarm &&
+            size >= 80 &&
+            typeof IntersectionObserver === "function" &&
+            typeof ResizeObserver === "function"
+          }
+          placeholder={
+            <div
+              className={
+                layoutMode === "pc"
+                  ? "esp-viewport-placeholder esp-viewport-placeholder-pc"
+                  : "esp-viewport-placeholder esp-viewport-placeholder-phone"
+              }
+              role="listitem"
+              data-row-key={"focus:" + item.id}
+              aria-label={[
                 item.block + item.number,
                 item.circle,
                 item.title,
-                item.remarks,
-                item.price ?? "価格未定",
-                item.quantity,
               ].join(" ")}
-            </span>
-          </div>
-        }
-        retain={retain}
-        render={() => content}
-      />
+              aria-posinset={index + 1}
+              aria-setsize={size}
+              tabIndex={0}
+              data-viewport-focus-sentinel
+              onFocus={(event) =>
+                focusPendingViewportContent(event.currentTarget)
+              }
+            >
+              <span className="esp-viewport-placeholder-label">
+                {[
+                  item.block + item.number,
+                  item.circle,
+                  item.title,
+                  item.remarks,
+                  item.price ?? "価格未定",
+                  item.quantity,
+                ].join(" ")}
+              </span>
+            </div>
+          }
+          retain={retain}
+          render={() => content}
+        />
+      </div>
     );
   },
 );
 
+type FocusVisitRowsProps = Omit<
+  FocusItemRowProps,
+  | "item"
+  | "index"
+  | "size"
+  | "blinkPrice"
+  | "blinkLimited"
+  | "retain"
+  | "prewarm"
+> & {
+  items: readonly ShoppingItem[];
+  hidden: boolean;
+  prewarm: boolean;
+  blinkingPriceItemIds: ReadonlySet<string>;
+  blinkingLimitedMissingItemIds: ReadonlySet<string>;
+  retainedItemIds?: ReadonlySet<string>;
+};
+const FocusVisitRows = React.memo(
+  ({
+    items,
+    hidden,
+    prewarm,
+    blinkingPriceItemIds,
+    blinkingLimitedMissingItemIds,
+    retainedItemIds,
+    ...rowProps
+  }: FocusVisitRowsProps) => (
+    <div
+      hidden={hidden}
+      aria-hidden={hidden || undefined}
+      data-focus-parked={hidden && !prewarm ? "true" : undefined}
+      className={
+        rowProps.layoutMode === "smartphone" ? "space-y-2" : "space-y-4"
+      }
+    >
+      {items.map((item, index) => (
+        <FocusItemRow
+          key={item.id}
+          {...rowProps}
+          item={item}
+          index={index}
+          size={items.length}
+          blinkPrice={blinkingPriceItemIds.has(item.id)}
+          blinkLimited={blinkingLimitedMissingItemIds.has(item.id)}
+          retain={retainedItemIds?.has(item.id)}
+          prewarm={prewarm}
+        />
+      ))}
+    </div>
+  ),
+);
+type CachedFocusVisit = { key: string; items: readonly ShoppingItem[] };
 export const FocusModeItemList: React.FC<FocusModeItemListProps> = React.memo(
   ({
     itemListRef,
@@ -320,9 +386,13 @@ export const FocusModeItemList: React.FC<FocusModeItemListProps> = React.memo(
     isMapVisible,
     containerClassName,
     currentVisitDisplayItems,
+    prewarmedItems = [],
+    visitId,
+    prewarmedVisitId,
+    cachePreviousVisit = true,
     blinkingPriceItemIds,
     retainedItemIds,
-    blinkingLimitedMissingItemIds = new Set(),
+    blinkingLimitedMissingItemIds = new Set<string>(),
     onUpdateItem,
     onEditRequest,
     onDeleteRequest,
@@ -336,6 +406,61 @@ export const FocusModeItemList: React.FC<FocusModeItemListProps> = React.memo(
     onPostEventDistributionCheckRequest,
   }) => {
     const rowStates = React.useRef(new Map<string, CardExpansion>());
+    const currentIds = new Set(currentVisitDisplayItems.map((item) => item.id));
+    const currentKey = visitId ?? currentVisitDisplayItems[0]?.id ?? "empty";
+    const committedVisit = React.useRef<CachedFocusVisit>({
+      key: currentKey,
+      items: currentVisitDisplayItems,
+    });
+    const [parkedVisit, setParkedVisit] =
+      React.useState<CachedFocusVisit | null>(null);
+    const moved = currentKey !== committedVisit.current.key;
+    const previous = cachePreviousVisit
+      ? moved
+        ? committedVisit.current.items.length >= 80
+          ? committedVisit.current
+          : null
+        : parkedVisit
+      : null;
+    const retainedPrevious =
+      previous &&
+      previous.key !== currentKey &&
+      !previous.items.some((item) => currentIds.has(item.id))
+        ? previous
+        : null;
+    React.useLayoutEffect(() => {
+      if (moved || !cachePreviousVisit) setParkedVisit(retainedPrevious);
+      committedVisit.current = {
+        key: currentKey,
+        items: currentVisitDisplayItems,
+      };
+    }, [
+      currentKey,
+      currentVisitDisplayItems,
+      moved,
+      cachePreviousVisit,
+      retainedPrevious,
+    ]);
+    const prepared = prewarmedItems
+      .filter((item) => !currentIds.has(item.id))
+      .slice(0, 2);
+    const preparedKey = prewarmedVisitId ?? prepared[0]?.id;
+    const visits = [
+      {
+        key: currentKey,
+        items: currentVisitDisplayItems,
+        hidden: false,
+        prewarm: false,
+      },
+      ...(retainedPrevious
+        ? [{ ...retainedPrevious, hidden: true, prewarm: false }]
+        : []),
+      ...(preparedKey &&
+      preparedKey !== currentKey &&
+      preparedKey !== retainedPrevious?.key
+        ? [{ key: preparedKey, items: prepared, hidden: true, prewarm: true }]
+        : []),
+    ];
     return (
       <ViewportRowStateContext.Provider value={rowStates.current}>
         <div
@@ -356,34 +481,32 @@ export const FocusModeItemList: React.FC<FocusModeItemListProps> = React.memo(
             aria-label="現在のスペースの品目"
             className={layoutMode === "smartphone" ? "space-y-2" : "space-y-4"}
           >
-            {currentVisitDisplayItems.map((item, index) => {
-              return (
-                <FocusItemRow
-                  key={item.id}
-                  item={item}
-                  index={index}
-                  size={currentVisitDisplayItems.length}
-                  layoutMode={layoutMode}
-                  blinkPrice={blinkingPriceItemIds.has(item.id)}
-                  blinkLimited={blinkingLimitedMissingItemIds.has(item.id)}
-                  onUpdateItem={onUpdateItem}
-                  onEditRequest={onEditRequest}
-                  onDeleteRequest={onDeleteRequest}
-                  getLatestItemById={getLatestItemById}
-                  onNotify={onNotify}
-                  purchaseStatusControlMode={purchaseStatusControlMode}
-                  skipLimitedPurchaseForSingleQuantity={
-                    skipLimitedPurchaseForSingleQuantity
-                  }
-                  readOnly={readOnly}
-                  onLimitedPurchaseDefer={onLimitedPurchaseDefer}
-                  onPostEventDistributionCheckRequest={
-                    onPostEventDistributionCheckRequest
-                  }
-                  retain={retainedItemIds?.has(item.id)}
-                />
-              );
-            })}
+            {visits.map((visit) => (
+              <FocusVisitRows
+                key={visit.key}
+                items={visit.items}
+                hidden={visit.hidden}
+                prewarm={visit.prewarm}
+                layoutMode={layoutMode}
+                blinkingPriceItemIds={blinkingPriceItemIds}
+                blinkingLimitedMissingItemIds={blinkingLimitedMissingItemIds}
+                retainedItemIds={retainedItemIds}
+                onUpdateItem={onUpdateItem}
+                onEditRequest={onEditRequest}
+                onDeleteRequest={onDeleteRequest}
+                getLatestItemById={getLatestItemById}
+                onNotify={onNotify}
+                purchaseStatusControlMode={purchaseStatusControlMode}
+                skipLimitedPurchaseForSingleQuantity={
+                  skipLimitedPurchaseForSingleQuantity
+                }
+                readOnly={readOnly}
+                onLimitedPurchaseDefer={onLimitedPurchaseDefer}
+                onPostEventDistributionCheckRequest={
+                  onPostEventDistributionCheckRequest
+                }
+              />
+            ))}
           </div>
           {onAddItem && (
             <div className="flex justify-center py-4">

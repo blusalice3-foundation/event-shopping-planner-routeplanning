@@ -904,6 +904,7 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
                 onMapVisibilityChange={setFocusModeMapVisible}
                 onAddItem={handleAddItemFromFocusMode}
                 onEditRequest={handleEditRequest}
+                retainedItemIds={retainedItemIds}
                 onDeleteRequest={handleDeleteRequest}
                 appZoomLevel={zoomLevel}
                 resumeState={currentFocusResumeState}

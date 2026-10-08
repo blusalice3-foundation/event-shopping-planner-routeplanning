@@ -1,5 +1,9 @@
 import type { ShoppingItem } from "../types/item";
-import { changedItemPositions, registerItemChanges } from "./itemIndex";
+import {
+  changedItemPositions,
+  itemPositions,
+  registerItemChanges,
+} from "./itemIndex";
 import {
   buildExecutionVisitProjectionKey,
   projectItemsToExecutionVisits,
@@ -130,6 +134,7 @@ export function createExecutionVisitIndex(
           visits[index].items,
           indices,
         );
+      registerItemChanges(value.visits, visits, [...updates.keys()]);
       const visitsByKey = new Map(value.visitsByKey);
       for (const index of updates.keys())
         visitsByKey.set(visits[index].key, visits[index]);
@@ -152,72 +157,83 @@ export function createExecutionVisitIndex(
 export function createPhaseVisitProjector(filterItems = true) {
   let previous: ProjectedVisit[] | undefined;
   let previousIds: ReadonlySet<string> | undefined;
-  let projected = new Map<
-    string,
-    { source: ProjectedVisit; visit: ProjectedVisit | null }
-  >();
   let result: ProjectedVisit[] = [];
   let membership = new Map<string, string>();
+  let projected = new Map<string, ProjectedVisit | null>();
   return (
     visits: ProjectedVisit[],
     ids: ReadonlySet<string>,
   ): ProjectedVisit[] => {
     if (previous === visits && previousIds === ids) return result;
-    const membershipChanges = new Set<string>();
-    if (previousIds && previousIds !== ids) {
-      for (const id of previousIds)
-        if (!ids.has(id)) {
-          const key = membership.get(id);
-          if (key) membershipChanges.add(key);
-        }
-      for (const id of ids)
-        if (!previousIds.has(id)) {
-          const key = membership.get(id);
-          if (key) membershipChanges.add(key);
-        }
-    }
-    const sameStructure =
-      previous &&
-      previous.length === visits.length &&
-      visits.every(
-        (visit, index) => visit.itemIds === previous![index].itemIds,
-      );
-    if (!sameStructure) {
+    const changes = previous ? changedItemPositions(previous, visits) : null;
+    const changedKeys = new Set<string>();
+    if (changes === null) {
       membership = new Map();
-      for (const visit of visits)
-        for (const id of visit.itemIds) membership.set(id, visit.key);
-    }
-    const next = new Map<
-      string,
-      { source: ProjectedVisit; visit: ProjectedVisit | null }
-    >();
-    const output: ProjectedVisit[] = [];
-    for (const source of visits) {
-      const cached =
-        previousIds === ids ||
-        (sameStructure && !membershipChanges.has(source.key))
-          ? projected.get(source.key)
-          : undefined;
-      let visit = cached?.source === source ? cached.visit : undefined;
-      if (visit === undefined) {
-        const items = source.items.filter((item) => ids.has(item.id));
-        visit = items.length
-          ? filterItems
-            ? { ...source, items, itemIds: items.map((item) => item.id) }
-            : source
-          : null;
+      projected = new Map();
+      for (const source of visits) {
+        for (const id of source.itemIds) membership.set(id, source.key);
+        changedKeys.add(source.key);
       }
-      next.set(source.key, { source, visit });
-      if (visit) output.push(visit);
+    } else {
+      for (const index of changes) changedKeys.add(visits[index].key);
+      if (previousIds !== ids) {
+        for (const id of previousIds ?? [])
+          if (!ids.has(id)) {
+            const key = membership.get(id);
+            if (key) changedKeys.add(key);
+          }
+        for (const id of ids)
+          if (!previousIds?.has(id)) {
+            const key = membership.get(id);
+            if (key) changedKeys.add(key);
+          }
+      }
     }
-    if (
-      result.length !== output.length ||
-      output.some((visit, index) => visit !== result[index])
-    )
-      result = output;
+    const positions = itemPositions(visits);
+    let next = changes === null ? ([] as ProjectedVisit[]) : result;
+    for (const key of changedKeys) {
+      const source = visits[positions.get(key)!];
+      const items = source.items.filter((item) => ids.has(item.id));
+      const visit = items.length
+        ? filterItems
+          ? { ...source, items, itemIds: items.map((item) => item.id) }
+          : source
+        : null;
+      projected.set(key, visit);
+    }
+    if (changes === null)
+      next = visits.flatMap((source) => {
+        const visit = projected.get(source.key);
+        return visit ? [visit] : [];
+      });
+    else if (changedKeys.size) {
+      const oldPositions = itemPositions(result);
+      const membershipChanged = [...changedKeys].some(
+        (key) => oldPositions.has(key) !== !!projected.get(key),
+      );
+      if (membershipChanged) {
+        // Reconcile order from the cached membership, without testing other members.
+        next = visits.flatMap((source) => {
+          const visit = projected.get(source.key);
+          return visit ? [visit] : [];
+        });
+      } else {
+        const updated: number[] = [];
+        for (const key of changedKeys) {
+          const index = oldPositions.get(key),
+            visit = projected.get(key);
+          if (index === undefined || !visit || result[index] === visit)
+            continue;
+          if (next === result) next = result.slice();
+          next[index] = visit;
+          updated.push(index);
+        }
+        registerItemChanges(result, next, updated);
+      }
+    }
+    result = next;
     previous = visits;
     previousIds = ids;
-    projected = next;
     return result;
   };
 }

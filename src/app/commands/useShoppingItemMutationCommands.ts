@@ -1,3 +1,4 @@
+import { itemUpdateBaseline } from "../../utils/itemUpdateBaseline";
 import { useCallback, useRef } from "react";
 import type { UpdateItemFieldsInput } from "../state/itemFieldMutation";
 import { editableItemContentFields } from "../state/itemContentEdits";
@@ -455,6 +456,7 @@ export const useShoppingItemMutationCommands = ({
       if (!currentItem) return;
       const renderedItem =
         baseline ??
+        itemUpdateBaseline(updatedItem) ??
         indexedItem(eventLists[activeEventName] ?? [], updatedItem.id);
       const intendedItem = renderedItem
         ? (applyChangedFields(

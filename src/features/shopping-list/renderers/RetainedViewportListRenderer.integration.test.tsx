@@ -19,21 +19,42 @@ const disconnect = vi.fn();
 const visibleKeys = new Set<string>();
 beforeEach(() => {
   disconnect.mockClear();
+  const observers = new Set<{
+    next: IntersectionObserverCallback;
+    targets: Set<Element>;
+  }>();
   vi.stubGlobal(
     "IntersectionObserver",
     class {
-      constructor(next: IntersectionObserverCallback) {
-        callback = next;
+      targets = new Set<Element>();
+      constructor(public next: IntersectionObserverCallback) {
+        observers.add(this);
+        callback = (entries) => {
+          for (const observer of observers) {
+            const ownEntries = entries.filter((entry) =>
+              observer.targets.has(entry.target),
+            );
+            if (ownEntries.length)
+              observer.next(
+                ownEntries,
+                observer as unknown as IntersectionObserver,
+              );
+          }
+        };
       }
       observe(element: Element) {
+        this.targets.add(element);
         observed.add(element);
       }
       unobserve(element: Element) {
-        observed.delete(element);
+        this.targets.delete(element);
+        if (![...observers].some((observer) => observer.targets.has(element)))
+          observed.delete(element);
       }
       disconnect() {
         disconnect();
-        observed.clear();
+        for (const target of this.targets) this.unobserve(target);
+        observers.delete(this);
       }
     },
   );
@@ -685,4 +706,63 @@ it("reveals the committed group after a concurrent render is discarded", () => {
   );
   expect(view.getByText("committed", { exact: true })).toBeVisible();
   expect(view.queryByText("discarded", { exact: true })).toBeNull();
+});
+
+it("propagates dialog retention through a memoized group and releases the row after closing", () => {
+  const model = buildListRows({
+    items,
+    groups: [{ key: "A1", label: "A1", items }],
+  });
+  const rowKey = model.itemRows[0].rowKey;
+  visibleKeys.add(model.rows[0].rowKey);
+  visibleKeys.add(rowKey);
+  const renderGroup = (
+    _group: unknown,
+    rows: readonly {
+      row: { itemId: string };
+      render(content: React.ReactNode): React.ReactElement;
+    }[],
+  ) => (
+    <section>
+      {rows.map((row) =>
+        row.render(
+          <input aria-label={row.row.itemId} defaultValue="保持する入力" />,
+        ),
+      )}
+    </section>
+  );
+  const dependencies: readonly unknown[] = [];
+  const props = {
+    model,
+    accessibleLabel: "買い物リスト",
+    renderGroup,
+    renderDependencies: dependencies,
+  };
+  const view = render(<RetainedViewportListRenderer {...props} />);
+  const input = view.getByRole("textbox", { name: "item-0" });
+  view.rerender(
+    <RetainedViewportListRenderer
+      {...props}
+      pinnedRowKeys={new Set([rowKey])}
+    />,
+  );
+  visibleKeys.clear();
+  const leaveViewport = () =>
+    act(() =>
+      callback(
+        [...observed].map((target) => ({
+          target,
+          isIntersecting: false,
+        })) as IntersectionObserverEntry[],
+        {} as IntersectionObserver,
+      ),
+    );
+  leaveViewport();
+  expect(view.getByRole("textbox", { name: "item-0" })).toBe(input);
+  expect(input).toHaveValue("保持する入力");
+  view.rerender(
+    <RetainedViewportListRenderer {...props} pinnedRowKeys={new Set()} />,
+  );
+  leaveViewport();
+  expect(view.queryByRole("textbox", { name: "item-0" })).toBeNull();
 });

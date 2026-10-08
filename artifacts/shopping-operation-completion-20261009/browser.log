@@ -1,0 +1,26 @@
+[WebServer] (node:39848) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 17 tests using 1 worker
+
+(node:11600) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  1 [chromium] › tests\browser\responsive-performance.spec.ts:137:3 › bounded DOM and response timings: 150 items, 40000 cells, 10000 historical items (6.2s)
+  ok  2 [chromium] › tests\browser\responsive-performance.spec.ts:137:3 › bounded DOM and response timings: 500 items, 40000 cells, 10000 historical items (10.3s)
+  ok  3 [chromium] › tests\browser\responsive-performance.spec.ts:137:3 › bounded DOM and response timings: 1500 items, 40000 cells, 10000 historical items (37.8s)
+  ok  4 [chromium] › tests\browser\responsive-performance.spec.ts:457:1 › direct field commands review another tab and retain inputs across worker save failure (4.2s)
+  ok  5 [chromium] › tests\browser\responsive-performance.spec.ts:552:5 › local shopping operations: 150 items, concentrated=false (14.6s)
+  ok  6 [chromium] › tests\browser\responsive-performance.spec.ts:552:5 › local shopping operations: 150 items, concentrated=true (12.7s)
+  ok  7 [chromium] › tests\browser\responsive-performance.spec.ts:552:5 › local shopping operations: 500 items, concentrated=false (30.6s)
+  ok  8 [chromium] › tests\browser\responsive-performance.spec.ts:552:5 › local shopping operations: 500 items, concentrated=true (18.0s)
+  ok  9 [chromium] › tests\browser\responsive-performance.spec.ts:552:5 › local shopping operations: 1500 items, concentrated=false (2.1m)
+  ok 10 [chromium] › tests\browser\responsive-performance.spec.ts:552:5 › local shopping operations: 1500 items, concentrated=true (39.2s)
+  ok 11 [chromium] › tests\browser\retained-viewport.spec.ts:101:3 › retained viewport preserves offscreen navigation, native values and saving: pc (3.0s)
+  ok 12 [chromium] › tests\browser\retained-viewport.spec.ts:101:3 › retained viewport preserves offscreen navigation, native values and saving: smartphone (3.2s)
+  ok 13 [chromium] › tests\browser\retained-viewport.spec.ts:202:1 › a large single space defers cards inside the group (2.1s)
+  ok 14 [chromium] › tests\browser\retained-viewport.spec.ts:227:1 › focus map remains correct after quantity, purchase and visibility changes (2.7s)
+  ok 15 [chromium] › tests\browser\retained-viewport.spec.ts:287:1 › keyboard focus reaches the native controls of a pending PC row (2.0s)
+  ok 16 [chromium] › tests\browser\retained-viewport.spec.ts:308:1 › focus mode defers a large visit with the map shown and hidden (2.1s)
+  ok 17 [chromium] › tests\browser\retained-viewport.spec.ts:327:1 › focus retains an edited offscreen item until the dialog closes (3.3s)
+
+  17 passed (5.3m)

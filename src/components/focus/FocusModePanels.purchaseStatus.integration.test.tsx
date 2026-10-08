@@ -609,3 +609,126 @@ it("renders only the changed focus item when sibling references are preserved", 
     shoppingPerformance.reset();
   }
 });
+
+it("prepares at most two next items, reuses their controls on arrival and releases older visits", () => {
+  const nextItems = [
+    makeItem("next-1", "None"),
+    makeItem("next-2", "None"),
+    makeItem("next-3", "None"),
+  ];
+  const props: ComponentProps<typeof FocusModeItemList> = {
+    itemListRef: { current: null },
+    layoutMode: "pc",
+    isMapVisible: false,
+    currentVisitDisplayItems: [baseItem],
+    prewarmedItems: nextItems,
+    blinkingPriceItemIds: new Set(),
+    onUpdateItem: vi.fn(),
+    skipLimitedPurchaseForSingleQuantity: true,
+  };
+  const view = render(<FocusModeItemList {...props} />);
+  const list = view.getByRole("list", { name: "現在のスペースの品目" });
+  expect(within(list).getAllByRole("listitem")).toHaveLength(1);
+  expect(view.container.querySelectorAll("[data-focus-prewarm]")).toHaveLength(
+    2,
+  );
+  const preparedButton = view.container.querySelector(
+    '[data-item-id="next-1"] button[aria-label^="Current status:"]',
+  );
+  expect(preparedButton).not.toBeNull();
+  view.rerender(
+    <FocusModeItemList
+      {...props}
+      currentVisitDisplayItems={nextItems}
+      prewarmedItems={[makeItem("later", "None")]}
+    />,
+  );
+  expect(
+    view.container.querySelector(
+      '[data-item-id="next-1"] button[aria-label^="Current status:"]',
+    ),
+  ).toBe(preparedButton);
+  expect(view.container.querySelector('[data-item-id="item-1"]')).toBeNull();
+  expect(within(list).getAllByRole("listitem")).toHaveLength(3);
+  expect(view.container.querySelectorAll("[data-focus-prewarm]")).toHaveLength(
+    1,
+  );
+});
+
+it("reuses the previous large visit's placeholders on back and keeps at most one parked visit", () => {
+  vi.stubGlobal(
+    "IntersectionObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  const large = Array.from({ length: 80 }, (_, index) =>
+    makeItem("large-" + index, "None"),
+  );
+  const small = [makeItem("small", "None")],
+    later = [makeItem("later", "None")];
+  const props: ComponentProps<typeof FocusModeItemList> = {
+    itemListRef: { current: null },
+    layoutMode: "pc",
+    isMapVisible: false,
+    currentVisitDisplayItems: large,
+    visitId: "large",
+    blinkingPriceItemIds: new Set(),
+    onUpdateItem: vi.fn(),
+    skipLimitedPurchaseForSingleQuantity: true,
+  };
+  const view = render(<FocusModeItemList {...props} />);
+  try {
+    const first = view.container.querySelector(
+      '[data-row-key="focus:large-0"]',
+    );
+    view.rerender(
+      <FocusModeItemList
+        {...props}
+        visitId="small"
+        currentVisitDisplayItems={small}
+      />,
+    );
+    expect(view.container.querySelectorAll("[data-focus-parked]")).toHaveLength(
+      1,
+    );
+    expect(view.getAllByRole("listitem")).toHaveLength(1);
+    view.rerender(<FocusModeItemList {...props} />);
+    expect(view.container.querySelector('[data-row-key="focus:large-0"]')).toBe(
+      first,
+    );
+    view.rerender(
+      <FocusModeItemList
+        {...props}
+        visitId="small"
+        currentVisitDisplayItems={small}
+      />,
+    );
+    view.rerender(
+      <FocusModeItemList
+        {...props}
+        visitId="later"
+        currentVisitDisplayItems={later}
+      />,
+    );
+    expect(view.container.querySelectorAll("[data-focus-parked]")).toHaveLength(
+      0,
+    );
+    expect(
+      view.container.querySelector('[data-row-key="focus:large-0"]'),
+    ).toBeNull();
+  } finally {
+    view.unmount();
+    vi.unstubAllGlobals();
+  }
+});

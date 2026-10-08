@@ -1,3 +1,4 @@
+import { rememberItemUpdateBaseline } from "../utils/itemUpdateBaseline";
 import { recordShoppingRender } from "../utils/shoppingPerformance";
 import React, {
   useCallback,
@@ -508,6 +509,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   const commitItemUpdate = useCallback(
     (updatedItem: ShoppingItem) => {
       if (readOnly) return;
+      rememberItemUpdateBaseline(updatedItem, optimisticItemRef.current);
       optimisticItemRef.current = updatedItem;
       setOptimisticItem((prev) =>
         areSameItemSnapshot(prev, updatedItem) ? prev : updatedItem,

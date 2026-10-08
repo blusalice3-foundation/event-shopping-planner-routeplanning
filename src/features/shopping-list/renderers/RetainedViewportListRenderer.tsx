@@ -1,3 +1,4 @@
+import { observeViewportAnchors } from "../../space-navigation/domain/navigationAnchors";
 import React, { useEffect, useLayoutEffect, useRef } from "react";
 
 import { recordShoppingRender } from "../../../utils/shoppingPerformance";
@@ -39,6 +40,7 @@ type GroupContentProps = {
   render: NonNullable<Props["renderGroup"]>;
   dependencies?: readonly unknown[];
   version?: unknown;
+  retained: readonly boolean[];
 };
 const sameGroupContent = (
   before: GroupContentProps,
@@ -47,6 +49,8 @@ const sameGroupContent = (
   !!before.dependencies &&
   !!after.dependencies &&
   before.version === after.version &&
+  before.retained.length === after.retained.length &&
+  before.retained.every((value, index) => value === after.retained[index]) &&
   before.index === after.index &&
   before.dependencies.length === after.dependencies.length &&
   before.dependencies.every(
@@ -171,6 +175,7 @@ const GroupViewport = React.memo(
             render={render}
             dependencies={dependencies}
             version={version}
+            retained={retained}
           />
         )}
       />
@@ -180,8 +185,6 @@ const GroupViewport = React.memo(
     sameGroupContent(before, after) &&
     before.layoutMode === after.layoutMode &&
     before.defer === after.defer &&
-    before.retained.length === after.retained.length &&
-    before.retained.every((value, index) => value === after.retained[index]) &&
     before.visitIds.every((value, index) => value === after.visitIds[index]),
 );
 /**
@@ -201,28 +204,36 @@ export const RetainedViewportListRenderer = (
     let frame: number | null = null;
     const capture = () => {
       frame = null;
-      const rows = listRoot.current?.querySelectorAll<HTMLElement>(
-        "[data-row-key][aria-posinset]",
-      );
-      if (!rows) return;
+      const rows = anchors.candidates();
       const viewportTop = Math.max(
         0,
         document.querySelector("header")?.getBoundingClientRect().bottom ?? 0,
       );
+      let first: { key: string; top: number } | undefined;
       for (const row of rows) {
         const rect = row.getBoundingClientRect();
         if (rect.bottom > viewportTop && rect.top < window.innerHeight) {
-          anchorRef.current = { key: row.dataset.rowKey!, top: rect.top };
-          break;
+          if (!first || rect.top < first.top)
+            first = { key: row.dataset.rowKey!, top: rect.top };
         }
       }
+      if (first) anchorRef.current = first;
     };
     const scroll = () => {
       frame ??= requestAnimationFrame(capture);
     };
+    const root = listRoot.current;
+    if (!root) return;
+    const anchors = observeViewportAnchors(
+      root,
+      "[data-row-key][aria-posinset]",
+      scroll,
+      ["data-row-key", "aria-posinset"],
+    );
     capture();
     window.addEventListener("scroll", scroll, { passive: true });
     return () => {
+      anchors.dispose();
       window.removeEventListener("scroll", scroll);
       if (frame !== null) cancelAnimationFrame(frame);
     };

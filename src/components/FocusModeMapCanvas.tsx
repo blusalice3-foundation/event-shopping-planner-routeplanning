@@ -4,7 +4,7 @@ import { normalizeExecutionVisitDay } from "../utils/visitProjection";
 
 import {
   createFocusCellItemsProjector,
-  summarizeFocusCell,
+  createFocusCellDisplayProjector,
 } from "../features/map/domain/focusCellState";
 import React, { useRef, useEffect, useCallback, useMemo } from "react";
 import { getMapRenderingSnapshot } from "../features/map/canvas/mapRenderingSnapshot";
@@ -389,180 +389,28 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     mapData,
     resolveCellItemLocation,
   );
-  const cellSummaryCache = useRef(
-    new WeakMap<
-      ShoppingItem[],
-      { summary: ReturnType<typeof summarizeFocusCell>; visitKeys: Set<string> }
-    >(),
+  const projectCellDisplay = useMemo(
+    () => createFocusCellDisplayProjector(getVisitKey),
+    [],
   );
-  const cellStates = useMemo(() => {
-    const states = new Map<
-      string,
-      {
-        hasItems: boolean;
-        statusLabel: string;
-        items: ShoppingItem[];
-        visitKeys: Set<string>;
-        isCurrentPosition: boolean;
-        isTemporaryPosition: boolean;
-        isNextDestination: boolean;
-        isPreviousPosition: boolean;
-        allNone: boolean;
-        allProcessed: boolean;
-        hasPostponed: boolean;
-        hasLate: boolean;
-        allPostponed: boolean;
-        allLate: boolean;
-        isVisited: boolean;
-      }
-    >();
-
-    for (const [key, members] of cellItems.execution) {
-      let cached = cellSummaryCache.current.get(members);
-      if (!cached) {
-        cached = {
-          summary: summarizeFocusCell(members),
-          visitKeys: new Set(members.map(getVisitKey)),
-        };
-        cellSummaryCache.current.set(members, cached);
-      }
-      const state = {
-        ...cached.summary,
-        items: members,
-        visitKeys: cached.visitKeys,
-        isCurrentPosition: false,
-        isTemporaryPosition: false,
-        isNextDestination: false,
-        isPreviousPosition: false,
-      };
-      states.set(key, state);
-    }
-
-    states.forEach((state) => {
-      const positionFlags = resolveFocusMapCellPositionFlags(
-        state.visitKeys,
-        positionKeys,
-      );
-      state.isCurrentPosition = positionFlags.isOfficialPosition;
-      state.isTemporaryPosition = positionFlags.isTemporaryPosition;
-      if (nextVisitKey && state.visitKeys.has(nextVisitKey)) {
-        state.isNextDestination = true;
-      }
-      if (prevVisitKey && state.visitKeys.has(prevVisitKey)) {
-        state.isPreviousPosition = true;
-      }
-    });
-
-    return states;
-  }, [cellItems, positionKeys, nextVisitKey, prevVisitKey]);
-
-  const officialCellCoords = useMemo(() => {
-    for (const [key, state] of cellStates.entries()) {
-      if (state.isCurrentPosition) {
-        const [row, col] = key.split("-").map(Number);
-        return { row, col };
-      }
-    }
-    return null;
-  }, [cellStates]);
-
-  const temporaryCellCoords = useMemo(() => {
-    for (const [key, state] of cellStates.entries()) {
-      if (state.isTemporaryPosition) {
-        const [row, col] = key.split("-").map(Number);
-        return { row, col };
-      }
-    }
-    return null;
-  }, [cellStates]);
-
-  // All viewport calculations follow the temporary target while marker and
-  // route-progress rendering continue to use the official position.
+  const cellDisplay = projectCellDisplay(
+    cellItems.execution,
+    positionKeys,
+    nextVisitKey,
+    prevVisitKey,
+    resolvedFormalPhase,
+    resolvedFormalPhaseIndex,
+  );
+  const cellStates = cellDisplay.states;
+  const cellLabels = cellDisplay.labels;
+  const officialCellCoords = cellDisplay.coordinates(
+    positionKeys.officialVisitKey,
+  );
+  const temporaryCellCoords = cellDisplay.coordinates(
+    positionKeys.temporaryVisitKey,
+  );
   const currentCellCoords = temporaryCellCoords ?? officialCellCoords;
-
-  const prevCellCoords = useMemo(() => {
-    for (const [key, state] of cellStates.entries()) {
-      if (state.isPreviousPosition) {
-        const [row, col] = key.split("-").map(Number);
-        return { row, col };
-      }
-    }
-    return null;
-  }, [cellStates]);
-
-  // セルに表示するラベル文字と色を決定する。
-  const cellLabels = useMemo(() => {
-    const labels = new Map<
-      string,
-      {
-        text: string;
-        bgColor: string;
-        textColor: string;
-      }
-    >();
-
-    cellStates.forEach((state, key) => {
-      if (!state.hasItems) return;
-
-      if (state.isCurrentPosition) {
-        if (resolvedFormalPhaseIndex === 0) {
-          // 各フェーズの最初の訪問セルにはフェーズ別ラベルを表示する。
-          if (resolvedFormalPhase === "normal") {
-            labels.set(key, {
-              text: "始",
-              bgColor: "rgba(255,109,0,0.5)",
-              textColor: "#FFFFFF",
-            });
-          } else if (resolvedFormalPhase === "postponed") {
-            labels.set(key, {
-              text: "後始",
-              bgColor: "rgba(156,39,176,0.5)",
-              textColor: "#FFFFFF",
-            });
-          } else {
-            labels.set(key, {
-              text: "遅始",
-              bgColor: "rgba(33,150,243,0.5)",
-              textColor: "#FFFFFF",
-            });
-          }
-        } else {
-          labels.set(key, {
-            text: "次",
-            bgColor: "rgba(255,109,0,0.5)",
-            textColor: "#FFFFFF",
-          });
-        }
-      } else if (state.allProcessed && state.allPostponed) {
-        labels.set(key, {
-          text: "後",
-          bgColor: "rgba(156,39,176,0.4)",
-          textColor: "rgba(156,39,176,0.9)",
-        });
-      } else if (state.allProcessed && state.allLate) {
-        labels.set(key, {
-          text: "遅",
-          bgColor: "rgba(33,150,243,0.4)",
-          textColor: "rgba(33,150,243,0.9)",
-        });
-      } else if (state.allProcessed) {
-        labels.set(key, {
-          text: "済",
-          bgColor: "rgba(158,158,158,0.5)",
-          textColor: "rgba(76,175,80,0.8)",
-        });
-      } else {
-        labels.set(key, {
-          text: state.statusLabel,
-          bgColor: "rgba(66,165,245,0.3)",
-          textColor: "rgba(33,150,243,0.8)",
-        });
-      }
-    });
-
-    return labels;
-  }, [cellStates, resolvedFormalPhaseIndex, resolvedFormalPhase]);
-
+  const prevCellCoords = cellDisplay.coordinates(prevVisitKey);
   // 番号セルを高速に判定できるようキャッシュする。
   const numberCellSet = useMemo(() => {
     const set = new Set<string>();

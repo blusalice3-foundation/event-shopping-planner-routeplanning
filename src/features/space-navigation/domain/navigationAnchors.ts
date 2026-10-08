@@ -1,10 +1,13 @@
 /** Track visible navigation anchors once; scroll events never scan the whole DOM. */
-export function observeNavigationAnchors(
+export function observeViewportAnchors(
   container: HTMLElement,
-  kind: string,
+  selector: string,
   onChange: () => void,
+  attributeFilter = [
+    "data-space-navigation-visit-id",
+    "data-space-navigation-anchor",
+  ],
 ) {
-  const selector = `[data-space-navigation-visit-id][data-space-navigation-anchor="${kind}"]`;
   const all = new Set<HTMLElement>();
   const visible = new Set<HTMLElement>();
   let receivedIntersection = false;
@@ -56,10 +59,7 @@ export function observeNavigationAnchors(
     subtree: true,
     childList: true,
     attributes: true,
-    attributeFilter: [
-      "data-space-navigation-visit-id",
-      "data-space-navigation-anchor",
-    ],
+    attributeFilter,
   });
   return {
     candidates: () => (intersection && receivedIntersection ? visible : all),
@@ -70,4 +70,16 @@ export function observeNavigationAnchors(
       visible.clear();
     },
   };
+}
+
+export function observeNavigationAnchors(
+  container: HTMLElement,
+  kind: string,
+  onChange: () => void,
+) {
+  return observeViewportAnchors(
+    container,
+    `[data-space-navigation-visit-id][data-space-navigation-anchor="${kind}"]`,
+    onChange,
+  );
 }

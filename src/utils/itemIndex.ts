@@ -13,14 +13,12 @@ const deltas = new WeakMap<
   readonly unknown[],
   { previous: ArrayReference; indices: readonly number[] }
 >();
-const itemId = (item: unknown): string | undefined =>
-  item &&
-  typeof item === "object" &&
-  "id" in item &&
-  typeof item.id === "string"
-    ? item.id
-    : undefined;
-
+const itemId = (item: unknown): string | undefined => {
+  if (!item || typeof item !== "object") return undefined;
+  if ("id" in item && typeof item.id === "string") return item.id;
+  if ("key" in item && typeof item.key === "string") return item.key;
+  return undefined;
+};
 export function itemPositions(
   items: readonly unknown[],
 ): ReadonlyMap<string, number> {
@@ -77,4 +75,59 @@ export function changedItemPositions(
     if (previous[index] !== next[index]) changed.add(index);
   }
   return [...changed];
+}
+const itemMaps = new WeakMap<
+  readonly unknown[],
+  ReadonlyMap<string, unknown>
+>();
+const mapSources = new WeakMap<object, readonly unknown[]>();
+/** Immutable lookup backed by shared positions; creating a new view is O(1). */
+export function indexedItems<T>(items: readonly T[]): ReadonlyMap<string, T> {
+  const cached = itemMaps.get(items);
+  if (cached) return cached as ReadonlyMap<string, T>;
+  const index = itemPositions(items);
+  const entries = function* (): MapIterator<[string, T]> {
+    for (const [id, position] of index) yield [id, items[position]];
+  };
+  const view: ReadonlyMap<string, T> = {
+    size: index.size,
+    get: (id) => {
+      const position = index.get(id);
+      return position === undefined ? undefined : items[position];
+    },
+    has: (id) => index.has(id),
+    keys: () => index.keys(),
+    values: function* (): MapIterator<T> {
+      for (const position of index.values()) yield items[position];
+    },
+    entries,
+    [Symbol.iterator]: entries,
+    forEach: (callback, thisArg) => {
+      for (const [id, position] of index)
+        callback.call(thisArg, items[position], id, view);
+    },
+  };
+  itemMaps.set(items, view);
+  mapSources.set(view, items);
+  return view;
+}
+const idsByPositions = new WeakMap<object, readonly string[]>();
+/** Membership IDs stay identical through field-only array replacements. */
+export function stableItemIds(items: readonly unknown[]): readonly string[] {
+  const positions = itemPositions(items);
+  let ids = idsByPositions.get(positions);
+  if (!ids) {
+    ids = items.flatMap((item) => {
+      const id = itemId(item);
+      return id === undefined ? [] : [id];
+    });
+    idsByPositions.set(positions, ids);
+  }
+  return ids;
+}
+
+export function indexedItemsSource<T>(
+  view: ReadonlyMap<string, T>,
+): readonly T[] | undefined {
+  return mapSources.get(view) as readonly T[] | undefined;
 }

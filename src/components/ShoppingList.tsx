@@ -13,7 +13,7 @@ import React, {
   useContext,
 } from "react";
 import ReactDOM from "react-dom";
-import { indexedItem, itemPositions } from "../utils/itemIndex";
+import { indexedItem, itemPositions, stableItemIds } from "../utils/itemIndex";
 import {
   createExecutionVisitIndex,
   createRoutingItemsProjector,
@@ -84,7 +84,7 @@ import {
   type RangePresentation,
 } from "../features/lists/domain/rangeSelection";
 import {
-  buildListRows,
+  createListRowsProjector,
   createShoppingListControllerState,
   createLocalStorageListRendererPreferenceAdapter,
   evaluateVirtualListEligibility,
@@ -1620,8 +1620,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     (groupKey: string) => groupVisitIdByKey.get(groupKey),
     [groupVisitIdByKey],
   );
+  const projectControllerRows = useMemo(createListRowsProjector, []);
+  const projectDisplayRows = useMemo(createListRowsProjector, []);
   const listControllerModel = useMemo(() => {
-    const visibleModel = buildListRows({
+    const visibleModel = projectControllerRows({
       items,
       groups: listRowGroups,
       column: columnType,
@@ -1630,7 +1632,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     });
     return {
       ...visibleModel,
-      itemIds: items.map((item) => item.id),
+      itemIds: stableItemIds(items),
     };
   }, [
     columnType,
@@ -1638,14 +1640,15 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     highlightedItemId,
     items,
     listRowGroups,
+    projectControllerRows,
   ]);
   const listControllerModelMembershipKey = useMemo(
     () =>
       JSON.stringify([
         listControllerModel.itemIds,
-        listControllerModel.rows.map((row) => row.rowKey),
+        listControllerModel.rowKeys,
       ]),
-    [listControllerModel],
+    [listControllerModel.itemIds, listControllerModel.rowKeys],
   );
 
   const [listControllerState, dispatchListController] = useReducer(
@@ -1678,7 +1681,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
   const listReadModel = useMemo(
     () =>
-      buildListRows({
+      projectDisplayRows({
         items,
         groups: listRowGroups,
         column: columnType,
@@ -1693,6 +1696,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       items,
       listRowGroups,
       selectedItemIds,
+      projectDisplayRows,
     ],
   );
 

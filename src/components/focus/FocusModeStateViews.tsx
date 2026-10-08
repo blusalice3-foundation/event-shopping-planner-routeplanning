@@ -293,6 +293,7 @@ export function CompletionStateView({
           data-nav-left={prevButtonLeft}
           className="esp-layout-nav-left fixed top-1/2 h-14 w-14 -translate-y-1/2 transform rounded-full bg-slate-600 text-2xl text-white shadow-lg transition-[left] duration-200 ease-out flex items-center justify-center z-40 hover:bg-slate-700"
           title="前の訪問先"
+          aria-label="前の訪問先へ移動"
         >
           ◀
         </button>

@@ -1,5 +1,10 @@
+import { registerNavigatorEntryChanges } from "./navigatorEntryIndex";
 import { buildNavigatorEntries } from "./buildNavigatorEntries";
 import { buildVisitIdentity } from "./visitIdentity";
+import {
+  changedItemPositions,
+  registerItemChanges,
+} from "../../../utils/itemIndex";
 import {
   NAVIGATOR_PHASE_ORDER,
   type FocusNavigatorSources,
@@ -7,114 +12,177 @@ import {
   type NavigatorEntry,
   type NavigatorPhase,
 } from "../types";
-/** Recompute only groups whose source objects changed. Unchanged entries are shared. */
+
+const identityForSource = (
+  source: NavigatorBuildSource,
+  phase?: NavigatorPhase,
+) => {
+  const visit = "items" in source ? source : null;
+  const item = visit
+    ? visit.items[0]
+    : (source as Exclude<NavigatorBuildSource, { items: unknown }>);
+  const block = visit?.block ?? item?.block,
+    number = visit?.number ?? item?.number;
+  if (block === undefined || number === undefined) return null;
+  return buildVisitIdentity({
+    phase: phase ?? visit?.phase,
+    block,
+    number,
+    priorityLevel: visit?.priorityLevel ?? item?.priorityLevel,
+  }).id;
+};
+
+/** Content changes rebuild the affected entry, preserving other visits and indexes. */
 export function createNavigatorEntriesProjector(phase?: NavigatorPhase) {
-  let previousSources: readonly NavigatorBuildSource[] | undefined;
-  let previous = new Map<
+  let previous: readonly NavigatorBuildSource[] | undefined;
+  let sourceKeys: (string | null)[] = [];
+  let groups = new Map<
     string,
-    { sources: NavigatorBuildSource[]; entry: NavigatorEntry }
+    { sourceIndices: number[]; entryIndex: number }
   >();
   let result: NavigatorEntry[] = [];
   return (sources: readonly NavigatorBuildSource[]): NavigatorEntry[] => {
-    if (sources === previousSources) return result;
-    const groups = new Map<string, NavigatorBuildSource[]>();
-    for (const source of sources) {
-      const visit = "items" in source ? source : null;
-      const item = visit
-        ? visit.items[0]
-        : (source as Exclude<NavigatorBuildSource, { items: unknown }>);
-      const block = visit?.block ?? item?.block;
-      const number = visit?.number ?? item?.number;
-      if (block === undefined || number === undefined) continue;
-      const identity = buildVisitIdentity({
-        phase: phase ?? visit?.phase,
-        block,
-        number,
-        priorityLevel: visit?.priorityLevel ?? item?.priorityLevel,
-      });
-      const group = groups.get(identity.id) ?? [];
-      group.push(source);
-      groups.set(identity.id, group);
-    }
-    const next = new Map<
-      string,
-      { sources: NavigatorBuildSource[]; entry: NavigatorEntry }
-    >();
-    const output: NavigatorEntry[] = [];
-    const counts = new Map<NavigatorPhase | undefined, number>();
-    for (const [id, group] of groups) {
-      const cached = previous.get(id);
-      let entry =
-        cached &&
-        cached.sources.length === group.length &&
-        group.every((source, index) => source === cached.sources[index])
-          ? cached.entry
-          : buildNavigatorEntries(group, { phase })[0];
-      if (!entry) continue;
-      const phaseIndex = counts.get(entry.phase) ?? 0;
-      counts.set(entry.phase, phaseIndex + 1);
-      if (entry.index !== output.length || entry.phaseIndex !== phaseIndex)
-        entry = { ...entry, index: output.length, phaseIndex };
-      next.set(id, { sources: group, entry });
-      output.push(entry);
-    }
+    if (previous === sources) return result;
+    const changes = previous ? changedItemPositions(previous, sources) : null;
     if (
-      output.length !== result.length ||
-      output.some((entry, index) => entry !== result[index])
-    )
+      changes === null ||
+      changes.some(
+        (index) =>
+          identityForSource(sources[index], phase) !== sourceKeys[index],
+      )
+    ) {
+      sourceKeys = sources.map((source) => identityForSource(source, phase));
+      groups = new Map();
+      sourceKeys.forEach((id, index) => {
+        if (id === null) return;
+        const group = groups.get(id) ?? {
+          sourceIndices: [],
+          entryIndex: groups.size,
+        };
+        group.sourceIndices.push(index);
+        groups.set(id, group);
+      });
+      const output: NavigatorEntry[] = [];
+      const counts = new Map<NavigatorPhase | undefined, number>();
+      for (const group of groups.values()) {
+        const entry = buildNavigatorEntries(
+          group.sourceIndices.map((index) => sources[index]),
+          { phase },
+        )[0];
+        if (!entry) continue;
+        const phaseIndex = counts.get(entry.phase) ?? 0;
+        counts.set(entry.phase, phaseIndex + 1);
+        group.entryIndex = output.length;
+        output.push({ ...entry, index: output.length, phaseIndex });
+      }
       result = output;
-    previousSources = sources;
-    previous = next;
+    } else if (changes.length) {
+      const touched = new Set(
+        changes.flatMap((index) => sourceKeys[index] ?? []),
+      );
+      const next = result.slice();
+      const updated: number[] = [];
+      for (const id of touched) {
+        const group = groups.get(id)!;
+        const before = result[group.entryIndex];
+        const entry = buildNavigatorEntries(
+          group.sourceIndices.map((index) => sources[index]),
+          { phase },
+        )[0];
+        const sameMembers =
+          entry.itemIds.length === before.itemIds.length &&
+          entry.itemIds.every((id, index) => id === before.itemIds[index]);
+        next[group.entryIndex] = {
+          ...entry,
+          itemIds: sameMembers ? before.itemIds : entry.itemIds,
+          index: before.index,
+          phaseIndex: before.phaseIndex,
+        };
+        updated.push(group.entryIndex);
+      }
+      registerItemChanges(result, next, updated);
+      registerNavigatorEntryChanges(result, next, updated);
+      result = next;
+    }
+    previous = sources;
     return result;
   };
 }
+
 export function createFocusNavigatorEntriesProjector() {
   const projectors = NAVIGATOR_PHASE_ORDER.map((phase) =>
     createNavigatorEntriesProjector(phase),
   );
+  let previous: NavigatorEntry[][] | undefined;
   let result: NavigatorEntry[] = [];
   return (sources: FocusNavigatorSources) => {
-    const output = NAVIGATOR_PHASE_ORDER.flatMap((phase, index) =>
-      projectors[index](sources[phase] ?? []),
+    const phases = NAVIGATOR_PHASE_ORDER.map((phase, index) =>
+      projectors[index](sources[phase] ?? EMPTY_SOURCES),
     );
-    const next = output.map((entry, index) => {
-      const old = result[index];
-      if (
-        old &&
-        old.id === entry.id &&
-        old.items === entry.items &&
-        old.label === entry.label &&
-        old.statusCounts === entry.statusCounts &&
-        old.warningKinds === entry.warningKinds &&
-        old.index === index
-      )
-        return old;
-      return entry.index === index ? entry : { ...entry, index };
-    });
     if (
-      next.length !== result.length ||
-      next.some((entry, index) => entry !== result[index])
+      previous &&
+      phases.every((entries, index) => entries === previous![index])
     )
+      return result;
+    const changes = previous
+      ? phases.map((entries, index) =>
+          changedItemPositions(previous![index], entries),
+        )
+      : [];
+    if (!previous || changes.some((change) => change === null))
+      result = phases
+        .flatMap((entries) => entries)
+        .map((entry, index) =>
+          entry.index === index ? entry : { ...entry, index },
+        );
+    else {
+      const next = result.slice();
+      const updated: number[] = [];
+      let offset = 0;
+      phases.forEach((entries, phaseIndex) => {
+        for (const localIndex of changes[phaseIndex]!) {
+          const index = offset + localIndex;
+          next[index] =
+            entries[localIndex].index === index
+              ? entries[localIndex]
+              : { ...entries[localIndex], index };
+          updated.push(index);
+        }
+        offset += entries.length;
+      });
+      registerItemChanges(result, next, updated);
+      registerNavigatorEntryChanges(result, next, updated);
       result = next;
+    }
+    previous = phases;
     return result;
   };
 }
-/** Geometry ignores status and price, but includes phase order and all member IDs. */
+const EMPTY_SOURCES: readonly NavigatorBuildSource[] = [];
+
+/** Geometry ignores status/price; even comparison examines only changed entries. */
 export function createRouteEntriesProjector() {
+  let previous: readonly NavigatorEntry[] | undefined;
   let result: readonly NavigatorEntry[] = [];
   return (entries: readonly NavigatorEntry[]) => {
+    const changes = previous ? changedItemPositions(previous, entries) : null;
     if (
-      entries.length !== result.length ||
-      entries.some(
-        (entry, index) =>
-          entry.id !== result[index].id ||
-          entry.itemIds.length !== result[index].itemIds.length ||
-          entry.itemIds.some(
-            (id, itemIndex) => id !== result[index].itemIds[itemIndex],
-          ),
-      )
+      changes === null ||
+      changes.some((index) => {
+        const entry = entries[index],
+          before = previous![index];
+        return (
+          entry.id !== before.id ||
+          (entry.itemIds !== before.itemIds &&
+            (entry.itemIds.length !== before.itemIds.length ||
+              entry.itemIds.some(
+                (id, itemIndex) => id !== before.itemIds[itemIndex],
+              )))
+        );
+      })
     )
       result = entries;
+    previous = entries;
     return result;
   };
 }

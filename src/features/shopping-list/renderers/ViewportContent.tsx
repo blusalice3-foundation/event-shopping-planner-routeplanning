@@ -154,6 +154,7 @@ export interface ViewportContentProps {
   readonly rowKey: string;
   readonly defer?: boolean;
   readonly retain?: boolean;
+  readonly estimatedHeight?: number;
   readonly placeholder: React.ReactNode;
   readonly render: () => React.ReactNode;
 }
@@ -161,6 +162,7 @@ export const ViewportContent = ({
   rowKey,
   defer = true,
   retain = false,
+  estimatedHeight,
   placeholder,
   render,
 }: ViewportContentProps): React.ReactElement => {
@@ -254,6 +256,7 @@ export const ViewportContent = ({
     observer?.observe(root);
     return () => observer?.disconnect();
   }, [activated, rowKey]);
+  const deferredHeight = heightRef.current ?? estimatedHeight;
   return (
     <div
       ref={rootRef}
@@ -266,11 +269,9 @@ export const ViewportContent = ({
         if (rootRef.current) delete rootRef.current.dataset.viewportRetain;
         updateRef.current?.();
       }}
-      className={
-        !activated && heightRef.current ? "esp-layout-height" : undefined
-      }
+      className={!activated && deferredHeight ? "esp-layout-height" : undefined}
       data-layout-height={
-        !activated && heightRef.current ? `${heightRef.current}px` : undefined
+        !activated && deferredHeight ? `${deferredHeight}px` : undefined
       }
     >
       {activated ? render() : placeholder}

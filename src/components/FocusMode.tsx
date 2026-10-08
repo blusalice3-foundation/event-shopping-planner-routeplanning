@@ -1,10 +1,12 @@
+import { navigatorEntryIndex } from "../features/space-navigation/domain/navigatorEntryIndex";
 import { useContext } from "react";
 import {
   AcceptedItemContext,
   ItemCommandContext,
 } from "../features/shopping-list/renderers/ViewportRowState";
 import { createRouteEntriesProjector } from "../features/space-navigation/domain/navigatorEntriesProjector";
-import { indexedItem } from "../utils/itemIndex";
+import { indexedItem, indexedItems } from "../utils/itemIndex";
+import { createOrderedItemsProjector } from "../utils/incrementalItems";
 import {
   createExecutionVisitIndex,
   createPhaseVisitProjector,
@@ -165,6 +167,7 @@ interface FocusModeProps {
   // アイテム編集・削除
   onEditRequest?: (item: ShoppingItem) => void;
   onDeleteRequest?: (item: ShoppingItem) => void;
+  retainedItemIds?: readonly string[];
   // アプリ全体の表示倍率
   appZoomLevel?: number;
   resumeState?: FocusModeSessionState | null;
@@ -224,6 +227,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
   onAddItem,
   onEditRequest,
   onDeleteRequest,
+  retainedItemIds,
   appZoomLevel = 100,
   resumeState = null,
   onSessionStateChange,
@@ -406,9 +410,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
       window.removeEventListener("resize", updateHeight);
     };
   }, [layoutMode, isCompleted]);
-  const itemsById = useMemo(() => {
-    return new Map(items.map((item) => [item.id, item]));
-  }, [items]);
+  const itemsById = indexedItems(items);
 
   const routingItemsProjector = useMemo(createRoutingItemsProjector, []);
   const routingItems = routingItemsProjector(items);
@@ -466,6 +468,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     ids: string[];
   } | null>(null);
 
+  const projectExecuteItems = useMemo(createOrderedItemsProjector, []);
   const executeItems = useMemo(() => {
     if (executeOrderingRef.current?.signature !== executeOrderingSignature) {
       const rawItems = executeModeItemIds
@@ -485,9 +488,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
         ids: sorted.map((item) => item.id),
       };
     }
-    return executeOrderingRef.current.ids
-      .map((id) => itemsById.get(id))
-      .filter((item): item is ShoppingItem => item !== undefined);
+    return projectExecuteItems(items, executeOrderingRef.current.ids);
   }, [
     itemsById,
     executeModeItemIds,
@@ -495,11 +496,11 @@ const FocusMode: React.FC<FocusModeProps> = ({
     hallOrder,
     mapData,
     executeOrderingSignature,
+    items,
+    projectExecuteItems,
   ]);
 
-  const executeItemsById = useMemo(() => {
-    return new Map(executeItems.map((item) => [item.id, item]));
-  }, [executeItems]);
+  const executeItemsById = indexedItems(executeItems);
   const executeModeItemIdSet = useMemo(() => {
     return new Set(executeModeItemIds);
   }, [executeModeItemIds]);
@@ -818,17 +819,22 @@ const FocusMode: React.FC<FocusModeProps> = ({
       resolveNavigatorEntryVisit(navigatorEntries[displayNavigatorIndex + 1]),
     [displayNavigatorIndex, navigatorEntries, resolveNavigatorEntryVisit],
   );
-  const currentVisitDisplayItems = useMemo(
+  const projectDisplayItems = useMemo(createOrderedItemsProjector, []);
+  const currentVisitDisplayItems = projectDisplayItems(items, displayItemIds);
+  const prewarmedNavigatorEntry = navigatorEntries[displayNavigatorIndex + 1];
+  const prewarmedVisitItems = useMemo(
     () =>
-      displayItemIds
-        .map((itemId) => itemsById.get(itemId))
-        .filter((item): item is ShoppingItem => item !== undefined),
-    [displayItemIds, itemsById],
+      !isTemporaryActive && !isInspecting
+        ? ((prewarmedNavigatorEntry?.items.slice(0, 2) as
+            | ShoppingItem[]
+            | undefined) ?? [])
+        : [],
+    [prewarmedNavigatorEntry, isTemporaryActive, isInspecting],
   );
   const formalPhaseEntriesLength = useMemo(
     () =>
-      baseNavigatorEntries.filter((entry) => entry.phase === currentPhase)
-        .length,
+      navigatorEntryIndex(baseNavigatorEntries).byPhase.get(currentPhase)
+        ?.length ?? 0,
     [baseNavigatorEntries, currentPhase],
   );
   const nextAllVisitKeys = useMemo(
@@ -2021,13 +2027,18 @@ const FocusMode: React.FC<FocusModeProps> = ({
   const retainedFocusItemIds = useMemo(
     () =>
       new Set([
+        ...(retainedItemIds ?? []),
         ...(limitedBulkDialogContext
           ? [limitedBulkDialogContext.itemSnapshot.id]
           : []),
         ...(postEventDistributionCheckContext?.targets.map((item) => item.id) ??
           []),
       ]),
-    [limitedBulkDialogContext, postEventDistributionCheckContext],
+    [
+      limitedBulkDialogContext,
+      postEventDistributionCheckContext,
+      retainedItemIds,
+    ],
   );
   const isLimitedBulkInputTarget = useCallback(
     (item: ShoppingItem): boolean =>
@@ -3291,6 +3302,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
             layoutMode={layoutMode}
             isMapVisible={isMapVisible}
             currentVisitDisplayItems={currentVisitDisplayItems}
+            prewarmedItems={prewarmedVisitItems}
+            visitId={displayEntry?.id}
+            prewarmedVisitId={prewarmedNavigatorEntry?.id}
+            cachePreviousVisit={!isTemporaryActive && !isInspecting}
             blinkingPriceItemIds={blinkingPriceItemIds}
             blinkingLimitedMissingItemIds={blinkingLimitedMissingItemIds}
             onUpdateItem={handleCardUpdateItem}
@@ -3434,6 +3449,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
             layoutMode={layoutMode}
             isMapVisible={isMapVisible}
             currentVisitDisplayItems={currentVisitDisplayItems}
+            prewarmedItems={prewarmedVisitItems}
+            visitId={displayEntry?.id}
+            prewarmedVisitId={prewarmedNavigatorEntry?.id}
+            cachePreviousVisit={!isTemporaryActive && !isInspecting}
             blinkingPriceItemIds={blinkingPriceItemIds}
             blinkingLimitedMissingItemIds={blinkingLimitedMissingItemIds}
             onUpdateItem={handleCardUpdateItem}
@@ -3470,6 +3489,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
           onClick={handlePrev}
           className="fixed right-[calc(50%+16px)] top-1/2 transform -translate-y-1/2 w-12 h-12 bg-slate-600 hover:bg-slate-700 text-white rounded-full shadow-lg flex items-center justify-center text-xl z-40"
           title="前の訪問先"
+          aria-label="前の訪問先へ移動"
         >
           ◀
         </button>
@@ -3486,6 +3506,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
                   : "bg-blue-600 hover:bg-blue-700 text-white"
           }`}
           title="次の訪問先"
+          aria-label="次の訪問先へ移動"
         >
           ▶
         </button>
@@ -3552,6 +3573,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
         isMapVisible={isMapVisible}
         containerClassName={itemListContainerClass}
         currentVisitDisplayItems={currentVisitDisplayItems}
+        prewarmedItems={prewarmedVisitItems}
+        visitId={displayEntry?.id}
+        prewarmedVisitId={prewarmedNavigatorEntry?.id}
+        cachePreviousVisit={!isTemporaryActive && !isInspecting}
         blinkingPriceItemIds={blinkingPriceItemIds}
         blinkingLimitedMissingItemIds={blinkingLimitedMissingItemIds}
         onUpdateItem={handleCardUpdateItem}
@@ -3590,6 +3615,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
             data-nav-left={`${navPrevLeftPx}px`}
             className="esp-layout-nav-left fixed top-1/2 h-14 w-14 -translate-y-1/2 transform rounded-full bg-slate-600 text-2xl text-white shadow-lg transition-[left] duration-200 ease-out flex items-center justify-center z-40 hover:bg-slate-700"
             title="前の訪問先"
+            aria-label="前の訪問先へ移動"
           >
             ◀
           </button>
@@ -3606,6 +3632,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
                     : "bg-blue-600 hover:bg-blue-700 text-white"
             }`}
             title="次の訪問先"
+            aria-label="次の訪問先へ移動"
           >
             ▶
           </button>

@@ -26,7 +26,9 @@ import React, {
 } from "react";
 import { ShoppingItem, EventMetadata, ExecuteModeItems } from "./types/item";
 import { MapDataStore, HallDefinition } from "./types/map";
-import { indexedItem } from "./utils/itemIndex";
+import { indexedItem, indexedItems } from "./utils/itemIndex";
+import { createAppListViewProjectors } from "./app/selectors/incrementalAppListView";
+import { createRoutingItemsProjector } from "./utils/executionVisitIndex";
 import { FocusModeSessionState } from "./types/focus";
 import { getMaplessKey } from "./types/map";
 import { extractEventDates } from "./utils/eventDates";
@@ -55,19 +57,9 @@ import { useMapVisitListCommands } from "./app/commands/useMapVisitListCommands"
 import { useMapRouteCommands } from "./app/commands/useMapRouteCommands";
 import { useMapEditorCommands } from "./app/commands/useMapEditorCommands";
 import {
-  selectBaseFilteredItems,
-  selectBlockOptions,
-  selectCandidateColumnItems,
   selectCurrentMaplessHalls,
-  selectDuplicateCircleItemIds,
-  selectExecuteColumnItems,
-  selectMovePlanState,
-  selectItemsForExecutionDay,
   selectMapVisitListItems,
-  selectSearchMatches,
   selectSortDisplayLabel,
-  selectTemporaryVisibleItems,
-  selectVisibleItems,
   selectVisibleSearchMatches,
 } from "./app/selectors/appListViewSelectors";
 import {
@@ -495,28 +487,27 @@ const App: React.FC = () => {
     () => (activeEventName ? eventLists[activeEventName] || [] : []),
     [activeEventName, eventLists],
   );
-  const firstItemById = useMemo(() => {
-    const index = new Map<string, ShoppingItem>();
-    items.forEach((item) => {
-      if (!index.has(item.id)) index.set(item.id, item);
-    });
-    return index;
-  }, [items]);
-
-  const eventDates = useMemo(() => extractEventDates(items), [items]);
+  const firstItemById = indexedItems(items);
+  const listProjectors = useMemo(createAppListViewProjectors, []);
+  const projectRoutingItems = useMemo(createRoutingItemsProjector, []);
+  const routingItems = projectRoutingItems(items);
+  const eventDates = useMemo(
+    () => extractEventDates(routingItems),
+    [routingItems],
+  );
   const activeEventDate = useMemo(
     () => (activeEventName && eventDates.includes(activeTab) ? activeTab : ""),
     [activeEventName, activeTab, eventDates],
   );
   const executeColumnItems = useMemo(
     () =>
-      selectExecuteColumnItems({
+      listProjectors.execute({
         activeEventName,
         activeEventDate,
         executeModeItems,
         items,
       }),
-    [activeEventDate, activeEventName, executeModeItems, items],
+    [activeEventDate, activeEventName, executeModeItems, items, listProjectors],
   );
 
   const {
@@ -1291,8 +1282,8 @@ const App: React.FC = () => {
 
   const currentTabItems = useMemo(() => {
     if (!activeEventName || !eventDates.includes(activeTab)) return [];
-    return selectItemsForExecutionDay(items, activeTab);
-  }, [items, activeTab, activeEventName, eventDates]);
+    return listProjectors.day(items, activeTab, true);
+  }, [items, activeTab, activeEventName, eventDates, listProjectors]);
 
   React.useEffect(() => {
     if (mapTabMenuOpen !== "mapToggle") return;
@@ -1519,7 +1510,7 @@ const App: React.FC = () => {
   );
   const baseFilteredItems = useMemo(
     () =>
-      selectBaseFilteredItems({
+      listProjectors.base({
         activeEventName,
         activeEventDate,
         currentTabItems,
@@ -1534,12 +1525,13 @@ const App: React.FC = () => {
       dayModes,
       executeColumnItems,
       sortState,
+      listProjectors,
     ],
   );
 
   const temporaryVisibleItems = useMemo(
     () =>
-      selectTemporaryVisibleItems({
+      listProjectors.temporary({
         activeEventName,
         activeEventDate,
         dayModes,
@@ -1556,6 +1548,7 @@ const App: React.FC = () => {
       executeColumnItems,
       recentlyChangedItemIds,
       sortState,
+      listProjectors,
     ],
   );
   const temporaryVisibleCount = temporaryVisibleItems.length;
@@ -1573,7 +1566,7 @@ const App: React.FC = () => {
 
   const { visibleItems } = useMemo(
     () =>
-      selectVisibleItems({
+      listProjectors.visible({
         activeEventName,
         activeEventDate,
         currentTabItems,
@@ -1592,6 +1585,7 @@ const App: React.FC = () => {
       executeColumnItems,
       sortState,
       temporaryVisibleItems,
+      listProjectors,
     ],
   );
 
@@ -1604,7 +1598,7 @@ const App: React.FC = () => {
   const consumedSearchNext = useRef(0);
   const searchMatches = useMemo(
     () =>
-      selectSearchMatches({
+      listProjectors.search({
         searchKeyword: deferredSearchKeyword,
         activeEventName,
         activeTab,
@@ -1617,18 +1611,19 @@ const App: React.FC = () => {
       currentTabItems,
       eventDates,
       deferredSearchKeyword,
+      listProjectors,
     ],
   );
 
   const duplicateCircleItemIds = useMemo(
     () =>
-      selectDuplicateCircleItemIds({
+      listProjectors.duplicates({
         activeEventName,
         activeTab,
         eventDates,
         currentTabItems,
       }),
-    [activeEventName, activeTab, currentTabItems, eventDates],
+    [activeEventName, activeTab, currentTabItems, eventDates, listProjectors],
   );
 
   const {
@@ -1637,13 +1632,19 @@ const App: React.FC = () => {
     blocksWithPriorityRemarks,
   } = useMemo(
     () =>
-      selectBlockOptions({
+      listProjectors.blocks({
         activeEventName,
         activeEventDate,
         executeModeItems,
         currentTabItems,
       }),
-    [activeEventDate, activeEventName, currentTabItems, executeModeItems],
+    [
+      activeEventDate,
+      activeEventName,
+      currentTabItems,
+      executeModeItems,
+      listProjectors,
+    ],
   );
 
   const currentMaplessHalls = useMemo(
@@ -1658,7 +1659,7 @@ const App: React.FC = () => {
 
   const candidateColumnItems = useMemo(
     () =>
-      selectCandidateColumnItems({
+      listProjectors.candidate({
         activeEventName,
         activeEventDate,
         executeModeItems,
@@ -1673,6 +1674,7 @@ const App: React.FC = () => {
       currentTabItems,
       executeModeItems,
       selectedBlockFilters,
+      listProjectors,
     ],
   );
 
@@ -1764,7 +1766,7 @@ const App: React.FC = () => {
     showMoveButtons,
   } = useMemo(
     () =>
-      selectMovePlanState({
+      listProjectors.movePlan({
         activeEventName,
         activeEventDate,
         currentMode,
@@ -1779,6 +1781,7 @@ const App: React.FC = () => {
       executeModeItems,
       items,
       selectedItemIds,
+      listProjectors,
     ],
   );
 

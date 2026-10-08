@@ -1,3 +1,9 @@
+import {
+  changedItemPositions,
+  indexedItems,
+  stableItemIds,
+} from "../../../utils/itemIndex";
+import { changedSetMembers } from "../../../utils/incrementalItems";
 import type { ShoppingItem } from "../../../types/item";
 
 export type ShoppingListColumn = "execute" | "candidate" | null;
@@ -54,6 +60,7 @@ export interface ShoppingListReadModel {
   readonly itemRows: readonly ShoppingListItemRow[];
   readonly itemIds: readonly string[];
   readonly hasStableRowKeys: boolean;
+  readonly rowKeys?: readonly string[];
 }
 
 const encodeRowKeyPart = (value: string): string => JSON.stringify(value);
@@ -161,5 +168,111 @@ export const buildListRows = ({
     itemRows,
     itemIds: itemRows.map((row) => row.itemId),
     hasStableRowKeys,
+    rowKeys: rows.map((row) => row.rowKey),
   };
 };
+
+/** Preserve untouched rows, accessibility metadata and membership across edits. */
+export function createListRowsProjector() {
+  let previous: BuildListRowsInput | undefined;
+  let value: ShoppingListReadModel;
+  let locations = new Map<string, { row: number; item: number }>();
+  return (input: BuildListRowsInput): ShoppingListReadModel => {
+    const changed = previous
+      ? changedItemPositions(previous.items, input.items)
+      : null;
+    const beforeGroups = previous?.groups ?? [];
+    const groups = input.groups ?? [];
+    const sameGroups =
+      beforeGroups.length === groups.length &&
+      groups.every((group, index) => {
+        const before = beforeGroups[index];
+        return (
+          group.key === before.key &&
+          group.label === before.label &&
+          group.collapsed === before.collapsed &&
+          stableItemIds(group.items) === stableItemIds(before.items)
+        );
+      });
+    if (
+      !previous ||
+      changed === null ||
+      !value.hasStableRowKeys ||
+      !sameGroups ||
+      previous.column !== input.column
+    ) {
+      value = buildListRows(input);
+      const rowPositions = new Map(
+        value.rows.map((row, index) => [row.rowKey, index]),
+      );
+      locations = new Map(
+        value.itemRows.map((row, index) => [
+          row.itemId,
+          { row: rowPositions.get(row.rowKey)!, item: index },
+        ]),
+      );
+    } else {
+      const touched = new Set(changed.map((index) => input.items[index].id));
+      for (const id of changedSetMembers(
+        previous.selectedItemIds,
+        input.selectedItemIds ?? EMPTY_ROW_IDS,
+      ))
+        touched.add(id);
+      for (const id of changedSetMembers(
+        previous.duplicateCircleItemIds,
+        input.duplicateCircleItemIds ?? EMPTY_ROW_IDS,
+      ))
+        touched.add(id);
+      if (previous.highlightedItemId !== input.highlightedItemId) {
+        if (previous.highlightedItemId) touched.add(previous.highlightedItemId);
+        if (input.highlightedItemId) touched.add(input.highlightedItemId);
+      }
+      let next = value;
+      const lookup = indexedItems(input.items);
+      for (const id of touched) {
+        const location = locations.get(id);
+        const item = lookup.get(id);
+        if (!location || !item) continue;
+        const before = value.itemRows[location.item];
+        const flags = {
+          selected: input.selectedItemIds?.has(id) ?? false,
+          duplicateCircle: input.duplicateCircleItemIds?.has(id) ?? false,
+          highlighted: input.highlightedItemId === id,
+        };
+        if (
+          before.item === item &&
+          Object.keys(flags).every(
+            (key) =>
+              flags[key as keyof typeof flags] ===
+              before.flags[key as keyof typeof flags],
+          )
+        )
+          continue;
+        if (next === value)
+          next = {
+            ...value,
+            rows: value.rows.slice(),
+            itemRows: value.itemRows.slice(),
+          };
+        const row = {
+          ...before,
+          item,
+          flags,
+          accessibleName:
+            before.item.circle === item.circle &&
+            before.item.title === item.title &&
+            before.item.block === item.block &&
+            before.item.number === item.number
+              ? before.accessibleName
+              : buildItemAccessibleName(item),
+        };
+        (next.rows as ShoppingListRow[])[location.row] = row;
+        (next.itemRows as ShoppingListItemRow[])[location.item] = row;
+      }
+      value = next;
+    }
+    previous = input;
+    return value;
+  };
+}
+const EMPTY_ROW_IDS: ReadonlySet<string> = new Set();

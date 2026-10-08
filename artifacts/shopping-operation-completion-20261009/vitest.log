@@ -1,0 +1,12 @@
+
+> event-shopping-planner@1.0.0 test:run
+> vitest run
+
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+
+
+ Test Files  218 passed (218)
+      Tests  2349 passed (2349)
+   Start at  00:42:16
+   Duration  34.77s (transform 45.76s, setup 136.08s, import 91.51s, tests 143.86s, environment 287.66s)
