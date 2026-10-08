@@ -189,6 +189,7 @@ const createHarness = (options: HarnessOptions = {}) => {
       dayModes: stores.dayModes,
       sortState: options.sortState ?? "Manual",
       executeColumnItems,
+      readAcceptedItem: options.readAcceptedItem,
       items: options.items ?? executeColumnItems,
       selectedItemIds: options.selectedItemIds ?? new Set(),
       recentlyChangedItemIds: options.recentlyChangedItemIds ?? new Set(),
@@ -647,4 +648,76 @@ describe("useShoppingSelectionExecutionCommands", () => {
       expect(harness.spies.setBlockSortDirection).not.toHaveBeenCalled();
     }
   });
+});
+
+it("advances after continuous accepted purchases and a final bulk operation without a render", () => {
+  const first = item("first");
+  const last = item("last", { number: "2" });
+  const accepted = new Map([first, last].map((entry) => [entry.id, entry]));
+  const harness = createHarness({
+    executeColumnItems: [first, last],
+    readAcceptedItem: (id) => accepted.get(id),
+  });
+  harness.spies.updateItem.mockImplementation((entry: ShoppingItem) => {
+    accepted.set(entry.id, entry);
+  });
+  harness.ports.actions.updateItems = (updates) => {
+    updates.forEach((entry) => accepted.set(entry.id, entry));
+  };
+  const { result } = renderHook(() =>
+    useShoppingSelectionExecutionCommands(harness.ports),
+  );
+  harness.spies.setShowPostponeFilterButton.mockClear();
+  act(() => {
+    result.current.setExecuteSpaceGroupOrder(["A-1", "A-2"]);
+    result.current.updateExecuteItem({ ...first, purchaseStatus: "Purchased" });
+    result.current.changeBulkStatus("A-2", "Purchased", [last]);
+  });
+  expect(harness.spies.setShowPostponeFilterButton).toHaveBeenCalledWith(true);
+  // Use the latest accepted status for the bulk toggle, even though its card is stale.
+  act(() => result.current.changeBulkStatus("A-2", "Purchased", [last]));
+  expect(accepted.get("last")?.purchaseStatus).toBe("None");
+});
+
+it("keeps an earlier accepted reversal from prematurely showing the next phase", () => {
+  const first = item("first", { purchaseStatus: "Purchased" });
+  const last = item("last", { number: "2" });
+  const accepted = new Map([first, last].map((entry) => [entry.id, entry]));
+  const harness = createHarness({
+    executeColumnItems: [first, last],
+    readAcceptedItem: (id) => accepted.get(id),
+  });
+  harness.spies.updateItem.mockImplementation((entry: ShoppingItem) => {
+    accepted.set(entry.id, entry);
+  });
+  const { result } = renderHook(() =>
+    useShoppingSelectionExecutionCommands(harness.ports),
+  );
+  harness.spies.setShowPostponeFilterButton.mockClear();
+  act(() => {
+    result.current.setExecuteSpaceGroupOrder(["A-1", "A-2"]);
+    result.current.updateExecuteItem({ ...first, purchaseStatus: "None" });
+    result.current.updateExecuteItem({ ...last, purchaseStatus: "Purchased" });
+  });
+  expect(harness.spies.setShowPostponeFilterButton).not.toHaveBeenCalled();
+});
+
+it("uses the accepted purchase result rather than a rejected intended status", () => {
+  const target = item("target");
+  const harness = createHarness({
+    executeColumnItems: [target],
+    readAcceptedItem: () => target,
+  });
+  const { result } = renderHook(() =>
+    useShoppingSelectionExecutionCommands(harness.ports),
+  );
+  harness.spies.setShowPostponeFilterButton.mockClear();
+  act(() => {
+    result.current.setExecuteSpaceGroupOrder(["A-1"]);
+    result.current.updateExecuteItem({
+      ...target,
+      purchaseStatus: "Purchased",
+    });
+  });
+  expect(harness.spies.setShowPostponeFilterButton).not.toHaveBeenCalled();
 });

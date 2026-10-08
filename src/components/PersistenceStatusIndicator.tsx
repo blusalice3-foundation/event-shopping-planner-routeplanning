@@ -133,7 +133,7 @@ const PersistenceStatusIndicator: React.FC<PersistenceStatusIndicatorProps> = ({
 
   return (
     <div
-      className={`fixed bottom-4 right-4 z-[80] rounded-full border px-3 py-1.5 text-xs font-medium shadow ${presentation.className}`}
+      className={`pointer-events-none fixed bottom-[calc(var(--footer-height,0px)+1rem)] right-4 z-[80] rounded-full border px-3 py-1.5 text-xs font-medium shadow ${presentation.className}`}
       role="status"
       aria-live="polite"
       aria-label={presentation.label}

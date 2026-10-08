@@ -823,6 +823,7 @@ const App: React.FC = () => {
       dayModes,
       sortState,
       executeColumnItems,
+      readAcceptedItem,
       recentlyChangedItemIds,
       spaceGroupDragItemIdsRef,
       items,

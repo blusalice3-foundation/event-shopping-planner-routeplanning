@@ -547,15 +547,43 @@ type ShoppingDiagnostics = {
     summary: Record<string, { count: number; medianMs: number; p95Ms: number }>;
   };
 };
+const shoppingProfiles = [false, true].flatMap((concentrated) =>
+  [false, true].flatMap((mapVisible) =>
+    (["pc", "smartphone"] as const).map((layout) => ({
+      concentrated,
+      mapVisible,
+      layout,
+    })),
+  ),
+);
 for (const count of [150, 500, 1500])
-  for (const concentrated of [false, true]) {
-    test(`local shopping operations: ${count} items, concentrated=${concentrated}`, async ({
+  for (const { concentrated, mapVisible, layout } of shoppingProfiles) {
+    test(`local shopping operations: ${count} items, concentrated=${concentrated}, mapVisible=${mapVisible}, layout=${layout} @shopping-performance`, async ({
       page,
     }, testInfo) => {
-      test.setTimeout(240000);
+      test.setTimeout(360000);
+      page.setDefaultTimeout(15000);
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
+      await page.setViewportSize({ width: 1280, height: 900 });
       await restore(page, count, concentrated);
+      if (layout === "smartphone") {
+        await page.getByTitle("表示項目の設定", { exact: true }).click();
+        await page
+          .getByTitle("スマートフォンモードに切替", { exact: true })
+          .click();
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page
+          .locator("div.fixed.inset-0.z-40")
+          .first()
+          .click({ position: { x: 2, y: 100 } });
+        const groups = page.getByRole("button", {
+          name: "スペース別",
+          exact: true,
+        });
+        if (!(await groups.getAttribute("class"))?.includes("bg-blue-600"))
+          await groups.click();
+      }
       const diagnostics = (action: "enable" | "reset" | "read") =>
         page.evaluate((action) => {
           const api = (
@@ -575,6 +603,23 @@ for (const count of [150, 500, 1500])
         next: [],
         back: [],
       };
+      const prepareItem = async (rowKey: string, itemId: string) => {
+        await expect
+          .poll(
+            async () => {
+              await page
+                .locator(`[data-row-key='${rowKey}']`)
+                .evaluate(async (row) => {
+                  row.scrollIntoView({ block: "center" });
+                  await new Promise(requestAnimationFrame);
+                  await new Promise((resolve) => setTimeout(resolve, 0));
+                });
+              return page.locator(`[data-item-id="${itemId}"]`).isVisible();
+            },
+            { timeout: 15000 },
+          )
+          .toBe(true);
+      };
       const clickResponse = async (
         locator: ReturnType<Page["locator"]>,
         button: string,
@@ -592,6 +637,41 @@ for (const count of [150, 500, 1500])
           return performance.now() - start;
         }, button);
         timings[group].push(duration);
+      };
+      const navigateResponse = async (
+        direction: "next" | "back",
+        record = true,
+      ) => {
+        if (layout === "pc") {
+          const button = page.getByTitle(
+            direction === "next" ? "次の訪問先" : "前の訪問先",
+            { exact: true },
+          );
+          if (record) await clickResponse(button, "button", direction);
+          else await button.click();
+          return;
+        }
+        const duration = await page
+          .getByTestId("focus-mode-scroll-region")
+          .evaluate(async (root, direction) => {
+            const emit = (type: string, x: number) => {
+              const point = { clientX: x, clientY: 200 };
+              const event = new Event(type, { bubbles: true });
+              Object.defineProperties(event, {
+                touches: { value: type === "touchend" ? [] : [point] },
+                changedTouches: { value: [point] },
+              });
+              root.dispatchEvent(event);
+            };
+            const start = performance.now();
+            emit("touchstart", 200);
+            emit("touchmove", direction === "next" ? 80 : 320);
+            emit("touchend", direction === "next" ? 80 : 320);
+            await new Promise(requestAnimationFrame);
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            return performance.now() - start;
+          }, direction);
+        if (record) timings[direction].push(duration);
       };
       // Scroll across the complete list before measuring, so old cards must be released.
       const visitedIds = await page.evaluate(async () => {
@@ -624,10 +704,7 @@ for (const count of [150, 500, 1500])
       for (let index = 0; index < count; index++) {
         const id = `perf-${index}`;
         if (visited.has(id)) continue;
-        await page
-          .locator(`[data-row-key='item:"${id}"']`)
-          .scrollIntoViewIfNeeded();
-        await expect(page.locator(`[data-item-id="${id}"]`)).toBeVisible();
+        await prepareItem(`item:"${id}"`, id);
         visited.add(id);
       }
       const visitedCount = visited.size;
@@ -640,10 +717,7 @@ for (const count of [150, 500, 1500])
       await profiler?.send("Profiler.start");
       for (let index = 0; index < 20; index++) {
         const row = page.locator(`[data-item-id="perf-${index}"]`);
-        await page
-          .locator(`[data-row-key='item:"perf-${index}"']`)
-          .scrollIntoViewIfNeeded();
-        await expect(row).toBeVisible();
+        await prepareItem(`item:"perf-${index}"`, `perf-${index}`);
         await clickResponse(
           row,
           'button[aria-label^="Current status:"]',
@@ -691,13 +765,18 @@ for (const count of [150, 500, 1500])
           .getByRole("combobox", { name: "回答内容", exact: true })
           .selectOption({ index: 1 + (sample % 2) });
         await clickResponse(
-          executionDialog.getByRole("button", { name: "記録", exact: true }),
+          executionDialog.getByRole("button", {
+            name: "記録",
+            exact: true,
+          }),
           "button",
           "executeRecord",
         );
         await expect(executionDialog).toBeHidden();
         await expect(
-          executionRow.getByRole("button", { name: /Current status: 売切/ }),
+          executionRow.getByRole("button", {
+            name: /Current status: 売切/,
+          }),
         ).toBeVisible();
       }
       await expect
@@ -709,28 +788,21 @@ for (const count of [150, 500, 1500])
       await page.getByTitle("集中モード", { exact: true }).click();
       if (!concentrated)
         for (let index = 0; index < 20; index++)
-          await page.getByTitle("次の訪問先", { exact: true }).click();
-      if (count === 1500)
+          await navigateResponse("next", false);
+      if (mapVisible)
         await page.getByTitle("マップを表示", { exact: true }).click();
       await diagnostics("reset");
       for (let index = 20; index < 40; index++) {
         const row = page.locator(`[data-item-id="perf-${index}"]`);
         if (concentrated)
-          await page
-            .locator(`[data-row-key="focus:perf-${index}"]`)
-            .scrollIntoViewIfNeeded();
+          await prepareItem(`focus:perf-${index}`, `perf-${index}`);
         await expect(row).toBeVisible();
         await clickResponse(
           row,
           'button[aria-label^="Current status:"]',
           "focus",
         );
-        if (!concentrated)
-          await clickResponse(
-            page.locator('[title="次の訪問先"]').locator(".."),
-            'button[title="次の訪問先"]',
-            "next",
-          );
+        if (!concentrated) await navigateResponse("next");
       }
       const target = concentrated ? "perf-39" : "perf-40";
       const row = page.locator(`[data-item-id="${target}"]`);
@@ -776,11 +848,7 @@ for (const count of [150, 500, 1500])
           row.getByRole("button", { name: /Current status: 売切/ }),
         ).toBeVisible();
       }
-      await clickResponse(
-        page.locator('[title="次の訪問先"]').locator(".."),
-        'button[title="次の訪問先"]',
-        "next",
-      );
+      await navigateResponse("next");
       await expect(dialog).toBeHidden();
       await expect
         .poll(async () => (await durableItem(page, target)).remarks, {
@@ -797,16 +865,8 @@ for (const count of [150, 500, 1500])
       await backProfiler?.send("Profiler.start");
       // Returning to the large first space also exercises retained input state.
       for (let sample = 0; sample < 20; sample++) {
-        await clickResponse(
-          page.getByTitle("前の訪問先", { exact: true }),
-          "button",
-          "back",
-        );
-        await clickResponse(
-          page.getByTitle("次の訪問先", { exact: true }),
-          "button",
-          "next",
-        );
+        await navigateResponse("back");
+        await navigateResponse("next");
       }
       if (backProfiler) {
         const profile = await backProfiler.send("Profiler.stop");
@@ -835,7 +895,8 @@ for (const count of [150, 500, 1500])
           {
             count,
             concentrated,
-            mapVisible: count === 1500,
+            mapVisible,
+            layout,
             visitedCount,
             timings,
             summary,
@@ -850,7 +911,7 @@ for (const count of [150, 500, 1500])
         contentType: "application/json",
       });
       expect(errors).toEqual([]);
-      if (process.env.ESP_ENFORCE_SHOPPING_BUDGET === "1" && count === 1500) {
+      if (count === 1500) {
         for (const operation of [
           "execute",
           "executeRecord",
