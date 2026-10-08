@@ -6,8 +6,10 @@ import React, {
   useCallback,
   useLayoutEffect,
   useReducer,
+  useContext,
 } from "react";
 import ReactDOM from "react-dom";
+import { AcceptedItemContext } from "../features/shopping-list/renderers/ViewportRowState";
 import {
   ShoppingItem,
   PurchaseStatus,
@@ -200,6 +202,8 @@ interface ShoppingListProps {
   skipLimitedPurchaseForSingleQuantity: boolean;
   listRendererPreferencePort?: ListRendererPreferencePort;
   forceFullListRenderer?: boolean;
+  retainedItemIds?: readonly string[];
+  appZoomLevel?: number;
   recoveryActive?: boolean | null;
 }
 
@@ -508,12 +512,15 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   purchaseStatusControlMode = "cycle",
   listRendererPreferencePort = DEFAULT_LIST_RENDERER_PREFERENCE_PORT,
   forceFullListRenderer = false,
+  retainedItemIds,
+  appZoomLevel = 100,
   recoveryActive = false,
 }) => {
   const dragItem = useRef<string | null>(null);
   const dragSourceColumn = useRef<"execute" | "candidate" | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const latestItemsRef = useRef(items);
+  const readAcceptedItem = useContext(AcceptedItemContext);
   const latestCardCrudCallbacksRef = useRef({
     onDeleteRequest,
     onEditRequest,
@@ -528,9 +535,17 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     };
   }, [items, onDeleteRequest, onEditRequest, onUpdateItem]);
   const getLatestItemById = useCallback(
-    (itemId: string): ShoppingItem | undefined =>
-      latestItemsRef.current.find((item) => item.id === itemId),
-    [],
+    (itemId: string): ShoppingItem | undefined => {
+      const rendered = latestItemsRef.current.find(
+        (item) => item.id === itemId,
+      );
+      return rendered
+        ? readAcceptedItem
+          ? readAcceptedItem(itemId)
+          : rendered
+        : undefined;
+    },
+    [readAcceptedItem],
   );
   const handleCardUpdateItem = useCallback((item: ShoppingItem) => {
     latestCardCrudCallbacksRef.current.onUpdateItem(item);
@@ -574,7 +589,11 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     position: "top" | "bottom";
   } | null>(null);
   const [dragRuntimeActive, setDragRuntimeActive] = useState(false);
-  const viewportZoomPercent = useViewportZoomPercent();
+  const browserZoomPercent = useViewportZoomPercent();
+  const viewportZoomPercent =
+    browserZoomPercent === null
+      ? null
+      : (browserZoomPercent * appZoomLevel) / 100;
 
   const [expandedRemarks, setExpandedRemarks] = useState<Set<string>>(
     new Set(),
@@ -1704,9 +1723,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const retainedViewportActivatedRef = useRef(false);
   const retainedViewportCapabilities = {
     runtimeAvailable:
-      virtualRuntimeAvailable &&
-      typeof IntersectionObserver === "function" &&
-      !isSingleColumnVirtualShape,
+      virtualRuntimeAvailable && typeof IntersectionObserver === "function",
     zoomPercent: viewportZoomPercent,
     recoveryActive,
     rowCount: listReadModel.rows.length,
@@ -2579,6 +2596,24 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     return (
       <GroupedListRenderer
         defer={useRetainedViewport}
+        zoomPercent={viewportZoomPercent}
+        pinnedRowKeys={
+          new Set(
+            listReadModel.itemRows
+              .filter(
+                (row) =>
+                  retainedItemIds?.includes(row.itemId) ||
+                  row.itemId === limitedBulkDialogContext?.itemSnapshot.id ||
+                  (postEventDistributionCheckContext?.mode === "single" &&
+                    postEventDistributionCheckContext.targets[0]?.id ===
+                      row.itemId) ||
+                  row.rowKey === listControllerState.focusedRowKey ||
+                  row.itemId === dragItem.current ||
+                  touchDragSpaceGroupIds.current?.includes(row.itemId),
+              )
+              .map((row) => row.rowKey),
+          )
+        }
         engine={listRendererSelection.engine}
         layoutMode={layoutMode}
         getVisitId={getExecutionVisitIdForItem}
@@ -3905,6 +3940,24 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     return (
       <GroupedListRenderer
         defer={useRetainedViewport}
+        zoomPercent={viewportZoomPercent}
+        pinnedRowKeys={
+          new Set(
+            listReadModel.itemRows
+              .filter(
+                (row) =>
+                  retainedItemIds?.includes(row.itemId) ||
+                  row.itemId === limitedBulkDialogContext?.itemSnapshot.id ||
+                  (postEventDistributionCheckContext?.mode === "single" &&
+                    postEventDistributionCheckContext.targets[0]?.id ===
+                      row.itemId) ||
+                  row.rowKey === listControllerState.focusedRowKey ||
+                  row.itemId === dragItem.current ||
+                  touchDragSpaceGroupIds.current?.includes(row.itemId),
+              )
+              .map((row) => row.rowKey),
+          )
+        }
         engine={listRendererSelection.engine}
         layoutMode={layoutMode}
         getVisitId={getExecutionVisitIdForItem}
@@ -4598,6 +4651,24 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     return (
       <GroupedListRenderer
         defer={useRetainedViewport}
+        zoomPercent={viewportZoomPercent}
+        pinnedRowKeys={
+          new Set(
+            listReadModel.itemRows
+              .filter(
+                (row) =>
+                  retainedItemIds?.includes(row.itemId) ||
+                  row.itemId === limitedBulkDialogContext?.itemSnapshot.id ||
+                  (postEventDistributionCheckContext?.mode === "single" &&
+                    postEventDistributionCheckContext.targets[0]?.id ===
+                      row.itemId) ||
+                  row.rowKey === listControllerState.focusedRowKey ||
+                  row.itemId === dragItem.current ||
+                  touchDragSpaceGroupIds.current?.includes(row.itemId),
+              )
+              .map((row) => row.rowKey),
+          )
+        }
         engine={listRendererSelection.engine}
         layoutMode={layoutMode}
         getVisitId={getExecutionVisitIdForItem}
@@ -4955,6 +5026,24 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     return (
       <RetainedViewportListRenderer
         defer={useRetainedViewport}
+        zoomPercent={viewportZoomPercent}
+        pinnedRowKeys={
+          new Set(
+            listReadModel.itemRows
+              .filter(
+                (row) =>
+                  retainedItemIds?.includes(row.itemId) ||
+                  row.itemId === limitedBulkDialogContext?.itemSnapshot.id ||
+                  (postEventDistributionCheckContext?.mode === "single" &&
+                    postEventDistributionCheckContext.targets[0]?.id ===
+                      row.itemId) ||
+                  row.rowKey === listControllerState.focusedRowKey ||
+                  row.itemId === dragItem.current ||
+                  touchDragSpaceGroupIds.current?.includes(row.itemId),
+              )
+              .map((row) => row.rowKey),
+          )
+        }
         engine={listRendererSelection.engine}
         model={listReadModel}
         selectionReason={listRendererSelection.reason}

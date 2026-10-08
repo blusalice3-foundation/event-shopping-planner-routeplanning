@@ -199,6 +199,7 @@ type AppMainContentFields = {
   isMapTab: boolean;
   items: ShoppingItem[];
   itemToEdit: ShoppingItem | null;
+  retainedItemIds?: readonly string[];
   layoutMode: LayoutMode;
   mainContentVisible: boolean;
   mapData: MapDataStore;
@@ -260,6 +261,7 @@ export type AppMainContentModel = {
     | "executeSpaceGroupingEnabled"
     | "items"
     | "itemToEdit"
+    | "retainedItemIds"
     | "newItemDefaults"
     | "rangeEnd"
     | "rangeStart"
@@ -427,6 +429,7 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
       executeSpaceGroupingEnabled,
       items,
       itemToEdit,
+      retainedItemIds,
       newItemDefaults,
       rangeEnd,
       rangeStart,
@@ -724,6 +727,8 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
                   onUpdateItem={handleUpdateItem}
                   onMoveItem={handleMoveItem}
                   onEditRequest={handleEditRequest}
+                  retainedItemIds={retainedItemIds}
+                  appZoomLevel={zoomLevel}
                   onDeleteRequest={handleDeleteRequest}
                   selectedItemIds={selectedItemIds}
                   onSelectItem={handleSelectItem}
@@ -839,6 +844,8 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
                   onUpdateItem={handleUpdateItem}
                   onMoveItem={handleMoveItem}
                   onEditRequest={handleEditRequest}
+                  retainedItemIds={retainedItemIds}
+                  appZoomLevel={zoomLevel}
                   onDeleteRequest={handleDeleteRequest}
                   selectedItemIds={selectedItemIds}
                   onSelectItem={handleSelectItem}
@@ -926,6 +933,8 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
               onUpdateItem={handleExecuteItemUpdate}
               onMoveItem={handleMoveItem}
               onEditRequest={handleEditRequest}
+              retainedItemIds={retainedItemIds}
+              appZoomLevel={zoomLevel}
               onDeleteRequest={handleDeleteRequest}
               selectedItemIds={selectedItemIds}
               onSelectItem={handleSelectItem}

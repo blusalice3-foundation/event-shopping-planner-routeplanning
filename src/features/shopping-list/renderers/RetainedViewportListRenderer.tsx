@@ -1,4 +1,8 @@
-import React from "react";
+import React, { useEffect, useLayoutEffect, useRef } from "react";
+import {
+  ViewportRowStateContext,
+  type CardExpansion,
+} from "./ViewportRowState";
 import type {
   FullListRendererProps,
   FullListRenderedItemRow,
@@ -14,6 +18,8 @@ type Props = FullListRendererProps & {
   readonly layoutMode?: "pc" | "smartphone";
   readonly defer?: boolean;
   readonly engine?: "full" | "virtual";
+  readonly pinnedRowKeys?: ReadonlySet<string>;
+  readonly zoomPercent?: number | null;
   readonly getGroupVisitId?: (groupKey: string) => string | undefined;
   readonly getVisitId?: (
     item: ShoppingListItemRow["item"],
@@ -50,13 +56,67 @@ const itemPlaceholder = (
 );
 
 /**
- * Retain activated rows to preserve native controls, focus, expansion and drag.
+ * Keep controls near the viewport and retain rows for active focus, dialogs and drag.
  * Every pending row has a normal-flow accessible/navigation placeholder.
  */
 export const RetainedViewportListRenderer = (
   props: Props,
 ): React.ReactElement => {
   const layoutMode = props.layoutMode ?? "pc";
+  const rowStates = useRef(new Map<string, CardExpansion>());
+  const anchorRef = useRef<{ key: string; top: number }>();
+  const listRoot = useRef<HTMLDivElement | null>(null);
+  const previousZoom = useRef(props.zoomPercent);
+  useEffect(() => {
+    let frame: number | null = null;
+    const capture = () => {
+      frame = null;
+      const rows = listRoot.current?.querySelectorAll<HTMLElement>(
+        "[data-row-key][aria-posinset]",
+      );
+      if (!rows) return;
+      const viewportTop = Math.max(
+        0,
+        document.querySelector("header")?.getBoundingClientRect().bottom ?? 0,
+      );
+      for (const row of rows) {
+        const rect = row.getBoundingClientRect();
+        if (rect.bottom > viewportTop && rect.top < window.innerHeight) {
+          anchorRef.current = { key: row.dataset.rowKey!, top: rect.top };
+          break;
+        }
+      }
+    };
+    const scroll = () => {
+      frame ??= requestAnimationFrame(capture);
+    };
+    capture();
+    window.addEventListener("scroll", scroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", scroll);
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, []);
+  useLayoutEffect(() => {
+    if (previousZoom.current === props.zoomPercent) return;
+    previousZoom.current = props.zoomPercent;
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+    const row = [
+      ...(listRoot.current?.querySelectorAll<HTMLElement>("[data-row-key]") ??
+        []),
+    ].find((candidate) => candidate.dataset.rowKey === anchor.key);
+    if (row)
+      window.scrollBy({
+        top: row.getBoundingClientRect().top - anchor.top,
+        behavior: "instant",
+      });
+  }, [props.zoomPercent]);
+  useEffect(() => {
+    const ids = new Set(props.model.itemRows.map((row) => row.itemId));
+    for (const id of rowStates.current.keys())
+      if (!ids.has(id)) rowStates.current.delete(id);
+  }, [props.model]);
   const rendered: React.ReactElement[] = [];
   for (let index = 0; index < props.model.rows.length; index += 1) {
     const row = props.model.rows[index];
@@ -74,6 +134,7 @@ export const RetainedViewportListRenderer = (
             <ViewportContent
               key={itemRow.rowKey}
               rowKey={itemRow.rowKey}
+              retain={props.pinnedRowKeys?.has(itemRow.rowKey)}
               defer={props.defer}
               placeholder={itemPlaceholder(
                 itemRow,
@@ -95,6 +156,13 @@ export const RetainedViewportListRenderer = (
         <ViewportContent
           key={row.rowKey}
           rowKey={row.rowKey}
+          retain={
+            props.pinnedRowKeys?.has(row.rowKey) ||
+            (row.kind === "group" &&
+              itemRows.some(({ row: child }) =>
+                props.pinnedRowKeys?.has(child.rowKey),
+              ))
+          }
           defer={props.defer}
           placeholder={
             <div {...getShoppingListRowAccessibilityAttributes(row)}>
@@ -138,6 +206,7 @@ export const RetainedViewportListRenderer = (
         <ViewportContent
           key={row.rowKey}
           rowKey={row.rowKey}
+          retain={props.pinnedRowKeys?.has(row.rowKey)}
           defer={props.defer}
           placeholder={itemPlaceholder(row, layoutMode, props.getVisitId)}
           render={() => (
@@ -150,24 +219,33 @@ export const RetainedViewportListRenderer = (
     }
   }
   return (
-    <div
-      {...props.rootProps}
-      ref={props.rootRef}
-      role="list"
-      aria-label={props.accessibleLabel}
-      data-list-renderer={props.engine ?? "virtual"}
-      data-list-renderer-strategy="retained-viewport"
-      data-list-renderer-reason={props.selectionReason}
-      data-list-row-count={props.model.rows.length}
-      data-list-row-keys-stable={
-        props.model.hasStableRowKeys ? "true" : "false"
-      }
-      data-list-controller="shared"
-      data-list-focused-row-key={props.focusedRowKey ?? undefined}
-    >
-      {props.beforeContent}
-      {rendered}
-      {props.afterContent}
-    </div>
+    <ViewportRowStateContext.Provider value={rowStates.current}>
+      <div
+        {...props.rootProps}
+        ref={(node) => {
+          listRoot.current = node;
+          if (typeof props.rootRef === "function") props.rootRef(node);
+          else if (props.rootRef)
+            (
+              props.rootRef as React.MutableRefObject<HTMLDivElement | null>
+            ).current = node;
+        }}
+        role="list"
+        aria-label={props.accessibleLabel}
+        data-list-renderer={props.engine ?? "virtual"}
+        data-list-renderer-strategy="retained-viewport"
+        data-list-renderer-reason={props.selectionReason}
+        data-list-row-count={props.model.rows.length}
+        data-list-row-keys-stable={
+          props.model.hasStableRowKeys ? "true" : "false"
+        }
+        data-list-controller="shared"
+        data-list-focused-row-key={props.focusedRowKey ?? undefined}
+      >
+        {props.beforeContent}
+        {rendered}
+        {props.afterContent}
+      </div>
+    </ViewportRowStateContext.Provider>
   );
 };

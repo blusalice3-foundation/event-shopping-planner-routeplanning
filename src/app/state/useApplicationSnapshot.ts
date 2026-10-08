@@ -58,6 +58,11 @@ import {
   type ItemContentEdit,
 } from "./itemContentEdits";
 
+import {
+  planItemContentMutation,
+  type UpdateItemFieldsInput,
+} from "./itemFieldMutation";
+
 export const MEMO_SAVE_DELAY_MS = 300;
 export const MEMO_SAVE_MAX_WAIT_MS = 1000;
 
@@ -97,6 +102,7 @@ type Batch = {
   acceptedBase?: PersistenceSnapshot;
   acceptedDraft?: PersistenceSnapshot;
   itemContentEdits?: readonly ItemContentEdit[];
+  inputItemIds?: readonly string[];
 };
 function changedSnapshotStores(
   base: PersistenceSnapshot,
@@ -134,6 +140,8 @@ function planBatch(
   latest: PersistenceSnapshot,
   choices: MutationChoices = {},
 ): MutationPlan {
+  if (batch.itemContentEdits)
+    return planItemContentMutation(latest, batch.itemContentEdits);
   const projected = projectConsistencySnapshot(
     latest,
     batch.context.eventName,
@@ -308,10 +316,7 @@ export function useApplicationSnapshot(
         edits.every((edit, index) => edit === cached.edits[index])
       )
         return cached.value;
-      const value = edits.reduce(
-        (current, edit) => applyItemContentEdits(current, edit),
-        snapshot,
-      );
+      const value = applyItemContentEdits(snapshot, edits.flat());
       itemContentOverlayCache.current = { source: snapshot, edits, value };
       return value;
     },
@@ -349,11 +354,14 @@ export function useApplicationSnapshot(
           precedingBatches(id).some((batch) => retained.current.has(batch.id)),
         drain: () => handlers.current.drain(),
         readDurable: () => persistence.readApplicationSnapshot(),
+        commitItemContentEdits: persistence.commitItemContentEdits,
         commit: async (snapshot, expectedRoots, base, invalidatedEvents) => {
-          const errors = [
-            ...validateSnapshotStructure(snapshot),
-            ...validateSnapshotReferences(snapshot),
-          ];
+          const errors = persistence.commitItemContentEdits
+            ? []
+            : [
+                ...validateSnapshotStructure(snapshot),
+                ...validateSnapshotReferences(snapshot),
+              ];
           if (errors.length) throw new Error(errors.join("\n"));
           const changedStores = changedSnapshotStores(base, snapshot);
           // Decide after reference repair: saved visit lists/routes make an
@@ -638,27 +646,32 @@ export function useApplicationSnapshot(
   );
   const submitBatch = useCallback(
     (batch: Batch) => {
+      if (batch.itemContentEdits) batch.retainOnConflict = true;
       submitted.current.push(batch);
-      const events = [
-        ...new Set(
-          keys.flatMap((key) => [
-            ...Object.keys(batch.base[key]),
-            ...Object.keys(batch.draft[key]),
-          ]),
-        ),
-      ].filter((name) =>
-        keys.some(
-          (key) => !jsonEqual(batch.base[key][name], batch.draft[key][name]),
-        ),
-      );
+      const events = batch.itemContentEdits
+        ? [...new Set(batch.itemContentEdits.map((edit) => edit.eventName))]
+        : [
+            ...new Set(
+              keys.flatMap((key) => [
+                ...Object.keys(batch.base[key]),
+                ...Object.keys(batch.draft[key]),
+              ]),
+            ),
+          ].filter((name) =>
+            keys.some(
+              (key) =>
+                !jsonEqual(batch.base[key][name], batch.draft[key][name]),
+            ),
+          );
       return request({
         id: batch.id,
         events,
+        itemContentEdits: batch.itemContentEdits,
         plan: (latest, choices) => {
           const plan = planBatch(batch, latest, choices);
           // Reference repair can turn one setter into a multi-store operation.
           // Only standalone setter edits are accepted before a successful save.
-          if (batch.retryOnFailure)
+          if (batch.retryOnFailure && !batch.itemContentEdits)
             batch.retainOnConflict = shouldRetainSetterBatch(
               batch,
               latest,
@@ -747,6 +760,75 @@ export function useApplicationSnapshot(
         ]),
       ) as unknown as PersistedStateSetters,
     [flushDraft, rebuildPreview],
+  );
+  const updateItemFields = useCallback(
+    (input: UpdateItemFieldsInput) => {
+      if (draft.current && !draft.current.itemContentEdits) flushDraft();
+      const source = previewRef.current;
+      const fields = Object.fromEntries(
+        Object.entries(input.changes).map(([key, value]) => [
+          key,
+          { present: value !== undefined, value },
+        ]),
+      );
+      if (!Object.keys(fields).length) return;
+      const proposedEdit: ItemContentEdit = {
+        eventName: input.eventName,
+        itemId: input.itemId,
+        fields,
+        baseline: input.baseline as unknown as Record<string, unknown>,
+      };
+      const accepted = planItemContentMutation(source, [proposedEdit]);
+      const edit = accepted.itemContentEdits[0];
+      const next = accepted.snapshot;
+      if (next === source) return;
+      if (!draft.current) {
+        draft.current = {
+          id: `application:${++sequence.current}`,
+          context: { ...contextRef.current },
+          base: source,
+          draft: next,
+          retryOnFailure: true,
+          itemContentEdits: [edit],
+          inputItemIds: [input.itemId],
+        };
+      } else {
+        const existing = draft.current.itemContentEdits ?? [];
+        const previous = existing.find(
+          (entry) =>
+            entry.eventName === edit.eventName && entry.itemId === edit.itemId,
+        );
+        const merged = previous
+          ? {
+              ...edit,
+              baseline: previous.baseline,
+              fields: { ...previous.fields, ...edit.fields },
+            }
+          : edit;
+        draft.current.inputItemIds = [
+          ...new Set([...(draft.current.inputItemIds ?? []), input.itemId]),
+        ];
+        draft.current.draft = next;
+        draft.current.itemContentEdits = [
+          ...existing.filter((entry) => entry !== previous),
+          merged,
+        ];
+      }
+      previewRef.current = next;
+      if (isMemoOnlyItemContentEdit(draft.current.itemContentEdits)) {
+        startTransition(() => setItemDraftRevision((revision) => revision + 1));
+        if (memoSaveTimer.current !== null) clearTimeout(memoSaveTimer.current);
+        memoSaveTimer.current = setTimeout(flushDraft, MEMO_SAVE_DELAY_MS);
+        memoMaxWaitTimer.current ??= setTimeout(
+          flushDraft,
+          MEMO_SAVE_MAX_WAIT_MS,
+        );
+      } else {
+        setItemDraftRevision((revision) => revision + 1);
+        queueMicrotask(flushDraft);
+      }
+    },
+    [flushDraft],
   );
   const hydrationSetters = useMemo(
     () =>
@@ -917,6 +999,22 @@ export function useApplicationSnapshot(
     previewRef,
     values,
     setters,
+    updateItemFields,
+    pendingItemIds: [
+      ...new Set(
+        [
+          ...submitted.current,
+          ...(draft.current ? [draft.current] : []),
+        ].flatMap(
+          (batch) =>
+            batch.inputItemIds?.filter((id) =>
+              batch.itemContentEdits?.some(
+                (edit) => edit.itemId === id && edit.eventName === eventName,
+              ),
+            ) ?? [],
+        ),
+      ),
+    ],
     hydrationSetters,
     handlers,
     request,

@@ -1,4 +1,6 @@
 import { useCallback } from "react";
+import type { UpdateItemFieldsInput } from "../state/itemFieldMutation";
+import { editableItemContentFields } from "../state/itemContentEdits";
 import { applyChangedFields } from "../../features/consistency/domain/mutations";
 import type { AppNavigationCommands } from "../navigation";
 import type {
@@ -78,6 +80,7 @@ export interface ShoppingItemMutationStatePort {
 }
 
 export interface ShoppingItemMutationActionPort {
+  updateItemFields?(input: UpdateItemFieldsInput): void;
   setEventLists(updater: StateUpdater<EventLists>): void;
   setEventMetadata(updater: StateUpdater<Record<string, EventMetadata>>): void;
   setDayModes(updater: StateUpdater<DayModesByEvent>): void;
@@ -265,6 +268,7 @@ export const useShoppingItemMutationCommands = ({
   } = state;
   const {
     setEventLists,
+    updateItemFields,
     updateExecuteModeItems,
     setRecentlyChangedItemIds,
     openDuplicateEvent,
@@ -445,8 +449,23 @@ export const useShoppingItemMutationCommands = ({
             currentItem,
           ) as ShoppingItem)
         : updatedItem;
+      const fieldOnly =
+        updateItemFields &&
+        [
+          ...new Set([
+            ...Object.keys(currentItem),
+            ...Object.keys(intendedItem),
+          ]),
+        ].every(
+          (key) =>
+            editableItemContentFields.has(key) ||
+            Object.is(
+              (currentItem as unknown as Record<string, unknown>)[key],
+              (intendedItem as unknown as Record<string, unknown>)[key],
+            ),
+        );
       const result = computeUpdateItem(
-        currentItems,
+        fieldOnly ? [currentItem] : currentItems,
         intendedItem,
         currentMode as ViewMode | undefined,
         currentItem?.protectionLevel,
@@ -456,10 +475,45 @@ export const useShoppingItemMutationCommands = ({
         (candidate) => candidate.id === updatedItem.id,
       );
 
-      setEventLists((current) => ({
-        ...current,
-        [activeEventName]: result.items,
-      }));
+      const changes = finalUpdatedItem
+        ? Object.fromEntries(
+            [
+              ...new Set([
+                ...Object.keys(currentItem),
+                ...Object.keys(finalUpdatedItem),
+              ]),
+            ]
+              .filter(
+                (key) =>
+                  !Object.is(
+                    (currentItem as unknown as Record<string, unknown>)[key],
+                    (finalUpdatedItem as unknown as Record<string, unknown>)[
+                      key
+                    ],
+                  ),
+              )
+              .map((key) => [
+                key,
+                (finalUpdatedItem as unknown as Record<string, unknown>)[key],
+              ]),
+          )
+        : {};
+      if (
+        updateItemFields &&
+        Object.keys(changes).every((key) => editableItemContentFields.has(key))
+      ) {
+        updateItemFields({
+          eventName: activeEventName,
+          itemId: updatedItem.id,
+          changes,
+          baseline: currentItem,
+        });
+      } else {
+        setEventLists((current) => ({
+          ...current,
+          [activeEventName]: result.items,
+        }));
+      }
 
       if (
         currentItem &&
@@ -505,6 +559,7 @@ export const useShoppingItemMutationCommands = ({
       executeModeItemsRef,
       notify,
       setEventLists,
+      updateItemFields,
       setRecentlyChangedItemIds,
       updateExecuteModeItems,
     ],

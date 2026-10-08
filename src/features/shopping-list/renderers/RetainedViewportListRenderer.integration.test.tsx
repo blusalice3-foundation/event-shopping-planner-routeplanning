@@ -214,7 +214,7 @@ describe("retained viewport rendering", () => {
     expect(view.container.querySelectorAll("input")).toHaveLength(100);
     expect(view.container.querySelectorAll("[data-row-key]")).toHaveLength(101);
     fireEvent(window, new Event("afterprint"));
-    expect(view.container.querySelectorAll("input")).toHaveLength(100);
+    expect(view.container.querySelectorAll("input")).toHaveLength(0);
   });
 
   it("activates a pending row and transfers forward/reverse Tab focus to its native controls", () => {
@@ -414,7 +414,7 @@ describe("retained viewport capability", () => {
   it.each([
     [{ runtimeAvailable: false }, "runtime-unavailable"],
     [{ zoomPercent: null }, "zoom-unknown"],
-    [{ zoomPercent: 125 }, "zoom-unsupported"],
+    [{ zoomPercent: 0 }, "zoom-unsupported"],
     [{ recoveryActive: null }, "recovery-state-unknown"],
     [{ recoveryActive: true }, "recovery-active"],
     [{ stableRowKeys: false }, "row-keys-unstable"],
@@ -426,3 +426,83 @@ describe("retained viewport capability", () => {
     ).toMatchObject({ eligible: false, reason });
   });
 });
+
+it("releases visited controls and options while retaining lightweight anchors", () => {
+  const model = buildListRows({ items });
+  const view = render(
+    <RetainedViewportListRenderer
+      model={model}
+      accessibleLabel="買い物リスト"
+      renderRow={(row) =>
+        row.kind === "item" ? (
+          <select aria-label={row.itemId}>
+            <option>ユーザー登録</option>
+            <option>エラーが発生しました</option>
+          </select>
+        ) : null
+      }
+    />,
+  );
+  const notify = (key: string, visible: boolean) => {
+    const target = [
+      ...view.container.querySelectorAll<HTMLElement>(
+        "[data-viewport-row-key]",
+      ),
+    ].find((row) => row.dataset.viewportRowKey === key)!;
+    act(() =>
+      callback(
+        [
+          {
+            target,
+            isIntersecting: visible,
+          } as unknown as IntersectionObserverEntry,
+        ],
+        {} as IntersectionObserver,
+      ),
+    );
+  };
+  for (const row of model.rows) {
+    notify(row.rowKey, true);
+    notify(row.rowKey, false);
+  }
+  expect(view.container.querySelectorAll("select, option")).toHaveLength(0);
+  expect(view.container.querySelectorAll("[data-row-key]")).toHaveLength(100);
+  notify(model.rows[99].rowKey, true);
+  expect(view.container.querySelectorAll("option")).toHaveLength(2);
+});
+it("keeps a pinned offscreen target until its dialog closes", () => {
+  const model = buildListRows({ items });
+  const props = {
+    model,
+    accessibleLabel: "買い物リスト",
+    renderRow: (row: (typeof model.rows)[number]) =>
+      row.kind === "item" ? <input aria-label={row.itemId} /> : null,
+  };
+  const view = render(
+    <RetainedViewportListRenderer
+      {...props}
+      pinnedRowKeys={new Set([model.rows[0].rowKey])}
+    />,
+  );
+  expect(view.container.querySelectorAll("input")).toHaveLength(1);
+  view.rerender(
+    <RetainedViewportListRenderer {...props} pinnedRowKeys={new Set()} />,
+  );
+  expect(view.container.querySelectorAll("input")).toHaveLength(0);
+});
+it.each([75, 125, 150, 200])(
+  "keeps the viewport capability at %i percent zoom",
+  (zoomPercent) => {
+    expect(
+      evaluateRetainedViewportEligibility({
+        runtimeAvailable: true,
+        zoomPercent,
+        recoveryActive: false,
+        rowCount: 1500,
+        minimumRowCount: 80,
+        stableRowKeys: true,
+        estimatedRowHeightPx: 136,
+      }).eligible,
+    ).toBe(true);
+  },
+);

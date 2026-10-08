@@ -951,3 +951,34 @@ export function findAllCrossingsIndexed(
 
   return crossings;
 }
+
+const routeCrossingsCache = new WeakMap<
+  readonly { path: { row: number; col: number }[] }[],
+  CrossingInfo[]
+>();
+/** Cache intersections in map coordinates; zoom only scales their positions. */
+export function getRouteCrossings(
+  segments: readonly { path: { row: number; col: number }[] }[],
+  cellSize: number,
+): CrossingInfo[] {
+  const referenceCellSize = 32;
+  let crossings = routeCrossingsCache.get(segments);
+  if (!crossings) {
+    const edges = segments.map((segment) =>
+      segment.path.slice(1).map((point, index) => ({
+        x1: (segment.path[index].col - 0.5) * referenceCellSize,
+        y1: (segment.path[index].row - 0.5) * referenceCellSize,
+        x2: (point.col - 0.5) * referenceCellSize,
+        y2: (point.row - 0.5) * referenceCellSize,
+      })),
+    );
+    crossings = findAllCrossingsIndexed(edges, referenceCellSize);
+    routeCrossingsCache.set(segments, crossings);
+  }
+  const ratio = cellSize / referenceCellSize;
+  return crossings.map((crossing) => ({
+    ...crossing,
+    x: crossing.x * ratio,
+    y: crossing.y * ratio,
+  }));
+}

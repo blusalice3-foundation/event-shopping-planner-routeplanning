@@ -1490,3 +1490,100 @@ describe("accepted memo input and batched saving", () => {
     h.unmount();
   });
 });
+
+it("keeps targeted field edits and other item references through a failed save and retry", async () => {
+  const h = harness();
+  const first = { ...purchase };
+  const untouched = { ...purchase, id: "B" };
+  const past = [{ ...purchase, id: "past" }];
+  h.durable().eventLists = { event: [first, untouched], past };
+  h.durable().eventConsistency.past = createEventConsistency();
+  act(() => {
+    h.result.current.hydrationSetters.setEventLists({
+      event: [first, untouched],
+      past,
+    });
+    h.result.current.hydrationSetters.setEventConsistency(
+      h.durable().eventConsistency,
+    );
+  });
+  const before = h.result.current.previewRef.current.eventLists;
+  h.commit.mockRejectedValueOnce(new Error("購入記録の保存失敗"));
+  act(() => {
+    h.result.current.updateItemFields({
+      eventName: "event",
+      itemId: first.id,
+      baseline: first,
+      changes: {
+        quantity: 7,
+        purchaseStatus: "Purchased",
+        remarks: "ユーザー登録",
+      },
+    });
+    expect(h.result.current.previewRef.current.eventLists.past).toBe(
+      before.past,
+    );
+    expect(h.result.current.previewRef.current.eventLists.event[1]).toBe(
+      before.event[1],
+    );
+  });
+  await waitFor(() =>
+    expect(h.result.current.retryableFailures).toHaveLength(1),
+  );
+  expect(h.result.current.pendingItemIds).toEqual([first.id]);
+  expect(h.result.current.values.eventLists.event[0]).toMatchObject({
+    quantity: 7,
+    purchaseStatus: "Purchased",
+    remarks: "ユーザー登録",
+  });
+  expect(h.durable().eventLists.event[0]).toMatchObject({
+    purchaseStatus: "None",
+  });
+  await act(async () => {
+    h.result.current.retryPending();
+    await h.result.current.coordinator.enqueue(() => undefined);
+  });
+  await waitFor(() => expect(h.result.current.pendingCount).toBe(0));
+  expect(h.durable().eventLists.event[0]).toMatchObject({
+    quantity: 7,
+    purchaseStatus: "Purchased",
+    remarks: "ユーザー登録",
+  });
+  h.unmount();
+});
+
+it("normalizes limited quantities before publishing or saving a direct field command", async () => {
+  const h = harness();
+  const item = {
+    ...purchase,
+    purchaseStatus: "LimitedPurchase" as const,
+    quantity: 5,
+    limitedPurchasedQuantity: 4,
+  };
+  h.durable().eventLists.event = [item];
+  act(() => h.result.current.hydrationSetters.setEventLists({ event: [item] }));
+  act(() => {
+    h.result.current.updateItemFields({
+      eventName: "event",
+      itemId: item.id,
+      baseline: item,
+      changes: { quantity: 2 },
+    });
+    expect(
+      h.result.current.previewRef.current.eventLists.event[0],
+    ).toMatchObject({ quantity: 2, purchaseStatus: "LimitedPurchase" });
+  });
+  expect(h.result.current.values.eventLists.event[0]).toMatchObject({
+    quantity: 2,
+    purchaseStatus: "LimitedPurchase",
+  });
+  expect(h.result.current.values.eventLists.event[0]).not.toHaveProperty(
+    "limitedPurchasedQuantity",
+  );
+  await act(async () => h.result.current.flush());
+  expect(h.durable().eventLists.event[0]).toMatchObject({
+    quantity: 2,
+    purchaseStatus: "LimitedPurchase",
+  });
+  h.unmount();
+});

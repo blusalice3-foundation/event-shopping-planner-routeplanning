@@ -1,3 +1,4 @@
+import { CanvasGestureRaster } from "../features/map/canvas/CanvasGestureRaster";
 import { normalizeExecutionVisitDay } from "../utils/visitProjection";
 
 import {
@@ -29,12 +30,11 @@ import {
 } from "../features/map/canvas/useCanvasViewport";
 import { buildSpaceKey } from "../features/space-navigation/domain/visitIdentity";
 import {
-  findAllCrossingsIndexed,
+  getRouteCrossings,
   buildCrossingLookup,
   getBridgeParams,
   collectEdgeWithBridges,
   BatchedPathRenderer,
-  PixelEdge,
 } from "../utils/routeRendering";
 import type { RouteDiagnostics } from "../utils/routeDiagnostics";
 import RouteDiagnosticsOverlay from "./map/RouteDiagnosticsOverlay";
@@ -304,6 +304,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     isDraggingRef,
     isPinchGestureRef,
     isRotationInteracting,
+    isViewportInteracting,
     mapCenterX,
     mapCenterY,
     offset,
@@ -963,23 +964,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
   const routeCrossingData = useMemo(() => {
     if (routeSegments.length === 0) return null;
 
-    const allPixelEdges: PixelEdge[][] = routeSegments.map((segment) => {
-      if (segment.path.length < 2) return [];
-      const edges: PixelEdge[] = [];
-      for (let i = 0; i < segment.path.length - 1; i++) {
-        const p1 = segment.path[i];
-        const p2 = segment.path[i + 1];
-        edges.push({
-          x1: (p1.col - 0.5) * cellSize,
-          y1: (p1.row - 0.5) * cellSize,
-          x2: (p2.col - 0.5) * cellSize,
-          y2: (p2.row - 0.5) * cellSize,
-        });
-      }
-      return edges;
-    });
-
-    const crossings = findAllCrossingsIndexed(allPixelEdges, cellSize);
+    const crossings = getRouteCrossings(routeSegments, cellSize);
     const crossingLookup = buildCrossingLookup(crossings);
     const bridgeParams = getBridgeParams(cellSize);
 
@@ -989,6 +974,27 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
   const cellLayerCacheRef = useRef<CanvasCellLayerCache | null>(null);
   if (!cellLayerCacheRef.current)
     cellLayerCacheRef.current = new CanvasCellLayerCache();
+  const gestureRaster = useRef(new CanvasGestureRaster());
+  const gestureDependencies = useMemo(
+    () => [
+      mapData,
+      cellStates,
+      routeSegments,
+      isDetailedView,
+      showNumbers,
+      showBorders,
+      isDarkMode,
+    ],
+    [
+      mapData,
+      cellStates,
+      routeSegments,
+      isDetailedView,
+      showNumbers,
+      showBorders,
+      isDarkMode,
+    ],
+  );
   const drawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -1006,6 +1012,18 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
     if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
 
+    if (
+      gestureRaster.current.paint(
+        ctx,
+        cellSize,
+        offsetRef.current,
+        rotationRadians,
+        gestureDependencies,
+        isViewportInteracting,
+        dpr,
+      )
+    )
+      return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, containerWidth, containerHeight);
 
@@ -1775,6 +1793,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       showNumbers,
       showBorders,
       isRotationInteracting,
+      isViewportInteracting,
       isDarkMode,
       resolvedFormalPhase,
       numberCellOutlineStyle,
@@ -1790,6 +1809,18 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
         const previousContext = ctx;
         ctx = layerContext;
         try {
+          if (
+            gestureRaster.current.paint(
+              ctx,
+              cellSize,
+              offsetRef.current,
+              rotationRadians,
+              gestureDependencies,
+              isViewportInteracting,
+              dpr,
+            )
+          )
+            return;
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
           ctx.translate(currentOffset.x, currentOffset.y);
           if (rotationRadians !== 0) {
@@ -2051,7 +2082,15 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     }
 
     ctx.restore();
+    gestureRaster.current.capture(
+      ctx,
+      cellSize,
+      offsetRef.current,
+      rotationRadians,
+      gestureDependencies,
+    );
   }, [
+    gestureDependencies,
     cellViewportIndex,
     canvasRef,
     containerRef,
@@ -2071,6 +2110,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     resolvedFormalPhase,
     isDarkMode,
     isRotationInteracting,
+    isViewportInteracting,
     rotationRadians,
     mapCenterX,
     mapCenterY,
@@ -2084,7 +2124,8 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
 
   // 依存値が変わったら再描画する。
   useEffect(() => {
-    drawCanvas();
+    const frame = requestAnimationFrame(drawCanvas);
+    return () => cancelAnimationFrame(frame);
   }, [drawCanvas]);
 
   const activeScrollBounds = useMemo(() => {

@@ -156,6 +156,24 @@ describe("ShoppingItemCard purchase status control", () => {
     );
   });
 
+  it("evaluates a same-task click burst from the latest accepted status", () => {
+    const { onUpdate } = renderCard();
+    const button = getStatusButton();
+    act(() => {
+      button.click();
+      button.click();
+      button.click();
+    });
+    expect(onUpdate.mock.calls.map(([item]) => item.purchaseStatus)).toEqual([
+      "Purchased",
+      "SoldOut",
+      "Absent",
+    ]);
+    expect(button).toHaveAccessibleName(
+      "Current status: 欠席. Click to change.",
+    );
+  });
+
   it("opens the limited purchase dialog without saving when cycle reaches LimitedPurchase", () => {
     const { onUpdate } = renderCard({
       item: { ...baseItem, purchaseStatus: "Late", quantity: 5 },

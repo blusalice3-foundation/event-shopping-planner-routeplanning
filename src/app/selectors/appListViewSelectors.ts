@@ -219,6 +219,18 @@ export interface SearchMatchesSelectorInput {
   readonly currentTabItems: readonly ShoppingItem[];
 }
 
+const itemSearchStrings = new WeakMap<ShoppingItem, readonly string[]>();
+const searchStringsForItem = (item: ShoppingItem): readonly string[] => {
+  let strings = itemSearchStrings.get(item);
+  if (!strings) {
+    strings = [item.circle, item.title, item.remarks].map((value) =>
+      value.toLowerCase(),
+    );
+    itemSearchStrings.set(item, strings);
+  }
+  return strings;
+};
+
 export const selectSearchMatches = (
   input: SearchMatchesSelectorInput,
 ): string[] => {
@@ -232,11 +244,8 @@ export const selectSearchMatches = (
 
   const keyword = input.searchKeyword.trim().toLowerCase();
   return input.currentTabItems
-    .filter(
-      (item) =>
-        item.circle.toLowerCase().includes(keyword) ||
-        item.title.toLowerCase().includes(keyword) ||
-        item.remarks.toLowerCase().includes(keyword),
+    .filter((item) =>
+      searchStringsForItem(item).some((value) => value.includes(keyword)),
     )
     .map((item) => item.id);
 };

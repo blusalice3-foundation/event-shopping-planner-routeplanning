@@ -1,3 +1,4 @@
+import { CanvasGestureRaster } from "../../features/map/canvas/CanvasGestureRaster";
 import { resolveLocation } from "../../features/consistency/domain/membership";
 import React, {
   useRef,
@@ -20,7 +21,7 @@ import {
 } from "../../types/map";
 import { ShoppingItem } from "../../types/item";
 import { useCanvasViewport } from "../../features/map/canvas/useCanvasViewport";
-import { generateRouteSegments, simplifyPath } from "../../utils/pathfinding";
+import { useRouteCalculation } from "../../features/map/routing/useRouteCalculation";
 import {
   filterFirstRouteMarkers,
   normalizeMapRouteDayText,
@@ -31,12 +32,11 @@ import {
   type MapRouteHitResult,
 } from "../../utils/mapRouteHitTest";
 import {
-  findAllCrossingsIndexed,
+  getRouteCrossings,
   buildCrossingLookup,
   getBridgeParams,
   collectEdgeWithBridges,
   BatchedPathRenderer,
-  PixelEdge,
 } from "../../utils/routeRendering";
 import MapCanvasPresentation from "./MapCanvasPresentation";
 
@@ -275,6 +275,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     isDraggingRef,
     isPinchGestureRef,
     isRotationInteracting,
+    isViewportInteracting,
     mapCenterX,
     mapCenterY,
     offsetRef,
@@ -572,24 +573,16 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     [routePoints],
   );
 
-  const routeSegments = useMemo(() => {
-    if (!effectiveRouteVisible) return [];
-    if (routeSegmentsOverride) return routeSegmentsOverride;
-    if (routeInsertSelectionActive) return [];
-    if (routePoints.length < 2) return [];
-
-    const segments = generateRouteSegments(mapData, routePoints);
-    return segments.map((seg) => ({
-      ...seg,
-      path: simplifyPath(seg.path),
-    }));
-  }, [
-    effectiveRouteVisible,
-    routeSegmentsOverride,
-    routeInsertSelectionActive,
-    routePoints,
+  const { result: calculatedRouteSegments } = useRouteCalculation({
+    kind: "segments",
     mapData,
-  ]);
+    points: routePoints,
+    enabled:
+      effectiveRouteVisible &&
+      !routeSegmentsOverride &&
+      !routeInsertSelectionActive,
+  });
+  const routeSegments = routeSegmentsOverride ?? calculatedRouteSegments;
 
   // Cache number cells for quick lookup.
   const numberCellSet = useMemo(() => {
@@ -604,23 +597,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
   const routeCrossingData = useMemo(() => {
     if (!effectiveRouteVisible || routeSegments.length === 0) return null;
 
-    const allPixelEdges: PixelEdge[][] = routeSegments.map((segment) => {
-      if (segment.path.length < 2) return [];
-      const edges: PixelEdge[] = [];
-      for (let i = 0; i < segment.path.length - 1; i++) {
-        const p1 = segment.path[i];
-        const p2 = segment.path[i + 1];
-        edges.push({
-          x1: (p1.col - 0.5) * cellSize,
-          y1: (p1.row - 0.5) * cellSize,
-          x2: (p2.col - 0.5) * cellSize,
-          y2: (p2.row - 0.5) * cellSize,
-        });
-      }
-      return edges;
-    });
-
-    const crossings = findAllCrossingsIndexed(allPixelEdges, cellSize);
+    const crossings = getRouteCrossings(routeSegments, cellSize);
     const crossingLookup = buildCrossingLookup(crossings);
     const bridgeParams = getBridgeParams(cellSize);
 
@@ -668,6 +645,27 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     return { crossingLookup, bridgeParams, edgeUsage };
   }, [effectiveRouteVisible, routeSegments, cellSize]);
 
+  const gestureRaster = useRef(new CanvasGestureRaster());
+  const gestureDependencies = useMemo(
+    () => [
+      mapData,
+      cellStates,
+      routeSegments,
+      isDetailedView,
+      showNumbers,
+      showBorders,
+      isDarkMode,
+    ],
+    [
+      mapData,
+      cellStates,
+      routeSegments,
+      isDetailedView,
+      showNumbers,
+      showBorders,
+      isDarkMode,
+    ],
+  );
   const drawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -681,6 +679,18 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
 
     syncCanvasBackingStoreSize(canvas, containerWidth, containerHeight, dpr);
 
+    if (
+      gestureRaster.current.paint(
+        ctx,
+        cellSize,
+        offsetRef.current,
+        rotationRadians,
+        gestureDependencies,
+        isViewportInteracting,
+        dpr,
+      )
+    )
+      return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.clearRect(0, 0, containerWidth, containerHeight);
@@ -2256,7 +2266,15 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
       ctx.fillText(label, labelX, labelY);
       ctx.restore();
     }
+    gestureRaster.current.capture(
+      ctx,
+      cellSize,
+      offsetRef.current,
+      rotationRadians,
+      gestureDependencies,
+    );
   }, [
+    gestureDependencies,
     canvasRef,
     containerRef,
     mapData,
@@ -2280,6 +2298,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     tapAssist,
     isDarkMode,
     isRotationInteracting,
+    isViewportInteracting,
     rotationRadians,
     mapCenterX,
     mapCenterY,
@@ -2293,7 +2312,8 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
 
   // Redraw when dependencies change.
   useEffect(() => {
-    drawCanvas();
+    const frame = requestAnimationFrame(drawCanvas);
+    return () => cancelAnimationFrame(frame);
   }, [drawCanvas]);
 
   const hasRouteInsertRouteSnapshot =

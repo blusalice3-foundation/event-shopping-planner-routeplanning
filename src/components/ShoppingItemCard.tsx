@@ -1,5 +1,6 @@
 import React, {
   useCallback,
+  useContext,
   useLayoutEffect,
   useMemo,
   useState,
@@ -7,6 +8,11 @@ import React, {
   useEffect,
 } from "react";
 import { createPortal } from "react-dom";
+import {
+  AcceptedItemContext,
+  useCardExpansion,
+} from "../features/shopping-list/renderers/ViewportRowState";
+import { VIEWPORT_RETENTION_EVENT } from "../features/shopping-list/renderers/ViewportContent";
 import {
   ShoppingItem,
   PurchaseStatus,
@@ -471,7 +477,11 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   preferNativeOptions = false,
 }) => {
   const [menuVisible, setMenuVisible] = useState(false);
-  const [optimisticItem, setOptimisticItem] = useState(sourceItem);
+  const readAcceptedItem = useContext(AcceptedItemContext);
+  const [optimisticItem, setOptimisticItem] = useState(
+    () => readAcceptedItem?.(sourceItem.id) ?? sourceItem,
+  );
+  const optimisticItemRef = useRef(optimisticItem);
   const longPressTimeout = useRef<number | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const purchaseStatusButtonRef = useRef<HTMLButtonElement>(null);
@@ -486,14 +496,17 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   const item = optimisticItem;
 
   useEffect(() => {
+    const accepted = readAcceptedItem?.(sourceItem.id) ?? sourceItem;
+    optimisticItemRef.current = accepted;
     setOptimisticItem((prev) =>
-      areSameItemSnapshot(prev, sourceItem) ? prev : sourceItem,
+      areSameItemSnapshot(prev, accepted) ? prev : accepted,
     );
-  }, [sourceItem]);
+  }, [sourceItem, readAcceptedItem]);
 
   const commitItemUpdate = useCallback(
     (updatedItem: ShoppingItem) => {
       if (readOnly) return;
+      optimisticItemRef.current = updatedItem;
       setOptimisticItem((prev) =>
         areSameItemSnapshot(prev, updatedItem) ? prev : updatedItem,
       );
@@ -503,7 +516,23 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   );
 
   // サークル名・タイトルが truncate されている時、タップで展開/折り畳みを切替
-  const [expanded, setExpanded] = useState<Set<"circle" | "title">>(new Set());
+  const [expanded, setExpanded] = useCardExpansion(sourceItem.id);
+  useLayoutEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    card.dataset.viewportRetain = String(
+      menuVisible ||
+        purchaseStatusMenuOpen ||
+        limitedDialogOpen ||
+        singleQuantityChoiceOpen,
+    );
+    card.dispatchEvent(new Event(VIEWPORT_RETENTION_EVENT, { bubbles: true }));
+  }, [
+    menuVisible,
+    purchaseStatusMenuOpen,
+    limitedDialogOpen,
+    singleQuantityChoiceOpen,
+  ]);
   // ref は truncate が実際に発生する <span> に付ける（button 側は inline-flex なので
   const circleTextRef = useRef<HTMLSpanElement>(null);
   const titleTextRef = useRef<HTMLSpanElement>(null);
@@ -517,14 +546,17 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
 
   const publishedTruncation = useRef(truncatedMap);
 
-  const toggleExpand = useCallback((key: "circle" | "title") => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }, []);
+  const toggleExpand = useCallback(
+    (key: "circle" | "title") => {
+      setExpanded((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+      });
+    },
+    [setExpanded],
+  );
 
   // 全カードの幅を先に読み取り、判定結果の更新でレイアウトを繰り返さない。
   useLayoutEffect(
@@ -563,7 +595,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   const handlePriceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     const updatedItem: ShoppingItem = {
-      ...item,
+      ...optimisticItemRef.current,
       price: value === "" ? null : parseInt(value, 10) || 0,
     };
     commitItemUpdate(updatedItem);
@@ -572,7 +604,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   const handleQuantityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = parseInt(e.target.value, 10) || 1;
     const updatedItem: ShoppingItem = {
-      ...item,
+      ...optimisticItemRef.current,
       quantity: value,
     };
     commitItemUpdate(updatedItem);
@@ -695,27 +727,29 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
         return;
       }
 
+      const current = optimisticItemRef.current;
       const nextItem =
-        item.purchaseStatus === "LimitedPurchase" ||
-        item.limitedPurchasedQuantity !== undefined
-          ? clearLimitedPurchase({ ...item, purchaseStatus: nextStatus })
-          : { ...item, purchaseStatus: nextStatus };
+        current.purchaseStatus === "LimitedPurchase" ||
+        current.limitedPurchasedQuantity !== undefined
+          ? clearLimitedPurchase({ ...current, purchaseStatus: nextStatus })
+          : { ...current, purchaseStatus: nextStatus };
 
       commitItemUpdate(nextItem);
-      if (nextStatus === "SoldOut" && item.purchaseStatus !== "SoldOut") {
+      if (nextStatus === "SoldOut" && current.purchaseStatus !== "SoldOut") {
         onPostEventDistributionCheckRequest?.(nextItem);
       }
     },
-    [item, commitItemUpdate, onPostEventDistributionCheckRequest, readOnly],
+    [commitItemUpdate, onPostEventDistributionCheckRequest, readOnly],
   );
 
   const togglePurchaseStatus = useCallback(() => {
-    const nextStatus = getNextPurchaseStatus(item.purchaseStatus, {
-      item,
+    const current = optimisticItemRef.current;
+    const nextStatus = getNextPurchaseStatus(current.purchaseStatus, {
+      item: current,
       skipLimitedPurchaseForSingleQuantity,
     });
     commitPurchaseStatusChange(nextStatus);
-  }, [item, commitPurchaseStatusChange, skipLimitedPurchaseForSingleQuantity]);
+  }, [commitPurchaseStatusChange, skipLimitedPurchaseForSingleQuantity]);
 
   const closePurchaseStatusMenu = useCallback(
     (options: { restoreFocus?: boolean } = {}) => {
@@ -897,7 +931,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   }, [item.url]);
 
   const handleRemarksChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    commitItemUpdate({ ...item, remarks: e.target.value });
+    commitItemUpdate({ ...optimisticItemRef.current, remarks: e.target.value });
   };
 
   const clearLongPress = useCallback(() => {

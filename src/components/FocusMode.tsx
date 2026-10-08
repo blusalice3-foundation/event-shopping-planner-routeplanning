@@ -73,10 +73,7 @@ import {
   getMapRenderingSnapshot,
 } from "../features/map/canvas/mapRenderingSnapshot";
 import { buildHallDefinitionsRoutingSignature } from "../utils/hallRoutingSignature";
-import {
-  calculateStrictFocusRoute,
-  type FocusRouteCalculation,
-} from "../utils/focusRouteCalculation";
+import { useRouteCalculation } from "../features/map/routing/useRouteCalculation";
 import { buildRouteDiagnostics } from "../utils/routeDiagnostics";
 import { acquireBodyScrollLock } from "../utils/bodyScrollLock";
 import {
@@ -1305,37 +1302,12 @@ const FocusMode: React.FC<FocusModeProps> = ({
 
     return coords;
   }, [allVisitKeys, visitKeyCellMap, routeCoordsSignature]);
-  const routeSegmentsSignature = useMemo(
-    () => JSON.stringify([currentRouteMapDataSignature, routeCoordsSignature]),
-    [currentRouteMapDataSignature, routeCoordsSignature],
-  );
-  const precomputedRouteCalculationRef = useRef<{
-    signature: string;
-    result: FocusRouteCalculation;
-  } | null>(null);
-  const precomputedRouteCalculation = useMemo(() => {
-    if (
-      precomputedRouteCalculationRef.current?.signature ===
-      routeSegmentsSignature
-    ) {
-      return precomputedRouteCalculationRef.current.result;
-    }
-    const result = calculateStrictFocusRoute(
-      currentRouteMapData,
-      allVisitKeys,
-      visitKeyCellMap,
-    );
-    precomputedRouteCalculationRef.current = {
-      signature: routeSegmentsSignature,
-      result,
-    };
-    return result;
-  }, [
-    allVisitKeys,
-    currentRouteMapData,
-    routeSegmentsSignature,
-    visitKeyCellMap,
-  ]);
+  const { result: precomputedRouteCalculation } = useRouteCalculation({
+    kind: "focus",
+    mapData: currentRouteMapData,
+    visitKeys: allVisitKeys,
+    cells: visitKeyCellMap,
+  });
   const precomputedRouteSegments = precomputedRouteCalculation.segments;
   const missingRouteVisitKeys = useMemo(
     () => new Set(precomputedRouteCalculation.missingVisitKeys),

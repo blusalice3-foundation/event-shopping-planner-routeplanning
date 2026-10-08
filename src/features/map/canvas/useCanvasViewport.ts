@@ -78,6 +78,44 @@ export const useCanvasViewport = ({
   const suppressClickUntilRef = useRef(0);
   const prevCellSizeRef = useRef(baseCellSize * (zoomLevel / 100));
   const [isRotationInteracting, setIsRotationInteracting] = useState(false);
+  const [isViewportInteracting, setIsViewportInteracting] = useState(false);
+  const pendingZoom = useRef<{ zoom: number; offset: Point } | null>(null);
+  const zoomFrame = useRef<number | null>(null);
+  const viewportIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const zoomCallbackRef = useRef(onZoomChange);
+  zoomCallbackRef.current = onZoomChange;
+  const publishZoom = useCallback(() => {
+    zoomFrame.current = null;
+    const value = pendingZoom.current;
+    pendingZoom.current = null;
+    if (!value) return;
+    setOffsetState(value.offset);
+    zoomCallbackRef.current?.(value.zoom);
+  }, []);
+  const scheduleZoom = useCallback(
+    (newZoom: number, newOffset: Point) => {
+      offsetRef.current = newOffset;
+      zoomLevelRef.current = newZoom;
+      prevCellSizeRef.current = baseCellSize * (newZoom / 100);
+      pendingZoom.current = { zoom: newZoom, offset: newOffset };
+      setIsViewportInteracting(true);
+      zoomFrame.current ??= requestAnimationFrame(publishZoom);
+      if (viewportIdleTimer.current !== null)
+        clearTimeout(viewportIdleTimer.current);
+      viewportIdleTimer.current = setTimeout(() => {
+        setIsViewportInteracting(false);
+      }, 150);
+    },
+    [baseCellSize, offsetRef, publishZoom],
+  );
+  useEffect(
+    () => () => {
+      if (zoomFrame.current !== null) cancelAnimationFrame(zoomFrame.current);
+      if (viewportIdleTimer.current !== null)
+        clearTimeout(viewportIdleTimer.current);
+    },
+    [],
+  );
   const rotationInteractionTimerRef = useRef<number | null>(null);
 
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
@@ -203,11 +241,11 @@ export const useCanvasViewport = ({
   );
 
   useEffect(() => {
-    offsetRef.current = offset;
+    if (!pendingZoom.current) offsetRef.current = offset;
   }, [offset, offsetRef]);
 
   useEffect(() => {
-    zoomLevelRef.current = zoomLevel;
+    if (!pendingZoom.current) zoomLevelRef.current = zoomLevel;
   }, [zoomLevel]);
 
   useEffect(() => {
@@ -255,15 +293,10 @@ export const useCanvasViewport = ({
         baseZoom: currentZoom,
         baseOffset: offsetRef.current,
       });
-      const newCellSize = baseCellSize * (newZoom / 100);
 
-      setOffset(newOffset);
-      prevCellSizeRef.current = newCellSize;
-      zoomLevelRef.current = newZoom;
-      onZoomChange(newZoom);
+      scheduleZoom(newZoom, newOffset);
     },
     [
-      baseCellSize,
       calculateOffsetForZoomPoint,
       maxZoom,
       minZoom,
@@ -271,7 +304,7 @@ export const useCanvasViewport = ({
       onRotationAngleChange,
       onZoomChange,
       rotationAngle,
-      setOffset,
+      scheduleZoom,
     ],
   );
 
@@ -340,22 +373,11 @@ export const useCanvasViewport = ({
           baseZoom: pinchStartZoomRef.current,
           baseOffset: pinchStartOffsetRef.current,
         });
-        const newCellSize = baseCellSize * (newZoom / 100);
 
-        setOffset(newOffset);
-        prevCellSizeRef.current = newCellSize;
-        zoomLevelRef.current = newZoom;
-        onZoomChange(newZoom);
+        scheduleZoom(newZoom, newOffset);
       }
     },
-    [
-      baseCellSize,
-      calculateOffsetForZoomPoint,
-      maxZoom,
-      minZoom,
-      onZoomChange,
-      setOffset,
-    ],
+    [calculateOffsetForZoomPoint, maxZoom, minZoom, onZoomChange, scheduleZoom],
   );
 
   const handleTouchEnd = useCallback(
@@ -365,6 +387,11 @@ export const useCanvasViewport = ({
       }
 
       if (activeTouchesRef.current.size < 2) {
+        if (zoomFrame.current !== null) cancelAnimationFrame(zoomFrame.current);
+        publishZoom();
+        if (viewportIdleTimer.current !== null)
+          clearTimeout(viewportIdleTimer.current);
+        setIsViewportInteracting(false);
         pinchStartDistRef.current = 0;
         isPinchGestureRef.current = false;
         isDraggingRef.current = false;
@@ -379,7 +406,7 @@ export const useCanvasViewport = ({
         }
       }
     },
-    [offsetRef],
+    [offsetRef, publishZoom],
   );
 
   useEffect(() => {
@@ -420,6 +447,7 @@ export const useCanvasViewport = ({
     isDraggingRef,
     isPinchGestureRef,
     isRotationInteracting,
+    isViewportInteracting,
     mapCenterX,
     mapCenterY,
     normalizedRotationAngle,

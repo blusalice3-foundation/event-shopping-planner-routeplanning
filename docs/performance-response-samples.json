@@ -1,0 +1,129 @@
+{
+  "measuredAt": "2026-10-08T01:53:05.484Z",
+  "browser": "Playwright Chromium",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "iterationsPerScenario": 1,
+  "browserTestsPassed": 126,
+  "workloads": [
+    {
+      "count": 150,
+      "cells": 40000,
+      "historicalItems": 10000,
+      "cards": 4,
+      "options": 488,
+      "samples": [
+        {
+          "scenario": "quantity",
+          "inputResponseMs": 15.099999994039536,
+          "completionMs": 61.19999998807907
+        },
+        {
+          "scenario": "purchase-burst",
+          "inputResponseMs": 13.800000011920929,
+          "completionMs": 67.7999999821186
+        },
+        {
+          "scenario": "memo-after-traversal",
+          "inputResponseMs": 19,
+          "completionMs": 406.39999997615814
+        },
+        {
+          "scenario": "Japanese-search",
+          "inputResponseMs": 18.700000017881393,
+          "completionMs": 206.2000000178814
+        },
+        {
+          "scenario": "purchase-then-next",
+          "inputResponseMs": 89.5,
+          "completionMs": 102.59999999403954
+        },
+        {
+          "scenario": "continuous-pinch",
+          "inputResponseMs": 2.0999999940395355,
+          "completionMs": 165.10000002384186
+        }
+      ]
+    },
+    {
+      "count": 500,
+      "cells": 40000,
+      "historicalItems": 10000,
+      "cards": 4,
+      "options": 488,
+      "samples": [
+        {
+          "scenario": "quantity",
+          "inputResponseMs": 24,
+          "completionMs": 87.7999999821186
+        },
+        {
+          "scenario": "purchase-burst",
+          "inputResponseMs": 25.900000005960464,
+          "completionMs": 159.59999999403954
+        },
+        {
+          "scenario": "memo-after-traversal",
+          "inputResponseMs": 37,
+          "completionMs": 452.80000001192093
+        },
+        {
+          "scenario": "Japanese-search",
+          "inputResponseMs": 26.80000001192093,
+          "completionMs": 245.80000001192093
+        },
+        {
+          "scenario": "purchase-then-next",
+          "inputResponseMs": 133,
+          "completionMs": 143.10000002384186
+        },
+        {
+          "scenario": "continuous-pinch",
+          "inputResponseMs": 1.699999988079071,
+          "completionMs": 274.2000000178814
+        }
+      ]
+    },
+    {
+      "count": 1500,
+      "cells": 40000,
+      "historicalItems": 10000,
+      "cards": 4,
+      "options": 488,
+      "samples": [
+        {
+          "scenario": "quantity",
+          "inputResponseMs": 68,
+          "completionMs": 262.09999999403954
+        },
+        {
+          "scenario": "purchase-burst",
+          "inputResponseMs": 54.30000001192093,
+          "completionMs": 321.59999999403954
+        },
+        {
+          "scenario": "memo-after-traversal",
+          "inputResponseMs": 88,
+          "completionMs": 559.0999999940395
+        },
+        {
+          "scenario": "Japanese-search",
+          "inputResponseMs": 56.900000005960464,
+          "completionMs": 475.30000001192093
+        },
+        {
+          "scenario": "purchase-then-next",
+          "inputResponseMs": 160,
+          "completionMs": 187.59999999403954
+        },
+        {
+          "scenario": "continuous-pinch",
+          "inputResponseMs": 2,
+          "completionMs": 272.90000000596046
+        }
+      ]
+    }
+  ]
+}

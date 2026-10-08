@@ -1,4 +1,4 @@
-import { createIndexedDbPersistenceCommandAdapter } from "../../persistence/adapters/indexedDbPersistenceCommandAdapter";
+import { createWorkerPersistenceCommandAdapter } from "../../persistence/adapters/workerPersistenceCommandAdapter";
 import { registerUpdateBlocker } from "../../pwa/updateBlockerRegistry";
 import { productionXlsxExecutionPort } from "../../xlsx/adapters/productionXlsxExecutionPort";
 import { downloadBytes } from "../../xlsx/download/downloadBytes";
@@ -27,7 +27,7 @@ export interface AppRuntime {
 }
 
 export const appRuntime: AppRuntime = {
-  persistenceCommands: createIndexedDbPersistenceCommandAdapter(),
+  persistenceCommands: createWorkerPersistenceCommandAdapter(),
   xlsxCommands: productionXlsxExecutionPort,
   downloadXlsx: downloadBytes,
   registerUpdateBlocker,

@@ -1,20 +1,18 @@
-import type { PersistenceSnapshot } from "../ports/PersistenceCommandPort";
+import type {
+  ItemContentEdit,
+  PersistenceSnapshot,
+} from "../ports/PersistenceCommandPort";
 
-const editableFields = new Set([
+export const editableItemContentFields = new Set([
   "remarks",
   "price",
   "quantity",
   "purchaseStatus",
   "limitedPurchasedQuantity",
+  "protectionLevel",
 ]);
 
-export interface ItemContentEdit {
-  readonly eventName: string;
-  readonly itemId: string;
-  readonly fields: Readonly<
-    Record<string, { present: boolean; value: unknown }>
-  >;
-}
+export type { ItemContentEdit } from "../ports/PersistenceCommandPort";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -56,11 +54,11 @@ export function collectItemContentEdits(
           Object.is(before[key], after[key])
         )
           continue;
-        if (!editableFields.has(key)) return undefined;
+        if (!editableItemContentFields.has(key)) return undefined;
         fields[key] = { present, value: after[key] };
       }
       if (Object.keys(fields).length) {
-        edits.push({ eventName, itemId: before.id, fields });
+        edits.push({ eventName, itemId: before.id, fields, baseline: before });
       }
     }
   }

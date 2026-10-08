@@ -291,7 +291,7 @@ export type AppHeaderShellActions = {
     readonly handleClearSelection: () => void;
     readonly handleMoveToExecuteColumn: (itemIds: string[]) => void;
     readonly handleRemoveFromExecuteColumn: (itemIds: string[]) => void;
-    readonly handleSearchNext: () => void;
+    readonly handleSearchNext: (keyword?: string) => void;
     readonly handleSortToggle: () => void;
     readonly setExecuteCollapsedSpaces: React.Dispatch<
       React.SetStateAction<Set<string>>

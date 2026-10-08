@@ -727,6 +727,7 @@ type RouteSegmentsCacheEntry = {
 };
 
 type StrictRouteSegmentsCacheEntry = RouteSegmentsCacheEntry & {
+  constraintKey?: string;
   ok: boolean;
   failedFromIndex?: number;
 };
@@ -787,9 +788,11 @@ const pushRouteCacheEntry = <T>(cache: T[], entry: T): void => {
 const findExactRouteCacheEntry = <T extends RouteSegmentsCacheEntry>(
   cache: T[],
   visitPoints: RouteVisitPoint[],
+  canReuse: (entry: T) => boolean = () => true,
 ): T | undefined => {
   for (let index = cache.length - 1; index >= 0; index--) {
     if (
+      canReuse(cache[index]) &&
       cache[index].visitPoints.length === visitPoints.length &&
       getCommonRoutePointPrefixLength(cache[index].visitPoints, visitPoints) ===
         visitPoints.length
@@ -924,9 +927,17 @@ export function generateRouteSegmentsStrict(
   if (visitPoints.length < 2) return { ok: true, segments: [] };
 
   const context = getPathfindingContext(mapData);
-  const canUseCache = options?.pathConstraint === undefined;
+  const constraint = options?.pathConstraint;
+  const constraintKey = constraint?.definition
+    ? JSON.stringify(constraint.definition)
+    : undefined;
+  const canUseCache = constraint === undefined || constraintKey !== undefined;
   const exactCacheEntry = canUseCache
-    ? findExactRouteCacheEntry(context.strictRouteCache, visitPoints)
+    ? findExactRouteCacheEntry(
+        context.strictRouteCache,
+        visitPoints,
+        (entry) => entry.constraintKey === constraintKey,
+      )
     : undefined;
   if (exactCacheEntry) {
     const segments = cloneRouteSegments(exactCacheEntry.segments);
@@ -947,7 +958,7 @@ export function generateRouteSegmentsStrict(
     ? findBestPrefixRouteCacheEntry(
         context.strictRouteCache,
         visitPoints,
-        (entry) => entry.ok,
+        (entry) => entry.ok && entry.constraintKey === constraintKey,
       )
     : undefined;
   const reusableSegmentCount = prefixCacheEntry
@@ -990,6 +1001,7 @@ export function generateRouteSegmentsStrict(
           visitPoints: snapshotRouteVisitPoints(visitPoints),
           segments: cloneRouteSegments(segments),
           ok: false,
+          constraintKey,
           failedFromIndex: i,
         });
       }
@@ -1021,6 +1033,7 @@ export function generateRouteSegmentsStrict(
       visitPoints: snapshotRouteVisitPoints(visitPoints),
       segments: cloneRouteSegments(segments),
       ok: true,
+      constraintKey,
     });
   }
   return { ok: true, segments };
