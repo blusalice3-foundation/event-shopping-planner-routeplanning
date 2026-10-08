@@ -1,0 +1,121 @@
+{
+  "status": "passed",
+  "browser": "151.0.7922.34",
+  "results": [
+    {
+      "count": 150,
+      "singleSpace": false,
+      "startupMainTransactionCount": 16,
+      "mainTransactionsForOrdinaryEdit": [],
+      "before": {
+        "cards": 5,
+        "options": 610
+      },
+      "synchronousPrint": {
+        "cards": 150,
+        "options": 18300,
+        "last": false
+      },
+      "afterManual": {
+        "cards": 5,
+        "options": 610
+      },
+      "nativePrintEvents": [
+        {
+          "event": "beforeprint",
+          "cards": 150
+        },
+        {
+          "event": "afterprint"
+        }
+      ],
+      "afterNative": {
+        "cards": 5,
+        "options": 610
+      },
+      "pdfPages": 34,
+      "pdfBytes": 7418242,
+      "savedQuantity": 7
+    },
+    {
+      "count": 1500,
+      "singleSpace": false,
+      "startupMainTransactionCount": 16,
+      "mainTransactionsForOrdinaryEdit": [],
+      "before": {
+        "cards": 5,
+        "options": 610
+      },
+      "synchronousPrint": {
+        "cards": 1500,
+        "options": 183000,
+        "last": true
+      },
+      "afterManual": {
+        "cards": 5,
+        "options": 610
+      },
+      "nativePrintEvents": [
+        {
+          "event": "beforeprint",
+          "cards": 1500
+        },
+        {
+          "event": "afterprint"
+        }
+      ],
+      "afterNative": {
+        "cards": 5,
+        "options": 610
+      },
+      "pdfPages": 334,
+      "pdfBytes": 71861404,
+      "savedQuantity": 7
+    },
+    {
+      "count": 1500,
+      "singleSpace": true,
+      "startupMainTransactionCount": 16,
+      "mainTransactionsForOrdinaryEdit": [],
+      "before": {
+        "cards": 6,
+        "options": 732
+      },
+      "synchronousPrint": {
+        "cards": 1500,
+        "options": 183000,
+        "last": true
+      },
+      "afterManual": {
+        "cards": 6,
+        "options": 732
+      },
+      "nativePrintEvents": [
+        {
+          "event": "beforeprint",
+          "cards": 1500
+        },
+        {
+          "event": "afterprint"
+        }
+      ],
+      "afterNative": {
+        "cards": 6,
+        "options": 732
+      },
+      "pdfPages": 265,
+      "pdfBytes": 65289693,
+      "savedQuantity": 7
+    }
+  ],
+  "sourceSha": "e9ceb0e8b093596f6da0d4cc0e38ce3ec83febc0",
+  "execution": "Vite development server at 127.0.0.1:4187",
+  "fixture": {
+    "cells": 40000,
+    "historicalItems": 10000
+  },
+  "unitTests": {
+    "files": 11,
+    "passed": 259
+  }
+}

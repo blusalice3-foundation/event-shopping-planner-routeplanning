@@ -1,0 +1,1479 @@
+{
+  "measuredAt": "2026-10-08T04:23:53.748Z",
+  "generatedAt": "2026-10-08T04:39:19.1439370Z",
+  "before": {
+    "buildId": "058a9b9b985769394070d7d19199496ed71db78f",
+    "buildMode": "release-a",
+    "kind": "event-shopping-planner-release-capabilities",
+    "legacyLocalStorageCleanup": "forced-off",
+    "releaseChannel": "release-a",
+    "sourceSha": "058a9b9b985769394070d7d19199496ed71db78f",
+    "sourceState": "clean",
+    "version": 1
+  },
+  "after": {
+    "buildId": "e9ceb0e8b093596f6da0d4cc0e38ce3ec83febc0",
+    "buildMode": "release-a",
+    "kind": "event-shopping-planner-release-capabilities",
+    "legacyLocalStorageCleanup": "forced-off",
+    "releaseChannel": "release-a",
+    "sourceSha": "e9ceb0e8b093596f6da0d4cc0e38ce3ec83febc0",
+    "sourceState": "clean",
+    "version": 1
+  },
+  "environment": {
+    "browser": "151.0.7922.34",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "os": "Microsoft Windows 11 Pro",
+    "cpu": "AMD Ryzen 9 3900X 12-Core Processor",
+    "logicalProcessors": 24,
+    "memoryGiB": 47.9,
+    "node": "24.19.0",
+    "serviceWorkers": "block",
+    "cpuThrottling": "none",
+    "lockFileSha256": "9b2b7ec709c74f80295265a33e9faf6969d130c428e3d475d3df7acc19e42234",
+    "harnessSha256": "0bd5cd2ed63323bf831bad87dc37464ef6bcd07d3be93642f09476a63666e8a8"
+  },
+  "conditions": {
+    "counts": [150, 500, 1500],
+    "mapCells": 40000,
+    "historicalItems": 10000,
+    "measuredRunsPerVersionAndCount": 3,
+    "warmupsPerVersionAndCount": 1,
+    "freshContextPerRun": true,
+    "order": "warmups: before then after; measured odd rounds: before then after; even rounds: after then before"
+  },
+  "metrics": [
+    {
+      "count": 150,
+      "scenario": "quantity-initial",
+      "label": "数量変更（閲覧前）",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 17.19999998807907,
+        "minMs": 15.200000017881393,
+        "maxMs": 17.19999998807907
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 17.5,
+        "minMs": 16.200000017881393,
+        "maxMs": 20.200000017881393
+      },
+      "responseShorteningPercent": -1.74418611702821,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 52.099999994039536,
+        "minMs": 48,
+        "maxMs": 53.099999994039536
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 41.80000001192093,
+        "minMs": 26.200000017881393,
+        "maxMs": 41.900000005960464
+      },
+      "completionShorteningPercent": 19.76967367235503,
+      "beforeMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      },
+      "afterMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "count": 150,
+      "scenario": "purchase-burst",
+      "label": "連続購入（3品目）",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 34.5,
+        "minMs": 31.399999976158142,
+        "maxMs": 43.400000005960464
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 32.19999998807907,
+        "minMs": 31.599999994039536,
+        "maxMs": 36.099999994039536
+      },
+      "responseShorteningPercent": 6.666666701220084,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 44.29999998211861,
+        "minMs": 42.89999997615814,
+        "maxMs": 49.400000005960464
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 37.19999998807907,
+        "minMs": 36.400000005960464,
+        "maxMs": 38.69999998807907
+      },
+      "completionShorteningPercent": 16.027088029131832,
+      "beforeMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      },
+      "afterMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "count": 150,
+      "scenario": "memo-after-traversal",
+      "label": "全件閲覧後のメモ入力",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 12.400000005960464,
+        "minMs": 12.400000005960464,
+        "maxMs": 17.19999998807907
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 12,
+        "minMs": 8.599999994039536,
+        "maxMs": 16.600000023841858
+      },
+      "responseShorteningPercent": 3.225806498130576,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 370.30000001192093,
+        "minMs": 343.5,
+        "maxMs": 372.69999998807907
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 352.80000001192093,
+        "minMs": 341.60000002384186,
+        "maxMs": 354.19999998807907
+      },
+      "completionShorteningPercent": 4.725897920452776,
+      "beforeMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      },
+      "afterMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "count": 150,
+      "scenario": "Japanese-search",
+      "label": "日本語検索・次を検索",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 14.5,
+        "minMs": 14.099999994039536,
+        "maxMs": 19.100000023841858
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 10.700000017881393,
+        "minMs": 10.100000023841858,
+        "maxMs": 13.099999994039536
+      },
+      "responseShorteningPercent": 26.206896428404182,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 79.7999999821186,
+        "minMs": 75.80000001192093,
+        "maxMs": 86.30000001192093
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 76.5,
+        "minMs": 75.90000000596046,
+        "maxMs": 79.2999999821186
+      },
+      "completionShorteningPercent": 4.135338324383537
+    },
+    {
+      "count": 150,
+      "scenario": "zoom-125",
+      "label": "表示倍率125%への変更",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 39.400000005960464,
+        "minMs": 39,
+        "maxMs": 42.20000001788139
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 24,
+        "minMs": 18.5,
+        "maxMs": 34.30000001192093
+      },
+      "responseShorteningPercent": 39.08629442545873,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 39.400000005960464,
+        "minMs": 39,
+        "maxMs": 42.20000001788139
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 24,
+        "minMs": 18.5,
+        "maxMs": 34.400000005960464
+      },
+      "completionShorteningPercent": 39.08629442545873
+    },
+    {
+      "count": 150,
+      "scenario": "edit-dialog-at-125",
+      "label": "125%で編集ダイアログ",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 52,
+        "minMs": 50.30000001192093,
+        "maxMs": 52.30000001192093
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 32.29999998211861,
+        "minMs": 30.19999998807907,
+        "maxMs": 32.5
+      },
+      "responseShorteningPercent": 37.88461541900268,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 52,
+        "minMs": 50.30000001192093,
+        "maxMs": 52.30000001192093
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 32.29999998211861,
+        "minMs": 30.19999998807907,
+        "maxMs": 32.5
+      },
+      "completionShorteningPercent": 37.88461541900268
+    },
+    {
+      "count": 150,
+      "scenario": "focus-open",
+      "label": "集中モードを開く",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 152.09999999403954,
+        "minMs": 141.39999997615814,
+        "maxMs": 160.40000000596046
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 98.09999999403954,
+        "minMs": 88.40000000596046,
+        "maxMs": 98.39999997615814
+      },
+      "responseShorteningPercent": 35.50295858127294,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 182.2000000178814,
+        "minMs": 175.2999999821186,
+        "maxMs": 190.80000001192093
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 145.09999999403954,
+        "minMs": 137.5,
+        "maxMs": 148
+      },
+      "completionShorteningPercent": 20.36223930856246
+    },
+    {
+      "count": 150,
+      "scenario": "purchase-then-next",
+      "label": "購入直後に次の訪問先",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 25.900000005960464,
+        "minMs": 23.30000001192093,
+        "maxMs": 29.30000001192093
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 18.400000005960464,
+        "minMs": 18.30000001192093,
+        "maxMs": 18.900000005960464
+      },
+      "responseShorteningPercent": 28.95752895086485,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 36,
+        "minMs": 35.70000001788139,
+        "maxMs": 38.599999994039536
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 23.30000001192093,
+        "minMs": 22.600000023841858,
+        "maxMs": 40
+      },
+      "completionShorteningPercent": 35.277777744664085
+    },
+    {
+      "count": 150,
+      "scenario": "map-open",
+      "label": "集中モードの地図を開く",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 34.30000001192093,
+        "minMs": 33.599999994039536,
+        "maxMs": 36.69999998807907
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 36.400000005960464,
+        "minMs": 36,
+        "maxMs": 36.400000005960464
+      },
+      "responseShorteningPercent": -6.122448960086539,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 376.69999998807907,
+        "minMs": 354.7000000178814,
+        "maxMs": 434.09999999403954
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 438.40000000596046,
+        "minMs": 436.2000000178814,
+        "maxMs": 452.30000001192093
+      },
+      "completionShorteningPercent": -16.379081502477817
+    },
+    {
+      "count": 150,
+      "scenario": "quantity-map-visible",
+      "label": "地図表示中の数量変更",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 24,
+        "minMs": 18,
+        "maxMs": 32.80000001192093
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 29.599999994039536,
+        "minMs": 29.5,
+        "maxMs": 32.89999997615814
+      },
+      "responseShorteningPercent": -23.333333308498066,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 31.900000005960464,
+        "minMs": 31.5,
+        "maxMs": 35.599999994039536
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 31.69999998807907,
+        "minMs": 31.399999976158142,
+        "maxMs": 34.69999998807907
+      },
+      "completionShorteningPercent": 0.6269593035862814,
+      "beforeMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      },
+      "afterMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "count": 150,
+      "scenario": "continuous-pinch",
+      "label": "連続ピンチ（30入力・10フレーム）",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 11.899999976158142,
+        "minMs": 11.400000005960464,
+        "maxMs": 14.299999982118607
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 12.5,
+        "minMs": 10.200000017881393,
+        "maxMs": 13
+      },
+      "responseShorteningPercent": -5.042017017176206,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 397.39999997615814,
+        "minMs": 386.90000000596046,
+        "maxMs": 399.69999998807907
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 396.69999998807907,
+        "minMs": 395.09999999403954,
+        "maxMs": 397.5
+      },
+      "completionShorteningPercent": 0.176144939134642,
+      "beforeMaxFrameGap": {
+        "count": 3,
+        "medianMs": 18,
+        "minMs": 17.400000005960464,
+        "maxMs": 18.099999994039536
+      },
+      "afterMaxFrameGap": {
+        "count": 3,
+        "medianMs": 18.399999976158142,
+        "minMs": 17.200000017881393,
+        "maxMs": 18.5
+      }
+    },
+    {
+      "count": 500,
+      "scenario": "quantity-initial",
+      "label": "数量変更（閲覧前）",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 33.19999998807907,
+        "minMs": 32.900000005960464,
+        "maxMs": 33.30000001192093
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 34.30000001192093,
+        "minMs": 33.400000005960464,
+        "maxMs": 34.79999998211861
+      },
+      "responseShorteningPercent": -3.3132530850506883,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 107.80000001192093,
+        "minMs": 105.59999999403954,
+        "maxMs": 112
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 84.30000001192093,
+        "minMs": 83.7999999821186,
+        "maxMs": 86.09999999403954
+      },
+      "completionShorteningPercent": 21.7996289400754,
+      "beforeMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      },
+      "afterMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "count": 500,
+      "scenario": "purchase-burst",
+      "label": "連続購入（3品目）",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 32.60000002384186,
+        "minMs": 30.80000001192093,
+        "maxMs": 33
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 41.29999998211861,
+        "minMs": 41.19999998807907,
+        "maxMs": 44.900000005960464
+      },
+      "responseShorteningPercent": -26.687116416914247,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 101.60000002384186,
+        "minMs": 97.69999998807907,
+        "maxMs": 101.7999999821186
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 53.30000001192093,
+        "minMs": 49.19999998807907,
+        "maxMs": 54.79999998211861
+      },
+      "completionShorteningPercent": 47.53937007931758,
+      "beforeMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      },
+      "afterMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "count": 500,
+      "scenario": "memo-after-traversal",
+      "label": "全件閲覧後のメモ入力",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 25.599999994039536,
+        "minMs": 25.5,
+        "maxMs": 37.70000001788139
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 12.800000011920929,
+        "minMs": 12.599999994039536,
+        "maxMs": 13.5
+      },
+      "responseShorteningPercent": 49.99999994179234,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 434.80000001192093,
+        "minMs": 431,
+        "maxMs": 440.40000000596046
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 357,
+        "minMs": 356.59999999403954,
+        "maxMs": 364.09999999403954
+      },
+      "completionShorteningPercent": 17.89328427088038,
+      "beforeMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      },
+      "afterMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "count": 500,
+      "scenario": "Japanese-search",
+      "label": "日本語検索・次を検索",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 37.5,
+        "minMs": 35.599999994039536,
+        "maxMs": 41.89999997615814
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 22.5,
+        "minMs": 8.800000011920929,
+        "maxMs": 23.299999982118607
+      },
+      "responseShorteningPercent": 40.0,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 225.69999998807907,
+        "minMs": 222.40000000596046,
+        "maxMs": 228.7999999821186
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 122.5,
+        "minMs": 107.30000001192093,
+        "maxMs": 124.69999998807907
+      },
+      "completionShorteningPercent": 45.72441293466099
+    },
+    {
+      "count": 500,
+      "scenario": "zoom-125",
+      "label": "表示倍率125%への変更",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 155.10000002384186,
+        "minMs": 142.69999998807907,
+        "maxMs": 156.5
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 36.900000005960464,
+        "minMs": 35.400000005960464,
+        "maxMs": 37
+      },
+      "responseShorteningPercent": 76.2088974853074,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 155.10000002384186,
+        "minMs": 142.69999998807907,
+        "maxMs": 156.5
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 36.900000005960464,
+        "minMs": 35.5,
+        "maxMs": 37
+      },
+      "completionShorteningPercent": 76.2088974853074
+    },
+    {
+      "count": 500,
+      "scenario": "edit-dialog-at-125",
+      "label": "125%で編集ダイアログ",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 148.7999999821186,
+        "minMs": 140.5,
+        "maxMs": 163.59999999403954
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 58.599999994039536,
+        "minMs": 53.900000005960464,
+        "maxMs": 61.400000005960464
+      },
+      "responseShorteningPercent": 60.61827956916564,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 148.7999999821186,
+        "minMs": 140.5,
+        "maxMs": 163.59999999403954
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 58.599999994039536,
+        "minMs": 54,
+        "maxMs": 61.400000005960464
+      },
+      "completionShorteningPercent": 60.61827956916564
+    },
+    {
+      "count": 500,
+      "scenario": "focus-open",
+      "label": "集中モードを開く",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 370.2999999821186,
+        "minMs": 336.30000001192093,
+        "maxMs": 406.7999999821186
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 148.90000000596046,
+        "minMs": 134.69999998807907,
+        "maxMs": 154.30000001192093
+      },
+      "responseShorteningPercent": 59.78935997484454,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 401.2999999821186,
+        "minMs": 359.80000001192093,
+        "maxMs": 434.7999999821186
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 213.59999999403954,
+        "minMs": 198.69999998807907,
+        "maxMs": 224.90000000596046
+      },
+      "completionShorteningPercent": 46.772987788797096
+    },
+    {
+      "count": 500,
+      "scenario": "purchase-then-next",
+      "label": "購入直後に次の訪問先",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 18.900000005960464,
+        "minMs": 17,
+        "maxMs": 43.70000001788139
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 26.299999982118607,
+        "minMs": 21.600000023841858,
+        "maxMs": 27.099999994039536
+      },
+      "responseShorteningPercent": -39.153439014944,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 85,
+        "minMs": 70.30000001192093,
+        "maxMs": 88
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 60.400000005960464,
+        "minMs": 56.30000001192093,
+        "maxMs": 65.5
+      },
+      "completionShorteningPercent": 28.941176463575925
+    },
+    {
+      "count": 500,
+      "scenario": "map-open",
+      "label": "集中モードの地図を開く",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 57.89999997615814,
+        "minMs": 57,
+        "maxMs": 62.599999994039536
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 51,
+        "minMs": 48.30000001192093,
+        "maxMs": 51
+      },
+      "responseShorteningPercent": 11.917098409325389,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 393.09999999403954,
+        "minMs": 392.2000000178814,
+        "maxMs": 408.7999999821186
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 403.09999999403954,
+        "minMs": 377.59999999403954,
+        "maxMs": 436
+      },
+      "completionShorteningPercent": -2.543881963915448
+    },
+    {
+      "count": 500,
+      "scenario": "quantity-map-visible",
+      "label": "地図表示中の数量変更",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 38,
+        "minMs": 36.599999994039536,
+        "maxMs": 38.599999994039536
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 28.5,
+        "minMs": 21.099999994039536,
+        "maxMs": 32.80000001192093
+      },
+      "responseShorteningPercent": 25.0,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 62.599999994039536,
+        "minMs": 60.80000001192093,
+        "maxMs": 63.29999998211861
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 56.19999998807907,
+        "minMs": 39.70000001788139,
+        "maxMs": 62.29999998211861
+      },
+      "completionShorteningPercent": 10.223642183018915,
+      "beforeMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      },
+      "afterMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "count": 500,
+      "scenario": "continuous-pinch",
+      "label": "連続ピンチ（30入力・10フレーム）",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 13.5,
+        "minMs": 12.800000011920929,
+        "maxMs": 13.599999994039536
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 10.200000017881393,
+        "minMs": 5.700000017881393,
+        "maxMs": 11
+      },
+      "responseShorteningPercent": 24.444444311989677,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 396.30000001192093,
+        "minMs": 390.5,
+        "maxMs": 398.59999999403954
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 396.09999999403954,
+        "minMs": 391.7000000178814,
+        "maxMs": 396.7000000178814
+      },
+      "completionShorteningPercent": 0.05046682257768794,
+      "beforeMaxFrameGap": {
+        "count": 3,
+        "medianMs": 17.200000017881393,
+        "minMs": 17.19999998807907,
+        "maxMs": 17.400000005960464
+      },
+      "afterMaxFrameGap": {
+        "count": 3,
+        "medianMs": 18.100000023841858,
+        "minMs": 17.200000017881393,
+        "maxMs": 18.19999998807907
+      }
+    },
+    {
+      "count": 1500,
+      "scenario": "quantity-initial",
+      "label": "数量変更（閲覧前）",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 89.30000001192093,
+        "minMs": 86.5,
+        "maxMs": 95.40000000596046
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 104.69999998807907,
+        "minMs": 98.59999999403954,
+        "maxMs": 146.80000001192093
+      },
+      "responseShorteningPercent": -17.245240732477434,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 301.2999999821186,
+        "minMs": 294.90000000596046,
+        "maxMs": 306.09999999403954
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 129.5,
+        "minMs": 122.59999999403954,
+        "maxMs": 246.09999999403954
+      },
+      "completionShorteningPercent": 57.01958180959658,
+      "beforeMaxLongTask": {
+        "count": 3,
+        "medianMs": 94,
+        "minMs": 87,
+        "maxMs": 97
+      },
+      "afterMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 64
+      }
+    },
+    {
+      "count": 1500,
+      "scenario": "purchase-burst",
+      "label": "連続購入（3品目）",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 87.5,
+        "minMs": 86.09999999403954,
+        "maxMs": 89.09999999403954
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 122.5,
+        "minMs": 113.90000000596046,
+        "maxMs": 139.5
+      },
+      "responseShorteningPercent": -40.0,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 280.2999999821186,
+        "minMs": 277.69999998807907,
+        "maxMs": 304.90000000596046
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 153.40000000596046,
+        "minMs": 139.80000001192093,
+        "maxMs": 168.69999998807907
+      },
+      "completionShorteningPercent": 45.27292186380791,
+      "beforeMaxLongTask": {
+        "count": 3,
+        "medianMs": 93,
+        "minMs": 89,
+        "maxMs": 105
+      },
+      "afterMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "count": 1500,
+      "scenario": "memo-after-traversal",
+      "label": "全件閲覧後のメモ入力",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 64.30000001192093,
+        "minMs": 60.30000001192093,
+        "maxMs": 95.7999999821186
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 16.900000005960464,
+        "minMs": 16.5,
+        "maxMs": 17.400000005960464
+      },
+      "responseShorteningPercent": 73.71695178409443,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 667.4000000059605,
+        "minMs": 656.9000000059605,
+        "maxMs": 727.5
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 408.69999998807907,
+        "minMs": 394.19999998807907,
+        "maxMs": 410.09999999403954
+      },
+      "completionShorteningPercent": 38.762361404790376,
+      "beforeMaxLongTask": {
+        "count": 3,
+        "medianMs": 92,
+        "minMs": 90,
+        "maxMs": 112
+      },
+      "afterMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "count": 1500,
+      "scenario": "Japanese-search",
+      "label": "日本語検索・次を検索",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 134.09999999403954,
+        "minMs": 129.7999999821186,
+        "maxMs": 134.90000000596046
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 24.80000001192093,
+        "minMs": 24.400000005960464,
+        "maxMs": 26.19999998807907
+      },
+      "responseShorteningPercent": 81.50633854360683,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 768.0999999940395,
+        "minMs": 738.5,
+        "maxMs": 770
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 316.90000000596046,
+        "minMs": 295.69999998807907,
+        "maxMs": 323.80000001192093
+      },
+      "completionShorteningPercent": 58.74235125525067
+    },
+    {
+      "count": 1500,
+      "scenario": "zoom-125",
+      "label": "表示倍率125%への変更",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 440.40000000596046,
+        "minMs": 439.69999998807907,
+        "maxMs": 445.7999999821186
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 122.59999999403954,
+        "minMs": 107.2000000178814,
+        "maxMs": 124.7000000178814
+      },
+      "responseShorteningPercent": 72.16167120972293,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 440.40000000596046,
+        "minMs": 439.69999998807907,
+        "maxMs": 445.7999999821186
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 122.59999999403954,
+        "minMs": 107.2000000178814,
+        "maxMs": 124.7000000178814
+      },
+      "completionShorteningPercent": 72.16167120972293
+    },
+    {
+      "count": 1500,
+      "scenario": "edit-dialog-at-125",
+      "label": "125%で編集ダイアログ",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 413,
+        "minMs": 411.2000000178814,
+        "maxMs": 421.30000001192093
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 139.30000001192093,
+        "minMs": 130,
+        "maxMs": 147.30000001192093
+      },
+      "responseShorteningPercent": 66.27118643779154,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 413,
+        "minMs": 411.2000000178814,
+        "maxMs": 421.30000001192093
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 139.30000001192093,
+        "minMs": 130,
+        "maxMs": 147.30000001192093
+      },
+      "completionShorteningPercent": 66.27118643779154
+    },
+    {
+      "count": 1500,
+      "scenario": "focus-open",
+      "label": "集中モードを開く",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 962.5999999940395,
+        "minMs": 955.4000000059605,
+        "maxMs": 1026.9000000059605
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 319.40000000596046,
+        "minMs": 303.7999999821186,
+        "maxMs": 340.40000000596046
+      },
+      "responseShorteningPercent": 66.81903178808038,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 997.8000000119209,
+        "minMs": 990.4000000059605,
+        "maxMs": 1041.5
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 445.19999998807907,
+        "minMs": 415.09999999403954,
+        "maxMs": 465.40000000596046
+      },
+      "completionShorteningPercent": 55.38184004983362
+    },
+    {
+      "count": 1500,
+      "scenario": "purchase-then-next",
+      "label": "購入直後に次の訪問先",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 25.200000017881393,
+        "minMs": 19.799999982118607,
+        "maxMs": 107.90000000596046
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 36.099999994039536,
+        "minMs": 32.400000005960464,
+        "maxMs": 36.80000001192093
+      },
+      "responseShorteningPercent": -43.2539681286656,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 175.80000001192093,
+        "minMs": 175,
+        "maxMs": 198.2000000178814
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 115.59999999403954,
+        "minMs": 105.7999999821186,
+        "maxMs": 120.80000001192093
+      },
+      "completionShorteningPercent": 34.243458483389794
+    },
+    {
+      "count": 1500,
+      "scenario": "map-open",
+      "label": "集中モードの地図を開く",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 73.09999999403954,
+        "minMs": 73,
+        "maxMs": 78.10000002384186
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 83.69999998807907,
+        "minMs": 83,
+        "maxMs": 88.90000000596046
+      },
+      "responseShorteningPercent": -14.500683987556558,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 415.10000002384186,
+        "minMs": 411.59999999403954,
+        "maxMs": 423.09999999403954
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 418.60000002384186,
+        "minMs": 415.69999998807907,
+        "maxMs": 434.09999999403954
+      },
+      "completionShorteningPercent": -0.843170320356293
+    },
+    {
+      "count": 1500,
+      "scenario": "quantity-map-visible",
+      "label": "地図表示中の数量変更",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 95.7000000178814,
+        "minMs": 92.7999999821186,
+        "maxMs": 96.5
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 44.900000005960464,
+        "minMs": 43.69999998807907,
+        "maxMs": 45.099999994039536
+      },
+      "responseShorteningPercent": 53.08254963681194,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 165.40000000596046,
+        "minMs": 159.19999998807907,
+        "maxMs": 166.7999999821186
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 109.80000001192093,
+        "minMs": 106.5,
+        "maxMs": 110.2000000178814
+      },
+      "completionShorteningPercent": 33.61547762517285,
+      "beforeMaxLongTask": {
+        "count": 3,
+        "medianMs": 81,
+        "minMs": 79,
+        "maxMs": 82
+      },
+      "afterMaxLongTask": {
+        "count": 3,
+        "medianMs": 0,
+        "minMs": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "count": 1500,
+      "scenario": "continuous-pinch",
+      "label": "連続ピンチ（30入力・10フレーム）",
+      "beforeResponse": {
+        "count": 3,
+        "medianMs": 16,
+        "minMs": 15.599999994039536,
+        "maxMs": 16.80000001192093
+      },
+      "afterResponse": {
+        "count": 3,
+        "medianMs": 12.699999988079071,
+        "minMs": 8.799999982118607,
+        "maxMs": 15.5
+      },
+      "responseShorteningPercent": 20.625000074505806,
+      "beforeCompletion": {
+        "count": 3,
+        "medianMs": 389.40000000596046,
+        "minMs": 388.80000001192093,
+        "maxMs": 391
+      },
+      "afterCompletion": {
+        "count": 3,
+        "medianMs": 397.40000000596046,
+        "minMs": 395.5,
+        "maxMs": 401.5
+      },
+      "completionShorteningPercent": -2.054442732377387,
+      "beforeMaxFrameGap": {
+        "count": 3,
+        "medianMs": 18,
+        "minMs": 17.19999998807907,
+        "maxMs": 18.099999994039536
+      },
+      "afterMaxFrameGap": {
+        "count": 3,
+        "medianMs": 17.700000017881393,
+        "minMs": 17.599999994039536,
+        "maxMs": 18.099999994039536
+      }
+    }
+  ],
+  "dom": [
+    {
+      "count": 150,
+      "before": [
+        {
+          "cards": 150,
+          "options": 18300,
+          "nodes": 29351,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        },
+        {
+          "cards": 150,
+          "options": 18300,
+          "nodes": 29351,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        },
+        {
+          "cards": 150,
+          "options": 18300,
+          "nodes": 29351,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        }
+      ],
+      "after": [
+        {
+          "cards": 4,
+          "options": 488,
+          "nodes": 2195,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        },
+        {
+          "cards": 4,
+          "options": 488,
+          "nodes": 2195,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        },
+        {
+          "cards": 4,
+          "options": 488,
+          "nodes": 2195,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "count": 500,
+      "before": [
+        {
+          "cards": 500,
+          "options": 61000,
+          "nodes": 97601,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        },
+        {
+          "cards": 500,
+          "options": 61000,
+          "nodes": 97601,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        },
+        {
+          "cards": 500,
+          "options": 61000,
+          "nodes": 97601,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        }
+      ],
+      "after": [
+        {
+          "cards": 4,
+          "options": 488,
+          "nodes": 5345,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        },
+        {
+          "cards": 4,
+          "options": 488,
+          "nodes": 5345,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        },
+        {
+          "cards": 4,
+          "options": 488,
+          "nodes": 5345,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "count": 1500,
+      "before": [
+        {
+          "cards": 1500,
+          "options": 183000,
+          "nodes": 292601,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        },
+        {
+          "cards": 1500,
+          "options": 183000,
+          "nodes": 292601,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        },
+        {
+          "cards": 1500,
+          "options": 183000,
+          "nodes": 292601,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        }
+      ],
+      "after": [
+        {
+          "cards": 4,
+          "options": 488,
+          "nodes": 14345,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        },
+        {
+          "cards": 4,
+          "options": 488,
+          "nodes": 14345,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        },
+        {
+          "cards": 4,
+          "options": 488,
+          "nodes": 14345,
+          "renderer": [
+            {
+              "engine": "virtual",
+              "strategy": "retained-viewport"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "completedRuns": 24,
+  "measuredRuns": 18,
+  "failedRuns": 0,
+  "allChangesVerifiedAfterReload": true
+}

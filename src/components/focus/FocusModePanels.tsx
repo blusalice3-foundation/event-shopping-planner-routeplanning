@@ -1,4 +1,5 @@
 import React from "react";
+import { recordShoppingRender } from "../../utils/shoppingPerformance";
 import {
   PurchaseStatus,
   PurchaseStatusControlMode,
@@ -24,6 +25,7 @@ interface FocusModeItemListProps {
   containerClassName?: string;
   currentVisitDisplayItems: ShoppingItem[];
   blinkingPriceItemIds: Set<string>;
+  retainedItemIds?: ReadonlySet<string>;
   blinkingLimitedMissingItemIds?: Set<string>;
   onUpdateItem: (item: ShoppingItem) => void;
   onEditRequest?: (item: ShoppingItem) => void;
@@ -175,6 +177,142 @@ const bulkStatusOptions: {
   },
 ];
 
+type FocusItemRowProps = Pick<
+  FocusModeItemListProps,
+  | "layoutMode"
+  | "onUpdateItem"
+  | "onEditRequest"
+  | "onDeleteRequest"
+  | "getLatestItemById"
+  | "onNotify"
+  | "purchaseStatusControlMode"
+  | "skipLimitedPurchaseForSingleQuantity"
+  | "readOnly"
+  | "onLimitedPurchaseDefer"
+  | "onPostEventDistributionCheckRequest"
+> & {
+  item: ShoppingItem;
+  index: number;
+  size: number;
+  blinkPrice: boolean;
+  blinkLimited: boolean;
+  retain?: boolean;
+};
+const FocusItemRow = React.memo(
+  ({
+    item,
+    index,
+    size,
+    layoutMode,
+    blinkPrice,
+    blinkLimited,
+    retain,
+    onUpdateItem,
+    onEditRequest,
+    onDeleteRequest,
+    getLatestItemById,
+    onNotify,
+    purchaseStatusControlMode,
+    skipLimitedPurchaseForSingleQuantity,
+    readOnly,
+    onLimitedPurchaseDefer,
+    onPostEventDistributionCheckRequest,
+  }: FocusItemRowProps) => {
+    recordShoppingRender("focus-item");
+    const content = (
+      <div
+        key={item.id}
+        data-item-id={item.id}
+        data-row-key={"focus:" + item.id}
+        role="listitem"
+        aria-label={[item.block + item.number, item.circle, item.title].join(
+          " ",
+        )}
+        aria-posinset={index + 1}
+        aria-setsize={size}
+        className={`relative ${
+          blinkPrice
+            ? "ring-2 ring-red-500 rounded-lg animate-attention-outline attention-outline-red"
+            : blinkLimited
+              ? "ring-2 ring-orange-500 rounded-lg animate-attention-outline attention-outline-orange"
+              : ""
+        }`}
+      >
+        <ShoppingItemCard
+          item={item}
+          onUpdate={onUpdateItem}
+          isStriped={index % 2 === 1}
+          onEditRequest={onEditRequest || noopShoppingItemHandler}
+          onDeleteRequest={onDeleteRequest || noopShoppingItemHandler}
+          isSelected={false}
+          onSelectItem={noopSelectItem}
+          layoutMode={layoutMode}
+          viewMode="focus"
+          purchaseStatusControlMode={purchaseStatusControlMode}
+          skipLimitedPurchaseForSingleQuantity={
+            skipLimitedPurchaseForSingleQuantity
+          }
+          readOnly={readOnly}
+          highlightLimitedMissing={blinkLimited}
+          getLatestItemById={getLatestItemById}
+          onNotify={onNotify}
+          onLimitedPurchaseDefer={onLimitedPurchaseDefer}
+          onPostEventDistributionCheckRequest={
+            onPostEventDistributionCheckRequest
+          }
+        />
+      </div>
+    );
+    return (
+      <ViewportContent
+        key={item.id}
+        rowKey={"focus:" + item.id}
+        defer={
+          size >= 80 &&
+          typeof IntersectionObserver === "function" &&
+          typeof ResizeObserver === "function"
+        }
+        placeholder={
+          <div
+            className={
+              layoutMode === "pc"
+                ? "esp-viewport-placeholder esp-viewport-placeholder-pc"
+                : "esp-viewport-placeholder esp-viewport-placeholder-phone"
+            }
+            role="listitem"
+            data-row-key={"focus:" + item.id}
+            aria-label={[
+              item.block + item.number,
+              item.circle,
+              item.title,
+            ].join(" ")}
+            aria-posinset={index + 1}
+            aria-setsize={size}
+            tabIndex={0}
+            data-viewport-focus-sentinel
+            onFocus={(event) =>
+              focusPendingViewportContent(event.currentTarget)
+            }
+          >
+            <span className="esp-viewport-placeholder-label">
+              {[
+                item.block + item.number,
+                item.circle,
+                item.title,
+                item.remarks,
+                item.price ?? "価格未定",
+                item.quantity,
+              ].join(" ")}
+            </span>
+          </div>
+        }
+        retain={retain}
+        render={() => content}
+      />
+    );
+  },
+);
+
 export const FocusModeItemList: React.FC<FocusModeItemListProps> = React.memo(
   ({
     itemListRef,
@@ -183,6 +321,7 @@ export const FocusModeItemList: React.FC<FocusModeItemListProps> = React.memo(
     containerClassName,
     currentVisitDisplayItems,
     blinkingPriceItemIds,
+    retainedItemIds,
     blinkingLimitedMissingItemIds = new Set(),
     onUpdateItem,
     onEditRequest,
@@ -218,98 +357,30 @@ export const FocusModeItemList: React.FC<FocusModeItemListProps> = React.memo(
             className={layoutMode === "smartphone" ? "space-y-2" : "space-y-4"}
           >
             {currentVisitDisplayItems.map((item, index) => {
-              const content = (
-                <div
-                  key={item.id}
-                  data-item-id={item.id}
-                  data-row-key={"focus:" + item.id}
-                  role="listitem"
-                  aria-label={[
-                    item.block + item.number,
-                    item.circle,
-                    item.title,
-                  ].join(" ")}
-                  aria-posinset={index + 1}
-                  aria-setsize={currentVisitDisplayItems.length}
-                  className={`relative ${
-                    blinkingPriceItemIds.has(item.id)
-                      ? "ring-2 ring-red-500 rounded-lg animate-attention-outline attention-outline-red"
-                      : blinkingLimitedMissingItemIds.has(item.id)
-                        ? "ring-2 ring-orange-500 rounded-lg animate-attention-outline attention-outline-orange"
-                        : ""
-                  }`}
-                >
-                  <ShoppingItemCard
-                    item={item}
-                    onUpdate={onUpdateItem}
-                    isStriped={index % 2 === 1}
-                    onEditRequest={onEditRequest || noopShoppingItemHandler}
-                    onDeleteRequest={onDeleteRequest || noopShoppingItemHandler}
-                    isSelected={false}
-                    onSelectItem={noopSelectItem}
-                    layoutMode={layoutMode}
-                    viewMode="focus"
-                    purchaseStatusControlMode={purchaseStatusControlMode}
-                    skipLimitedPurchaseForSingleQuantity={
-                      skipLimitedPurchaseForSingleQuantity
-                    }
-                    readOnly={readOnly}
-                    highlightLimitedMissing={blinkingLimitedMissingItemIds.has(
-                      item.id,
-                    )}
-                    getLatestItemById={getLatestItemById}
-                    onNotify={onNotify}
-                    onLimitedPurchaseDefer={onLimitedPurchaseDefer}
-                    onPostEventDistributionCheckRequest={
-                      onPostEventDistributionCheckRequest
-                    }
-                  />
-                </div>
-              );
               return (
-                <ViewportContent
+                <FocusItemRow
                   key={item.id}
-                  rowKey={"focus:" + item.id}
-                  defer={
-                    currentVisitDisplayItems.length >= 80 &&
-                    typeof IntersectionObserver === "function" &&
-                    typeof ResizeObserver === "function"
+                  item={item}
+                  index={index}
+                  size={currentVisitDisplayItems.length}
+                  layoutMode={layoutMode}
+                  blinkPrice={blinkingPriceItemIds.has(item.id)}
+                  blinkLimited={blinkingLimitedMissingItemIds.has(item.id)}
+                  onUpdateItem={onUpdateItem}
+                  onEditRequest={onEditRequest}
+                  onDeleteRequest={onDeleteRequest}
+                  getLatestItemById={getLatestItemById}
+                  onNotify={onNotify}
+                  purchaseStatusControlMode={purchaseStatusControlMode}
+                  skipLimitedPurchaseForSingleQuantity={
+                    skipLimitedPurchaseForSingleQuantity
                   }
-                  placeholder={
-                    <div
-                      className={
-                        layoutMode === "pc"
-                          ? "esp-viewport-placeholder esp-viewport-placeholder-pc"
-                          : "esp-viewport-placeholder esp-viewport-placeholder-phone"
-                      }
-                      role="listitem"
-                      data-row-key={"focus:" + item.id}
-                      aria-label={[
-                        item.block + item.number,
-                        item.circle,
-                        item.title,
-                      ].join(" ")}
-                      aria-posinset={index + 1}
-                      aria-setsize={currentVisitDisplayItems.length}
-                      tabIndex={0}
-                      data-viewport-focus-sentinel
-                      onFocus={(event) =>
-                        focusPendingViewportContent(event.currentTarget)
-                      }
-                    >
-                      <span className="esp-viewport-placeholder-label">
-                        {[
-                          item.block + item.number,
-                          item.circle,
-                          item.title,
-                          item.remarks,
-                          item.price ?? "価格未定",
-                          item.quantity,
-                        ].join(" ")}
-                      </span>
-                    </div>
+                  readOnly={readOnly}
+                  onLimitedPurchaseDefer={onLimitedPurchaseDefer}
+                  onPostEventDistributionCheckRequest={
+                    onPostEventDistributionCheckRequest
                   }
-                  render={() => content}
+                  retain={retainedItemIds?.has(item.id)}
                 />
               );
             })}

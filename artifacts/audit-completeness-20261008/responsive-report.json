@@ -1,0 +1,546 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\event-shopping-planner-routeplanning-1.9.6.7\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/responsive-performance.spec.ts",
+      "--workers=1",
+      "--repeat-each=3",
+      "--reporter=json",
+      "--output",
+      "artifacts/audit-completeness-20261008/playwright"
+    ],
+    "configFile": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\playwright.config.ts",
+    "rootDir": "D:/event-shopping-planner-routeplanning-1.9.6.7/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/event-shopping-planner-routeplanning-1.9.6.7/artifacts/audit-completeness-20261008/playwright",
+        "repeatEach": 3,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/event-shopping-planner-routeplanning-1.9.6.7/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "responsive-performance.spec.ts",
+      "file": "responsive-performance.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "bounded DOM and response timings: 150 items, 40000 cells, 10000 historical items",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8034,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T03:30:05.315Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "response-timings",
+                      "contentType": "application/json",
+                      "body": "ewogICJjb3VudCI6IDE1MCwKICAiY2VsbHMiOiA0MDAwMCwKICAiaGlzdG9yaWNhbEl0ZW1zIjogMTAwMDAsCiAgImNhcmRzIjogNCwKICAib3B0aW9ucyI6IDQ4OCwKICAic2FtcGxlcyI6IFsKICAgIHsKICAgICAgInNjZW5hcmlvIjogInF1YW50aXR5IiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDIyLjI5OTk5OTk4MjExODYwNywKICAgICAgImNvbXBsZXRpb25NcyI6IDEwNS40MDAwMDAwMDU5NjA0NgogICAgfSwKICAgIHsKICAgICAgInNjZW5hcmlvIjogInB1cmNoYXNlLWJ1cnN0IiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDIzLAogICAgICAiY29tcGxldGlvbk1zIjogMTAxLjY5OTk5OTk4ODA3OTA3CiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAibWVtby1hZnRlci10cmF2ZXJzYWwiLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogMzYuNjk5OTk5OTg4MDc5MDcsCiAgICAgICJjb21wbGV0aW9uTXMiOiA0NDkuNjk5OTk5OTg4MDc5MDcKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJKYXBhbmVzZS1zZWFyY2giLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogMjcuMjAwMDAwMDE3ODgxMzkzLAogICAgICAiY29tcGxldGlvbk1zIjogMjA2LjcwMDAwMDAxNzg4MTQKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJwdXJjaGFzZS10aGVuLW5leHQiLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogMTQwLAogICAgICAiY29tcGxldGlvbk1zIjogMTQ4LjY5OTk5OTk4ODA3OTA3CiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAiY29udGludW91cy1waW5jaCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAyLjA5OTk5OTk5NDAzOTUzNTUsCiAgICAgICJjb21wbGV0aW9uTXMiOiAyNzYuNjk5OTk5OTg4MDc5MDcKICAgIH0KICBdCn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a0d349b98009996c615f-6f5a221e3a8a7a374dbc",
+          "file": "responsive-performance.spec.ts",
+          "line": 134,
+          "column": 3
+        },
+        {
+          "title": "bounded DOM and response timings: 500 items, 40000 cells, 10000 historical items",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 20588,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T03:30:13.491Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "response-timings",
+                      "contentType": "application/json",
+                      "body": "ewogICJjb3VudCI6IDUwMCwKICAiY2VsbHMiOiA0MDAwMCwKICAiaGlzdG9yaWNhbEl0ZW1zIjogMTAwMDAsCiAgImNhcmRzIjogNCwKICAib3B0aW9ucyI6IDQ4OCwKICAic2FtcGxlcyI6IFsKICAgIHsKICAgICAgInNjZW5hcmlvIjogInF1YW50aXR5IiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDUxLAogICAgICAiY29tcGxldGlvbk1zIjogMjI1CiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAicHVyY2hhc2UtYnVyc3QiLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogNTIuNTk5OTk5OTk0MDM5NTM2LAogICAgICAiY29tcGxldGlvbk1zIjogMjI2LjYwMDAwMDAyMzg0MTg2CiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAibWVtby1hZnRlci10cmF2ZXJzYWwiLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogODIuNjk5OTk5OTg4MDc5MDcsCiAgICAgICJjb21wbGV0aW9uTXMiOiA1MDguNjk5OTk5OTg4MDc5MDcKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJKYXBhbmVzZS1zZWFyY2giLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogNDYuODk5OTk5OTc2MTU4MTQsCiAgICAgICJjb21wbGV0aW9uTXMiOiA0MDkuNjk5OTk5OTg4MDc5MDcKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJwdXJjaGFzZS10aGVuLW5leHQiLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogMTc3Ljg5OTk5OTk3NjE1ODE0LAogICAgICAiY29tcGxldGlvbk1zIjogMTg2LjUKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJjb250aW51b3VzLXBpbmNoIiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDIsCiAgICAgICJjb21wbGV0aW9uTXMiOiAxNjUuNTk5OTk5OTk0MDM5NTQKICAgIH0KICBdCn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a0d349b98009996c615f-d2f0d9be6ae8c3700560",
+          "file": "responsive-performance.spec.ts",
+          "line": 134,
+          "column": 3
+        },
+        {
+          "title": "bounded DOM and response timings: 1500 items, 40000 cells, 10000 historical items",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 110721,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T03:30:34.091Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "response-timings",
+                      "contentType": "application/json",
+                      "body": "ewogICJjb3VudCI6IDE1MDAsCiAgImNlbGxzIjogNDAwMDAsCiAgImhpc3RvcmljYWxJdGVtcyI6IDEwMDAwLAogICJjYXJkcyI6IDQsCiAgIm9wdGlvbnMiOiA0ODgsCiAgInNhbXBsZXMiOiBbCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJxdWFudGl0eSIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAxNDQuNjk5OTk5OTg4MDc5MDcsCiAgICAgICJjb21wbGV0aW9uTXMiOiA2MzEuMjAwMDAwMDE3ODgxNAogICAgfSwKICAgIHsKICAgICAgInNjZW5hcmlvIjogInB1cmNoYXNlLWJ1cnN0IiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDEzNC43OTk5OTk5ODIxMTg2LAogICAgICAiY29tcGxldGlvbk1zIjogNzM0LjU5OTk5OTk5NDAzOTUKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJtZW1vLWFmdGVyLXRyYXZlcnNhbCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAyMjAsCiAgICAgICJjb21wbGV0aW9uTXMiOiA5NDAuMzAwMDAwMDExOTIwOQogICAgfSwKICAgIHsKICAgICAgInNjZW5hcmlvIjogIkphcGFuZXNlLXNlYXJjaCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAxMzIuNTk5OTk5OTk0MDM5NTQsCiAgICAgICJjb21wbGV0aW9uTXMiOiAxMTA4LjgwMDAwMDAxMTkyMQogICAgfSwKICAgIHsKICAgICAgInNjZW5hcmlvIjogInB1cmNoYXNlLXRoZW4tbmV4dCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAzNTMuNSwKICAgICAgImNvbXBsZXRpb25NcyI6IDM2NC40MDAwMDAwMDU5NjA0NgogICAgfSwKICAgIHsKICAgICAgInNjZW5hcmlvIjogImNvbnRpbnVvdXMtcGluY2giLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogMS44MDAwMDAwMTE5MjA5MjksCiAgICAgICJjb21wbGV0aW9uTXMiOiAyNjkuMzAwMDAwMDExOTIwOTMKICAgIH0KICBdCn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a0d349b98009996c615f-bec0fce98480cb77af3b",
+          "file": "responsive-performance.spec.ts",
+          "line": 134,
+          "column": 3
+        },
+        {
+          "title": "direct field commands review another tab and retain inputs across worker save failure",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5305,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T03:32:24.823Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a0d349b98009996c615f-ac075bd0ab4901f490cb",
+          "file": "responsive-performance.spec.ts",
+          "line": 454,
+          "column": 1
+        },
+        {
+          "title": "bounded DOM and response timings: 150 items, 40000 cells, 10000 historical items",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7692,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T03:32:30.697Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "response-timings",
+                      "contentType": "application/json",
+                      "body": "ewogICJjb3VudCI6IDE1MCwKICAiY2VsbHMiOiA0MDAwMCwKICAiaGlzdG9yaWNhbEl0ZW1zIjogMTAwMDAsCiAgImNhcmRzIjogNCwKICAib3B0aW9ucyI6IDQ4OCwKICAic2FtcGxlcyI6IFsKICAgIHsKICAgICAgInNjZW5hcmlvIjogInF1YW50aXR5IiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDIzLjY5OTk5OTk4ODA3OTA3LAogICAgICAiY29tcGxldGlvbk1zIjogMTEwLjQwMDAwMDAwNTk2MDQ2CiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAicHVyY2hhc2UtYnVyc3QiLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogMjMuMzAwMDAwMDExOTIwOTMsCiAgICAgICJjb21wbGV0aW9uTXMiOiAxMDMuOTAwMDAwMDA1OTYwNDYKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJtZW1vLWFmdGVyLXRyYXZlcnNhbCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAzMi4wOTk5OTk5OTQwMzk1MzYsCiAgICAgICJjb21wbGV0aW9uTXMiOiA0NDMuNjk5OTk5OTg4MDc5MDcKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJKYXBhbmVzZS1zZWFyY2giLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogMjYsCiAgICAgICJjb21wbGV0aW9uTXMiOiAyMjguMDk5OTk5OTk0MDM5NTQKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJwdXJjaGFzZS10aGVuLW5leHQiLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogMTMyLjc5OTk5OTk4MjExODYsCiAgICAgICJjb21wbGV0aW9uTXMiOiAxNDkuMDk5OTk5OTk0MDM5NTQKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJjb250aW51b3VzLXBpbmNoIiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDEuOTAwMDAwMDA1OTYwNDY0NSwKICAgICAgImNvbXBsZXRpb25NcyI6IDI2Ny42OTk5OTk5ODgwNzkwNwogICAgfQogIF0KfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a0d349b98009996c615f-70889a375b326f66569c",
+          "file": "responsive-performance.spec.ts",
+          "line": 134,
+          "column": 3
+        },
+        {
+          "title": "bounded DOM and response timings: 500 items, 40000 cells, 10000 historical items",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 19282,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T03:32:38.527Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "response-timings",
+                      "contentType": "application/json",
+                      "body": "ewogICJjb3VudCI6IDUwMCwKICAiY2VsbHMiOiA0MDAwMCwKICAiaGlzdG9yaWNhbEl0ZW1zIjogMTAwMDAsCiAgImNhcmRzIjogNCwKICAib3B0aW9ucyI6IDQ4OCwKICAic2FtcGxlcyI6IFsKICAgIHsKICAgICAgInNjZW5hcmlvIjogInF1YW50aXR5IiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDUwLjA5OTk5OTk5NDAzOTUzNiwKICAgICAgImNvbXBsZXRpb25NcyI6IDI0Mi45MDAwMDAwMDU5NjA0NgogICAgfSwKICAgIHsKICAgICAgInNjZW5hcmlvIjogInB1cmNoYXNlLWJ1cnN0IiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDUyLjE5OTk5OTk4ODA3OTA3LAogICAgICAiY29tcGxldGlvbk1zIjogMjM3LjcwMDAwMDAxNzg4MTQKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJtZW1vLWFmdGVyLXRyYXZlcnNhbCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiA3My41LAogICAgICAiY29tcGxldGlvbk1zIjogNDg2LjY5OTk5OTk4ODA3OTA3CiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAiSmFwYW5lc2Utc2VhcmNoIiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDQ2LjkwMDAwMDAwNTk2MDQ2NCwKICAgICAgImNvbXBsZXRpb25NcyI6IDM5My40MDAwMDAwMDU5NjA0NgogICAgfSwKICAgIHsKICAgICAgInNjZW5hcmlvIjogInB1cmNoYXNlLXRoZW4tbmV4dCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAxNTEuODAwMDAwMDExOTIwOTMsCiAgICAgICJjb21wbGV0aW9uTXMiOiAxNjEKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJjb250aW51b3VzLXBpbmNoIiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDEuNjk5OTk5OTg4MDc5MDcxLAogICAgICAiY29tcGxldGlvbk1zIjogMTYyLjg5OTk5OTk3NjE1ODE0CiAgICB9CiAgXQp9"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a0d349b98009996c615f-921e3dbd422cd67d234f",
+          "file": "responsive-performance.spec.ts",
+          "line": 134,
+          "column": 3
+        },
+        {
+          "title": "bounded DOM and response timings: 1500 items, 40000 cells, 10000 historical items",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 104970,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T03:32:57.819Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "response-timings",
+                      "contentType": "application/json",
+                      "body": "ewogICJjb3VudCI6IDE1MDAsCiAgImNlbGxzIjogNDAwMDAsCiAgImhpc3RvcmljYWxJdGVtcyI6IDEwMDAwLAogICJjYXJkcyI6IDQsCiAgIm9wdGlvbnMiOiA0ODgsCiAgInNhbXBsZXMiOiBbCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJxdWFudGl0eSIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAxMzEsCiAgICAgICJjb21wbGV0aW9uTXMiOiA1NTkKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJwdXJjaGFzZS1idXJzdCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAxMzYuMTAwMDAwMDIzODQxODYsCiAgICAgICJjb21wbGV0aW9uTXMiOiA2NDYKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJtZW1vLWFmdGVyLXRyYXZlcnNhbCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAyMDAuMDk5OTk5OTk0MDM5NTQsCiAgICAgICJjb21wbGV0aW9uTXMiOiA4NTMKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJKYXBhbmVzZS1zZWFyY2giLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogMTIzLjU5OTk5OTk5NDAzOTU0LAogICAgICAiY29tcGxldGlvbk1zIjogMTA0NS45MDAwMDAwMDU5NjA1CiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAicHVyY2hhc2UtdGhlbi1uZXh0IiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDI5OC4xOTk5OTk5ODgwNzkwNywKICAgICAgImNvbXBsZXRpb25NcyI6IDMxMi4yOTk5OTk5ODIxMTg2CiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAiY29udGludW91cy1waW5jaCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAyLjQwMDAwMDAwNTk2MDQ2NDUsCiAgICAgICJjb21wbGV0aW9uTXMiOiAyNzUKICAgIH0KICBdCn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a0d349b98009996c615f-46c6e178516b8c24a4e0",
+          "file": "responsive-performance.spec.ts",
+          "line": 134,
+          "column": 3
+        },
+        {
+          "title": "direct field commands review another tab and retain inputs across worker save failure",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5209,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T03:34:42.799Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a0d349b98009996c615f-f5eea35e0e4ec712036d",
+          "file": "responsive-performance.spec.ts",
+          "line": 454,
+          "column": 1
+        },
+        {
+          "title": "bounded DOM and response timings: 150 items, 40000 cells, 10000 historical items",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7756,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T03:34:48.581Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "response-timings",
+                      "contentType": "application/json",
+                      "body": "ewogICJjb3VudCI6IDE1MCwKICAiY2VsbHMiOiA0MDAwMCwKICAiaGlzdG9yaWNhbEl0ZW1zIjogMTAwMDAsCiAgImNhcmRzIjogNCwKICAib3B0aW9ucyI6IDQ4OCwKICAic2FtcGxlcyI6IFsKICAgIHsKICAgICAgInNjZW5hcmlvIjogInF1YW50aXR5IiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDIxLjI5OTk5OTk4MjExODYwNywKICAgICAgImNvbXBsZXRpb25NcyI6IDExMi4wOTk5OTk5OTQwMzk1NAogICAgfSwKICAgIHsKICAgICAgInNjZW5hcmlvIjogInB1cmNoYXNlLWJ1cnN0IiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDI2LjIwMDAwMDAxNzg4MTM5MywKICAgICAgImNvbXBsZXRpb25NcyI6IDExNy4zMDAwMDAwMTE5MjA5MwogICAgfSwKICAgIHsKICAgICAgInNjZW5hcmlvIjogIm1lbW8tYWZ0ZXItdHJhdmVyc2FsIiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDMzLjI5OTk5OTk4MjExODYxLAogICAgICAiY29tcGxldGlvbk1zIjogNDQxLjkwMDAwMDAwNTk2MDQ2CiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAiSmFwYW5lc2Utc2VhcmNoIiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDIyLjkwMDAwMDAwNTk2MDQ2NCwKICAgICAgImNvbXBsZXRpb25NcyI6IDIxMS45MDAwMDAwMDU5NjA0NgogICAgfSwKICAgIHsKICAgICAgInNjZW5hcmlvIjogInB1cmNoYXNlLXRoZW4tbmV4dCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAxMTMuMTk5OTk5OTg4MDc5MDcsCiAgICAgICJjb21wbGV0aW9uTXMiOiAxMzEuOTAwMDAwMDA1OTYwNDYKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJjb250aW51b3VzLXBpbmNoIiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDEuOTAwMDAwMDA1OTYwNDY0NSwKICAgICAgImNvbXBsZXRpb25NcyI6IDI3NC4yMDAwMDAwMTc4ODE0CiAgICB9CiAgXQp9"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a0d349b98009996c615f-7368af88955ffd31d996",
+          "file": "responsive-performance.spec.ts",
+          "line": 134,
+          "column": 3
+        },
+        {
+          "title": "bounded DOM and response timings: 500 items, 40000 cells, 10000 historical items",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 19355,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T03:34:56.468Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "response-timings",
+                      "contentType": "application/json",
+                      "body": "ewogICJjb3VudCI6IDUwMCwKICAiY2VsbHMiOiA0MDAwMCwKICAiaGlzdG9yaWNhbEl0ZW1zIjogMTAwMDAsCiAgImNhcmRzIjogNCwKICAib3B0aW9ucyI6IDQ4OCwKICAic2FtcGxlcyI6IFsKICAgIHsKICAgICAgInNjZW5hcmlvIjogInF1YW50aXR5IiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDUxLjMwMDAwMDAxMTkyMDkzLAogICAgICAiY29tcGxldGlvbk1zIjogMjMyLjgwMDAwMDAxMTkyMDkzCiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAicHVyY2hhc2UtYnVyc3QiLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogNTEuNTk5OTk5OTk0MDM5NTM2LAogICAgICAiY29tcGxldGlvbk1zIjogMjMwLjkwMDAwMDAwNTk2MDQ2CiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAibWVtby1hZnRlci10cmF2ZXJzYWwiLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogNzQuNSwKICAgICAgImNvbXBsZXRpb25NcyI6IDQ5Ny41CiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAiSmFwYW5lc2Utc2VhcmNoIiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDQ3LjgwMDAwMDAxMTkyMDkzLAogICAgICAiY29tcGxldGlvbk1zIjogMzc4LjIwMDAwMDAxNzg4MTQKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJwdXJjaGFzZS10aGVuLW5leHQiLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogMTUwLjA5OTk5OTk5NDAzOTU0LAogICAgICAiY29tcGxldGlvbk1zIjogMTU4CiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAiY29udGludW91cy1waW5jaCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAxLjU5OTk5OTk5NDAzOTUzNTUsCiAgICAgICJjb21wbGV0aW9uTXMiOiAxNjIKICAgIH0KICBdCn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a0d349b98009996c615f-453ede9f5187a8e926db",
+          "file": "responsive-performance.spec.ts",
+          "line": 134,
+          "column": 3
+        },
+        {
+          "title": "bounded DOM and response timings: 1500 items, 40000 cells, 10000 historical items",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 109107,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T03:35:15.833Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "response-timings",
+                      "contentType": "application/json",
+                      "body": "ewogICJjb3VudCI6IDE1MDAsCiAgImNlbGxzIjogNDAwMDAsCiAgImhpc3RvcmljYWxJdGVtcyI6IDEwMDAwLAogICJjYXJkcyI6IDQsCiAgIm9wdGlvbnMiOiA0ODgsCiAgInNhbXBsZXMiOiBbCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJxdWFudGl0eSIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAxMzIuMDk5OTk5OTk0MDM5NTQsCiAgICAgICJjb21wbGV0aW9uTXMiOiA1OTQuNQogICAgfSwKICAgIHsKICAgICAgInNjZW5hcmlvIjogInB1cmNoYXNlLWJ1cnN0IiwKICAgICAgImlucHV0UmVzcG9uc2VNcyI6IDE2My4wOTk5OTk5OTQwMzk1NCwKICAgICAgImNvbXBsZXRpb25NcyI6IDY4Mi4xOTk5OTk5ODgwNzkxCiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAibWVtby1hZnRlci10cmF2ZXJzYWwiLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogMjE0LjUsCiAgICAgICJjb21wbGV0aW9uTXMiOiA5MTguMzAwMDAwMDExOTIwOQogICAgfSwKICAgIHsKICAgICAgInNjZW5hcmlvIjogIkphcGFuZXNlLXNlYXJjaCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAxMjMuMTAwMDAwMDIzODQxODYsCiAgICAgICJjb21wbGV0aW9uTXMiOiAxMDI1LjUKICAgIH0sCiAgICB7CiAgICAgICJzY2VuYXJpbyI6ICJwdXJjaGFzZS10aGVuLW5leHQiLAogICAgICAiaW5wdXRSZXNwb25zZU1zIjogMzMxLjE5OTk5OTk4ODA3OTA3LAogICAgICAiY29tcGxldGlvbk1zIjogMzQ0LjU5OTk5OTk5NDAzOTU0CiAgICB9LAogICAgewogICAgICAic2NlbmFyaW8iOiAiY29udGludW91cy1waW5jaCIsCiAgICAgICJpbnB1dFJlc3BvbnNlTXMiOiAxLjU5OTk5OTk5NDAzOTUzNTUsCiAgICAgICJjb21wbGV0aW9uTXMiOiAxNjQuMzAwMDAwMDExOTIwOTMKICAgIH0KICBdCn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a0d349b98009996c615f-c106154746b3a50ff885",
+          "file": "responsive-performance.spec.ts",
+          "line": 134,
+          "column": 3
+        },
+        {
+          "title": "direct field commands review another tab and retain inputs across worker save failure",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5146,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T03:37:04.954Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a0d349b98009996c615f-6f7dd52ecc59fe3d9137",
+          "file": "responsive-performance.spec.ts",
+          "line": 454,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-08T03:30:04.820Z",
+    "duration": 425397.358,
+    "expected": 12,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

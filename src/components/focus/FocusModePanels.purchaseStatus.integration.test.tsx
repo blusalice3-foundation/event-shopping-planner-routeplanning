@@ -1,3 +1,4 @@
+import { shoppingPerformance } from "../../utils/shoppingPerformance";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -575,4 +576,36 @@ describe("FocusModeHeader aggregate phase label", () => {
       expect(phaseLabel).toHaveTextContent(`移動基準：${expected}`);
     },
   );
+});
+
+it("renders only the changed focus item when sibling references are preserved", () => {
+  const items = [
+    makeItem("first", "None"),
+    makeItem("second", "None"),
+    makeItem("third", "None"),
+  ];
+  const props: ComponentProps<typeof FocusModeItemList> = {
+    itemListRef: { current: null },
+    layoutMode: "pc",
+    isMapVisible: false,
+    currentVisitDisplayItems: items,
+    blinkingPriceItemIds: new Set(),
+    onUpdateItem: vi.fn(),
+    skipLimitedPurchaseForSingleQuantity: false,
+  };
+  shoppingPerformance.enable();
+  try {
+    const view = render(<FocusModeItemList {...props} />);
+    shoppingPerformance.reset();
+    const next = items.slice();
+    next[0] = { ...items[0], purchaseStatus: "Purchased" };
+    view.rerender(
+      <FocusModeItemList {...props} currentVisitDisplayItems={next} />,
+    );
+    expect(shoppingPerformance.read().renders["focus-item"]).toBe(1);
+    expect(view.getAllByRole("listitem")).toHaveLength(3);
+  } finally {
+    shoppingPerformance.enable(false);
+    shoppingPerformance.reset();
+  }
 });

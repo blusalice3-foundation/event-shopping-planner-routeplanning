@@ -69,13 +69,23 @@ export interface ShoppingSelectionExecutionActionPort {
   setBlockSortDirection(value: BlockSortDirection | null): void;
   setExecuteCollapsedSpaces(action: StateAction<Set<string>>): void;
   updateExecuteModeItems(action: StateAction<ExecuteModeItemsByEvent>): void;
-  updateItem(item: ShoppingItem): void;
+  updateItem(
+    item: ShoppingItem,
+    baseline?: ShoppingItem,
+    options?: { saveImmediately?: boolean },
+  ): void;
+  updateItems?(
+    items: readonly ShoppingItem[],
+    options?: { saveImmediately?: boolean },
+  ): void;
 }
 
 export interface ShoppingSelectionExecutionEffectPort {
   notify(message: string): void;
   scheduleCenteredItemScroll(itemId: string): void;
 }
+
+import { useStableCallback } from "../../hooks/useStableCallback";
 
 export interface ShoppingSelectionExecutionCommandPorts {
   readonly state: ShoppingSelectionExecutionStatePort;
@@ -105,7 +115,11 @@ export interface ShoppingSelectionExecutionCommands {
     targetStatus: PurchaseStatus,
     groupItems: ShoppingItem[],
   ): void;
-  updateExecuteItem(updatedItem: ShoppingItem): void;
+  updateExecuteItem(
+    updatedItem: ShoppingItem,
+    baseline?: ShoppingItem,
+    options?: { saveImmediately?: boolean },
+  ): void;
   activatePostponeFilter(): void;
   activateLateFilter(): void;
   setExecuteSpaceGroupOrder(orderedGroupKeys: readonly string[]): void;
@@ -269,7 +283,7 @@ export const useShoppingSelectionExecutionCommands = ({
     [spaceGroupDragItemIdsRef],
   );
 
-  const changeBulkStatus = useCallback(
+  const changeBulkStatus = useStableCallback(
     (
       groupKey: string,
       targetStatus: PurchaseStatus,
@@ -282,19 +296,36 @@ export const useShoppingSelectionExecutionCommands = ({
       const nextStatus: PurchaseStatus = allAlready ? "None" : targetStatus;
       const groupItemIds = new Set(groupItems.map((item) => item.id));
 
-      setEventLists((current) => ({
-        ...current,
-        [activeEventName]: (current[activeEventName] || []).map((item) => {
-          if (!groupItemIds.has(item.id)) return item;
-          if (
-            targetStatus === "LimitedPurchase" ||
-            item.purchaseStatus === "LimitedPurchase"
-          ) {
-            return item;
-          }
-          return clearLimitedPurchase({ ...item, purchaseStatus: nextStatus });
-        }),
-      }));
+      if (actions.updateItems) {
+        actions.updateItems(
+          groupItems
+            .filter(
+              (item) =>
+                targetStatus !== "LimitedPurchase" &&
+                item.purchaseStatus !== "LimitedPurchase",
+            )
+            .map((item) =>
+              clearLimitedPurchase({ ...item, purchaseStatus: nextStatus }),
+            ),
+        );
+      } else {
+        setEventLists((current) => ({
+          ...current,
+          [activeEventName]: (current[activeEventName] || []).map((item) => {
+            if (!groupItemIds.has(item.id)) return item;
+            if (
+              targetStatus === "LimitedPurchase" ||
+              item.purchaseStatus === "LimitedPurchase"
+            ) {
+              return item;
+            }
+            return clearLimitedPurchase({
+              ...item,
+              purchaseStatus: nextStatus,
+            });
+          }),
+        }));
+      }
       setRecentlyChangedItemIds((currentIds) => {
         const next = new Set(currentIds);
         groupItems.forEach((item) => next.add(item.id));
@@ -326,19 +357,16 @@ export const useShoppingSelectionExecutionCommands = ({
         if (allVisibleNonNone) setShowLateFilterButton(true);
       }
     },
-    [
-      activeEventName,
-      setEventLists,
-      setRecentlyChangedItemIds,
-      setShowLateFilterButton,
-      setShowPostponeFilterButton,
-      sortState,
-    ],
   );
 
-  const updateExecuteItem = useCallback(
-    (updatedItem: ShoppingItem) => {
-      updateItem(updatedItem);
+  const updateExecuteItem = useStableCallback(
+    (
+      updatedItem: ShoppingItem,
+      baseline?: ShoppingItem,
+      options?: { saveImmediately?: boolean },
+    ) => {
+      if (baseline || options) updateItem(updatedItem, baseline, options);
+      else updateItem(updatedItem);
       if (sortState !== "Manual" && sortState !== "Postpone") return;
       if (updatedItem.purchaseStatus === "None") return;
 
@@ -383,12 +411,6 @@ export const useShoppingSelectionExecutionCommands = ({
       });
       if (allVisibleNonNone) setShowLateFilterButton(true);
     },
-    [
-      setShowLateFilterButton,
-      setShowPostponeFilterButton,
-      sortState,
-      updateItem,
-    ],
   );
 
   const activatePostponeFilter = useCallback(() => {

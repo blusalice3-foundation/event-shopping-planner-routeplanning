@@ -1,3 +1,7 @@
+import {
+  changedItemPositions,
+  registerItemChanges,
+} from "../../../utils/itemIndex";
 import { projectDayBuckets } from "./dayBuckets";
 import { normalizeExecutionVisitDay } from "../../../utils/visitProjection";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
@@ -242,12 +246,13 @@ export function createConsistencySnapshotProjector() {
       if (projection && rawItems !== cached!.items) {
         const oldItems = cached!.items as ShoppingItem[];
         const items = rawItems as ShoppingItem[];
+        const changedIndices = changedItemPositions(oldItems, items);
         const sameMembership =
-          items.length === oldItems.length &&
-          items.every((item, index) => {
+          changedIndices !== null &&
+          changedIndices.every((index) => {
+            const item = items[index];
             const old = oldItems[index];
             return (
-              item.id === old.id &&
               item.eventDate === old.eventDate &&
               item.block === old.block &&
               item.number === old.number
@@ -255,21 +260,20 @@ export function createConsistencySnapshotProjector() {
           });
         if (sameMembership) {
           const oldProjected = projection.eventLists[name] as ShoppingItem[];
-          projection = {
-            ...projection,
-            eventLists: {
-              [name]: items.map((item, index) => {
-                if (item === oldItems[index]) return oldProjected[index];
-                const value = { ...item };
-                delete value.manualHallId;
-                const membership = membershipByItem.get(oldProjected[index])!;
-                if (membership.hall)
-                  value.manualHallId = encodeHallRef(membership.hall);
-                membershipByItem.set(value, membership);
-                return value;
-              }),
-            },
-          };
+          const nextProjected = changedIndices!.length
+            ? oldProjected.slice()
+            : oldProjected;
+          for (const index of changedIndices!) {
+            const value = { ...items[index] };
+            delete value.manualHallId;
+            const membership = membershipByItem.get(oldProjected[index])!;
+            if (membership.hall)
+              value.manualHallId = encodeHallRef(membership.hall);
+            membershipByItem.set(value, membership);
+            nextProjected[index] = value;
+          }
+          registerItemChanges(oldProjected, nextProjected, changedIndices!);
+          projection = { ...projection, eventLists: { [name]: nextProjected } };
         } else projection = undefined;
       }
       if (!projection)

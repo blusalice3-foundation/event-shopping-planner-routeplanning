@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import type {
   DayMapData,
   HallDefinition,
@@ -69,16 +69,43 @@ export function useMapSelectors({
     },
     [activeEventName, hallDefinitions],
   );
+  const hallsCache = useRef(
+    new Map<
+      string,
+      {
+        mapped: HallDefinition[] | undefined;
+        simple: HallDefinition[] | undefined;
+        value: HallDefinition[];
+      }
+    >(),
+  );
+  const settingsCache = useRef(
+    new Map<
+      string,
+      {
+        selected: HallRouteSettings | undefined;
+        simple: HallRouteSettings | undefined;
+        halls: HallDefinition[];
+        value: HallRouteSettings;
+      }
+    >(),
+  );
   const getHallsForDate = useCallback(
     (date: string): HallDefinition[] => {
       if (!activeEventName) return [];
       const map = getMapTabForDate(date),
         simple = getSimpleKey(date),
         definitions = hallDefinitions[activeEventName];
-      return [
-        ...(map ? (definitions?.[map] ?? []) : []),
-        ...(simple ? (definitions?.[simple] ?? []) : []),
-      ];
+      const key = JSON.stringify([activeEventName, date, map, simple]);
+      const mapped = map ? definitions?.[map] : undefined;
+      const simpleHalls = simple ? definitions?.[simple] : undefined;
+      const cached = hallsCache.current.get(key);
+      if (cached && cached.mapped === mapped && cached.simple === simpleHalls)
+        return cached.value;
+      const value = [...(mapped ?? []), ...(simpleHalls ?? [])];
+      if (hallsCache.current.size >= 64) hallsCache.current.clear();
+      hallsCache.current.set(key, { mapped, simple: simpleHalls, value });
+      return value;
     },
     [activeEventName, hallDefinitions, getMapTabForDate, getSimpleKey],
   );
@@ -104,12 +131,22 @@ export function useMapSelectors({
           : undefined;
       if (isCompleteHallOrder(selected)) return selected!;
       const simpleSettings = simple ? settings?.[simple] : undefined;
-      return {
+      const halls = getHallsForDate(date);
+      const key = JSON.stringify([activeEventName, date, map, simple]);
+      const cached = settingsCache.current.get(key);
+      if (
+        cached &&
+        cached.selected === selected &&
+        cached.simple === simpleSettings &&
+        cached.halls === halls
+      )
+        return cached.value;
+      const value = {
         hallOrder: [
           ...new Set([
             ...(selected?.hallOrder ?? []),
             ...(simpleSettings?.hallOrder ?? []),
-            ...getHallsForDate(date).map((hall) => hall.id),
+            ...halls.map((hall) => hall.id),
           ]),
         ],
         hallVisitLists: [
@@ -117,6 +154,14 @@ export function useMapSelectors({
           ...(map ? (simpleSettings?.hallVisitLists ?? []) : []),
         ],
       };
+      if (settingsCache.current.size >= 64) settingsCache.current.clear();
+      settingsCache.current.set(key, {
+        selected,
+        simple: simpleSettings,
+        halls,
+        value,
+      });
+      return value;
     },
     [
       activeEventName,

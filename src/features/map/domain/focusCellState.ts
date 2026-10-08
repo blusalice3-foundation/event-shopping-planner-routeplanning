@@ -1,3 +1,8 @@
+import {
+  changedItemPositions,
+  registerItemChanges,
+} from "../../../utils/itemIndex";
+import { sameItemRouting } from "../../../utils/executionVisitIndex";
 import type { ShoppingItem } from "../../../types/item";
 import type { DayMapData } from "../../../types/map";
 import { normalizeExecutionVisitDay } from "../../../utils/visitProjection";
@@ -70,5 +75,74 @@ export function summarizeFocusCell(items: readonly ShoppingItem[]) {
     hasLate: items.some((item) => item.purchaseStatus === "Late"),
     allPostponed,
     allLate,
+  };
+}
+
+/** Reuse coordinate membership for content edits and replace only affected cells. */
+export function createFocusCellItemsProjector() {
+  let previous: readonly ShoppingItem[] | undefined;
+  let previousContext: readonly unknown[] = [];
+  let value: ReturnType<typeof collectFocusCellItems>;
+  let membership = new Map<
+    string,
+    { category: "execution" | "candidates"; key: string; index: number }
+  >();
+  return (...args: Parameters<typeof collectFocusCellItems>) => {
+    const [items, ids, day, map, resolver] = args;
+    const context = [ids, day, map, resolver];
+    const changes =
+      previous &&
+      context.every((input, index) => input === previousContext[index])
+        ? changedItemPositions(previous, items)
+        : null;
+    if (
+      changes === null ||
+      changes.some((index) => !sameItemRouting(previous![index], items[index]))
+    ) {
+      value = collectFocusCellItems(...args);
+      membership = new Map();
+      for (const category of ["execution", "candidates"] as const)
+        for (const [key, members] of value[category])
+          members.forEach((item, index) =>
+            membership.set(item.id, { category, key, index }),
+          );
+    } else if (changes.length) {
+      const next = { ...value };
+      const updated = new Map<string, number[]>();
+      for (const position of changes) {
+        const item = items[position];
+        const location = membership.get(item.id);
+        if (!location) continue;
+        const key = location.category + ":" + location.key;
+        let indices = updated.get(key);
+        if (!indices) {
+          indices = [];
+          updated.set(key, indices);
+          if (next[location.category] === value[location.category])
+            next[location.category] = new Map(value[location.category]);
+          next[location.category].set(
+            location.key,
+            value[location.category].get(location.key)!.slice(),
+          );
+        }
+        next[location.category].get(location.key)![location.index] = item;
+        indices.push(location.index);
+      }
+      for (const [key, indices] of updated) {
+        const [category, cell] = key.split(":") as [
+          "execution" | "candidates",
+          string,
+        ];
+        registerItemChanges(
+          value[category].get(cell)!,
+          next[category].get(cell)!,
+          indices,
+        );
+      }
+      if (updated.size) value = next;
+    }
+    previous = items;
+    previousContext = context;
+    return value!;
   };
 }

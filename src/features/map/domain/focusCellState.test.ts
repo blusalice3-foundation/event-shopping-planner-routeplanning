@@ -1,7 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ShoppingItem } from "../../../types/item";
 import type { DayMapData } from "../../../types/map";
-import { collectFocusCellItems, summarizeFocusCell } from "./focusCellState";
+import {
+  collectFocusCellItems,
+  summarizeFocusCell,
+  createFocusCellItemsProjector,
+} from "./focusCellState";
 const item = (id: string, patch: Partial<ShoppingItem> = {}): ShoppingItem => ({
   id,
   circle: id,
@@ -155,4 +159,32 @@ describe("focus map status labels", () => {
     ).toBe("後1・限未1・済1");
     expect(summarizeFocusCell([]).statusLabel).toBe("");
   });
+});
+
+it("reuses coordinates and unaffected cell memberships on a status change", () => {
+  const project = createFocusCellItemsProjector();
+  const ids = ["a", "b"];
+  const original = [item("a"), item("b", { number: "02a" })];
+  const resolver = vi.fn(
+    (_map: DayMapData, member: Pick<ShoppingItem, "block" | "number">) => ({
+      status: "resolved" as const,
+      location: { cell: { row: 1, col: member.number === "01a" ? 1 : 2 } },
+    }),
+  );
+  // Use the production resolver's full shape for the cache contract.
+  const resolve = resolver as unknown as Parameters<
+    typeof collectFocusCellItems
+  >[4];
+  const first = project(original, ids, "1日目", map, resolve);
+  resolver.mockClear();
+  const next = project(
+    [{ ...original[0], purchaseStatus: "SoldOut" }, original[1]],
+    ids,
+    "1日目",
+    map,
+    resolve,
+  );
+  expect(resolver).not.toHaveBeenCalled();
+  expect(next.execution.get("1-2")).toBe(first.execution.get("1-2"));
+  expect(next.execution.get("1-1")![0].purchaseStatus).toBe("SoldOut");
 });

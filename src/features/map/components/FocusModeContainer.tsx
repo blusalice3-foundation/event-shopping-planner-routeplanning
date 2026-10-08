@@ -6,6 +6,7 @@ import {
 import React, { useEffect, useMemo, useRef } from "react";
 import FocusMode from "../../../components/FocusMode";
 import { buildMergedHallRouteSettings } from "../../../utils/mergedHallRouteSettings";
+import { createRoutingItemsProjector } from "../../../utils/executionVisitIndex";
 import { buildItemRoutingSignature } from "../../../utils/hallGrouping";
 import { getMapVisitLookupRenderingSignature } from "../canvas/mapRenderingSnapshot";
 import {
@@ -138,9 +139,11 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
     return executeModeItemIds;
   }, [executeModeItemIds, executeModeItemIdsSignature]);
 
+  const projectRoutingItems = useMemo(createRoutingItemsProjector, []);
+  const routingItems = projectRoutingItems(items);
   const focusRouteItemsSignature = useMemo(() => {
-    return buildItemRoutingSignature(items, stableExecuteModeItemIds);
-  }, [items, stableExecuteModeItemIds]);
+    return buildItemRoutingSignature(routingItems, stableExecuteModeItemIds);
+  }, [routingItems, stableExecuteModeItemIds]);
 
   const focusRouteRelevantItemsRef = useRef<{
     signature: string;

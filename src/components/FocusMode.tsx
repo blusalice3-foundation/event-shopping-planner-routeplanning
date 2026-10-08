@@ -1,3 +1,17 @@
+import { useContext } from "react";
+import {
+  AcceptedItemContext,
+  ItemCommandContext,
+} from "../features/shopping-list/renderers/ViewportRowState";
+import { createRouteEntriesProjector } from "../features/space-navigation/domain/navigatorEntriesProjector";
+import { indexedItem } from "../utils/itemIndex";
+import {
+  createExecutionVisitIndex,
+  createPhaseVisitProjector,
+  createRoutingItemsProjector,
+} from "../utils/executionVisitIndex";
+import { useStableCallback } from "../hooks/useStableCallback";
+import { measureShoppingOperation } from "../utils/shoppingPerformance";
 import { resolveDayMap } from "../features/consistency/domain/context";
 
 import React, {
@@ -88,7 +102,6 @@ import {
   getPlannedQuantity,
   getSafePriceForCalculation,
   hasMissingLimitedPurchaseQuantity,
-  isCountedAsPurchased,
   isPriceRequiredStatus,
   isUndefinedPrice,
 } from "../utils/purchaseQuantity";
@@ -110,7 +123,6 @@ import {
 import type {
   NavigationGuardResult,
   NavigatorEntry,
-  NavigatorSourceVisit,
 } from "../features/space-navigation/types";
 import {
   buildSpaceKey,
@@ -122,7 +134,6 @@ import {
   buildPhaseVisitProjectionKey,
   EXECUTION_VISIT_MERGE_NOTICE,
   normalizeExecutionVisitDay,
-  projectItemsToExecutionVisits,
 } from "../utils/visitProjection";
 import {
   aggregateNavigatorSpace,
@@ -134,7 +145,11 @@ import { SPACE_NAVIGATOR_RAIL_WIDTH_PX } from "../features/space-navigation/comp
 interface FocusModeProps {
   items: ShoppingItem[];
   executeModeItemIds: string[];
-  onUpdateItem: (item: ShoppingItem) => void;
+  onUpdateItem: (
+    item: ShoppingItem,
+    baseline?: ShoppingItem,
+    options?: { saveImmediately?: boolean },
+  ) => void;
   onModeChange: (mode: "edit" | "execute", lastItemId?: string) => void;
   layoutMode: "pc" | "smartphone";
   onLayoutModeChange: (mode: "pc" | "smartphone") => void;
@@ -395,9 +410,17 @@ const FocusMode: React.FC<FocusModeProps> = ({
     return new Map(items.map((item) => [item.id, item]));
   }, [items]);
 
+  const routingItemsProjector = useMemo(createRoutingItemsProjector, []);
+  const routingItems = routingItemsProjector(items);
   const executeItemsRoutingSignature = useMemo(() => {
-    return buildItemRoutingSignature(items, executeModeItemIds);
-  }, [items, executeModeItemIds]);
+    return buildItemRoutingSignature(routingItems, executeModeItemIds);
+  }, [routingItems, executeModeItemIds]);
+  const readAcceptedItem = useContext(AcceptedItemContext);
+  const commitItemCommands = useContext(ItemCommandContext);
+  const getLatestItemById = useStableCallback(
+    (itemId: string): ShoppingItem | undefined =>
+      readAcceptedItem ? readAcceptedItem(itemId) : indexedItem(items, itemId),
+  );
 
   const hallDefinitionsRoutingSignature = useMemo(() => {
     return buildHallDefinitionsRoutingSignature(hallDefinitions);
@@ -500,69 +523,28 @@ const FocusMode: React.FC<FocusModeProps> = ({
     return sortedItems;
   }, [routePositionSignature, executeItems]);
   // 全訪問先リストを実行列順序で生成
-  const allVisits = useMemo(() => {
-    return projectItemsToExecutionVisits(executeItems).map(
-      ({ key, items }) => ({
-        key,
-        items,
-      }),
-    );
-  }, [executeItems]);
-  const currentPostponedItemIds = useMemo(() => {
-    return new Set(
-      executeItems
-        .filter((item) => item.purchaseStatus === "Postpone")
-        .map((item) => item.id),
-    );
-  }, [executeItems]);
-  const currentLateItemIds = useMemo(() => {
-    return new Set(
-      executeItems
-        .filter((item) => item.purchaseStatus === "Late")
-        .map((item) => item.id),
-    );
-  }, [executeItems]);
-  const visitsByPhase = useMemo(() => {
-    const normal: typeof allVisits = [];
-    const postponed: typeof allVisits = [];
-    const late: typeof allVisits = [];
-    allVisits.forEach((visit) => {
-      // 通常フェーズ: 全ての訪問先を含む
-      normal.push(visit);
-      // 後回しフェーズ: 記憶されたアイテムIDがある訪問先
-      if (currentPhase === "normal") {
-        const hasPostponedItems = visit.items.some((item) =>
-          currentPostponedItemIds.has(item.id),
-        );
-        if (hasPostponedItems) postponed.push(visit);
-      } else {
-        const hasPostponedItems = visit.items.some((item) =>
-          postponedPhaseItemIds.has(item.id),
-        );
-        if (hasPostponedItems) postponed.push(visit);
-      }
-      // 遅参フェーズ: 記憶されたアイテムIDがある訪問先
-      if (currentPhase === "normal" || currentPhase === "postponed") {
-        const hasLateItems = visit.items.some((item) =>
-          currentLateItemIds.has(item.id),
-        );
-        if (hasLateItems) late.push(visit);
-      } else {
-        const hasLateItems = visit.items.some((item) =>
-          latePhaseItemIds.has(item.id),
-        );
-        if (hasLateItems) late.push(visit);
-      }
-    });
-    return { normal, postponed, late };
-  }, [
+  const projectVisitIndex = useMemo(createExecutionVisitIndex, []);
+  const visitIndex = projectVisitIndex(executeItems);
+  const allVisits = visitIndex.visits;
+  const currentPostponedItemIds = visitIndex.postponedItemIds;
+  const currentLateItemIds = visitIndex.lateItemIds;
+  const projectPostponedVisits = useMemo(
+    () => createPhaseVisitProjector(false),
+    [],
+  );
+  const projectLateVisits = useMemo(() => createPhaseVisitProjector(false), []);
+  const postponedVisits = projectPostponedVisits(
     allVisits,
-    currentPhase,
-    currentPostponedItemIds,
-    currentLateItemIds,
-    postponedPhaseItemIds,
-    latePhaseItemIds,
-  ]);
+    currentPhase === "normal" ? currentPostponedItemIds : postponedPhaseItemIds,
+  );
+  const lateVisits = projectLateVisits(
+    allVisits,
+    currentPhase === "late" ? latePhaseItemIds : currentLateItemIds,
+  );
+  const visitsByPhase = useMemo(
+    () => ({ normal: allVisits, postponed: postponedVisits, late: lateVisits }),
+    [allVisits, postponedVisits, lateVisits],
+  );
   const formalPhaseVisits = useMemo(
     () => visitsByPhase[currentPhase],
     [visitsByPhase, currentPhase],
@@ -589,39 +571,23 @@ const FocusMode: React.FC<FocusModeProps> = ({
     currentPhase === "normal" ? currentPostponedItemIds : postponedPhaseItemIds;
   const effectiveLateItemIds =
     currentPhase === "late" ? latePhaseItemIds : currentLateItemIds;
+  const projectPostponedSources = useMemo(
+    () => createPhaseVisitProjector(),
+    [],
+  );
+  const projectLateSources = useMemo(() => createPhaseVisitProjector(), []);
+  const postponedSources = projectPostponedSources(
+    allVisits,
+    effectivePostponedItemIds,
+  );
+  const lateSources = projectLateSources(allVisits, effectiveLateItemIds);
   const navigatorSourcesByPhase = useMemo(
     () => ({
-      normal: visitsByPhase.normal.map(
-        (visit): NavigatorSourceVisit => ({ ...visit, items: visit.items }),
-      ),
-      postponed: visitsByPhase.postponed
-        .map(
-          (visit): NavigatorSourceVisit => ({
-            ...visit,
-            items: visit.items.filter((item) =>
-              effectivePostponedItemIds.has(item.id),
-            ),
-          }),
-        )
-        .filter((visit) => visit.items.length > 0),
-      late: visitsByPhase.late
-        .map(
-          (visit): NavigatorSourceVisit => ({
-            ...visit,
-            items: visit.items.filter((item) =>
-              effectiveLateItemIds.has(item.id),
-            ),
-          }),
-        )
-        .filter((visit) => visit.items.length > 0),
+      normal: allVisits,
+      postponed: postponedSources,
+      late: lateSources,
     }),
-    [
-      effectiveLateItemIds,
-      effectivePostponedItemIds,
-      visitsByPhase.late,
-      visitsByPhase.normal,
-      visitsByPhase.postponed,
-    ],
+    [allVisits, postponedSources, lateSources],
   );
 
   const {
@@ -781,6 +747,12 @@ const FocusMode: React.FC<FocusModeProps> = ({
     getMapViewportSnapshot,
     restoreMapViewportSnapshot,
   });
+  const projectRouteEntries = useMemo(createRouteEntriesProjector, []);
+  const routeNavigatorEntries = projectRouteEntries(baseNavigatorEntries);
+  const routePositionItemsById = useMemo(
+    () => new Map(routePositionItems.map((item) => [item.id, item])),
+    [routePositionItems],
+  );
   const activeNavigatorRailSide =
     spaceNavigator?.settings.railVisible &&
     spaceNavigator.registration?.id === focusNavigatorRegistrationId
@@ -827,7 +799,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
         };
       }
       return (
-        allVisits.find((visit) => visit.key === visitKey) ?? {
+        visitIndex.visitsByKey.get(visitKey) ?? {
           key: visitKey,
           items: entry.itemIds
             .map((itemId) => itemsById.get(itemId))
@@ -835,7 +807,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
         }
       );
     },
-    [allVisits, itemsById],
+    [visitIndex.visitsByKey, itemsById],
   );
   const currentVisit = useMemo(
     () => resolveNavigatorEntryVisit(displayEntry ?? undefined),
@@ -861,17 +833,17 @@ const FocusMode: React.FC<FocusModeProps> = ({
   );
   const nextAllVisitKeys = useMemo(
     () =>
-      baseNavigatorEntries
+      routeNavigatorEntries
         .map((entry) => {
           const firstItem = entry.itemIds
-            .map((itemId) => itemsById.get(itemId))
+            .map((itemId) => routePositionItemsById.get(itemId))
             .find((item): item is ShoppingItem => item !== undefined);
           return firstItem
             ? buildPhaseVisitProjectionKey(firstItem, entry.phase || "normal")
             : null;
         })
         .filter((visitKey): visitKey is string => visitKey !== null),
-    [baseNavigatorEntries, itemsById],
+    [routeNavigatorEntries, routePositionItemsById],
   );
   const allVisitKeysSignature = useMemo(
     () => JSON.stringify(nextAllVisitKeys),
@@ -948,21 +920,8 @@ const FocusMode: React.FC<FocusModeProps> = ({
   }, [currentPhase]);
   const totalVisits = baseNavigatorEntries.length;
   const currentVisitNumber = formalRouteIndex + 1;
-  const remainingCost = useMemo(() => {
-    return executeItems.reduce((sum, item) => {
-      const isPurchasable =
-        item.purchaseStatus === "None" ||
-        item.purchaseStatus === "Postpone" ||
-        item.purchaseStatus === "Late";
-      if (!isPurchasable) return sum;
-      const price = getSafePriceForCalculation(item.price);
-      return sum + price * getPlannedBudgetQuantity(item);
-    }, 0);
-  }, [executeItems]);
-  // 購入済み件数
-  const purchasedCount = useMemo(() => {
-    return executeItems.filter(isCountedAsPurchased).length;
-  }, [executeItems]);
+  const remainingCost = visitIndex.remainingCost;
+  const purchasedCount = visitIndex.purchasedCount;
   const currentVisitCheckedCount = useMemo(() => {
     return currentVisitDisplayItems.filter(
       (item) => item.purchaseStatus !== "None",
@@ -1034,7 +993,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     [isInspecting, markLimitedPurchaseQuantityDeferred],
   );
   const updateItemWithDeferredCleanup = useCallback(
-    (updatedItem: ShoppingItem) => {
+    (updatedItem: ShoppingItem, saveImmediately = false) => {
       if (isInspecting) {
         setNotification("内容確認中は編集できません");
         return;
@@ -1045,13 +1004,40 @@ const FocusMode: React.FC<FocusModeProps> = ({
       if (shouldClearDefer) {
         clearLimitedPurchaseQuantityDeferredForItem(updatedItem.id);
       }
-      onUpdateItem(updatedItem);
+      if (saveImmediately)
+        onUpdateItem(updatedItem, undefined, { saveImmediately: true });
+      else onUpdateItem(updatedItem);
     },
     [
       clearLimitedPurchaseQuantityDeferredForItem,
       isInspecting,
       onUpdateItem,
       setNotification,
+    ],
+  );
+  const updateItemsWithDeferredCleanup = useCallback(
+    (updates: readonly ShoppingItem[], saveImmediately = false) => {
+      if (isInspecting) return;
+      if (!commitItemCommands) {
+        updates.forEach((item) =>
+          updateItemWithDeferredCleanup(item, saveImmediately),
+        );
+        return;
+      }
+      updates.forEach((item) => {
+        if (
+          item.purchaseStatus !== "LimitedPurchase" ||
+          !hasMissingLimitedPurchaseQuantity(item)
+        )
+          clearLimitedPurchaseQuantityDeferredForItem(item.id);
+      });
+      commitItemCommands(updates, { saveImmediately });
+    },
+    [
+      isInspecting,
+      commitItemCommands,
+      updateItemWithDeferredCleanup,
+      clearLimitedPurchaseQuantityDeferredForItem,
     ],
   );
   const openPostEventDistributionCheck = useCallback(
@@ -1075,20 +1061,29 @@ const FocusMode: React.FC<FocusModeProps> = ({
         setNotification("内容確認中は事後通販・頒布可否を記録できません");
         return;
       }
-      answers.forEach(({ itemId, answer }) => {
-        const latestItem = items.find((item) => item.id === itemId);
-        if (!latestItem) return;
-        updateItemWithDeferredCleanup({
-          ...latestItem,
-          remarks: upsertPostEventDistributionRemark(
-            latestItem.remarks,
-            answer,
-          ),
-        });
+      const updates = answers.flatMap(({ itemId, answer }) => {
+        const latestItem = getLatestItemById(itemId);
+        return latestItem
+          ? [
+              {
+                ...latestItem,
+                remarks: upsertPostEventDistributionRemark(
+                  latestItem.remarks,
+                  answer,
+                ),
+              },
+            ]
+          : [];
       });
+      updateItemsWithDeferredCleanup(updates, true);
       setPostEventDistributionCheckContext(null);
     },
-    [isInspecting, items, setNotification, updateItemWithDeferredCleanup],
+    [
+      isInspecting,
+      getLatestItemById,
+      setNotification,
+      updateItemsWithDeferredCleanup,
+    ],
   );
   const handlePostEventDistributionCheckCancel = useCallback(() => {
     setPostEventDistributionCheckContext(null);
@@ -1244,9 +1239,9 @@ const FocusMode: React.FC<FocusModeProps> = ({
   ]);
   const visitKeyCellMap = useMemo(() => {
     const map = new Map<string, { row: number; col: number; key: string }>();
-    baseNavigatorEntries.forEach((entry) => {
+    routeNavigatorEntries.forEach((entry) => {
       const firstItem = entry.itemIds
-        .map((itemId) => itemsById.get(itemId))
+        .map((itemId) => routePositionItemsById.get(itemId))
         .find((item): item is ShoppingItem => item !== undefined);
       if (!firstItem) return;
       const coord = executionVisitCellMap.get(getVisitKey(firstItem));
@@ -1262,7 +1257,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
       }
     });
     return map;
-  }, [baseNavigatorEntries, executionVisitCellMap, itemsById]);
+  }, [routeNavigatorEntries, executionVisitCellMap, routePositionItemsById]);
   const routeCoordsSignature = useMemo(() => {
     return JSON.stringify(
       allVisitKeys.map((visitKey) => {
@@ -1315,9 +1310,9 @@ const FocusMode: React.FC<FocusModeProps> = ({
   );
   const missingRouteItemIds = useMemo(() => {
     const missingIds = new Set<string>();
-    baseNavigatorEntries.forEach((entry) => {
+    routeNavigatorEntries.forEach((entry) => {
       const firstItem = entry.itemIds
-        .map((itemId) => itemsById.get(itemId))
+        .map((itemId) => routePositionItemsById.get(itemId))
         .find((item): item is ShoppingItem => item !== undefined);
       if (
         firstItem &&
@@ -1329,7 +1324,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
       }
     });
     return Array.from(missingIds);
-  }, [baseNavigatorEntries, itemsById, missingRouteVisitKeys]);
+  }, [routeNavigatorEntries, routePositionItemsById, missingRouteVisitKeys]);
   const routeDiagnostics = useMemo(
     () =>
       buildRouteDiagnostics({
@@ -1808,6 +1803,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     setPostponedPhaseItemIds,
   ]);
   const handleNext = useCallback(() => {
+    const finishNavigation = measureShoppingOperation("focus-next");
     if (isInspecting) {
       setNotification("内容確認中は前後移動できません");
       return;
@@ -1819,38 +1815,59 @@ const FocusMode: React.FC<FocusModeProps> = ({
       }
       return;
     }
+    const latestVisitItems = currentVisitDisplayItems.flatMap((item) => {
+      const latest = getLatestItemById(item.id);
+      return latest ? [latest] : [];
+    });
+    const latestUndefinedPriceItems = latestVisitItems.filter(
+      (item) => isPriceRequiredStatus(item) && isUndefinedPrice(item.price),
+    );
+    const latestLimitedMissingItems = latestVisitItems.filter(
+      hasMissingLimitedPurchaseQuantity,
+    );
+    const latestBlockedByPrice =
+      !disablePriceUndefinedCheck && latestUndefinedPriceItems.length > 0;
+    const latestBlockedByLimited =
+      !disableLimitedPurchaseQuantityCheck &&
+      latestLimitedMissingItems.some(
+        (item) =>
+          !deferredLimitedItemIdsByVisitKey
+            .get(getVisitKey(item))
+            ?.has(item.id),
+      );
     setBlinkingPriceItemIds(
-      new Set(currentVisitUndefinedPriceItems.map((item) => item.id)),
+      new Set(latestUndefinedPriceItems.map((item) => item.id)),
     );
     setBlinkingLimitedMissingItemIds(
-      blockedByLimited
-        ? new Set(currentVisitLimitedMissingItems.map((item) => item.id))
+      latestBlockedByLimited
+        ? new Set(latestLimitedMissingItems.map((item) => item.id))
         : new Set(),
     );
 
-    if (blockedByPrice && blockedByLimited) {
+    if (latestBlockedByPrice && latestBlockedByLimited) {
       setNotification("価格と限数の実購入数を入力してください", "warning");
       return;
     }
-    if (blockedByPrice) {
+    if (latestBlockedByPrice) {
       setNotification(
         "価格未定のアイテムがあります。価格を入力してください。",
         "warning",
       );
       return;
     }
-    if (blockedByLimited) {
+    if (latestBlockedByLimited) {
       setNotification(
         "限数未入力があります。実購入数を入力してください",
         "warning",
       );
       return;
     }
-    const hasUncheckedItems = currentVisitDisplayItems.some(
+    const hasUncheckedItems = latestVisitItems.some(
       (item) => item.purchaseStatus === "None",
     );
     clearAutoAdvanceTimer();
     moveToNext();
+    finishNavigation();
     // チェック漏れがある場合は通知を表示
     if (hasUncheckedItems) {
       setTimeout(() => {
@@ -1858,11 +1875,11 @@ const FocusMode: React.FC<FocusModeProps> = ({
       }, 100);
     }
   }, [
-    blockedByLimited,
-    blockedByPrice,
+    getLatestItemById,
+    disablePriceUndefinedCheck,
+    disableLimitedPurchaseQuantityCheck,
+    deferredLimitedItemIdsByVisitKey,
     currentVisitDisplayItems,
-    currentVisitLimitedMissingItems,
-    currentVisitUndefinedPriceItems,
     clearAutoAdvanceTimer,
     isInspecting,
     isTemporaryActive,
@@ -1952,8 +1969,9 @@ const FocusMode: React.FC<FocusModeProps> = ({
       // まずアイテムを更新
       updateItemWithDeferredCleanup(updatedItem);
       // 購入状態が変更されたかチェック
-      const originalItem = currentVisitDisplayItems.find(
-        (i) => i.id === updatedItem.id,
+      const originalItem = indexedItem(
+        currentVisitDisplayItems,
+        updatedItem.id,
       );
       if (!originalItem) {
         clearAutoAdvanceTimer();
@@ -1990,12 +2008,27 @@ const FocusMode: React.FC<FocusModeProps> = ({
     ],
   );
 
-  const getLatestItemById = useCallback(
-    (itemId: string): ShoppingItem | undefined =>
-      items.find((item) => item.id === itemId),
-    [items],
+  const handleCardUpdateItem = useStableCallback(handleUpdateItem);
+  const handleCardEditRequest = useStableCallback((item: ShoppingItem) =>
+    onEditRequest?.(item),
   );
-
+  const handleCardDeleteRequest = useStableCallback((item: ShoppingItem) =>
+    onDeleteRequest?.(item),
+  );
+  const handleCardPostEventCheck = useStableCallback((item: ShoppingItem) =>
+    openPostEventDistributionCheck("single", [item]),
+  );
+  const retainedFocusItemIds = useMemo(
+    () =>
+      new Set([
+        ...(limitedBulkDialogContext
+          ? [limitedBulkDialogContext.itemSnapshot.id]
+          : []),
+        ...(postEventDistributionCheckContext?.targets.map((item) => item.id) ??
+          []),
+      ]),
+    [limitedBulkDialogContext, postEventDistributionCheckContext],
+  );
   const isLimitedBulkInputTarget = useCallback(
     (item: ShoppingItem): boolean =>
       getLimitedBulkInputTargetDecision(item, {
@@ -2365,11 +2398,11 @@ const FocusMode: React.FC<FocusModeProps> = ({
         });
       }
 
-      changedItems.forEach((item) => {
-        updateItemWithDeferredCleanup(
+      updateItemsWithDeferredCleanup(
+        changedItems.map((item) =>
           clearLimitedPurchase({ ...item, purchaseStatus: newStatus }),
-        );
-      });
+        ),
+      );
 
       if (targetStatus === "SoldOut" && newStatus === "SoldOut") {
         openPostEventDistributionCheck("bulk", targets);
@@ -2390,7 +2423,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
       setLastPurchaseChangeAt,
       setNotification,
       startLimitedBulkFlow,
-      updateItemWithDeferredCleanup,
+      updateItemsWithDeferredCleanup,
       openPostEventDistributionCheck,
     ],
   );
@@ -3260,9 +3293,22 @@ const FocusMode: React.FC<FocusModeProps> = ({
             currentVisitDisplayItems={currentVisitDisplayItems}
             blinkingPriceItemIds={blinkingPriceItemIds}
             blinkingLimitedMissingItemIds={blinkingLimitedMissingItemIds}
-            onUpdateItem={handleUpdateItem}
-            onEditRequest={isInspecting ? undefined : onEditRequest}
-            onDeleteRequest={isInspecting ? undefined : onDeleteRequest}
+            onUpdateItem={handleCardUpdateItem}
+            retainedItemIds={retainedFocusItemIds}
+            onEditRequest={
+              isInspecting
+                ? undefined
+                : onEditRequest
+                  ? handleCardEditRequest
+                  : undefined
+            }
+            onDeleteRequest={
+              isInspecting
+                ? undefined
+                : onDeleteRequest
+                  ? handleCardDeleteRequest
+                  : undefined
+            }
             onAddItem={
               onAddItem && !isInspecting ? openAddItemDialogFromList : undefined
             }
@@ -3274,9 +3320,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
             }
             readOnly={isInspecting}
             onLimitedPurchaseDefer={handleLimitedPurchaseDefer}
-            onPostEventDistributionCheckRequest={(soldOutItem) =>
-              openPostEventDistributionCheck("single", [soldOutItem])
-            }
+            onPostEventDistributionCheckRequest={handleCardPostEventCheck}
           />
         </div>
         <FocusModeFooterPortal
@@ -3392,9 +3436,22 @@ const FocusMode: React.FC<FocusModeProps> = ({
             currentVisitDisplayItems={currentVisitDisplayItems}
             blinkingPriceItemIds={blinkingPriceItemIds}
             blinkingLimitedMissingItemIds={blinkingLimitedMissingItemIds}
-            onUpdateItem={handleUpdateItem}
-            onEditRequest={isInspecting ? undefined : onEditRequest}
-            onDeleteRequest={isInspecting ? undefined : onDeleteRequest}
+            onUpdateItem={handleCardUpdateItem}
+            retainedItemIds={retainedFocusItemIds}
+            onEditRequest={
+              isInspecting
+                ? undefined
+                : onEditRequest
+                  ? handleCardEditRequest
+                  : undefined
+            }
+            onDeleteRequest={
+              isInspecting
+                ? undefined
+                : onDeleteRequest
+                  ? handleCardDeleteRequest
+                  : undefined
+            }
             onAddItem={
               onAddItem && !isInspecting ? openAddItemDialogFromList : undefined
             }
@@ -3406,9 +3463,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
             }
             readOnly={isInspecting}
             onLimitedPurchaseDefer={handleLimitedPurchaseDefer}
-            onPostEventDistributionCheckRequest={(soldOutItem) =>
-              openPostEventDistributionCheck("single", [soldOutItem])
-            }
+            onPostEventDistributionCheckRequest={handleCardPostEventCheck}
           />
         </div>
         <button
@@ -3499,9 +3554,22 @@ const FocusMode: React.FC<FocusModeProps> = ({
         currentVisitDisplayItems={currentVisitDisplayItems}
         blinkingPriceItemIds={blinkingPriceItemIds}
         blinkingLimitedMissingItemIds={blinkingLimitedMissingItemIds}
-        onUpdateItem={handleUpdateItem}
-        onEditRequest={isInspecting ? undefined : onEditRequest}
-        onDeleteRequest={isInspecting ? undefined : onDeleteRequest}
+        onUpdateItem={handleCardUpdateItem}
+        retainedItemIds={retainedFocusItemIds}
+        onEditRequest={
+          isInspecting
+            ? undefined
+            : onEditRequest
+              ? handleCardEditRequest
+              : undefined
+        }
+        onDeleteRequest={
+          isInspecting
+            ? undefined
+            : onDeleteRequest
+              ? handleCardDeleteRequest
+              : undefined
+        }
         onAddItem={
           onAddItem && !isInspecting ? openAddItemDialogFromList : undefined
         }
@@ -3513,9 +3581,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
         }
         readOnly={isInspecting}
         onLimitedPurchaseDefer={handleLimitedPurchaseDefer}
-        onPostEventDistributionCheckRequest={(soldOutItem) =>
-          openPostEventDistributionCheck("single", [soldOutItem])
-        }
+        onPostEventDistributionCheckRequest={handleCardPostEventCheck}
       />
       {layoutMode === "pc" && (
         <>

@@ -49,3 +49,12 @@
   color: transparent;
   pointer-events: none;
 }
+
+/* Skip descendant layout after a measured row height has been retained. */
+@supports (content-visibility: auto) and
+  (height: attr(data-layout-height type(<length-percentage>), auto)) {
+  [data-viewport-active="false"].esp-layout-height {
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto 220px;
+  }
+}

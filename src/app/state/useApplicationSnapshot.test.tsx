@@ -1587,3 +1587,101 @@ it("normalizes limited quantities before publishing or saving a direct field com
   });
   h.unmount();
 });
+
+it("queues confirmed remarks immediately and preserves accepted references on acknowledgement", async () => {
+  const h = harness();
+  const item = { ...purchase };
+  const other = { ...purchase, id: "unrelated" };
+  h.durable().eventLists.event = [item, other];
+  act(() =>
+    h.result.current.hydrationSetters.setEventLists({ event: [item, other] }),
+  );
+  const untouched = h.result.current.values.eventLists.event[1];
+  act(() => {
+    h.result.current.updateItemFields({
+      eventName: "event",
+      itemId: item.id,
+      baseline: item,
+      changes: { purchaseStatus: "SoldOut" },
+    });
+    const accepted = h.result.current.previewRef.current.eventLists
+      .event[0] as typeof item;
+    h.result.current.updateItemFields({
+      eventName: "event",
+      itemId: item.id,
+      baseline: accepted,
+      changes: { remarks: "ユーザー登録" },
+      saveImmediately: true,
+    });
+  });
+  const acceptedReference = h.result.current.values.eventLists.event[0];
+  // Enqueue a barrier without flushing memo timers: the record is already queued.
+  await act(async () => {
+    await h.result.current.coordinator.enqueue(() => undefined);
+  });
+  expect(h.durable().eventLists.event[0]).toMatchObject({
+    purchaseStatus: "SoldOut",
+    remarks: "ユーザー登録",
+  });
+  expect(h.result.current.values.eventLists.event[0]).toBe(acceptedReference);
+  expect(h.result.current.values.eventLists.event[1]).toBe(untouched);
+  expect(h.result.current.pendingCount).toBe(0);
+  h.unmount();
+});
+it("accepts a bulk field command in one ordered operation", async () => {
+  const h = harness();
+  const items = [purchase, { ...purchase, id: "second" }];
+  h.durable().eventLists.event = items;
+  act(() => h.result.current.hydrationSetters.setEventLists({ event: items }));
+  act(() =>
+    h.result.current.updateItemFields(
+      items.map((item) => ({
+        eventName: "event",
+        itemId: item.id,
+        baseline: item,
+        changes: { purchaseStatus: "Purchased" as const },
+        saveImmediately: true,
+      })),
+    ),
+  );
+  expect(h.result.current.pendingItemIds).toEqual(items.map((item) => item.id));
+  await act(async () => {
+    await h.result.current.coordinator.enqueue(() => undefined);
+  });
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(
+    h
+      .durable()
+      .eventLists.event.map((item) => (item as typeof purchase).purchaseStatus),
+  ).toEqual(["Purchased", "Purchased"]);
+  h.unmount();
+});
+
+it("flushes a pending memo when an unchanged answer is confirmed", async () => {
+  const h = harness();
+  const item = { ...purchase, remarks: "未記録" };
+  h.durable().eventLists.event = [item];
+  act(() => h.result.current.hydrationSetters.setEventLists({ event: [item] }));
+  act(() => {
+    h.result.current.updateItemFields({
+      eventName: "event",
+      itemId: purchase.id,
+      baseline: item,
+      changes: { remarks: "ユーザー登録" },
+    });
+    h.result.current.updateItemFields({
+      eventName: "event",
+      itemId: purchase.id,
+      baseline: h.result.current.previewRef.current.eventLists
+        .event[0] as typeof purchase,
+      changes: {},
+      saveImmediately: true,
+    });
+  });
+  await act(async () => h.result.current.coordinator.enqueue(() => undefined));
+  expect(h.durable().eventLists.event[0]).toMatchObject({
+    remarks: "ユーザー登録",
+  });
+  expect(h.commit).toHaveBeenCalledOnce();
+  h.unmount();
+});

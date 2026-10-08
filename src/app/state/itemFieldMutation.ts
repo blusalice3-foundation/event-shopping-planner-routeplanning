@@ -13,6 +13,8 @@ import {
   type ItemContentEdit,
 } from "./itemContentEdits";
 
+import { indexedItem } from "../../utils/itemIndex";
+
 export interface UpdateItemFieldsInput {
   readonly eventName: string;
   readonly itemId: string;
@@ -28,6 +30,7 @@ export interface UpdateItemFieldsInput {
     >
   >;
   readonly baseline: ShoppingItem;
+  readonly saveImmediately?: boolean;
 }
 
 /** Field-only plans do not change membership, visit order or map references. */
@@ -35,14 +38,17 @@ export function planItemContentMutation(
   source: PersistenceSnapshot,
   edits: readonly ItemContentEdit[],
 ) {
-  let snapshot = source;
+  const normalizedItems = new Map<string, ShoppingItem>();
   const conflicts: ChangedFieldConflict[] = [];
   const normalizedEdits: ItemContentEdit[] = [];
   for (const edit of edits) {
-    const items = snapshot.eventLists[edit.eventName] as
+    const items = source.eventLists[edit.eventName] as
       | ShoppingItem[]
       | undefined;
-    const current = items?.find((item) => item.id === edit.itemId);
+    const itemKey = JSON.stringify([edit.eventName, edit.itemId]);
+    const current =
+      normalizedItems.get(itemKey) ??
+      (items ? indexedItem(items, edit.itemId) : undefined);
     if (!current) throw new MutationTargetMissingError();
     const desired = { ...current };
     for (const [key, field] of Object.entries(edit.fields)) {
@@ -61,7 +67,7 @@ export function planItemContentMutation(
       if (field.present) Object.assign(desired, { [key]: field.value });
       else delete (desired as unknown as Record<string, unknown>)[key];
     }
-    const mode = snapshot.dayModes[edit.eventName]?.[current.eventDate] as
+    const mode = source.dayModes[edit.eventName]?.[current.eventDate] as
       | ViewMode
       | undefined;
     const normalized = computeUpdateItem(
@@ -84,10 +90,13 @@ export function planItemContentMutation(
     );
     const normalizedEdit = { ...edit, fields };
     normalizedEdits.push(normalizedEdit);
-    snapshot = applyItemContentEdits(snapshot, [normalizedEdit]);
+    normalizedItems.set(itemKey, normalized);
   }
   return {
-    ...confirmChangedFieldConflicts({ snapshot }, conflicts),
+    ...confirmChangedFieldConflicts(
+      { snapshot: applyItemContentEdits(source, normalizedEdits) },
+      conflicts,
+    ),
     itemContentEdits: normalizedEdits,
   };
 }

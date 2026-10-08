@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { navigatorEntryIndex } from "../domain/navigatorEntryIndex";
+import { AcceptedItemContext } from "../../shopping-list/renderers/ViewportRowState";
 import type {
   FocusMapViewportSnapshot,
   FocusPhase,
@@ -9,7 +18,7 @@ import {
   type SpaceNavigatorActionResult,
   type SpaceNavigatorRegistration,
 } from "../SpaceNavigatorContext";
-import { buildFocusNavigatorEntries } from "../domain/buildNavigatorEntries";
+import { createFocusNavigatorEntriesProjector } from "../domain/navigatorEntriesProjector";
 import { evaluateNavigationGuard } from "../domain/navigationGuard";
 import {
   buildStatusSegments,
@@ -225,6 +234,7 @@ export function useFocusSpaceNavigator({
   restoreMapViewportSnapshot,
 }: UseFocusSpaceNavigatorArgs) {
   const navigator = useOptionalSpaceNavigator();
+  const readAcceptedItem = useContext(AcceptedItemContext);
   const [displaySnapshot, setDisplaySnapshot] =
     useState<DisplaySnapshot | null>(null);
   const [recenterRevision, setRecenterRevision] = useState(0);
@@ -244,10 +254,8 @@ export function useFocusSpaceNavigator({
     setPromotionPhaseChoiceOpen(false);
   }, [enabled, registrationId]);
 
-  const baseEntries = useMemo(
-    () => buildFocusNavigatorEntries(sourcesByPhase),
-    [sourcesByPhase],
-  );
+  const projectEntries = useMemo(createFocusNavigatorEntriesProjector, []);
+  const baseEntries = projectEntries(sourcesByPhase);
   const refreshedDisplaySnapshot = useMemo(
     () =>
       displaySnapshot
@@ -264,9 +272,8 @@ export function useFocusSpaceNavigator({
     [baseEntries, refreshedRetainedEntry],
   );
 
-  const formalPhaseEntries = baseEntries.filter(
-    (entry) => entry.phase === officialPhase,
-  );
+  const formalPhaseEntries =
+    navigatorEntryIndex(baseEntries).byPhase.get(officialPhase) ?? [];
   const formalBaseEntry =
     formalPhaseEntries.length > 0
       ? formalPhaseEntries[
@@ -277,26 +284,18 @@ export function useFocusSpaceNavigator({
         ]
       : null;
   const formalEntry = formalBaseEntry
-    ? (entries.find((entry) => entry.id === formalBaseEntry.id) ?? null)
+    ? (navigatorEntryIndex(entries).byId.get(formalBaseEntry.id) ?? null)
     : null;
   const formalRouteIndex = formalBaseEntry
-    ? Math.max(
-        0,
-        baseEntries.findIndex((entry) => entry.id === formalBaseEntry.id),
-      )
+    ? Math.max(0, formalBaseEntry.index)
     : 0;
-  const formalIndex = formalEntry
-    ? entries.findIndex((entry) => entry.id === formalEntry.id)
-    : 0;
+  const formalIndex = formalEntry ? formalEntry.index : 0;
   const displayEntry =
     (refreshedDisplaySnapshot
-      ? entries.find((entry) => entry.id === refreshedDisplaySnapshot.entry.id)
+      ? navigatorEntryIndex(entries).byId.get(refreshedDisplaySnapshot.entry.id)
       : formalEntry) ?? null;
   const currentIndex = displayEntry
-    ? Math.max(
-        0,
-        entries.findIndex((entry) => entry.id === displayEntry.id),
-      )
+    ? Math.max(0, displayEntry.index)
     : formalIndex;
 
   const makeDisplaySnapshot = useCallback(
@@ -382,7 +381,13 @@ export function useFocusSpaceNavigator({
         intent,
         currentIndex,
         targetIndex,
-        currentItems: currentEntry?.items ?? [],
+        currentItems:
+          currentEntry?.items.flatMap((item) => {
+            const latest = readAcceptedItem
+              ? readAcceptedItem(item.id)
+              : latestItemsById.get(item.id);
+            return latest ? [latest] : [];
+          }) ?? [],
         settings: {
           disablePriceUndefinedCheck,
           disableLimitedPurchaseQuantityCheck,
@@ -396,6 +401,8 @@ export function useFocusSpaceNavigator({
     },
     [
       currentIndex,
+      readAcceptedItem,
+      latestItemsById,
       disableLimitedPurchaseQuantityCheck,
       disablePriceUndefinedCheck,
       entries,
@@ -410,7 +417,12 @@ export function useFocusSpaceNavigator({
         intent: "temporary",
         currentIndex: 0,
         targetIndex: 1,
-        currentItems: entry.items,
+        currentItems: entry.items.flatMap((item) => {
+          const latest = readAcceptedItem
+            ? readAcceptedItem(item.id)
+            : latestItemsById.get(item.id);
+          return latest ? [latest] : [];
+        }),
         settings: {
           disablePriceUndefinedCheck,
           disableLimitedPurchaseQuantityCheck,
@@ -421,6 +433,8 @@ export function useFocusSpaceNavigator({
       return result;
     },
     [
+      readAcceptedItem,
+      latestItemsById,
       disableLimitedPurchaseQuantityCheck,
       disablePriceUndefinedCheck,
       getDeferredLimitedItemIds,

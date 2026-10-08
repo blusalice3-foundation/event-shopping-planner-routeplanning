@@ -2,6 +2,7 @@ import {
   semanticEqual,
   jsonEqual,
   reuseEqualReferences,
+  reuseEqualItemLists,
 } from "../../utils/semanticEquality";
 import type { ApplicationSnapshotCommitContext } from "../commands/ApplicationSnapshotCommitPort";
 import {
@@ -62,6 +63,8 @@ import {
   planItemContentMutation,
   type UpdateItemFieldsInput,
 } from "./itemFieldMutation";
+
+import { measureShoppingOperation } from "../../utils/shoppingPerformance";
 
 export const MEMO_SAVE_DELAY_MS = 300;
 export const MEMO_SAVE_MAX_WAIT_MS = 1000;
@@ -588,6 +591,7 @@ export function useApplicationSnapshot(
       flushDraftRef.current();
       const id = intent.id ?? `application:${++sequence.current}`;
       const acceptedContext = { ...contextRef.current };
+      const finishSave = measureShoppingOperation("item-command", "save");
       const result = new Promise<PersistenceSnapshot>((resolve, reject) => {
         resolvers.current.set(id, { resolve, reject });
       });
@@ -637,7 +641,10 @@ export function useApplicationSnapshot(
             ),
         })
         .then(
-          (result) => handleResult(id, result),
+          (result) => {
+            if (result.status === "committed") finishSave();
+            handleResult(id, result);
+          },
           (error) => fail(id, error),
         );
       return result;
@@ -762,26 +769,47 @@ export function useApplicationSnapshot(
     [flushDraft, rebuildPreview],
   );
   const updateItemFields = useCallback(
-    (input: UpdateItemFieldsInput) => {
+    (
+      inputOrInputs: UpdateItemFieldsInput | readonly UpdateItemFieldsInput[],
+    ) => {
+      const finishInput = measureShoppingOperation("item-command");
+      const inputs: readonly UpdateItemFieldsInput[] = Array.isArray(
+        inputOrInputs,
+      )
+        ? inputOrInputs
+        : [inputOrInputs as UpdateItemFieldsInput];
       if (draft.current && !draft.current.itemContentEdits) flushDraft();
       const source = previewRef.current;
-      const fields = Object.fromEntries(
-        Object.entries(input.changes).map(([key, value]) => [
-          key,
-          { present: value !== undefined, value },
-        ]),
-      );
-      if (!Object.keys(fields).length) return;
-      const proposedEdit: ItemContentEdit = {
-        eventName: input.eventName,
-        itemId: input.itemId,
-        fields,
-        baseline: input.baseline as unknown as Record<string, unknown>,
-      };
-      const accepted = planItemContentMutation(source, [proposedEdit]);
-      const edit = accepted.itemContentEdits[0];
+      const proposedEdits: ItemContentEdit[] = inputs.flatMap((input) => {
+        const fields = Object.fromEntries(
+          Object.entries(input.changes).map(([key, value]) => [
+            key,
+            { present: value !== undefined, value },
+          ]),
+        );
+        return Object.keys(fields).length
+          ? [
+              {
+                eventName: input.eventName,
+                itemId: input.itemId,
+                fields,
+                baseline: input.baseline as unknown as Record<string, unknown>,
+              },
+            ]
+          : [];
+      });
+      if (!proposedEdits.length) {
+        if (inputs.some((input) => input.saveImmediately)) flushDraft();
+        finishInput();
+        return;
+      }
+      const accepted = planItemContentMutation(source, proposedEdits);
       const next = accepted.snapshot;
-      if (next === source) return;
+      if (next === source) {
+        if (inputs.some((input) => input.saveImmediately)) flushDraft();
+        finishInput();
+        return;
+      }
       if (!draft.current) {
         draft.current = {
           id: `application:${++sequence.current}`,
@@ -789,33 +817,43 @@ export function useApplicationSnapshot(
           base: source,
           draft: next,
           retryOnFailure: true,
-          itemContentEdits: [edit],
-          inputItemIds: [input.itemId],
+          itemContentEdits: [],
+          inputItemIds: [],
         };
-      } else {
-        const existing = draft.current.itemContentEdits ?? [];
-        const previous = existing.find(
-          (entry) =>
-            entry.eventName === edit.eventName && entry.itemId === edit.itemId,
-        );
-        const merged = previous
-          ? {
-              ...edit,
-              baseline: previous.baseline,
-              fields: { ...previous.fields, ...edit.fields },
-            }
-          : edit;
-        draft.current.inputItemIds = [
-          ...new Set([...(draft.current.inputItemIds ?? []), input.itemId]),
-        ];
-        draft.current.draft = next;
-        draft.current.itemContentEdits = [
-          ...existing.filter((entry) => entry !== previous),
-          merged,
-        ];
       }
+      const mergedEdits = new Map(
+        (draft.current.itemContentEdits ?? []).map((edit) => [
+          JSON.stringify([edit.eventName, edit.itemId]),
+          edit,
+        ]),
+      );
+      for (const edit of accepted.itemContentEdits) {
+        const key = JSON.stringify([edit.eventName, edit.itemId]);
+        const previous = mergedEdits.get(key);
+        mergedEdits.set(
+          key,
+          previous
+            ? {
+                ...edit,
+                baseline: previous.baseline,
+                fields: { ...previous.fields, ...edit.fields },
+              }
+            : edit,
+        );
+      }
+      draft.current.inputItemIds = [
+        ...new Set([
+          ...(draft.current.inputItemIds ?? []),
+          ...inputs.map((input) => input.itemId),
+        ]),
+      ];
+      draft.current.draft = next;
+      draft.current.itemContentEdits = [...mergedEdits.values()];
       previewRef.current = next;
-      if (isMemoOnlyItemContentEdit(draft.current.itemContentEdits)) {
+      if (inputs.some((input) => input.saveImmediately)) {
+        setItemDraftRevision((revision) => revision + 1);
+        flushDraft();
+      } else if (isMemoOnlyItemContentEdit(draft.current.itemContentEdits)) {
         startTransition(() => setItemDraftRevision((revision) => revision + 1));
         if (memoSaveTimer.current !== null) clearTimeout(memoSaveTimer.current);
         memoSaveTimer.current = setTimeout(flushDraft, MEMO_SAVE_DELAY_MS);
@@ -827,6 +865,7 @@ export function useApplicationSnapshot(
         setItemDraftRevision((revision) => revision + 1);
         queueMicrotask(flushDraft);
       }
+      finishInput();
     },
     [flushDraft],
   );
@@ -858,11 +897,28 @@ export function useApplicationSnapshot(
       ),
     [raw, retainedOperationIds],
   );
-  const values = projectForDisplay(
+  const displayRef = useRef<PersistedStateValues>();
+  const projectedValues = projectForDisplay(
     overlayPendingItemContent(retainedSnapshot),
     eventName,
     day,
   ) as unknown as PersistedStateValues;
+  // Save acknowledgements carry cloned durable objects. Keep accepted item
+  // references when their content is identical; foreign changes still replace them.
+  const values = useMemo(
+    () =>
+      displayRef.current
+        ? {
+            ...projectedValues,
+            eventLists: reuseEqualItemLists(
+              displayRef.current.eventLists,
+              projectedValues.eventLists,
+            ),
+          }
+        : projectedValues,
+    [projectedValues],
+  );
+  displayRef.current = values;
   const commitPatch = useCallback(
     async (
       patch: Partial<PersistenceSnapshot>,

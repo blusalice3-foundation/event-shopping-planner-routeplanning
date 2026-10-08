@@ -1,8 +1,9 @@
+import { recordShoppingRender } from "../utils/shoppingPerformance";
 import { CanvasGestureRaster } from "../features/map/canvas/CanvasGestureRaster";
 import { normalizeExecutionVisitDay } from "../utils/visitProjection";
 
 import {
-  collectFocusCellItems,
+  createFocusCellItemsProjector,
   summarizeFocusCell,
 } from "../features/map/domain/focusCellState";
 import React, { useRef, useEffect, useCallback, useMemo } from "react";
@@ -375,16 +376,24 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     return normalizeExecutionVisitDay(eventDate ?? dayMatch?.[1] ?? "");
   }, [mapName, eventDate]);
 
-  const cellItems = useMemo(
-    () =>
-      collectFocusCellItems(
-        items,
-        executeModeItemIds,
-        dayName,
-        mapData,
-        (_map, item) => mapRenderingSnapshot.resolveLocation(item),
-      ),
-    [items, executeModeItemIds, dayName, mapData, mapRenderingSnapshot],
+  const projectCellItems = useMemo(createFocusCellItemsProjector, []);
+  const resolveCellItemLocation = useCallback(
+    (_map: DayMapData, item: Pick<ShoppingItem, "block" | "number">) =>
+      mapRenderingSnapshot.resolveLocation(item),
+    [mapRenderingSnapshot],
+  );
+  const cellItems = projectCellItems(
+    items,
+    executeModeItemIds,
+    dayName,
+    mapData,
+    resolveCellItemLocation,
+  );
+  const cellSummaryCache = useRef(
+    new WeakMap<
+      ShoppingItem[],
+      { summary: ReturnType<typeof summarizeFocusCell>; visitKeys: Set<string> }
+    >(),
   );
   const cellStates = useMemo(() => {
     const states = new Map<
@@ -409,10 +418,18 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     >();
 
     for (const [key, members] of cellItems.execution) {
+      let cached = cellSummaryCache.current.get(members);
+      if (!cached) {
+        cached = {
+          summary: summarizeFocusCell(members),
+          visitKeys: new Set(members.map(getVisitKey)),
+        };
+        cellSummaryCache.current.set(members, cached);
+      }
       const state = {
-        ...summarizeFocusCell(members),
+        ...cached.summary,
         items: members,
-        visitKeys: new Set(members.map(getVisitKey)),
+        visitKeys: cached.visitKeys,
         isCurrentPosition: false,
         isTemporaryPosition: false,
         isNextDestination: false,
@@ -971,6 +988,12 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     return { crossingLookup, bridgeParams };
   }, [routeSegments, cellSize]);
 
+  const backgroundLayerCacheRef = useRef<CanvasCellLayerCache | null>(null);
+  if (!backgroundLayerCacheRef.current)
+    backgroundLayerCacheRef.current = new CanvasCellLayerCache();
+  const routeLayerCacheRef = useRef<CanvasCellLayerCache | null>(null);
+  if (!routeLayerCacheRef.current)
+    routeLayerCacheRef.current = new CanvasCellLayerCache();
   const cellLayerCacheRef = useRef<CanvasCellLayerCache | null>(null);
   if (!cellLayerCacheRef.current)
     cellLayerCacheRef.current = new CanvasCellLayerCache();
@@ -996,6 +1019,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     ],
   );
   const drawCanvas = useCallback(() => {
+    recordShoppingRender("focus-map-paint");
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
@@ -1405,7 +1429,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       ctx.textBaseline = "middle";
     };
 
-    const renderCellLayer = () => {
+    const renderCellLayer = (dynamic = true) => {
       // 番号セルのスタイル値はループ外で解決する。
       const outlineStyle = numberCellOutlineStyle;
       const useInset = outlineStyle !== "none";
@@ -1457,13 +1481,13 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
 
         if (isNumberCell) {
           ncRects.push({ x, y, w: width, h: height });
-        } else if (cell.backgroundColor) {
+        } else if (!dynamic && cell.backgroundColor) {
           ctx.fillStyle = cell.backgroundColor;
           ctx.fillRect(x, y, width, height);
         }
 
         const state = cellStates.get(cellKey);
-        if (state && state.hasItems) {
+        if (dynamic && state && state.hasItems) {
           const label = cellLabels.get(cellKey);
           if (label) {
             if (isNumberCell) {
@@ -1510,13 +1534,14 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
 
       // 収集したジオメトリをまとめて描画する。
       if (ncRects.length > 0) {
-        ctx.beginPath();
-        for (const r of ncRects) drawCellPath(r.x, r.y, r.w, r.h);
-        ctx.fillStyle = ncBg;
-        ctx.fill();
-
+        if (!dynamic) {
+          ctx.beginPath();
+          for (const r of ncRects) drawCellPath(r.x, r.y, r.w, r.h);
+          ctx.fillStyle = ncBg;
+          ctx.fill();
+        }
         // 枠線を描画する。
-        if (drawStroke) {
+        if (!dynamic && drawStroke) {
           ctx.strokeStyle = ncBorder;
           ctx.lineWidth = ncBorderWidth;
           if (isDashed) {
@@ -1675,7 +1700,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
         });
       }
 
-      if (showNumbers) {
+      if (dynamic && showNumbers) {
         visibleCells.forEach((cell) => {
           if (cell.isMerged || cell.value === null) return;
 
@@ -1799,6 +1824,46 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       numberCellOutlineStyle,
       visiblePaintState,
     ]);
+    const renderLayerWithTransform = (
+      layerContext: CanvasRenderingContext2D,
+      render: () => void,
+    ) => {
+      const previousContext = ctx;
+      ctx = layerContext;
+      try {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.translate(currentOffset.x, currentOffset.y);
+        if (rotationRadians !== 0) {
+          ctx.translate(mapCenterX, mapCenterY);
+          ctx.rotate(rotationRadians);
+          ctx.translate(-mapCenterX, -mapCenterY);
+        }
+        render();
+      } finally {
+        ctx = previousContext;
+      }
+    };
+    const usedBackground = backgroundLayerCacheRef.current?.paint(
+      mainContext,
+      [mapData.cells, mapData.mergedCells, numberCellSet, mergedCellsMap],
+      JSON.stringify([
+        containerWidth,
+        containerHeight,
+        dpr,
+        currentOffset.x,
+        currentOffset.y,
+        cellSize,
+        rotationRadians,
+        mapCenterX,
+        mapCenterY,
+        isDarkMode,
+        numberCellOutlineStyle,
+      ]),
+      pixelWidth,
+      pixelHeight,
+      (layer) => renderLayerWithTransform(layer, () => renderCellLayer(false)),
+    );
+    if (!usedBackground) renderCellLayer(false);
     const usedLayer = cellLayerCacheRef.current?.paint(
       mainContext,
       [mapData.cells, mapData.mergedCells, numberCellSet, mergedCellsMap],
@@ -1838,78 +1903,116 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     );
     if (!usedLayer) renderCellLayer();
 
-    // ドラッグ中の再描画で再計算しないよう、ルート交差データをキャッシュする。
-    if (
-      !isRotationInteracting &&
-      routeSegments.length > 0 &&
-      routeCrossingData
-    ) {
-      const lineWidth = Math.max(2, cellSize * 0.08);
-      const { crossingLookup, bridgeParams } = routeCrossingData;
+    const renderRouteLayer = () => {
+      // ドラッグ中の再描画で再計算しないよう、ルート交差データをキャッシュする。
+      if (
+        !isRotationInteracting &&
+        routeSegments.length > 0 &&
+        routeCrossingData
+      ) {
+        const lineWidth = Math.max(2, cellSize * 0.08);
+        const { crossingLookup, bridgeParams } = routeCrossingData;
 
-      // ビューポート外判定用の余白。
-      const routeMargin = cellSize * 2;
-      const visMinX = visibleMinX - routeMargin;
-      const visMaxX = visibleMaxX + routeMargin;
-      const visMinY = visibleMinY - routeMargin;
-      const visMaxY = visibleMaxY + routeMargin;
+        // ビューポート外判定用の余白。
+        const routeMargin = cellSize * 2;
+        const visMinX = visibleMinX - routeMargin;
+        const visMaxX = visibleMaxX + routeMargin;
+        const visMinY = visibleMinY - routeMargin;
+        const visMaxY = visibleMaxY + routeMargin;
 
-      const batcher = new BatchedPathRenderer();
+        const batcher = new BatchedPathRenderer();
 
-      routeSegments.forEach((segment, segIdx) => {
-        if (segment.path.length < 2) return;
+        routeSegments.forEach((segment, segIdx) => {
+          if (segment.path.length < 2) return;
 
-        let currentLineWidth = lineWidth;
-        let strokeStyle: string;
+          let currentLineWidth = lineWidth;
+          let strokeStyle: string;
 
-        // 正式位置だけを基準にルート線の見た目を切り替える。
-        const progressState = resolveFocusMapRouteProgressState(
-          segment.segmentIndex,
-          resolvedFormalRouteIndex,
-        );
-        if (progressState === "visited") {
-          strokeStyle = "rgba(156, 163, 175, 0.4)";
-        } else if (progressState === "current") {
-          strokeStyle = "rgba(255, 109, 0, 0.6)";
-          currentLineWidth = Math.max(3, cellSize * 0.1);
-        } else {
-          strokeStyle = "rgba(66, 165, 245, 0.4)";
-        }
-
-        const collector = batcher.beginGroup(strokeStyle, currentLineWidth);
-
-        for (let i = 0; i < segment.path.length - 1; i++) {
-          const p1 = segment.path[i];
-          const p2 = segment.path[i + 1];
-
-          const px1 = (p1.col - 0.5) * cellSize;
-          const py1 = (p1.row - 0.5) * cellSize;
-          const px2 = (p2.col - 0.5) * cellSize;
-          const py2 = (p2.row - 0.5) * cellSize;
-
-          // ビューポート外のセグメントは描画をスキップする。
-          if (px1 < visMinX && px2 < visMinX) continue;
-          if (px1 > visMaxX && px2 > visMaxX) continue;
-          if (py1 < visMinY && py2 < visMinY) continue;
-          if (py1 > visMaxY && py2 > visMaxY) continue;
-
-          // ルート線の交差箇所にはブリッジ用の隙間を入れて描画する。
-          collectEdgeWithBridges(
-            collector,
-            px1,
-            py1,
-            px2,
-            py2,
-            segIdx,
-            i,
-            crossingLookup,
-            bridgeParams,
+          // 正式位置だけを基準にルート線の見た目を切り替える。
+          const progressState = resolveFocusMapRouteProgressState(
+            segment.segmentIndex,
+            resolvedFormalRouteIndex,
           );
-        }
-      });
+          if (progressState === "visited") {
+            strokeStyle = "rgba(156, 163, 175, 0.4)";
+          } else if (progressState === "current") {
+            strokeStyle = "rgba(255, 109, 0, 0.6)";
+            currentLineWidth = Math.max(3, cellSize * 0.1);
+          } else {
+            strokeStyle = "rgba(66, 165, 245, 0.4)";
+          }
 
-      batcher.flush(ctx);
-    }
+          const collector = batcher.beginGroup(strokeStyle, currentLineWidth);
+
+          for (let i = 0; i < segment.path.length - 1; i++) {
+            const p1 = segment.path[i];
+            const p2 = segment.path[i + 1];
+
+            const px1 = (p1.col - 0.5) * cellSize;
+            const py1 = (p1.row - 0.5) * cellSize;
+            const px2 = (p2.col - 0.5) * cellSize;
+            const py2 = (p2.row - 0.5) * cellSize;
+
+            // ビューポート外のセグメントは描画をスキップする。
+            if (px1 < visMinX && px2 < visMinX) continue;
+            if (px1 > visMaxX && px2 > visMaxX) continue;
+            if (py1 < visMinY && py2 < visMinY) continue;
+            if (py1 > visMaxY && py2 > visMaxY) continue;
+
+            // ルート線の交差箇所にはブリッジ用の隙間を入れて描画する。
+            collectEdgeWithBridges(
+              collector,
+              px1,
+              py1,
+              px2,
+              py2,
+              segIdx,
+              i,
+              crossingLookup,
+              bridgeParams,
+            );
+          }
+        });
+
+        batcher.flush(ctx);
+      }
+    };
+    const usedRouteLayer = routeLayerCacheRef.current?.paint(
+      mainContext,
+      [routeSegments, routeCrossingData],
+      JSON.stringify([
+        containerWidth,
+        containerHeight,
+        dpr,
+        currentOffset.x,
+        currentOffset.y,
+        cellSize,
+        rotationRadians,
+        mapCenterX,
+        mapCenterY,
+        resolvedFormalRouteIndex,
+        isRotationInteracting,
+      ]),
+      pixelWidth,
+      pixelHeight,
+      (layerContext) => {
+        const previousContext = ctx;
+        ctx = layerContext;
+        try {
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.translate(currentOffset.x, currentOffset.y);
+          if (rotationRadians !== 0) {
+            ctx.translate(mapCenterX, mapCenterY);
+            ctx.rotate(rotationRadians);
+            ctx.translate(-mapCenterX, -mapCenterY);
+          }
+          renderRouteLayer();
+        } finally {
+          ctx = previousContext;
+        }
+      },
+    );
+    if (!usedRouteLayer) renderRouteLayer();
 
     if (!isRotationInteracting) {
       cellItems.candidates.forEach((members, key) => {

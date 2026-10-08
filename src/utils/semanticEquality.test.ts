@@ -98,3 +98,16 @@ describe("canonical mutation equality", () => {
     );
   });
 });
+
+it("preserves nested optional-field removal and array holes when sharing saved clones", () => {
+  const previous: { nested: { quantity?: undefined }; array: unknown[] } = {
+    nested: { quantity: undefined },
+    array: new Array(1),
+  };
+  const next = { nested: {}, array: [undefined] };
+  const value = reuseEqualReferences(previous, next);
+  expect(value.nested).not.toHaveProperty("quantity");
+  expect(Object.keys(value.array)).toEqual(["0"]);
+  expect(previous.nested).toHaveProperty("quantity");
+  expect(Object.keys(previous.array)).toEqual([]);
+});

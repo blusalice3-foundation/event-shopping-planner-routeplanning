@@ -11,7 +11,7 @@ interface Subscription {
 interface ViewportRegistry {
   observer: IntersectionObserver;
   subscribers: Map<Element, Subscription>;
-  requestedKeys: Set<string>;
+  requestedKeys: Map<string, number>;
   heights: Map<string, number>;
   printing: boolean;
   backwardTab: boolean;
@@ -21,6 +21,13 @@ interface ViewportRegistry {
   afterPrint: () => void;
 }
 const registries = new WeakMap<Document, ViewportRegistry>();
+const requestKey = (registry: ViewportRegistry, key: string) =>
+  registry.requestedKeys.set(key, (registry.requestedKeys.get(key) ?? 0) + 1);
+const releaseKey = (registry: ViewportRegistry, key: string) => {
+  const remaining = (registry.requestedKeys.get(key) ?? 0) - 1;
+  if (remaining > 0) registry.requestedKeys.set(key, remaining);
+  else registry.requestedKeys.delete(key);
+};
 const withinViewport = (root: Element): boolean => {
   const rect = root.getBoundingClientRect();
   return (
@@ -48,7 +55,7 @@ const getRegistry = (document: Document): ViewportRegistry => {
   const registry: ViewportRegistry = {
     observer,
     subscribers,
-    requestedKeys: new Set(),
+    requestedKeys: new Map(),
     heights: new Map(),
     printing: false,
     backwardTab: false,
@@ -96,7 +103,7 @@ export const revealViewportContent = (element: HTMLElement): void => {
   while (ancestor) {
     const key = ancestor.dataset.viewportRowKey ?? ancestor.dataset.rowKey;
     if (key) {
-      registry.requestedKeys.add(key);
+      requestKey(registry, key);
       keys.push(key);
     }
     ancestor = ancestor.parentElement;
@@ -104,7 +111,7 @@ export const revealViewportContent = (element: HTMLElement): void => {
   element.dispatchEvent(new Event(REVEAL_EVENT, { bubbles: true }));
   requestAnimationFrame(() =>
     requestAnimationFrame(() => {
-      for (const key of keys) registry.requestedKeys.delete(key);
+      for (const key of keys) releaseKey(registry, key);
       for (const [root, subscription] of registry.subscribers) {
         if (keys.includes((root as HTMLElement).dataset.viewportRowKey ?? "")) {
           subscription.visible = withinViewport(root);
@@ -115,6 +122,18 @@ export const revealViewportContent = (element: HTMLElement): void => {
   );
 };
 
+export const findViewportRow = (
+  root: ParentNode | null | undefined,
+  key: string,
+): HTMLElement | null => {
+  const escaped =
+    typeof CSS !== "undefined" && typeof CSS.escape === "function"
+      ? CSS.escape(key)
+      : key.replace(/["\\]/g, "\\$&");
+  return (
+    root?.querySelector<HTMLElement>(`[data-row-key="${escaped}"]`) ?? null
+  );
+};
 export const focusPendingViewportContent = (element: HTMLElement): void => {
   const document = element.ownerDocument;
   const key = element.closest<HTMLElement>("[data-row-key]")?.dataset.rowKey;
@@ -123,9 +142,7 @@ export const focusPendingViewportContent = (element: HTMLElement): void => {
     element.closest<HTMLElement>("[data-list-renderer]") ??
     document.documentElement;
   flushSync(() => revealViewportContent(element));
-  const row = [...root.querySelectorAll<HTMLElement>("[data-row-key]")].find(
-    (candidate) => candidate.dataset.rowKey === key,
-  );
+  const row = key ? findViewportRow(root, key) : null;
   const targets = [
     ...(row?.querySelectorAll<HTMLElement>(
       'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
@@ -260,3 +277,29 @@ export const ViewportContent = ({
     </div>
   );
 };
+
+/** Warm at most the current and following visit; leaving the range releases controls. */
+export function prewarmViewportContent(element: HTMLElement): () => void {
+  const registry = registries.get(element.ownerDocument);
+  if (!registry) return () => {};
+  const keys: string[] = [];
+  let ancestor: HTMLElement | null = element;
+  while (ancestor) {
+    const key = ancestor.dataset.viewportRowKey;
+    if (key) {
+      requestKey(registry, key);
+      keys.push(key);
+    }
+    ancestor = ancestor.parentElement;
+  }
+  element.dispatchEvent(new Event(REVEAL_EVENT, { bubbles: true }));
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    for (const key of keys) releaseKey(registry, key);
+    for (const [root, subscription] of registry.subscribers)
+      if (keys.includes((root as HTMLElement).dataset.viewportRowKey ?? ""))
+        subscription.update();
+  };
+}

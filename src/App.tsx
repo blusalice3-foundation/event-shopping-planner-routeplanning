@@ -14,7 +14,7 @@ import {
   getDayConsistency,
   resolveDayMap,
 } from "./features/consistency/domain/context";
-import { AcceptedItemContext } from "./features/shopping-list/renderers/ViewportRowState";
+import { AcceptedItemCommandsProvider } from "./features/shopping-list/renderers/ViewportRowState";
 import { useSearchScrollRequest } from "./app/state/useSearchScrollRequest";
 import React, {
   useEffect,
@@ -26,6 +26,7 @@ import React, {
 } from "react";
 import { ShoppingItem, EventMetadata, ExecuteModeItems } from "./types/item";
 import { MapDataStore, HallDefinition } from "./types/map";
+import { indexedItem } from "./utils/itemIndex";
 import { FocusModeSessionState } from "./types/focus";
 import { getMaplessKey } from "./types/map";
 import { extractEventDates } from "./utils/eventDates";
@@ -179,7 +180,7 @@ const App: React.FC = () => {
   const readAcceptedItem = useCallback(
     (id: string) =>
       activeEventName
-        ? eventListsRef.current[activeEventName]?.find((item) => item.id === id)
+        ? indexedItem(eventListsRef.current[activeEventName] ?? [], id)
         : undefined,
     [activeEventName, eventListsRef],
   );
@@ -719,6 +720,10 @@ const App: React.FC = () => {
       getMapTabForDate,
     },
   });
+  const retainedDialogItemIds = useMemo(
+    () => [itemToEdit?.id, itemToDelete?.id].filter((id): id is string => !!id),
+    [itemToEdit?.id, itemToDelete?.id],
+  );
   const { showHeaderBar, showTabBar, rawHideSomething } = useMemo(
     () =>
       selectAppChromeVisibility({
@@ -746,6 +751,7 @@ const App: React.FC = () => {
     applyBulkAdd,
     handleBulkAdd,
     updateItem: handleUpdateItem,
+    updateItems: handleUpdateItems,
     moveItem: handleMoveItem,
     moveItemUp: handleMoveItemUp,
     moveItemDown: handleMoveItemDown,
@@ -853,6 +859,7 @@ const App: React.FC = () => {
       setExecuteCollapsedSpaces,
       updateExecuteModeItems,
       updateItem: handleUpdateItem,
+      updateItems: handleUpdateItems,
     },
     effects: {
       notify: alert,
@@ -2249,7 +2256,10 @@ const App: React.FC = () => {
           </button>
         )}
 
-      <AcceptedItemContext.Provider value={readAcceptedItem}>
+      <AcceptedItemCommandsProvider
+        read={readAcceptedItem}
+        commit={handleUpdateItems}
+      >
         <AppMainContent
           model={{
             navigation: {
@@ -2278,11 +2288,7 @@ const App: React.FC = () => {
               executeSpaceGroupingEnabled,
               items,
               itemToEdit,
-              retainedItemIds: [
-                itemToEdit?.id,
-                itemToDelete?.id,
-                ...application.pendingItemIds,
-              ].filter((id): id is string => !!id),
+              retainedItemIds: retainedDialogItemIds,
               newItemDefaults,
               rangeEnd,
               rangeStart,
@@ -2414,7 +2420,7 @@ const App: React.FC = () => {
             },
           }}
         />
-      </AcceptedItemContext.Provider>
+      </AcceptedItemCommandsProvider>
 
       <AppOverlayLayer
         overlay={overlayController.readModel}

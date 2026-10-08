@@ -1,3 +1,4 @@
+import { recordShoppingRender } from "../utils/shoppingPerformance";
 import React, {
   useCallback,
   useContext,
@@ -477,6 +478,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   preferNativeOptions = false,
 }) => {
   const [menuVisible, setMenuVisible] = useState(false);
+  recordShoppingRender("card");
   const readAcceptedItem = useContext(AcceptedItemContext);
   const [optimisticItem, setOptimisticItem] = useState(
     () => readAcceptedItem?.(sourceItem.id) ?? sourceItem,

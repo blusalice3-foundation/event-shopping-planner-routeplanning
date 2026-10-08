@@ -1,13 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 const eventName = "応答速度検証";
-const makeBackup = (count: number) => {
+const makeBackup = (count: number, concentrated = false) => {
   const item = (id: string, index: number) => ({
     id,
     eventDate: "1日目",
     circle: "ユーザー登録" + index,
     title: "新刊" + index,
     block: "A",
-    number: String(index + 1),
+    number: String(concentrated && index < count - 10 ? 1 : index + 1),
     price: 500,
     quantity: 1,
     purchaseStatus: "None",
@@ -84,14 +84,17 @@ const makeBackup = (count: number) => {
     },
   };
 };
-async function restore(page: Page, count: number) {
+async function restore(page: Page, count: number, concentrated = false) {
   await page.goto("/");
   await page
     .locator('input[aria-label="バックアップファイルを選択"]')
     .setInputFiles({
       name: "performance.json",
       mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(makeBackup(count)), "utf8"),
+      buffer: Buffer.from(
+        JSON.stringify(makeBackup(count, concentrated)),
+        "utf8",
+      ),
     });
   const dialog = page.getByRole("dialog", {
     name: "バックアップからイベントを復元",
@@ -534,3 +537,226 @@ test("direct field commands review another tab and retain inputs across worker s
   ).toHaveValue("7");
   await other.close();
 });
+
+type ShoppingDiagnostics = {
+  enable(value?: boolean): void;
+  reset(): void;
+  read(): {
+    samples: { operation: string; phase: string; durationMs: number }[];
+    renders: Record<string, number>;
+    summary: Record<string, { count: number; medianMs: number; p95Ms: number }>;
+  };
+};
+for (const count of [150, 500, 1500])
+  for (const concentrated of [false, true]) {
+    test(`local shopping operations: ${count} items, concentrated=${concentrated}`, async ({
+      page,
+    }, testInfo) => {
+      test.setTimeout(240000);
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      await restore(page, count, concentrated);
+      const diagnostics = (action: "enable" | "reset" | "read") =>
+        page.evaluate((action) => {
+          const api = (
+            window as unknown as {
+              __espShoppingPerformance: ShoppingDiagnostics;
+            }
+          ).__espShoppingPerformance;
+          return action === "read" ? api.read() : api[action]();
+        }, action);
+      await diagnostics("enable");
+      await diagnostics("reset");
+      const timings: Record<string, number[]> = {
+        execute: [],
+        focus: [],
+        record: [],
+        next: [],
+      };
+      const clickResponse = async (
+        locator: ReturnType<Page["locator"]>,
+        button: string,
+        group: string,
+      ) => {
+        await locator.scrollIntoViewIfNeeded();
+        const duration = await locator.evaluate(async (root, selector) => {
+          const button = root.matches(selector)
+            ? (root as HTMLButtonElement)
+            : root.querySelector<HTMLButtonElement>(selector)!;
+          const start = performance.now();
+          button.click();
+          await new Promise(requestAnimationFrame);
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          return performance.now() - start;
+        }, button);
+        timings[group].push(duration);
+      };
+      // Scroll across the complete list before measuring, so old cards must be released.
+      const visitedIds = await page.evaluate(async () => {
+        const seen = new Set<string>();
+        const collect = () =>
+          document
+            .querySelectorAll<HTMLElement>("[data-item-id]")
+            .forEach((row) => seen.add(row.dataset.itemId!));
+        const step = innerHeight;
+        collect();
+        for (
+          let top = 0;
+          top < document.documentElement.scrollHeight;
+          top += step
+        ) {
+          scrollTo(0, top);
+          await new Promise(requestAnimationFrame);
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          collect();
+        }
+        scrollTo(0, document.documentElement.scrollHeight);
+        await new Promise(requestAnimationFrame);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        collect();
+        scrollTo(0, 0);
+        await new Promise(requestAnimationFrame);
+        return [...seen];
+      });
+      const visited = new Set(visitedIds);
+      for (let index = 0; index < count; index++) {
+        const id = `perf-${index}`;
+        if (visited.has(id)) continue;
+        await page
+          .locator(`[data-row-key='item:"${id}"']`)
+          .scrollIntoViewIfNeeded();
+        await expect(page.locator(`[data-item-id="${id}"]`)).toBeVisible();
+        visited.add(id);
+      }
+      const visitedCount = visited.size;
+      expect(visitedCount).toBe(count);
+      await diagnostics("reset");
+      const profiler = process.env.ESP_PROFILE_SHOPPING
+        ? await page.context().newCDPSession(page)
+        : undefined;
+      await profiler?.send("Profiler.enable");
+      await profiler?.send("Profiler.start");
+      for (let index = 0; index < 20; index++) {
+        const row = page.locator(`[data-item-id="perf-${index}"]`);
+        await page
+          .locator(`[data-row-key='item:"perf-${index}"']`)
+          .scrollIntoViewIfNeeded();
+        await expect(row).toBeVisible();
+        await clickResponse(
+          row,
+          'button[aria-label^="Current status:"]',
+          "execute",
+        );
+      }
+      await expect
+        .poll(async () => (await durableItem(page, "perf-19")).purchaseStatus, {
+          timeout: 60000,
+        })
+        .toBe("Purchased");
+      expect(await page.locator("[data-item-id]").count()).toBeLessThan(60);
+      const executionDiagnostic = await diagnostics("read");
+      if (profiler) {
+        const profile = await profiler.send("Profiler.stop");
+        await testInfo.attach("execution-cpu-profile", {
+          body: JSON.stringify(profile),
+          contentType: "application/json",
+        });
+        await profiler.detach();
+      }
+      await page.getByTitle("集中モード", { exact: true }).click();
+      if (!concentrated)
+        for (let index = 0; index < 20; index++)
+          await page.getByTitle("次の訪問先", { exact: true }).click();
+      if (count === 1500)
+        await page.getByTitle("マップを表示", { exact: true }).click();
+      await diagnostics("reset");
+      for (let index = 20; index < 40; index++) {
+        const row = page.locator(`[data-item-id="perf-${index}"]`);
+        if (concentrated)
+          await page
+            .locator(`[data-row-key="focus:perf-${index}"]`)
+            .scrollIntoViewIfNeeded();
+        await expect(row).toBeVisible();
+        await clickResponse(
+          row,
+          'button[aria-label^="Current status:"]',
+          "focus",
+        );
+        if (!concentrated)
+          await clickResponse(
+            page.locator('[title="次の訪問先"]').locator(".."),
+            'button[title="次の訪問先"]',
+            "next",
+          );
+      }
+      const target = concentrated ? "perf-39" : "perf-40";
+      const row = page.locator(`[data-item-id="${target}"]`);
+      if (!concentrated)
+        await clickResponse(
+          row,
+          'button[aria-label^="Current status:"]',
+          "focus",
+        );
+      await clickResponse(
+        row,
+        'button[aria-label^="Current status:"]',
+        "focus",
+      );
+      const dialog = page.getByRole("dialog", {
+        name: "事後通販･頒布可否確認",
+      });
+      await expect(dialog).toBeVisible();
+      await clickResponse(
+        dialog.getByRole("button", { name: "記録", exact: true }),
+        "button",
+        "record",
+      );
+      await clickResponse(
+        page.locator('[title="次の訪問先"]').locator(".."),
+        'button[title="次の訪問先"]',
+        "next",
+      );
+      await expect(dialog).toBeHidden();
+      await expect
+        .poll(async () => (await durableItem(page, target)).remarks, {
+          timeout: 60000,
+        })
+        .toContain("通販･頒布確認");
+      await expect
+        .poll(async () => (await durableItem(page, target)).purchaseStatus)
+        .toBe("SoldOut");
+      const diagnostic = await diagnostics("read");
+      const summary = Object.fromEntries(
+        Object.entries(timings).map(([operation, values]) => {
+          values.sort((a, b) => a - b);
+          return [
+            operation,
+            {
+              count: values.length,
+              medianMs: values[Math.ceil(values.length * 0.5) - 1],
+              p95Ms: values[Math.ceil(values.length * 0.95) - 1],
+            },
+          ];
+        }),
+      );
+      await testInfo.attach("shopping-operation-timings", {
+        body: JSON.stringify(
+          {
+            count,
+            concentrated,
+            mapVisible: count === 1500,
+            visitedCount,
+            timings,
+            summary,
+            diagnostic,
+            executionDiagnostic,
+            errors,
+          },
+          null,
+          2,
+        ),
+        contentType: "application/json",
+      });
+      expect(errors).toEqual([]);
+    });
+  }

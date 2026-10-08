@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import type { UpdateItemFieldsInput } from "../state/itemFieldMutation";
 import { editableItemContentFields } from "../state/itemContentEdits";
 import { applyChangedFields } from "../../features/consistency/domain/mutations";
@@ -79,8 +79,13 @@ export interface ShoppingItemMutationStatePort {
   readonly eventUpdatePreviewEpochRef: MutableCommandValue<number>;
 }
 
+import { indexedItem } from "../../utils/itemIndex";
+import { useStableCallback } from "../../hooks/useStableCallback";
+
 export interface ShoppingItemMutationActionPort {
-  updateItemFields?(input: UpdateItemFieldsInput): void;
+  updateItemFields?(
+    input: UpdateItemFieldsInput | readonly UpdateItemFieldsInput[],
+  ): void;
   setEventLists(updater: StateUpdater<EventLists>): void;
   setEventMetadata(updater: StateUpdater<Record<string, EventMetadata>>): void;
   setDayModes(updater: StateUpdater<DayModesByEvent>): void;
@@ -135,7 +140,15 @@ export interface ShoppingItemMutationCommands {
     newItemsData: BulkAddItemInput[],
     metadata?: BulkAddMetadata,
   ): boolean;
-  updateItem(updatedItem: ShoppingItem, baseline?: ShoppingItem): void;
+  updateItem(
+    updatedItem: ShoppingItem,
+    baseline?: ShoppingItem,
+    options?: { saveImmediately?: boolean },
+  ): void;
+  updateItems(
+    items: readonly ShoppingItem[],
+    options?: { saveImmediately?: boolean },
+  ): void;
   moveItem(
     dragId: string,
     hoverId: string,
@@ -428,20 +441,21 @@ export const useShoppingItemMutationCommands = ({
     ],
   );
 
-  const updateItem = useCallback(
-    (updatedItem: ShoppingItem, baseline?: ShoppingItem) => {
+  const fieldCommandBatch = useRef<UpdateItemFieldsInput[] | null>(null);
+  const updateItem = useStableCallback(
+    (
+      updatedItem: ShoppingItem,
+      baseline?: ShoppingItem,
+      options?: { saveImmediately?: boolean },
+    ) => {
       if (!activeEventName) return;
       const currentMode = dayModes[activeEventName]?.[activeEventDate];
       const currentItems = eventListsRef.current[activeEventName] || [];
-      const currentItem = currentItems.find(
-        (candidate) => candidate.id === updatedItem.id,
-      );
+      const currentItem = indexedItem(currentItems, updatedItem.id);
       if (!currentItem) return;
       const renderedItem =
         baseline ??
-        eventLists[activeEventName]?.find(
-          (candidate) => candidate.id === updatedItem.id,
-        );
+        indexedItem(eventLists[activeEventName] ?? [], updatedItem.id);
       const intendedItem = renderedItem
         ? (applyChangedFields(
             renderedItem,
@@ -502,12 +516,15 @@ export const useShoppingItemMutationCommands = ({
         updateItemFields &&
         Object.keys(changes).every((key) => editableItemContentFields.has(key))
       ) {
-        updateItemFields({
+        const command = {
           eventName: activeEventName,
           itemId: updatedItem.id,
           changes,
           baseline: currentItem,
-        });
+          saveImmediately: options?.saveImmediately,
+        };
+        if (fieldCommandBatch.current) fieldCommandBatch.current.push(command);
+        else updateItemFields(command);
       } else {
         setEventLists((current) => ({
           ...current,
@@ -544,27 +561,50 @@ export const useShoppingItemMutationCommands = ({
         }
       }
 
-      if (result.purchaseStatusChanged || result.purchaseQuantityChanged) {
+      if (
+        !fieldCommandBatch.current &&
+        (result.purchaseStatusChanged || result.purchaseQuantityChanged)
+      ) {
         setRecentlyChangedItemIds((currentIds) =>
           new Set(currentIds).add(updatedItem.id),
         );
       }
     },
-    [
-      activeEventDate,
-      activeEventName,
-      dayModes,
-      eventLists,
-      eventListsRef,
-      executeModeItemsRef,
-      notify,
-      setEventLists,
-      updateItemFields,
-      setRecentlyChangedItemIds,
-      updateExecuteModeItems,
-    ],
   );
 
+  const updateItems = useStableCallback(
+    (
+      updates: readonly ShoppingItem[],
+      options?: { saveImmediately?: boolean },
+    ) => {
+      if (!updateItemFields) {
+        updates.forEach((item) => updateItem(item, undefined, options));
+        return;
+      }
+      const commands: UpdateItemFieldsInput[] = [];
+      fieldCommandBatch.current = commands;
+      try {
+        updates.forEach((item) => updateItem(item, undefined, options));
+      } finally {
+        fieldCommandBatch.current = null;
+      }
+      if (commands.length) {
+        updateItemFields(commands);
+        const changedIds = commands
+          .filter(
+            (command) =>
+              "purchaseStatus" in command.changes ||
+              "limitedPurchasedQuantity" in command.changes ||
+              "quantity" in command.changes,
+          )
+          .map((command) => command.itemId);
+        if (changedIds.length)
+          setRecentlyChangedItemIds(
+            (current) => new Set([...current, ...changedIds]),
+          );
+      }
+    },
+  );
   const moveItem = useCallback(
     (
       dragId: string,
@@ -1038,6 +1078,7 @@ export const useShoppingItemMutationCommands = ({
     applyBulkAdd,
     handleBulkAdd,
     updateItem,
+    updateItems,
     moveItem,
     moveItemUp,
     moveItemDown,

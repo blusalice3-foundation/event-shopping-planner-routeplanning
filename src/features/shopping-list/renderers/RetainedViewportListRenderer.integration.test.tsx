@@ -1,11 +1,16 @@
 import React from "react";
+import { shoppingPerformance } from "../../../utils/shoppingPerformance";
 import ShoppingList from "../../../components/ShoppingList";
 import { act, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildListRows } from "../model/buildListRows";
 import type { ShoppingItem } from "../../../types/item";
 import { RetainedViewportListRenderer } from "./RetainedViewportListRenderer";
-import { revealViewportContent, ViewportContent } from "./ViewportContent";
+import {
+  prewarmViewportContent,
+  revealViewportContent,
+  ViewportContent,
+} from "./ViewportContent";
 import { evaluateRetainedViewportEligibility } from "./retainedViewportEligibility";
 
 let callback: IntersectionObserverCallback;
@@ -51,6 +56,7 @@ beforeEach(() => {
   );
 });
 afterEach(() => {
+  shoppingPerformance.enable(false);
   visibleKeys.clear();
   observed.clear();
   disconnect.mockClear();
@@ -506,3 +512,177 @@ it.each([75, 125, 150, 200])(
     ).toBe(true);
   },
 );
+
+it("renders only the changed execution group and uses the latest render closure", () => {
+  const groupItems = [items[0], items[1]];
+  const makeModel = (members: ShoppingItem[]) =>
+    buildListRows({
+      items: members,
+      groups: members.map((item, index) => ({
+        key: `space-${index}`,
+        label: `Space ${index}`,
+        items: [item],
+      })),
+    });
+  const rendered = vi.fn();
+  const renderGroups =
+    (members: ShoppingItem[]) =>
+    (
+      row: { groupKey: string },
+      children: readonly {
+        row: { item: ShoppingItem };
+        render(content: React.ReactNode): React.ReactElement;
+      }[],
+    ) => {
+      rendered(row.groupKey);
+      return (
+        <div>
+          {children.map((child) =>
+            child.render(
+              <span>
+                {
+                  members.find((item) => item.id === child.row.item.id)!
+                    .purchaseStatus
+                }
+              </span>,
+            ),
+          )}
+        </div>
+      );
+    };
+  const view = render(
+    <RetainedViewportListRenderer
+      defer={false}
+      model={makeModel(groupItems)}
+      accessibleLabel="buy"
+      renderDependencies={[]}
+      renderGroup={renderGroups(groupItems)}
+    />,
+  );
+  rendered.mockClear();
+  shoppingPerformance.enable();
+  shoppingPerformance.reset();
+  const next = [
+    { ...groupItems[0], purchaseStatus: "Purchased" as const },
+    groupItems[1],
+  ];
+  view.rerender(
+    <RetainedViewportListRenderer
+      defer={false}
+      model={makeModel(next)}
+      accessibleLabel="buy"
+      renderDependencies={[]}
+      renderGroup={renderGroups(next)}
+    />,
+  );
+  expect(shoppingPerformance.read().renders["execution-viewport"]).toBe(1);
+  expect(rendered).toHaveBeenCalledTimes(1);
+  expect(rendered).toHaveBeenCalledWith("space-0");
+  expect(view.getByText("Purchased")).toBeVisible();
+});
+
+it("keeps overlapping prewarm requests until both navigation owners release them", () => {
+  const view = render(
+    <ViewportContent
+      rowKey="overlapping-next"
+      placeholder={<span>待機</span>}
+      render={() => <input aria-label="次の訪問先" />}
+    />,
+  );
+  const root = view.container.querySelector<HTMLElement>(
+    "[data-viewport-row-key]",
+  )!;
+  let releaseFirst!: () => void;
+  let releaseSecond!: () => void;
+  act(() => {
+    releaseFirst = prewarmViewportContent(root);
+    releaseSecond = prewarmViewportContent(root);
+  });
+  expect(view.getByRole("textbox")).toBeVisible();
+  act(() => releaseFirst());
+  expect(view.getByRole("textbox")).toBeVisible();
+  act(() => releaseFirst());
+  expect(view.getByRole("textbox")).toBeVisible();
+  act(() => releaseSecond());
+  expect(view.queryByRole("textbox")).toBeNull();
+});
+
+it("updates a collapsed space summary without rendering unrelated collapsed spaces", () => {
+  const sources = [items[0], items[1]];
+  const model = buildListRows({
+    items: sources,
+    groups: sources.map((item) => ({
+      key: item.id,
+      label: item.id,
+      items: [item],
+      collapsed: true,
+    })),
+  });
+  const rendered = vi.fn();
+  const props = (members: ShoppingItem[]) => ({
+    model,
+    defer: false,
+    accessibleLabel: "購入状態",
+    renderDependencies: [],
+    getGroupVersion: (id: string) => members.find((item) => item.id === id),
+    renderGroup: (row: { groupKey: string }) => {
+      rendered(row.groupKey);
+      return (
+        <span>
+          {members.find((item) => item.id === row.groupKey)!.purchaseStatus}
+        </span>
+      );
+    },
+  });
+  const view = render(<RetainedViewportListRenderer {...props(sources)} />);
+  rendered.mockClear();
+  view.rerender(
+    <RetainedViewportListRenderer
+      {...props([{ ...sources[0], purchaseStatus: "Purchased" }, sources[1]])}
+    />,
+  );
+  expect(rendered).toHaveBeenCalledOnce();
+  expect(rendered).toHaveBeenCalledWith(sources[0].id);
+  expect(view.getByText("Purchased")).toBeVisible();
+});
+
+it("reveals the committed group after a concurrent render is discarded", () => {
+  const blocked = new Promise<void>(() => {});
+  const Suspend = ({ value }: { value: string }) => {
+    if (value === "discarded") throw blocked;
+    return null;
+  };
+  let discard!: () => void;
+  const Harness = () => {
+    const [value, setValue] = React.useState("committed");
+    discard = () => React.startTransition(() => setValue("discarded"));
+    const member = { ...items[0], remarks: value };
+    return (
+      <React.Suspense fallback={<span>ロード中</span>}>
+        <RetainedViewportListRenderer
+          model={buildListRows({
+            items: [member],
+            groups: [{ key: "group", label: "訪問先", items: [member] }],
+          })}
+          accessibleLabel="購入状態"
+          renderDependencies={[value]}
+          renderGroup={() => <span>{value}</span>}
+        />
+        <Suspend value={value} />
+      </React.Suspense>
+    );
+  };
+  const view = render(<Harness />);
+  act(() => discard());
+  act(() =>
+    callback(
+      [...observed].map((target) => ({
+        target,
+        isIntersecting: true,
+      })) as IntersectionObserverEntry[],
+      {} as IntersectionObserver,
+    ),
+  );
+  expect(view.getByText("committed", { exact: true })).toBeVisible();
+  expect(view.queryByText("discarded", { exact: true })).toBeNull();
+});

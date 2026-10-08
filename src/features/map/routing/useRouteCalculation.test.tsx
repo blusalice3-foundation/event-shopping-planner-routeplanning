@@ -78,3 +78,31 @@ it("does not resubmit an equivalent route on an unrelated render", () => {
   expect(instances).toHaveLength(1);
   expect(instances[0].postMessage).toHaveBeenCalledOnce();
 });
+
+it("rejects a retired response when geometry returns to the same key", () => {
+  vi.stubGlobal("Worker", TestWorker);
+  const hook = renderHook(
+    ({ col }) =>
+      useRouteCalculation({
+        kind: "segments",
+        mapData: map,
+        points: [
+          { row: 1, col: 1 },
+          { row: 2, col },
+        ],
+        enabled: true,
+      }),
+    { initialProps: { col: 2 } },
+  );
+  const first = instances[0];
+  const retired = first.onmessage!;
+  const key = first.postMessage.mock.calls[0][0].key;
+  hook.rerender({ col: 3 });
+  hook.rerender({ col: 2 });
+  act(() => retired({ data: { key, result: ["retired"] } } as MessageEvent));
+  expect(hook.result.current.pending).toBe(true);
+  expect(hook.result.current.result).toEqual([]);
+  const current = instances[instances.length - 1];
+  act(() => current.onmessage!({ data: { key, result: [] } } as MessageEvent));
+  expect(hook.result.current.pending).toBe(false);
+});
