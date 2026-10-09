@@ -9,7 +9,7 @@ import {
   simplifyPath,
 } from "../../utils/pathfinding";
 
-type RouteSegmentsPairParams = {
+export type RouteSegmentsPairParams = {
   displayMapData: DayMapData;
   displayRoutePoints: MapRoutePoint[];
   mapInsertMapData: DayMapData | null;

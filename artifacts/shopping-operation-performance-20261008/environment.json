@@ -1,0 +1,15 @@
+{
+  "measuredAt": "2026-10-08T20:45:33+09:00",
+  "os": "Windows 11 10.0.26200",
+  "cpu": "AMD Ryzen 9 3900X 12-Core Processor",
+  "memoryBytes": 51456794624,
+  "node": "24.19.0",
+  "npm": "11.19.0",
+  "chromium": "151.0.7922.34",
+  "sourceCommit": "e9ceb0e8b093596f6da0d4cc0e38ce3ec83febc0",
+  "uncommittedImplementation": true,
+  "buildIdentity": "d98941e074d5f19be8dfb0a3232e8b43e1f2a9e2d838eca34c815bb4bc8b9761",
+  "browserTests": 16,
+  "unitIntegrationWorkerTests": 2329,
+  "smartphonePhysicalDeviceVerified": false
+}

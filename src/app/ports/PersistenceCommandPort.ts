@@ -20,6 +20,18 @@ export class PersistenceSettingsRollbackError extends Error {
   }
 }
 
+export interface ItemContentEdit {
+  readonly eventName: string;
+  readonly itemId: string;
+  readonly baseline?: Readonly<Record<string, unknown>>;
+  readonly fields: Readonly<
+    Record<string, { present: boolean; value: unknown }>
+  >;
+}
+export type ApplicationItemEditsResult =
+  | { status: "committed"; read: ApplicationSnapshotRead }
+  | { status: "review-required" };
+
 export interface PersistenceSnapshot {
   eventConsistency: EventConsistencyStore;
   eventLists: Record<string, unknown[]>;
@@ -103,6 +115,11 @@ export interface PersistenceCommandPort extends PreferencePersistencePort {
     ): Promise<void>;
   }): () => void;
   readApplicationSnapshot(): Promise<ApplicationSnapshotRead>;
+  commitItemContentEdits?(
+    edits: readonly ItemContentEdit[],
+    operationIds: readonly string[],
+    expectedEventGenerations: Readonly<Record<string, number>>,
+  ): Promise<ApplicationItemEditsResult>;
   saveEventConsistency(
     value: PersistenceSnapshot["eventConsistency"],
   ): Promise<void>;

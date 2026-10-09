@@ -1,0 +1,646 @@
+{
+  "verifiedOn": "2026-10-09",
+  "baseCommit": "eb0ba4b76911ac3c8345ecfd0ad84df98e29f115",
+  "productionBuildIdentity": "3435e974eca7e7a176e60de82f664f2dfa39f70a7cb9b0360f85f215f4c94044",
+  "sourceState": "base commit plus completion source changes, built before final commit",
+  "physicalSmartphoneVerified": false,
+  "thresholds": {
+    "minimumSamples": 20,
+    "medianMs": 50,
+    "p95Ms": 100
+  },
+  "browserTestStats": {
+    "startTime": "2026-10-08T15:34:39.471Z",
+    "duration": 320398.828,
+    "expected": 17,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "cases": [
+    {
+      "count": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "visitedCount": 150,
+      "summary": {
+        "execute": {
+          "count": 20,
+          "medianMs": 12,
+          "p95Ms": 15.200000017881393
+        },
+        "executeRecord": {
+          "count": 20,
+          "medianMs": 11.399999976158142,
+          "p95Ms": 12.400000005960464
+        },
+        "focus": {
+          "count": 22,
+          "medianMs": 14,
+          "p95Ms": 16.099999994039536
+        },
+        "record": {
+          "count": 20,
+          "medianMs": 11.599999994039536,
+          "p95Ms": 12.899999976158142
+        },
+        "next": {
+          "count": 41,
+          "medianMs": 12.099999994039536,
+          "p95Ms": 13.599999994039536
+        },
+        "back": {
+          "count": 20,
+          "medianMs": 12.5,
+          "p95Ms": 14
+        }
+      },
+      "executionRenders": {
+        "execution-space": 66,
+        "card": 63,
+        "execution-viewport": 170
+      },
+      "executionSummary": {
+        "item-command:input": {
+          "count": 20,
+          "medianMs": 0.09999999403953552,
+          "p95Ms": 0.10000002384185791
+        },
+        "item-command:paint": {
+          "count": 20,
+          "medianMs": 11.900000005960464,
+          "p95Ms": 15
+        },
+        "item-command:save": {
+          "count": 20,
+          "medianMs": 13.900000005960464,
+          "p95Ms": 15.5
+        }
+      },
+      "executionRecordSummary": {
+        "item-command:input": {
+          "count": 135,
+          "medianMs": 0,
+          "p95Ms": 0.10000002384185791
+        },
+        "item-command:paint": {
+          "count": 135,
+          "medianMs": 12.900000005960464,
+          "p95Ms": 17.400000005960464
+        },
+        "item-command:save": {
+          "count": 40,
+          "medianMs": 13.099999994039536,
+          "p95Ms": 16.19999998807907
+        }
+      },
+      "focusSummary": {
+        "item-command:input": {
+          "count": 156,
+          "medianMs": 0,
+          "p95Ms": 0.10000002384185791
+        },
+        "item-command:paint": {
+          "count": 156,
+          "medianMs": 5.4000000059604645,
+          "p95Ms": 15.900000005960464
+        },
+        "item-command:save": {
+          "count": 61,
+          "medianMs": 12.5,
+          "p95Ms": 15.199999988079071
+        },
+        "focus-next:input": {
+          "count": 41,
+          "medianMs": 0,
+          "p95Ms": 0.10000002384185791
+        },
+        "focus-next:paint": {
+          "count": 41,
+          "medianMs": 12,
+          "p95Ms": 13.5
+        }
+      }
+    },
+    {
+      "count": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "visitedCount": 150,
+      "summary": {
+        "execute": {
+          "count": 20,
+          "medianMs": 11.099999994039536,
+          "p95Ms": 14.900000005960464
+        },
+        "executeRecord": {
+          "count": 20,
+          "medianMs": 11.300000011920929,
+          "p95Ms": 13.099999994039536
+        },
+        "focus": {
+          "count": 21,
+          "medianMs": 12.299999982118607,
+          "p95Ms": 13.900000005960464
+        },
+        "record": {
+          "count": 20,
+          "medianMs": 11.700000017881393,
+          "p95Ms": 13.099999994039536
+        },
+        "next": {
+          "count": 21,
+          "medianMs": 12.200000017881393,
+          "p95Ms": 13.300000011920929
+        },
+        "back": {
+          "count": 20,
+          "medianMs": 15.200000017881393,
+          "p95Ms": 16.600000023841858
+        }
+      },
+      "executionRenders": {
+        "execution-space": 24,
+        "card": 63,
+        "execution-viewport": 31
+      },
+      "executionSummary": {
+        "item-command:input": {
+          "count": 20,
+          "medianMs": 0.09999999403953552,
+          "p95Ms": 0.10000002384185791
+        },
+        "item-command:paint": {
+          "count": 20,
+          "medianMs": 10.799999982118607,
+          "p95Ms": 14.700000017881393
+        },
+        "item-command:save": {
+          "count": 20,
+          "medianMs": 12.400000005960464,
+          "p95Ms": 14.400000005960464
+        }
+      },
+      "executionRecordSummary": {
+        "item-command:input": {
+          "count": 135,
+          "medianMs": 0,
+          "p95Ms": 0.10000002384185791
+        },
+        "item-command:paint": {
+          "count": 135,
+          "medianMs": 5.5999999940395355,
+          "p95Ms": 16.19999998807907
+        },
+        "item-command:save": {
+          "count": 40,
+          "medianMs": 13.700000017881393,
+          "p95Ms": 18.80000001192093
+        }
+      },
+      "focusSummary": {
+        "item-command:input": {
+          "count": 155,
+          "medianMs": 0,
+          "p95Ms": 0.10000002384185791
+        },
+        "item-command:paint": {
+          "count": 155,
+          "medianMs": 5.199999988079071,
+          "p95Ms": 12.899999976158142
+        },
+        "item-command:save": {
+          "count": 60,
+          "medianMs": 11.700000017881393,
+          "p95Ms": 15.699999988079071
+        },
+        "focus-next:input": {
+          "count": 21,
+          "medianMs": 0.09999999403953552,
+          "p95Ms": 0.10000002384185791
+        },
+        "focus-next:paint": {
+          "count": 21,
+          "medianMs": 12.099999994039536,
+          "p95Ms": 13.100000023841858
+        }
+      }
+    },
+    {
+      "count": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "visitedCount": 500,
+      "summary": {
+        "execute": {
+          "count": 20,
+          "medianMs": 20.400000005960464,
+          "p95Ms": 26.5
+        },
+        "executeRecord": {
+          "count": 20,
+          "medianMs": 15.599999994039536,
+          "p95Ms": 18.899999976158142
+        },
+        "focus": {
+          "count": 22,
+          "medianMs": 12.599999994039536,
+          "p95Ms": 14.200000017881393
+        },
+        "record": {
+          "count": 20,
+          "medianMs": 10.900000005960464,
+          "p95Ms": 11.900000005960464
+        },
+        "next": {
+          "count": 41,
+          "medianMs": 12.099999994039536,
+          "p95Ms": 14.599999994039536
+        },
+        "back": {
+          "count": 20,
+          "medianMs": 12.899999976158142,
+          "p95Ms": 14
+        }
+      },
+      "executionRenders": {
+        "execution-space": 66,
+        "card": 63,
+        "execution-viewport": 520
+      },
+      "executionSummary": {
+        "item-command:input": {
+          "count": 20,
+          "medianMs": 0.09999999403953552,
+          "p95Ms": 0.19999998807907104
+        },
+        "item-command:paint": {
+          "count": 20,
+          "medianMs": 20.099999994039536,
+          "p95Ms": 26.30000001192093
+        },
+        "item-command:save": {
+          "count": 20,
+          "medianMs": 42.099999994039536,
+          "p95Ms": 56.599999994039536
+        }
+      },
+      "executionRecordSummary": {
+        "item-command:input": {
+          "count": 135,
+          "medianMs": 0,
+          "p95Ms": 0.10000002384185791
+        },
+        "item-command:paint": {
+          "count": 135,
+          "medianMs": 13.200000017881393,
+          "p95Ms": 18.599999994039536
+        },
+        "item-command:save": {
+          "count": 39,
+          "medianMs": 38.19999998807907,
+          "p95Ms": 51.20000001788139
+        }
+      },
+      "focusSummary": {
+        "item-command:input": {
+          "count": 156,
+          "medianMs": 0,
+          "p95Ms": 0.10000002384185791
+        },
+        "item-command:paint": {
+          "count": 156,
+          "medianMs": 11.699999988079071,
+          "p95Ms": 17.69999998807907
+        },
+        "item-command:save": {
+          "count": 61,
+          "medianMs": 37,
+          "p95Ms": 46.5
+        },
+        "focus-next:input": {
+          "count": 41,
+          "medianMs": 0,
+          "p95Ms": 0.09999999403953552
+        },
+        "focus-next:paint": {
+          "count": 41,
+          "medianMs": 12,
+          "p95Ms": 14.5
+        }
+      }
+    },
+    {
+      "count": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "visitedCount": 500,
+      "summary": {
+        "execute": {
+          "count": 20,
+          "medianMs": 20.30000001192093,
+          "p95Ms": 25.5
+        },
+        "executeRecord": {
+          "count": 20,
+          "medianMs": 16.400000005960464,
+          "p95Ms": 22.30000001192093
+        },
+        "focus": {
+          "count": 21,
+          "medianMs": 13.400000005960464,
+          "p95Ms": 17.099999994039536
+        },
+        "record": {
+          "count": 20,
+          "medianMs": 10.300000011920929,
+          "p95Ms": 13.300000011920929
+        },
+        "next": {
+          "count": 21,
+          "medianMs": 12.300000011920929,
+          "p95Ms": 14.600000023841858
+        },
+        "back": {
+          "count": 20,
+          "medianMs": 20.599999994039536,
+          "p95Ms": 23.19999998807907
+        }
+      },
+      "executionRenders": {
+        "execution-space": 24,
+        "card": 58,
+        "execution-viewport": 31
+      },
+      "executionSummary": {
+        "item-command:input": {
+          "count": 20,
+          "medianMs": 0.09999999403953552,
+          "p95Ms": 0.20000001788139343
+        },
+        "item-command:paint": {
+          "count": 20,
+          "medianMs": 20.099999994039536,
+          "p95Ms": 25.19999998807907
+        },
+        "item-command:save": {
+          "count": 20,
+          "medianMs": 36.599999994039536,
+          "p95Ms": 41.19999998807907
+        }
+      },
+      "executionRecordSummary": {
+        "item-command:input": {
+          "count": 135,
+          "medianMs": 0,
+          "p95Ms": 0.10000002384185791
+        },
+        "item-command:paint": {
+          "count": 135,
+          "medianMs": 13.099999994039536,
+          "p95Ms": 19.5
+        },
+        "item-command:save": {
+          "count": 40,
+          "medianMs": 43.5,
+          "p95Ms": 52.70000001788139
+        }
+      },
+      "focusSummary": {
+        "item-command:input": {
+          "count": 155,
+          "medianMs": 0,
+          "p95Ms": 0.10000002384185791
+        },
+        "item-command:paint": {
+          "count": 155,
+          "medianMs": 10.099999994039536,
+          "p95Ms": 15.599999994039536
+        },
+        "item-command:save": {
+          "count": 60,
+          "medianMs": 39,
+          "p95Ms": 46.80000001192093
+        },
+        "focus-next:input": {
+          "count": 21,
+          "medianMs": 0.19999998807907104,
+          "p95Ms": 0.30000001192092896
+        },
+        "focus-next:paint": {
+          "count": 21,
+          "medianMs": 12.200000017881393,
+          "p95Ms": 14.400000005960464
+        }
+      }
+    },
+    {
+      "count": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "visitedCount": 1500,
+      "summary": {
+        "execute": {
+          "count": 20,
+          "medianMs": 44.89999997615814,
+          "p95Ms": 54.29999998211861
+        },
+        "executeRecord": {
+          "count": 20,
+          "medianMs": 36.400000005960464,
+          "p95Ms": 42.599999994039536
+        },
+        "focus": {
+          "count": 22,
+          "medianMs": 21.099999994039536,
+          "p95Ms": 23.80000001192093
+        },
+        "record": {
+          "count": 20,
+          "medianMs": 17.099999994039536,
+          "p95Ms": 21.5
+        },
+        "next": {
+          "count": 41,
+          "medianMs": 26.69999998807907,
+          "p95Ms": 32.099999994039536
+        },
+        "back": {
+          "count": 20,
+          "medianMs": 25.099999994039536,
+          "p95Ms": 31.799999982118607
+        }
+      },
+      "executionRenders": {
+        "execution-space": 66,
+        "card": 63,
+        "execution-viewport": 1520
+      },
+      "executionSummary": {
+        "item-command:input": {
+          "count": 20,
+          "medianMs": 0.09999999403953552,
+          "p95Ms": 0.20000001788139343
+        },
+        "item-command:paint": {
+          "count": 20,
+          "medianMs": 44.69999998807907,
+          "p95Ms": 51.900000005960464
+        },
+        "item-command:save": {
+          "count": 20,
+          "medianMs": 111.40000000596046,
+          "p95Ms": 130.10000002384186
+        }
+      },
+      "executionRecordSummary": {
+        "item-command:input": {
+          "count": 135,
+          "medianMs": 0,
+          "p95Ms": 0.10000002384185791
+        },
+        "item-command:paint": {
+          "count": 135,
+          "medianMs": 28.5,
+          "p95Ms": 48.20000001788139
+        },
+        "item-command:save": {
+          "count": 40,
+          "medianMs": 108.5,
+          "p95Ms": 139.40000000596046
+        }
+      },
+      "focusSummary": {
+        "item-command:input": {
+          "count": 156,
+          "medianMs": 0,
+          "p95Ms": 0.10000002384185791
+        },
+        "item-command:paint": {
+          "count": 156,
+          "medianMs": 13,
+          "p95Ms": 22.100000023841858
+        },
+        "focus-next:input": {
+          "count": 41,
+          "medianMs": 0,
+          "p95Ms": 0.10000002384185791
+        },
+        "focus-next:paint": {
+          "count": 41,
+          "medianMs": 26.599999994039536,
+          "p95Ms": 31.799999982118607
+        },
+        "item-command:save": {
+          "count": 61,
+          "medianMs": 116.80000001192093,
+          "p95Ms": 177.89999997615814
+        }
+      }
+    },
+    {
+      "count": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "visitedCount": 1500,
+      "summary": {
+        "execute": {
+          "count": 20,
+          "medianMs": 43.30000001192093,
+          "p95Ms": 55.10000002384186
+        },
+        "executeRecord": {
+          "count": 20,
+          "medianMs": 44.39999997615814,
+          "p95Ms": 52.20000001788139
+        },
+        "focus": {
+          "count": 21,
+          "medianMs": 28.400000005960464,
+          "p95Ms": 36.900000005960464
+        },
+        "record": {
+          "count": 20,
+          "medianMs": 24.599999994039536,
+          "p95Ms": 29.900000005960464
+        },
+        "next": {
+          "count": 21,
+          "medianMs": 25.099999994039536,
+          "p95Ms": 34.39999997615814
+        },
+        "back": {
+          "count": 20,
+          "medianMs": 48.099999994039536,
+          "p95Ms": 58.19999998807907
+        }
+      },
+      "executionRenders": {
+        "card": 58,
+        "execution-space": 23,
+        "execution-viewport": 31
+      },
+      "executionSummary": {
+        "item-command:input": {
+          "count": 20,
+          "medianMs": 0.09999999403953552,
+          "p95Ms": 0.30000001192092896
+        },
+        "item-command:paint": {
+          "count": 20,
+          "medianMs": 43,
+          "p95Ms": 54.80000001192093
+        },
+        "item-command:save": {
+          "count": 20,
+          "medianMs": 99.59999999403954,
+          "p95Ms": 128.7999999821186
+        }
+      },
+      "executionRecordSummary": {
+        "item-command:input": {
+          "count": 135,
+          "medianMs": 0,
+          "p95Ms": 0.19999998807907104
+        },
+        "item-command:paint": {
+          "count": 135,
+          "medianMs": 17.599999994039536,
+          "p95Ms": 47.900000005960464
+        },
+        "item-command:save": {
+          "count": 39,
+          "medianMs": 142.2000000178814,
+          "p95Ms": 166.59999999403954
+        }
+      },
+      "focusSummary": {
+        "item-command:input": {
+          "count": 155,
+          "medianMs": 0,
+          "p95Ms": 0.10000002384185791
+        },
+        "item-command:paint": {
+          "count": 155,
+          "medianMs": 17.5,
+          "p95Ms": 30.600000023841858
+        },
+        "item-command:save": {
+          "count": 60,
+          "medianMs": 129.09999999403954,
+          "p95Ms": 189.09999999403954
+        },
+        "focus-next:input": {
+          "count": 21,
+          "medianMs": 0.29999998211860657,
+          "p95Ms": 0.4000000059604645
+        },
+        "focus-next:paint": {
+          "count": 21,
+          "medianMs": 24.900000005960464,
+          "p95Ms": 34.19999998807907
+        }
+      }
+    }
+  ]
+}

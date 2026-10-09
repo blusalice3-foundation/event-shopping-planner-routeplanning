@@ -19,7 +19,8 @@ export const evaluateRetainedViewportEligibility = (input: {
   ): VirtualListEligibility => ({ eligible: false, reason, rowHeightPx: null });
   if (!input.runtimeAvailable) return fail("runtime-unavailable");
   if (input.zoomPercent === null) return fail("zoom-unknown");
-  if (input.zoomPercent !== 100) return fail("zoom-unsupported");
+  if (!Number.isFinite(input.zoomPercent) || input.zoomPercent <= 0)
+    return fail("zoom-unsupported");
   if (input.recoveryActive === null) return fail("recovery-state-unknown");
   if (input.recoveryActive) return fail("recovery-active");
   if (!Number.isInteger(input.rowCount) || input.rowCount < 0)

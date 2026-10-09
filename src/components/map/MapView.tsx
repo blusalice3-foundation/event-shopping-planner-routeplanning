@@ -37,11 +37,9 @@ import {
   resolveMapRoutePoints,
   type MapRoutePoint,
 } from "../../utils/mapRoutePoints";
+import { useRouteCalculation } from "../../features/map/routing/useRouteCalculation";
 import { buildSelectedHallRouteMapData } from "../../utils/mapRouteMapData";
-import {
-  calculateRouteSegmentsPair,
-  createRouteInsertMapSnapshots,
-} from "./mapViewRouteCalculations";
+import { createRouteInsertMapSnapshots } from "./mapViewRouteCalculations";
 import { validateMapSmartInsert } from "../../utils/mapSmartInsert";
 import type { MapRouteHitResult } from "../../utils/mapRouteHitTest";
 import {
@@ -651,28 +649,20 @@ const MapView: React.FC<MapViewProps> = ({
   const includeDisplayRoute =
     isRouteVisible && (halls.length === 0 || selectedHallId !== "all");
   const includeMapInsertRoute = smartInsertEnabled && smartInsertMode === "map";
+  const routeCalculation = useRouteCalculation({
+    kind: "pair",
+    params: {
+      displayMapData: displayRoutePathfindingMapData,
+      displayRoutePoints,
+      mapInsertMapData: mapInsertRoutePathfindingMapData,
+      mapInsertRoutePoints,
+      includeDisplayRoute,
+      includeMapInsertRoute,
+    },
+    constraint: mapInsertRoutePathConstraint?.definition,
+  });
   const { displayRouteSegments, mapInsertRouteSegments, displayRouteState } =
-    useMemo(
-      () =>
-        calculateRouteSegmentsPair({
-          displayMapData: displayRoutePathfindingMapData,
-          displayRoutePoints,
-          mapInsertMapData: mapInsertRoutePathfindingMapData,
-          mapInsertRoutePoints,
-          mapInsertPathConstraint: mapInsertRoutePathConstraint,
-          includeDisplayRoute,
-          includeMapInsertRoute,
-        }),
-      [
-        displayRoutePathfindingMapData,
-        displayRoutePoints,
-        mapInsertRoutePathfindingMapData,
-        mapInsertRoutePoints,
-        mapInsertRoutePathConstraint,
-        includeDisplayRoute,
-        includeMapInsertRoute,
-      ],
-    );
+    routeCalculation.result;
   const routeDiagnostics = useMemo(
     () =>
       buildRouteDiagnostics({
@@ -937,9 +927,23 @@ const MapView: React.FC<MapViewProps> = ({
     [onUpdateHallRouteSettings],
   );
 
+  const [waitingRouteInsert, setWaitingRouteInsert] = useState<{
+    itemIds: string[];
+    item: ShoppingItem;
+    key: string;
+  } | null>(null);
   const tryStartMapRouteInsertSelection = useCallback(
     (itemIds: string[], representativeItem: ShoppingItem): boolean => {
       if (vertexSelectionMode || cellSelectionMode) return false;
+      if (routeCalculation.pending) {
+        setWaitingRouteInsert({
+          itemIds: [...itemIds],
+          item: representativeItem,
+          key: routeCalculation.key,
+        });
+        return true;
+      }
+      if (routeCalculation.error) return true;
       if (!hasValidSelectedHallRouteContext) return false;
       if (!routeResolutionMapData) return false;
       if (!mapInsertRoutePathfindingMapData) return false;
@@ -1015,6 +1019,9 @@ const MapView: React.FC<MapViewProps> = ({
     [
       vertexSelectionMode,
       cellSelectionMode,
+      routeCalculation.pending,
+      routeCalculation.error,
+      routeCalculation.key,
       hasValidSelectedHallRouteContext,
       routeResolutionMapData,
       mapInsertRoutePathfindingMapData,
@@ -1139,6 +1146,39 @@ const MapView: React.FC<MapViewProps> = ({
     ],
   );
 
+  useEffect(() => {
+    if (!waitingRouteInsert || routeCalculation.pending) return;
+    setWaitingRouteInsert(null);
+    if (
+      waitingRouteInsert.key !== routeCalculation.key ||
+      routeCalculation.error
+    )
+      return;
+    if (
+      tryStartMapRouteInsertSelection(
+        waitingRouteInsert.itemIds,
+        waitingRouteInsert.item,
+      )
+    )
+      return;
+    const collected: string[] = [];
+    for (const id of waitingRouteInsert.itemIds) {
+      if (!itemsById.has(id)) continue;
+      const ids = normalizeInsertedItemIds(onAddToExecuteList(id), [id]);
+      if (ids) collected.push(...ids);
+    }
+    if (collected.length) batchAddToHallVisitList(collected);
+  }, [
+    waitingRouteInsert,
+    routeCalculation.pending,
+    routeCalculation.key,
+    routeCalculation.error,
+    tryStartMapRouteInsertSelection,
+    itemsById,
+    normalizeInsertedItemIds,
+    onAddToExecuteList,
+    batchAddToHallVisitList,
+  ]);
   const handleInsertPositionSelect = useCallback(
     (position: InsertPosition) => {
       const item = insertDialogState.item;
@@ -1763,7 +1803,18 @@ const MapView: React.FC<MapViewProps> = ({
     mapRouteInsertPending?.routeInsertMissMapDataAtStart;
 
   return (
-    <div className="relative h-[calc(100vh-140px)] overflow-hidden bg-slate-100 dark:bg-slate-900">
+    <div
+      data-route-pending={routeCalculation.pending ? "true" : "false"}
+      className="relative h-[calc(100vh-140px)] overflow-hidden bg-slate-100 dark:bg-slate-900"
+    >
+      {(waitingRouteInsert || routeCalculation.error) && (
+        <p
+          role="status"
+          className="absolute bottom-4 left-4 z-20 rounded bg-white p-2 text-sm dark:bg-slate-800"
+        >
+          {routeCalculation.error ?? "経路を計算しています…"}
+        </p>
+      )}
       {/* Top-right controls: hall selection, hall order, route visibility. */}
       {!hideInternalControls && (
         <div className="absolute top-4 right-4 z-10 flex items-center gap-3">

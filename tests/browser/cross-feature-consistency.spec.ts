@@ -89,6 +89,13 @@ async function restore(
     page.getByRole("heading", { name: eventName, exact: true }),
   ).toBeVisible();
 }
+function persistenceRealm(page: Page) {
+  const worker = page
+    .workers()
+    .find((candidate) => candidate.url().includes("persistence.worker"));
+  if (!worker) throw new Error("The persistence worker has not started.");
+  return worker;
+}
 async function stored(page: Page, store: string, key = "data") {
   return page.evaluate(
     async ({ name, key }) => {
@@ -701,7 +708,7 @@ test("a failed long-press save keeps the current day and persisted modes", async
   page,
 }) => {
   await restore(page);
-  await page.evaluate(() => {
+  await persistenceRealm(page).evaluate(() => {
     const original = IDBDatabase.prototype.transaction;
     IDBDatabase.prototype.transaction = function (
       ...args: Parameters<typeof original>
@@ -1072,14 +1079,16 @@ for (const origin of ["visit panel", "map item edit"] as const) {
       .fill("新しいメモ");
     // Delay delivery of the first atomic transaction's completion so the screen
     // still contains its previous values when the priority intent is accepted.
-    await page.evaluate(() => {
+    await persistenceRealm(page).evaluate(() => {
       const descriptor = Object.getOwnPropertyDescriptor(
         IDBTransaction.prototype,
         "oncomplete",
       )!;
       const gate = { ready: false, release: () => {} };
       (
-        window as typeof window & { __consistencyWriteGate: typeof gate }
+        globalThis as typeof globalThis & {
+          __consistencyWriteGate: typeof gate;
+        }
       ).__consistencyWriteGate = gate;
       let intercepted = false;
       Object.defineProperty(IDBTransaction.prototype, "oncomplete", {
@@ -1110,10 +1119,10 @@ for (const origin of ["visit panel", "map item edit"] as const) {
     await expect(editor).toBeHidden();
     await expect
       .poll(() =>
-        page.evaluate(
+        persistenceRealm(page).evaluate(
           () =>
             (
-              window as typeof window & {
+              globalThis as typeof globalThis & {
                 __consistencyWriteGate: { ready: boolean };
               }
             ).__consistencyWriteGate.ready,
@@ -1144,9 +1153,9 @@ for (const origin of ["visit panel", "map item edit"] as const) {
         .getByRole("button", { name: "保存", exact: true })
         .click();
     }
-    await page.evaluate(() =>
+    await persistenceRealm(page).evaluate(() =>
       (
-        window as typeof window & {
+        globalThis as typeof globalThis & {
           __consistencyWriteGate: { release(): void };
         }
       ).__consistencyWriteGate.release(),
@@ -1363,11 +1372,11 @@ test.describe("spreadsheet and save-conflict connections", () => {
   }
 
   async function forceThreeSnapshotConflicts(page: Page) {
-    await page.evaluate((name) => {
+    await persistenceRealm(page).evaluate((name) => {
       const original = IDBObjectStore.prototype.get;
       let remaining = 3;
       const state = { count: 0 };
-      Object.assign(window, { __forcedConsistencyConflicts: state });
+      Object.assign(globalThis, { __forcedConsistencyConflicts: state });
       IDBObjectStore.prototype.get = function (key) {
         const request = original.call(this, key);
         if (
@@ -1399,10 +1408,10 @@ test.describe("spreadsheet and save-conflict connections", () => {
   }
 
   async function forceSnapshotAbort(page: Page) {
-    await page.evaluate(() => {
+    await persistenceRealm(page).evaluate(() => {
       const original = IDBObjectStore.prototype.put;
       const state = { count: 0 };
-      Object.assign(window, { __forcedConsistencyConflicts: state });
+      Object.assign(globalThis, { __forcedConsistencyConflicts: state });
       IDBObjectStore.prototype.put = function (
         ...args: Parameters<typeof original>
       ) {
@@ -1719,10 +1728,10 @@ test.describe("spreadsheet and save-conflict connections", () => {
       await expect(conflict).toBeVisible();
       expect(await stored(page, "eventLists")).toEqual(before);
       expect(
-        await page.evaluate(
+        await persistenceRealm(page).evaluate(
           () =>
             (
-              window as typeof window & {
+              globalThis as typeof globalThis & {
                 __forcedConsistencyConflicts: { count: number };
               }
             ).__forcedConsistencyConflicts.count,
@@ -2043,7 +2052,7 @@ test("focus map shows mixed execution counts separately from candidates and the 
 }) => {
   await page.addInitScript(() => {
     const labels: string[] = [];
-    Object.assign(window, { __focusStatusLabels: labels });
+    Object.assign(globalThis, { __focusStatusLabels: labels });
     const original = CanvasRenderingContext2D.prototype.fillText;
     CanvasRenderingContext2D.prototype.fillText = function (
       ...args: Parameters<typeof original>
@@ -2071,7 +2080,7 @@ test("focus map shows mixed execution counts separately from candidates and the 
   const labels = () =>
     page.evaluate(
       () =>
-        (window as typeof window & { __focusStatusLabels: string[] })
+        (globalThis as typeof globalThis & { __focusStatusLabels: string[] })
           .__focusStatusLabels,
     );
   await expect
@@ -2081,7 +2090,7 @@ test("focus map shows mixed execution counts separately from candidates and the 
   const phase = page.getByLabel("phase", { exact: true });
   await page.evaluate(() => {
     (
-      window as typeof window & { __focusStatusLabels: string[] }
+      globalThis as typeof globalThis & { __focusStatusLabels: string[] }
     ).__focusStatusLabels.length = 0;
   });
   await phase.selectOption("postponed");
@@ -2107,9 +2116,9 @@ test("a standalone execute reorder writes only its store and survives reload", a
   // Legacy migration normally creates a visit context for these execution IDs.
   source.eventConsistency[eventName].days = {};
   await loadSavedSnapshot(page, source);
-  await page.evaluate(() => {
+  await persistenceRealm(page).evaluate(() => {
     const writes: string[][] = [];
-    Object.assign(window, { __reorderTransactions: writes });
+    Object.assign(globalThis, { __reorderTransactions: writes });
     const original = IDBDatabase.prototype.transaction;
     IDBDatabase.prototype.transaction = function (
       ...args: Parameters<typeof original>
@@ -2125,9 +2134,9 @@ test("a standalone execute reorder writes only its store and survives reload", a
   await expect
     .poll(() => stored(page, "executeModeItems"))
     .toMatchObject({ [eventName]: { "1日目": ["2", "1"] } });
-  const writes = await page.evaluate(
+  const writes = await persistenceRealm(page).evaluate(
     () =>
-      (window as typeof window & { __reorderTransactions: string[][] })
+      (globalThis as typeof globalThis & { __reorderTransactions: string[][] })
         .__reorderTransactions,
   );
   expect(writes.some((stores) => stores.includes("executeModeItems"))).toBe(
@@ -2514,14 +2523,14 @@ test("confirmation disables cancellation, choices and repeated saving during its
   const selectedMode = await dialog
     .getByRole("combobox", { name: "統合後の表示モード" })
     .inputValue();
-  await page.evaluate(() => {
+  await persistenceRealm(page).evaluate(() => {
     const descriptor = Object.getOwnPropertyDescriptor(
       IDBTransaction.prototype,
       "oncomplete",
     )!;
     const gate = { ready: false, release: () => {} };
     (
-      window as typeof window & { __confirmationReadGate: typeof gate }
+      globalThis as typeof globalThis & { __confirmationReadGate: typeof gate }
     ).__confirmationReadGate = gate;
     let intercepted = false;
     Object.defineProperty(IDBTransaction.prototype, "oncomplete", {
@@ -2554,10 +2563,10 @@ test("confirmation disables cancellation, choices and repeated saving during its
     .click();
   await expect
     .poll(() =>
-      page.evaluate(
+      persistenceRealm(page).evaluate(
         () =>
           (
-            window as typeof window & {
+            globalThis as typeof globalThis & {
               __confirmationReadGate: { ready: boolean };
             }
           ).__confirmationReadGate.ready,
@@ -2575,9 +2584,11 @@ test("confirmation disables cancellation, choices and repeated saving during its
   await cancel.evaluate((button: HTMLButtonElement) => button.click());
   await expect(dialog).toBeVisible();
   expect(await stored(page, "dayModes")).toEqual(source.dayModes);
-  await page.evaluate(() =>
+  await persistenceRealm(page).evaluate(() =>
     (
-      window as typeof window & { __confirmationReadGate: { release(): void } }
+      globalThis as typeof globalThis & {
+        __confirmationReadGate: { release(): void };
+      }
     ).__confirmationReadGate.release(),
   );
   await expect(dialog).toBeHidden();
@@ -2846,7 +2857,7 @@ for (const operation of ["opening", "reorder"] as const) {
     await operate();
     const review = page.getByRole("dialog", { name: /1日目 の保存先を統合/ });
     await expect(review).toBeVisible();
-    await page.evaluate(() => {
+    await persistenceRealm(page).evaluate(() => {
       const original = IDBObjectStore.prototype.put;
       IDBObjectStore.prototype.put = function (
         ...args: Parameters<typeof original>
@@ -3233,7 +3244,7 @@ for (const operation of ["ordinary reorder", "ordinary item edit"] as const) {
           .selectOption("execute");
         await expect(review).toHaveAttribute("aria-busy", "false");
         if (outcome === "abort") {
-          await page.evaluate(() => {
+          await persistenceRealm(page).evaluate(() => {
             const original = IDBObjectStore.prototype.put;
             IDBObjectStore.prototype.put = function (
               ...args: Parameters<typeof original>
@@ -3557,7 +3568,7 @@ for (const outcome of ["save", "cancel", "abort"] as const) {
       await Promise.all(stores.map((store) => stored(page, store))),
     ).toEqual(before);
     if (outcome === "abort") {
-      await page.evaluate(() => {
+      await persistenceRealm(page).evaluate(() => {
         const original = IDBObjectStore.prototype.put;
         IDBObjectStore.prototype.put = function (
           ...args: Parameters<typeof original>
@@ -3885,7 +3896,7 @@ for (const outcome of ["save", "cancel", "abort"] as const) {
       await expect(review).toBeHidden();
     } else {
       if (outcome === "abort")
-        await page.evaluate(() => {
+        await persistenceRealm(page).evaluate(() => {
           const original = IDBObjectStore.prototype.put;
           IDBObjectStore.prototype.put = function (
             ...args: Parameters<typeof original>

@@ -335,38 +335,33 @@ describe("FocusMode Space Navigator integration", () => {
       history: 0,
     });
     await waitFor(() => {
-      expect(screen.getByTitle("前の訪問先")).toHaveAttribute(
-        "data-nav-left",
-        "32px",
-      );
-      expect(screen.getByTitle("次の訪問先")).toHaveAttribute(
-        "data-nav-right",
-        "16px",
-      );
+      expect(
+        screen.getByRole("button", { name: "前の訪問先へ移動" }),
+      ).toHaveAttribute("data-nav-left", "32px");
+      expect(
+        screen.getByRole("button", { name: "次の訪問先へ移動" }),
+      ).toHaveAttribute("data-nav-right", "16px");
     });
 
     fireEvent.click(
       screen.getByRole("button", { name: "navigator-side-right" }),
     );
     await waitFor(() => {
-      expect(screen.getByTitle("前の訪問先")).toHaveAttribute(
-        "data-nav-left",
-        "16px",
-      );
-      expect(screen.getByTitle("次の訪問先")).toHaveAttribute(
-        "data-nav-right",
-        "32px",
-      );
+      expect(
+        screen.getByRole("button", { name: "前の訪問先へ移動" }),
+      ).toHaveAttribute("data-nav-left", "16px");
+      expect(
+        screen.getByRole("button", { name: "次の訪問先へ移動" }),
+      ).toHaveAttribute("data-nav-right", "32px");
     });
 
     fireEvent.click(screen.getByTitle("マップを表示"));
     await waitFor(() =>
       expect(screen.getByTestId("focus-map-canvas-mock")).toBeInTheDocument(),
     );
-    expect(screen.getByTitle("次の訪問先")).toHaveAttribute(
-      "data-nav-right",
-      "32px",
-    );
+    expect(
+      screen.getByRole("button", { name: "次の訪問先へ移動" }),
+    ).toHaveAttribute("data-nav-right", "32px");
   });
 
   it("applies the rail-aware offset to the completion view previous button", () => {
@@ -383,11 +378,12 @@ describe("FocusMode Space Navigator integration", () => {
       />,
     );
 
-    expect(screen.getByTitle("前の訪問先")).toHaveClass("esp-layout-nav-left");
-    expect(screen.getByTitle("前の訪問先")).toHaveAttribute(
-      "data-nav-left",
-      "48px",
-    );
+    expect(
+      screen.getByRole("button", { name: "前の訪問先へ移動" }),
+    ).toHaveClass("esp-layout-nav-left");
+    expect(
+      screen.getByRole("button", { name: "前の訪問先へ移動" }),
+    ).toHaveAttribute("data-nav-left", "48px");
   });
 
   it("keeps the formal session pointer unchanged while a temporary visit is displayed", async () => {
@@ -452,7 +448,7 @@ describe("FocusMode Space Navigator integration", () => {
       history: 1,
     });
 
-    fireEvent.click(screen.getByTitle("次の訪問先"));
+    fireEvent.click(screen.getByRole("button", { name: "次の訪問先へ移動" }));
     await expectNavigatorPosition({
       current: 2,
       formal: 0,
@@ -463,7 +459,7 @@ describe("FocusMode Space Navigator integration", () => {
       container.querySelector('[data-item-id="normal-3"]'),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByTitle("前の訪問先"));
+    fireEvent.click(screen.getByRole("button", { name: "前の訪問先へ移動" }));
     await expectNavigatorPosition({
       current: 1,
       formal: 0,
@@ -592,7 +588,7 @@ describe("FocusMode Space Navigator integration", () => {
 
     fireEvent.click(statusButton);
     fireEvent.click(bulkPurchaseButton);
-    fireEvent.click(screen.getByTitle("次の訪問先"));
+    fireEvent.click(screen.getByRole("button", { name: "次の訪問先へ移動" }));
     await expectNavigatorPosition({
       current: 1,
       formal: 0,
@@ -600,7 +596,7 @@ describe("FocusMode Space Navigator integration", () => {
       history: 1,
     });
 
-    fireEvent.click(screen.getByTitle("前の訪問先"));
+    fireEvent.click(screen.getByRole("button", { name: "前の訪問先へ移動" }));
     await expectNavigatorPosition({
       current: 1,
       formal: 0,
@@ -1303,7 +1299,7 @@ describe("FocusMode Space Navigator integration", () => {
       ),
     );
 
-    fireEvent.click(screen.getByTitle("次の訪問先"));
+    fireEvent.click(screen.getByRole("button", { name: "次の訪問先へ移動" }));
     const movementDialog = await screen.findByRole("dialog", {
       name: "次へ進む基準フェーズを選択",
     });
@@ -1331,7 +1327,7 @@ describe("FocusMode Space Navigator integration", () => {
       "1",
     );
 
-    fireEvent.click(screen.getByTitle("次の訪問先"));
+    fireEvent.click(screen.getByRole("button", { name: "次の訪問先へ移動" }));
     const remainingDialog = await screen.findByRole("dialog", {
       name: "一時巡回の残りスペース",
     });
@@ -1423,7 +1419,7 @@ describe("FocusMode Space Navigator integration", () => {
       fireEvent.click(screen.getByRole("button", { name: "A-02aに一時移動" })),
     );
 
-    fireEvent.click(screen.getByTitle("次の訪問先"));
+    fireEvent.click(screen.getByRole("button", { name: "次の訪問先へ移動" }));
     const dialog = await screen.findByRole("dialog", {
       name: "次へ進む基準フェーズを選択",
     });
@@ -1441,7 +1437,7 @@ describe("FocusMode Space Navigator integration", () => {
       );
     });
 
-    fireEvent.click(screen.getByTitle("次の訪問先"));
+    fireEvent.click(screen.getByRole("button", { name: "次の訪問先へ移動" }));
     await act(async () => {
       await Promise.resolve();
     });

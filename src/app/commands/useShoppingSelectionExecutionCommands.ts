@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import type {
   BlockSortDirection,
   BulkSortDirection,
@@ -13,6 +13,7 @@ import type {
   ViewMode,
 } from "../../types/item";
 import { clearLimitedPurchase } from "../../utils/purchaseQuantity";
+import { createExecutionProgressIndex } from "../../utils/executionProgressIndex";
 import { getSpaceKey } from "../../utils/spaceGrouping";
 import {
   buildExecutionVisitProjectionKey,
@@ -35,6 +36,7 @@ export interface ShoppingSelectionExecutionStatePort {
   readonly dayModes: DayModesByEvent;
   readonly sortState: SortState;
   readonly executeColumnItems: readonly ShoppingItem[];
+  readonly readAcceptedItem?: (itemId: string) => ShoppingItem | undefined;
   readonly items: readonly ShoppingItem[];
   readonly selectedItemIds: ReadonlySet<string>;
   readonly recentlyChangedItemIds: ReadonlySet<string>;
@@ -69,13 +71,23 @@ export interface ShoppingSelectionExecutionActionPort {
   setBlockSortDirection(value: BlockSortDirection | null): void;
   setExecuteCollapsedSpaces(action: StateAction<Set<string>>): void;
   updateExecuteModeItems(action: StateAction<ExecuteModeItemsByEvent>): void;
-  updateItem(item: ShoppingItem): void;
+  updateItem(
+    item: ShoppingItem,
+    baseline?: ShoppingItem,
+    options?: { saveImmediately?: boolean },
+  ): void;
+  updateItems?(
+    items: readonly ShoppingItem[],
+    options?: { saveImmediately?: boolean },
+  ): void;
 }
 
 export interface ShoppingSelectionExecutionEffectPort {
   notify(message: string): void;
   scheduleCenteredItemScroll(itemId: string): void;
 }
+
+import { useStableCallback } from "../../hooks/useStableCallback";
 
 export interface ShoppingSelectionExecutionCommandPorts {
   readonly state: ShoppingSelectionExecutionStatePort;
@@ -105,7 +117,11 @@ export interface ShoppingSelectionExecutionCommands {
     targetStatus: PurchaseStatus,
     groupItems: ShoppingItem[],
   ): void;
-  updateExecuteItem(updatedItem: ShoppingItem): void;
+  updateExecuteItem(
+    updatedItem: ShoppingItem,
+    baseline?: ShoppingItem,
+    options?: { saveImmediately?: boolean },
+  ): void;
   activatePostponeFilter(): void;
   activateLateFilter(): void;
   setExecuteSpaceGroupOrder(orderedGroupKeys: readonly string[]): void;
@@ -132,6 +148,7 @@ export const useShoppingSelectionExecutionCommands = ({
     dayModes,
     sortState,
     executeColumnItems,
+    readAcceptedItem,
     items,
     selectedItemIds,
     recentlyChangedItemIds,
@@ -163,19 +180,25 @@ export const useShoppingSelectionExecutionCommands = ({
   const { scheduleCenteredItemScroll } = effects;
 
   const executeSpaceGroupOrderRef = useRef<readonly string[]>([]);
-  const executeColumnItemsRef =
-    useRef<readonly ShoppingItem[]>(executeColumnItems);
-  const recentlyChangedItemIdsRef = useRef<ReadonlySet<string>>(
-    recentlyChangedItemIds,
+  const executeSpaceGroupPositionsRef = useRef(new Map<string, number>());
+  const progressRef = useRef<ReturnType<typeof createExecutionProgressIndex>>();
+  progressRef.current ??= createExecutionProgressIndex(
+    buildSpacePriorityGroupKey,
   );
-
-  useEffect(() => {
-    executeColumnItemsRef.current = executeColumnItems;
-  }, [executeColumnItems]);
-
-  useEffect(() => {
-    recentlyChangedItemIdsRef.current = recentlyChangedItemIds;
-  }, [recentlyChangedItemIds]);
+  const progress = progressRef.current;
+  useLayoutEffect(() => {
+    progress.sync(
+      executeColumnItems,
+      recentlyChangedItemIds,
+      JSON.stringify([activeEventName, activeEventDate]),
+    );
+  }, [
+    progress,
+    executeColumnItems,
+    recentlyChangedItemIds,
+    activeEventName,
+    activeEventDate,
+  ]);
 
   useEffect(() => {
     setShowPostponeFilterButton(false);
@@ -269,32 +292,64 @@ export const useShoppingSelectionExecutionCommands = ({
     [spaceGroupDragItemIdsRef],
   );
 
-  const changeBulkStatus = useCallback(
+  const changeBulkStatus = useStableCallback(
     (
       groupKey: string,
       targetStatus: PurchaseStatus,
       groupItems: ShoppingItem[],
     ) => {
       if (!activeEventName) return;
+      groupItems = groupItems.flatMap((item) => {
+        const latest = readAcceptedItem
+          ? readAcceptedItem(item.id)
+          : (progress.item(item.id) ?? item);
+        return latest ? [latest] : [];
+      });
       const allAlready = groupItems.every(
         (item) => item.purchaseStatus === targetStatus,
       );
       const nextStatus: PurchaseStatus = allAlready ? "None" : targetStatus;
       const groupItemIds = new Set(groupItems.map((item) => item.id));
 
-      setEventLists((current) => ({
-        ...current,
-        [activeEventName]: (current[activeEventName] || []).map((item) => {
-          if (!groupItemIds.has(item.id)) return item;
-          if (
-            targetStatus === "LimitedPurchase" ||
-            item.purchaseStatus === "LimitedPurchase"
-          ) {
-            return item;
-          }
-          return clearLimitedPurchase({ ...item, purchaseStatus: nextStatus });
-        }),
-      }));
+      if (actions.updateItems) {
+        actions.updateItems(
+          groupItems
+            .filter(
+              (item) =>
+                targetStatus !== "LimitedPurchase" &&
+                item.purchaseStatus !== "LimitedPurchase",
+            )
+            .map((item) =>
+              clearLimitedPurchase({ ...item, purchaseStatus: nextStatus }),
+            ),
+        );
+      } else {
+        setEventLists((current) => ({
+          ...current,
+          [activeEventName]: (current[activeEventName] || []).map((item) => {
+            if (!groupItemIds.has(item.id)) return item;
+            if (
+              targetStatus === "LimitedPurchase" ||
+              item.purchaseStatus === "LimitedPurchase"
+            ) {
+              return item;
+            }
+            return clearLimitedPurchase({
+              ...item,
+              purchaseStatus: nextStatus,
+            });
+          }),
+        }));
+      }
+      for (const item of groupItems) {
+        const latest = readAcceptedItem
+          ? readAcceptedItem(item.id)
+          : targetStatus === "LimitedPurchase" ||
+              item.purchaseStatus === "LimitedPurchase"
+            ? item
+            : clearLimitedPurchase({ ...item, purchaseStatus: nextStatus });
+        if (latest) progress.apply(latest, true);
+      }
       setRecentlyChangedItemIds((currentIds) => {
         const next = new Set(currentIds);
         groupItems.forEach((item) => next.add(item.id));
@@ -306,89 +361,50 @@ export const useShoppingSelectionExecutionCommands = ({
         groupOrder.length > 0 && groupKey === groupOrder[groupOrder.length - 1];
       if (!isLastGroup || nextStatus === "None") return;
 
-      const currentItems = executeColumnItemsRef.current;
-      if (sortState === "Manual") {
-        const allNonNone = currentItems.every(
-          (item) => groupItemIds.has(item.id) || item.purchaseStatus !== "None",
-        );
-        if (allNonNone) setShowPostponeFilterButton(true);
-      }
-
-      if (sortState === "Postpone") {
-        const recentIds = recentlyChangedItemIdsRef.current;
-        const allVisibleNonNone = currentItems.every((item) => {
-          if (groupItemIds.has(item.id)) return true;
-          if (item.purchaseStatus !== "Postpone" && !recentIds.has(item.id)) {
-            return true;
-          }
-          return item.purchaseStatus !== "None";
-        });
-        if (allVisibleNonNone) setShowLateFilterButton(true);
-      }
+      if (sortState === "Manual" && progress.noneCount === 0)
+        setShowPostponeFilterButton(true);
+      if (sortState === "Postpone" && progress.visibleNoneCount === 0)
+        setShowLateFilterButton(true);
     },
-    [
-      activeEventName,
-      setEventLists,
-      setRecentlyChangedItemIds,
-      setShowLateFilterButton,
-      setShowPostponeFilterButton,
-      sortState,
-    ],
   );
 
-  const updateExecuteItem = useCallback(
-    (updatedItem: ShoppingItem) => {
-      updateItem(updatedItem);
-      if (sortState !== "Manual" && sortState !== "Postpone") return;
-      if (updatedItem.purchaseStatus === "None") return;
-
+  const updateExecuteItem = useStableCallback(
+    (
+      updatedItem: ShoppingItem,
+      baseline?: ShoppingItem,
+      options?: { saveImmediately?: boolean },
+    ) => {
+      const before = readAcceptedItem
+        ? readAcceptedItem(updatedItem.id)
+        : progress.item(updatedItem.id);
+      if (before) progress.apply(before);
       const groupOrder = executeSpaceGroupOrderRef.current;
-      if (groupOrder.length === 0) return;
       const lastGroupKey = groupOrder[groupOrder.length - 1];
-      if (buildSpacePriorityGroupKey(updatedItem) !== lastGroupKey) return;
-
-      const currentItems = executeColumnItemsRef.current;
-      if (sortState === "Manual") {
-        const lastGroupItems = currentItems.filter(
-          (item) => buildSpacePriorityGroupKey(item) === lastGroupKey,
-        );
-        if (lastGroupItems[lastGroupItems.length - 1]?.id !== updatedItem.id) {
-          return;
-        }
-        const allNonNone = currentItems.every(
-          (item) =>
-            item.id === updatedItem.id || item.purchaseStatus !== "None",
-        );
-        if (allNonNone) setShowPostponeFilterButton(true);
-        return;
-      }
-
-      const recentIds = recentlyChangedItemIdsRef.current;
-      const visibleLastGroupItems = currentItems.filter((item) => {
-        if (buildSpacePriorityGroupKey(item) !== lastGroupKey) return false;
-        return item.purchaseStatus === "Postpone" || recentIds.has(item.id);
-      });
-      if (
-        visibleLastGroupItems[visibleLastGroupItems.length - 1]?.id !==
-        updatedItem.id
-      ) {
-        return;
-      }
-      const allVisibleNonNone = currentItems.every((item) => {
-        if (item.id === updatedItem.id) return true;
-        if (item.purchaseStatus !== "Postpone" && !recentIds.has(item.id)) {
-          return true;
-        }
-        return item.purchaseStatus !== "None";
-      });
-      if (allVisibleNonNone) setShowLateFilterButton(true);
+      const lastItemId = lastGroupKey
+        ? progress.lastItemId(lastGroupKey, sortState === "Postpone")
+        : undefined;
+      if (baseline || options) updateItem(updatedItem, baseline, options);
+      else updateItem(updatedItem);
+      const latest = readAcceptedItem
+        ? readAcceptedItem(updatedItem.id)
+        : updatedItem;
+      if (!latest) return;
+      progress.apply(
+        latest,
+        !!before &&
+          (before.purchaseStatus !== latest.purchaseStatus ||
+            before.quantity !== latest.quantity ||
+            before.limitedPurchasedQuantity !==
+              latest.limitedPurchasedQuantity),
+      );
+      if (sortState !== "Manual" && sortState !== "Postpone") return;
+      if (latest.purchaseStatus === "None" || lastItemId !== latest.id) return;
+      if (buildSpacePriorityGroupKey(latest) !== lastGroupKey) return;
+      if (sortState === "Manual" && progress.noneCount === 0)
+        setShowPostponeFilterButton(true);
+      if (sortState === "Postpone" && progress.visibleNoneCount === 0)
+        setShowLateFilterButton(true);
     },
-    [
-      setShowLateFilterButton,
-      setShowPostponeFilterButton,
-      sortState,
-      updateItem,
-    ],
   );
 
   const activatePostponeFilter = useCallback(() => {
@@ -406,6 +422,9 @@ export const useShoppingSelectionExecutionCommands = ({
   const setExecuteSpaceGroupOrder = useCallback(
     (orderedGroupKeys: readonly string[]) => {
       executeSpaceGroupOrderRef.current = [...orderedGroupKeys];
+      executeSpaceGroupPositionsRef.current = new Map(
+        orderedGroupKeys.map((key, index) => [key, index]),
+      );
     },
     [],
   );
@@ -414,7 +433,8 @@ export const useShoppingSelectionExecutionCommands = ({
     (currentGroupKey: string) => {
       clearRangeSelection();
       const order = executeSpaceGroupOrderRef.current;
-      const currentIndex = order.indexOf(currentGroupKey);
+      const currentIndex =
+        executeSpaceGroupPositionsRef.current.get(currentGroupKey) ?? -1;
       const nextKey =
         currentIndex >= 0 && currentIndex < order.length - 1
           ? order[currentIndex + 1]

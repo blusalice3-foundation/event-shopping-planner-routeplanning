@@ -1,4 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { indexedItem } from "../../../utils/itemIndex";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { navigatorEntryIndex } from "../domain/navigatorEntryIndex";
+import { AcceptedItemContext } from "../../shopping-list/renderers/ViewportRowState";
 import type {
   FocusMapViewportSnapshot,
   FocusPhase,
@@ -9,7 +19,7 @@ import {
   type SpaceNavigatorActionResult,
   type SpaceNavigatorRegistration,
 } from "../SpaceNavigatorContext";
-import { buildFocusNavigatorEntries } from "../domain/buildNavigatorEntries";
+import { createFocusNavigatorEntriesProjector } from "../domain/navigatorEntriesProjector";
 import { evaluateNavigationGuard } from "../domain/navigationGuard";
 import {
   buildStatusSegments,
@@ -19,7 +29,7 @@ import {
 import {
   aggregateNavigatorSpace,
   buildInitialPhaseNavigationCandidates,
-  buildRemainingSpaceLists,
+  createRemainingSpaceListsProjector,
   findAdjacentSpaceTarget,
   type InitialPhaseNavigationCandidates,
   type OpportunisticSpaceTarget,
@@ -137,7 +147,7 @@ const refreshDisplaySnapshot = (
     const latest = latestItemsById.get(itemId);
     if (latest) return latest;
     if (snapshot.kind === "space-aggregate") return undefined;
-    return snapshot.entry.items.find((item) => item.id === itemId) as
+    return indexedItem(snapshot.entry.items, itemId) as
       | ShoppingItem
       | undefined;
   });
@@ -174,14 +184,14 @@ const insertRetainedEntry = (
 ): NavigatorEntry[] => {
   if (
     !retainedEntry ||
-    entries.some((entry) => entry.id === retainedEntry.id)
+    navigatorEntryIndex(entries).byId.has(retainedEntry.id)
   ) {
-    return entries.map((entry) => ({ ...entry }));
+    return entries as NavigatorEntry[];
   }
 
   const phase = retainedEntry.phase ?? "normal";
-  const phaseEntries = entries.filter((entry) => entry.phase === phase);
-  const phaseStart = entries.findIndex((entry) => entry.phase === phase);
+  const phaseEntries = navigatorEntryIndex(entries).byPhase.get(phase) ?? [];
+  const phaseStart = phaseEntries[0]?.index ?? -1;
   let insertionIndex: number;
   if (phaseStart >= 0) {
     insertionIndex =
@@ -190,9 +200,9 @@ const insertRetainedEntry = (
     const phasePosition = phaseOrder.indexOf(phase);
     const nextPhase = phaseOrder
       .slice(phasePosition + 1)
-      .find((candidate) => entries.some((entry) => entry.phase === candidate));
+      .find((candidate) => navigatorEntryIndex(entries).byPhase.has(candidate));
     insertionIndex = nextPhase
-      ? entries.findIndex((entry) => entry.phase === nextPhase)
+      ? navigatorEntryIndex(entries).byPhase.get(nextPhase)![0].index
       : entries.length;
   }
 
@@ -225,6 +235,7 @@ export function useFocusSpaceNavigator({
   restoreMapViewportSnapshot,
 }: UseFocusSpaceNavigatorArgs) {
   const navigator = useOptionalSpaceNavigator();
+  const readAcceptedItem = useContext(AcceptedItemContext);
   const [displaySnapshot, setDisplaySnapshot] =
     useState<DisplaySnapshot | null>(null);
   const [recenterRevision, setRecenterRevision] = useState(0);
@@ -244,10 +255,8 @@ export function useFocusSpaceNavigator({
     setPromotionPhaseChoiceOpen(false);
   }, [enabled, registrationId]);
 
-  const baseEntries = useMemo(
-    () => buildFocusNavigatorEntries(sourcesByPhase),
-    [sourcesByPhase],
-  );
+  const projectEntries = useMemo(createFocusNavigatorEntriesProjector, []);
+  const baseEntries = projectEntries(sourcesByPhase);
   const refreshedDisplaySnapshot = useMemo(
     () =>
       displaySnapshot
@@ -264,9 +273,8 @@ export function useFocusSpaceNavigator({
     [baseEntries, refreshedRetainedEntry],
   );
 
-  const formalPhaseEntries = baseEntries.filter(
-    (entry) => entry.phase === officialPhase,
-  );
+  const formalPhaseEntries =
+    navigatorEntryIndex(baseEntries).byPhase.get(officialPhase) ?? [];
   const formalBaseEntry =
     formalPhaseEntries.length > 0
       ? formalPhaseEntries[
@@ -277,26 +285,18 @@ export function useFocusSpaceNavigator({
         ]
       : null;
   const formalEntry = formalBaseEntry
-    ? (entries.find((entry) => entry.id === formalBaseEntry.id) ?? null)
+    ? (navigatorEntryIndex(entries).byId.get(formalBaseEntry.id) ?? null)
     : null;
   const formalRouteIndex = formalBaseEntry
-    ? Math.max(
-        0,
-        baseEntries.findIndex((entry) => entry.id === formalBaseEntry.id),
-      )
+    ? Math.max(0, formalBaseEntry.index)
     : 0;
-  const formalIndex = formalEntry
-    ? entries.findIndex((entry) => entry.id === formalEntry.id)
-    : 0;
+  const formalIndex = formalEntry ? formalEntry.index : 0;
   const displayEntry =
     (refreshedDisplaySnapshot
-      ? entries.find((entry) => entry.id === refreshedDisplaySnapshot.entry.id)
+      ? navigatorEntryIndex(entries).byId.get(refreshedDisplaySnapshot.entry.id)
       : formalEntry) ?? null;
   const currentIndex = displayEntry
-    ? Math.max(
-        0,
-        entries.findIndex((entry) => entry.id === displayEntry.id),
-      )
+    ? Math.max(0, displayEntry.index)
     : formalIndex;
 
   const makeDisplaySnapshot = useCallback(
@@ -332,21 +332,16 @@ export function useFocusSpaceNavigator({
         latestItemsById,
       });
       if (!aggregate) return null;
+      const proposedRepresentative = representativeVisitId
+        ? navigatorEntryIndex(baseEntries).byId.get(representativeVisitId)
+        : undefined;
       const representativeEntry =
-        baseEntries.find(
-          (entry) =>
-            entry.id === representativeVisitId &&
-            entry.spaceKey === aggregate.spaceKey,
-        ) ?? aggregate.representativeEntry;
+        proposedRepresentative?.spaceKey === aggregate.spaceKey
+          ? proposedRepresentative
+          : aggregate.representativeEntry;
       const entryPhase =
         movementBasisPhase ?? representativeEntry.phase ?? "normal";
-      const phaseEntries = baseEntries.filter(
-        (entry) => entry.phase === entryPhase,
-      );
-      const phaseIndex = Math.max(
-        0,
-        phaseEntries.findIndex((entry) => entry.id === representativeEntry.id),
-      );
+      const phaseIndex = Math.max(0, representativeEntry.phaseIndex);
       const items = aggregate.items as readonly ShoppingItem[];
       return {
         kind: "space-aggregate",
@@ -382,7 +377,13 @@ export function useFocusSpaceNavigator({
         intent,
         currentIndex,
         targetIndex,
-        currentItems: currentEntry?.items ?? [],
+        currentItems:
+          currentEntry?.items.flatMap((item) => {
+            const latest = readAcceptedItem
+              ? readAcceptedItem(item.id)
+              : latestItemsById.get(item.id);
+            return latest ? [latest] : [];
+          }) ?? [],
         settings: {
           disablePriceUndefinedCheck,
           disableLimitedPurchaseQuantityCheck,
@@ -396,6 +397,8 @@ export function useFocusSpaceNavigator({
     },
     [
       currentIndex,
+      readAcceptedItem,
+      latestItemsById,
       disableLimitedPurchaseQuantityCheck,
       disablePriceUndefinedCheck,
       entries,
@@ -410,7 +413,12 @@ export function useFocusSpaceNavigator({
         intent: "temporary",
         currentIndex: 0,
         targetIndex: 1,
-        currentItems: entry.items,
+        currentItems: entry.items.flatMap((item) => {
+          const latest = readAcceptedItem
+            ? readAcceptedItem(item.id)
+            : latestItemsById.get(item.id);
+          return latest ? [latest] : [];
+        }),
         settings: {
           disablePriceUndefinedCheck,
           disableLimitedPurchaseQuantityCheck,
@@ -421,6 +429,8 @@ export function useFocusSpaceNavigator({
       return result;
     },
     [
+      readAcceptedItem,
+      latestItemsById,
       disableLimitedPurchaseQuantityCheck,
       disablePriceUndefinedCheck,
       getDeferredLimitedItemIds,
@@ -432,17 +442,18 @@ export function useFocusSpaceNavigator({
     (
       entry: NavigatorEntry,
     ): { entry: NavigatorEntry | null; didFallback: boolean } => {
-      const liveEntry = baseEntries.find(
-        (candidate) => candidate.id === entry.id,
-      );
+      const liveEntry = navigatorEntryIndex(baseEntries).byId.get(entry.id);
       if (liveEntry) return { entry: liveEntry, didFallback: false };
       if (entry.phase === "normal") return { entry: null, didFallback: false };
-      const normalFallback = baseEntries.find(
-        (candidate) =>
-          candidate.phase === "normal" &&
-          candidate.spaceKey === entry.spaceKey &&
-          candidate.priorityLevel === entry.priorityLevel,
-      );
+      const normalFallback = navigatorEntryIndex(baseEntries)
+        .byPhaseAndSpace.get("normal")
+        ?.get(entry.spaceKey)
+        ?.find(
+          (candidate) =>
+            candidate.phase === "normal" &&
+            candidate.spaceKey === entry.spaceKey &&
+            candidate.priorityLevel === entry.priorityLevel,
+        );
       return {
         entry: normalFallback ?? null,
         didFallback: Boolean(normalFallback),
@@ -551,11 +562,9 @@ export function useFocusSpaceNavigator({
           };
         }
         const targetEntry =
-          baseEntries.find(
-            (candidate) =>
-              candidate.phase === payload.phase &&
-              candidate.spaceKey === refreshedDisplaySnapshot.entry.spaceKey,
-          ) ?? null;
+          navigatorEntryIndex(baseEntries)
+            .byPhaseAndSpace.get(payload.phase)
+            ?.get(refreshedDisplaySnapshot.entry.spaceKey)?.[0] ?? null;
         if (!targetEntry) {
           return {
             ok: false,
@@ -621,8 +630,8 @@ export function useFocusSpaceNavigator({
           };
         }
       } else if (snapshot?.kind === "single") {
-        const liveEntry = baseEntries.find(
-          (entry) => entry.id === snapshot.entry.id,
+        const liveEntry = navigatorEntryIndex(baseEntries).byId.get(
+          snapshot.entry.id,
         );
         if (!liveEntry) {
           return {
@@ -807,34 +816,38 @@ export function useFocusSpaceNavigator({
     return {
       normal: Boolean(
         spaceKey &&
-        baseEntries.some(
-          (entry) => entry.phase === "normal" && entry.spaceKey === spaceKey,
-        ),
+        navigatorEntryIndex(baseEntries)
+          .byPhaseAndSpace.get("normal")
+          ?.has(spaceKey),
       ),
       postponed: Boolean(
         spaceKey &&
-        baseEntries.some(
-          (entry) => entry.phase === "postponed" && entry.spaceKey === spaceKey,
-        ),
+        navigatorEntryIndex(baseEntries)
+          .byPhaseAndSpace.get("postponed")
+          ?.has(spaceKey),
       ),
       late: Boolean(
         spaceKey &&
-        baseEntries.some(
-          (entry) => entry.phase === "late" && entry.spaceKey === spaceKey,
-        ),
+        navigatorEntryIndex(baseEntries)
+          .byPhaseAndSpace.get("late")
+          ?.has(spaceKey),
       ),
     };
   }, [aggregateSnapshot?.entry.spaceKey, baseEntries]);
 
+  const projectRemainingSpaces = useMemo(
+    createRemainingSpaceListsProjector,
+    [],
+  );
   const remainingSpaceLists = useMemo<RemainingSpaceLists>(
     () =>
       aggregateSnapshot
-        ? buildRemainingSpaceLists(baseEntries, {
+        ? projectRemainingSpaces(baseEntries, {
             currentSpaceKey: aggregateSnapshot.entry.spaceKey,
             latestItemsById,
           })
         : EMPTY_REMAINING_SPACE_LISTS,
-    [aggregateSnapshot, baseEntries, latestItemsById],
+    [aggregateSnapshot, baseEntries, latestItemsById, projectRemainingSpaces],
   );
 
   const moveTemporaryBy = useCallback(
@@ -991,7 +1004,7 @@ export function useFocusSpaceNavigator({
           ? refreshedDisplaySnapshot
           : null;
       if (!activeSnapshot) return { ok: false };
-      const latestLists = buildRemainingSpaceLists(baseEntries, {
+      const latestLists = projectRemainingSpaces(baseEntries, {
         currentSpaceKey: activeSnapshot.entry.spaceKey,
         latestItemsById,
       });
@@ -1027,6 +1040,7 @@ export function useFocusSpaceNavigator({
       latestItemsById,
       makeAggregateDisplaySnapshot,
       navigator,
+      projectRemainingSpaces,
       refreshedDisplaySnapshot,
     ],
   );

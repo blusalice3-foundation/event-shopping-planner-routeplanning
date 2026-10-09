@@ -147,10 +147,16 @@ for (const layout of ["pc", "smartphone"] as const) {
       await last
         .getByRole("combobox", { name: "購入金額", exact: true })
         .selectOption("2000");
-      expect(await original!.evaluate((element) => element.isConnected)).toBe(
-        true,
-      );
-      await first.scrollIntoViewIfNeeded();
+      await expect
+        .poll(() => original!.evaluate((element) => element.isConnected))
+        .toBe(false);
+      await page
+        .getByRole("listitem", {
+          name: "A1 ユーザー登録サークル0 新刊0",
+          exact: true,
+        })
+        .scrollIntoViewIfNeeded();
+      await expect(first).toBeVisible();
       await expect(price).toHaveValue("1000");
       await expect(
         first.getByRole("combobox", { name: "購入予定数量", exact: true }),
@@ -206,6 +212,17 @@ test("a large single space defers cards inside the group", async ({ page }) => {
     })
     .scrollIntoViewIfNeeded();
   await expect(page.locator('[data-item-id="viewport-0-239"]')).toBeVisible();
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.getByRole("button", { name: "全売切", exact: true }).click();
+  await expect(
+    page.getByRole("dialog", { name: "事後通販･頒布可否確認" }),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-list-renderer-strategy="retained-viewport"]'),
+  ).toHaveAttribute("data-list-renderer", "virtual");
+  await expect
+    .poll(() => page.locator("[data-item-id]").count())
+    .toBeLessThan(40);
 });
 test("focus map remains correct after quantity, purchase and visibility changes", async ({
   page,
@@ -305,4 +322,41 @@ test("focus mode defers a large visit with the map shown and hidden", async ({
   await expect(page.locator('[data-item-id="viewport-0-239"]')).toBeVisible();
   await page.getByTitle("マップを非表示", { exact: true }).click();
   await expect(page.locator("canvas")).toHaveCount(0);
+});
+
+test("focus retains an edited offscreen item until the dialog closes", async ({
+  page,
+}) => {
+  await restore(page, "focus", true);
+  const last = page.locator('[data-item-id="viewport-0-239"]');
+  await page
+    .getByRole("listitem", {
+      name: "A1 ユーザー登録サークル239 新刊239",
+      exact: true,
+    })
+    .scrollIntoViewIfNeeded();
+  await expect(last).toBeVisible();
+  const target = last.locator(":scope > div.rounded-lg").first();
+  await target.dispatchEvent("pointerdown", {
+    button: 0,
+    isPrimary: true,
+    pointerType: "mouse",
+  });
+  await expect(
+    page.getByRole("button", { name: "編集", exact: true }),
+  ).toBeVisible();
+  await target.dispatchEvent("pointerup", {
+    button: 0,
+    isPrimary: true,
+    pointerType: "mouse",
+  });
+  await page.getByRole("button", { name: "編集", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "アイテム編集" });
+  await expect(dialog).toBeVisible();
+  await page
+    .getByTestId("focus-mode-scroll-region")
+    .evaluate((root) => root.scrollTo(0, 0));
+  await expect(last).toHaveCount(1);
+  await dialog.getByRole("button", { name: "キャンセル", exact: true }).click();
+  await expect(last).toHaveCount(0);
 });

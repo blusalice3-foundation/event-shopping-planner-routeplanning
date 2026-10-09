@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { rememberItemUpdateBaseline } from "../../utils/itemUpdateBaseline";
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type {
@@ -1000,5 +1001,42 @@ it("applies explicitly edited purchase fields while preserving other newer field
     price: 800,
     quantity: 2,
     remarks: "編集したメモ",
+  });
+});
+
+it("preserves every accepted transition when a rapid cycle returns to the rendered status", () => {
+  const original = item("rapid", { purchaseStatus: "SoldOut", price: 500 });
+  const h = createHarness({
+    eventLists: { [EVENT]: [original] },
+    items: [original],
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  let accepted = original;
+  act(() => {
+    for (const purchaseStatus of [
+      "Absent",
+      "Postpone",
+      "Late",
+      "None",
+      "Purchased",
+      "SoldOut",
+    ] as const) {
+      const changed = rememberItemUpdateBaseline(
+        { ...accepted, purchaseStatus },
+        accepted,
+      );
+      result.current.updateItem(changed);
+      accepted = h.refs.eventListsRef.current[EVENT][0];
+      expect(accepted.purchaseStatus).toBe(purchaseStatus);
+    }
+    const recorded = rememberItemUpdateBaseline(
+      { ...accepted, remarks: "通販･頒布確認：可能" },
+      accepted,
+    );
+    result.current.updateItem(recorded);
+  });
+  expect(h.stores.eventLists[EVENT][0]).toMatchObject({
+    purchaseStatus: "SoldOut",
+    remarks: "通販･頒布確認：可能",
   });
 });

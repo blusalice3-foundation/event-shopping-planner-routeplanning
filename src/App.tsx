@@ -14,10 +14,21 @@ import {
   getDayConsistency,
   resolveDayMap,
 } from "./features/consistency/domain/context";
+import { AcceptedItemCommandsProvider } from "./features/shopping-list/renderers/ViewportRowState";
 import { useSearchScrollRequest } from "./app/state/useSearchScrollRequest";
-import React, { useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  useDeferredValue,
+} from "react";
 import { ShoppingItem, EventMetadata, ExecuteModeItems } from "./types/item";
 import { MapDataStore, HallDefinition } from "./types/map";
+import { indexedItem, indexedItems } from "./utils/itemIndex";
+import { createAppListViewProjectors } from "./app/selectors/incrementalAppListView";
+import { createRoutingItemsProjector } from "./utils/executionVisitIndex";
 import { FocusModeSessionState } from "./types/focus";
 import { getMaplessKey } from "./types/map";
 import { extractEventDates } from "./utils/eventDates";
@@ -46,19 +57,9 @@ import { useMapVisitListCommands } from "./app/commands/useMapVisitListCommands"
 import { useMapRouteCommands } from "./app/commands/useMapRouteCommands";
 import { useMapEditorCommands } from "./app/commands/useMapEditorCommands";
 import {
-  selectBaseFilteredItems,
-  selectBlockOptions,
-  selectCandidateColumnItems,
   selectCurrentMaplessHalls,
-  selectDuplicateCircleItemIds,
-  selectExecuteColumnItems,
-  selectMovePlanState,
-  selectItemsForExecutionDay,
   selectMapVisitListItems,
-  selectSearchMatches,
   selectSortDisplayLabel,
-  selectTemporaryVisibleItems,
-  selectVisibleItems,
   selectVisibleSearchMatches,
 } from "./app/selectors/appListViewSelectors";
 import {
@@ -167,6 +168,13 @@ const App: React.FC = () => {
       },
     }),
     [application.previewRef],
+  );
+  const readAcceptedItem = useCallback(
+    (id: string) =>
+      activeEventName
+        ? indexedItem(eventListsRef.current[activeEventName] ?? [], id)
+        : undefined,
+    [activeEventName, eventListsRef],
   );
   const eventMetadataRef = useMemo(
     () => ({
@@ -479,28 +487,27 @@ const App: React.FC = () => {
     () => (activeEventName ? eventLists[activeEventName] || [] : []),
     [activeEventName, eventLists],
   );
-  const firstItemById = useMemo(() => {
-    const index = new Map<string, ShoppingItem>();
-    items.forEach((item) => {
-      if (!index.has(item.id)) index.set(item.id, item);
-    });
-    return index;
-  }, [items]);
-
-  const eventDates = useMemo(() => extractEventDates(items), [items]);
+  const firstItemById = indexedItems(items);
+  const listProjectors = useMemo(createAppListViewProjectors, []);
+  const projectRoutingItems = useMemo(createRoutingItemsProjector, []);
+  const routingItems = projectRoutingItems(items);
+  const eventDates = useMemo(
+    () => extractEventDates(routingItems),
+    [routingItems],
+  );
   const activeEventDate = useMemo(
     () => (activeEventName && eventDates.includes(activeTab) ? activeTab : ""),
     [activeEventName, activeTab, eventDates],
   );
   const executeColumnItems = useMemo(
     () =>
-      selectExecuteColumnItems({
+      listProjectors.execute({
         activeEventName,
         activeEventDate,
         executeModeItems,
         items,
       }),
-    [activeEventDate, activeEventName, executeModeItems, items],
+    [activeEventDate, activeEventName, executeModeItems, items, listProjectors],
   );
 
   const {
@@ -704,6 +711,10 @@ const App: React.FC = () => {
       getMapTabForDate,
     },
   });
+  const retainedDialogItemIds = useMemo(
+    () => [itemToEdit?.id, itemToDelete?.id].filter((id): id is string => !!id),
+    [itemToEdit?.id, itemToDelete?.id],
+  );
   const { showHeaderBar, showTabBar, rawHideSomething } = useMemo(
     () =>
       selectAppChromeVisibility({
@@ -731,6 +742,7 @@ const App: React.FC = () => {
     applyBulkAdd,
     handleBulkAdd,
     updateItem: handleUpdateItem,
+    updateItems: handleUpdateItems,
     moveItem: handleMoveItem,
     moveItemUp: handleMoveItemUp,
     moveItemDown: handleMoveItemDown,
@@ -760,6 +772,7 @@ const App: React.FC = () => {
     },
     actions: {
       setEventLists,
+      updateItemFields: application.updateItemFields,
       setEventMetadata,
       setDayModes,
       updateExecuteModeItems,
@@ -810,6 +823,7 @@ const App: React.FC = () => {
       dayModes,
       sortState,
       executeColumnItems,
+      readAcceptedItem,
       recentlyChangedItemIds,
       spaceGroupDragItemIdsRef,
       items,
@@ -837,6 +851,7 @@ const App: React.FC = () => {
       setExecuteCollapsedSpaces,
       updateExecuteModeItems,
       updateItem: handleUpdateItem,
+      updateItems: handleUpdateItems,
     },
     effects: {
       notify: alert,
@@ -1268,8 +1283,8 @@ const App: React.FC = () => {
 
   const currentTabItems = useMemo(() => {
     if (!activeEventName || !eventDates.includes(activeTab)) return [];
-    return selectItemsForExecutionDay(items, activeTab);
-  }, [items, activeTab, activeEventName, eventDates]);
+    return listProjectors.day(items, activeTab, true);
+  }, [items, activeTab, activeEventName, eventDates, listProjectors]);
 
   React.useEffect(() => {
     if (mapTabMenuOpen !== "mapToggle") return;
@@ -1496,7 +1511,7 @@ const App: React.FC = () => {
   );
   const baseFilteredItems = useMemo(
     () =>
-      selectBaseFilteredItems({
+      listProjectors.base({
         activeEventName,
         activeEventDate,
         currentTabItems,
@@ -1511,12 +1526,13 @@ const App: React.FC = () => {
       dayModes,
       executeColumnItems,
       sortState,
+      listProjectors,
     ],
   );
 
   const temporaryVisibleItems = useMemo(
     () =>
-      selectTemporaryVisibleItems({
+      listProjectors.temporary({
         activeEventName,
         activeEventDate,
         dayModes,
@@ -1533,6 +1549,7 @@ const App: React.FC = () => {
       executeColumnItems,
       recentlyChangedItemIds,
       sortState,
+      listProjectors,
     ],
   );
   const temporaryVisibleCount = temporaryVisibleItems.length;
@@ -1550,7 +1567,7 @@ const App: React.FC = () => {
 
   const { visibleItems } = useMemo(
     () =>
-      selectVisibleItems({
+      listProjectors.visible({
         activeEventName,
         activeEventDate,
         currentTabItems,
@@ -1569,30 +1586,45 @@ const App: React.FC = () => {
       executeColumnItems,
       sortState,
       temporaryVisibleItems,
+      listProjectors,
     ],
   );
 
+  const deferredSearchKeyword = useDeferredValue(searchKeyword);
+  const [pendingSearchNext, setPendingSearchNext] = useState<{
+    keyword: string;
+    id: number;
+  } | null>(null);
+  const searchNextSequence = useRef(0);
+  const consumedSearchNext = useRef(0);
   const searchMatches = useMemo(
     () =>
-      selectSearchMatches({
-        searchKeyword,
+      listProjectors.search({
+        searchKeyword: deferredSearchKeyword,
         activeEventName,
         activeTab,
         eventDates,
         currentTabItems,
       }),
-    [activeEventName, activeTab, currentTabItems, eventDates, searchKeyword],
+    [
+      activeEventName,
+      activeTab,
+      currentTabItems,
+      eventDates,
+      deferredSearchKeyword,
+      listProjectors,
+    ],
   );
 
   const duplicateCircleItemIds = useMemo(
     () =>
-      selectDuplicateCircleItemIds({
+      listProjectors.duplicates({
         activeEventName,
         activeTab,
         eventDates,
         currentTabItems,
       }),
-    [activeEventName, activeTab, currentTabItems, eventDates],
+    [activeEventName, activeTab, currentTabItems, eventDates, listProjectors],
   );
 
   const {
@@ -1601,13 +1633,19 @@ const App: React.FC = () => {
     blocksWithPriorityRemarks,
   } = useMemo(
     () =>
-      selectBlockOptions({
+      listProjectors.blocks({
         activeEventName,
         activeEventDate,
         executeModeItems,
         currentTabItems,
       }),
-    [activeEventDate, activeEventName, currentTabItems, executeModeItems],
+    [
+      activeEventDate,
+      activeEventName,
+      currentTabItems,
+      executeModeItems,
+      listProjectors,
+    ],
   );
 
   const currentMaplessHalls = useMemo(
@@ -1622,7 +1660,7 @@ const App: React.FC = () => {
 
   const candidateColumnItems = useMemo(
     () =>
-      selectCandidateColumnItems({
+      listProjectors.candidate({
         activeEventName,
         activeEventDate,
         executeModeItems,
@@ -1637,6 +1675,7 @@ const App: React.FC = () => {
       currentTabItems,
       executeModeItems,
       selectedBlockFilters,
+      listProjectors,
     ],
   );
 
@@ -1666,7 +1705,7 @@ const App: React.FC = () => {
     activeEventName,
     activeTab,
     activeEventDate,
-    searchKeyword,
+    deferredSearchKeyword,
     currentMode,
     sortState,
     candidateNumberSortDirection,
@@ -1683,30 +1722,41 @@ const App: React.FC = () => {
     setCurrentSearchIndex(-1);
     setHighlightedItemId(null);
   }, [searchContextKey, setCurrentSearchIndex, setHighlightedItemId]);
-  const handleSearchNext = useCallback(() => {
-    if (!searchKeyword.trim() || visibleSearchMatches.length === 0) {
-      if (searchMatches.length > 0 && visibleSearchMatches.length === 0) {
+  const handleSearchNext = useCallback(
+    (keyword = searchKeyword) => {
+      setSearchKeyword(keyword);
+      setPendingSearchNext({ keyword, id: ++searchNextSequence.current });
+    },
+    [searchKeyword, setSearchKeyword],
+  );
+  useEffect(() => {
+    if (
+      !pendingSearchNext ||
+      consumedSearchNext.current === pendingSearchNext.id ||
+      deferredSearchKeyword !== pendingSearchNext.keyword
+    )
+      return;
+    consumedSearchNext.current = pendingSearchNext.id;
+    if (!deferredSearchKeyword.trim() || visibleSearchMatches.length === 0) {
+      if (searchMatches.length && !visibleSearchMatches.length)
         alert("現在の絞り込み条件では一致する項目がありません。");
-      }
       return;
     }
-
-    const startIndex = currentSearchIndex === -1 ? -1 : currentSearchIndex;
-    const nextIndex = (startIndex + 1) % visibleSearchMatches.length;
+    const nextIndex =
+      ((currentSearchIndex < 0 ? -1 : currentSearchIndex) + 1) %
+      visibleSearchMatches.length;
     setCurrentSearchIndex(nextIndex);
-
-    const nextItemId = visibleSearchMatches[nextIndex];
-    setHighlightedItemId(nextItemId);
-
-    requestSearchScroll(nextItemId);
+    setHighlightedItemId(visibleSearchMatches[nextIndex]);
+    requestSearchScroll(visibleSearchMatches[nextIndex]);
   }, [
-    searchKeyword,
+    pendingSearchNext,
+    deferredSearchKeyword,
     visibleSearchMatches,
+    searchMatches.length,
     currentSearchIndex,
+    requestSearchScroll,
     setCurrentSearchIndex,
     setHighlightedItemId,
-    searchMatches.length,
-    requestSearchScroll,
   ]);
 
   const {
@@ -1717,7 +1767,7 @@ const App: React.FC = () => {
     showMoveButtons,
   } = useMemo(
     () =>
-      selectMovePlanState({
+      listProjectors.movePlan({
         activeEventName,
         activeEventDate,
         currentMode,
@@ -1732,6 +1782,7 @@ const App: React.FC = () => {
       executeModeItems,
       items,
       selectedItemIds,
+      listProjectors,
     ],
   );
 
@@ -2209,165 +2260,171 @@ const App: React.FC = () => {
           </button>
         )}
 
-      <AppMainContent
-        model={{
-          navigation: {
-            activeEventDate,
-            activeEventName,
-            activeTab,
-            currentMode,
-            eventDates,
-            isMapTab,
-            mainContentVisible,
-          },
-          events: {
-            eventLists,
-            exportFileInputRef,
-          },
-          list: {
-            availableBlocks,
-            blocksWithPriorityRemarks,
-            candidateColumnItems,
-            candidateNumberSortDirection,
-            collapsedSpaces,
-            duplicateCircleItemIds,
-            executeCollapsedSpaces,
-            executeColumnItems,
-            executeModeItems,
-            executeSpaceGroupingEnabled,
-            items,
-            itemToEdit,
-            newItemDefaults,
-            rangeEnd,
-            rangeStart,
-            selectedBlockFilters,
-            selectedItemIds,
-            showLateFilterButton,
-            showPostponeFilterButton,
-            spaceGroupingEnabled,
-            visibleItems,
-          },
-          map: {
-            cellSelectionMode,
-            currentHallRouteSettings,
-            currentHalls,
-            currentMapData,
-            currentMapExecuteItemIds,
-            currentMapTabName,
-            currentMapTabRotationState,
-            currentMapTabViewport,
-            getHallOrderForDate,
-            getHallsForDate,
-            getMapDataForDate,
-            getMapTabForDate,
-            hallDefinitions,
-            hallRouteSettings,
-            highlightedItemId,
-            searchScrollRequest,
-            onSearchScrollRequestConsumed: consumeSearchScrollRequest,
-            highlightedMapCell,
-            mapData,
-            mapIsHallOrderOpen,
-            mapIsRouteVisible,
-            mapSelectedHallId,
-            mapSmartInsertEnabled,
-            mapSmartInsertMode,
-            vertexGuideOptions,
-            vertexSelectionMode,
-            visitListPanelOpen,
-          },
-          focus: {
-            currentFocusMapRotationState,
-            currentFocusResumeState,
-            currentFocusSessionKey,
-          },
-          ui: {
-            disableLimitedPurchaseQuantityCheck,
-            disablePriceUndefinedCheck,
-            layoutMode,
-            numberCellOutlineStyle,
-            postEventDistributionCheckEnabled,
-            purchaseStatusControlMode,
-            skipLimitedPurchaseForSingleQuantity,
-            zoomLevel,
-          },
-        }}
-        actions={{
-          events: {
-            handleBackupExport,
-            handleBackupRestoreRequest,
-            handleBulkAdd,
-            handleDeleteEvent,
-            handleExportEvent,
-            handleImportMapData,
-            handleRenameEvent,
-            handleSelectEvent,
-            handleUpdateEvent,
-          },
-          list: {
-            handleActivateLateFilter,
-            handleActivatePostponeFilter,
-            handleBulkStatusChange,
-            handleCandidateNumberSort,
-            handleClearBlockFilters,
-            handleClearNewItemDefaults,
-            handleClearRangeSelection: clearRangeSelection,
-            handleCollapseAndOpenNext,
-            handleDeleteRequest,
-            handleDoneEditing,
-            handleEditRequest,
-            handleExecuteItemUpdate,
-            handleExecuteSpaceGroupOrderChange,
-            handleExecuteToggleAllSpaceCollapse,
-            handleExecuteToggleSpaceCollapse,
-            handleMoveItem,
-            handleMoveItemDown,
-            handleMoveItemUp,
-            handleMoveToExecuteColumn,
-            handleRemoveFromExecuteColumn,
-            handleSelectItem,
-            handleSelectSpaceGroupForRange,
-            handleSetSpaceGroupDragItemIds,
-            handleToggleAllSpaceCollapse,
-            handleToggleBlockFilter,
-            handleToggleRangeSelection,
-            handleToggleSpaceCollapse,
-            handleUpdateItem,
-            setCollapsedSpaces,
-            setSpaceGroupingEnabled,
-          },
-          map: {
-            handleAddNewItemFromMap,
-            handleAddToExecuteListFromMap,
-            handleAddToExecuteListFromMapAtPosition,
-            handleBatchAddToExecuteListFromMap,
-            handleBatchAddToExecuteListFromMapAtPosition,
-            handleBatchRemoveFromExecuteListFromMap,
-            handleDeleteItemFromMap,
-            handleMapTabRotationAngleChange,
-            handleMapViewportChange,
-            handleMoveToFirstFromMap,
-            handleMoveToLastFromMap,
-            handleRemoveFromExecuteListFromMap,
-            handleReorderExecuteListByHallOrder,
-            handleUpdateHallRouteSettings,
-            handleUpdateItemPriorityFromEdit,
-            setMapIsHallOrderOpen,
-            setMapIsRouteVisible: handleSetMapRouteVisibility,
-            setMapSelectedHallId,
-          },
-          focus: {
-            handleAddItemFromFocusMode,
-            handleFocusMapRotationAngleChange,
-            handleFocusSessionStateChange,
-            handleModeChangeFromFocus,
-            setFocusModeMapVisible,
-          },
-          ui: {
-            setLayoutMode,
-          },
-        }}
-      />
+      <AcceptedItemCommandsProvider
+        read={readAcceptedItem}
+        commit={handleUpdateItems}
+      >
+        <AppMainContent
+          model={{
+            navigation: {
+              activeEventDate,
+              activeEventName,
+              activeTab,
+              currentMode,
+              eventDates,
+              isMapTab,
+              mainContentVisible,
+            },
+            events: {
+              eventLists,
+              exportFileInputRef,
+            },
+            list: {
+              availableBlocks,
+              blocksWithPriorityRemarks,
+              candidateColumnItems,
+              candidateNumberSortDirection,
+              collapsedSpaces,
+              duplicateCircleItemIds,
+              executeCollapsedSpaces,
+              executeColumnItems,
+              executeModeItems,
+              executeSpaceGroupingEnabled,
+              items,
+              itemToEdit,
+              retainedItemIds: retainedDialogItemIds,
+              newItemDefaults,
+              rangeEnd,
+              rangeStart,
+              selectedBlockFilters,
+              selectedItemIds,
+              showLateFilterButton,
+              showPostponeFilterButton,
+              spaceGroupingEnabled,
+              visibleItems,
+            },
+            map: {
+              cellSelectionMode,
+              currentHallRouteSettings,
+              currentHalls,
+              currentMapData,
+              currentMapExecuteItemIds,
+              currentMapTabName,
+              currentMapTabRotationState,
+              currentMapTabViewport,
+              getHallOrderForDate,
+              getHallsForDate,
+              getMapDataForDate,
+              getMapTabForDate,
+              hallDefinitions,
+              hallRouteSettings,
+              highlightedItemId,
+              searchScrollRequest,
+              onSearchScrollRequestConsumed: consumeSearchScrollRequest,
+              highlightedMapCell,
+              mapData,
+              mapIsHallOrderOpen,
+              mapIsRouteVisible,
+              mapSelectedHallId,
+              mapSmartInsertEnabled,
+              mapSmartInsertMode,
+              vertexGuideOptions,
+              vertexSelectionMode,
+              visitListPanelOpen,
+            },
+            focus: {
+              currentFocusMapRotationState,
+              currentFocusResumeState,
+              currentFocusSessionKey,
+            },
+            ui: {
+              disableLimitedPurchaseQuantityCheck,
+              disablePriceUndefinedCheck,
+              layoutMode,
+              numberCellOutlineStyle,
+              postEventDistributionCheckEnabled,
+              purchaseStatusControlMode,
+              skipLimitedPurchaseForSingleQuantity,
+              zoomLevel,
+            },
+          }}
+          actions={{
+            events: {
+              handleBackupExport,
+              handleBackupRestoreRequest,
+              handleBulkAdd,
+              handleDeleteEvent,
+              handleExportEvent,
+              handleImportMapData,
+              handleRenameEvent,
+              handleSelectEvent,
+              handleUpdateEvent,
+            },
+            list: {
+              handleActivateLateFilter,
+              handleActivatePostponeFilter,
+              handleBulkStatusChange,
+              handleCandidateNumberSort,
+              handleClearBlockFilters,
+              handleClearNewItemDefaults,
+              handleClearRangeSelection: clearRangeSelection,
+              handleCollapseAndOpenNext,
+              handleDeleteRequest,
+              handleDoneEditing,
+              handleEditRequest,
+              handleExecuteItemUpdate,
+              handleExecuteSpaceGroupOrderChange,
+              handleExecuteToggleAllSpaceCollapse,
+              handleExecuteToggleSpaceCollapse,
+              handleMoveItem,
+              handleMoveItemDown,
+              handleMoveItemUp,
+              handleMoveToExecuteColumn,
+              handleRemoveFromExecuteColumn,
+              handleSelectItem,
+              handleSelectSpaceGroupForRange,
+              handleSetSpaceGroupDragItemIds,
+              handleToggleAllSpaceCollapse,
+              handleToggleBlockFilter,
+              handleToggleRangeSelection,
+              handleToggleSpaceCollapse,
+              handleUpdateItem,
+              setCollapsedSpaces,
+              setSpaceGroupingEnabled,
+            },
+            map: {
+              handleAddNewItemFromMap,
+              handleAddToExecuteListFromMap,
+              handleAddToExecuteListFromMapAtPosition,
+              handleBatchAddToExecuteListFromMap,
+              handleBatchAddToExecuteListFromMapAtPosition,
+              handleBatchRemoveFromExecuteListFromMap,
+              handleDeleteItemFromMap,
+              handleMapTabRotationAngleChange,
+              handleMapViewportChange,
+              handleMoveToFirstFromMap,
+              handleMoveToLastFromMap,
+              handleRemoveFromExecuteListFromMap,
+              handleReorderExecuteListByHallOrder,
+              handleUpdateHallRouteSettings,
+              handleUpdateItemPriorityFromEdit,
+              setMapIsHallOrderOpen,
+              setMapIsRouteVisible: handleSetMapRouteVisibility,
+              setMapSelectedHallId,
+            },
+            focus: {
+              handleAddItemFromFocusMode,
+              handleFocusMapRotationAngleChange,
+              handleFocusSessionStateChange,
+              handleModeChangeFromFocus,
+              setFocusModeMapVisible,
+            },
+            ui: {
+              setLayoutMode,
+            },
+          }}
+        />
+      </AcceptedItemCommandsProvider>
 
       <AppOverlayLayer
         overlay={overlayController.readModel}

@@ -275,6 +275,10 @@ export interface RouteSegment {
 }
 
 export interface RoutePathConstraint {
+  definition?: {
+    rule: "inside-inclusive-v1";
+    vertices: { row: number; col: number }[];
+  };
   isPathAllowed: (path: { row: number; col: number }[]) => boolean;
 }
 

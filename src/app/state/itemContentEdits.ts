@@ -1,20 +1,20 @@
-import type { PersistenceSnapshot } from "../ports/PersistenceCommandPort";
+import type {
+  ItemContentEdit,
+  PersistenceSnapshot,
+} from "../ports/PersistenceCommandPort";
 
-const editableFields = new Set([
+import { itemPositions, registerItemChanges } from "../../utils/itemIndex";
+
+export const editableItemContentFields = new Set([
   "remarks",
   "price",
   "quantity",
   "purchaseStatus",
   "limitedPurchasedQuantity",
+  "protectionLevel",
 ]);
 
-export interface ItemContentEdit {
-  readonly eventName: string;
-  readonly itemId: string;
-  readonly fields: Readonly<
-    Record<string, { present: boolean; value: unknown }>
-  >;
-}
+export type { ItemContentEdit } from "../ports/PersistenceCommandPort";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -56,11 +56,11 @@ export function collectItemContentEdits(
           Object.is(before[key], after[key])
         )
           continue;
-        if (!editableFields.has(key)) return undefined;
+        if (!editableItemContentFields.has(key)) return undefined;
         fields[key] = { present, value: after[key] };
       }
       if (Object.keys(fields).length) {
-        edits.push({ eventName, itemId: before.id, fields });
+        edits.push({ eventName, itemId: before.id, fields, baseline: before });
       }
     }
   }
@@ -90,11 +90,14 @@ export function applyItemContentEdits(
   for (const [eventName, changes] of byEvent) {
     const items = source.eventLists[eventName];
     if (!items) continue;
-    let changed = false;
-    const next = items.map((item) => {
-      if (!isRecord(item) || typeof item.id !== "string") return item;
-      const fields = changes.get(item.id);
-      if (!fields) return item;
+    let next = items;
+    const changedIndices: number[] = [];
+    const index = itemPositions(items);
+    for (const [id, fields] of changes) {
+      const position = index.get(id);
+      if (position === undefined) continue;
+      const item = items[position];
+      if (!isRecord(item)) continue;
       let value = item;
       for (const [key, field] of Object.entries(fields)) {
         if (
@@ -106,10 +109,14 @@ export function applyItemContentEdits(
         if (field.present) value[key] = field.value;
         else delete value[key];
       }
-      if (value !== item) changed = true;
-      return value;
-    });
-    if (changed) {
+      if (value !== item) {
+        if (next === items) next = items.slice();
+        next[position] = value;
+        changedIndices.push(position);
+      }
+    }
+    if (next !== items) {
+      registerItemChanges(items, next, changedIndices);
       if (lists === source.eventLists) lists = { ...lists };
       lists[eventName] = next;
     }

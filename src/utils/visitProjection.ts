@@ -49,12 +49,13 @@ export function buildPhaseVisitProjectionKey(
  */
 export function projectItemsToExecutionVisits(
   items: readonly ShoppingItem[],
+  keyForItem: (item: ShoppingItem) => string = buildExecutionVisitProjectionKey,
 ): ProjectedVisit[] {
   const visits: ProjectedVisit[] = [];
   const visitsByKey = new Map<string, ProjectedVisit>();
 
   items.forEach((item, index) => {
-    const key = buildExecutionVisitProjectionKey(item);
+    const key = keyForItem(item);
     const existing = visitsByKey.get(key);
     if (existing) {
       existing.items.push(item);

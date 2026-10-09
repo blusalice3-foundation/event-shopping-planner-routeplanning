@@ -1,4 +1,13 @@
-import { revealViewportContent } from "../../shopping-list/renderers/ViewportContent";
+import { measureShoppingOperation } from "../../../utils/shoppingPerformance";
+import { observeNavigationAnchors } from "../domain/navigationAnchors";
+import { navigatorEntryIndex } from "../domain/navigatorEntryIndex";
+import { indexedItem } from "../../../utils/itemIndex";
+import { AcceptedItemContext } from "../../shopping-list/renderers/ViewportRowState";
+import { useContext } from "react";
+import {
+  prewarmViewportContent,
+  revealViewportContent,
+} from "../../shopping-list/renderers/ViewportContent";
 import {
   useCallback,
   useEffect,
@@ -17,12 +26,13 @@ import {
   type SpaceNavigatorRegistration,
   type TemporaryNavigationMode,
 } from "../SpaceNavigatorContext";
-import { buildExecutionNavigatorEntries } from "../domain/buildNavigatorEntries";
+import { createNavigatorEntriesProjector } from "../domain/navigatorEntriesProjector";
+import { createExecutionVisitIndex } from "../../../utils/executionVisitIndex";
 import { evaluateNavigationGuard } from "../domain/navigationGuard";
 import type { NavigatorEntry } from "../types";
 
 const VISIT_ID_ATTRIBUTE = "data-space-navigation-visit-id";
-const ANCHOR_ATTRIBUTE = "data-space-navigation-anchor";
+
 const PROGRAMMATIC_SCROLL_IDLE_MS = 120;
 const PROGRAMMATIC_SCROLL_TIMEOUT_MS = 2_000;
 
@@ -200,7 +210,10 @@ export function useExecutionSpaceNavigator(
   } = options;
   const navigator = useOptionalSpaceNavigator();
   const notify = navigator?.notify;
-  const entries = useMemo(() => buildExecutionNavigatorEntries(items), [items]);
+  const readAcceptedItem = useContext(AcceptedItemContext);
+  const projectVisits = useMemo(createExecutionVisitIndex, []);
+  const projectEntries = useMemo(() => createNavigatorEntriesProjector(), []);
+  const entries = projectEntries(projectVisits(items as ShoppingItem[]).visits);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [formalIndex, setFormalIndex] = useState(0);
   const currentIndexRef = useRef(0);
@@ -260,9 +273,9 @@ export function useExecutionSpaceNavigator(
       if (!isCurrentProgrammaticNavigation(operation)) return false;
 
       programmaticNavigationInFlightRef.current = false;
-      const targetStillExists = entriesRef.current.some(
-        (entry) => entry.id === operation.targetVisitId,
-      );
+      const targetStillExists = navigatorEntryIndex(
+        entriesRef.current,
+      ).byId.has(operation.targetVisitId);
       if (keepTargetLock && targetStillExists) {
         programmaticTargetVisitIdRef.current = operation.targetVisitId;
         programmaticTargetScrollTopRef.current = getWindowScrollTop();
@@ -278,9 +291,8 @@ export function useExecutionSpaceNavigator(
   const setDisplayedVisit = useCallback(
     (visitId: string, updateFormal: boolean): boolean => {
       const latestEntries = entriesRef.current;
-      const nextIndex = latestEntries.findIndex(
-        (entry) => entry.id === visitId,
-      );
+      const nextIndex =
+        navigatorEntryIndex(latestEntries).byId.get(visitId)?.index ?? -1;
       if (nextIndex < 0) return false;
       const nextEntry = latestEntries[nextIndex];
       currentIndexRef.current = nextIndex;
@@ -325,8 +337,10 @@ export function useExecutionSpaceNavigator(
       const container = containerRef.current;
       if (!container) return [];
       return Array.from(
-        container.querySelectorAll<HTMLElement>(`[${VISIT_ID_ATTRIBUTE}]`),
-      ).filter((element) => element.dataset.spaceNavigationVisitId === visitId);
+        container.querySelectorAll<HTMLElement>(
+          `[${VISIT_ID_ATTRIBUTE}="${typeof CSS !== "undefined" && typeof CSS.escape === "function" ? CSS.escape(visitId) : visitId.replace(/["\\]/g, "\\$&")}"]`,
+        ),
+      );
     },
     [containerRef],
   );
@@ -413,10 +427,11 @@ export function useExecutionSpaceNavigator(
     async (
       request: Parameters<SpaceNavigatorRegistration["onNavigate"]>[0],
     ): Promise<SpaceNavigatorActionResult> => {
+      const finishNavigation = measureShoppingOperation("execute-navigation");
       const latestEntries = entriesRef.current;
-      const targetIndex = latestEntries.findIndex(
-        (entry) => entry.id === request.entry.id,
-      );
+      const targetIndex =
+        navigatorEntryIndex(latestEntries).byId.get(request.entry.id)?.index ??
+        -1;
       if (targetIndex < 0) {
         return {
           ok: false,
@@ -425,9 +440,9 @@ export function useExecutionSpaceNavigator(
       }
       const targetEntry = latestEntries[targetIndex];
       const currentIndexById = currentVisitIdRef.current
-        ? latestEntries.findIndex(
-            (entry) => entry.id === currentVisitIdRef.current,
-          )
+        ? (navigatorEntryIndex(latestEntries).byId.get(
+            currentVisitIdRef.current,
+          )?.index ?? -1)
         : -1;
       const effectiveCurrentIndex =
         currentIndexById >= 0
@@ -444,7 +459,13 @@ export function useExecutionSpaceNavigator(
         intent: request.intent,
         currentIndex: effectiveCurrentIndex,
         targetIndex,
-        currentItems: currentEntry?.items ?? [],
+        currentItems:
+          currentEntry?.items.flatMap((item) => {
+            const latest = readAcceptedItem
+              ? readAcceptedItem(item.id)
+              : indexedItem(items, item.id);
+            return latest ? [latest] : [];
+          }) ?? [],
         settings: {
           disablePriceUndefinedCheck,
           disableLimitedPurchaseQuantityCheck,
@@ -501,6 +522,7 @@ export function useExecutionSpaceNavigator(
             message: "選択した訪問先は絞り込み対象外になりました",
           };
         }
+        finishNavigation();
         await revealEntry(targetEntry);
         if (!isCurrentProgrammaticNavigation(operation)) {
           return {
@@ -533,6 +555,8 @@ export function useExecutionSpaceNavigator(
       disablePriceUndefinedCheck,
       isCurrentProgrammaticNavigation,
       onGuardFeedback,
+      readAcceptedItem,
+      items,
       revealEntry,
       setDisplayedVisit,
     ],
@@ -542,9 +566,8 @@ export function useExecutionSpaceNavigator(
     async (point: RestorePoint) => {
       const latestEntries = entriesRef.current;
       if (latestEntries.length === 0) return;
-      const exactIndex = latestEntries.findIndex(
-        (entry) => entry.id === point.visitId,
-      );
+      const exactIndex =
+        navigatorEntryIndex(latestEntries).byId.get(point.visitId)?.index ?? -1;
       const targetIndex =
         exactIndex >= 0
           ? exactIndex
@@ -668,17 +691,17 @@ export function useExecutionSpaceNavigator(
     const previousCurrentId = currentVisitIdRef.current;
     const previousFormalId = formalVisitIdRef.current;
     const currentMatch = previousCurrentId
-      ? entries.findIndex((entry) => entry.id === previousCurrentId)
+      ? (navigatorEntryIndex(entries).byId.get(previousCurrentId)?.index ?? -1)
       : -1;
     const formalMatch = previousFormalId
-      ? entries.findIndex((entry) => entry.id === previousFormalId)
+      ? (navigatorEntryIndex(entries).byId.get(previousFormalId)?.index ?? -1)
       : -1;
     const currentWasRemoved = previousCurrentId !== null && currentMatch < 0;
     const formalWasRemoved = previousFormalId !== null && formalMatch < 0;
     const programmaticTargetWasRemoved =
       programmaticTargetVisitIdRef.current &&
-      !entries.some(
-        (entry) => entry.id === programmaticTargetVisitIdRef.current,
+      !navigatorEntryIndex(entries).byId.has(
+        programmaticTargetVisitIdRef.current,
       );
     if (programmaticTargetWasRemoved) {
       cancelProgrammaticNavigation();
@@ -808,19 +831,17 @@ export function useExecutionSpaceNavigator(
         programmaticTargetVisitIdRef.current = null;
         programmaticTargetScrollTopRef.current = null;
       }
-      const preferredKind = showSpaceGroups ? "heading" : "item";
-      const anchors = Array.from(
-        container.querySelectorAll<HTMLElement>(
-          `[${VISIT_ID_ATTRIBUTE}][${ANCHOR_ATTRIBUTE}="${preferredKind}"]`,
-        ),
-      );
-      if (anchors.length === 0) return;
+      const anchors = anchorRegistry.candidates();
+      if (anchors.size === 0) return;
       const viewportCenter = window.innerHeight / 2;
       let nearest: { index: number; distance: number } | null = null;
 
       for (const anchor of anchors) {
         const visitId = anchor.dataset.spaceNavigationVisitId;
-        const index = entries.findIndex((entry) => entry.id === visitId);
+        const index = visitId
+          ? (navigatorEntryIndex(entriesRef.current).byId.get(visitId)?.index ??
+            -1)
+          : -1;
         if (index < 0) continue;
         const rect = anchor.getBoundingClientRect();
         const distance = Math.abs(rect.top + rect.height / 2 - viewportCenter);
@@ -842,6 +863,11 @@ export function useExecutionSpaceNavigator(
       }
     };
 
+    const anchorRegistry = observeNavigationAnchors(
+      container,
+      showSpaceGroups ? "heading" : "item",
+      scheduleUpdate,
+    );
     scheduleUpdate();
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", scheduleUpdate);
@@ -852,6 +878,7 @@ export function useExecutionSpaceNavigator(
     observer?.observe(container);
 
     return () => {
+      anchorRegistry.dispose();
       window.removeEventListener("scroll", scheduleUpdate);
       window.removeEventListener("resize", scheduleUpdate);
       observer?.disconnect();
@@ -862,7 +889,20 @@ export function useExecutionSpaceNavigator(
         window.cancelAnimationFrame(frameId);
       }
     };
-  }, [containerRef, enabled, entries, setDisplayedEntry, showSpaceGroups]);
+  }, [
+    containerRef,
+    enabled,
+    entries.length,
+    setDisplayedEntry,
+    showSpaceGroups,
+  ]);
+
+  const nextVisitId = entries[currentIndex + 1]?.id;
+  useEffect(() => {
+    if (!enabled) return;
+    const anchor = nextVisitId ? findPreferredAnchor(nextVisitId) : null;
+    return anchor ? prewarmViewportContent(anchor) : undefined;
+  }, [enabled, nextVisitId, findPreferredAnchor]);
 
   const registration = useMemo<SpaceNavigatorRegistration>(
     () => ({

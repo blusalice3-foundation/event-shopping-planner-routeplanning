@@ -1,6 +1,8 @@
 import type {
   ApplicationSnapshotRead,
   PersistenceSnapshot,
+  ItemContentEdit,
+  ApplicationItemEditsResult,
 } from "../ports/PersistenceCommandPort";
 
 export function semanticSignature(value: unknown): string {
@@ -38,6 +40,7 @@ export interface MutationIntent {
   id: string;
   events: string[];
   expectedGenerations?: Record<string, number>;
+  itemContentEdits?: readonly ItemContentEdit[];
   /** Keep ordinary accepted edits visible after persistence failures or exhausted CAS retries. */
   retainOnConflict?: boolean;
   plan(snapshot: PersistenceSnapshot, choices?: MutationChoices): MutationPlan;
@@ -95,6 +98,11 @@ export interface MutationCoordinatorPorts {
   hasPendingAcceptedChanges?(operationId: string): boolean;
   drain(): Promise<void>;
   readDurable(): Promise<ApplicationSnapshotRead>;
+  commitItemContentEdits?(
+    edits: readonly ItemContentEdit[],
+    operationIds: readonly string[],
+    expectedEventGenerations: Readonly<Record<string, number>>,
+  ): Promise<ApplicationItemEditsResult>;
   commit(
     snapshot: PersistenceSnapshot,
     expectedRoots: object,
@@ -176,11 +184,19 @@ export function createApplicationMutationCoordinator(
     }
   >();
   const completed = new Set<string>();
+  let openItemBatch: {
+    ids: string[];
+    resolvers: Map<
+      string,
+      { resolve(result: MutationResult): void; reject(error: unknown): void }
+    >;
+  } | null = null;
   const generation = (events: string[]) =>
     semanticSignature(
       events.map((event) => [event, generations.get(event) ?? 0]),
     );
   function enqueue<T>(task: () => Promise<T> | T): Promise<T> {
+    openItemBatch = null;
     const result = tail.then(() => {
       if (stopped) throw new Error("保存済み状態を再読み込みしてください。");
       return task();
@@ -366,9 +382,78 @@ export function createApplicationMutationCoordinator(
     }
     throw new MutationConflictError();
   }
+  async function executeItemBatch(batch: NonNullable<typeof openItemBatch>) {
+    if (openItemBatch === batch) openItemBatch = null;
+    const ids = batch.ids.filter((id) => pending.has(id) && !completed.has(id));
+    try {
+      await ports.drain();
+      const operations = ids.map((id) => pending.get(id)!);
+      if (!operations.length) return;
+      if (
+        operations.some(
+          (operation) =>
+            operation.generation !== generation(operation.intent.events) ||
+            ports.hasPendingAcceptedChanges?.(operation.intent.id),
+        )
+      ) {
+        for (const id of ids)
+          batch.resolvers.get(id)?.resolve(await execute(id));
+        return;
+      }
+      for (const operation of operations) operation.committing = true;
+      const result = await ports.commitItemContentEdits!(
+        operations.flatMap(
+          (operation) => operation.intent.itemContentEdits ?? [],
+        ),
+        ids,
+        durableGenerations,
+      );
+      if (result.status === "review-required") {
+        for (const operation of operations) operation.committing = false;
+        for (const id of ids)
+          batch.resolvers.get(id)?.resolve(await execute(id));
+        return;
+      }
+      durableGenerations = { ...result.read.eventGenerations };
+      for (const id of ids) {
+        completed.add(id);
+        pending.delete(id);
+      }
+      try {
+        ports.apply(result.read.snapshot, []);
+      } catch (error) {
+        stopped = true;
+        const failure = new CommittedStateApplyError(error);
+        ports.onApplyFailure?.(failure);
+        throw failure;
+      }
+      for (const id of ids)
+        batch.resolvers
+          .get(id)
+          ?.resolve({ status: "committed", snapshot: result.read.snapshot });
+    } catch (error) {
+      for (const id of ids) {
+        const operation = pending.get(id);
+        if (operation) operation.committing = false;
+        batch.resolvers.get(id)?.reject(error);
+      }
+    } finally {
+      for (const id of batch.ids) {
+        if (!ids.includes(id))
+          batch.resolvers.get(id)?.resolve({ status: "expired" });
+      }
+    }
+  }
   return {
     enqueue,
     request(intent: MutationIntent): Promise<MutationResult> {
+      if (completed.has(intent.id))
+        return Promise.resolve({
+          status: "committed",
+          snapshot: ports.readCurrent(),
+        });
+      if (openItemBatch?.resolvers.has(intent.id))
+        return enqueue(() => execute(intent.id));
       if (
         intent.expectedGenerations &&
         Object.entries(intent.expectedGenerations).some(
@@ -382,6 +467,36 @@ export function createApplicationMutationCoordinator(
           choices: {},
           generation: generation(intent.events),
         });
+      if (
+        intent.itemContentEdits &&
+        ports.commitItemContentEdits &&
+        !pending.get(intent.id)?.confirmation
+      ) {
+        if (!openItemBatch) {
+          const batch = {
+            ids: [] as string[],
+            resolvers: new Map<
+              string,
+              {
+                resolve(result: MutationResult): void;
+                reject(error: unknown): void;
+              }
+            >(),
+          };
+          openItemBatch = batch;
+          void enqueue(() => executeItemBatch(batch)).catch((error) => {
+            for (const resolver of batch.resolvers.values())
+              resolver.reject(error);
+          });
+          openItemBatch = batch;
+        }
+        const batch = openItemBatch;
+        batch.ids.push(intent.id);
+        return new Promise<MutationResult>((resolve, reject) =>
+          batch.resolvers.set(intent.id, { resolve, reject }),
+        );
+      }
+      openItemBatch = null;
       return enqueue(() => execute(intent.id));
     },
     retry(operationId: string): Promise<MutationResult> {

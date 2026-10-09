@@ -363,3 +363,58 @@ describe("pathfinding utilities", () => {
     assertOrthogonal(path);
   });
 });
+
+it("caches constraints by polygon data and recalculates the suffix in order", () => {
+  const map = createMapData(8, 8, []);
+  const points = [
+    { row: 2, col: 2 },
+    { row: 2, col: 5 },
+    { row: 5, col: 5 },
+    { row: 5, col: 2 },
+  ];
+  let checks = 0;
+  const constraint = {
+    definition: {
+      rule: "inside-inclusive-v1" as const,
+      vertices: [
+        { row: 1, col: 1 },
+        { row: 1, col: 8 },
+        { row: 8, col: 8 },
+        { row: 8, col: 1 },
+      ],
+    },
+    isPathAllowed: () => {
+      checks++;
+      return true;
+    },
+  };
+  const first = generateRouteSegmentsStrict(map, points, {
+    pathConstraint: constraint,
+  });
+  expect(checks).toBe(3);
+  expect(
+    generateRouteSegmentsStrict(map, points, {
+      pathConstraint: {
+        ...constraint,
+        definition: structuredClone(constraint.definition),
+      },
+    }),
+  ).toEqual(first);
+  expect(checks).toBe(3);
+  const changed = [points[0], points[1], points[3], points[2]];
+  const warm = generateRouteSegmentsStrict(map, changed, {
+    pathConstraint: constraint,
+  });
+  expect(checks).toBe(5);
+  const cold = generateRouteSegmentsStrict(createMapData(8, 8, []), changed, {
+    pathConstraint: constraint,
+  });
+  expect(warm).toEqual(cold);
+  const denied = {
+    definition: { ...constraint.definition, vertices: [{ row: 0, col: 0 }] },
+    isPathAllowed: () => false,
+  };
+  expect(
+    generateRouteSegmentsStrict(map, points, { pathConstraint: denied }).ok,
+  ).toBe(false);
+});

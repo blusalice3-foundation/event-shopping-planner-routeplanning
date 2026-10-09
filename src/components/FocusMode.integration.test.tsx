@@ -85,11 +85,11 @@ const clickLimitedDeferAt = (index: number) => {
 };
 
 const clickNextVisitButton = () => {
-  fireEvent.click(screen.getByTitle("次の訪問先"));
+  fireEvent.click(screen.getByRole("button", { name: "次の訪問先へ移動" }));
 };
 
 const clickPrevVisitButton = () => {
-  fireEvent.click(screen.getByTitle("前の訪問先"));
+  fireEvent.click(screen.getByRole("button", { name: "前の訪問先へ移動" }));
 };
 
 const fillLimitedActualAndSaveAt = (index: number, actual: string) => {
@@ -436,7 +436,9 @@ describe("FocusMode accessible emphasis - integration", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Current status:/ }));
 
-    const nextButton = screen.getByTitle("次の訪問先");
+    const nextButton = screen.getByRole("button", {
+      name: "次の訪問先へ移動",
+    });
     await waitFor(() =>
       expect(nextButton).toHaveClass("bg-green-700", "hover:bg-green-800"),
     );

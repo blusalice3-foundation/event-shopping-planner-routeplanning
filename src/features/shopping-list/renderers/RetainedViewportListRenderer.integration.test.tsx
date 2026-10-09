@@ -1,11 +1,16 @@
 import React from "react";
+import { shoppingPerformance } from "../../../utils/shoppingPerformance";
 import ShoppingList from "../../../components/ShoppingList";
 import { act, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildListRows } from "../model/buildListRows";
 import type { ShoppingItem } from "../../../types/item";
 import { RetainedViewportListRenderer } from "./RetainedViewportListRenderer";
-import { revealViewportContent, ViewportContent } from "./ViewportContent";
+import {
+  prewarmViewportContent,
+  revealViewportContent,
+  ViewportContent,
+} from "./ViewportContent";
 import { evaluateRetainedViewportEligibility } from "./retainedViewportEligibility";
 
 let callback: IntersectionObserverCallback;
@@ -14,21 +19,42 @@ const disconnect = vi.fn();
 const visibleKeys = new Set<string>();
 beforeEach(() => {
   disconnect.mockClear();
+  const observers = new Set<{
+    next: IntersectionObserverCallback;
+    targets: Set<Element>;
+  }>();
   vi.stubGlobal(
     "IntersectionObserver",
     class {
-      constructor(next: IntersectionObserverCallback) {
-        callback = next;
+      targets = new Set<Element>();
+      constructor(public next: IntersectionObserverCallback) {
+        observers.add(this);
+        callback = (entries) => {
+          for (const observer of observers) {
+            const ownEntries = entries.filter((entry) =>
+              observer.targets.has(entry.target),
+            );
+            if (ownEntries.length)
+              observer.next(
+                ownEntries,
+                observer as unknown as IntersectionObserver,
+              );
+          }
+        };
       }
       observe(element: Element) {
+        this.targets.add(element);
         observed.add(element);
       }
       unobserve(element: Element) {
-        observed.delete(element);
+        this.targets.delete(element);
+        if (![...observers].some((observer) => observer.targets.has(element)))
+          observed.delete(element);
       }
       disconnect() {
         disconnect();
-        observed.clear();
+        for (const target of this.targets) this.unobserve(target);
+        observers.delete(this);
       }
     },
   );
@@ -51,6 +77,7 @@ beforeEach(() => {
   );
 });
 afterEach(() => {
+  shoppingPerformance.enable(false);
   visibleKeys.clear();
   observed.clear();
   disconnect.mockClear();
@@ -214,7 +241,7 @@ describe("retained viewport rendering", () => {
     expect(view.container.querySelectorAll("input")).toHaveLength(100);
     expect(view.container.querySelectorAll("[data-row-key]")).toHaveLength(101);
     fireEvent(window, new Event("afterprint"));
-    expect(view.container.querySelectorAll("input")).toHaveLength(100);
+    expect(view.container.querySelectorAll("input")).toHaveLength(0);
   });
 
   it("activates a pending row and transfers forward/reverse Tab focus to its native controls", () => {
@@ -414,7 +441,7 @@ describe("retained viewport capability", () => {
   it.each([
     [{ runtimeAvailable: false }, "runtime-unavailable"],
     [{ zoomPercent: null }, "zoom-unknown"],
-    [{ zoomPercent: 125 }, "zoom-unsupported"],
+    [{ zoomPercent: 0 }, "zoom-unsupported"],
     [{ recoveryActive: null }, "recovery-state-unknown"],
     [{ recoveryActive: true }, "recovery-active"],
     [{ stableRowKeys: false }, "row-keys-unstable"],
@@ -425,4 +452,317 @@ describe("retained viewport capability", () => {
       evaluateRetainedViewportEligibility({ ...ready, ...override }),
     ).toMatchObject({ eligible: false, reason });
   });
+});
+
+it("releases visited controls and options while retaining lightweight anchors", () => {
+  const model = buildListRows({ items });
+  const view = render(
+    <RetainedViewportListRenderer
+      model={model}
+      accessibleLabel="買い物リスト"
+      renderRow={(row) =>
+        row.kind === "item" ? (
+          <select aria-label={row.itemId}>
+            <option>ユーザー登録</option>
+            <option>エラーが発生しました</option>
+          </select>
+        ) : null
+      }
+    />,
+  );
+  const notify = (key: string, visible: boolean) => {
+    const target = [
+      ...view.container.querySelectorAll<HTMLElement>(
+        "[data-viewport-row-key]",
+      ),
+    ].find((row) => row.dataset.viewportRowKey === key)!;
+    act(() =>
+      callback(
+        [
+          {
+            target,
+            isIntersecting: visible,
+          } as unknown as IntersectionObserverEntry,
+        ],
+        {} as IntersectionObserver,
+      ),
+    );
+  };
+  for (const row of model.rows) {
+    notify(row.rowKey, true);
+    notify(row.rowKey, false);
+  }
+  expect(view.container.querySelectorAll("select, option")).toHaveLength(0);
+  expect(view.container.querySelectorAll("[data-row-key]")).toHaveLength(100);
+  notify(model.rows[99].rowKey, true);
+  expect(view.container.querySelectorAll("option")).toHaveLength(2);
+});
+it("keeps a pinned offscreen target until its dialog closes", () => {
+  const model = buildListRows({ items });
+  const props = {
+    model,
+    accessibleLabel: "買い物リスト",
+    renderRow: (row: (typeof model.rows)[number]) =>
+      row.kind === "item" ? <input aria-label={row.itemId} /> : null,
+  };
+  const view = render(
+    <RetainedViewportListRenderer
+      {...props}
+      pinnedRowKeys={new Set([model.rows[0].rowKey])}
+    />,
+  );
+  expect(view.container.querySelectorAll("input")).toHaveLength(1);
+  view.rerender(
+    <RetainedViewportListRenderer {...props} pinnedRowKeys={new Set()} />,
+  );
+  expect(view.container.querySelectorAll("input")).toHaveLength(0);
+});
+it.each([75, 125, 150, 200])(
+  "keeps the viewport capability at %i percent zoom",
+  (zoomPercent) => {
+    expect(
+      evaluateRetainedViewportEligibility({
+        runtimeAvailable: true,
+        zoomPercent,
+        recoveryActive: false,
+        rowCount: 1500,
+        minimumRowCount: 80,
+        stableRowKeys: true,
+        estimatedRowHeightPx: 136,
+      }).eligible,
+    ).toBe(true);
+  },
+);
+
+it("renders only the changed execution group and uses the latest render closure", () => {
+  const groupItems = [items[0], items[1]];
+  const makeModel = (members: ShoppingItem[]) =>
+    buildListRows({
+      items: members,
+      groups: members.map((item, index) => ({
+        key: `space-${index}`,
+        label: `Space ${index}`,
+        items: [item],
+      })),
+    });
+  const rendered = vi.fn();
+  const renderGroups =
+    (members: ShoppingItem[]) =>
+    (
+      row: { groupKey: string },
+      children: readonly {
+        row: { item: ShoppingItem };
+        render(content: React.ReactNode): React.ReactElement;
+      }[],
+    ) => {
+      rendered(row.groupKey);
+      return (
+        <div>
+          {children.map((child) =>
+            child.render(
+              <span>
+                {
+                  members.find((item) => item.id === child.row.item.id)!
+                    .purchaseStatus
+                }
+              </span>,
+            ),
+          )}
+        </div>
+      );
+    };
+  const view = render(
+    <RetainedViewportListRenderer
+      defer={false}
+      model={makeModel(groupItems)}
+      accessibleLabel="buy"
+      renderDependencies={[]}
+      renderGroup={renderGroups(groupItems)}
+    />,
+  );
+  rendered.mockClear();
+  shoppingPerformance.enable();
+  shoppingPerformance.reset();
+  const next = [
+    { ...groupItems[0], purchaseStatus: "Purchased" as const },
+    groupItems[1],
+  ];
+  view.rerender(
+    <RetainedViewportListRenderer
+      defer={false}
+      model={makeModel(next)}
+      accessibleLabel="buy"
+      renderDependencies={[]}
+      renderGroup={renderGroups(next)}
+    />,
+  );
+  expect(shoppingPerformance.read().renders["execution-viewport"]).toBe(1);
+  expect(rendered).toHaveBeenCalledTimes(1);
+  expect(rendered).toHaveBeenCalledWith("space-0");
+  expect(view.getByText("Purchased")).toBeVisible();
+});
+
+it("keeps overlapping prewarm requests until both navigation owners release them", () => {
+  const view = render(
+    <ViewportContent
+      rowKey="overlapping-next"
+      placeholder={<span>待機</span>}
+      render={() => <input aria-label="次の訪問先" />}
+    />,
+  );
+  const root = view.container.querySelector<HTMLElement>(
+    "[data-viewport-row-key]",
+  )!;
+  let releaseFirst!: () => void;
+  let releaseSecond!: () => void;
+  act(() => {
+    releaseFirst = prewarmViewportContent(root);
+    releaseSecond = prewarmViewportContent(root);
+  });
+  expect(view.getByRole("textbox")).toBeVisible();
+  act(() => releaseFirst());
+  expect(view.getByRole("textbox")).toBeVisible();
+  act(() => releaseFirst());
+  expect(view.getByRole("textbox")).toBeVisible();
+  act(() => releaseSecond());
+  expect(view.queryByRole("textbox")).toBeNull();
+});
+
+it("updates a collapsed space summary without rendering unrelated collapsed spaces", () => {
+  const sources = [items[0], items[1]];
+  const model = buildListRows({
+    items: sources,
+    groups: sources.map((item) => ({
+      key: item.id,
+      label: item.id,
+      items: [item],
+      collapsed: true,
+    })),
+  });
+  const rendered = vi.fn();
+  const props = (members: ShoppingItem[]) => ({
+    model,
+    defer: false,
+    accessibleLabel: "購入状態",
+    renderDependencies: [],
+    getGroupVersion: (id: string) => members.find((item) => item.id === id),
+    renderGroup: (row: { groupKey: string }) => {
+      rendered(row.groupKey);
+      return (
+        <span>
+          {members.find((item) => item.id === row.groupKey)!.purchaseStatus}
+        </span>
+      );
+    },
+  });
+  const view = render(<RetainedViewportListRenderer {...props(sources)} />);
+  rendered.mockClear();
+  view.rerender(
+    <RetainedViewportListRenderer
+      {...props([{ ...sources[0], purchaseStatus: "Purchased" }, sources[1]])}
+    />,
+  );
+  expect(rendered).toHaveBeenCalledOnce();
+  expect(rendered).toHaveBeenCalledWith(sources[0].id);
+  expect(view.getByText("Purchased")).toBeVisible();
+});
+
+it("reveals the committed group after a concurrent render is discarded", () => {
+  const blocked = new Promise<void>(() => {});
+  const Suspend = ({ value }: { value: string }) => {
+    if (value === "discarded") throw blocked;
+    return null;
+  };
+  let discard!: () => void;
+  const Harness = () => {
+    const [value, setValue] = React.useState("committed");
+    discard = () => React.startTransition(() => setValue("discarded"));
+    const member = { ...items[0], remarks: value };
+    return (
+      <React.Suspense fallback={<span>ロード中</span>}>
+        <RetainedViewportListRenderer
+          model={buildListRows({
+            items: [member],
+            groups: [{ key: "group", label: "訪問先", items: [member] }],
+          })}
+          accessibleLabel="購入状態"
+          renderDependencies={[value]}
+          renderGroup={() => <span>{value}</span>}
+        />
+        <Suspend value={value} />
+      </React.Suspense>
+    );
+  };
+  const view = render(<Harness />);
+  act(() => discard());
+  act(() =>
+    callback(
+      [...observed].map((target) => ({
+        target,
+        isIntersecting: true,
+      })) as IntersectionObserverEntry[],
+      {} as IntersectionObserver,
+    ),
+  );
+  expect(view.getByText("committed", { exact: true })).toBeVisible();
+  expect(view.queryByText("discarded", { exact: true })).toBeNull();
+});
+
+it("propagates dialog retention through a memoized group and releases the row after closing", () => {
+  const model = buildListRows({
+    items,
+    groups: [{ key: "A1", label: "A1", items }],
+  });
+  const rowKey = model.itemRows[0].rowKey;
+  visibleKeys.add(model.rows[0].rowKey);
+  visibleKeys.add(rowKey);
+  const renderGroup = (
+    _group: unknown,
+    rows: readonly {
+      row: { itemId: string };
+      render(content: React.ReactNode): React.ReactElement;
+    }[],
+  ) => (
+    <section>
+      {rows.map((row) =>
+        row.render(
+          <input aria-label={row.row.itemId} defaultValue="保持する入力" />,
+        ),
+      )}
+    </section>
+  );
+  const dependencies: readonly unknown[] = [];
+  const props = {
+    model,
+    accessibleLabel: "買い物リスト",
+    renderGroup,
+    renderDependencies: dependencies,
+  };
+  const view = render(<RetainedViewportListRenderer {...props} />);
+  const input = view.getByRole("textbox", { name: "item-0" });
+  view.rerender(
+    <RetainedViewportListRenderer
+      {...props}
+      pinnedRowKeys={new Set([rowKey])}
+    />,
+  );
+  visibleKeys.clear();
+  const leaveViewport = () =>
+    act(() =>
+      callback(
+        [...observed].map((target) => ({
+          target,
+          isIntersecting: false,
+        })) as IntersectionObserverEntry[],
+        {} as IntersectionObserver,
+      ),
+    );
+  leaveViewport();
+  expect(view.getByRole("textbox", { name: "item-0" })).toBe(input);
+  expect(input).toHaveValue("保持する入力");
+  view.rerender(
+    <RetainedViewportListRenderer {...props} pinnedRowKeys={new Set()} />,
+  );
+  leaveViewport();
+  expect(view.queryByRole("textbox", { name: "item-0" })).toBeNull();
 });

@@ -10,7 +10,11 @@ import {
   type MutationIntent,
 } from "./applicationMutationCoordinator";
 
-function setup() {
+function setup(
+  commitItems?: Parameters<
+    typeof createApplicationMutationCoordinator
+  >[0]["commitItemContentEdits"],
+) {
   let durable: PersistenceSnapshot = {
     eventLists: {
       event: [{ id: "A", remarks: "before", purchaseStatus: "None" }],
@@ -42,6 +46,7 @@ function setup() {
     readCurrent: () => current,
     drain,
     readDurable,
+    commitItemContentEdits: commitItems,
     commit,
     apply: (value) => {
       current = value;
@@ -623,4 +628,89 @@ it("expires a stale session if a CAS retry encounters an equal replacement", asy
   ).toEqual({ status: "expired" });
   expect(plan).toHaveBeenCalledOnce();
   expect(app.commit).toHaveBeenCalledOnce();
+});
+
+it("coalesces queued field commands in order without crossing a structural command", async () => {
+  const trace: string[] = [];
+  const commitItems = vi.fn<
+    NonNullable<
+      Parameters<
+        typeof createApplicationMutationCoordinator
+      >[0]["commitItemContentEdits"]
+    >
+  >(async (edits, ids) => {
+    trace.push("items:" + ids.join(","));
+    for (const edit of edits) {
+      app.update(
+        Object.fromEntries(
+          Object.entries(edit.fields).map(([key, field]) => [
+            key,
+            (field as { value: unknown }).value,
+          ]),
+        ),
+      );
+    }
+    return {
+      status: "committed" as const,
+      read: {
+        snapshot: structuredClone(app.durable()),
+        expectedRoots: {},
+        consistencyMissing: false,
+      },
+    };
+  });
+  const app = setup(commitItems);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const blocker = app.coordinator.enqueue(() => gate);
+  const fieldIntent = (
+    id: string,
+    fields: Record<string, { present: boolean; value: unknown }>,
+  ): MutationIntent => ({
+    id,
+    events: ["event"],
+    itemContentEdits: [{ eventName: "event", itemId: "A", fields }],
+    plan: () => {
+      throw new Error("The ordinary field path should stay in the worker.");
+    },
+  });
+  const first = app.coordinator.request(
+    fieldIntent("first", { quantity: { present: true, value: 2 } }),
+  );
+  const second = app.coordinator.request(
+    fieldIntent("second", {
+      remarks: { present: true, value: "ユーザー登録" },
+    }),
+  );
+  const structure = app.coordinator.request({
+    id: "structure",
+    events: ["event"],
+    plan: (snapshot) => {
+      trace.push("structure");
+      expect(snapshot.eventLists.event[0]).toMatchObject({
+        quantity: 2,
+        remarks: "ユーザー登録",
+      });
+      return { snapshot };
+    },
+  });
+  const third = app.coordinator.request(
+    fieldIntent("third", { quantity: { present: true, value: 3 } }),
+  );
+  expect(commitItems).not.toHaveBeenCalled();
+  release();
+  const results = await Promise.all([first, second, structure, third]);
+  await blocker;
+  expect(results.map((result) => result.status)).toEqual(
+    Array(4).fill("committed"),
+  );
+  expect(trace).toEqual(["items:first,second", "structure", "items:third"]);
+  expect(commitItems).toHaveBeenCalledTimes(2);
+  expect(app.commit).toHaveBeenCalledOnce();
+  expect(app.read().eventLists.event[0]).toMatchObject({
+    quantity: 3,
+    remarks: "ユーザー登録",
+  });
 });

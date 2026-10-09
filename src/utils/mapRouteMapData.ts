@@ -116,6 +116,10 @@ export function buildSelectedHallRouteMapData(
       cells: [...cellsByKey.values()],
     },
     routePathConstraint: {
+      definition: {
+        rule: "inside-inclusive-v1",
+        vertices: hall.vertices.map((point) => ({ ...point })),
+      },
       isPathAllowed: (path) =>
         isRoutePathInsideHallPolygon(path, hall.vertices),
     },

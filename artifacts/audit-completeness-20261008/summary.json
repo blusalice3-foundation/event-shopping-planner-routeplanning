@@ -1,0 +1,775 @@
+{
+  "date": "2026-10-08",
+  "sourceSha": "e9ceb0e8b093596f6da0d4cc0e38ce3ec83febc0",
+  "implementationConclusion": "Normal-operation implementations are present; initialization, migration, and recovery adoption still use main-thread persistence.",
+  "printConclusion": "Full print mode satisfies the functional requirement. A separate renderer is not required.",
+  "performanceAcceptance": "pending-external-evidence",
+  "execution": {
+    "mode": "Vite development server",
+    "baseURL": "http://127.0.0.1:4187",
+    "browser": "151.0.7922.34",
+    "viewport": "1280x720",
+    "repetitionsPerWorkload": 3,
+    "cells": 40000,
+    "historicalItems": 10000,
+    "measurementsIncludeAutomationAndPolling": true,
+    "formalPolicySampleCount": 30,
+    "absoluteTimeThresholdsDefined": false,
+    "regressionComparisonPerformed": false
+  },
+  "unitAndIntegrationTests": {
+    "files": 11,
+    "passed": 259
+  },
+  "browserTests": {
+    "startTime": "2026-10-08T03:30:04.82Z",
+    "duration": 425397.358,
+    "expected": 12,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "nativePrintChecks": [
+    {
+      "count": 150,
+      "singleSpace": false,
+      "startupMainTransactionCount": 16,
+      "mainTransactionsForOrdinaryEdit": [],
+      "before": {
+        "cards": 5,
+        "options": 610
+      },
+      "synchronousPrint": {
+        "cards": 150,
+        "options": 18300,
+        "last": false
+      },
+      "afterManual": {
+        "cards": 5,
+        "options": 610
+      },
+      "nativePrintEvents": [
+        {
+          "event": "beforeprint",
+          "cards": 150
+        },
+        {
+          "event": "afterprint"
+        }
+      ],
+      "afterNative": {
+        "cards": 5,
+        "options": 610
+      },
+      "pdfPages": 34,
+      "pdfBytes": 7418242,
+      "savedQuantity": 7
+    },
+    {
+      "count": 1500,
+      "singleSpace": false,
+      "startupMainTransactionCount": 16,
+      "mainTransactionsForOrdinaryEdit": [],
+      "before": {
+        "cards": 5,
+        "options": 610
+      },
+      "synchronousPrint": {
+        "cards": 1500,
+        "options": 183000,
+        "last": true
+      },
+      "afterManual": {
+        "cards": 5,
+        "options": 610
+      },
+      "nativePrintEvents": [
+        {
+          "event": "beforeprint",
+          "cards": 1500
+        },
+        {
+          "event": "afterprint"
+        }
+      ],
+      "afterNative": {
+        "cards": 5,
+        "options": 610
+      },
+      "pdfPages": 334,
+      "pdfBytes": 71861404,
+      "savedQuantity": 7
+    },
+    {
+      "count": 1500,
+      "singleSpace": true,
+      "startupMainTransactionCount": 16,
+      "mainTransactionsForOrdinaryEdit": [],
+      "before": {
+        "cards": 6,
+        "options": 732
+      },
+      "synchronousPrint": {
+        "cards": 1500,
+        "options": 183000,
+        "last": true
+      },
+      "afterManual": {
+        "cards": 6,
+        "options": 732
+      },
+      "nativePrintEvents": [
+        {
+          "event": "beforeprint",
+          "cards": 1500
+        },
+        {
+          "event": "afterprint"
+        }
+      ],
+      "afterNative": {
+        "cards": 6,
+        "options": 732
+      },
+      "pdfPages": 265,
+      "pdfBytes": 65289693,
+      "savedQuantity": 7
+    }
+  ],
+  "mainTransactionCounterScope": "startupMainTransactionCount includes startup and backup restoration preparation. Ordinary quantity-edit transactions are counted separately.",
+  "encodingCheck": {
+    "status": "passed",
+    "checkedFiles": 993,
+    "sourceFilesModified": false
+  },
+  "policyCheck": {
+    "scenarios": 17,
+    "explicitPending": 17,
+    "performanceAcceptancePassed": false
+  },
+  "timings": [
+    {
+      "count": 150,
+      "scenario": "quantity",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 22.3,
+        "min": 21.3,
+        "max": 23.7
+      },
+      "completionMs": {
+        "median": 110.4,
+        "min": 105.4,
+        "max": 112.1
+      }
+    },
+    {
+      "count": 150,
+      "scenario": "purchase-burst",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 23.3,
+        "min": 23.0,
+        "max": 26.2
+      },
+      "completionMs": {
+        "median": 103.9,
+        "min": 101.7,
+        "max": 117.3
+      }
+    },
+    {
+      "count": 150,
+      "scenario": "memo-after-traversal",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 33.3,
+        "min": 32.1,
+        "max": 36.7
+      },
+      "completionMs": {
+        "median": 443.7,
+        "min": 441.9,
+        "max": 449.7
+      }
+    },
+    {
+      "count": 150,
+      "scenario": "Japanese-search",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 26.0,
+        "min": 22.9,
+        "max": 27.2
+      },
+      "completionMs": {
+        "median": 211.9,
+        "min": 206.7,
+        "max": 228.1
+      }
+    },
+    {
+      "count": 150,
+      "scenario": "purchase-then-next",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 132.8,
+        "min": 113.2,
+        "max": 140.0
+      },
+      "completionMs": {
+        "median": 148.7,
+        "min": 131.9,
+        "max": 149.1
+      }
+    },
+    {
+      "count": 150,
+      "scenario": "continuous-pinch",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 1.9,
+        "min": 1.9,
+        "max": 2.1
+      },
+      "completionMs": {
+        "median": 274.2,
+        "min": 267.7,
+        "max": 276.7
+      }
+    },
+    {
+      "count": 500,
+      "scenario": "quantity",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 51.0,
+        "min": 50.1,
+        "max": 51.3
+      },
+      "completionMs": {
+        "median": 232.8,
+        "min": 225.0,
+        "max": 242.9
+      }
+    },
+    {
+      "count": 500,
+      "scenario": "purchase-burst",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 52.2,
+        "min": 51.6,
+        "max": 52.6
+      },
+      "completionMs": {
+        "median": 230.9,
+        "min": 226.6,
+        "max": 237.7
+      }
+    },
+    {
+      "count": 500,
+      "scenario": "memo-after-traversal",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 74.5,
+        "min": 73.5,
+        "max": 82.7
+      },
+      "completionMs": {
+        "median": 497.5,
+        "min": 486.7,
+        "max": 508.7
+      }
+    },
+    {
+      "count": 500,
+      "scenario": "Japanese-search",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 46.9,
+        "min": 46.9,
+        "max": 47.8
+      },
+      "completionMs": {
+        "median": 393.4,
+        "min": 378.2,
+        "max": 409.7
+      }
+    },
+    {
+      "count": 500,
+      "scenario": "purchase-then-next",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 151.8,
+        "min": 150.1,
+        "max": 177.9
+      },
+      "completionMs": {
+        "median": 161.0,
+        "min": 158.0,
+        "max": 186.5
+      }
+    },
+    {
+      "count": 500,
+      "scenario": "continuous-pinch",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 1.7,
+        "min": 1.6,
+        "max": 2.0
+      },
+      "completionMs": {
+        "median": 162.9,
+        "min": 162.0,
+        "max": 165.6
+      }
+    },
+    {
+      "count": 1500,
+      "scenario": "quantity",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 132.1,
+        "min": 131.0,
+        "max": 144.7
+      },
+      "completionMs": {
+        "median": 594.5,
+        "min": 559.0,
+        "max": 631.2
+      }
+    },
+    {
+      "count": 1500,
+      "scenario": "purchase-burst",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 136.1,
+        "min": 134.8,
+        "max": 163.1
+      },
+      "completionMs": {
+        "median": 682.2,
+        "min": 646.0,
+        "max": 734.6
+      }
+    },
+    {
+      "count": 1500,
+      "scenario": "memo-after-traversal",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 214.5,
+        "min": 200.1,
+        "max": 220.0
+      },
+      "completionMs": {
+        "median": 918.3,
+        "min": 853.0,
+        "max": 940.3
+      }
+    },
+    {
+      "count": 1500,
+      "scenario": "Japanese-search",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 123.6,
+        "min": 123.1,
+        "max": 132.6
+      },
+      "completionMs": {
+        "median": 1045.9,
+        "min": 1025.5,
+        "max": 1108.8
+      }
+    },
+    {
+      "count": 1500,
+      "scenario": "purchase-then-next",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 331.2,
+        "min": 298.2,
+        "max": 353.5
+      },
+      "completionMs": {
+        "median": 344.6,
+        "min": 312.3,
+        "max": 364.4
+      }
+    },
+    {
+      "count": 1500,
+      "scenario": "continuous-pinch",
+      "sampleCount": 3,
+      "inputResponseMs": {
+        "median": 1.8,
+        "min": 1.6,
+        "max": 2.4
+      },
+      "completionMs": {
+        "median": 269.3,
+        "min": 164.3,
+        "max": 275.0
+      }
+    }
+  ],
+  "rawTimings": [
+    {
+      "count": 150,
+      "cells": 40000,
+      "historicalItems": 10000,
+      "cards": 4,
+      "options": 488,
+      "samples": [
+        {
+          "scenario": "quantity",
+          "inputResponseMs": 22.299999982118607,
+          "completionMs": 105.40000000596046
+        },
+        {
+          "scenario": "purchase-burst",
+          "inputResponseMs": 23,
+          "completionMs": 101.69999998807907
+        },
+        {
+          "scenario": "memo-after-traversal",
+          "inputResponseMs": 36.69999998807907,
+          "completionMs": 449.69999998807907
+        },
+        {
+          "scenario": "Japanese-search",
+          "inputResponseMs": 27.200000017881393,
+          "completionMs": 206.7000000178814
+        },
+        {
+          "scenario": "purchase-then-next",
+          "inputResponseMs": 140,
+          "completionMs": 148.69999998807907
+        },
+        {
+          "scenario": "continuous-pinch",
+          "inputResponseMs": 2.0999999940395355,
+          "completionMs": 276.69999998807907
+        }
+      ]
+    },
+    {
+      "count": 500,
+      "cells": 40000,
+      "historicalItems": 10000,
+      "cards": 4,
+      "options": 488,
+      "samples": [
+        {
+          "scenario": "quantity",
+          "inputResponseMs": 51,
+          "completionMs": 225
+        },
+        {
+          "scenario": "purchase-burst",
+          "inputResponseMs": 52.599999994039536,
+          "completionMs": 226.60000002384186
+        },
+        {
+          "scenario": "memo-after-traversal",
+          "inputResponseMs": 82.69999998807907,
+          "completionMs": 508.69999998807907
+        },
+        {
+          "scenario": "Japanese-search",
+          "inputResponseMs": 46.89999997615814,
+          "completionMs": 409.69999998807907
+        },
+        {
+          "scenario": "purchase-then-next",
+          "inputResponseMs": 177.89999997615814,
+          "completionMs": 186.5
+        },
+        {
+          "scenario": "continuous-pinch",
+          "inputResponseMs": 2,
+          "completionMs": 165.59999999403954
+        }
+      ]
+    },
+    {
+      "count": 1500,
+      "cells": 40000,
+      "historicalItems": 10000,
+      "cards": 4,
+      "options": 488,
+      "samples": [
+        {
+          "scenario": "quantity",
+          "inputResponseMs": 144.69999998807907,
+          "completionMs": 631.2000000178814
+        },
+        {
+          "scenario": "purchase-burst",
+          "inputResponseMs": 134.7999999821186,
+          "completionMs": 734.5999999940395
+        },
+        {
+          "scenario": "memo-after-traversal",
+          "inputResponseMs": 220,
+          "completionMs": 940.3000000119209
+        },
+        {
+          "scenario": "Japanese-search",
+          "inputResponseMs": 132.59999999403954,
+          "completionMs": 1108.800000011921
+        },
+        {
+          "scenario": "purchase-then-next",
+          "inputResponseMs": 353.5,
+          "completionMs": 364.40000000596046
+        },
+        {
+          "scenario": "continuous-pinch",
+          "inputResponseMs": 1.800000011920929,
+          "completionMs": 269.30000001192093
+        }
+      ]
+    },
+    {
+      "count": 150,
+      "cells": 40000,
+      "historicalItems": 10000,
+      "cards": 4,
+      "options": 488,
+      "samples": [
+        {
+          "scenario": "quantity",
+          "inputResponseMs": 23.69999998807907,
+          "completionMs": 110.40000000596046
+        },
+        {
+          "scenario": "purchase-burst",
+          "inputResponseMs": 23.30000001192093,
+          "completionMs": 103.90000000596046
+        },
+        {
+          "scenario": "memo-after-traversal",
+          "inputResponseMs": 32.099999994039536,
+          "completionMs": 443.69999998807907
+        },
+        {
+          "scenario": "Japanese-search",
+          "inputResponseMs": 26,
+          "completionMs": 228.09999999403954
+        },
+        {
+          "scenario": "purchase-then-next",
+          "inputResponseMs": 132.7999999821186,
+          "completionMs": 149.09999999403954
+        },
+        {
+          "scenario": "continuous-pinch",
+          "inputResponseMs": 1.9000000059604645,
+          "completionMs": 267.69999998807907
+        }
+      ]
+    },
+    {
+      "count": 500,
+      "cells": 40000,
+      "historicalItems": 10000,
+      "cards": 4,
+      "options": 488,
+      "samples": [
+        {
+          "scenario": "quantity",
+          "inputResponseMs": 50.099999994039536,
+          "completionMs": 242.90000000596046
+        },
+        {
+          "scenario": "purchase-burst",
+          "inputResponseMs": 52.19999998807907,
+          "completionMs": 237.7000000178814
+        },
+        {
+          "scenario": "memo-after-traversal",
+          "inputResponseMs": 73.5,
+          "completionMs": 486.69999998807907
+        },
+        {
+          "scenario": "Japanese-search",
+          "inputResponseMs": 46.900000005960464,
+          "completionMs": 393.40000000596046
+        },
+        {
+          "scenario": "purchase-then-next",
+          "inputResponseMs": 151.80000001192093,
+          "completionMs": 161
+        },
+        {
+          "scenario": "continuous-pinch",
+          "inputResponseMs": 1.699999988079071,
+          "completionMs": 162.89999997615814
+        }
+      ]
+    },
+    {
+      "count": 1500,
+      "cells": 40000,
+      "historicalItems": 10000,
+      "cards": 4,
+      "options": 488,
+      "samples": [
+        {
+          "scenario": "quantity",
+          "inputResponseMs": 131,
+          "completionMs": 559
+        },
+        {
+          "scenario": "purchase-burst",
+          "inputResponseMs": 136.10000002384186,
+          "completionMs": 646
+        },
+        {
+          "scenario": "memo-after-traversal",
+          "inputResponseMs": 200.09999999403954,
+          "completionMs": 853
+        },
+        {
+          "scenario": "Japanese-search",
+          "inputResponseMs": 123.59999999403954,
+          "completionMs": 1045.9000000059605
+        },
+        {
+          "scenario": "purchase-then-next",
+          "inputResponseMs": 298.19999998807907,
+          "completionMs": 312.2999999821186
+        },
+        {
+          "scenario": "continuous-pinch",
+          "inputResponseMs": 2.4000000059604645,
+          "completionMs": 275
+        }
+      ]
+    },
+    {
+      "count": 150,
+      "cells": 40000,
+      "historicalItems": 10000,
+      "cards": 4,
+      "options": 488,
+      "samples": [
+        {
+          "scenario": "quantity",
+          "inputResponseMs": 21.299999982118607,
+          "completionMs": 112.09999999403954
+        },
+        {
+          "scenario": "purchase-burst",
+          "inputResponseMs": 26.200000017881393,
+          "completionMs": 117.30000001192093
+        },
+        {
+          "scenario": "memo-after-traversal",
+          "inputResponseMs": 33.29999998211861,
+          "completionMs": 441.90000000596046
+        },
+        {
+          "scenario": "Japanese-search",
+          "inputResponseMs": 22.900000005960464,
+          "completionMs": 211.90000000596046
+        },
+        {
+          "scenario": "purchase-then-next",
+          "inputResponseMs": 113.19999998807907,
+          "completionMs": 131.90000000596046
+        },
+        {
+          "scenario": "continuous-pinch",
+          "inputResponseMs": 1.9000000059604645,
+          "completionMs": 274.2000000178814
+        }
+      ]
+    },
+    {
+      "count": 500,
+      "cells": 40000,
+      "historicalItems": 10000,
+      "cards": 4,
+      "options": 488,
+      "samples": [
+        {
+          "scenario": "quantity",
+          "inputResponseMs": 51.30000001192093,
+          "completionMs": 232.80000001192093
+        },
+        {
+          "scenario": "purchase-burst",
+          "inputResponseMs": 51.599999994039536,
+          "completionMs": 230.90000000596046
+        },
+        {
+          "scenario": "memo-after-traversal",
+          "inputResponseMs": 74.5,
+          "completionMs": 497.5
+        },
+        {
+          "scenario": "Japanese-search",
+          "inputResponseMs": 47.80000001192093,
+          "completionMs": 378.2000000178814
+        },
+        {
+          "scenario": "purchase-then-next",
+          "inputResponseMs": 150.09999999403954,
+          "completionMs": 158
+        },
+        {
+          "scenario": "continuous-pinch",
+          "inputResponseMs": 1.5999999940395355,
+          "completionMs": 162
+        }
+      ]
+    },
+    {
+      "count": 1500,
+      "cells": 40000,
+      "historicalItems": 10000,
+      "cards": 4,
+      "options": 488,
+      "samples": [
+        {
+          "scenario": "quantity",
+          "inputResponseMs": 132.09999999403954,
+          "completionMs": 594.5
+        },
+        {
+          "scenario": "purchase-burst",
+          "inputResponseMs": 163.09999999403954,
+          "completionMs": 682.1999999880791
+        },
+        {
+          "scenario": "memo-after-traversal",
+          "inputResponseMs": 214.5,
+          "completionMs": 918.3000000119209
+        },
+        {
+          "scenario": "Japanese-search",
+          "inputResponseMs": 123.10000002384186,
+          "completionMs": 1025.5
+        },
+        {
+          "scenario": "purchase-then-next",
+          "inputResponseMs": 331.19999998807907,
+          "completionMs": 344.59999999403954
+        },
+        {
+          "scenario": "continuous-pinch",
+          "inputResponseMs": 1.5999999940395355,
+          "completionMs": 164.30000001192093
+        }
+      ]
+    }
+  ]
+}

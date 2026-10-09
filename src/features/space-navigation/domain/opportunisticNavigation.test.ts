@@ -1,3 +1,4 @@
+import { indexedItems, registerItemChanges } from "../../../utils/itemIndex";
 import { describe, expect, it } from "vitest";
 import type {
   NavigatorEntry,
@@ -9,6 +10,7 @@ import {
   aggregateNavigatorSpace,
   buildInitialPhaseNavigationCandidates,
   buildRemainingSpaceLists,
+  createRemainingSpaceListsProjector,
   findAdjacentSpaceTarget,
   groupCellItemsBySpace,
 } from "./opportunisticNavigation";
@@ -597,4 +599,68 @@ describe("buildRemainingSpaceLists", () => {
       late: [],
     });
   });
+});
+
+it("matches remaining lists across accepted updates and keeps untouched spaces and phases stable", () => {
+  const project = createRemainingSpaceListsProjector();
+  let live = Array.from({ length: 1500 }, (_, index) =>
+    item(
+      String(index),
+      "A",
+      String(index + 1),
+      index % 2 ? "Postpone" : "None",
+    ),
+  );
+  const entries = live.map((member, index) => ({
+    ...entry({
+      id: "visit-" + member.id,
+      phase: "normal",
+      block: member.block,
+      number: member.number,
+      items: [member],
+      phaseIndex: index,
+    }),
+    index,
+  }));
+  const options = () => ({
+    latestItemsById: indexedItems(live),
+    currentSpaceKey: entries[0].spaceKey,
+  });
+  const first = project(entries, options());
+  const old = live;
+  live = live.slice();
+  live[0] = { ...live[0], purchaseStatus: "Purchased" };
+  registerItemChanges(old, live, [0]);
+  const purchased = project(entries, options());
+  expect(purchased).toEqual(buildRemainingSpaceLists(entries, options()));
+  expect(purchased.normal[0]).toBe(first.normal[1]);
+  expect(purchased.postponed).toBe(first.postponed);
+  const beforeRecord = live;
+  live = live.slice();
+  live[2] = { ...live[2], price: 900 };
+  registerItemChanges(beforeRecord, live, [2]);
+  const recorded = project(entries, options());
+  expect(recorded).toEqual(buildRemainingSpaceLists(entries, options()));
+  expect(recorded.normal[0].items[0]).toBe(live[2]);
+  expect(recorded.normal[1]).toBe(purchased.normal[1]);
+  const movedOptions = { ...options(), currentSpaceKey: entries[2].spaceKey };
+  const moved = project(entries, movedOptions);
+  expect(moved).toEqual(buildRemainingSpaceLists(entries, movedOptions));
+  expect(moved.normal[0].isCurrent).toBe(true);
+  expect(moved.normal[1]).toBe(recorded.normal[1]);
+  const restored = [
+    ...entries,
+    entry({
+      id: "new",
+      phase: "late",
+      block: "B",
+      number: "1",
+      items: [item("new", "B", "1", "Late")],
+    }),
+  ];
+  expect(project(restored)).toEqual(buildRemainingSpaceLists(restored));
+  const foreign = new Map(live.map((member) => [member.id, member]));
+  expect(project(entries, { latestItemsById: foreign })).toEqual(
+    buildRemainingSpaceLists(entries, { latestItemsById: foreign }),
+  );
 });

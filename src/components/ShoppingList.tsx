@@ -1,3 +1,7 @@
+import {
+  useStableCallback,
+  useStableOptionalCallback,
+} from "../hooks/useStableCallback";
 import React, {
   useRef,
   useState,
@@ -6,8 +10,18 @@ import React, {
   useCallback,
   useLayoutEffect,
   useReducer,
+  useContext,
 } from "react";
 import ReactDOM from "react-dom";
+import { indexedItem, itemPositions, stableItemIds } from "../utils/itemIndex";
+import {
+  createExecutionVisitIndex,
+  createRoutingItemsProjector,
+} from "../utils/executionVisitIndex";
+import {
+  AcceptedItemContext,
+  ItemCommandContext,
+} from "../features/shopping-list/renderers/ViewportRowState";
 import {
   ShoppingItem,
   PurchaseStatus,
@@ -70,13 +84,14 @@ import {
   type RangePresentation,
 } from "../features/lists/domain/rangeSelection";
 import {
-  buildListRows,
+  createListRowsProjector,
   createShoppingListControllerState,
   createLocalStorageListRendererPreferenceAdapter,
   evaluateVirtualListEligibility,
   evaluateRetainedViewportEligibility,
   RetainedViewportListRenderer,
   revealViewportContent,
+  findViewportRow,
   FullListRenderer,
   resolveListRendererPreference,
   selectListRenderer,
@@ -120,7 +135,11 @@ interface SpaceGroup {
 
 interface ShoppingListProps {
   items: ShoppingItem[];
-  onUpdateItem: (item: ShoppingItem) => void;
+  onUpdateItem: (
+    item: ShoppingItem,
+    baseline?: ShoppingItem,
+    options?: { saveImmediately?: boolean },
+  ) => void;
   onMoveItem: (
     dragId: string,
     hoverId: string,
@@ -200,6 +219,8 @@ interface ShoppingListProps {
   skipLimitedPurchaseForSingleQuantity: boolean;
   listRendererPreferencePort?: ListRendererPreferencePort;
   forceFullListRenderer?: boolean;
+  retainedItemIds?: readonly string[];
+  appZoomLevel?: number;
   recoveryActive?: boolean | null;
 }
 
@@ -471,11 +492,11 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   columnType,
   currentDay,
   rangeScopeId = "",
-  onMoveItemUp,
-  onMoveItemDown,
+  onMoveItemUp: onMoveItemUpProp,
+  onMoveItemDown: onMoveItemDownProp,
   rangeStart,
   rangeEnd,
-  onToggleRangeSelection,
+  onToggleRangeSelection: onToggleRangeSelectionProp,
   duplicateCircleItemIds = EMPTY_DUPLICATE_CIRCLE_ITEM_IDS,
   highlightedItemId = null,
   searchScrollRequest = null,
@@ -488,18 +509,18 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   mapData = null,
   showSpaceGroups = false,
   collapsedSpaces,
-  onToggleSpaceCollapse,
+  onToggleSpaceCollapse: onToggleSpaceCollapseProp,
   onToggleAllSpaceCollapse,
-  onSetSpaceGroupDragItemIds,
-  onSelectSpaceGroupForRange,
-  onAddItem,
-  onBulkStatusChange,
-  onSpaceGroupOrderChange,
-  onCollapseAndOpenNext,
+  onSetSpaceGroupDragItemIds: onSetSpaceGroupDragItemIdsProp,
+  onSelectSpaceGroupForRange: onSelectSpaceGroupForRangeProp,
+  onAddItem: onAddItemProp,
+  onBulkStatusChange: onBulkStatusChangeProp,
+  onSpaceGroupOrderChange: onSpaceGroupOrderChangeProp,
+  onCollapseAndOpenNext: onCollapseAndOpenNextProp,
   showPostponeFilterButton,
-  onActivatePostponeFilter,
+  onActivatePostponeFilter: onActivatePostponeFilterProp,
   showLateFilterButton,
-  onActivateLateFilter,
+  onActivateLateFilter: onActivateLateFilterProp,
   disablePriceUndefinedCheck = false,
   disableLimitedPurchaseQuantityCheck:
     _disableLimitedPurchaseQuantityCheck = false,
@@ -508,12 +529,44 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   purchaseStatusControlMode = "cycle",
   listRendererPreferencePort = DEFAULT_LIST_RENDERER_PREFERENCE_PORT,
   forceFullListRenderer = false,
+  retainedItemIds,
+  appZoomLevel = 100,
   recoveryActive = false,
 }) => {
+  const onMoveItemUp = useStableOptionalCallback(onMoveItemUpProp);
+  const onMoveItemDown = useStableOptionalCallback(onMoveItemDownProp);
+  const onToggleRangeSelection = useStableOptionalCallback(
+    onToggleRangeSelectionProp,
+  );
+  const onToggleSpaceCollapse = useStableOptionalCallback(
+    onToggleSpaceCollapseProp,
+  );
+  const onSetSpaceGroupDragItemIds = useStableOptionalCallback(
+    onSetSpaceGroupDragItemIdsProp,
+  );
+  const onSelectSpaceGroupForRange = useStableOptionalCallback(
+    onSelectSpaceGroupForRangeProp,
+  );
+  const onAddItem = useStableOptionalCallback(onAddItemProp);
+  const onBulkStatusChange = useStableOptionalCallback(onBulkStatusChangeProp);
+  const onSpaceGroupOrderChange = useStableOptionalCallback(
+    onSpaceGroupOrderChangeProp,
+  );
+  const onCollapseAndOpenNext = useStableOptionalCallback(
+    onCollapseAndOpenNextProp,
+  );
+  const onActivatePostponeFilter = useStableOptionalCallback(
+    onActivatePostponeFilterProp,
+  );
+  const onActivateLateFilter = useStableOptionalCallback(
+    onActivateLateFilterProp,
+  );
   const dragItem = useRef<string | null>(null);
   const dragSourceColumn = useRef<"execute" | "candidate" | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const latestItemsRef = useRef(items);
+  const readAcceptedItem = useContext(AcceptedItemContext);
+  const commitItemCommands = useContext(ItemCommandContext);
   const latestCardCrudCallbacksRef = useRef({
     onDeleteRequest,
     onEditRequest,
@@ -528,13 +581,26 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     };
   }, [items, onDeleteRequest, onEditRequest, onUpdateItem]);
   const getLatestItemById = useCallback(
-    (itemId: string): ShoppingItem | undefined =>
-      latestItemsRef.current.find((item) => item.id === itemId),
+    (itemId: string): ShoppingItem | undefined => {
+      const rendered = indexedItem(latestItemsRef.current, itemId);
+      return rendered
+        ? readAcceptedItem
+          ? readAcceptedItem(itemId)
+          : rendered
+        : undefined;
+    },
+    [readAcceptedItem],
+  );
+  const handleCardUpdateItem = useCallback(
+    (item: ShoppingItem, saveImmediately = false) => {
+      if (saveImmediately)
+        latestCardCrudCallbacksRef.current.onUpdateItem(item, undefined, {
+          saveImmediately: true,
+        });
+      else latestCardCrudCallbacksRef.current.onUpdateItem(item);
+    },
     [],
   );
-  const handleCardUpdateItem = useCallback((item: ShoppingItem) => {
-    latestCardCrudCallbacksRef.current.onUpdateItem(item);
-  }, []);
   const handleCardEditRequest = useCallback((item: ShoppingItem) => {
     latestCardCrudCallbacksRef.current.onEditRequest(item);
   }, []);
@@ -574,7 +640,11 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     position: "top" | "bottom";
   } | null>(null);
   const [dragRuntimeActive, setDragRuntimeActive] = useState(false);
-  const viewportZoomPercent = useViewportZoomPercent();
+  const browserZoomPercent = useViewportZoomPercent();
+  const viewportZoomPercent =
+    browserZoomPercent === null
+      ? null
+      : (browserZoomPercent * appZoomLevel) / 100;
 
   const [expandedRemarks, setExpandedRemarks] = useState<Set<string>>(
     new Set(),
@@ -666,7 +736,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     if (priceHighlightItemIds.size === 0) return;
     const remaining = new Set<string>();
     for (const id of priceHighlightItemIds) {
-      const item = items.find((i) => i.id === id);
+      const item = indexedItem(items, id);
       if (item && isPriceRequiredStatus(item) && isUndefinedPrice(item.price)) {
         remaining.add(id);
       }
@@ -680,7 +750,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     if (limitedMissingHighlightItemIds.size === 0) return;
     const remaining = new Set<string>();
     for (const id of limitedMissingHighlightItemIds) {
-      const item = items.find((candidate) => candidate.id === id);
+      const item = indexedItem(items, id);
       if (item && hasMissingLimitedPurchaseQuantity(item)) {
         remaining.add(id);
       }
@@ -694,7 +764,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     setDeferredLimitedItemIdsByGroupKey((previous) => {
       if (previous.size === 0) return previous;
 
-      const itemsById = new Map(items.map((item) => [item.id, item]));
       let mutated = false;
       const next = new Map<string, Set<string>>();
 
@@ -702,7 +771,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         const retainedIds = new Set<string>();
 
         itemIds.forEach((itemId) => {
-          const latest = itemsById.get(itemId);
+          const latest = indexedItem(items, itemId);
           if (
             latest &&
             latest.purchaseStatus === "LimitedPurchase" &&
@@ -844,7 +913,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   );
 
   const updateItemWithDeferredCleanup = useCallback(
-    (updatedItem: ShoppingItem) => {
+    (updatedItem: ShoppingItem, saveImmediately = false) => {
       const shouldClearDefer =
         updatedItem.purchaseStatus !== "LimitedPurchase" ||
         !hasMissingLimitedPurchaseQuantity(updatedItem);
@@ -853,11 +922,34 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         clearLimitedPurchaseQuantityDeferredForItem(updatedItem.id);
       }
 
-      handleCardUpdateItem(updatedItem);
+      handleCardUpdateItem(updatedItem, saveImmediately);
     },
     [clearLimitedPurchaseQuantityDeferredForItem, handleCardUpdateItem],
   );
 
+  const updateItemsWithDeferredCleanup = useCallback(
+    (updates: readonly ShoppingItem[], saveImmediately = false) => {
+      if (!commitItemCommands) {
+        updates.forEach((item) =>
+          updateItemWithDeferredCleanup(item, saveImmediately),
+        );
+        return;
+      }
+      updates.forEach((item) => {
+        if (
+          item.purchaseStatus !== "LimitedPurchase" ||
+          !hasMissingLimitedPurchaseQuantity(item)
+        )
+          clearLimitedPurchaseQuantityDeferredForItem(item.id);
+      });
+      commitItemCommands(updates, { saveImmediately });
+    },
+    [
+      commitItemCommands,
+      updateItemWithDeferredCleanup,
+      clearLimitedPurchaseQuantityDeferredForItem,
+    ],
+  );
   const openPostEventDistributionCheck = useCallback(
     (mode: PostEventDistributionCheckMode, targets: ShoppingItem[]) => {
       if (!postEventDistributionCheckEnabled || targets.length === 0) return;
@@ -868,20 +960,24 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
   const handlePostEventDistributionCheckApply = useCallback(
     (answers: { itemId: string; answer: PostEventDistributionAnswer }[]) => {
-      answers.forEach(({ itemId, answer }) => {
+      const updates = answers.flatMap(({ itemId, answer }) => {
         const latestItem = getLatestItemById(itemId);
-        if (!latestItem) return;
-        updateItemWithDeferredCleanup({
-          ...latestItem,
-          remarks: upsertPostEventDistributionRemark(
-            latestItem.remarks,
-            answer,
-          ),
-        });
+        return latestItem
+          ? [
+              {
+                ...latestItem,
+                remarks: upsertPostEventDistributionRemark(
+                  latestItem.remarks,
+                  answer,
+                ),
+              },
+            ]
+          : [];
       });
+      updateItemsWithDeferredCleanup(updates, true);
       setPostEventDistributionCheckContext(null);
     },
-    [getLatestItemById, updateItemWithDeferredCleanup],
+    [getLatestItemById, updateItemsWithDeferredCleanup],
   );
 
   const handlePostEventDistributionCheckCancel = useCallback(() => {
@@ -1394,64 +1490,82 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     );
   }, [items, showHallGroups, hallDefinitions, hallOrder, mapData]);
 
-  const blockColorMap = useMemo(() => calculateBlockColors(items), [items]);
+  const projectRoutingItems = useMemo(createRoutingItemsProjector, []);
+  const routingItems = projectRoutingItems(items);
+  const blockColorMap = useMemo(
+    () => calculateBlockColors(routingItems),
+    [routingItems],
+  );
 
-  const spaceGroups = useMemo((): SpaceGroup[] => {
-    if (!showSpaceGroups) return [];
-
-    // 入力順の最初の位置でグループ化し、訪問内の品目順も維持する
-    const groupMap = new Map<
+  const projectExecutionVisits = useMemo(
+    () =>
+      createExecutionVisitIndex((item) =>
+        getSpaceGroupKeyForItem(item, columnType),
+      ),
+    [columnType],
+  );
+  const executionVisits = projectExecutionVisits(items).visits;
+  const spaceGroupCache = useRef(
+    new Map<
       string,
       {
-        spaceKey: string;
-        priority: PriorityLevel;
-        hallGroupId: string | null;
-        items: ShoppingItem[];
+        visit: (typeof executionVisits)[number];
+        context: readonly unknown[];
+        group: SpaceGroup;
+      }
+    >(),
+  );
+  const spaceGroups = useMemo((): SpaceGroup[] => {
+    if (!showSpaceGroups) return [];
+    const context = [columnType, collapsedSpaces, hallDefinitions, mapData];
+    const nextCache = new Map<
+      string,
+      {
+        visit: (typeof executionVisits)[number];
+        context: readonly unknown[];
+        group: SpaceGroup;
       }
     >();
-    const groupOrder: string[] = [];
-    displayOrderedItems.forEach((item) => {
+    const sources = executionVisits;
+    const output = sources.map((visit) => {
+      const item = visit.items[0];
+      const groupKey = getSpaceGroupKeyForItem(item, columnType);
+      const cached = spaceGroupCache.current.get(groupKey);
+      if (
+        cached?.visit === visit &&
+        context.every((value, index) => value === cached.context[index])
+      ) {
+        nextCache.set(groupKey, cached);
+        return cached.group;
+      }
       const spaceKey = getSpaceKey(item.block, item.number);
       const priority =
         columnType === "candidate"
           ? "none"
           : ((item.priorityLevel || "none") as PriorityLevel);
-      const groupKey = getSpaceGroupKeyForItem(item, columnType);
-      if (!groupMap.has(groupKey)) {
-        // 先頭アイテムのhallGroupIdを算出
-        const hallId =
-          columnType !== "candidate" && hallDefinitions.length > 0 && mapData
-            ? getHallIdForItem(item, mapData, hallDefinitions)
-            : null;
-        const hallGroupId =
-          columnType === "candidate" ? null : buildGroupId(hallId, priority);
-        groupMap.set(groupKey, { spaceKey, priority, hallGroupId, items: [] });
-        groupOrder.push(groupKey);
-      }
-      groupMap.get(groupKey)!.items.push(item);
-    });
-
-    return groupOrder.map((groupKey) => {
-      const {
-        spaceKey,
-        priority,
-        hallGroupId,
-        items: groupItems,
-      } = groupMap.get(groupKey)!;
-      return {
+      const hallId =
+        columnType !== "candidate" && hallDefinitions.length > 0 && mapData
+          ? getHallIdForItem(item, mapData, hallDefinitions)
+          : null;
+      const group: SpaceGroup = {
         groupKey,
         spaceKey,
         displayName: spaceKey,
-        items: groupItems,
+        items: visit.items,
         isCollapsed: collapsedSpaces?.has(groupKey) ?? false,
         priority,
-        hallGroupId,
+        hallGroupId:
+          columnType === "candidate" ? null : buildGroupId(hallId, priority),
       };
+      nextCache.set(groupKey, { visit, context, group });
+      return group;
     });
+    spaceGroupCache.current = nextCache;
+    return output;
   }, [
     columnType,
     collapsedSpaces,
-    displayOrderedItems,
+    executionVisits,
     hallDefinitions,
     mapData,
     showSpaceGroups,
@@ -1506,8 +1620,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     (groupKey: string) => groupVisitIdByKey.get(groupKey),
     [groupVisitIdByKey],
   );
+  const projectControllerRows = useMemo(createListRowsProjector, []);
+  const projectDisplayRows = useMemo(createListRowsProjector, []);
   const listControllerModel = useMemo(() => {
-    const visibleModel = buildListRows({
+    const visibleModel = projectControllerRows({
       items,
       groups: listRowGroups,
       column: columnType,
@@ -1516,7 +1632,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     });
     return {
       ...visibleModel,
-      itemIds: items.map((item) => item.id),
+      itemIds: stableItemIds(items),
     };
   }, [
     columnType,
@@ -1524,14 +1640,15 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     highlightedItemId,
     items,
     listRowGroups,
+    projectControllerRows,
   ]);
   const listControllerModelMembershipKey = useMemo(
     () =>
       JSON.stringify([
         listControllerModel.itemIds,
-        listControllerModel.rows.map((row) => row.rowKey),
+        listControllerModel.rowKeys,
       ]),
-    [listControllerModel],
+    [listControllerModel.itemIds, listControllerModel.rowKeys],
   );
 
   const [listControllerState, dispatchListController] = useReducer(
@@ -1564,7 +1681,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
   const listReadModel = useMemo(
     () =>
-      buildListRows({
+      projectDisplayRows({
         items,
         groups: listRowGroups,
         column: columnType,
@@ -1579,10 +1696,11 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       items,
       listRowGroups,
       selectedItemIds,
+      projectDisplayRows,
     ],
   );
 
-  const onSelectItem = useCallback(
+  const onSelectItem = useStableCallback(
     (
       itemId: string,
       sourceColumn: "execute" | "candidate" | undefined,
@@ -1591,7 +1709,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       dispatchListController(shoppingListCommand.toggleSelection(itemId));
       onSelectItemProp(itemId, sourceColumn, presentation);
     },
-    [onSelectItemProp],
   );
 
   const handleFocusedRowKeyChange = useCallback((rowKey: string | null) => {
@@ -1704,9 +1821,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const retainedViewportActivatedRef = useRef(false);
   const retainedViewportCapabilities = {
     runtimeAvailable:
-      virtualRuntimeAvailable &&
-      typeof IntersectionObserver === "function" &&
-      !isSingleColumnVirtualShape,
+      virtualRuntimeAvailable && typeof IntersectionObserver === "function",
     zoomPercent: viewportZoomPercent,
     recoveryActive,
     rowCount: listReadModel.rows.length,
@@ -1743,10 +1858,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const GroupedListRenderer = useRetainedViewportStructure
     ? RetainedViewportListRenderer
     : FullListRenderer;
-  const itemIndexById = useMemo(
-    () => new Map(items.map((item, index) => [item.id, index])),
-    [items],
-  );
+  const itemIndexById = itemPositions(items);
   const preferNativeOptions =
     (listRendererSelection.engine === "full" || useRetainedViewport) &&
     listReadModel.itemRows.length >= VIRTUAL_LIST_MINIMUM_ROW_COUNT;
@@ -1758,18 +1870,17 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       (listRendererSelection.engine !== "full" && !useRetainedViewport)
     )
       return;
-    const rowElement = Array.from(
-      containerRef.current?.querySelectorAll<HTMLElement>("[data-row-key]") ??
-        [],
-    ).find((element) => element.dataset.rowKey === scrollRequest.rowKey);
+    const rowElement = findViewportRow(
+      containerRef.current,
+      scrollRequest.rowKey,
+    );
     if (useRetainedViewportStructure && rowElement) {
       revealViewportContent(rowElement);
       const frame = requestAnimationFrame(() => {
-        const actual = Array.from(
-          containerRef.current?.querySelectorAll<HTMLElement>(
-            "[data-row-key]",
-          ) ?? [],
-        ).find((element) => element.dataset.rowKey === scrollRequest.rowKey);
+        const actual = findViewportRow(
+          containerRef.current,
+          scrollRequest.rowKey,
+        );
         actual?.scrollIntoView?.({
           block: scrollRequest.alignment,
           behavior: "auto",
@@ -1857,17 +1968,21 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   ]);
 
   // スペースグループの表示順序をApp.tsxに通知
+  const spaceGroupOrderSignature = JSON.stringify(
+    spaceGroups.map((group) => group.groupKey),
+  );
   useEffect(() => {
-    if (!isInspecting && onSpaceGroupOrderChange && spaceGroups.length > 0) {
-      onSpaceGroupOrderChange(spaceGroups.map((g) => g.groupKey));
+    const order: string[] = JSON.parse(spaceGroupOrderSignature);
+    if (!isInspecting && onSpaceGroupOrderChange && order.length > 0) {
+      onSpaceGroupOrderChange(order);
     }
-  }, [isInspecting, spaceGroups, onSpaceGroupOrderChange]);
+  }, [isInspecting, spaceGroupOrderSignature, onSpaceGroupOrderChange]);
 
   const spaceGroupBlockColorMap = useMemo(() => {
     if (!showSpaceGroups)
       return new Map<string, { light: string; dark: string }>();
     const uniqueBlocks = new Set<string>();
-    items.forEach((item) => uniqueBlocks.add(item.block));
+    routingItems.forEach((item) => uniqueBlocks.add(item.block));
     const sortedBlocks = Array.from(uniqueBlocks).sort((a, b) => {
       const numA = Number(a);
       const numB = Number(b);
@@ -1882,7 +1997,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       blockColorMapResult.set(block, colorPalette[index % colorPalette.length]);
     });
     return blockColorMapResult;
-  }, [items, showSpaceGroups]);
+  }, [routingItems, showSpaceGroups]);
 
   const resolvedRange = useMemo(() => {
     if (!rangeStart || !rangeEnd) return null;
@@ -2579,6 +2694,24 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     return (
       <GroupedListRenderer
         defer={useRetainedViewport}
+        zoomPercent={viewportZoomPercent}
+        pinnedRowKeys={
+          new Set(
+            listReadModel.itemRows
+              .filter(
+                (row) =>
+                  retainedItemIds?.includes(row.itemId) ||
+                  row.itemId === limitedBulkDialogContext?.itemSnapshot.id ||
+                  (postEventDistributionCheckContext?.mode === "single" &&
+                    postEventDistributionCheckContext.targets[0]?.id ===
+                      row.itemId) ||
+                  row.rowKey === listControllerState.focusedRowKey ||
+                  row.itemId === dragItem.current ||
+                  touchDragSpaceGroupIds.current?.includes(row.itemId),
+              )
+              .map((row) => row.rowKey),
+          )
+        }
         engine={listRendererSelection.engine}
         layoutMode={layoutMode}
         getVisitId={getExecutionVisitIdForItem}
@@ -3905,6 +4038,24 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     return (
       <GroupedListRenderer
         defer={useRetainedViewport}
+        zoomPercent={viewportZoomPercent}
+        pinnedRowKeys={
+          new Set(
+            listReadModel.itemRows
+              .filter(
+                (row) =>
+                  retainedItemIds?.includes(row.itemId) ||
+                  row.itemId === limitedBulkDialogContext?.itemSnapshot.id ||
+                  (postEventDistributionCheckContext?.mode === "single" &&
+                    postEventDistributionCheckContext.targets[0]?.id ===
+                      row.itemId) ||
+                  row.rowKey === listControllerState.focusedRowKey ||
+                  row.itemId === dragItem.current ||
+                  touchDragSpaceGroupIds.current?.includes(row.itemId),
+              )
+              .map((row) => row.rowKey),
+          )
+        }
         engine={listRendererSelection.engine}
         layoutMode={layoutMode}
         getVisitId={getExecutionVisitIdForItem}
@@ -3936,6 +4087,50 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
               </div>
             )}
           </>
+        }
+        renderDependencies={[
+          layoutMode,
+          viewMode,
+          columnType,
+          hallDefinitions,
+          hallOrder,
+          mapData,
+          selectedItemIds,
+          priceHighlightItemIds,
+          limitedMissingHighlightItemIds,
+          expandedRemarks,
+          activeDropTarget,
+          rangeStart,
+          rangeEnd,
+          groupRangeInfo,
+          spaceGroupRangeInfo,
+          crossSpaceGroupRangeInfo,
+          isInspecting,
+          purchaseStatusControlMode,
+          skipLimitedPurchaseForSingleQuantity,
+          preferNativeOptions,
+          onSelectItem,
+          onMoveItemUp,
+          onMoveItemDown,
+          onToggleRangeSelection,
+          onToggleSpaceCollapse,
+          onSetSpaceGroupDragItemIds,
+          onSelectSpaceGroupForRange,
+          onAddItem,
+          onBulkStatusChange,
+          onSpaceGroupOrderChange,
+          onCollapseAndOpenNext,
+          showPostponeFilterButton,
+          showLateFilterButton,
+          onActivatePostponeFilter,
+          onActivateLateFilter,
+          disablePriceUndefinedCheck,
+          _disableLimitedPurchaseQuantityCheck,
+          postEventDistributionCheckEnabled,
+          deferredLimitedItemIdsByGroupKey,
+        ]}
+        getGroupVersion={(key) =>
+          spaceGroups[spaceGroupIndexByKey.get(key) ?? -1]
         }
         renderGroup={renderSpaceGroupRow}
         afterContent={
@@ -4598,6 +4793,24 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     return (
       <GroupedListRenderer
         defer={useRetainedViewport}
+        zoomPercent={viewportZoomPercent}
+        pinnedRowKeys={
+          new Set(
+            listReadModel.itemRows
+              .filter(
+                (row) =>
+                  retainedItemIds?.includes(row.itemId) ||
+                  row.itemId === limitedBulkDialogContext?.itemSnapshot.id ||
+                  (postEventDistributionCheckContext?.mode === "single" &&
+                    postEventDistributionCheckContext.targets[0]?.id ===
+                      row.itemId) ||
+                  row.rowKey === listControllerState.focusedRowKey ||
+                  row.itemId === dragItem.current ||
+                  touchDragSpaceGroupIds.current?.includes(row.itemId),
+              )
+              .map((row) => row.rowKey),
+          )
+        }
         engine={listRendererSelection.engine}
         layoutMode={layoutMode}
         getVisitId={getExecutionVisitIdForItem}
@@ -4613,6 +4826,47 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           onDragLeave: () => setActiveDropTarget(null),
           onFocusCapture: handleFullListFocusCapture,
         }}
+        renderDependencies={[
+          layoutMode,
+          viewMode,
+          columnType,
+          hallDefinitions,
+          hallOrder,
+          mapData,
+          selectedItemIds,
+          priceHighlightItemIds,
+          limitedMissingHighlightItemIds,
+          expandedRemarks,
+          activeDropTarget,
+          rangeStart,
+          rangeEnd,
+          groupRangeInfo,
+          spaceGroupRangeInfo,
+          crossSpaceGroupRangeInfo,
+          isInspecting,
+          purchaseStatusControlMode,
+          skipLimitedPurchaseForSingleQuantity,
+          preferNativeOptions,
+          onSelectItem,
+          onMoveItemUp,
+          onMoveItemDown,
+          onToggleRangeSelection,
+          onToggleSpaceCollapse,
+          onSetSpaceGroupDragItemIds,
+          onSelectSpaceGroupForRange,
+          onAddItem,
+          onBulkStatusChange,
+          onSpaceGroupOrderChange,
+          onCollapseAndOpenNext,
+          showPostponeFilterButton,
+          showLateFilterButton,
+          onActivatePostponeFilter,
+          onActivateLateFilter,
+          disablePriceUndefinedCheck,
+          _disableLimitedPurchaseQuantityCheck,
+          postEventDistributionCheckEnabled,
+          deferredLimitedItemIdsByGroupKey,
+        ]}
         renderGroup={renderHallGroupRow}
       />
     );
@@ -4955,6 +5209,24 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     return (
       <RetainedViewportListRenderer
         defer={useRetainedViewport}
+        zoomPercent={viewportZoomPercent}
+        pinnedRowKeys={
+          new Set(
+            listReadModel.itemRows
+              .filter(
+                (row) =>
+                  retainedItemIds?.includes(row.itemId) ||
+                  row.itemId === limitedBulkDialogContext?.itemSnapshot.id ||
+                  (postEventDistributionCheckContext?.mode === "single" &&
+                    postEventDistributionCheckContext.targets[0]?.id ===
+                      row.itemId) ||
+                  row.rowKey === listControllerState.focusedRowKey ||
+                  row.itemId === dragItem.current ||
+                  touchDragSpaceGroupIds.current?.includes(row.itemId),
+              )
+              .map((row) => row.rowKey),
+          )
+        }
         engine={listRendererSelection.engine}
         model={listReadModel}
         selectionReason={listRendererSelection.reason}

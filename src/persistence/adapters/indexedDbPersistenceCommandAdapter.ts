@@ -35,6 +35,7 @@ export type IndexedDbPersistenceCommandDelegate = Pick<
   | "deleteEventAtomically"
   | "renameEventAtomically"
 > & {
+  commitItemContentEdits?: PersistenceCommandPort["commitItemContentEdits"];
   adoptRecoveryCandidate(
     candidate: Parameters<PersistenceCommandPort["adoptRecoveryCandidate"]>[0],
   ): Promise<unknown>;
@@ -83,6 +84,15 @@ export function createIndexedDbPersistenceCommandAdapter(
     };
   return {
     inspectConsistencyUpgrade,
+    ...(delegate.commitItemContentEdits
+      ? {
+          commitItemContentEdits: async (...args) => {
+            const result = await delegate.commitItemContentEdits!(...args);
+            if (result.status === "committed") observed = result.read.snapshot;
+            return result;
+          },
+        }
+      : {}),
     loadPreference: (key) => auxiliary.loadPreference(key),
     savePreference: (key, value) => auxiliary.savePreference(key, value),
     bindApplicationSettings(next) {

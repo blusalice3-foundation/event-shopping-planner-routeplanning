@@ -79,6 +79,137 @@ const createAuxiliaryDelegate = (
 };
 
 describe("IndexedDB persistence command adapter", () => {
+  it("forwards field edits with operation identities and observes the committed snapshot", async () => {
+    const committed = snapshot();
+    committed.eventLists.event = [
+      { id: "item-1", purchaseStatus: "Purchased" },
+    ];
+    committed.eventConsistency.event = {
+      ...createEventConsistency(),
+      blockDetectionSettings: DEFAULT_BLOCK_DETECTION_SETTINGS,
+    };
+    const read = {
+      snapshot: committed,
+      expectedRoots: { revision: 2 },
+      consistencyMissing: false,
+      eventGenerations: { event: 3 },
+    };
+    const result = { status: "committed" as const, read };
+    const commitItemContentEdits = vi.fn(async () => result);
+    const delegate = createDelegate({ commitItemContentEdits });
+    const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+    const edits = [
+      {
+        eventName: "event",
+        itemId: "item-1",
+        fields: { purchaseStatus: { present: true, value: "Purchased" } },
+      },
+    ];
+    const operationIds = ["application:1", "application:2"];
+    const generations = { event: 3 };
+
+    expect(adapter.readBlockDetectionSettings("event")).toBeNull();
+    expect(
+      await adapter.commitItemContentEdits!(edits, operationIds, generations),
+    ).toBe(result);
+    expect(commitItemContentEdits).toHaveBeenCalledExactlyOnceWith(
+      edits,
+      operationIds,
+      generations,
+    );
+    expect(adapter.readBlockDetectionSettings("event")).toEqual(
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(adapter.readBlockDetectionSettingsForBackup(["event"])).toEqual({
+      event: DEFAULT_BLOCK_DETECTION_SETTINGS,
+    });
+    expect(delegate.commitApplicationSnapshotAtomically).not.toHaveBeenCalled();
+  });
+
+  it("retains observed settings while a field edit requires conflict review", async () => {
+    const previous = snapshot();
+    previous.eventLists.event = [{ id: "item-1", remarks: "previous" }];
+    previous.eventConsistency.event = {
+      ...createEventConsistency(),
+      blockDetectionSettings: DEFAULT_BLOCK_DETECTION_SETTINGS,
+    };
+    const review = { status: "review-required" as const };
+    const delegate = createDelegate({
+      readApplicationSnapshot: vi.fn(async () => ({
+        snapshot: previous,
+        expectedRoots: {},
+        consistencyMissing: false,
+      })),
+      commitItemContentEdits: vi.fn(async () => review),
+    });
+    const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+    await adapter.readApplicationSnapshot();
+
+    const edits = [
+      {
+        eventName: "event",
+        itemId: "item-1",
+        baseline: { remarks: "previous" },
+        fields: { remarks: { present: true, value: "confirmed answer" } },
+      },
+    ];
+    expect(
+      await adapter.commitItemContentEdits!(edits, ["application:3"], {
+        event: 3,
+      }),
+    ).toBe(review);
+    expect(adapter.readBlockDetectionSettings("event")).toEqual(
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(adapter.readBlockDetectionSettingsForBackup(["event"])).toEqual({
+      event: DEFAULT_BLOCK_DETECTION_SETTINGS,
+    });
+    expect(delegate.commitApplicationSnapshotAtomically).not.toHaveBeenCalled();
+  });
+
+  it("propagates a failed field save without replacing the last observed settings", async () => {
+    const previous = snapshot();
+    previous.eventLists.event = [{ id: "item-1", quantity: 1 }];
+    previous.eventConsistency.event = {
+      ...createEventConsistency(),
+      blockDetectionSettings: DEFAULT_BLOCK_DETECTION_SETTINGS,
+    };
+    const failure = new DOMException("quota", "QuotaExceededError");
+    const commitItemContentEdits = vi.fn().mockRejectedValue(failure);
+    const delegate = createDelegate({
+      readApplicationSnapshot: vi.fn(async () => ({
+        snapshot: previous,
+        expectedRoots: {},
+        consistencyMissing: false,
+      })),
+      commitItemContentEdits,
+    });
+    const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+    await adapter.readApplicationSnapshot();
+    const edits = [
+      {
+        eventName: "event",
+        itemId: "item-1",
+        fields: { quantity: { present: true, value: 2 } },
+      },
+    ];
+    const operationIds = ["application:4"];
+    const generations = { event: 3 };
+
+    await expect(
+      adapter.commitItemContentEdits!(edits, operationIds, generations),
+    ).rejects.toBe(failure);
+    expect(commitItemContentEdits).toHaveBeenCalledExactlyOnceWith(
+      edits,
+      operationIds,
+      generations,
+    );
+    expect(adapter.readBlockDetectionSettings("event")).toEqual(
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(delegate.commitApplicationSnapshotAtomically).not.toHaveBeenCalled();
+  });
+
   it("uses the preference port for UI preferences and canonical state for event settings", async () => {
     const delegate = createDelegate(),
       auxiliary = createAuxiliaryDelegate({
