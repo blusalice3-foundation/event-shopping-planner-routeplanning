@@ -1,3 +1,5 @@
+import { RUNTIME_FALLBACK_NAMESPACE } from "../../utils/persistenceResilience";
+import { semanticEqual } from "../../utils/semanticEquality";
 import { assertEventConsistency } from "../../types/consistencyValidation";
 /**
  * Atomic full-application restore transaction.
@@ -54,6 +56,8 @@ import {
   prepareMetadataForPayload,
   readRuntimeCandidateSnapshots,
   validatePersistenceSnapshot,
+  isStoredPersistenceMetadata,
+  immutableObservedRootFieldsMatch,
   type ObservedRevisionRoot,
   type RuntimeCandidateSnapshot,
   type StoredPersistenceMetadata,
@@ -407,8 +411,183 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
   };
 }
 
+let verifiedCommandCache:
+  | {
+      database: IDBDatabase;
+      observation: AppDataRestoreObservation;
+      fallbackKey: string;
+    }
+  | undefined;
+const dayCommandObservations = new WeakSet<object>();
+const frozenCommandValues = new WeakSet<object>();
+function freezeCommandValue(value: unknown): void {
+  if (!value || typeof value !== "object" || frozenCommandValues.has(value))
+    return;
+  frozenCommandValues.add(value);
+  for (const entry of Object.values(value)) freezeCommandValue(entry);
+  Object.freeze(value);
+}
+function captureCommandChanges(before: unknown, after: unknown): unknown {
+  if (before === after) return before;
+  if (
+    before &&
+    after &&
+    typeof before === "object" &&
+    typeof after === "object" &&
+    !Array.isArray(before) &&
+    !Array.isArray(after)
+  ) {
+    return Object.fromEntries(
+      Object.entries(after).map(([key, value]) => [
+        key,
+        captureCommandChanges((before as Record<string, unknown>)[key], value),
+      ]),
+    );
+  }
+  return structuredClone(after);
+}
+function runtimeFallbackKey(): string {
+  if (typeof localStorage === "undefined") return "";
+  const entries: Array<[string, string | null]> = [];
+  for (let index = 0; index < localStorage.length; index++) {
+    const key = localStorage.key(index);
+    if (key?.startsWith(RUNTIME_FALLBACK_NAMESPACE))
+      entries.push([key, localStorage.getItem(key)]);
+  }
+  return JSON.stringify(entries.sort(([a], [b]) => a.localeCompare(b)));
+}
+function rememberObservation(
+  observation: AppDataRestoreObservation,
+  share = false,
+): ApplicationSnapshotRead {
+  observation.roots.forEach((root, store) =>
+    expectedRevisionRoots.set(getObservedRootKey(store, DATA_KEY), root),
+  );
+  observation.checkpoints.forEach((checkpoint, store) =>
+    expectedPersistenceCheckpoints.set(
+      getObservedRootKey(store, DATA_KEY),
+      checkpoint,
+    ),
+  );
+  const expectedRoots = { roots: structuredClone(observation.roots) };
+  applicationSnapshotObservations.set(expectedRoots, observation);
+  if (share) {
+    freezeCommandValue(observation.snapshot);
+    dayCommandObservations.add(expectedRoots);
+  }
+  return {
+    snapshot: share
+      ? observation.snapshot
+      : structuredClone(observation.snapshot),
+    expectedRoots,
+    consistencyMissing: observation.consistencyMissing,
+    eventGenerations: { ...observation.eventGenerations },
+  };
+}
+
+/** Worker-owned immutable cache. Every transaction still checks all revision/checkpoint heads. */
+export async function readDayCommandSnapshot(): Promise<ApplicationSnapshotRead> {
+  const database = await openDB();
+  const cached = verifiedCommandCache;
+  const fallbackKey = runtimeFallbackKey();
+  if (
+    cached?.database === database &&
+    cached.fallbackKey === fallbackKey &&
+    cached.observation.runtimeCandidates.length === 0 &&
+    !cached.observation.consistencyMissing &&
+    APPLICATION_SNAPSHOT_STORE_NAMES.every(
+      (store) =>
+        !cached.observation.roots.get(store)?.synthetic &&
+        cached.observation.checkpoints.get(store) != null,
+    )
+  ) {
+    const transaction = openCoordinatedTransaction(
+      database,
+      [STORES.SYNC_QUEUE],
+      "readonly",
+    );
+    const finished = transactionFinished(transaction);
+    const control = transaction.objectStore(STORES.SYNC_QUEUE);
+    const reads = APPLICATION_SNAPSHOT_STORE_NAMES.map(async (store) => {
+      const [metadata, checkpoint] = await Promise.all([
+        requestResult(
+          control.get(createPersistenceMetadataKey(store, DATA_KEY)),
+        ),
+        requestResult(
+          control.get(createPersistenceCheckpointKey(store, DATA_KEY)),
+        ),
+      ]);
+      const root = cached.observation.roots.get(store)!;
+      if (
+        !isStoredPersistenceMetadata(metadata, store, DATA_KEY) ||
+        !immutableObservedRootFieldsMatch(metadata, root)
+      )
+        return false;
+      try {
+        assertCurrentCheckpointMatchesExpected(
+          store,
+          DATA_KEY,
+          checkpoint,
+          cached.observation.checkpoints.get(store)!,
+        );
+      } catch {
+        return false;
+      }
+      return true;
+    });
+    const journal = requestResult(control.get(CONSISTENCY_MIGRATION_KEY));
+    const archive = requestResult(control.get(CONSISTENCY_ARCHIVE_KEY));
+    const generations = requestResult(control.get(EVENT_GENERATIONS_KEY));
+    const heads = await Promise.all(reads);
+    const evidence = await Promise.all([
+      journal,
+      archive,
+      generations,
+      finished,
+    ]);
+    if (
+      heads.every(Boolean) &&
+      storedValuesEqual(evidence[0], cached.observation.journal) &&
+      storedValuesEqual(evidence[1], cached.observation.archive) &&
+      storedValuesEqual(
+        readEventGenerations(evidence[2]),
+        cached.observation.eventGenerations,
+      )
+    )
+      return rememberObservation(cached.observation, true);
+  }
+  verifiedCommandCache = undefined;
+  const observation = await observeAppDataRestoreState();
+  verifiedCommandCache = {
+    database,
+    observation,
+    fallbackKey: runtimeFallbackKey(),
+  };
+  return rememberObservation(
+    observation,
+    APPLICATION_SNAPSHOT_STORE_NAMES.every(
+      (store) =>
+        !observation.roots.get(store)?.synthetic &&
+        observation.checkpoints.get(store) != null,
+    ),
+  );
+}
+export async function commitDayCommandSnapshot(
+  data: AppData,
+  expectedRoots: object,
+): Promise<void> {
+  await commitApplicationSnapshotAtomically(data, {
+    expectedRoots,
+    changedStoresOnly: true,
+  });
+}
 export async function readApplicationSnapshot(): Promise<ApplicationSnapshotRead> {
   const observation = await observeAppDataRestoreState();
+  verifiedCommandCache = {
+    database: await openDB(),
+    observation,
+    fallbackKey: runtimeFallbackKey(),
+  };
   observation.roots.forEach((root, store) =>
     expectedRevisionRoots.set(getObservedRootKey(store, DATA_KEY), root),
   );
@@ -431,7 +610,10 @@ export async function commitApplicationSnapshotAtomically(
   data: AppData,
   options: AtomicSnapshotOptions = {},
 ): Promise<void> {
-  assertEventConsistency(data.eventConsistency);
+  const verifiedCommand =
+    !!options.expectedRoots &&
+    dayCommandObservations.has(options.expectedRoots);
+  if (!verifiedCommand) assertEventConsistency(data.eventConsistency);
   const ownedObservation = options.expectedRoots
     ? applicationSnapshotObservations.get(options.expectedRoots)
     : undefined;
@@ -445,15 +627,23 @@ export async function commitApplicationSnapshotAtomically(
     ownedObservation.checkpoints.get(STORES.MAP_DATA) != null &&
     mapDescriptor?.enumerable === true &&
     "value" in mapDescriptor &&
-    storedValuesEqual(mapDescriptor.value, ownedObservation.snapshot.mapData);
+    (verifiedCommand
+      ? mapDescriptor.value === ownedObservation.snapshot.mapData
+      : storedValuesEqual(
+          mapDescriptor.value,
+          ownedObservation.snapshot.mapData,
+        ));
   // Capture all mutable caller data before awaiting. Only a private, previously
   // validated and unchanged map may bypass full restore preparation.
-  const stableData: AppData = reuseUnchangedMap
-    ? {
-        ...structuredClone({ ...data, mapData: {} }),
-        mapData: ownedObservation.snapshot.mapData,
-      }
-    : structuredClone(data);
+  const stableData: AppData =
+    verifiedCommand && ownedObservation
+      ? (captureCommandChanges(ownedObservation.snapshot, data) as AppData)
+      : reuseUnchangedMap
+        ? {
+            ...structuredClone({ ...data, mapData: {} }),
+            mapData: ownedObservation.snapshot.mapData,
+          }
+        : structuredClone(data);
   const stableMapData = reuseUnchangedMap
     ? (stableData.mapData as MapDataStore)
     : normalizeMapDataForPersistence(stableData.mapData as MapDataStore);
@@ -519,10 +709,15 @@ export async function commitApplicationSnapshotAtomically(
         options.migration ||
         observation.roots.get(storeName)?.synthetic ||
         !observation.checkpoints.get(storeName) ||
-        !storedValuesEqual(
-          observation.snapshot[storeName],
-          restorePayloads.get(storeName),
-        ),
+        !(verifiedCommand
+          ? semanticEqual(
+              observation.snapshot[storeName],
+              restorePayloads.get(storeName),
+            )
+          : storedValuesEqual(
+              observation.snapshot[storeName],
+              restorePayloads.get(storeName),
+            )),
     ),
   );
   // A confirmed save remains a real write even when its values already match.
@@ -583,7 +778,8 @@ export async function commitApplicationSnapshotAtomically(
     const currentMetadata = new Map<StoreName, unknown>();
     const currentCheckpoints = new Map<StoreName, unknown>();
     let currentMapEntries: Record<string, unknown> | null = null;
-    let remainingReads = APPLICATION_SNAPSHOT_STORE_NAMES.length * 3 + 3;
+    let remainingReads =
+      APPLICATION_SNAPSHOT_STORE_NAMES.length * (verifiedCommand ? 2 : 3) + 3;
     let currentEventGenerations: unknown;
     let currentJournal: unknown;
     let currentArchive: unknown;
@@ -694,7 +890,25 @@ export async function commitApplicationSnapshotAtomically(
           if (!observed)
             throw new Error(`Missing restore state for ${storeName}.`);
           const changed = changedStores.has(storeName);
-          if (storeName === STORES.MAP_DATA) {
+          if (verifiedCommand) {
+            const metadata = currentMetadata.get(storeName);
+            if (
+              !isStoredPersistenceMetadata(metadata, storeName, DATA_KEY) ||
+              !immutableObservedRootFieldsMatch(metadata, observed)
+            )
+              throw new PersistenceConflictError(
+                `${storeName} changed after the verified command read.`,
+              );
+            if (changed) {
+              if (storeName === STORES.MAP_DATA)
+                throw new Error("Day commands cannot modify map geometry.");
+              trackRequest(
+                transaction
+                  .objectStore(storeName)
+                  .put(restorePayloads.get(storeName), DATA_KEY),
+              );
+            }
+          } else if (storeName === STORES.MAP_DATA) {
             const currentEntries = currentMapEntries;
             if (currentEntries === null)
               throw new Error("Missing mapData restore CAS snapshot.");
@@ -810,6 +1024,7 @@ export async function commitApplicationSnapshotAtomically(
           commitIfReady();
         };
 
+        if (verifiedCommand) return;
         if (storeName === STORES.MAP_DATA) {
           const mapEntries: Record<string, unknown> = {};
           const mapCursor = transaction.objectStore(storeName).openCursor();
@@ -867,6 +1082,39 @@ export async function commitApplicationSnapshotAtomically(
     );
   });
   cleanupRuntimeCandidateSnapshots(observation.runtimeCandidates);
+  if (!options.migration) {
+    const roots = new Map(observation.roots),
+      checkpoints = new Map(observation.checkpoints);
+    preparedMetadata.forEach((metadata, store) => {
+      roots.set(store, metadata);
+      checkpoints.set(store, preparedCheckpoints.get(store)!);
+    });
+    verifiedCommandCache = {
+      database,
+      observation: {
+        ...observation,
+        roots,
+        checkpoints,
+        snapshot: stableData,
+        consistencyMissing: false,
+        mapDataNormalized: true,
+        eventGenerations: Object.fromEntries(
+          [
+            ...new Set([
+              ...Object.keys(observation.eventGenerations),
+              ...(options.invalidatedEvents ?? []),
+            ]),
+          ].map((event) => [
+            event,
+            (observation.eventGenerations[event] ?? 0) +
+              (options.invalidatedEvents?.includes(event) ? 1 : 0),
+          ]),
+        ),
+        runtimeCandidates: [],
+      },
+      fallbackKey: runtimeFallbackKey(),
+    };
+  } else verifiedCommandCache = undefined;
 }
 
 /** Compatibility entry point for backup restore callers. */

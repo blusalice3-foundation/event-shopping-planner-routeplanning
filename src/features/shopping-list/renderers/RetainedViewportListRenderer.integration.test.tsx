@@ -61,10 +61,16 @@ beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
     function (this: HTMLElement) {
       return {
-        top: visibleKeys.has(this.dataset.viewportRowKey ?? "") ? 20 : 10000,
-        bottom: visibleKeys.has(this.dataset.viewportRowKey ?? "")
-          ? 156
-          : 10136,
+        top:
+          !this.dataset.viewportRowKey ||
+          visibleKeys.has(this.dataset.viewportRowKey)
+            ? 20
+            : 10000,
+        bottom:
+          !this.dataset.viewportRowKey ||
+          visibleKeys.has(this.dataset.viewportRowKey)
+            ? 156
+            : 10136,
         height: 136,
         width: 400,
         left: 0,
@@ -766,3 +772,30 @@ it("propagates dialog retention through a memoized group and releases the row af
   leaveViewport();
   expect(view.queryByRole("textbox", { name: "item-0" })).toBeNull();
 });
+
+it.each([500, 1500])(
+  "bounds synchronous initial position measurements for %i rows",
+  (count) => {
+    const many = Array.from({ length: count }, (_, index) => ({
+      ...items[0],
+      id: `bounded-${index}`,
+    }));
+    const model = buildListRows({ items: many });
+    visibleKeys.add(model.rows[0].rowKey);
+    const measure = vi.mocked(HTMLElement.prototype.getBoundingClientRect);
+    measure.mockClear();
+    const view = render(
+      <RetainedViewportListRenderer
+        model={model}
+        accessibleLabel="計測範囲"
+        renderRow={(row) => (row.kind === "item" ? <input /> : null)}
+      />,
+    );
+    const rowMeasurements = measure.mock.instances.filter(
+      (element) => !!(element as HTMLElement).dataset.viewportRowKey,
+    );
+    expect(rowMeasurements.length).toBeLessThan(20);
+    expect(view.container.querySelectorAll("input")).toHaveLength(1);
+  },
+  15000,
+);

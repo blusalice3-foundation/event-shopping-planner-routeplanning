@@ -1,3 +1,4 @@
+import { createBackupInWorker } from "./backupWorker";
 import { inspectConsistencyUpgrade } from "../db/consistencyUpgrade";
 import type {
   PersistenceCommandPort,
@@ -36,6 +37,7 @@ export type IndexedDbPersistenceCommandDelegate = Pick<
   | "renameEventAtomically"
 > & {
   commitItemContentEdits?: PersistenceCommandPort["commitItemContentEdits"];
+  commitDayMutation?: PersistenceCommandPort["commitDayMutation"];
   adoptRecoveryCandidate(
     candidate: Parameters<PersistenceCommandPort["adoptRecoveryCandidate"]>[0],
   ): Promise<unknown>;
@@ -84,10 +86,24 @@ export function createIndexedDbPersistenceCommandAdapter(
     };
   return {
     inspectConsistencyUpgrade,
+    createBackupFile: createBackupInWorker,
     ...(delegate.commitItemContentEdits
       ? {
           commitItemContentEdits: async (...args) => {
             const result = await delegate.commitItemContentEdits!(...args);
+            if (result.status === "committed") observed = result.read.snapshot;
+            return result;
+          },
+        }
+      : {}),
+    ...(delegate.commitDayMutation
+      ? {
+          commitDayMutation: async (
+            ...args: Parameters<
+              NonNullable<PersistenceCommandPort["commitDayMutation"]>
+            >
+          ) => {
+            const result = await delegate.commitDayMutation!(...args);
             if (result.status === "committed") observed = result.read.snapshot;
             return result;
           },

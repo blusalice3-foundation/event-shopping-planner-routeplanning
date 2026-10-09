@@ -46,6 +46,12 @@ self.onmessage = (
             args[0] as Parameters<typeof server.commit>[0],
             args[1] as Parameters<typeof server.commit>[1],
           );
+        else if (method === "day")
+          result = await server.day(
+            args[0] as Parameters<typeof server.day>[0],
+            args[1] as string,
+            args[2] as Record<string, number>,
+          );
         else if (method === "items")
           result = await server.items(
             args[0] as Parameters<typeof server.items>[0],

@@ -592,6 +592,7 @@ export const useMapVisitListCommands = ({
       void requestMutation({
         events: [event],
         expectedGenerations: { [event]: generation },
+        dayMutation: { kind: "mode", eventName: event, day: tab },
         plan: (snapshot, choices) =>
           planDayModeToggle(snapshot, event, tab, choices),
       })

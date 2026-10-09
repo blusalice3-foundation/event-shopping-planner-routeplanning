@@ -28,6 +28,32 @@ export interface ItemContentEdit {
     Record<string, { present: boolean; value: unknown }>
   >;
 }
+export interface ApplicationBackupChange {
+  store: keyof PersistenceSnapshot;
+  eventName: string;
+  baseline: unknown;
+  desired: unknown;
+}
+export interface ApplicationBackupFile {
+  blob: Blob;
+  exportedAt: string;
+}
+/** A command contains only the affected event/day and proposed field changes. */
+export type ApplicationDayMutation =
+  | {
+      kind: "mode";
+      eventName: string;
+      day: string;
+      mode?: "edit" | "execute" | "focus";
+    }
+  | {
+      kind: "patch";
+      eventName: string;
+      day: string;
+      baseline: Partial<PersistenceSnapshot>;
+      desired: Partial<PersistenceSnapshot>;
+      routeDays?: Record<string, Record<string, string[]>>;
+    };
 export type ApplicationItemEditsResult =
   | { status: "committed"; read: ApplicationSnapshotRead }
   | { status: "review-required" };
@@ -118,6 +144,15 @@ export interface PersistenceCommandPort extends PreferencePersistencePort {
   commitItemContentEdits?(
     edits: readonly ItemContentEdit[],
     operationIds: readonly string[],
+    expectedEventGenerations: Readonly<Record<string, number>>,
+  ): Promise<ApplicationItemEditsResult>;
+  createBackupFile?(
+    changes: readonly ApplicationBackupChange[],
+    fallback: () => PersistenceSnapshot,
+  ): Promise<ApplicationBackupFile>;
+  commitDayMutation?(
+    command: ApplicationDayMutation,
+    operationId: string,
     expectedEventGenerations: Readonly<Record<string, number>>,
   ): Promise<ApplicationItemEditsResult>;
   saveEventConsistency(

@@ -1,5 +1,6 @@
 import type {
   ApplicationSnapshotRead,
+  ApplicationDayMutation,
   AtomicSnapshotOptions,
   ItemContentEdit,
   PersistenceSnapshot,
@@ -10,9 +11,24 @@ import {
   validateSnapshotReferences,
   validateSnapshotStructure,
 } from "../../utils/appBackup";
-import { snapshotDelta, type WorkerSnapshotRead } from "./snapshotDelta";
+import {
+  snapshotDelta,
+  daySnapshotDelta,
+  type WorkerSnapshotRead,
+} from "./snapshotDelta";
 
+import {
+  planDayMutation,
+  scopeDaySnapshot,
+} from "../../features/consistency/domain/dayMutation";
+import { duplicateEventDays } from "../../features/consistency/domain/dayMerge";
+import { sameDay } from "../../features/consistency/domain/context";
 export interface PersistenceWorkerDelegate {
+  readDayCommandSnapshot?(): Promise<ApplicationSnapshotRead>;
+  commitDayCommandSnapshot?(
+    snapshot: PersistenceSnapshot,
+    expectedRoots: object,
+  ): Promise<void>;
   readApplicationSnapshot(): Promise<ApplicationSnapshotRead>;
   commitApplicationSnapshotAtomically(
     snapshot: PersistenceSnapshot,
@@ -28,12 +44,15 @@ export function createPersistenceWorkerServer(
   const publish = (
     read: ApplicationSnapshotRead,
     retainObservation = true,
+    dayEvent?: string,
   ): WorkerSnapshotRead => {
     const observationId = ++sequence;
     if (retainObservation) observations.set(observationId, read.expectedRoots);
     if (observations.size > 8)
       observations.delete(observations.keys().next().value!);
-    const delta = snapshotDelta(previous, read.snapshot);
+    const delta = dayEvent
+      ? daySnapshotDelta(previous, read.snapshot, dayEvent)
+      : snapshotDelta(previous, read.snapshot);
     previous = read.snapshot;
     return {
       delta,
@@ -71,7 +90,92 @@ export function createPersistenceWorkerServer(
         ...options,
         expectedRoots,
       });
-      // The next read computes its delta against the last value actually sent to the UI.
+      // The caller adopts its submitted snapshot when this commit resolves.
+      previous = snapshot;
+    },
+    async day(
+      command: ApplicationDayMutation,
+      operationId: string,
+      expectedGenerations: Readonly<Record<string, number>>,
+    ) {
+      if (!operationId) throw new Error("Missing operation sequence.");
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const read = await (delegate.readDayCommandSnapshot?.() ??
+          delegate.readApplicationSnapshot());
+        if (
+          (read.eventGenerations?.[command.eventName] ?? 0) !==
+          (expectedGenerations[command.eventName] ?? 0)
+        )
+          return { status: "review-required" as const };
+        if (
+          duplicateEventDays(read.snapshot, command.eventName).some((day) =>
+            sameDay(day, command.day),
+          )
+        )
+          return { status: "review-required" as const };
+        if (
+          read.snapshot.eventConsistency[command.eventName]?.legacyPending
+            .length
+        )
+          return { status: "review-required" as const };
+        let plan;
+        try {
+          plan = planDayMutation(read.snapshot, command);
+        } catch (error) {
+          if (error instanceof MutationTargetMissingError)
+            return { status: "review-required" as const };
+          throw error;
+        }
+        if (plan.confirmation) return { status: "review-required" as const };
+        const scoped = scopeDaySnapshot(
+          plan.snapshot,
+          command.eventName,
+          command.day,
+        );
+        const maps = new WeakSet<object>(
+          Object.values(scoped.mapData[command.eventName] ?? {}).filter(
+            (value): value is object => !!value && typeof value === "object",
+          ),
+        );
+        const errors = [
+          ...validateSnapshotStructure(scoped, true, maps),
+          ...validateSnapshotReferences(scoped, maps),
+        ];
+        if (errors.length) throw new Error(errors.join("\n"));
+        try {
+          if (delegate.commitDayCommandSnapshot)
+            await delegate.commitDayCommandSnapshot(
+              plan.snapshot,
+              read.expectedRoots,
+            );
+          else
+            await delegate.commitApplicationSnapshotAtomically(plan.snapshot, {
+              expectedRoots: read.expectedRoots,
+              changedStoresOnly: true,
+            });
+          return {
+            status: "committed" as const,
+            read: publish(
+              { ...read, snapshot: plan.snapshot },
+              false,
+              command.eventName,
+            ),
+          };
+        } catch (error) {
+          if (
+            !(error instanceof Error) ||
+            !["PersistenceConflict", "PersistenceConflictError"].includes(
+              error.name,
+            )
+          )
+            throw error;
+        }
+      }
+      const error = new Error(
+        "保存の競合が続いています。最新の内容を確認して再試行してください。",
+      );
+      error.name = "MutationConflict";
+      throw error;
     },
     async items(
       edits: readonly ItemContentEdit[],

@@ -50,6 +50,7 @@ import { createEventConsistency } from "../../types/consistency";
 import {
   validateSnapshotStructure,
   validateSnapshotReferences,
+  createAppBackupFile,
 } from "../../utils/appBackup";
 import type { BlockDetectionSettings } from "../../types/map";
 import {
@@ -64,6 +65,7 @@ import {
   type UpdateItemFieldsInput,
 } from "./itemFieldMutation";
 
+import { collectDayMutation } from "../../features/consistency/domain/dayMutation";
 import { measureShoppingOperation } from "../../utils/shoppingPerformance";
 
 export const MEMO_SAVE_DELAY_MS = 300;
@@ -358,6 +360,35 @@ export function useApplicationSnapshot(
         drain: () => handlers.current.drain(),
         readDurable: () => persistence.readApplicationSnapshot(),
         commitItemContentEdits: persistence.commitItemContentEdits,
+        commitDayMutation: persistence.commitDayMutation,
+        createBackupFile: async (base, accepted) => {
+          if (!persistence.createBackupFile) {
+            return createAppBackupFile(accepted);
+          }
+          const changes = keys.flatMap((store) => {
+            if (base[store] === accepted[store]) return [];
+            return [
+              ...new Set([
+                ...Object.keys(base[store]),
+                ...Object.keys(accepted[store]),
+              ]),
+            ]
+              .filter(
+                (eventName) =>
+                  !semanticEqual(
+                    base[store][eventName],
+                    accepted[store][eventName],
+                  ),
+              )
+              .map((eventName) => ({
+                store,
+                eventName,
+                baseline: base[store][eventName],
+                desired: accepted[store][eventName],
+              }));
+          });
+          return persistence.createBackupFile(changes, () => accepted);
+        },
         commit: async (snapshot, expectedRoots, base, invalidatedEvents) => {
           const errors = persistence.commitItemContentEdits
             ? []
@@ -674,6 +705,13 @@ export function useApplicationSnapshot(
         id: batch.id,
         events,
         itemContentEdits: batch.itemContentEdits,
+        dayMutation: collectDayMutation(
+          batch.base,
+          batch.draft,
+          batch.context.eventName,
+          batch.context.day,
+          batch.context.routeDays,
+        ),
         plan: (latest, choices) => {
           const plan = planBatch(batch, latest, choices);
           // Reference repair can turn one setter into a multi-store operation.

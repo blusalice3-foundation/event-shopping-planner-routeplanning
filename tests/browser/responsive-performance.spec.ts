@@ -1,6 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 const eventName = "応答速度検証";
-const makeBackup = (count: number, concentrated = false) => {
+const makeBackup = (
+  count: number,
+  concentrated = false,
+  historicalCount = 10000,
+  decorated = false,
+) => {
   const item = (id: string, index: number) => ({
     id,
     eventDate: "1日目",
@@ -17,7 +22,7 @@ const makeBackup = (count: number, concentrated = false) => {
     item("perf-" + index, index),
   );
   const histories = Object.fromEntries(
-    Array.from({ length: 10 }, (_, event) => [
+    Array.from({ length: historicalCount / 1000 }, (_, event) => [
       "過去イベント" + event,
       Array.from({ length: 1000 }, (_, index) =>
         item(`past-${event}-${index}`, index),
@@ -45,8 +50,22 @@ const makeBackup = (count: number, concentrated = false) => {
         row,
         col,
         value: numbered.get(`${row}-${col}`) ?? null,
-        backgroundColor: null,
-        borders: { top: null, right: null, bottom: null, left: null },
+        // Colored cells are obstacles. Keep an entrance corridor around the first visits.
+        backgroundColor:
+          decorated &&
+          (numbered.has(`${row}-${col}`) || (row > 3 && index % 3 === 0))
+            ? "#fef3c7"
+            : null,
+        borders: {
+          // Decorated fences retain regularly spaced passages for reachable routes.
+          top:
+            decorated && row % 5 === 0 && col % 20 > 1
+              ? { style: "thin", color: "#666666" }
+              : null,
+          right: null,
+          bottom: null,
+          left: null,
+        },
       };
     }),
     blocks: [
@@ -84,24 +103,98 @@ const makeBackup = (count: number, concentrated = false) => {
     },
   };
 };
-async function restore(page: Page, count: number, concentrated = false) {
+async function restore(
+  page: Page,
+  count: number,
+  concentrated = false,
+  historicalCount = 10000,
+  decorated = false,
+  initialExecuteCount?: number,
+  multipleHalls = false,
+) {
   await page.goto("/");
-  await page
-    .locator('input[aria-label="バックアップファイルを選択"]')
-    .setInputFiles({
-      name: "performance.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(
-        JSON.stringify(makeBackup(count, concentrated)),
-        "utf8",
-      ),
+  const backup = makeBackup(count, concentrated, historicalCount, decorated);
+  if (initialExecuteCount !== undefined)
+    backup.data.executeModeItems[eventName]["1日目"] =
+      backup.data.executeModeItems[eventName]["1日目"].slice(
+        0,
+        initialExecuteCount,
+      );
+  if (multipleHalls)
+    Object.assign(backup.data.hallDefinitions, {
+      [eventName]: {
+        "1日目マップ": [
+          {
+            id: "west",
+            name: "西",
+            vertices: [
+              { row: 0, col: 0 },
+              { row: 0, col: 100 },
+              { row: 200, col: 100 },
+              { row: 200, col: 0 },
+            ],
+          },
+          {
+            id: "east",
+            name: "東",
+            vertices: [
+              { row: 0, col: 100 },
+              { row: 0, col: 200 },
+              { row: 200, col: 200 },
+              { row: 200, col: 100 },
+            ],
+          },
+        ],
+      },
     });
-  const dialog = page.getByRole("dialog", {
-    name: "バックアップからイベントを復元",
-  });
-  await dialog.getByRole("radio", { name: /同名で置換/ }).check();
-  await dialog.getByRole("button", { name: "置換して復元" }).click();
-  await expect(dialog).toBeHidden({ timeout: 60000 });
+  for (const name of Object.keys(backup.data.eventLists)) {
+    await page
+      .locator('input[aria-label="バックアップファイルを選択"]')
+      .setInputFiles({
+        name: "performance.json",
+        mimeType: "application/json",
+        buffer: Buffer.from(JSON.stringify(backup), "utf8"),
+      });
+    const dialog = page.getByRole("dialog", {
+      name: "バックアップからイベントを復元",
+    });
+    await dialog.getByLabel("復元するイベント").selectOption(name);
+    await dialog.getByRole("radio", { name: /同名で置換/ }).check();
+    await dialog.getByRole("button", { name: "置換して復元" }).click();
+    await expect(dialog).toBeHidden({ timeout: 60000 });
+  }
+  await expect
+    .poll(
+      () =>
+        page.evaluate(async () => {
+          const db = await new Promise<IDBDatabase>((resolve, reject) => {
+            const request = indexedDB.open("EventShoppingPlannerDB");
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          try {
+            return await new Promise<number>((resolve, reject) => {
+              const request = db
+                .transaction("eventLists")
+                .objectStore("eventLists")
+                .get("data");
+              request.onsuccess = () =>
+                resolve(
+                  Object.entries(request.result as Record<string, unknown[]>)
+                    .filter(([name]) => name.startsWith("過去イベント"))
+                    .reduce((sum, [, items]) => sum + items.length, 0),
+                );
+              request.onerror = () => reject(request.error);
+            });
+          } finally {
+            db.close();
+          }
+        }),
+      { timeout: 60000 },
+    )
+    .toBe(historicalCount);
+  await page.getByRole("button", { name: "イベント一覧", exact: true }).click();
+  await page.getByText(eventName, { exact: true }).click();
   await expect(page.locator('[data-item-id="perf-0"]')).toBeVisible();
 }
 async function durableItem(page: Page, id: string) {
@@ -936,3 +1029,516 @@ for (const count of [150, 500, 1500])
       }
     });
   }
+
+type PerformanceMode = "edit" | "execute" | "focus";
+const modeTitles: Record<PerformanceMode, string> = {
+  edit: "編集モード",
+  execute: "実行モード",
+  focus: "集中モード",
+};
+const modeClasses: Record<PerformanceMode, string> = {
+  edit: "bg-blue-100",
+  execute: "bg-green-100",
+  focus: "bg-purple-100",
+};
+async function measureModeClick(page: Page, mode: PerformanceMode) {
+  const button = page.getByTitle(modeTitles[mode], { exact: true });
+  const bounds = await button.boundingBox();
+  if (!bounds) throw new Error("Mode button is not visible.");
+  await button.evaluate((element, activeClass) => {
+    const state = window as unknown as {
+      modeMeasurement?: { durationMs: number };
+    };
+    state.modeMeasurement = undefined;
+    element.addEventListener(
+      "click",
+      (event) => {
+        const started = event.timeStamp;
+        const observer = new MutationObserver(check);
+        let completed = false;
+        function check() {
+          if (completed || !element.classList.contains(activeClass)) return;
+          completed = true;
+          observer.disconnect();
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+              state.modeMeasurement = {
+                durationMs: performance.now() - started,
+              };
+            }),
+          );
+        }
+        observer.observe(document.body, {
+          attributes: true,
+          childList: true,
+          subtree: true,
+        });
+        check();
+      },
+      { once: true },
+    );
+  }, modeClasses[mode]);
+  await page.mouse.click(
+    bounds.x + bounds.width / 2,
+    bounds.y + bounds.height / 2,
+  );
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { modeMeasurement?: unknown }).modeMeasurement !==
+      undefined,
+  );
+  return page.evaluate(
+    () =>
+      (window as unknown as { modeMeasurement: { durationMs: number } })
+        .modeMeasurement.durationMs,
+  );
+}
+for (const historicalCount of [0, 10000])
+  for (const session of [1, 2, 3]) {
+    test(`six mode transitions: 500 items, history=${historicalCount}, session=${session} @mode-performance`, async ({
+      page,
+    }, testInfo) => {
+      test.setTimeout(240000);
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await restore(page, 500, false, historicalCount);
+      const samples: Array<{
+        from: PerformanceMode;
+        to: PerformanceMode;
+        durationMs: number;
+        first: boolean;
+      }> = [];
+      const cold = await measureModeClick(page, "edit");
+      const cycle: PerformanceMode[] = [
+        "execute",
+        "focus",
+        "edit",
+        "focus",
+        "execute",
+        "edit",
+      ];
+      let from: PerformanceMode = "edit";
+      for (let repeat = 0; repeat < 30; repeat++)
+        for (const to of cycle) {
+          const durationMs = await measureModeClick(page, to);
+          samples.push({ from, to, durationMs, first: repeat === 0 });
+          from = to;
+        }
+      await testInfo.attach("mode-response-timings", {
+        contentType: "application/json",
+        body: Buffer.from(
+          JSON.stringify({
+            historicalCount,
+            session,
+            coldExecuteToEditMs: cold,
+            samples,
+          }),
+        ),
+      });
+      expect(samples).toHaveLength(180);
+      expect(
+        new Set(samples.map((value) => `${value.from}->${value.to}`)).size,
+      ).toBe(6);
+    });
+  }
+
+async function durableExecuteIds(page: Page) {
+  return page.evaluate(async (event) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("EventShoppingPlannerDB");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      return await new Promise<string[]>((resolve, reject) => {
+        const request = db
+          .transaction("executeModeItems")
+          .objectStore("executeModeItems")
+          .get("data");
+        request.onsuccess = () =>
+          resolve(request.result?.[event]?.["1日目"] ?? []);
+        request.onerror = () => reject(request.error);
+      });
+    } finally {
+      db.close();
+    }
+  }, eventName);
+}
+for (const decorated of [false, true])
+  test(`map insertion markers 1-5 remain selectable, decorated=${decorated} @visit-performance`, async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(240000);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.addInitScript(() => {
+      const state = window as unknown as { visitCommandMethods: string[] };
+      state.visitCommandMethods = [];
+      const NativeWorker = window.Worker;
+      window.Worker = class extends NativeWorker {
+        constructor(url: string | URL, options?: WorkerOptions) {
+          super(url, options);
+          const send = this.postMessage.bind(this);
+          this.postMessage = (message: { method?: string }) => {
+            if (message.method) state.visitCommandMethods.push(message.method);
+            send(message);
+          };
+        }
+      };
+    });
+    await restore(page, 500, false, 10000, decorated, 5, decorated);
+    const resetCommandMethods = () =>
+      page.evaluate(() => {
+        (
+          window as unknown as { visitCommandMethods: string[] }
+        ).visitCommandMethods = [];
+      });
+    const commandMethods = () =>
+      page.evaluate(
+        () =>
+          (window as unknown as { visitCommandMethods: string[] })
+            .visitCommandMethods,
+      );
+    await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+    page.setDefaultTimeout(15000);
+    const selectWest = async () => {
+      if (!decorated) return;
+      const selector = page.getByTitle(/^表示ホール:/);
+      if ((await selector.getAttribute("title"))?.includes("西")) return;
+      await selector.click();
+      await page.getByRole("button", { name: /^西\s*\(/ }).click();
+    };
+    await selectWest();
+    const smart = page.locator('button[title^="スマート挿入:"]');
+    if ((await smart.getAttribute("title"))!.includes("プレビュー")) {
+      await smart.hover();
+      await page.mouse.down();
+      await expect(smart).toHaveAttribute("title", /マップ/);
+      await page.mouse.up();
+    }
+    if ((await smart.getAttribute("title"))!.includes("無効"))
+      await smart.click();
+    const map = page.locator("[data-route-pending]");
+    await expect(map).toHaveAttribute("data-route-pending", "false", {
+      timeout: 60000,
+    });
+    const canvas = page.locator("canvas").first();
+    const clickCell = async (col: number) => {
+      const rect = await canvas.boundingBox();
+      if (!rect) throw new Error("Missing canvas");
+      await page.mouse.click(rect.x + (col - 0.5) * 28, rect.y + 42);
+    };
+    const samples: unknown[] = [];
+    for (let marker = 1; marker <= 5; marker++) {
+      await resetCommandMethods();
+      await clickCell(12);
+      await page.getByText("ユーザー登録5", { exact: true }).click();
+      const notice = page
+        .getByRole("status")
+        .filter({ hasText: "ルート線または番号をクリックしてください" });
+      await expect(notice).toBeVisible();
+      const noticeBounds = await notice.boundingBox(),
+        canvasBounds = await canvas.boundingBox();
+      expect(noticeBounds!.y + noticeBounds!.height).toBeLessThanOrEqual(
+        canvasBounds!.y + 1,
+      );
+      await canvas.evaluate((element) =>
+        element.addEventListener(
+          "click",
+          (event) => {
+            (window as unknown as { visitStarted: number }).visitStarted =
+              event.timeStamp;
+          },
+          { once: true },
+        ),
+      );
+      await clickCell(marker * 2);
+      const screen = (async () => {
+        await expect(notice).toBeHidden();
+        await expect(map).toHaveAttribute("data-route-item-count", "6");
+        return page.evaluate(async () => {
+          await new Promise(requestAnimationFrame);
+          await new Promise(requestAnimationFrame);
+          return (
+            performance.now() -
+            (window as unknown as { visitStarted: number }).visitStarted
+          );
+        });
+      })();
+      const saved = (async () => {
+        await expect
+          .poll(() => durableExecuteIds(page), { timeout: 60000 })
+          .toContain("perf-5");
+        return page.evaluate(
+          () =>
+            performance.now() -
+            (window as unknown as { visitStarted: number }).visitStarted,
+        );
+      })();
+      const route = (async () => {
+        await expect(map).toHaveAttribute("data-route-item-count", "6");
+        await expect(map).toHaveAttribute("data-route-pending", "false", {
+          timeout: 60000,
+        });
+        return page.evaluate(
+          () =>
+            performance.now() -
+            (window as unknown as { visitStarted: number }).visitStarted,
+        );
+      })();
+      const [screenMs, savedMs, routeMs] = await Promise.all([
+        screen,
+        saved,
+        route,
+      ]);
+      const addMethods = await commandMethods();
+      expect(addMethods).toContain("day");
+      expect(addMethods).not.toContain("commit");
+      samples.push({
+        operation: "add",
+        marker,
+        screenMs,
+        savedMs,
+        routeMs,
+        commandMethods: addMethods,
+      });
+      await resetCommandMethods();
+      await clickCell(12);
+      const remove = page.getByText("ユーザー登録5", { exact: true });
+      await remove.evaluate((element) =>
+        element.addEventListener(
+          "click",
+          (event) => {
+            (window as unknown as { visitStarted: number }).visitStarted =
+              event.timeStamp;
+          },
+          { once: true },
+        ),
+      );
+      await remove.click();
+      const removeScreen = (async () => {
+        await expect(map).toHaveAttribute("data-route-item-count", "5");
+        return page.evaluate(async () => {
+          await new Promise(requestAnimationFrame);
+          await new Promise(requestAnimationFrame);
+          return (
+            performance.now() -
+            (window as unknown as { visitStarted: number }).visitStarted
+          );
+        });
+      })();
+      const removeSaved = (async () => {
+        await expect
+          .poll(() => durableExecuteIds(page), { timeout: 60000 })
+          .not.toContain("perf-5");
+        return page.evaluate(
+          () =>
+            performance.now() -
+            (window as unknown as { visitStarted: number }).visitStarted,
+        );
+      })();
+      const removeRoute = (async () => {
+        await expect(map).toHaveAttribute("data-route-item-count", "5");
+        await expect(map).toHaveAttribute("data-route-pending", "false", {
+          timeout: 60000,
+        });
+        return page.evaluate(
+          () =>
+            performance.now() -
+            (window as unknown as { visitStarted: number }).visitStarted,
+        );
+      })();
+      const [removeScreenMs, removeSavedMs, removeRouteMs] = await Promise.all([
+        removeScreen,
+        removeSaved,
+        removeRoute,
+      ]);
+      const removeMethods = await commandMethods();
+      expect(removeMethods).toContain("day");
+      expect(removeMethods).not.toContain("commit");
+      samples.push({
+        commandMethods: removeMethods,
+        operation: "remove",
+        marker,
+        screenMs: removeScreenMs,
+        savedMs: removeSavedMs,
+        routeMs: removeRouteMs,
+      });
+      await expect(map).toHaveAttribute("data-route-item-count", "5");
+      await expect(map).toHaveAttribute("data-route-pending", "false", {
+        timeout: 60000,
+      });
+      await page.reload();
+      await page.getByText(eventName, { exact: true }).click();
+      await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+      await selectWest();
+
+      await expect(map).toHaveAttribute("data-route-pending", "false", {
+        timeout: 60000,
+      });
+    }
+    await testInfo.attach("visit-response-timings", {
+      contentType: "application/json",
+      body: Buffer.from(
+        JSON.stringify({ decorated, multipleHalls: decorated, samples }),
+      ),
+    });
+  });
+
+test("JSON backup keeps input responsive while exporting 10000 historical items @backup-performance", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(180000);
+  await page.addInitScript(() => {
+    const state = window as unknown as {
+      backupPayloads: Array<{ snapshot: boolean }>;
+    };
+    state.backupPayloads = [];
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor(url: string | URL, options?: WorkerOptions) {
+        super(url, options);
+        if (String(url).toLowerCase().includes("backup")) {
+          const send = this.postMessage.bind(this);
+          this.postMessage = (message: { snapshot?: unknown }) => {
+            state.backupPayloads.push({
+              snapshot: message.snapshot !== undefined,
+            });
+            send(message);
+          };
+        }
+      }
+    };
+  });
+  await restore(page, 500, false, 10000, true);
+  await page.getByRole("button", { name: "イベント一覧", exact: true }).click();
+  await page.evaluate(() => {
+    const state = window as unknown as {
+      backupFrameGaps: number[];
+      backupLongTasks: number[];
+      backupMeasuring: boolean;
+    };
+    state.backupFrameGaps = [];
+    state.backupLongTasks = [];
+    state.backupMeasuring = true;
+    const observer = new PerformanceObserver((entries) => {
+      if (state.backupMeasuring)
+        for (const entry of entries.getEntries())
+          state.backupLongTasks.push(entry.duration);
+    });
+    observer.observe({ type: "longtask", buffered: false });
+    let previous = performance.now();
+    function frame(now: number) {
+      state.backupFrameGaps.push(now - previous);
+      previous = now;
+      if (state.backupMeasuring) requestAnimationFrame(frame);
+      else observer.disconnect();
+    }
+    requestAnimationFrame(frame);
+  });
+  const download = page.waitForEvent("download");
+  const exportButton = page.getByRole("button", {
+    name: "JSONバックアップ保存",
+    exact: true,
+  });
+  await exportButton.evaluate((element) =>
+    element.addEventListener(
+      "click",
+      (event) => {
+        (window as unknown as { backupStarted: number }).backupStarted =
+          event.timeStamp;
+      },
+      { once: true },
+    ),
+  );
+  await exportButton.click();
+  const open = page.getByText(eventName, { exact: true });
+  await open.evaluate((element) =>
+    element.addEventListener(
+      "click",
+      (event) => {
+        (
+          window as unknown as { backupInputStarted: number }
+        ).backupInputStarted = event.timeStamp;
+      },
+      { once: true },
+    ),
+  );
+  await open.click();
+  await expect(page.locator('[data-item-id="perf-0"]')).toBeVisible();
+  const inputResponseMs = await page.evaluate(async () => {
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
+    return (
+      performance.now() -
+      (window as unknown as { backupInputStarted: number }).backupInputStarted
+    );
+  });
+  const file = await download;
+  const completionMs = await page.evaluate(
+    () =>
+      performance.now() -
+      (window as unknown as { backupStarted: number }).backupStarted,
+  );
+  const sample = await page.evaluate(() => {
+    const state = window as unknown as {
+      backupFrameGaps: number[];
+      backupLongTasks: number[];
+      backupMeasuring: boolean;
+      backupPayloads: Array<{ snapshot: boolean }>;
+    };
+    state.backupMeasuring = false;
+    return {
+      frameGaps: state.backupFrameGaps,
+      longTasks: state.backupLongTasks,
+      payloads: state.backupPayloads,
+    };
+  });
+  expect(sample.payloads).toEqual([{ snapshot: false }]);
+  expect(inputResponseMs).toBeLessThan(300);
+  expect(Math.max(0, ...sample.longTasks)).toBeLessThan(300);
+  const path = await file.path();
+  expect(path).not.toBeNull();
+  const { readFile } = await import("node:fs/promises");
+  const backup = JSON.parse(await readFile(path!, "utf8"));
+  expect(
+    Object.entries(backup.data.eventLists as Record<string, unknown[]>)
+      .filter(([name]) => name.startsWith("過去イベント"))
+      .reduce((sum, [, items]) => sum + items.length, 0),
+  ).toBe(10000);
+  expect(backup.data.eventLists[eventName][0].circle).toBe("ユーザー登録0");
+
+  await testInfo.attach("backup-response-timings", {
+    contentType: "application/json",
+    body: Buffer.from(
+      JSON.stringify({ ...sample, inputResponseMs, completionMs }),
+    ),
+  });
+});
+
+for (const concentrated of [false, true]) {
+  test(`mode transitions preserve decorated 40000-cell maps and multiple halls, concentrated=${concentrated}`, async ({
+    page,
+  }) => {
+    test.setTimeout(180000);
+    page.setDefaultTimeout(15000);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await restore(page, 500, concentrated, 10000, true, undefined, true);
+    await measureModeClick(page, "edit");
+    for (const mode of [
+      "execute",
+      "focus",
+      "edit",
+      "focus",
+      "execute",
+      "edit",
+    ] as const)
+      await measureModeClick(page, mode);
+    await page.reload();
+    await page.getByText(eventName, { exact: true }).click();
+    await expect(page.getByTitle(modeTitles.edit, { exact: true })).toHaveClass(
+      /bg-blue-100/,
+    );
+    expect(errors).toEqual([]);
+  });
+}

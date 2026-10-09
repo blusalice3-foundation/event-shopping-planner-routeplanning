@@ -162,3 +162,230 @@ describe("storage worker transactions", () => {
     );
   });
 });
+
+it("limits mode work and acknowledgements to the target day after verified cache warmup", async () => {
+  const data = seed();
+  data.eventLists.past = Array.from({ length: 10000 }, (_, index) => ({
+    ...item,
+    id: `past-${index}`,
+  }));
+  data.eventConsistency.past = createEventConsistency();
+  data.dayModes.event["2日目"] = "focus";
+  const initial = await db.readApplicationSnapshot();
+  await db.commitApplicationSnapshotAtomically(data, {
+    expectedRoots: initial.expectedRoots,
+  });
+  const server = createPersistenceWorkerServer(db);
+  await server.read();
+  await server.day(
+    { kind: "mode", eventName: "event", day: "1日目", mode: "edit" },
+    "warm",
+    {},
+  );
+  const get = vi.spyOn(IDBObjectStore.prototype, "get");
+  const cursor = vi.spyOn(IDBObjectStore.prototype, "openCursor");
+  const result = await server.day(
+    { kind: "mode", eventName: "event", day: "1日目", mode: "focus" },
+    "measured",
+    {},
+  );
+  expect(result.status).toBe("committed");
+  expect(get.mock.calls.every(([key]) => key !== "data")).toBe(true);
+  expect(cursor).not.toHaveBeenCalled();
+  if (result.status !== "committed") throw new Error("not committed");
+  expect(JSON.stringify(result.read.delta).length).toBeLessThan(500);
+  const saved = await db.readApplicationSnapshot();
+  expect(saved.snapshot.dayModes.event).toEqual({
+    "1日目": "focus",
+    "2日目": "focus",
+  });
+  expect(saved.snapshot.eventLists.past).toEqual(data.eventLists.past);
+});
+it("invalidates the verified cache after another tab changes a revision and preserves its edits", async () => {
+  const { server } = await setup();
+  const fast = createPersistenceWorkerServer(db);
+  await fast.read();
+  await fast.day(
+    { kind: "mode", eventName: "event", day: "1日目", mode: "edit" },
+    "warm",
+    {},
+  );
+  const remote = await db.readApplicationSnapshot();
+  (remote.snapshot.eventLists.event[0] as typeof item).remarks =
+    "他タブのユーザー登録";
+  await db.commitApplicationSnapshotAtomically(remote.snapshot, {
+    expectedRoots: remote.expectedRoots,
+    changedStoresOnly: true,
+  });
+  expect(
+    (
+      await fast.day(
+        { kind: "mode", eventName: "event", day: "1日目", mode: "focus" },
+        "next",
+        {},
+      )
+    ).status,
+  ).toBe("committed");
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.eventLists.event[0],
+  ).toMatchObject({ remarks: "他タブのユーザー登録" });
+  void server;
+});
+it("does not bypass duplicate-day confirmation", async () => {
+  const data = seed();
+  data.dayModes.event[" 1日目　"] = "focus";
+  const initial = await db.readApplicationSnapshot();
+  await db.commitApplicationSnapshotAtomically(data, {
+    expectedRoots: initial.expectedRoots,
+  });
+  const server = createPersistenceWorkerServer(db);
+  expect(
+    await server.day(
+      { kind: "mode", eventName: "event", day: "1日目" },
+      "review",
+      {},
+    ),
+  ).toEqual({ status: "review-required" });
+  expect((await db.readApplicationSnapshot()).snapshot.dayModes).toEqual(
+    data.dayModes,
+  );
+});
+
+it("adds and removes visits atomically without changing another event or day", async () => {
+  const data = seed();
+  data.eventLists.event.push({ ...item, id: "other-day", eventDate: "2日目" });
+  data.executeModeItems.event = { "1日目": [], "2日目": ["other-day"] };
+  data.dayModes.event["2日目"] = "focus";
+  const initial = await db.readApplicationSnapshot();
+  await db.commitApplicationSnapshotAtomically(data, {
+    expectedRoots: initial.expectedRoots,
+  });
+  const server = createPersistenceWorkerServer(db);
+  await server.read();
+  for (const ids of [["1"], []]) {
+    const before = (await db.readApplicationSnapshot()).snapshot
+      .executeModeItems.event["1日目"];
+    expect(
+      (
+        await server.day(
+          {
+            kind: "patch",
+            eventName: "event",
+            day: "1日目",
+            baseline: { executeModeItems: { event: { "1日目": before } } },
+            desired: { executeModeItems: { event: { "1日目": ids } } },
+          },
+          `visit-${ids.length}`,
+          {},
+        )
+      ).status,
+    ).toBe("committed");
+    const saved = await db.readApplicationSnapshot();
+    expect(saved.snapshot.executeModeItems.event).toEqual({
+      "1日目": ids,
+      "2日目": ["other-day"],
+    });
+    expect(saved.snapshot.dayModes.event["2日目"]).toBe("focus");
+    expect(saved.snapshot.eventLists).toEqual(data.eventLists);
+  }
+});
+it("rolls back a day command and keeps it retryable after a transaction write fails", async () => {
+  await setup();
+  const server = createPersistenceWorkerServer(db);
+  await server.read();
+  const original = IDBObjectStore.prototype.put;
+  const fault = vi
+    .spyOn(IDBObjectStore.prototype, "put")
+    .mockImplementation(function (
+      this: IDBObjectStore,
+      ...args: Parameters<typeof original>
+    ) {
+      if (this.name === "dayModes")
+        throw new DOMException("quota", "QuotaExceededError");
+      return original.apply(this, args);
+    });
+  const command = {
+    kind: "mode" as const,
+    eventName: "event",
+    day: "1日目",
+    mode: "focus" as const,
+  };
+  await expect(server.day(command, "retry", {})).rejects.toThrow();
+  fault.mockRestore();
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.dayModes.event["1日目"],
+  ).toBe("execute");
+  expect((await server.day(command, "retry", {})).status).toBe("committed");
+});
+it("exports unsaved Japanese text in the backup worker and supports storage read failure", async () => {
+  const { buildWorkerBackup } = await import("./backupWorkerServer");
+  const { parseAppBackup } = await import("../../utils/appBackup");
+  await setup();
+  const baseline = seed().eventLists.event;
+  const desired = baseline.map((value) => ({
+    ...(value as typeof item),
+    remarks: "未保存のユーザー登録・エラーが発生しました",
+  }));
+  const result = await buildWorkerBackup(db.readApplicationSnapshot, {
+    changes: [{ store: "eventLists", eventName: "event", baseline, desired }],
+  });
+  if (!("file" in result)) throw new Error("missing backup");
+  const parsed = parseAppBackup(await result.file.blob.text());
+  expect(parsed.ok).toBe(true);
+  if (!parsed.ok) throw new Error("invalid backup");
+  expect(parsed.data.eventLists.event[0]).toMatchObject({
+    remarks: "未保存のユーザー登録・エラーが発生しました",
+  });
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.eventLists.event[0],
+  ).toMatchObject({ remarks: "" });
+  const fail = async (): Promise<never> => {
+    throw new Error("unavailable");
+  };
+  expect(await buildWorkerBackup(fail, { changes: [] })).toEqual({
+    needsSnapshot: true,
+  });
+  expect(
+    await buildWorkerBackup(fail, { changes: [], snapshot: seed() }),
+  ).toHaveProperty("file.blob");
+});
+
+it("requires review for competing visit edits and for a replaced event generation", async () => {
+  await setup();
+  const base = await db.readApplicationSnapshot();
+  base.snapshot.eventLists.event.push({ ...item, id: "2", number: "2" });
+  base.snapshot.executeModeItems.event = { "1日目": ["1"] };
+  await db.commitApplicationSnapshotAtomically(base.snapshot, {
+    expectedRoots: base.expectedRoots,
+  });
+  const server = createPersistenceWorkerServer(db);
+  await server.read();
+  const remote = await db.readApplicationSnapshot();
+  remote.snapshot.executeModeItems.event = { "1日目": [] };
+  await db.commitApplicationSnapshotAtomically(remote.snapshot, {
+    expectedRoots: remote.expectedRoots,
+    changedStoresOnly: true,
+  });
+  const command = {
+    kind: "patch" as const,
+    eventName: "event",
+    day: "1日目",
+    baseline: { executeModeItems: { event: { "1日目": ["1"] } } },
+    desired: { executeModeItems: { event: { "1日目": ["1", "2"] } } },
+  };
+  expect(await server.day(command, "conflict", {})).toEqual({
+    status: "review-required",
+  });
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.executeModeItems.event[
+      "1日目"
+    ],
+  ).toEqual([]);
+  expect(
+    await server.day(
+      { kind: "mode", eventName: "event", day: "1日目", mode: "focus" },
+      "generation",
+      { event: 9 },
+    ),
+  ).toEqual({ status: "review-required" });
+});

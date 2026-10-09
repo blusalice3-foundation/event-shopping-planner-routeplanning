@@ -1064,6 +1064,10 @@ const App: React.FC = () => {
       application.flushDraft();
       return application.coordinator.readExportSnapshot();
     },
+    createBackupFile: () => {
+      application.flushDraft();
+      return application.coordinator.createBackupFile();
+    },
     eventConsistency,
     appRuntime,
     eventLists,

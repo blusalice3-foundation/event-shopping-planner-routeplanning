@@ -1,5 +1,7 @@
 import type {
   ApplicationSnapshotRead,
+  ApplicationDayMutation,
+  ApplicationBackupFile,
   PersistenceSnapshot,
   ItemContentEdit,
   ApplicationItemEditsResult,
@@ -41,6 +43,7 @@ export interface MutationIntent {
   events: string[];
   expectedGenerations?: Record<string, number>;
   itemContentEdits?: readonly ItemContentEdit[];
+  dayMutation?: ApplicationDayMutation;
   /** Keep ordinary accepted edits visible after persistence failures or exhausted CAS retries. */
   retainOnConflict?: boolean;
   plan(snapshot: PersistenceSnapshot, choices?: MutationChoices): MutationPlan;
@@ -101,6 +104,15 @@ export interface MutationCoordinatorPorts {
   commitItemContentEdits?(
     edits: readonly ItemContentEdit[],
     operationIds: readonly string[],
+    expectedEventGenerations: Readonly<Record<string, number>>,
+  ): Promise<ApplicationItemEditsResult>;
+  createBackupFile?(
+    base: PersistenceSnapshot,
+    accepted: PersistenceSnapshot,
+  ): Promise<ApplicationBackupFile>;
+  commitDayMutation?(
+    command: ApplicationDayMutation,
+    operationId: string,
     expectedEventGenerations: Readonly<Record<string, number>>,
   ): Promise<ApplicationItemEditsResult>;
   commit(
@@ -246,6 +258,54 @@ export function createApplicationMutationCoordinator(
     await ports.drain();
     const afterDrain = validity();
     if (afterDrain) return afterDrain;
+    if (
+      operation.intent.dayMutation &&
+      ports.commitDayMutation &&
+      !operation.confirmation &&
+      !confirmation &&
+      !ports.hasPendingAcceptedChanges?.(id)
+    ) {
+      operation.committing = true;
+      try {
+        const result = await ports.commitDayMutation(
+          operation.intent.dayMutation,
+          id,
+          durableGenerations,
+        );
+        if (result.status === "committed") {
+          const nextGenerations =
+            result.read.eventGenerations ?? durableGenerations;
+          const invalidated = [
+            ...new Set([
+              ...Object.keys(durableGenerations),
+              ...Object.keys(nextGenerations),
+            ]),
+          ].filter(
+            (event) =>
+              durableGeneration(durableGenerations, event) !==
+              durableGeneration(nextGenerations, event),
+          );
+          durableGenerations = { ...nextGenerations };
+          completed.add(id);
+          pending.delete(id);
+          invalidate(invalidated);
+          try {
+            ports.apply(result.read.snapshot, invalidated);
+          } catch (error) {
+            stopped = true;
+            const failure = new CommittedStateApplyError(error);
+            ports.onApplyFailure?.(failure);
+            throw failure;
+          }
+          expirePending();
+          return { status: "committed", snapshot: result.read.snapshot };
+        }
+      } finally {
+        operation.committing = false;
+      }
+      const afterCommand = validity();
+      if (afterCommand) return afterCommand;
+    }
     for (let attempt = 0; attempt < 3; attempt++) {
       const beforeRead = validity();
       if (beforeRead) return beforeRead;
@@ -552,6 +612,15 @@ export function createApplicationMutationCoordinator(
     },
     invalidate,
     generation: (event: string): number => generations.get(event) ?? 0,
+    createBackupFile: async (): Promise<ApplicationBackupFile> => {
+      if (!ports.createBackupFile)
+        throw new Error("Backup worker is unavailable.");
+      const captured = await enqueue(() => ({
+        base: ports.readCurrent(),
+        accepted: (ports.readExportCurrent ?? ports.readCurrent)(),
+      }));
+      return ports.createBackupFile(captured.base, captured.accepted);
+    },
     // Wait for earlier mutations, then preserve the accepted in-memory values.
     // Export is read-only and must remain available when persistence fails.
     readExportSnapshot: (): Promise<PersistenceSnapshot> =>

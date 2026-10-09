@@ -1372,41 +1372,44 @@ test.describe("spreadsheet and save-conflict connections", () => {
   }
 
   async function forceThreeSnapshotConflicts(page: Page) {
-    await persistenceRealm(page).evaluate((name) => {
-      const original = IDBObjectStore.prototype.get;
-      let remaining = 3;
-      const state = { count: 0 };
-      Object.assign(globalThis, { __forcedConsistencyConflicts: state });
-      IDBObjectStore.prototype.get = function (key) {
-        const request = original.call(this, key);
-        if (
-          remaining > 0 &&
-          this.name === "eventLists" &&
-          key === "data" &&
-          this.transaction.mode === "readwrite" &&
-          this.transaction.objectStoreNames.contains("eventConsistency")
-        ) {
-          remaining--;
-          request.addEventListener(
-            "success",
-            () => {
-              // Change only the transaction's CAS observation; no corrupt value is written to the DB.
-              const value = structuredClone(request.result) as Record<
-                string,
-                Array<Record<string, unknown>>
-              >;
-              value[name][0].remarks = `concurrent writer ${++state.count}`;
-              Object.defineProperty(request, "result", { value });
-            },
-            { once: true },
-          );
-          if (remaining === 0) IDBObjectStore.prototype.get = original;
-        }
-        return request;
-      };
-    }, eventName);
+    await persistenceRealm(page).evaluate(
+      (metadataKey) => {
+        const original = IDBObjectStore.prototype.get;
+        let remaining = 3;
+        const state = { count: 0 };
+        Object.assign(globalThis, { __forcedConsistencyConflicts: state });
+        IDBObjectStore.prototype.get = function (key) {
+          const request = original.call(this, key);
+          if (
+            remaining > 0 &&
+            this.name === "syncQueue" &&
+            key === metadataKey &&
+            this.transaction.mode === "readwrite" &&
+            this.transaction.objectStoreNames.contains("eventConsistency")
+          ) {
+            remaining--;
+            request.addEventListener(
+              "success",
+              () => {
+                // Both whole snapshots and cached day commands CAS against this revision.
+                // Change only the observation; no corrupt value is written to IndexedDB.
+                const value = {
+                  ...request.result,
+                  revision: request.result.revision + 1,
+                };
+                state.count++;
+                Object.defineProperty(request, "result", { value });
+              },
+              { once: true },
+            );
+            if (remaining === 0) IDBObjectStore.prototype.get = original;
+          }
+          return request;
+        };
+      },
+      createPersistenceMetadataKey("eventLists", "data"),
+    );
   }
-
   async function forceSnapshotAbort(page: Page) {
     await persistenceRealm(page).evaluate(() => {
       const original = IDBObjectStore.prototype.put;
@@ -2106,7 +2109,7 @@ test("focus map shows mixed execution counts separately from candidates and the 
     .toEqual(expect.arrayContaining(["後始", "後1", "遅1", "候補1"]));
 });
 
-test("a standalone execute reorder writes only its store and survives reload", async ({
+test("a standalone execute reorder writes only its changed payload and survives reload", async ({
   page,
 }) => {
   const source = migrateLegacyConsistency(
@@ -2117,16 +2120,15 @@ test("a standalone execute reorder writes only its store and survives reload", a
   source.eventConsistency[eventName].days = {};
   await loadSavedSnapshot(page, source);
   await persistenceRealm(page).evaluate(() => {
-    const writes: string[][] = [];
+    const writes: string[] = [];
     Object.assign(globalThis, { __reorderTransactions: writes });
-    const original = IDBDatabase.prototype.transaction;
-    IDBDatabase.prototype.transaction = function (
+    const original = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (
       ...args: Parameters<typeof original>
     ) {
-      const transaction = original.apply(this, args);
-      if (args[1] === "readwrite")
-        writes.push(Array.from(transaction.objectStoreNames));
-      return transaction;
+      if (args[1] === "data" && this.name !== "syncQueue")
+        writes.push(this.name);
+      return original.apply(this, args);
     };
   });
   const row = page.locator('[data-item-id="2"]');
@@ -2136,18 +2138,10 @@ test("a standalone execute reorder writes only its store and survives reload", a
     .toMatchObject({ [eventName]: { "1日目": ["2", "1"] } });
   const writes = await persistenceRealm(page).evaluate(
     () =>
-      (globalThis as typeof globalThis & { __reorderTransactions: string[][] })
+      (globalThis as typeof globalThis & { __reorderTransactions: string[] })
         .__reorderTransactions,
   );
-  expect(writes.some((stores) => stores.includes("executeModeItems"))).toBe(
-    true,
-  );
-  expect(
-    writes.every(
-      (stores) =>
-        !stores.includes("eventLists") && !stores.includes("eventConsistency"),
-    ),
-  ).toBe(true);
+  expect(writes).toEqual(["executeModeItems"]);
   await page.reload();
   await expect(
     page.locator('input[aria-label="バックアップファイルを選択"]'),

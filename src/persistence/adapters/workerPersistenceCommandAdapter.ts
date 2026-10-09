@@ -16,7 +16,10 @@ import {
   createIndexedDbPersistenceCommandAdapter,
   type IndexedDbPersistenceCommandDelegate,
 } from "./indexedDbPersistenceCommandAdapter";
-import type { WorkerSnapshotRead } from "../worker/snapshotDelta";
+import {
+  applySnapshotBranches,
+  type WorkerSnapshotRead,
+} from "../worker/snapshotDelta";
 
 /** One worker owns storage transactions. Ordinary edits send only fields and operation IDs. */
 export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort {
@@ -37,6 +40,8 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
     mirror = value.delta.full ?? { ...mirror!, ...value.delta.stores };
     if (value.delta.items?.length)
       mirror = applyItemContentEdits(mirror, value.delta.items);
+    if (value.delta.branches?.length)
+      mirror = applySnapshotBranches(mirror, value.delta.branches);
     return {
       snapshot: mirror,
       expectedRoots: { workerObservation: value.observationId },
@@ -138,12 +143,26 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
           options?.expectedRoots as { workerObservation?: number } | undefined
         )?.workerObservation,
       },
-    ]).then(() => undefined);
+    ]).then(() => {
+      mirror = snapshot;
+    });
   const delegate: IndexedDbPersistenceCommandDelegate = {
     ...db,
     readApplicationSnapshot: async () =>
       read((await call("read", [])) as WorkerSnapshotRead),
     commitApplicationSnapshotAtomically: commit,
+    commitDayMutation: async (command, operationId, expectedGenerations) => {
+      const result = (await call("day", [
+        command,
+        operationId,
+        expectedGenerations,
+      ])) as
+        | { status: "review-required" }
+        | { status: "committed"; read: WorkerSnapshotRead };
+      return result.status === "committed"
+        ? { ...result, read: read(result.read) }
+        : result;
+    },
     commitItemContentEdits: async (
       edits,
       operationIds,
