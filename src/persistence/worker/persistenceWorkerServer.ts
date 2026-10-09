@@ -28,6 +28,7 @@ export interface PersistenceWorkerDelegate {
   commitDayCommandSnapshot?(
     snapshot: PersistenceSnapshot,
     expectedRoots: object,
+    target: { eventName: string; day: string },
   ): Promise<void>;
   readApplicationSnapshot(): Promise<ApplicationSnapshotRead>;
   commitApplicationSnapshotAtomically(
@@ -147,6 +148,7 @@ export function createPersistenceWorkerServer(
             await delegate.commitDayCommandSnapshot(
               plan.snapshot,
               read.expectedRoots,
+              { eventName: command.eventName, day: command.day },
             );
           else
             await delegate.commitApplicationSnapshotAtomically(plan.snapshot, {

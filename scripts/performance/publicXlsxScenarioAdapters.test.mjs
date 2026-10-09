@@ -299,7 +299,7 @@ test("round-trips the production UI export download through the public Worker", 
         return {
           contract: argument.contract,
           databaseName: "EventShoppingPlannerDB",
-          databaseVersion: 8,
+          databaseVersion: 9,
           storeName: "eventLists",
           controlStoreName: "syncQueue",
           key: "data",
@@ -451,7 +451,7 @@ test("round-trips the production UI export download through the public Worker", 
       timing: "excluded-from-measurement-v1",
       readback: "separate-readonly-transaction-v1",
       databaseName: "EventShoppingPlannerDB",
-      databaseVersion: 8,
+      databaseVersion: 9,
       storeName: "eventLists",
       controlStoreName: "syncQueue",
       key: "data",
@@ -488,7 +488,7 @@ test("keeps the XLSX adapter free of synthetic download and legacy target hooks"
   assert.match(source, /await readFile\(downloadPath\)/);
 });
 
-test("stages an initialized empty DB v8 root while preserving its parent revision", async (t) => {
+test("stages an initialized empty DB v9 root while preserving its parent revision", async (t) => {
   const originalIndexedDb = globalThis.indexedDB;
   const metadataKey = "__esp_internal__:meta:v1:eventLists:data";
   const checkpointKey = "__esp_internal__:checkpoint:v1:eventLists:data";
@@ -561,7 +561,7 @@ test("stages an initialized empty DB v8 root while preserving its parent revisio
         const database = await new Promise((resolve, reject) => {
           const request = globalThis.indexedDB.open(
             "EventShoppingPlannerDB",
-            8,
+            9,
           );
           request.onupgradeneeded = () => {
             for (const storeName of [
@@ -659,7 +659,7 @@ test("stages an initialized empty DB v8 root while preserving its parent revisio
             ]);
           if (mutation === "none") {
             const staged = await stageCanonicalExportEventLists(stageOptions);
-            assert.equal(staged.receipt.databaseVersion, 8);
+            assert.equal(staged.receipt.databaseVersion, 9);
             const [
               payload,
               metadata,

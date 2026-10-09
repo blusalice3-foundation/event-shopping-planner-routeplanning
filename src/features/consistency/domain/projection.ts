@@ -199,6 +199,21 @@ export function projectConsistencySnapshot(
   }
   return result;
 }
+function projectCachedDayStores<T>(
+  source: Record<string, Record<string, T>>,
+  previous: Record<string, Record<string, T>> | undefined,
+  projected: Record<string, Record<string, T>> | undefined,
+): Record<string, Record<string, T>> {
+  if (source === previous) return projected!;
+  return Object.fromEntries(
+    Object.entries(source).map(([event, days]) => [
+      event,
+      days === previous?.[event] && projected?.[event]
+        ? projected[event]
+        : projectDayBuckets(days),
+    ]),
+  );
+}
 /** Cache only immutable UI snapshots. Mutation planners keep using the uncached adapter. */
 export function createConsistencySnapshotProjector() {
   type Entry = {
@@ -291,7 +306,7 @@ export function createConsistencySnapshotProjector() {
       });
     }
     const fresh = projectConsistencySnapshot(
-      { ...source, eventLists: changed },
+      { ...source, eventLists: changed, executeModeItems: {}, dayModes: {} },
       activeEvent,
       activeDay,
     );
@@ -303,14 +318,16 @@ export function createConsistencySnapshotProjector() {
     ] as const;
     const result = {
       ...source,
-      executeModeItems:
-        source.executeModeItems === previous?.executeModeItems
-          ? previousResult!.executeModeItems
-          : fresh.executeModeItems,
-      dayModes:
-        source.dayModes === previous?.dayModes
-          ? previousResult!.dayModes
-          : fresh.dayModes,
+      executeModeItems: projectCachedDayStores(
+        source.executeModeItems,
+        previous?.executeModeItems,
+        previousResult?.executeModeItems,
+      ),
+      dayModes: projectCachedDayStores(
+        source.dayModes,
+        previous?.dayModes,
+        previousResult?.dayModes,
+      ),
     };
     for (const [name, entry] of nextEntries) {
       if (!entry.projection)

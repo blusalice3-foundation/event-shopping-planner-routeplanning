@@ -1,4 +1,4 @@
-import { IDBFactory, IDBObjectStore } from "fake-indexeddb";
+import { IDBFactory, IDBObjectStore, IDBKeyRange } from "fake-indexeddb";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "../facade/indexedDbPersistence";
 import { resetDatabaseConnection, openDatabase } from "../db/openDatabase";
@@ -26,7 +26,7 @@ const seed = (): PersistenceSnapshot => ({
   eventLists: { event: [item] },
   eventConsistency: { event: createEventConsistency() },
   eventMetadata: {},
-  executeModeItems: {},
+  executeModeItems: { event: { "1日目": [] } },
   dayModes: { event: { "1日目": "execute" } },
   mapData: {},
   mapRotationSettings: {},
@@ -48,6 +48,7 @@ const edit = (
 beforeEach(() => {
   resetDatabaseConnection();
   vi.stubGlobal("indexedDB", new IDBFactory());
+  vi.stubGlobal("IDBKeyRange", IDBKeyRange);
   const storage = new Map<string, string>();
   vi.stubGlobal("localStorage", {
     get length() {
@@ -388,4 +389,345 @@ it("requires review for competing visit edits and for a replaced event generatio
       { event: 9 },
     ),
   ).toEqual({ status: "review-required" });
+});
+
+it("writes only the requested event/date records and bounded headers with 10000 historical visits", async () => {
+  const { DAY_RECORD_PREFIX } = await import("../db/dayRecordStorage");
+  const data = seed();
+  data.eventLists.past = Array.from({ length: 10000 }, (_, index) => ({
+    ...item,
+    id: `past-${index}`,
+  }));
+  data.eventConsistency.past = createEventConsistency();
+  data.executeModeItems.past = {
+    "1日目": data.eventLists.past.map(
+      (value: unknown) => (value as { id: string }).id,
+    ),
+  };
+  data.dayModes.past = { "1日目": "execute" };
+  data.dayModes.event["2日目"] = "focus";
+  const initial = await db.readApplicationSnapshot();
+  await db.commitApplicationSnapshotAtomically(data, {
+    expectedRoots: initial.expectedRoots,
+  });
+  const server = createPersistenceWorkerServer(db);
+  await server.read();
+  await server.day(
+    { kind: "mode", eventName: "event", day: "1日目", mode: "edit" },
+    "mode-warm",
+    {},
+  );
+  await server.day(
+    {
+      kind: "patch",
+      eventName: "event",
+      day: "1日目",
+      baseline: { executeModeItems: { event: { "1日目": [] } } },
+      desired: { executeModeItems: { event: { "1日目": ["1"] } } },
+    },
+    "visit-warm",
+    {},
+  );
+  const put = vi.spyOn(IDBObjectStore.prototype, "put");
+  const get = vi.spyOn(IDBObjectStore.prototype, "get");
+  const cursor = vi.spyOn(IDBObjectStore.prototype, "openCursor");
+  await server.day(
+    { kind: "mode", eventName: "event", day: "1日目", mode: "focus" },
+    "mode-next",
+    {},
+  );
+  await server.day(
+    {
+      kind: "patch",
+      eventName: "event",
+      day: "1日目",
+      baseline: { executeModeItems: { event: { "1日目": ["1"] } } },
+      desired: { executeModeItems: { event: { "1日目": [] } } },
+    },
+    "visit-next",
+    {},
+  );
+  expect(get.mock.calls.every(([key]) => key !== "data")).toBe(true);
+  expect(cursor).not.toHaveBeenCalled();
+  const records = put.mock.calls.filter(([, key]) =>
+    String(key).startsWith(DAY_RECORD_PREFIX),
+  );
+  expect(records.length).toBeGreaterThan(0);
+  expect(
+    records.every(
+      ([value]) => value.eventName === "event" && value.path.at(-1) === "1日目",
+    ),
+  ).toBe(true);
+  const headers = put.mock.calls.filter(([, key]) => key === "data");
+  expect(headers.length).toBeGreaterThan(0);
+  expect(
+    headers.every(
+      ([value]) =>
+        value.kind === "event-shopping-planner-day-records" &&
+        JSON.stringify(value).length < 250,
+    ),
+  ).toBe(true);
+  expect(
+    put.mock.instances.every(
+      (store) =>
+        !["eventLists", "mapData"].includes((store as IDBObjectStore).name),
+    ),
+  ).toBe(true);
+  const loaded = await db.readApplicationSnapshot();
+  expect(loaded.snapshot.executeModeItems.past).toEqual(
+    data.executeModeItems.past,
+  );
+  expect(loaded.snapshot.dayModes.event["2日目"]).toBe("focus");
+  expect((await db.loadDayModes()).data).toEqual(loaded.snapshot.dayModes);
+  expect((await db.loadExecuteModeItems()).data).toEqual(
+    loaded.snapshot.executeModeItems,
+  );
+  expect(await db.getAllKeys("executeModeItems")).toEqual(["data"]);
+  expect(await db.getAllData("executeModeItems")).toEqual({
+    data: loaded.snapshot.executeModeItems,
+  });
+});
+
+it.each(["altered", "missing"])(
+  "detects %s date records on reload and preserves corruption evidence",
+  async (damage) => {
+    const { dayRecordKey } = await import("../db/dayRecordStorage");
+    await setup();
+    const server = createPersistenceWorkerServer(db);
+    await server.read();
+    await server.day(
+      { kind: "mode", eventName: "event", day: "1日目", mode: "focus" },
+      "warm",
+      {},
+    );
+    const database = await openDatabase();
+    const transaction = database.transaction("dayModes", "readwrite");
+    if (damage === "altered")
+      transaction
+        .objectStore("dayModes")
+        .put({ corrupt: "ユーザー登録" }, dayRecordKey("event", ["1日目"]));
+    else
+      transaction
+        .objectStore("dayModes")
+        .delete(dayRecordKey("event", ["1日目"]));
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onabort = () => reject(transaction.error);
+    });
+    await expect(db.readApplicationSnapshot()).rejects.toThrow();
+    const loaded = await db.loadDayModes();
+    expect(loaded.status).toBe("conflict");
+    expect(loaded.recoveryBundle).toBeDefined();
+    if (damage === "altered")
+      expect(JSON.stringify(loaded.recoveryBundle)).toContain("ユーザー登録");
+  },
+);
+
+it.each([false, true])(
+  "rejects writes outside a date command before any persistence, partitioned=%s",
+  async (partitioned) => {
+    await setup();
+    if (partitioned) {
+      const server = createPersistenceWorkerServer(db);
+      await server.day(
+        { kind: "mode", eventName: "event", day: "1日目", mode: "focus" },
+        "warm",
+        {},
+      );
+    }
+    const read = await db.readDayCommandSnapshot();
+    const put = vi.spyOn(IDBObjectStore.prototype, "put");
+    const changes = [
+      {
+        ...read.snapshot,
+        dayModes: {
+          ...read.snapshot.dayModes,
+          other: { "1日目": "focus" as const },
+        },
+      },
+      {
+        ...read.snapshot,
+        dayModes: {
+          ...read.snapshot.dayModes,
+          event: { ...read.snapshot.dayModes.event, "2日目": "focus" as const },
+        },
+      },
+      { ...read.snapshot, eventMetadata: { event: { name: "outside" } } },
+    ];
+    for (const changed of changes)
+      await expect(
+        db.commitDayCommandSnapshot(changed, read.expectedRoots, {
+          eventName: "event",
+          day: "1日目",
+        }),
+      ).rejects.toThrow("Day commands cannot modify");
+    expect(put).not.toHaveBeenCalled();
+    expect((await db.loadDayModes()).data).toEqual(read.snapshot.dayModes);
+  },
+);
+
+it("rejects physical date-record changes during a full save and through the compatibility API", async () => {
+  const { dayRecordKey } = await import("../db/dayRecordStorage");
+  await setup();
+  const server = createPersistenceWorkerServer(db);
+  await server.day(
+    { kind: "mode", eventName: "event", day: "1日目", mode: "focus" },
+    "warm",
+    {},
+  );
+  const read = await db.readApplicationSnapshot();
+  const database = await openDatabase();
+  const transaction = database.transaction("dayModes", "readwrite");
+  transaction
+    .objectStore("dayModes")
+    .put({ corrupt: "ユーザー登録" }, dayRecordKey("event", ["1日目"]));
+  await new Promise<void>((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onabort = () => reject(transaction.error);
+  });
+  await expect(
+    db.commitApplicationSnapshotAtomically(read.snapshot, {
+      expectedRoots: read.expectedRoots,
+    }),
+  ).rejects.toThrow("日付レコードが計算後に変更");
+  await expect(
+    db.saveDayModes({ event: { "1日目": "edit" } }),
+  ).rejects.toThrow();
+  expect((await db.loadDayModes()).status).toBe("conflict");
+});
+
+it("retains shard state after a failed visit write and a retry, then survives a full-store API save", async () => {
+  await setup();
+  const server = createPersistenceWorkerServer(db);
+  await server.read();
+  await server.day(
+    { kind: "mode", eventName: "event", day: "1日目", mode: "edit" },
+    "mode-warm",
+    {},
+  );
+  await server.day(
+    {
+      kind: "patch",
+      eventName: "event",
+      day: "1日目",
+      baseline: { executeModeItems: { event: { "1日目": [] } } },
+      desired: { executeModeItems: { event: { "1日目": ["1"] } } },
+    },
+    "warm",
+    {},
+  );
+  const original = IDBObjectStore.prototype.put;
+  const fault = vi
+    .spyOn(IDBObjectStore.prototype, "put")
+    .mockImplementation(function (
+      this: IDBObjectStore,
+      ...args: Parameters<typeof original>
+    ) {
+      if (this.name === "executeModeItems")
+        throw new DOMException("quota", "QuotaExceededError");
+      return original.apply(this, args);
+    });
+  const command = {
+    kind: "patch" as const,
+    eventName: "event",
+    day: "1日目",
+    baseline: { executeModeItems: { event: { "1日目": ["1"] } } },
+    desired: { executeModeItems: { event: { "1日目": [] } } },
+  };
+  await expect(server.day(command, "retry", {})).rejects.toThrow();
+  fault.mockRestore();
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.executeModeItems.event[
+      "1日目"
+    ],
+  ).toEqual(["1"]);
+  expect((await server.day(command, "retry", {})).status).toBe("committed");
+  expect((await db.loadExecuteModeItems()).data).toEqual({
+    event: { "1日目": [] },
+  });
+  await db.saveExecuteModeItems({ event: { "1日目": ["1"] } });
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.executeModeItems.event[
+      "1日目"
+    ],
+  ).toEqual(["1"]);
+  expect((await server.day(command, "after-full-save", {})).status).toBe(
+    "committed",
+  );
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.executeModeItems.event[
+      "1日目"
+    ],
+  ).toEqual([]);
+});
+
+it("preserves and explicitly adopts valid date-record data when its root metadata is damaged", async () => {
+  const { createPersistenceMetadataKey } =
+    await import("../../utils/persistenceResilience");
+  await setup();
+  const server = createPersistenceWorkerServer(db);
+  await server.read();
+  await server.day(
+    { kind: "mode", eventName: "event", day: "1日目", mode: "focus" },
+    "warm",
+    {},
+  );
+  const database = await openDatabase();
+  const transaction = database.transaction("syncQueue", "readwrite");
+  transaction
+    .objectStore("syncQueue")
+    .put({ corrupt: true }, createPersistenceMetadataKey("dayModes", "data"));
+  await new Promise<void>((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onabort = () => reject(transaction.error);
+  });
+  const loaded = await db.loadDayModes();
+  expect(loaded.status).toBe("conflict");
+  const candidate = loaded.recoveryBundle?.candidates.find(
+    (value) => value.storeName === "dayModes" && value.adoptable,
+  );
+  expect(candidate).toBeDefined();
+  expect(JSON.stringify(loaded.recoveryBundle)).toContain(
+    "event-shopping-planner-day-record",
+  );
+  await db.adoptRecoveryCandidate(candidate!);
+  expect((await db.loadDayModes()).data).toEqual({
+    event: { "1日目": "focus" },
+  });
+});
+
+it("creates the first visit through a date command and exports the partitioned state without losing Japanese text", async () => {
+  const { collectDayMutation } =
+    await import("../../features/consistency/domain/dayMutation");
+  const { buildWorkerBackup } = await import("./backupWorkerServer");
+  const { parseAppBackup } = await import("../../utils/appBackup");
+  const data = seed();
+  data.executeModeItems = {};
+  const initial = await db.readApplicationSnapshot();
+  await db.commitApplicationSnapshotAtomically(data, {
+    expectedRoots: initial.expectedRoots,
+  });
+  const server = createPersistenceWorkerServer(db);
+  await server.read();
+  const command = collectDayMutation(
+    data,
+    { ...data, executeModeItems: { event: { "1日目": ["1"] } } },
+    "event",
+    "1日目",
+  );
+  expect(command).toBeDefined();
+  expect((await server.day(command!, "first-visit", {})).status).toBe(
+    "committed",
+  );
+  const result = await buildWorkerBackup(db.readApplicationSnapshot, {
+    changes: [],
+  });
+  if (!("file" in result)) throw new Error("missing backup");
+  const parsed = parseAppBackup(await result.file.blob.text());
+  expect(parsed.ok).toBe(true);
+  if (!parsed.ok) throw new Error("invalid backup");
+  expect(parsed.data.executeModeItems.event["1日目"]).toEqual(["1"]);
+  expect(parsed.data.eventLists.event[0]).toMatchObject({
+    circle: "ユーザー登録",
+  });
 });

@@ -13,7 +13,7 @@ export function isValidExportSetupStorageBinding(setup) {
   }
   if (setup.method === CONSISTENCY_METHOD) {
     return (
-      setup.databaseVersion === 8 &&
+      (setup.databaseVersion === 8 || setup.databaseVersion === 9) &&
       JSON.stringify(setup.transactionStores) ===
         JSON.stringify(["eventLists", "eventConsistency", "syncQueue"])
     );

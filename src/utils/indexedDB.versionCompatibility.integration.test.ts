@@ -125,27 +125,30 @@ afterEach(() => {
 });
 
 describe("IndexedDB version compatibility", () => {
-  it("upgrades a version 7 database while preserving unknown stores", async () => {
-    await seedDatabase(7, [...REQUIRED_STORES, FUTURE_STORE]);
-    const { db } = await import("./indexedDB");
+  it.each([7, 8])(
+    "upgrades a version %i database while preserving unknown stores",
+    async (version) => {
+      await seedDatabase(version, [...REQUIRED_STORES, FUTURE_STORE]);
+      const { db } = await import("./indexedDB");
 
-    await db.saveMapDataChanges({}, testMapData);
+      await db.saveMapDataChanges({}, testMapData);
 
-    const loaded = await db.loadMapData();
-    expect(loaded.status).toBe("ok");
-    expect(loaded.data).toEqual(testMapData);
+      const loaded = await db.loadMapData();
+      expect(loaded.status).toBe("ok");
+      expect(loaded.data).toEqual(testMapData);
 
-    const inspected = await inspectRawDatabase();
-    expect(inspected.version).toBe(8);
-    expect(inspected.stores).toContain(FUTURE_STORE);
-    expect(inspected.futureValue).toEqual({ preserved: true });
-  });
+      const inspected = await inspectRawDatabase();
+      expect(inspected.version).toBe(9);
+      expect(inspected.stores).toContain(FUTURE_STORE);
+      expect(inspected.futureValue).toEqual({ preserved: true });
+    },
+  );
 
   it("does not modify a current version database with a missing required store", async () => {
     const incompleteStores = REQUIRED_STORES.filter(
       (storeName) => storeName !== MAP_DATA_STORE,
     );
-    await seedDatabase(8, [...incompleteStores, FUTURE_STORE]);
+    await seedDatabase(9, [...incompleteStores, FUTURE_STORE]);
     const { db } = await import("./indexedDB");
 
     await expect(db.saveMapDataChanges({}, testMapData)).rejects.toMatchObject({
@@ -153,13 +156,13 @@ describe("IndexedDB version compatibility", () => {
     });
 
     const inspected = await inspectRawDatabase();
-    expect(inspected.version).toBe(8);
+    expect(inspected.version).toBe(9);
     expect(inspected.stores).not.toContain(MAP_DATA_STORE);
     expect(inspected.futureValue).toEqual({ preserved: true });
   });
 
   it("refuses an unknown newer database without modifying it", async () => {
-    await seedDatabase(9, [...REQUIRED_STORES, FUTURE_STORE]);
+    await seedDatabase(10, [...REQUIRED_STORES, FUTURE_STORE]);
     const { db } = await import("./indexedDB");
 
     await expect(db.saveMapDataChanges({}, testMapData)).rejects.toMatchObject({
@@ -167,17 +170,27 @@ describe("IndexedDB version compatibility", () => {
     });
 
     const inspected = await inspectRawDatabase();
-    expect(inspected.version).toBe(9);
+    expect(inspected.version).toBe(10);
     expect(inspected.futureValue).toEqual({ preserved: true });
   });
 
-  it("creates a new database at version 8", async () => {
+  it("prevents a version 8 client from opening the partitioned version 9 database", async () => {
+    await seedDatabase(9, [...REQUIRED_STORES, FUTURE_STORE]);
+    await expect(requestRawDatabase(8)).rejects.toMatchObject({
+      name: "VersionError",
+    });
+    expect((await inspectRawDatabase()).futureValue).toEqual({
+      preserved: true,
+    });
+  });
+
+  it("creates a new database at version 9", async () => {
     const { db } = await import("./indexedDB");
 
     await db.saveMapDataChanges({}, testMapData);
 
     const inspected = await inspectRawDatabase();
-    expect(inspected.version).toBe(8);
+    expect(inspected.version).toBe(9);
     expect(inspected.stores).toEqual(
       expect.arrayContaining([...REQUIRED_STORES]),
     );

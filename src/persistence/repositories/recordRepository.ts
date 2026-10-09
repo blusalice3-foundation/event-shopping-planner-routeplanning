@@ -17,6 +17,12 @@ import type {
   PersistenceRecordOperations,
 } from "../contracts/persistence";
 import { STORES, type StoreName } from "../db/constants";
+import {
+  DAY_RECORD_PREFIX,
+  hasDayRecordHead,
+  dayRecordStores,
+  assertDayRecordsUnchanged,
+} from "../db/dayRecordStorage";
 import { PersistenceConflictError } from "../db/errors";
 import {
   ensureStoreExists,
@@ -69,6 +75,23 @@ async function writeDataWithMetadataOnce<T>(
   metadata: StoredPersistenceMetadata,
   checkpoint: PersistenceCheckpoint,
 ): Promise<void> {
+  let expectedDayRecords: Map<string, unknown> | undefined;
+  if (key === "data" && dayRecordStores.includes(storeName)) {
+    const snapshot = await readPersistenceSnapshotWithRetry(storeName, key);
+    if (hasDayRecordHead(snapshot.payload)) {
+      const validation = await validatePersistenceSnapshot(
+        storeName,
+        key,
+        snapshot,
+      );
+      if ("conflict" in validation)
+        throw (
+          validation.conflict.error ??
+          new PersistenceConflictError("日付レコードを検証できません。")
+        );
+      expectedDayRecords = snapshot.dayRecords;
+    }
+  }
   const database = await openDatabase();
   ensureStoreExists(database, storeName);
   ensureStoreExists(database, STORES.SYNC_QUEUE);
@@ -117,6 +140,8 @@ async function writeDataWithMetadataOnce<T>(
       let metadataLoaded = false;
       let checkpointLoaded = false;
       let writesQueued = false;
+      let dayRecordsLoaded = !expectedDayRecords;
+      const currentDayRecords = new Map<string, unknown>();
 
       const abortWith = (error: unknown) => {
         failure = error;
@@ -131,7 +156,8 @@ async function writeDataWithMetadataOnce<T>(
           writesQueued ||
           !payloadLoaded ||
           !metadataLoaded ||
-          !checkpointLoaded
+          !checkpointLoaded ||
+          !dayRecordsLoaded
         )
           return;
         writesQueued = true;
@@ -149,6 +175,19 @@ async function writeDataWithMetadataOnce<T>(
             currentCheckpoint,
             expectedCheckpoint,
           );
+          if (expectedDayRecords)
+            assertDayRecordsUnchanged(expectedDayRecords, currentDayRecords);
+          if (hasDayRecordHead(currentPayload)) {
+            const removed = payloadStore.delete(
+              IDBKeyRange.bound(
+                DAY_RECORD_PREFIX,
+                DAY_RECORD_PREFIX + "\uffff",
+              ),
+            );
+            removed.onerror = () => {
+              failure = failure ?? removed.error;
+            };
+          }
           const payloadPut = payloadStore.put(data, key);
           const metadataPut = controlStore.put(metadata, metadataKey);
           const checkpointPut = controlStore.put(checkpoint, checkpointKey);
@@ -166,6 +205,24 @@ async function writeDataWithMetadataOnce<T>(
         }
       };
 
+      if (expectedDayRecords) {
+        const cursorRequest = payloadStore.openCursor(
+          IDBKeyRange.bound(DAY_RECORD_PREFIX, DAY_RECORD_PREFIX + "\uffff"),
+        );
+        cursorRequest.onerror = () => {
+          failure = failure ?? cursorRequest.error;
+        };
+        cursorRequest.onsuccess = () => {
+          const cursor = cursorRequest.result;
+          if (cursor) {
+            currentDayRecords.set(String(cursor.key), cursor.value);
+            cursor.continue();
+          } else {
+            dayRecordsLoaded = true;
+            commitIfReady();
+          }
+        };
+      }
       payloadRequest.onerror = () => {
         failure =
           failure ??

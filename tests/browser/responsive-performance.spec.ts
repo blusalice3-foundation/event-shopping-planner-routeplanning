@@ -1150,12 +1150,20 @@ async function durableExecuteIds(page: Page) {
     });
     try {
       return await new Promise<string[]>((resolve, reject) => {
-        const request = db
+        const store = db
           .transaction("executeModeItems")
-          .objectStore("executeModeItems")
-          .get("data");
-        request.onsuccess = () =>
-          resolve(request.result?.[event]?.["1日目"] ?? []);
+          .objectStore("executeModeItems");
+        const request = store.get("data");
+        request.onsuccess = () => {
+          if (request.result?.kind === "event-shopping-planner-day-records") {
+            const date = store.get(
+              "__esp_internal__:day-record:v1:" +
+                JSON.stringify([event, ["1日目"]]),
+            );
+            date.onsuccess = () => resolve(date.result?.value ?? []);
+            date.onerror = () => reject(date.error);
+          } else resolve(request.result?.[event]?.["1日目"] ?? []);
+        };
         request.onerror = () => reject(request.error);
       });
     } finally {

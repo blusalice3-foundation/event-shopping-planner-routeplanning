@@ -47,7 +47,7 @@ async function loadStoredMapData(): Promise<MapDataStore> {
 
 async function openRawDatabase(): Promise<IDBDatabase> {
   return await new Promise((resolve, reject) => {
-    const request = indexedDB.open("EventShoppingPlannerDB", 8);
+    const request = indexedDB.open("EventShoppingPlannerDB", 9);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
   });

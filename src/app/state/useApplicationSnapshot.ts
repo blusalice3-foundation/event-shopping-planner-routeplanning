@@ -65,7 +65,10 @@ import {
   type UpdateItemFieldsInput,
 } from "./itemFieldMutation";
 
-import { collectDayMutation } from "../../features/consistency/domain/dayMutation";
+import {
+  collectDayMutation,
+  dayMutationStores,
+} from "../../features/consistency/domain/dayMutation";
 import { measureShoppingOperation } from "../../utils/shoppingPerformance";
 
 export const MEMO_SAVE_DELAY_MS = 300;
@@ -747,9 +750,13 @@ export function useApplicationSnapshot(
           `set${key[0].toUpperCase()}${key.slice(1)}`,
           (action: SetStateAction<PersistedStateValues[typeof key]>) => {
             const previous = (draft.current?.draft ?? previewRef.current)[key];
-            const current = structuredClone(
-              previous,
-            ) as PersistedStateValues[typeof key];
+            // React state updaters are immutable. Preserve all untouched date branches
+            // for day commands instead of cloning historical visits and route settings.
+            const current = (dayMutationStores as readonly string[]).includes(
+              key,
+            )
+              ? previous
+              : structuredClone(previous);
             const next =
               typeof action === "function"
                 ? (action as (value: typeof current) => typeof current)(current)

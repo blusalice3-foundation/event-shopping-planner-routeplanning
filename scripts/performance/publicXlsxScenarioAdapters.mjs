@@ -390,8 +390,8 @@ export const stageCanonicalExportEventLists = async ({
   const receipt = await page.evaluate(
     async (input) => {
       const DATABASE_NAME = "EventShoppingPlannerDB";
-      const MIN_DATABASE_VERSION = 8;
-      const MAX_DATABASE_VERSION = 8;
+      const MIN_DATABASE_VERSION = 9;
+      const MAX_DATABASE_VERSION = 9;
       const DATA_KEY = "data";
       const EVENT_STORE = "eventLists";
       const CONTROL_STORE = "syncQueue";
@@ -812,8 +812,8 @@ export const stageCanonicalExportEventLists = async ({
   if (
     !isRecord(receipt) ||
     !Number.isSafeInteger(receipt.databaseVersion) ||
-    receipt.databaseVersion < 8 ||
-    receipt.databaseVersion > 8 ||
+    receipt.databaseVersion < 9 ||
+    receipt.databaseVersion > 9 ||
     Object.entries(expectedReceipt).some(
       ([key, value]) => JSON.stringify(receipt[key]) !== JSON.stringify(value),
     )
@@ -904,8 +904,8 @@ export const readCommittedEventListsReceipt = async ({
       });
       try {
         if (
-          database.version < 8 ||
-          database.version > 8 ||
+          database.version < 9 ||
+          database.version > 9 ||
           !database.objectStoreNames.contains("eventConsistency") ||
           !database.objectStoreNames.contains("eventLists") ||
           !database.objectStoreNames.contains("syncQueue")
@@ -1013,8 +1013,8 @@ export const readCommittedEventListsReceipt = async ({
     !isRecord(receipt) ||
     receipt.databaseName !== "EventShoppingPlannerDB" ||
     !Number.isSafeInteger(receipt.databaseVersion) ||
-    receipt.databaseVersion < 8 ||
-    receipt.databaseVersion > 8 ||
+    receipt.databaseVersion < 9 ||
+    receipt.databaseVersion > 9 ||
     receipt.storeName !== "eventLists" ||
     receipt.controlStoreName !== "syncQueue" ||
     receipt.key !== "data" ||

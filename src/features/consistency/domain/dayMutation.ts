@@ -215,8 +215,12 @@ export function collectDayMutation(
             isDayKey(store, key, day),
           ),
         );
-      Object.assign(baseline, { [store]: { [eventName]: select(before) } });
-      Object.assign(changes, { [store]: { [eventName]: select(after) } });
+      Object.assign(baseline, {
+        [store]: before === undefined ? {} : { [eventName]: select(before) },
+      });
+      Object.assign(changes, {
+        [store]: after === undefined ? {} : { [eventName]: select(after) },
+      });
     }
   }
   if (!Object.keys(changes).length) return;

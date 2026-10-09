@@ -57,6 +57,11 @@ import {
   type RawPersistenceSnapshot,
 } from "../repositories/applicationDataRepository";
 import { validateCheckpointForRoot } from "../recovery/checkpoint";
+import {
+  decodeDayRecords,
+  hasDayRecordHead,
+  type DayRecordState,
+} from "../db/dayRecordStorage";
 
 export type { StoreName } from "../db/constants";
 export type { AppData } from "../../app/ports/PersistenceCommandPort";
@@ -290,6 +295,7 @@ export interface ValidatedPersistenceSnapshot<T> {
   data: T | null;
   root: ObservedRevisionRoot;
   checkpoint: PersistenceCheckpoint | null;
+  dayRecordState?: DayRecordState;
 }
 
 function toRecoveryPrimitive(value: unknown): unknown {
@@ -500,6 +506,68 @@ export async function validatePersistenceSnapshot<T>(
       checkpointConflict?: true;
     }
 > {
+  const conflictForSnapshot = (
+    message: string,
+    store: StoreName,
+    candidates: StartupRecoveryCandidate[],
+  ): LoadResult<T> =>
+    createConflictLoadResult<T>(
+      message,
+      store,
+      hasDayRecordHead(snapshot.payload)
+        ? [
+            ...candidates,
+            createRecoveryCandidate(
+              "indexedDB",
+              store,
+              "__esp_internal__:day-record-evidence:v1",
+              null,
+              {
+                head: snapshot.payload,
+                records: [...(snapshot.dayRecords ?? [])],
+              },
+              undefined,
+              { adoptable: false },
+            ),
+          ]
+        : candidates,
+    );
+  let logicalPayload = snapshot.payload;
+  let dayRecordState: DayRecordState | undefined;
+  if (hasDayRecordHead(snapshot.payload)) {
+    try {
+      const decoded = await decodeDayRecords(
+        storeName,
+        snapshot.payload,
+        snapshot.dayRecords,
+      );
+      logicalPayload = decoded.data;
+      dayRecordState = decoded.state;
+    } catch (error) {
+      return {
+        conflict: conflictForSnapshot(
+          error instanceof Error
+            ? error.message
+            : "日付レコードを検証できません。",
+          storeName,
+          [
+            createRecoveryCandidate(
+              "indexedDB",
+              storeName,
+              key,
+              null,
+              {
+                head: snapshot.payload,
+                records: [...(snapshot.dayRecords ?? [])],
+              },
+              undefined,
+              { adoptable: false },
+            ),
+          ],
+        ),
+      };
+    }
+  }
   const payloadMissing =
     snapshot.payload === undefined || snapshot.payload === null;
   const metadataMissing =
@@ -510,7 +578,7 @@ export async function validatePersistenceSnapshot<T>(
   if (payloadMissing && metadataMissing) {
     if (!checkpointMissing) {
       return {
-        conflict: createConflictLoadResult(
+        conflict: conflictForSnapshot(
           `${storeName} の吸収checkpointだけが残っているため、安全に読み込めません。`,
           storeName,
           [
@@ -539,7 +607,7 @@ export async function validatePersistenceSnapshot<T>(
 
   if (payloadMissing) {
     return {
-      conflict: createConflictLoadResult(
+      conflict: conflictForSnapshot(
         `${storeName} の世代情報だけが残っており、対応する保存データがありません。`,
         storeName,
         [
@@ -559,10 +627,10 @@ export async function validatePersistenceSnapshot<T>(
 
   if (
     storeName === STORES.EVENT_CONSISTENCY &&
-    validateEventConsistency(snapshot.payload).length > 0
+    validateEventConsistency(logicalPayload).length > 0
   ) {
     return {
-      conflict: createConflictLoadResult(
+      conflict: conflictForSnapshot(
         "関連設定の型・構造が不正です。元のデータを保全しています。",
         storeName,
         [
@@ -571,7 +639,7 @@ export async function validatePersistenceSnapshot<T>(
             storeName,
             key,
             null,
-            snapshot.payload,
+            logicalPayload,
           ),
         ],
       ),
@@ -581,7 +649,7 @@ export async function validatePersistenceSnapshot<T>(
   if (metadataMissing) {
     if (!checkpointMissing) {
       return {
-        conflict: createConflictLoadResult(
+        conflict: conflictForSnapshot(
           `${storeName} のpayloadと吸収checkpointに対応する世代情報がありません。`,
           storeName,
           [
@@ -590,7 +658,7 @@ export async function validatePersistenceSnapshot<T>(
               storeName,
               key,
               null,
-              snapshot.payload,
+              logicalPayload,
             ),
             createRecoveryCandidate(
               "indexedDB",
@@ -609,14 +677,15 @@ export async function validatePersistenceSnapshot<T>(
       return {
         validated: {
           status: "ok",
-          data: snapshot.payload as T,
+          data: logicalPayload as T,
+          dayRecordState,
           root,
           checkpoint: null,
         },
       };
     } catch {
       return {
-        conflict: createConflictLoadResult(
+        conflict: conflictForSnapshot(
           `${storeName} のmetadata未付与データを安全に識別できません。`,
           storeName,
           [
@@ -625,7 +694,7 @@ export async function validatePersistenceSnapshot<T>(
               storeName,
               key,
               null,
-              snapshot.payload,
+              logicalPayload,
             ),
           ],
         ),
@@ -635,7 +704,7 @@ export async function validatePersistenceSnapshot<T>(
 
   if (!isStoredPersistenceMetadata(snapshot.metadata, storeName, key)) {
     return {
-      conflict: createConflictLoadResult(
+      conflict: conflictForSnapshot(
         `${storeName} の世代情報が不正なため、保存データを上書きできません。`,
         storeName,
         [
@@ -644,7 +713,7 @@ export async function validatePersistenceSnapshot<T>(
             storeName,
             key,
             null,
-            snapshot.payload,
+            logicalPayload,
           ),
           createRecoveryCandidate(
             "indexedDB",
@@ -675,7 +744,7 @@ export async function validatePersistenceSnapshot<T>(
   }
   if (!digestValid || !fingerprintValid) {
     return {
-      conflict: createConflictLoadResult(
+      conflict: conflictForSnapshot(
         `${storeName} の保存データと世代情報が一致しないため、安全に読み込めません。`,
         storeName,
         [
@@ -684,7 +753,7 @@ export async function validatePersistenceSnapshot<T>(
             storeName,
             key,
             snapshot.metadata.revision,
-            snapshot.payload,
+            logicalPayload,
           ),
           createRecoveryCandidate(
             "indexedDB",
@@ -708,7 +777,7 @@ export async function validatePersistenceSnapshot<T>(
     );
   } catch {
     return {
-      conflict: createConflictLoadResult(
+      conflict: conflictForSnapshot(
         `${storeName} の吸収checkpointが確定rootと一致しません。`,
         storeName,
         [
@@ -717,7 +786,7 @@ export async function validatePersistenceSnapshot<T>(
             storeName,
             key,
             snapshot.metadata.revision,
-            snapshot.payload,
+            logicalPayload,
           ),
           createRecoveryCandidate(
             "indexedDB",
@@ -735,7 +804,8 @@ export async function validatePersistenceSnapshot<T>(
   return {
     validated: {
       status: "ok",
-      data: snapshot.payload as T,
+      data: logicalPayload as T,
+      dayRecordState,
       root: snapshot.metadata,
       checkpoint,
     },

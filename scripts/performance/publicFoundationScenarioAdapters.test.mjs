@@ -131,7 +131,7 @@ const makeHarness = ({
           durationMs: 2,
           matched: indexedDbMatched,
           storeNames: requiredStores,
-          version: 8,
+          version: 9,
         };
       }
       if (request.operation === "measure-indexeddb") {
@@ -139,7 +139,7 @@ const makeHarness = ({
           durationMs: 7,
           matched: indexedDbMatched,
           storeNames: requiredStores,
-          version: 8,
+          version: 9,
         };
       }
       throw new Error(`Unexpected browser operation ${request.operation}`);

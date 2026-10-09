@@ -106,11 +106,55 @@ async function stored(page: Page, store: string, key = "data") {
       });
       try {
         return await new Promise<unknown>((resolve, reject) => {
-          const request = database
+          const store = database
             .transaction(name, "readonly")
-            .objectStore(name)
-            .get(key);
-          request.onsuccess = () => resolve(request.result);
+            .objectStore(name);
+          const request = store.get(key);
+          request.onsuccess = () => {
+            const head = request.result;
+            if (
+              key !== "data" ||
+              head?.kind !== "event-shopping-planner-day-records"
+            ) {
+              resolve(head);
+              return;
+            }
+            const prefix = "__esp_internal__:day-record:v1:";
+            const rows: Array<{
+              eventName: string;
+              path: string[];
+              value: unknown;
+            }> = [];
+            const cursor = store.openCursor(
+              IDBKeyRange.bound(prefix, prefix + "\uffff"),
+            );
+            cursor.onerror = () => reject(cursor.error);
+            cursor.onsuccess = () => {
+              const row = cursor.result;
+              if (row) {
+                rows.push(row.value);
+                row.continue();
+                return;
+              }
+              const data: Record<string, Record<string, unknown>> = {};
+              for (const row of rows.filter((row) => !row.path.length))
+                Object.defineProperty(data, row.eventName, {
+                  value: row.value,
+                  enumerable: true,
+                });
+              for (const row of rows.filter((row) => row.path.length)) {
+                const parent =
+                  row.path.length === 2
+                    ? (data[row.eventName].days as Record<string, unknown>)
+                    : data[row.eventName];
+                Object.defineProperty(parent, row.path.at(-1)!, {
+                  value: row.value,
+                  enumerable: true,
+                });
+              }
+              resolve(data);
+            };
+          };
           request.onerror = () => reject(request.error);
         });
       } finally {

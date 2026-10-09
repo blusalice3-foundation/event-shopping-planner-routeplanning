@@ -383,7 +383,7 @@ async function main() {
       assert.deepEqual(current.data.eventLists, backup.data.eventLists);
       assert.deepEqual(await readLegacySources(page), LEGACY_SOURCES);
       const snapshot = await snapshotDatabase(page);
-      assert.equal(snapshot.version, 8);
+      assert.equal(snapshot.version, 9);
       assert.ok(
         snapshot.stores.eventConsistency,
         "The consistency store is missing.",

@@ -1685,3 +1685,47 @@ it("flushes a pending memo when an unchanged answer is confirmed", async () => {
   expect(h.commit).toHaveBeenCalledOnce();
   h.unmount();
 });
+
+it("preserves historical day-store input references instead of cloning them for modes and visits", async () => {
+  const h = harness();
+  const history = {
+    "1日目": Array.from({ length: 10000 }, (_, index) => `past-${index}`),
+  };
+  const modes = {
+    event: { "1日目": "edit" as const },
+    past: { "1日目": "focus" as const },
+  };
+  const visits = { event: { "1日目": [] }, past: history };
+  act(() => {
+    h.result.current.hydrationSetters.setDayModes(modes);
+    h.result.current.hydrationSetters.setExecuteModeItems(visits);
+  });
+  const beforeModes = h.result.current.previewRef.current.dayModes;
+  const beforeVisits = h.result.current.previewRef.current.executeModeItems;
+  let modesInput: unknown;
+  let visitsInput: unknown;
+  const clone = vi.spyOn(globalThis, "structuredClone");
+  act(() => {
+    h.result.current.setters.setDayModes((current) => {
+      modesInput = current;
+      return { ...current, event: { ...current.event, "1日目": "focus" } };
+    });
+    h.result.current.setters.setExecuteModeItems((current) => {
+      visitsInput = current;
+      return { ...current, event: { ...current.event, "1日目": [] } };
+    });
+  });
+  expect(modesInput).toBe(beforeModes);
+  expect(visitsInput).toBe(beforeVisits);
+  expect(
+    clone.mock.calls.every(
+      ([value]) => value !== beforeModes && value !== beforeVisits,
+    ),
+  ).toBe(true);
+  expect(h.result.current.previewRef.current.executeModeItems.past).toBe(
+    beforeVisits.past,
+  );
+  clone.mockRestore();
+  await act(async () => h.result.current.coordinator.enqueue(() => undefined));
+  h.unmount();
+});
