@@ -20,6 +20,10 @@ import {
   MAP_DATA_LEGACY_KEY,
   STORES,
 } from "../db/constants";
+import {
+  prepareMapScopeRoots,
+  enqueueMapScopeRoots,
+} from "../db/scopedDayStorage";
 import { PersistenceConflictError } from "../db/errors";
 import {
   ensureStoreExists,
@@ -517,6 +521,7 @@ async function writeMapDataWithMetadataOnce(
   const database = await openDatabase();
   ensureStoreExists(database, STORES.MAP_DATA);
   ensureStoreExists(database, STORES.SYNC_QUEUE);
+  const scopeRoots = await prepareMapScopeRoots(data, metadata.revision);
   const desiredPuts = buildMapDataPuts(data);
   const desiredByStorageKey = new Map(
     desiredPuts.map(({ key: storageKey, value }) => [storageKey, value]),
@@ -581,6 +586,17 @@ async function writeMapDataWithMetadataOnce(
           DATA_KEY,
           currentCheckpoint,
           expectedCheckpoint,
+        );
+        enqueueMapScopeRoots(
+          controlStore,
+          scopeRoots,
+          metadata.revision,
+          Object.keys(materializeMapData(observedEntries).data),
+          (request) => {
+            request.onerror = () => {
+              failure = failure ?? request.error;
+            };
+          },
         );
         deletes.forEach((storageKey) => {
           const request = mapStore.delete(storageKey);

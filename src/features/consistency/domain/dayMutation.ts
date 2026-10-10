@@ -1,5 +1,6 @@
 import type {
   ApplicationDayMutation,
+  ApplicationDayScope,
   PersistenceSnapshot,
 } from "../../../app/ports/PersistenceCommandPort";
 import type { MutationPlan } from "../../../app/commands/applicationMutationCoordinator";
@@ -10,6 +11,9 @@ import { MAPLESS_HALL_KEY } from "../../../types/map";
 import { semanticEqual } from "../../../utils/semanticEquality";
 import { sameDay, normalizeMapDay } from "./context";
 import { planDayModeToggle } from "./dayMode";
+import { planDayMerge } from "./dayMerge";
+import { planVisitPanelMutation } from "./visitPanelMutation";
+import { dayMutationScope, matchesScopeDay } from "./dayScope";
 import { projectConsistencySnapshot } from "./projection";
 import {
   applyChangedFields,
@@ -23,6 +27,7 @@ export const dayMutationStores = [
   "executeModeItems",
   "hallRouteSettings",
   "routeSettings",
+  "mapViewportSettings",
 ] as const;
 const isDayKey = (
   store: keyof PersistenceSnapshot,
@@ -40,7 +45,9 @@ export function scopeDaySnapshot(
   source: PersistenceSnapshot,
   eventName: string,
   day: string,
+  additionalDays: readonly string[] = [],
 ): PersistenceSnapshot {
+  const target = { eventName, day, additionalDays };
   const result = Object.fromEntries(
     Object.keys(source).map((key) => [key, {}]),
   ) as unknown as PersistenceSnapshot;
@@ -50,25 +57,28 @@ export function scopeDaySnapshot(
     let value: unknown;
     if (store === "eventLists")
       value = (event as ShoppingItem[]).filter((item) =>
-        sameDay(item.eventDate, day),
+        matchesScopeDay(target, item.eventDate),
       );
     else if (store === "eventConsistency") {
       const consistency = source.eventConsistency[eventName];
       value = {
         ...consistency,
         days: Object.fromEntries(
-          Object.entries(consistency.days).filter(([key]) => sameDay(key, day)),
+          Object.entries(consistency.days).filter(([key]) =>
+            matchesScopeDay(target, key),
+          ),
         ),
         legacyPending: consistency.legacyPending.filter(
           (entry) =>
-            entry.sourceDayKey === null || sameDay(entry.sourceDayKey, day),
+            entry.sourceDayKey === null ||
+            matchesScopeDay(target, entry.sourceDayKey),
         ),
       };
     } else if (store === "eventMetadata") value = event;
     else
       value = Object.fromEntries(
         Object.entries(event ?? {}).filter(([key]) =>
-          isDayKey(store, key, day),
+          [day, ...additionalDays].some((value) => isDayKey(store, key, value)),
         ),
       );
     Object.assign(result[store], { [eventName]: value });
@@ -82,7 +92,10 @@ export function mergeDaySnapshot(
   before: PersistenceSnapshot,
   after: PersistenceSnapshot,
   eventName: string,
+  day: string,
+  additionalDays: readonly string[] = [],
 ): PersistenceSnapshot {
+  const target = { eventName, day, additionalDays };
   const next = { ...source };
   for (const store of Object.keys(source) as Array<keyof PersistenceSnapshot>) {
     const old = before[store][eventName],
@@ -107,7 +120,18 @@ export function mergeDaySnapshot(
       Object.assign(days, changed.days);
       next.eventConsistency = {
         ...source.eventConsistency,
-        [eventName]: { ...original, days },
+        [eventName]: {
+          ...original,
+          days,
+          legacyPending: [
+            ...original.legacyPending.filter(
+              (entry) =>
+                entry.sourceDayKey !== null &&
+                !matchesScopeDay(target, entry.sourceDayKey),
+            ),
+            ...changed.legacyPending,
+          ],
+        },
       };
     } else {
       const branch = { ...source[store][eventName] };
@@ -127,7 +151,13 @@ export function planDayMutation(
 ): MutationPlan {
   const { eventName, day } = command;
   if (!source.eventLists[eventName]) throw new MutationTargetMissingError();
-  const scoped = scopeDaySnapshot(source, eventName, day);
+  const target = dayMutationScope(command);
+  const scoped = scopeDaySnapshot(
+    source,
+    eventName,
+    day,
+    target.additionalDays,
+  );
   let plan: MutationPlan;
   if (command.kind === "mode") {
     plan = planDayModeToggle(
@@ -136,6 +166,25 @@ export function planDayMutation(
       day,
       command.mode ? { mode: command.mode } : {},
     );
+  } else if (command.kind === "visits") {
+    plan = planVisitPanelMutation(scoped, command);
+  } else if (command.kind === "map-viewport") {
+    if (!scoped.mapData[eventName]?.[command.mapKey])
+      throw new MutationTargetMissingError();
+    plan = {
+      snapshot: {
+        ...scoped,
+        mapViewportSettings: {
+          ...scoped.mapViewportSettings,
+          [eventName]: {
+            ...scoped.mapViewportSettings[eventName],
+            [command.mapKey]: structuredClone(command.viewport),
+          },
+        },
+      },
+    };
+  } else if (command.kind === "day-merge") {
+    plan = planDayMerge(scoped, eventName, day);
   } else {
     const projected = projectConsistencySnapshot(scoped, eventName, day);
     const patch: Partial<PersistenceSnapshot> = {};
@@ -173,7 +222,14 @@ export function planDayMutation(
   }
   return {
     ...plan,
-    snapshot: mergeDaySnapshot(source, scoped, plan.snapshot, eventName),
+    snapshot: mergeDaySnapshot(
+      source,
+      scoped,
+      plan.snapshot,
+      eventName,
+      day,
+      target.additionalDays,
+    ),
   };
 }
 
@@ -243,4 +299,59 @@ export function collectDayMutation(
     desired: changes,
     routeDays,
   };
+}
+
+/** Merge an independently verified day read without discarding retained historical state. */
+export function adoptScopedDaySnapshot(
+  retained: PersistenceSnapshot | undefined,
+  scoped: PersistenceSnapshot,
+  target: ApplicationDayScope,
+): PersistenceSnapshot {
+  if (!retained) return scoped;
+  let result = retained;
+  const { eventName, day, additionalDays = [] } = target;
+  for (const store of Object.keys(scoped) as Array<keyof PersistenceSnapshot>) {
+    const latest = scoped[store][eventName];
+    const current = retained[store][eventName];
+    let value: unknown;
+    if (store === "eventLists" || store === "eventMetadata") value = latest;
+    else if (store === "eventConsistency") {
+      if (latest === undefined) value = undefined;
+      else {
+        const old = retained.eventConsistency[eventName];
+        const next = scoped.eventConsistency[eventName];
+        const days = Object.fromEntries(
+          Object.entries(old?.days ?? {}).filter(
+            ([key]) => !matchesScopeDay(target, key),
+          ),
+        );
+        value = { ...next, days: { ...days, ...next.days } };
+      }
+    } else if (latest === undefined && current === undefined) value = undefined;
+    else {
+      value = {
+        ...Object.fromEntries(
+          Object.entries(current ?? {}).filter(
+            ([key]) =>
+              ![day, ...additionalDays].some((value) =>
+                isDayKey(store, key, value),
+              ),
+          ),
+        ),
+        ...(latest as object),
+      };
+    }
+    if (semanticEqual(current, value)) continue;
+    const branch = { ...result[store] } as Record<string, unknown>;
+    if (value === undefined) delete branch[eventName];
+    else
+      Object.defineProperty(branch, eventName, {
+        value,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    result = { ...result, [store]: branch };
+  }
+  return result;
 }

@@ -848,3 +848,43 @@ describe("visit sessions wait for duplicate-day review", () => {
     },
   );
 });
+
+it("preserves save and discard baselines when the worker fast path skips UI planning", async () => {
+  const { planDayMutation } =
+    await import("../../features/consistency/domain/dayMutation");
+  const h = harness();
+  h.open();
+  const planned = vi.fn();
+  vi.mocked(h.ports.requestMutation).mockImplementation(async (intent) => {
+    expect(intent.dayMutation?.kind).toBe("visits");
+    intent.assertApplicable?.();
+    const result = planDayMutation(h.snapshot(), intent.dayMutation!);
+    h.mutate((snapshot) => Object.assign(snapshot, result.snapshot));
+    planned(intent.dayMutation);
+    return h.snapshot();
+  });
+  await h.update(["A", "B", "C"]);
+  await act(() => h.result.current.saveChanges());
+  h.rerender();
+  expect(h.state.originalOrder).toEqual(["A", "B", "C"]);
+  await h.update(["C", "B", "A"]);
+  await act(() => h.result.current.discardChanges());
+  h.rerender();
+  expect(h.ids()).toEqual(["A", "B", "C"]);
+  expect(h.state.hasUnsavedChanges).toBe(false);
+  await h.update(["C", "B", "A"]);
+  act(() => h.result.current.requestDayModeChange("2日目"));
+  h.rerender();
+  await act(() => h.result.current.discardPendingTransition());
+  expect(planned).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      kind: "visits",
+      day: DAY,
+      modeDay: "2日目",
+      order: ["A", "B", "C"],
+    }),
+  );
+  expect(h.ids()).toEqual(["A", "B", "C"]);
+  expect(h.snapshot().dayModes.event["2日目"]).toBe("execute");
+  expect(h.state.panelOpen).toBe(false);
+});

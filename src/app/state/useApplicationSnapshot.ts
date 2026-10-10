@@ -362,6 +362,8 @@ export function useApplicationSnapshot(
           precedingBatches(id).some((batch) => retained.current.has(batch.id)),
         drain: () => handlers.current.drain(),
         readDurable: () => persistence.readApplicationSnapshot(),
+        readDayDurable: persistence.readDayApplicationSnapshot,
+        commitDaySnapshot: persistence.commitDayApplicationSnapshot,
         commitItemContentEdits: persistence.commitItemContentEdits,
         commitDayMutation: persistence.commitDayMutation,
         createBackupFile: async (base, accepted) => {
@@ -438,6 +440,7 @@ export function useApplicationSnapshot(
             rawRef.current,
             snapshot as unknown as PersistedStateValues,
           );
+          persistence.adoptCommittedSnapshot?.(rawRef.current);
           setRaw(rawRef.current);
           handlers.current.applied(rawRef.current, events);
         },
@@ -926,12 +929,13 @@ export function useApplicationSnapshot(
                 ? (action as (value: typeof current) => typeof current)(current)
                 : action;
             rawRef.current = { ...rawRef.current, [key]: value };
+            persistence.adoptCommittedSnapshot?.(rawRef.current);
             setRaw(rawRef.current);
             rebuildPreview();
           },
         ]),
       ) as unknown as PersistedStateSetters,
-    [rebuildPreview],
+    [rebuildPreview, persistence],
   );
   const retainedSnapshot = useMemo(
     () =>

@@ -1,11 +1,16 @@
 import type {
   ApplicationSnapshotRead,
+  ApplicationDayScope,
   ItemContentEdit,
   PersistenceSnapshot,
 } from "../../app/ports/PersistenceCommandPort";
 import { semanticEqual } from "../../utils/semanticEquality";
 
 export interface SnapshotDelta {
+  scope?: {
+    target: ApplicationDayScope;
+    snapshot: PersistenceSnapshot;
+  };
   full?: PersistenceSnapshot;
   stores?: Partial<PersistenceSnapshot>;
   items?: ItemContentEdit[];

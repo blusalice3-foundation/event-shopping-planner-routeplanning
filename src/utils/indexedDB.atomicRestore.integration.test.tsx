@@ -314,10 +314,12 @@ it("writes only changed stores while checking every durable root", async () => {
       changedStoresOnly: true,
     });
     expect(
-      put.mock.instances.map((store) => (store as IDBObjectStore).name).sort(),
-    ).toEqual(
-      [db.STORES.DAY_MODES, db.STORES.SYNC_QUEUE, db.STORES.SYNC_QUEUE].sort(),
-    );
+      [
+        ...new Set(
+          put.mock.instances.map((store) => (store as IDBObjectStore).name),
+        ),
+      ].sort(),
+    ).toEqual([db.STORES.DAY_MODES, db.STORES.SYNC_QUEUE].sort());
     expect(await db.getAllAppData()).toEqual(next);
     const after = await db.readApplicationSnapshot();
     const roots = (read: typeof before) =>
@@ -333,10 +335,12 @@ it("writes only changed stores while checking every durable root", async () => {
       changedStoresOnly: true,
     });
     expect(
-      put.mock.instances.map((store) => (store as IDBObjectStore).name).sort(),
-    ).toEqual(
-      [db.STORES.DAY_MODES, db.STORES.SYNC_QUEUE, db.STORES.SYNC_QUEUE].sort(),
-    );
+      [
+        ...new Set(
+          put.mock.instances.map((store) => (store as IDBObjectStore).name),
+        ),
+      ].sort(),
+    ).toEqual([db.STORES.DAY_MODES, db.STORES.SYNC_QUEUE].sort());
   } finally {
     put.mockRestore();
   }

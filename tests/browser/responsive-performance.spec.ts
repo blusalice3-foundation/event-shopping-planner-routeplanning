@@ -1093,10 +1093,12 @@ async function measureModeClick(page: Page, mode: PerformanceMode) {
         .modeMeasurement.durationMs,
   );
 }
-for (const historicalCount of [0, 10000])
-  for (const session of [1, 2, 3]) {
+// Alternate paired conditions so browser/time drift does not align with history size.
+for (const session of [1, 2, 3])
+  for (const historicalCount of session === 2 ? [10000, 0] : [0, 10000]) {
     test(`six mode transitions: 500 items, history=${historicalCount}, session=${session} @mode-performance`, async ({
       page,
+      browser,
     }, testInfo) => {
       test.setTimeout(240000);
       await page.setViewportSize({ width: 1280, height: 900 });
@@ -1130,6 +1132,15 @@ for (const historicalCount of [0, 10000])
             historicalCount,
             session,
             coldExecuteToEditMs: cold,
+            measurementOrder: "paired-counterbalanced-v1",
+            releaseIdentity: await page.evaluate(async () =>
+              (
+                await fetch("/release-identity.json", { cache: "no-store" })
+              ).json(),
+            ),
+            browserVersion: browser.version(),
+            browserChannel: process.env.PERFORMANCE_BROWSER_CHANNEL,
+            headed: process.env.PERFORMANCE_HEADED === "1",
             samples,
           }),
         ),
@@ -1550,3 +1561,303 @@ for (const concentrated of [false, true]) {
     expect(errors).toEqual([]);
   });
 }
+
+for (const session of [1, 2, 3])
+  test(
+    "backup comparison on Windows, session=" + session + " @backup-comparison",
+    async ({ page, browser }, testInfo) => {
+      test.setTimeout(180000);
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await restore(page, 500, false, 10000, true);
+      const samples: Array<Record<string, unknown>> = [];
+      for (const parallel of [false, true]) {
+        await page
+          .getByRole("button", { name: "イベント一覧", exact: true })
+          .click();
+        const button = page.getByRole("button", {
+          name: "JSONバックアップ保存",
+          exact: true,
+        });
+        const exportBounds = (await button.boundingBox())!;
+        const eventBounds = (await page
+          .getByText(eventName, { exact: true })
+          .boundingBox())!;
+        await page.evaluate(() => {
+          const state = window as unknown as {
+            backupCompare: {
+              longTasks: number[];
+              frameGaps: number[];
+              active: boolean;
+              started: number;
+              startedEpochMs: number;
+            };
+          };
+          state.backupCompare = {
+            longTasks: [],
+            frameGaps: [],
+            active: true,
+            started: 0,
+            startedEpochMs: 0,
+          };
+          const observer = new PerformanceObserver((entries) => {
+            for (const entry of entries.getEntries())
+              state.backupCompare.longTasks.push(entry.duration);
+          });
+          observer.observe({ type: "longtask", buffered: false });
+          let previous = performance.now();
+          function frame(now: number) {
+            if (!state.backupCompare.active) {
+              observer.disconnect();
+              return;
+            }
+            state.backupCompare.frameGaps.push(now - previous);
+            previous = now;
+            requestAnimationFrame(frame);
+          }
+          requestAnimationFrame(frame);
+        });
+        await button.evaluate((element) =>
+          element.addEventListener(
+            "click",
+            (event) => {
+              const state = (
+                window as unknown as {
+                  backupCompare: { started: number; startedEpochMs: number };
+                }
+              ).backupCompare;
+              state.started = event.timeStamp;
+              state.startedEpochMs = Date.now();
+            },
+            { once: true },
+          ),
+        );
+        let downloadReceivedAt = 0;
+        const download = page.waitForEvent("download").then((file) => {
+          downloadReceivedAt = Date.now();
+          return file;
+        });
+        const click = page.mouse.click(
+          exportBounds.x + exportBounds.width / 2,
+          exportBounds.y + exportBounds.height / 2,
+        );
+        let inputSentAt: number | undefined;
+        let inputPaintMs: number | undefined;
+        if (parallel) {
+          await new Promise((resolve) => setTimeout(resolve, 40));
+          inputSentAt = Date.now();
+          await page.mouse.click(
+            eventBounds.x + eventBounds.width / 2,
+            eventBounds.y + eventBounds.height / 2,
+          );
+          await expect(page.locator('[data-item-id="perf-0"]')).toBeVisible();
+          inputPaintMs = await page.evaluate(async (sentAt) => {
+            await new Promise(requestAnimationFrame);
+            await new Promise(requestAnimationFrame);
+            return Date.now() - sentAt;
+          }, inputSentAt);
+        }
+        await click;
+        const file = await download;
+
+        const measured = await page.evaluate(async () => {
+          await new Promise(requestAnimationFrame);
+          await new Promise(requestAnimationFrame);
+          const state = (
+            window as unknown as {
+              backupCompare: {
+                longTasks: number[];
+                frameGaps: number[];
+                active: boolean;
+                started: number;
+                startedEpochMs: number;
+              };
+            }
+          ).backupCompare;
+          state.active = false;
+          return {
+            ...state,
+            observationDurationMs: performance.now() - state.started,
+          };
+        });
+        const { readFile } = await import("node:fs/promises");
+        const exported = JSON.parse(
+          await readFile((await file.path())!, "utf8"),
+        );
+        expect(
+          Object.values(
+            exported.data.eventLists as Record<string, unknown[]>,
+          ).reduce((sum, items) => sum + items.length, 0),
+        ).toBe(10500);
+        expect(exported.data.eventLists[eventName][0].circle).toBe(
+          "ユーザー登録0",
+        );
+        samples.push({
+          parallel,
+          ...measured,
+          completionMs: downloadReceivedAt - measured.startedEpochMs,
+          inputSentAt,
+          inputPaintMs,
+          downloadReceivedAt,
+        });
+      }
+      const userAgent = await page.evaluate(() => navigator.userAgent);
+      await testInfo.attach("backup-comparison-timings", {
+        contentType: "application/json",
+        body: Buffer.from(
+          JSON.stringify({
+            session,
+            userAgent,
+            releaseIdentity: await page.evaluate(async () =>
+              (
+                await fetch("/release-identity.json", { cache: "no-store" })
+              ).json(),
+            ),
+            browserVersion: browser.version(),
+            browserChannel: process.env.PERFORMANCE_BROWSER_CHANNEL,
+            headed: process.env.PERFORMANCE_HEADED === "1",
+            fixture: "500+10000, decorated40000, 1280x900",
+            samples,
+          }),
+        ),
+      });
+      if (process.env.PERFORMANCE_COMPARE_BASELINE !== "1") {
+        expect(Math.max(0, ...(samples[0].longTasks as number[]))).toBeLessThan(
+          100,
+        );
+        expect(samples[1].inputPaintMs as number).toBeLessThan(300);
+      }
+    },
+  );
+
+test("visit panel reorder, discard, save and long press stay scoped with 10000 historical items @visit-panel-scope", async ({
+  page,
+}) => {
+  test.setTimeout(240000);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.addInitScript(() => {
+    const state = window as unknown as {
+      panelCommands: Array<{ method: string; kind?: string; modeDay?: string }>;
+    };
+    state.panelCommands = [];
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor(url: string | URL, options?: WorkerOptions) {
+        super(url, options);
+        if (!String(url).includes("persistence.worker")) return;
+        const send = this.postMessage.bind(this);
+        this.postMessage = (message: {
+          method?: string;
+          args?: Array<{ kind?: string; modeDay?: string }>;
+        }) => {
+          if (message.method)
+            state.panelCommands.push({
+              method: message.method,
+              kind: message.args?.[0]?.kind,
+              modeDay: message.args?.[0]?.modeDay,
+            });
+          send(message);
+        };
+      }
+    };
+  });
+  await restore(page, 500, false, 10000, true, 5, true);
+  page.setDefaultTimeout(15000);
+  const baseline = Array.from({ length: 5 }, (_, index) => `perf-${index}`);
+  const reordered = ["perf-1", "perf-0", ...baseline.slice(2)];
+  const resetCommands = () =>
+    page.evaluate(() => {
+      (window as unknown as { panelCommands: unknown[] }).panelCommands = [];
+    });
+  const expectVisits = async (modeDay?: string) => {
+    const commands = await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            panelCommands: Array<{
+              method: string;
+              kind?: string;
+              modeDay?: string;
+            }>;
+          }
+        ).panelCommands,
+    );
+    expect(commands).toContainEqual({ method: "day", kind: "visits", modeDay });
+    expect(
+      commands.some(({ method }) =>
+        ["read", "commit", "restore"].includes(method),
+      ),
+    ).toBe(false);
+  };
+  const openPanel = async () => {
+    await page.getByTitle("リスト表示に切り替え", { exact: true }).hover();
+    await page.mouse.down();
+    const button = page.getByRole("button", {
+      name: "📍 訪問リスト",
+      exact: true,
+    });
+    await expect(button).toBeVisible();
+    await page.mouse.up();
+    await button.click();
+    await expect(page.locator("[data-drag-item]")).toHaveCount(5);
+  };
+  const reorder = async (expected: string[]) => {
+    await resetCommands();
+    const rows = page.locator("[data-drag-item]");
+    const transfer = await page.evaluateHandle(() => new DataTransfer());
+    await rows.nth(1).dispatchEvent("dragstart", { dataTransfer: transfer });
+    await rows.nth(0).dispatchEvent("dragover", { dataTransfer: transfer });
+    await rows.nth(0).dispatchEvent("drop", { dataTransfer: transfer });
+    await transfer.dispose();
+    await expect
+      .poll(() => durableExecuteIds(page), { timeout: 60000 })
+      .toEqual(expected);
+    await expectVisits();
+  };
+  const longPress = async (choice: string) => {
+    await resetCommands();
+    await page.getByRole("button", { name: /^1日目/ }).hover();
+    await page.mouse.down();
+    await expect(
+      page.getByRole("heading", { name: "変更を保存しますか？" }),
+    ).toBeVisible();
+    await page.mouse.up();
+    await page.getByRole("button", { name: choice, exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "変更を保存しますか？" }),
+    ).toBeHidden();
+    await expect(page.locator("[data-drag-item]")).toHaveCount(0);
+    await expectVisits("1日目");
+  };
+  await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+  await openPanel();
+  await reorder(reordered);
+  await resetCommands();
+  await page.getByRole("button", { name: "キャンセル", exact: true }).click();
+  await expect.poll(() => durableExecuteIds(page)).toEqual(baseline);
+  await expectVisits();
+  await reorder(reordered);
+
+  await resetCommands();
+  await page.getByRole("button", { name: "確定", exact: true }).click();
+  await expect(
+    page.getByTitle("元に戻す (Ctrl+Z)", { exact: true }),
+  ).toBeDisabled();
+  await expectVisits();
+  await reorder(baseline);
+  await longPress("保存して確定");
+  await expect.poll(() => durableExecuteIds(page)).toEqual(baseline);
+  // Return to the day list to select execute mode before reopening the map.
+  await page.getByTitle("リスト表示に切り替え", { exact: true }).click();
+  const execute = page.getByTitle("実行モード", { exact: true });
+  await execute.click();
+  await expect(execute).toHaveClass(/bg-green-100/);
+  await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+  await openPanel();
+  await reorder(reordered);
+  await longPress("キャンセル（破棄）");
+  await expect.poll(() => durableExecuteIds(page)).toEqual(baseline);
+  await page.reload();
+  await page.getByText(eventName, { exact: true }).click();
+  await expect(page.locator('[data-item-id="perf-0"]')).toBeVisible();
+  expect(await durableExecuteIds(page)).toEqual(baseline);
+});

@@ -19,13 +19,25 @@ export const dayRecordStores: readonly StoreName[] = [
   STORES.HALL_ROUTE_SETTINGS,
   STORES.ROUTE_SETTINGS,
   STORES.EVENT_CONSISTENCY,
+  STORES.HALL_DEFINITIONS,
+  STORES.MAP_VIEWPORT_SETTINGS,
 ];
+export const scopeRecordStores: readonly Exclude<StoreName, "syncQueue">[] = [
+  ...(dayRecordStores as readonly Exclude<StoreName, "syncQueue">[]),
+  STORES.EVENT_LISTS,
+  STORES.EVENT_METADATA,
+  STORES.MAP_ROTATION_SETTINGS,
+];
+export const sidecarRecordStores = scopeRecordStores.filter(
+  (store) => !dayRecordStores.includes(store),
+);
 export interface DayRecordHead {
   kind: typeof HEAD_KIND;
   version: 1;
   storeName: StoreName;
   count: number;
   checksum: string;
+  authenticatedRoots?: true;
 }
 export interface DayRecord {
   kind: typeof RECORD_KIND;
@@ -34,6 +46,7 @@ export interface DayRecord {
   path: string[];
   value: unknown;
   digest: PersistenceDigestDescriptor;
+  children?: Array<{ path: string[]; digest: PersistenceDigestDescriptor }>;
 }
 export interface DayRecordState {
   head: DayRecordHead;
@@ -53,10 +66,20 @@ export const dayRecordKey = (eventName: string, path: readonly string[]) =>
   DAY_RECORD_PREFIX + JSON.stringify([eventName, path]);
 const checksum = (value: bigint) =>
   (((value % MODULUS) + MODULUS) % MODULUS).toString(16).padStart(64, "0");
-const digestInput = (store: StoreName, key: string, value: unknown) => ({
+export const dayRecordRootDigestKey = (store: StoreName, eventName: string) =>
+  "__esp_internal__:day-root-digest:v1:" + JSON.stringify([store, eventName]);
+const eventWideStore = (store: StoreName) =>
+  store === STORES.EVENT_LISTS || store === STORES.EVENT_METADATA;
+export const dayRecordDigestInput = (
+  store: StoreName,
+  key: string,
+  value: unknown,
+  children?: DayRecord["children"],
+) => ({
   store,
   key,
   value,
+  ...(children === undefined ? {} : { children }),
 });
 const define = (target: Record<string, unknown>, key: string, value: unknown) =>
   Object.defineProperty(target, key, {
@@ -127,11 +150,31 @@ export async function decodeDayRecords(
         key !== dayRecordKey(entry.eventName, entry.path) ||
         !isPersistenceDigestDescriptor(entry.digest) ||
         !(await verifyPersistenceDigest(
-          digestInput(store, key, entry.value),
+          dayRecordDigestInput(
+            store,
+            key,
+            entry.value,
+            entry.children as DayRecord["children"],
+          ),
           entry.digest,
         ))
       )
         throw new Error("日付レコードの内容またはハッシュが一致しません。");
+      if (
+        value.authenticatedRoots &&
+        entry.path.length === 0 &&
+        (!Array.isArray(entry.children) ||
+          !entry.children.every(
+            (child) =>
+              record(child) &&
+              Array.isArray(child.path) &&
+              child.path.length > 0 &&
+              child.path.every((part) => typeof part === "string") &&
+              isPersistenceDigestDescriptor(child.digest),
+          ))
+      ) {
+        throw new Error("イベント索引の形式が一致しません。");
+      }
       const typed = entry as unknown as DayRecord;
       records.set(key, typed);
       sum += BigInt("0x" + typed.digest.value);
@@ -139,6 +182,32 @@ export async function decodeDayRecords(
   );
   if (checksum(sum) !== value.checksum)
     throw new Error("日付レコードの整合性ヘッダーが一致しません。");
+  if (value.authenticatedRoots) {
+    const childCounts = new Map<string, number>();
+    for (const entry of records.values())
+      if (entry.path.length)
+        childCounts.set(
+          entry.eventName,
+          (childCounts.get(entry.eventName) ?? 0) + 1,
+        );
+    for (const root of records.values()) {
+      if (root.path.length) continue;
+      const expected = new Set<string>();
+      for (const child of root.children ?? []) {
+        const key = dayRecordKey(root.eventName, child.path);
+        const entry = records.get(key);
+        if (
+          expected.has(key) ||
+          !entry ||
+          !semanticEqual(child.digest, entry.digest)
+        )
+          throw new Error("イベント索引と日付レコードが一致しません。");
+        expected.add(key);
+      }
+      if ((childCounts.get(root.eventName) ?? 0) !== expected.size)
+        throw new Error("イベント索引に含まれない日付レコードがあります。");
+    }
+  }
   const data: Record<string, unknown> = {};
   for (const entry of records.values())
     if (!entry.path.length)
@@ -156,11 +225,12 @@ export async function decodeDayRecords(
   return { data, state: { head: value as unknown as DayRecordHead, records } };
 }
 
-async function prepareRecord(
+export async function prepareDayRecord(
   store: StoreName,
   eventName: string,
   path: string[],
   value: unknown,
+  children?: DayRecord["children"],
 ): Promise<[string, DayRecord]> {
   const key = dayRecordKey(eventName, path);
   const stable = structuredClone(value);
@@ -172,7 +242,10 @@ async function prepareRecord(
       eventName,
       path,
       value: stable,
-      digest: await createPersistenceDigest(digestInput(store, key, stable)),
+      ...(children === undefined ? {} : { children }),
+      digest: await createPersistenceDigest(
+        dayRecordDigestInput(store, key, stable, children),
+      ),
     },
   ];
 }
@@ -182,29 +255,42 @@ export async function partitionDayRecordStore(
   store: StoreName,
   data: Record<string, unknown>,
 ): Promise<DayRecordWrite> {
-  const pending: Array<Promise<[string, DayRecord]>> = [];
-  for (const [event, branch] of Object.entries(data)) {
-    if (!record(branch)) {
-      pending.push(prepareRecord(store, event, [], branch));
-      continue;
-    }
-    const consistency = store === STORES.EVENT_CONSISTENCY;
-    pending.push(
-      prepareRecord(
+  const roots = await Promise.all(
+    Object.entries(data).map(async ([event, branch]) => {
+      const consistency = store === STORES.EVENT_CONSISTENCY;
+      const children =
+        record(branch) && !eventWideStore(store)
+          ? await Promise.all(
+              Object.entries(
+                consistency ? (branch.days as object) : branch,
+              ).map(([key, child]) =>
+                prepareDayRecord(
+                  store,
+                  event,
+                  consistency ? ["days", key] : [key],
+                  child,
+                ),
+              ),
+            )
+          : [];
+      const root = await prepareDayRecord(
         store,
         event,
         [],
-        consistency ? { ...branch, days: {} } : {},
-      ),
-    );
-    for (const [key, child] of Object.entries(
-      consistency ? (branch.days as object) : branch,
-    ))
-      pending.push(
-        prepareRecord(store, event, consistency ? ["days", key] : [key], child),
+        eventWideStore(store) || !record(branch)
+          ? branch
+          : consistency
+            ? { ...branch, days: {} }
+            : {},
+        children.map(([, child]) => ({
+          path: child.path,
+          digest: child.digest,
+        })),
       );
-  }
-  const records = new Map(await Promise.all(pending));
+      return [root, ...children];
+    }),
+  );
+  const records = new Map(roots.flat());
   let sum = 0n;
   for (const entry of records.values())
     sum += BigInt("0x" + entry.digest.value);
@@ -213,6 +299,7 @@ export async function partitionDayRecordStore(
     version: 1,
     storeName: store,
     count: records.size,
+    authenticatedRoots: true,
     checksum: checksum(sum),
   };
   return {
@@ -242,16 +329,46 @@ export async function patchDayRecordStore(
       count--;
     }
     if (change.present) {
-      const [key, entry] = await prepareRecord(
+      const [key, entry] = await prepareDayRecord(
         store,
         eventName,
         change.path,
         change.value,
+        change.path.length ? undefined : (old?.children ?? []),
       );
       puts.set(key, entry);
       sum += BigInt("0x" + entry.digest.value);
       count++;
     } else deletes.push(key);
+  }
+  const rootKey = dayRecordKey(eventName, []);
+  const oldRoot = previous.records.get(rootKey);
+  let root = puts.get(rootKey) ?? oldRoot;
+  if (root && !deletes.includes(rootKey)) {
+    const children = new Map(
+      (root.children ?? []).map((child) => [JSON.stringify(child.path), child]),
+    );
+    for (const change of changes) {
+      if (!change.path.length) continue;
+      const path = JSON.stringify(change.path);
+      const entry = puts.get(dayRecordKey(eventName, change.path));
+      if (entry)
+        children.set(path, { path: change.path, digest: entry.digest });
+      else children.delete(path);
+    }
+    const [key, updated] = await prepareDayRecord(
+      store,
+      eventName,
+      [],
+      root.value,
+      [...children.values()],
+    );
+    if (!semanticEqual(root, updated)) {
+      sum -= BigInt("0x" + root.digest.value);
+      sum += BigInt("0x" + updated.digest.value);
+      puts.set(key, updated);
+      root = updated;
+    }
   }
   return {
     state: {
@@ -304,4 +421,45 @@ export function adoptDayRecordWrite(write: DayRecordWrite): DayRecordState {
     for (const [key, entry] of write.puts) write.state.records.set(key, entry);
   }
   return write.state;
+}
+
+/** Root digests authenticate the manifest used for independent scoped reads. */
+export function enqueueDayRootDigests(
+  control: IDBObjectStore,
+  storeName: StoreName,
+  write: DayRecordWrite,
+  previous: ReadonlyMap<string, DayRecord> | undefined,
+  track: (request: IDBRequest) => void,
+): void {
+  if (write.replace) {
+    const prefix =
+      "__esp_internal__:day-root-digest:v1:" +
+      JSON.stringify([storeName]).slice(0, -1) +
+      ",";
+    track(control.delete(IDBKeyRange.bound(prefix, prefix + "\uffff")));
+  }
+  if (write.replace && previous) {
+    for (const [key, entry] of previous) {
+      if (!entry.path.length && !write.state.records.has(key))
+        track(
+          control.delete(dayRecordRootDigestKey(storeName, entry.eventName)),
+        );
+    }
+  }
+  for (const key of write.deletes) {
+    const [eventName, path] = JSON.parse(
+      key.slice(DAY_RECORD_PREFIX.length),
+    ) as [string, string[]];
+    if (!path.length)
+      track(control.delete(dayRecordRootDigestKey(storeName, eventName)));
+  }
+  for (const entry of write.puts.values()) {
+    if (!entry.path.length)
+      track(
+        control.put(
+          entry.digest,
+          dayRecordRootDigestKey(storeName, entry.eventName),
+        ),
+      );
+  }
 }

@@ -4,8 +4,8 @@
   "contractUri": "urn:event-shopping-planner:db-compatibility:v1",
   "indexedDb": {
     "name": "EventShoppingPlannerDB",
-    "version": 9,
-    "forwardCompatibilityCeiling": 9,
+    "version": 11,
+    "forwardCompatibilityCeiling": 11,
     "stores": {
       "eventConsistency": {
         "keyPath": null,

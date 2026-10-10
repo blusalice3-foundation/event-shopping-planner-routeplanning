@@ -1,3 +1,4 @@
+import { jsonEqual } from "../utils/semanticEquality";
 import type { EventConsistencyStore } from "../types/consistency";
 
 import {
@@ -692,7 +693,7 @@ export function useIndexedDbPersistence({
     async (snapshot: PersistedStateValues, base: PersistedStateValues) => {
       const previous = latestValuesRef.current;
       const changedStores = (Object.keys(base) as PersistedStoreName[]).filter(
-        (key) => JSON.stringify(base[key]) !== JSON.stringify(snapshot[key]),
+        (key) => !jsonEqual(base[key], snapshot[key]),
       );
       if (changedStores.length !== 1)
         throw new Error("監視保存は単独の保存領域だけを対象とします。");

@@ -1,8 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type {
-  MutationPlan,
-  MutationChoices,
-} from "./applicationMutationCoordinator";
 import { planDayModeToggle } from "../../features/consistency/domain/dayMode";
 import {
   duplicateEventDays,
@@ -11,20 +7,21 @@ import {
 import type { ApplicationMutationPort } from "../ports/ApplicationMutationPort";
 import {
   existingDayKey,
-  getContextHalls,
   getDayConsistency,
-  hallGroupKey,
-  resolveDayMap,
   resolveDayKey,
   sameDay,
 } from "../../features/consistency/domain/context";
-import { createMembershipResolver } from "../../features/consistency/domain/membership";
-import { applyVisitHistory } from "../../features/consistency/domain/visitHistory";
-import { planProjectedMutation } from "../../features/consistency/domain/mutations";
-import type { DayMapData, HallDefinition } from "../../types/map";
+
 import type { ActiveTab } from "../../features/app-shell/types";
 import type { ShoppingItem } from "../../types/item";
-import type { PersistenceSnapshot } from "../ports/PersistenceCommandPort";
+import type {
+  ApplicationDayMutation,
+  PersistenceSnapshot,
+} from "../ports/PersistenceCommandPort";
+import {
+  planVisitPanelMutation,
+  type VisitPanelRebase,
+} from "../../features/consistency/domain/visitPanelMutation";
 
 type ExecuteModeItemsStore = PersistenceSnapshot["executeModeItems"];
 type ExecuteModeItemsUpdater = (
@@ -99,64 +96,6 @@ interface VisitSession {
   generation: number;
   baseline: string[];
   latest: string[];
-}
-type SessionTransition = (
-  snapshot: PersistenceSnapshot,
-  choices?: MutationChoices,
-) => MutationPlan;
-
-/** Reviews source and target changes before either is persisted. */
-function planSessionTransition(
-  snapshot: PersistenceSnapshot,
-  value: VisitSession,
-  choices?: MutationChoices,
-  transition?: SessionTransition,
-): MutationPlan {
-  const transitionPlan = transition?.(snapshot, choices);
-  const sourceChoices = transition
-    ? Object.fromEntries(
-        Object.entries(choices ?? {})
-          .filter(([key]) => key.startsWith("source:"))
-          .map(([key, choice]) => [key.slice("source:".length), choice]),
-      )
-    : choices;
-  const mergePlan = planDayMerge(
-    transitionPlan?.snapshot ?? snapshot,
-    value.event,
-    value.day,
-    undefined,
-    sourceChoices,
-  );
-
-  const sourceReview = mergePlan.confirmation
-    ? {
-        ...mergePlan.confirmation,
-        choices: mergePlan.confirmation.choices?.map((choice) => ({
-          ...choice,
-          id: transition ? `source:${choice.id}` : choice.id,
-          label: transition ? `${value.day} / ${choice.label}` : choice.label,
-        })),
-      }
-    : undefined;
-  const review =
-    transitionPlan?.confirmation && sourceReview
-      ? {
-          title: transitionPlan.confirmation.title,
-          choices: [
-            ...(transitionPlan.confirmation.choices ?? []),
-            ...(sourceReview.choices ?? []),
-          ],
-          details: [
-            ...transitionPlan.confirmation.details,
-            ...sourceReview.details,
-          ],
-          comparison: {
-            transition: transitionPlan.confirmation.comparison,
-            source: sourceReview.comparison,
-          },
-        }
-      : (sourceReview ?? transitionPlan?.confirmation);
-  return { ...mergePlan, confirmation: review };
 }
 export const useMapVisitListCommands = ({
   state,
@@ -247,6 +186,16 @@ export const useMapVisitListCommands = ({
       void requestMutation({
         events: [event],
         expectedGenerations: { [event]: generation },
+        dayMutation: { kind: "day-merge", eventName: event, day: requestedDay },
+        assertApplicable: () => {
+          if (
+            opening.current !== target ||
+            current.current.activeEventName !== event ||
+            (current.current.generation ?? 0) !== generation ||
+            !sameDay(current.current.activeEventDate, requestedDay)
+          )
+            throw new Error("訪問リストの操作は終了しています。");
+        },
         plan: (snapshot, choices) => {
           if (
             opening.current !== target ||
@@ -327,119 +276,34 @@ export const useMapVisitListCommands = ({
     (
       ids: readonly string[],
       dirty: boolean,
-      transition?: (
-        snapshot: PersistenceSnapshot,
-        choices?: MutationChoices,
-      ) => MutationPlan,
+      modeDay?: string,
     ): Promise<void> => {
       const value = session.current;
       if (!valid(value)) return Promise.resolve();
       pendingWrites.current += 1;
-      let rebase: { day: string; map: string; baseline: string[] } | undefined;
+      let rebase: VisitPanelRebase | undefined;
+      const command: Extract<ApplicationDayMutation, { kind: "visits" }> = {
+        kind: "visits",
+        eventName: value.event,
+        day: value.day,
+        mapKey: value.map,
+        order: [...ids],
+        modeDay,
+      };
       const task = requestMutation({
         events: [value.event],
         expectedGenerations: { [value.event]: value.generation },
+        dayMutation: command,
+        assertApplicable: () => {
+          if (!valid(value) || session.current !== value)
+            throw new Error("訪問リストの操作は終了しています。");
+        },
         plan: (snapshot, choices) => {
           if (!valid(value) || session.current !== value)
             throw new Error("訪問リストの操作は終了しています。");
-          // Target mode changes and source-day merges share one confirmed commit.
-          const sourceDuplicated = duplicateEventDays(
-            snapshot,
-            value.event,
-          ).some((day) => sameDay(day, value.day));
-          const mergePlan = planSessionTransition(
-            snapshot,
-            value,
-            choices,
-            transition,
-          );
-          snapshot = mergePlan.snapshot;
-          rebase = undefined;
-          const review = mergePlan.confirmation;
-          const dayKey = existingDayKey(
-            snapshot.executeModeItems[value.event],
-            value.day,
-          );
-          if (!dayKey) return { snapshot, confirmation: review };
-          const items = snapshot.eventLists[value.event] as ShoppingItem[];
-          const day = getDayConsistency(
-            snapshot.eventConsistency[value.event],
-            dayKey,
-          );
-          const maps = snapshot.mapData[value.event] as
-            | Record<string, DayMapData>
-            | undefined;
-          const mapKey = day?.selectedMapKey ?? value.map;
-          const map = resolveDayMap(maps, dayKey, mapKey);
-          const context = day?.maps[mapKey];
-          if (sourceDuplicated || dayKey !== value.day || mapKey !== value.map)
-            rebase = {
-              day: dayKey,
-              map: mapKey,
-              baseline: [...snapshot.executeModeItems[value.event][dayKey]],
-            };
-          const halls = getContextHalls(
-            snapshot.hallDefinitions[value.event] as Record<
-              string,
-              HallDefinition[]
-            >,
-            dayKey,
-            mapKey,
-          );
-          const resolve = createMembershipResolver({
-            items,
-            day: dayKey,
-            map,
-            context,
-            halls,
-          });
-          const order = applyVisitHistory(
-            snapshot.executeModeItems[value.event][dayKey],
-            ids,
-            items,
-            (item) =>
-              hallGroupKey({
-                hall: resolve(item).hall,
-                priority: item.priorityLevel ?? "none",
-              }),
-          );
-          const orderPlan = planProjectedMutation(
-            snapshot,
-            {
-              executeModeItems: {
-                ...snapshot.executeModeItems,
-                [value.event]: {
-                  ...snapshot.executeModeItems[value.event],
-                  [dayKey]: order,
-                },
-              },
-            },
-            {
-              eventName: value.event,
-              day: dayKey,
-              mapKey,
-              confirm: false,
-            },
-          );
-          if (!review) return orderPlan;
-          const beforeOrder = snapshot.executeModeItems[value.event][dayKey];
-          const afterOrder =
-            orderPlan.snapshot.executeModeItems[value.event][dayKey];
-          return {
-            ...orderPlan,
-            confirmation: {
-              ...review,
-              details: [
-                ...review.details,
-                `${value.day} の訪問順: ${JSON.stringify(beforeOrder)} → ${JSON.stringify(afterOrder)}`,
-              ],
-              comparison: {
-                review: review.comparison,
-                beforeOrder,
-                afterOrder,
-              },
-            },
-          };
+          const plan = planVisitPanelMutation(snapshot, command, choices);
+          rebase = plan.rebase;
+          return plan;
         },
       }).then((snapshot) => {
         if (!valid(value) || session.current !== value) return;
@@ -450,6 +314,13 @@ export const useMapVisitListCommands = ({
         value.latest = day
           ? [...snapshot.executeModeItems[value.event][day]]
           : [];
+        const map = day
+          ? (getDayConsistency(snapshot.eventConsistency[value.event], day)
+              ?.selectedMapKey ?? value.map)
+          : value.map;
+        // The worker fast path does not invoke the reviewed UI planner.
+        if (!rebase && day && (day !== value.day || map !== value.map))
+          rebase = { day, map, baseline: [...value.latest] };
         if (day) value.day = day;
         if (rebase) {
           value.map = rebase.map;
@@ -477,23 +348,30 @@ export const useMapVisitListCommands = ({
     [applyOrder],
   );
   const saveChanges = useCallback(
-    async (transition?: SessionTransition) => {
+    async (modeDay?: string) => {
       await writes.current;
       const value = session.current;
       if (!valid(value)) return;
       let merged = false;
+      const command: Extract<ApplicationDayMutation, { kind: "visits" }> = {
+        kind: "visits",
+        eventName: value.event,
+        day: value.day,
+        mapKey: value.map,
+        modeDay,
+      };
       const currentSnapshot = await requestMutation({
         events: [value.event],
         expectedGenerations: { [value.event]: value.generation },
+        dayMutation: command,
+        assertApplicable: () => {
+          if (!valid(value) || session.current !== value)
+            throw new Error("訪問リストの操作は終了しています。");
+        },
         plan: (snapshot, choices) => {
           if (!valid(value) || session.current !== value)
             throw new Error("訪問リストの操作は終了しています。");
-          const plan = planSessionTransition(
-            snapshot,
-            value,
-            choices,
-            transition,
-          );
+          const plan = planVisitPanelMutation(snapshot, command, choices);
           merged = !!plan.confirmation;
           return plan;
         },
@@ -634,13 +512,9 @@ export const useMapVisitListCommands = ({
           await writes.current;
           if (!valid(value) || session.current !== value) return;
           if (discard) {
-            await applyOrder(value.baseline, false, (snapshot, choices) =>
-              planDayModeToggle(snapshot, value.event, modeTab, choices),
-            );
+            await applyOrder(value.baseline, false, modeTab);
           } else {
-            await saveChanges((snapshot, choices) =>
-              planDayModeToggle(snapshot, value.event, modeTab, choices),
-            );
+            await saveChanges(modeTab);
           }
         } else if (discard) await discardChanges();
         else await saveChanges();

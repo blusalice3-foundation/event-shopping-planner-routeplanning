@@ -2,6 +2,7 @@ import { createBackupInWorker } from "./backupWorker";
 import { inspectConsistencyUpgrade } from "../db/consistencyUpgrade";
 import type {
   PersistenceCommandPort,
+  ApplicationDayScope,
   PersistenceSnapshot,
   PreferencePersistencePort,
 } from "../../app/ports/PersistenceCommandPort";
@@ -38,6 +39,8 @@ export type IndexedDbPersistenceCommandDelegate = Pick<
 > & {
   commitItemContentEdits?: PersistenceCommandPort["commitItemContentEdits"];
   commitDayMutation?: PersistenceCommandPort["commitDayMutation"];
+  readDayApplicationSnapshot?: PersistenceCommandPort["readDayApplicationSnapshot"];
+  commitDayApplicationSnapshot?: PersistenceCommandPort["commitDayApplicationSnapshot"];
   adoptRecoveryCandidate(
     candidate: Parameters<PersistenceCommandPort["adoptRecoveryCandidate"]>[0],
   ): Promise<unknown>;
@@ -86,6 +89,28 @@ export function createIndexedDbPersistenceCommandAdapter(
     };
   return {
     inspectConsistencyUpgrade,
+    ...(delegate.readDayApplicationSnapshot
+      ? {
+          readDayApplicationSnapshot: async (target: ApplicationDayScope) => {
+            const result = await delegate.readDayApplicationSnapshot!(target);
+            observed = result.snapshot;
+            return result;
+          },
+          commitDayApplicationSnapshot: async (
+            snapshot: PersistenceSnapshot,
+            expectedRoots: object,
+            target: ApplicationDayScope,
+          ) => {
+            const result = await delegate.commitDayApplicationSnapshot!(
+              snapshot,
+              expectedRoots,
+              target,
+            );
+            observed = result.snapshot;
+            return result;
+          },
+        }
+      : {}),
     createBackupFile: createBackupInWorker,
     ...(delegate.commitItemContentEdits
       ? {

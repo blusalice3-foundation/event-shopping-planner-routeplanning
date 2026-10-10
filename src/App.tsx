@@ -685,6 +685,7 @@ const App: React.FC = () => {
     updateGlobalHallRouteSettings: handleUpdateGlobalHallRouteSettings,
     reorderExecuteListByHallOrder: handleReorderExecuteListByHallOrder,
   } = useMapRouteCommands({
+    requestMutation: application.request,
     state: {
       activeEventName,
       activeEventDate,

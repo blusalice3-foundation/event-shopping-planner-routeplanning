@@ -391,7 +391,7 @@ export const stageCanonicalExportEventLists = async ({
     async (input) => {
       const DATABASE_NAME = "EventShoppingPlannerDB";
       const MIN_DATABASE_VERSION = 9;
-      const MAX_DATABASE_VERSION = 9;
+      const MAX_DATABASE_VERSION = 11;
       const DATA_KEY = "data";
       const EVENT_STORE = "eventLists";
       const CONTROL_STORE = "syncQueue";
@@ -569,6 +569,18 @@ export const stageCanonicalExportEventLists = async ({
         canonicalization: "esp-json-v1",
         value: await sha256("{}"),
       };
+      const emptyDayCanonical = canonicalize({
+        kind: "event-shopping-planner-day-records",
+        version: 1,
+        storeName: CONSISTENCY_STORE,
+        count: 0,
+        checksum: "0".repeat(64),
+        authenticatedRoots: true,
+      });
+      const emptyDayDigest = {
+        ...emptyPayloadDigest,
+        value: await sha256(emptyDayCanonical),
+      };
       const consistencyPayload = Object.fromEntries(
         Object.keys(input.eventLists).map((event) => [
           event,
@@ -641,43 +653,59 @@ export const stageCanonicalExportEventLists = async ({
           requestResult(consistencyStore.get(DATA_KEY)),
           requestResult(controlStore.get(consistencyMetadataKey)),
           requestResult(controlStore.get(consistencyCheckpointKey)),
+          requestResult(consistencyStore.count()),
         ]);
         const isInitializedEmptyRoot = (
           [existingPayload, existingMetadata, existingCheckpoint],
           storeName,
-        ) =>
-          canonicalize(existingPayload ?? null) === "{}" &&
-          existingMetadata?.kind === metadata.kind &&
-          existingMetadata.version === 1 &&
-          existingMetadata.storeName === storeName &&
-          existingMetadata.key === DATA_KEY &&
-          typeof existingMetadata.revision === "string" &&
-          existingMetadata.revision.length > 0 &&
-          existingMetadata.baseRevision === null &&
-          typeof existingMetadata.writerId === "string" &&
-          existingMetadata.writerId.length > 0 &&
-          Number.isFinite(Date.parse(existingMetadata.committedAt)) &&
-          canonicalize(existingMetadata.payloadDigest ?? null) ===
-            canonicalize(emptyPayloadDigest) &&
-          canonicalize(existingMetadata.payloadFingerprint ?? null) ===
-            canonicalize(fingerprint("{}")) &&
-          existingCheckpoint?.kind === checkpoint.kind &&
-          existingCheckpoint.version === 1 &&
-          existingCheckpoint.storeName === storeName &&
-          existingCheckpoint.key === DATA_KEY &&
-          Array.isArray(existingCheckpoint.absorbedCandidates) &&
-          existingCheckpoint.absorbedCandidates.length === 0 &&
-          Number.isFinite(Date.parse(existingCheckpoint.updatedAt)) &&
-          Date.parse(existingCheckpoint.updatedAt) >=
-            Date.parse(existingMetadata.committedAt) &&
-          canonicalize(existingCheckpoint.committedRoot ?? null) ===
-            canonicalize({
-              revision: existingMetadata.revision,
-              baseRevision: null,
-              digest: emptyPayloadDigest,
-              writerId: existingMetadata.writerId,
-              committedAt: existingMetadata.committedAt,
-            });
+        ) => {
+          const physicalCanonical = canonicalize(existingPayload ?? null);
+          const partitioned =
+            storeName === CONSISTENCY_STORE &&
+            physicalCanonical === emptyDayCanonical &&
+            existing[6] === 1;
+          const expectedDigest = partitioned
+            ? emptyDayDigest
+            : emptyPayloadDigest;
+          const baseRevision = existingMetadata?.baseRevision;
+          return (
+            (physicalCanonical === "{}" || partitioned) &&
+            existingMetadata?.kind === metadata.kind &&
+            existingMetadata.version === 1 &&
+            existingMetadata.storeName === storeName &&
+            existingMetadata.key === DATA_KEY &&
+            typeof existingMetadata.revision === "string" &&
+            existingMetadata.revision.length > 0 &&
+            (baseRevision === null ||
+              (partitioned &&
+                typeof baseRevision === "string" &&
+                baseRevision.length > 0)) &&
+            typeof existingMetadata.writerId === "string" &&
+            existingMetadata.writerId.length > 0 &&
+            Number.isFinite(Date.parse(existingMetadata.committedAt)) &&
+            canonicalize(existingMetadata.payloadDigest ?? null) ===
+              canonicalize(expectedDigest) &&
+            canonicalize(existingMetadata.payloadFingerprint ?? null) ===
+              canonicalize(fingerprint(physicalCanonical)) &&
+            existingCheckpoint?.kind === checkpoint.kind &&
+            existingCheckpoint.version === 1 &&
+            existingCheckpoint.storeName === storeName &&
+            existingCheckpoint.key === DATA_KEY &&
+            Array.isArray(existingCheckpoint.absorbedCandidates) &&
+            existingCheckpoint.absorbedCandidates.length === 0 &&
+            Number.isFinite(Date.parse(existingCheckpoint.updatedAt)) &&
+            Date.parse(existingCheckpoint.updatedAt) >=
+              Date.parse(existingMetadata.committedAt) &&
+            canonicalize(existingCheckpoint.committedRoot ?? null) ===
+              canonicalize({
+                revision: existingMetadata.revision,
+                baseRevision,
+                digest: expectedDigest,
+                writerId: existingMetadata.writerId,
+                committedAt: existingMetadata.committedAt,
+              })
+          );
+        };
         const roots = [
           {
             existing: existing.slice(0, 3),
@@ -813,7 +841,7 @@ export const stageCanonicalExportEventLists = async ({
     !isRecord(receipt) ||
     !Number.isSafeInteger(receipt.databaseVersion) ||
     receipt.databaseVersion < 9 ||
-    receipt.databaseVersion > 9 ||
+    receipt.databaseVersion > 11 ||
     Object.entries(expectedReceipt).some(
       ([key, value]) => JSON.stringify(receipt[key]) !== JSON.stringify(value),
     )
@@ -905,7 +933,7 @@ export const readCommittedEventListsReceipt = async ({
       try {
         if (
           database.version < 9 ||
-          database.version > 9 ||
+          database.version > 11 ||
           !database.objectStoreNames.contains("eventConsistency") ||
           !database.objectStoreNames.contains("eventLists") ||
           !database.objectStoreNames.contains("syncQueue")
@@ -1014,7 +1042,7 @@ export const readCommittedEventListsReceipt = async ({
     receipt.databaseName !== "EventShoppingPlannerDB" ||
     !Number.isSafeInteger(receipt.databaseVersion) ||
     receipt.databaseVersion < 9 ||
-    receipt.databaseVersion > 9 ||
+    receipt.databaseVersion > 11 ||
     receipt.storeName !== "eventLists" ||
     receipt.controlStoreName !== "syncQueue" ||
     receipt.key !== "data" ||

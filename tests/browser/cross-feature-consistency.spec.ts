@@ -1,3 +1,8 @@
+import {
+  DAY_RECORD_PREFIX,
+  dayRecordRootDigestKey,
+  partitionDayRecordStore,
+} from "../../src/persistence/db/dayRecordStorage";
 import ExcelJS from "exceljs";
 import type { PersistenceSnapshot } from "../../src/app/ports/PersistenceCommandPort";
 import { planEventRestore } from "../../src/features/consistency/domain/eventMutations";
@@ -2577,8 +2582,8 @@ test("confirmation disables cancellation, choices and repeated saving during its
         if (
           !intercepted &&
           this.mode === "readonly" &&
-          this.objectStoreNames.contains("eventConsistency") &&
-          this.objectStoreNames.contains("eventLists")
+          // A cached day read verifies revisions/checkpoints in the control store.
+          this.objectStoreNames.contains("syncQueue")
         ) {
           intercepted = true;
           descriptor.set!.call(this, (event: Event) => {
@@ -2740,12 +2745,13 @@ async function addDurableDuplicateMode(
   page: Page,
   mode: "edit" | "execute" = "execute",
 ) {
-  // Simulate another writer using the application's integrity metadata generators.
+  // Simulate a DB 10 writer: payload, authenticated date index, metadata and checkpoint commit together.
   const modes = (await stored(page, "dayModes")) as Record<
     string,
     Record<string, string>
   >;
   modes[eventName][" 1日目　"] = mode;
+  const write = await partitionDayRecordStore("dayModes", modes);
   const metadataKey = createPersistenceMetadataKey("dayModes", "data");
   const checkpointKey = createPersistenceCheckpointKey("dayModes", "data");
   const previous = (await stored(
@@ -2761,7 +2767,7 @@ async function addDurableDuplicateMode(
   const metadata = await prepareMetadataForPayload(
     "dayModes",
     "data",
-    modes,
+    write.state.head,
     previous.revision,
   );
   const checkpoint = createNextPersistenceCheckpoint(
@@ -2771,7 +2777,16 @@ async function addDurableDuplicateMode(
     previousCheckpoint,
   );
   await page.evaluate(
-    async ({ modes, metadataKey, checkpointKey, metadata, checkpoint }) => {
+    async ({
+      head,
+      records,
+      roots,
+      prefix,
+      metadataKey,
+      checkpointKey,
+      metadata,
+      checkpoint,
+    }) => {
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open("EventShoppingPlannerDB");
         request.onsuccess = () => resolve(request.result);
@@ -2783,7 +2798,12 @@ async function addDurableDuplicateMode(
             ["dayModes", "syncQueue"],
             "readwrite",
           );
-          transaction.objectStore("dayModes").put(modes, "data");
+          const payload = transaction.objectStore("dayModes");
+          payload.delete(IDBKeyRange.bound(prefix, prefix + "\uffff"));
+          for (const [key, record] of records) payload.put(record, key);
+          payload.put(head, "data");
+          for (const [key, digest] of roots)
+            transaction.objectStore("syncQueue").put(digest, key);
           transaction.objectStore("syncQueue").put(metadata, metadataKey);
           transaction.objectStore("syncQueue").put(checkpoint, checkpointKey);
           transaction.oncomplete = () => resolve();
@@ -2794,7 +2814,24 @@ async function addDurableDuplicateMode(
         database.close();
       }
     },
-    { modes, metadataKey, checkpointKey, metadata, checkpoint },
+    {
+      head: write.state.head,
+      records: [...write.puts],
+      roots: [...write.puts.values()]
+        .filter((record) => record.path.length === 0)
+        .map(
+          (record) =>
+            [
+              dayRecordRootDigestKey("dayModes", record.eventName),
+              record.digest,
+            ] as const,
+        ),
+      prefix: DAY_RECORD_PREFIX,
+      metadataKey,
+      checkpointKey,
+      metadata,
+      checkpoint,
+    },
   );
 }
 
@@ -3978,5 +4015,97 @@ for (const outcome of ["save", "cancel", "abort"] as const) {
       page.locator('input[aria-label="バックアップファイルを選択"]'),
     ).toBeAttached();
     await check();
+  });
+}
+
+for (const choice of ["保存して確定", "キャンセル（破棄）"] as const) {
+  test(`visit long press commits source visits and a different target mode with scoped commands: ${choice}`, async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const state = window as unknown as { visitDayCommands: unknown[] };
+      state.visitDayCommands = [];
+      const NativeWorker = window.Worker;
+      window.Worker = class extends NativeWorker {
+        constructor(url: string | URL, options?: WorkerOptions) {
+          super(url, options);
+          if (!String(url).includes("persistence.worker")) return;
+          const send = this.postMessage.bind(this);
+          this.postMessage = (message: {
+            method?: string;
+            args?: unknown[];
+          }) => {
+            if (message.method) state.visitDayCommands.push(message);
+            send(message);
+          };
+        }
+      };
+    });
+    await restore(page, mapBackup());
+    const beforeModes = (await stored(page, "dayModes")) as Record<
+      string,
+      Record<string, string>
+    >;
+    await reorderVisitList(page);
+    await page.evaluate(() => {
+      (window as unknown as { visitDayCommands: unknown[] }).visitDayCommands =
+        [];
+    });
+    await page.getByRole("button", { name: /^2日目/ }).hover();
+    await page.mouse.down();
+    await expect(
+      page.getByRole("heading", { name: "変更を保存しますか？" }),
+    ).toBeVisible();
+    await page.mouse.up();
+    await page.getByRole("button", { name: choice, exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "変更を保存しますか？" }),
+    ).toBeHidden();
+    const order = choice === "保存して確定" ? ["2", "1"] : ["1", "2"];
+    await expect
+      .poll(() => stored(page, "executeModeItems"))
+      .toEqual({
+        [eventName]: { "1日目": order, "2日目": ["3"] },
+      });
+    const modes = {
+      [eventName]: { ...beforeModes[eventName], "2日目": "execute" },
+    };
+    await expect.poll(() => stored(page, "dayModes")).toEqual(modes);
+    const commands = await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            visitDayCommands: Array<{ method: string; args: unknown[] }>;
+          }
+        ).visitDayCommands,
+    );
+    expect(commands.map((command) => command.method)).toEqual(["day", "day"]);
+    expect(commands[1]).toMatchObject({
+      method: "day",
+      args: [
+        {
+          kind: "map-viewport",
+          eventName,
+          day: "1日目",
+          mapKey: "1日目マップ",
+        },
+        expect.any(String),
+        expect.any(Object),
+      ],
+    });
+    expect(commands[0]).toMatchObject({
+      method: "day",
+      args: [
+        { kind: "visits", eventName, day: "1日目", modeDay: "2日目" },
+        expect.any(String),
+        expect.any(Object),
+      ],
+    });
+    await page.reload();
+    await page.getByText(eventName, { exact: true }).click();
+    expect(await stored(page, "executeModeItems")).toEqual({
+      [eventName]: { "1日目": order, "2日目": ["3"] },
+    });
+    expect(await stored(page, "dayModes")).toEqual(modes);
   });
 }

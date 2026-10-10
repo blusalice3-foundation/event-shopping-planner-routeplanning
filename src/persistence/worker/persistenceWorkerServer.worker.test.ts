@@ -455,7 +455,9 @@ it("writes only the requested event/date records and bounded headers with 10000 
   expect(records.length).toBeGreaterThan(0);
   expect(
     records.every(
-      ([value]) => value.eventName === "event" && value.path.at(-1) === "1日目",
+      ([value]) =>
+        value.eventName === "event" &&
+        (value.path.length === 0 || value.path.at(-1) === "1日目"),
     ),
   ).toBe(true);
   const headers = put.mock.calls.filter(([, key]) => key === "data");
@@ -730,4 +732,219 @@ it("creates the first visit through a date command and exports the partitioned s
   expect(parsed.data.eventLists.event[0]).toMatchObject({
     circle: "ユーザー登録",
   });
+});
+
+it.each([0, 10000])(
+  "reads only target records without a cache, history=%i",
+  async (history) => {
+    const data = seed();
+    data.eventLists.past = Array.from({ length: history }, (_, index) => ({
+      ...item,
+      id: "past-" + index,
+    }));
+    data.eventConsistency.past = createEventConsistency();
+    data.dayModes.event["2日目"] = "focus";
+    const initial = await db.readApplicationSnapshot();
+    await db.commitApplicationSnapshotAtomically(data, {
+      expectedRoots: initial.expectedRoots,
+    });
+    resetDatabaseConnection();
+    const server = createPersistenceWorkerServer(db);
+    const get = vi.spyOn(IDBObjectStore.prototype, "get");
+    const cursor = vi.spyOn(IDBObjectStore.prototype, "openCursor");
+    const result = await server.day(
+      { kind: "mode", eventName: "event", day: "1日目", mode: "edit" },
+      "cold",
+      {},
+    );
+    expect(result.status).toBe("committed");
+    expect(cursor).not.toHaveBeenCalled();
+    expect(get.mock.calls.some(([key]) => String(key).includes("past"))).toBe(
+      false,
+    );
+    expect(get.mock.calls.filter(([key]) => key === "data")).toHaveLength(7);
+    expect(
+      get.mock.instances
+        .filter((store, index) => get.mock.calls[index][0] === "data")
+        .every(
+          (store) =>
+            !["eventLists", "mapData"].includes((store as IDBObjectStore).name),
+        ),
+    ).toBe(true);
+    if (result.status !== "committed") throw new Error("not committed");
+    expect(result.read.delta.scope?.target).toEqual({
+      eventName: "event",
+      day: "1日目",
+    });
+    expect(result.read.delta.scope?.snapshot.eventLists.past).toBeUndefined();
+    cursor.mockRestore();
+    get.mockRestore();
+    const saved = await db.readApplicationSnapshot();
+    expect(saved.snapshot.eventLists.past).toEqual(data.eventLists.past);
+    expect(saved.snapshot.dayModes.event).toEqual({
+      "1日目": "edit",
+      "2日目": "focus",
+    });
+  },
+);
+it("invalidates a cache after a repository save without reloading historical payloads", async () => {
+  await setup();
+  const server = createPersistenceWorkerServer(db);
+  await server.read();
+  await db.saveEventLists({ event: [{ ...item, remarks: "他タブ更新" }] });
+  const cursor = vi.spyOn(IDBObjectStore.prototype, "openCursor");
+  const result = await server.day(
+    { kind: "mode", eventName: "event", day: "1日目", mode: "focus" },
+    "remote",
+    {},
+  );
+  expect(result.status).toBe("committed");
+  expect(cursor).not.toHaveBeenCalled();
+  if (result.status !== "committed") throw new Error("not committed");
+  expect(
+    (
+      result.read.delta.branches?.find(
+        (branch) => branch.store === "eventLists",
+      )?.value as unknown[] | undefined
+    )?.[0],
+  ).toMatchObject({
+    remarks: "他タブ更新",
+  });
+});
+it("keeps date merge review and its confirmed commit scoped, including concurrent changes", async () => {
+  const data = seed();
+  data.dayModes.event[" 1日目　"] = "focus";
+  data.dayModes.event["2日目"] = "execute";
+  const initial = await db.readApplicationSnapshot();
+  await db.commitApplicationSnapshotAtomically(data, {
+    expectedRoots: initial.expectedRoots,
+  });
+  const server = createPersistenceWorkerServer(db);
+  await server.read();
+  const { scopeDaySnapshot, adoptScopedDaySnapshot } =
+    await import("../../features/consistency/domain/dayMutation");
+  const { planDayModeToggle } =
+    await import("../../features/consistency/domain/dayMode");
+  const cursor = vi.spyOn(IDBObjectStore.prototype, "openCursor");
+  const read = await server.readDay({ eventName: "event", day: "1日目" });
+  const scoped = adoptScopedDaySnapshot(data, read.delta.scope!.snapshot, {
+    eventName: "event",
+    day: "1日目",
+  });
+  expect(scoped.mapData.event).toBeUndefined();
+  const plan = planDayModeToggle(
+    scopeDaySnapshot(scoped, "event", "1日目"),
+    "event",
+    "1日目",
+    { mode: "edit" },
+  );
+  expect(plan.confirmation).toBeDefined();
+  const committed = await server.commitDay(plan.snapshot, read.observationId, {
+    eventName: "event",
+    day: "1日目",
+  });
+  expect(
+    committed.delta.branches?.find(
+      (branch) => branch.store === "dayModes" && branch.path.at(-1) === "1日目",
+    )?.value,
+  ).toBe("edit");
+  expect(cursor).not.toHaveBeenCalled();
+  cursor.mockRestore();
+  const saved = await db.readApplicationSnapshot();
+  expect(saved.snapshot.dayModes.event).toEqual({
+    "1日目": "edit",
+    "2日目": "execute",
+  });
+});
+it("rejects modified target records after a cache reset instead of adopting their payload", async () => {
+  await setup();
+  const { dayRecordKey } = await import("../db/dayRecordStorage");
+  const database = await openDatabase();
+  await new Promise<void>((resolve, reject) => {
+    const tx = database.transaction("dayModes", "readwrite");
+    const store = tx.objectStore("dayModes");
+    const request = store.get(dayRecordKey("event", ["1日目"]));
+    request.onsuccess = () =>
+      store.put(
+        { ...request.result, value: "focus" },
+        dayRecordKey("event", ["1日目"]),
+      );
+    tx.oncomplete = () => resolve();
+    tx.onabort = () => reject(tx.error);
+  });
+  resetDatabaseConnection();
+  await expect(
+    createPersistenceWorkerServer(db).day(
+      { kind: "mode", eventName: "event", day: "1日目", mode: "edit" },
+      "tamper",
+      {},
+    ),
+  ).rejects.toMatchObject({ name: "PersistenceConflict" });
+});
+
+it("keeps acknowledgements small after an independently verified cache miss", async () => {
+  await setup();
+  resetDatabaseConnection();
+  const server = createPersistenceWorkerServer(db);
+  await server.day(
+    { kind: "mode", eventName: "event", day: "1日目", mode: "edit" },
+    "first",
+    {},
+  );
+  const result = await server.day(
+    { kind: "mode", eventName: "event", day: "1日目", mode: "focus" },
+    "second",
+    {},
+  );
+  expect(result.status).toBe("committed");
+  if (result.status !== "committed") throw new Error("not committed");
+  expect(result.read.delta.scope).toBeUndefined();
+  expect(result.read.delta.full).toBeUndefined();
+  expect(JSON.stringify(result.read.delta).length).toBeLessThan(1000);
+  expect(
+    result.read.delta.branches?.every((branch) => branch.eventName === "event"),
+  ).toBe(true);
+});
+
+it("prepares valid legacy map records before accepting scoped commands after restart", async () => {
+  const { scopeReadyKey } = await import("../db/scopedDayStorage");
+  const data = seed();
+  data.mapData.event = {
+    "1日目マップ": {
+      sheetName: "ユーザー登録",
+      maxRow: 1,
+      maxCol: 1,
+      cells: [],
+      mergedCells: [],
+      blocks: [],
+    },
+  };
+  const initial = await db.readApplicationSnapshot();
+  await db.commitApplicationSnapshotAtomically(data, {
+    expectedRoots: initial.expectedRoots,
+  });
+  const saved = (await db.readApplicationSnapshot()).snapshot;
+  const database = await openDatabase();
+  const transaction = database.transaction(
+    ["mapData", "syncQueue"],
+    "readwrite",
+  );
+  const mapStore = transaction.objectStore("mapData");
+  mapStore.clear();
+  mapStore.put(saved.mapData, "data");
+  transaction.objectStore("syncQueue").delete(scopeReadyKey("mapData"));
+  await new Promise<void>((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onabort = () => reject(transaction.error);
+  });
+  resetDatabaseConnection();
+  const server = createPersistenceWorkerServer(db);
+  await server.read();
+  resetDatabaseConnection();
+  const cursor = vi.spyOn(IDBObjectStore.prototype, "openCursor");
+  const scoped = await server.readDay({ eventName: "event", day: "1日目" });
+  expect(cursor).not.toHaveBeenCalled();
+  expect(scoped.delta.scope?.snapshot.mapData.event).toEqual(
+    saved.mapData.event,
+  );
 });

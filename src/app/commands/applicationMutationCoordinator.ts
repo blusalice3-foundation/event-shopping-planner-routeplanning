@@ -1,6 +1,9 @@
+import { dayMutationScope } from "../../features/consistency/domain/dayScope";
+import { scopeDaySnapshot } from "../../features/consistency/domain/dayMutation";
 import type {
   ApplicationSnapshotRead,
   ApplicationDayMutation,
+  ApplicationDayScope,
   ApplicationBackupFile,
   PersistenceSnapshot,
   ItemContentEdit,
@@ -44,6 +47,8 @@ export interface MutationIntent {
   expectedGenerations?: Record<string, number>;
   itemContentEdits?: readonly ItemContentEdit[];
   dayMutation?: ApplicationDayMutation;
+  /** Check ephemeral UI sessions before taking a worker fast path or retrying a review. */
+  assertApplicable?(): void;
   /** Keep ordinary accepted edits visible after persistence failures or exhausted CAS retries. */
   retainOnConflict?: boolean;
   plan(snapshot: PersistenceSnapshot, choices?: MutationChoices): MutationPlan;
@@ -101,6 +106,14 @@ export interface MutationCoordinatorPorts {
   hasPendingAcceptedChanges?(operationId: string): boolean;
   drain(): Promise<void>;
   readDurable(): Promise<ApplicationSnapshotRead>;
+  readDayDurable?(
+    target: ApplicationDayScope,
+  ): Promise<ApplicationSnapshotRead>;
+  commitDaySnapshot?(
+    snapshot: PersistenceSnapshot,
+    expectedRoots: object,
+    target: ApplicationDayScope,
+  ): Promise<ApplicationSnapshotRead>;
   commitItemContentEdits?(
     edits: readonly ItemContentEdit[],
     operationIds: readonly string[],
@@ -252,6 +265,7 @@ export function createApplicationMutationCoordinator(
         (confirmation && operation.token !== confirmation)
       )
         return { status: "expired" };
+      operation.intent.assertApplicable?.();
       return undefined;
     };
     // Confirmation never keeps a transaction or this queue occupied.
@@ -309,7 +323,14 @@ export function createApplicationMutationCoordinator(
     for (let attempt = 0; attempt < 3; attempt++) {
       const beforeRead = validity();
       if (beforeRead) return beforeRead;
-      const read = await ports.readDurable();
+      const target = operation.intent.dayMutation
+        ? dayMutationScope(operation.intent.dayMutation)
+        : undefined;
+      const scopedOperation =
+        target && ports.readDayDurable && ports.commitDaySnapshot;
+      const read = await (scopedOperation
+        ? ports.readDayDurable!(target)
+        : ports.readDurable());
       const nextGenerations = read.eventGenerations ?? durableGenerations;
       const externallyInvalidated = [
         ...new Set([
@@ -326,7 +347,10 @@ export function createApplicationMutationCoordinator(
         invalidate(externallyInvalidated);
         expirePending();
         try {
-          ports.apply(structuredClone(read.snapshot), externallyInvalidated);
+          ports.apply(
+            scopedOperation ? read.snapshot : structuredClone(read.snapshot),
+            externallyInvalidated,
+          );
         } catch (error) {
           stopped = true;
           const failure = new CommittedStateApplyError(error);
@@ -340,7 +364,16 @@ export function createApplicationMutationCoordinator(
       if (afterRead) return afterRead;
       // Planning includes retained edits as well as the latest other-tab values.
       // They may be previewed, but must be saved or discarded before this commit.
-      const current = structuredClone(read.snapshot);
+      const current = structuredClone(
+        scopedOperation
+          ? scopeDaySnapshot(
+              read.snapshot,
+              target.eventName,
+              target.day,
+              target.additionalDays,
+            )
+          : read.snapshot,
+      );
       const planning = ports.readMutationCurrent?.(current, id) ?? current;
       // A previous review remains mandatory even if its original cause clears.
       // Capture the input before planners can mutate it in place.
@@ -357,7 +390,10 @@ export function createApplicationMutationCoordinator(
           pending.delete(id);
           invalidate(operation.intent.events);
           expirePending();
-          ports.apply(structuredClone(read.snapshot), operation.intent.events);
+          ports.apply(
+            scopedOperation ? read.snapshot : structuredClone(read.snapshot),
+            operation.intent.events,
+          );
         }
         throw error;
       }
@@ -392,12 +428,20 @@ export function createApplicationMutationCoordinator(
       if (beforeCommit) return beforeCommit;
       try {
         operation.committing = true;
-        await ports.commit(
-          plan.snapshot,
-          read.expectedRoots,
-          read.snapshot,
-          plan.invalidatedEvents,
-        );
+        if (scopedOperation) {
+          const committed = await ports.commitDaySnapshot!(
+            plan.snapshot,
+            read.expectedRoots,
+            target,
+          );
+          plan.snapshot = committed.snapshot;
+        } else
+          await ports.commit(
+            plan.snapshot,
+            read.expectedRoots,
+            read.snapshot,
+            plan.invalidatedEvents,
+          );
       } catch (error) {
         operation.committing = false;
         const afterFailure = validity();
