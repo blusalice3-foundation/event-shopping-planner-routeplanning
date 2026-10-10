@@ -129,6 +129,70 @@ describe("retained viewport rendering", () => {
     );
   });
 
+  it("preserves row heights while a list is hidden and resets them for a real width change", () => {
+    const callbacks = new Map<Element, ResizeObserverCallback>();
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(private next: ResizeObserverCallback) {}
+        observe(target: Element) {
+          callbacks.set(target, this.next);
+        }
+        unobserve(target: Element) {
+          callbacks.delete(target);
+        }
+        disconnect() {}
+      },
+    );
+    visibleKeys.add("hidden-width-cache");
+    const renderRow = vi.fn(() => (
+      <input aria-label="保持する編集" defaultValue="ユーザー登録" />
+    ));
+    const view = render(
+      <div data-viewport-list>
+        <ViewportContent
+          rowKey="hidden-width-cache"
+          defer
+          estimatedHeight={220}
+          placeholder={<span>エラーが発生しました</span>}
+          render={renderRow}
+        />
+      </div>,
+    );
+    const list = view.container.firstElementChild as HTMLElement;
+    const input = view.getByRole("textbox", { name: "保持する編集" });
+    fireEvent.change(input, { target: { value: "入力中の編集" } });
+    const rendered = renderRow.mock.calls.length;
+    const resize = (width: number) =>
+      act(() =>
+        callbacks.get(list)!(
+          [
+            {
+              target: list,
+              contentRect: new DOMRect(0, 0, width, 136),
+              borderBoxSize: [],
+              contentBoxSize: [],
+              devicePixelContentBoxSize: [],
+            },
+          ],
+          {} as ResizeObserver,
+        ),
+      );
+
+    expect(list.dataset.viewportWidth).toBe("400");
+    resize(0);
+    expect(list.dataset.viewportWidth).toBe("400");
+    resize(400);
+    expect(renderRow).toHaveBeenCalledTimes(rendered);
+    expect(view.getByRole("textbox", { name: "保持する編集" })).toBe(input);
+    expect(input).toHaveValue("入力中の編集");
+
+    resize(600);
+    expect(list.dataset.viewportWidth).toBe("600");
+    expect(renderRow.mock.calls.length).toBeGreaterThan(rendered);
+    expect(input).toHaveValue("入力中の編集");
+  });
+
   it("retains an activated control, its edit and focus after leaving the viewport", () => {
     const model = buildListRows({ items });
     visibleKeys.add(model.rows[0].rowKey);

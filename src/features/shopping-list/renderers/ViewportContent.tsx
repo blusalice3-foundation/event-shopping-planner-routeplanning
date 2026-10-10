@@ -140,6 +140,7 @@ const getRegistry = (document: Document): ViewportRegistry => {
     registry.sizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const list = entry.target as HTMLElement;
+        if (entry.contentRect.width <= 0) continue;
         const width = String(entry.contentRect.width);
         if (list.dataset.viewportWidth === width) continue;
         list.dataset.viewportWidth = width;
