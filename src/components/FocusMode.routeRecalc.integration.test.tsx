@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, fireEvent } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ShoppingItem } from "../types/item";
 import type { DayMapData, HallDefinition } from "../types/map";
@@ -11,6 +11,7 @@ vi.mock("../utils/pathfinding", async (importOriginal) => {
   };
 });
 
+vi.mock("./FocusModeMapCanvas", () => ({ default: () => null }));
 import FocusMode from "./FocusMode";
 import { generateRouteSegmentsStrict } from "../utils/pathfinding";
 import { minimalProps } from "./FocusMode.fixtures";
@@ -104,12 +105,13 @@ const renderFocusMode = (params: {
   map?: DayMapData;
   hallDefinitions?: HallDefinition[];
   hallOrder?: string[];
+  mapVisible?: boolean;
 }) => {
   const item1 = makeItem({ id: "item-1", number: "01a" });
   const item2 = makeItem({ id: "item-2", number: "02a" });
   const items = params.items ?? [item1, item2];
 
-  return render(
+  const view = render(
     <FocusMode
       {...minimalProps({
         items,
@@ -121,6 +123,9 @@ const renderFocusMode = (params: {
       hallOrder={params.hallOrder ?? ["hall-1"]}
     />,
   );
+  if (params.mapVisible !== false)
+    fireEvent.click(view.getByTitle("マップを表示"));
+  return view;
 };
 
 describe("FocusMode route recalculation cache", () => {
@@ -420,4 +425,29 @@ describe("FocusMode route recalculation cache", () => {
       callsBefore,
     );
   });
+});
+
+it("does not search hidden focus routes and cancels them when the map closes", () => {
+  mockedGenerateRouteSegmentsStrict.mockClear();
+  const view = renderFocusMode({ mapVisible: false });
+  expect(mockedGenerateRouteSegmentsStrict).not.toHaveBeenCalled();
+  fireEvent.click(view.getByTitle("マップを表示"));
+  expect(mockedGenerateRouteSegmentsStrict).toHaveBeenCalledOnce();
+  fireEvent.click(view.getByTitle("マップを非表示"));
+  const calls = mockedGenerateRouteSegmentsStrict.mock.calls.length;
+  view.rerender(
+    <FocusMode
+      {...minimalProps({
+        items: [
+          makeItem({ number: "03a" }),
+          makeItem({ id: "item-2", number: "02a" }),
+        ],
+        executeModeItemIds: ["item-1", "item-2"],
+      })}
+      mapData={{ Day1マップ: makeMap() }}
+      hallDefinitions={halls}
+      hallOrder={["hall-1"]}
+    />,
+  );
+  expect(mockedGenerateRouteSegmentsStrict.mock.calls.length).toBe(calls);
 });

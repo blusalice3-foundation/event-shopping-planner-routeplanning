@@ -190,6 +190,15 @@ const cloneDayMapDataForRouteInsertSnapshot = (
   mergedCells: mapData.mergedCells.map((merge) => ({ ...merge })),
 });
 
+const routeInsertSnapshots = new WeakMap<DayMapData, DayMapData>();
+const getRouteInsertSnapshot = (mapData: DayMapData): DayMapData => {
+  let snapshot = routeInsertSnapshots.get(mapData);
+  if (!snapshot) {
+    snapshot = cloneDayMapDataForRouteInsertSnapshot(mapData);
+    routeInsertSnapshots.set(mapData, snapshot);
+  }
+  return snapshot;
+};
 export const createRouteInsertMapSnapshots = (
   canvasMapData: DayMapData,
   routeInsertMissMapData: DayMapData,
@@ -200,14 +209,13 @@ export const createRouteInsertMapSnapshots = (
   },
   "canvasMapDataAtStart" | "routeInsertMissMapDataAtStart"
 > => {
-  const canvasMapDataAtStart =
-    cloneDayMapDataForRouteInsertSnapshot(canvasMapData);
+  const canvasMapDataAtStart = getRouteInsertSnapshot(canvasMapData);
   return {
     canvasMapDataAtStart,
     // 同じ読み取り専用スナップショットを2用途で使える場合は複製を重ねない。
     routeInsertMissMapDataAtStart:
       canvasMapData === routeInsertMissMapData
         ? canvasMapDataAtStart
-        : cloneDayMapDataForRouteInsertSnapshot(routeInsertMissMapData),
+        : getRouteInsertSnapshot(routeInsertMissMapData),
   };
 };

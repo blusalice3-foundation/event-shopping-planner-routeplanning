@@ -31,6 +31,11 @@ import {
   STORES,
 } from "../db/constants";
 import { PersistenceConflictError } from "../db/errors";
+import {
+  DAY_RECORD_PREFIX,
+  decodeDayRecords,
+  hasDayRecordHead,
+} from "../db/dayRecordStorage";
 import { ensureStoreExists, openDatabase as openDB } from "../db/openDatabase";
 import { openCoordinatedTransaction } from "../db/transactionCoordinator";
 import {
@@ -352,8 +357,21 @@ async function readRecoveryAdoptionCurrentEvidence(
     };
   }
   const snapshot = await readPersistenceSnapshotWithRetry(storeName, DATA_KEY);
+  let decodedDayPayload: unknown;
+  if (hasDayRecordHead(snapshot.payload)) {
+    try {
+      decodedDayPayload = (
+        await decodeDayRecords(storeName, snapshot.payload, snapshot.dayRecords)
+      ).data;
+    } catch {
+      // Corrupt physical records remain CAS/archive evidence for a selected fallback.
+    }
+  }
   return {
     payload: snapshot.payload,
+    ...(snapshot.dayRecords
+      ? { dayRecords: [...snapshot.dayRecords], decodedDayPayload }
+      : {}),
     metadata: snapshot.metadata,
     checkpoint: snapshot.checkpoint,
   };
@@ -583,9 +601,11 @@ async function commitRecoveryCandidateAdoption({
     }
 
     let failure: unknown = null;
-    let remainingReads = 3 + (preparedResolution ? 2 : 0);
+    let remainingReads =
+      3 + (preparedResolution ? 2 : 0) + (expectedEvidence.dayRecords ? 1 : 0);
     let writesQueued = false;
     let currentPayload: unknown;
+    let currentDayRecords: Array<[string, unknown]> | undefined;
     let currentMapEntries: Record<string, unknown> | undefined;
     let currentMetadata: unknown;
     let currentCheckpoint: unknown;
@@ -624,10 +644,13 @@ async function commitRecoveryCandidateAdoption({
               }
             : {
                 payload: currentPayload,
+                ...(currentDayRecords ? { dayRecords: currentDayRecords } : {}),
                 metadata: currentMetadata,
                 checkpoint: currentCheckpoint,
               };
-        if (!recoveryEvidenceMatches(observedEvidence, expectedEvidence)) {
+        const physicalExpected = { ...expectedEvidence };
+        delete physicalExpected.decodedDayPayload;
+        if (!recoveryEvidenceMatches(observedEvidence, physicalExpected)) {
           throw new PersistenceConflictError(
             `${storeName} changed after the recovery candidate was observed.`,
           );
@@ -676,6 +699,15 @@ async function commitRecoveryCandidateAdoption({
             trackWrite(payloadStore.put(value, key));
           });
         } else {
+          if (hasDayRecordHead(currentPayload))
+            trackWrite(
+              payloadStore.delete(
+                IDBKeyRange.bound(
+                  DAY_RECORD_PREFIX,
+                  DAY_RECORD_PREFIX + "\uffff",
+                ),
+              ),
+            );
           trackWrite(payloadStore.put(payload, DATA_KEY));
         }
         trackWrite(
@@ -785,6 +817,25 @@ async function commitRecoveryCandidateAdoption({
       };
     }
 
+    if (expectedEvidence.dayRecords) {
+      const entries: Array<[string, unknown]> = [];
+      const cursorRequest = payloadStore.openCursor(
+        IDBKeyRange.bound(DAY_RECORD_PREFIX, DAY_RECORD_PREFIX + "\uffff"),
+      );
+      cursorRequest.onerror = () => {
+        failure = failure ?? cursorRequest.error;
+      };
+      cursorRequest.onsuccess = () => {
+        const cursor = cursorRequest.result;
+        if (cursor) {
+          entries.push([String(cursor.key), cursor.value]);
+          cursor.continue();
+        } else {
+          currentDayRecords = entries;
+          commitIfReady();
+        }
+      };
+    }
     if (storeName === STORES.MAP_DATA) {
       const entries: Record<string, unknown> = {};
       const cursorRequest = payloadStore.openCursor();

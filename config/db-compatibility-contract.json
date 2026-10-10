@@ -4,8 +4,8 @@
   "contractUri": "urn:event-shopping-planner:db-compatibility:v1",
   "indexedDb": {
     "name": "EventShoppingPlannerDB",
-    "version": 8,
-    "forwardCompatibilityCeiling": 8,
+    "version": 11,
+    "forwardCompatibilityCeiling": 11,
     "stores": {
       "eventConsistency": {
         "keyPath": null,
@@ -64,7 +64,8 @@
       "migrationArchive": 1,
       "repairCheckpoint": 1,
       "mapData": 1,
-      "syncQueueWire": 2
+      "syncQueueWire": 2,
+      "dayRecords": 1
     }
   },
   "remote": {

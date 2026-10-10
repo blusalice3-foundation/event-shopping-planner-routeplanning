@@ -685,6 +685,7 @@ const App: React.FC = () => {
     updateGlobalHallRouteSettings: handleUpdateGlobalHallRouteSettings,
     reorderExecuteListByHallOrder: handleReorderExecuteListByHallOrder,
   } = useMapRouteCommands({
+    requestMutation: application.request,
     state: {
       activeEventName,
       activeEventDate,
@@ -1063,6 +1064,10 @@ const App: React.FC = () => {
     readExportSnapshot: () => {
       application.flushDraft();
       return application.coordinator.readExportSnapshot();
+    },
+    createBackupFile: () => {
+      application.flushDraft();
+      return application.coordinator.createBackupFile();
     },
     eventConsistency,
     appRuntime,

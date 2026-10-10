@@ -1,5 +1,5 @@
 import { CanvasGestureRaster } from "../../features/map/canvas/CanvasGestureRaster";
-import { resolveLocation } from "../../features/consistency/domain/membership";
+import { createLocationResolver } from "../../features/consistency/domain/membership";
 import React, {
   useRef,
   useEffect,
@@ -429,6 +429,10 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     return new Set(executeModeItemIds);
   }, [executeModeItemIds]);
 
+  const resolveMapLocation = useMemo(
+    () => createLocationResolver(mapData),
+    [mapData],
+  );
   const resolvedMapCellItems = useMemo(() => {
     const resolvedItems: ResolvedMapCellItem[] = [];
     const dayName = eventDate ?? extractDayNameFromMapName(mapName);
@@ -439,14 +443,14 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
       const itemEventDate = normalizeMapRouteDayText(item.eventDate);
       if (itemEventDate !== normalizedDayName) return;
 
-      const location = resolveLocation(mapData, item);
+      const location = resolveMapLocation(item);
       if (location.status !== "resolved") return;
       const cell = location.location.cell;
       resolvedItems.push({ key: `${cell.row}-${cell.col}`, item });
     });
 
     return resolvedItems;
-  }, [mapData, items, mapName, eventDate]);
+  }, [resolveMapLocation, items, mapName, eventDate]);
 
   const cellStates = useMemo(() => {
     const states = new Map<string, MapCellStateDetail>();
@@ -543,7 +547,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     }> = [];
 
     visitItems.forEach((item, index) => {
-      const location = resolveLocation(mapData, item);
+      const location = resolveMapLocation(item);
       const cell =
         location.status === "resolved" ? location.location.cell : null;
       if (cell) {
@@ -558,7 +562,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
 
     return points;
   }, [
-    mapData,
+    resolveMapLocation,
     items,
     mapName,
     eventDate,

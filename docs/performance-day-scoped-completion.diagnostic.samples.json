@@ -1,0 +1,7123 @@
+{
+  "schemaVersion": 1,
+  "condition": "Chrome final-build run before counterbalanced ordering; retains the 33.8ms budget failure",
+  "artifact": {
+    "buildId": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+    "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+    "outerAgentUrl": "/assets/outer-recovery-agent.js",
+    "pwaLifecycle": "prompt-close-all-v1",
+    "releaseRole": "standard",
+    "requiredDbCompatibilityFingerprint": "b3c773424e66b8e0c4cb9faa4fe42b0e55aa5b45a3243cad5ec92bf70b7bba9f",
+    "roleEntrySha256": "d0e003a3b1c964577eab08e7640651cda2607cb2dd13385c9036b3decb1afb73",
+    "roleEntryUrl": "/assets/release-role.js",
+    "schemaVersion": 1,
+    "serviceWorkerSha256": "9534a173bd672489488cc3c1657cf94dfa459953da6b78c232cc8c25151b9b3f",
+    "serviceWorkerUrl": "/sw.js",
+    "sourceSha": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+    "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+  },
+  "reportSources": [
+    ".tmp-day-completion-chrome-unbalanced-1.json",
+    ".tmp-day-completion-chrome-unbalanced-rest.json"
+  ],
+  "summary": [
+    {
+      "from": "edit",
+      "to": "execute",
+      "baselineMedianMs": 89.40000003576279,
+      "historicalMedianMs": 123.19999998807907,
+      "medianIncreaseMs": 33.799999952316284
+    },
+    {
+      "from": "edit",
+      "to": "focus",
+      "baselineMedianMs": 48.0,
+      "historicalMedianMs": 52.40000003576279,
+      "medianIncreaseMs": 4.400000035762787
+    },
+    {
+      "from": "execute",
+      "to": "edit",
+      "baselineMedianMs": 87.19999998807907,
+      "historicalMedianMs": 99.0,
+      "medianIncreaseMs": 11.800000011920929
+    },
+    {
+      "from": "execute",
+      "to": "focus",
+      "baselineMedianMs": 49.59999996423721,
+      "historicalMedianMs": 55.799999952316284,
+      "medianIncreaseMs": 6.199999988079071
+    },
+    {
+      "from": "focus",
+      "to": "edit",
+      "baselineMedianMs": 83.89999997615814,
+      "historicalMedianMs": 96.60000002384186,
+      "medianIncreaseMs": 12.700000047683716
+    },
+    {
+      "from": "focus",
+      "to": "execute",
+      "baselineMedianMs": 124.89999997615814,
+      "historicalMedianMs": 147.89999997615814,
+      "medianIncreaseMs": 23.0
+    }
+  ],
+  "raw": [
+    {
+      "kind": "mode-response-timings",
+      "data": {
+        "historicalCount": 0,
+        "session": 1,
+        "coldExecuteToEditMs": 100.19999998807907,
+        "releaseIdentity": {
+          "buildId": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "outerAgentUrl": "/assets/outer-recovery-agent.js",
+          "pwaLifecycle": "prompt-close-all-v1",
+          "releaseRole": "standard",
+          "requiredDbCompatibilityFingerprint": "b3c773424e66b8e0c4cb9faa4fe42b0e55aa5b45a3243cad5ec92bf70b7bba9f",
+          "roleEntrySha256": "d0e003a3b1c964577eab08e7640651cda2607cb2dd13385c9036b3decb1afb73",
+          "roleEntryUrl": "/assets/release-role.js",
+          "schemaVersion": 1,
+          "serviceWorkerSha256": "9534a173bd672489488cc3c1657cf94dfa459953da6b78c232cc8c25151b9b3f",
+          "serviceWorkerUrl": "/sw.js",
+          "sourceSha": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+        },
+        "browserVersion": "154.0.8037.99",
+        "browserChannel": "chrome",
+        "headed": true,
+        "samples": [
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 92.39999997615814,
+            "first": true
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 58.09999996423721,
+            "first": true
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 87.10000002384186,
+            "first": true
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 53.89999997615814,
+            "first": true
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 129.69999998807907,
+            "first": true
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 86.40000003576279,
+            "first": true
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 94.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.200000047683716,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 89.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 57.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 120.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 90.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 89.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 81.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 39.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 119.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 81.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 91.20000004768372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 56.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 84.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 38.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 122.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 81.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 89.40000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 47.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 79.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 46.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 121.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 83.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 90.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 81.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 38.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 123.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 86.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 84.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 82.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 50,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 126.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 94.40000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 57.799999952316284,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 81.79999995231628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 45.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 122.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 83.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 87.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.79999995231628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 46.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 120.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 83.90000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 86.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 78.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 50,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 99.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 85.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 87.90000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 82.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 53.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 128.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 89.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 92.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 47.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 78.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 48.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 100.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 80.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 85.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50.299999952316284,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 85.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 38.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 128.4000000357628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 84.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 86.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 53.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 92.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 51.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 122.09999996423721,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 86.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 85.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 47.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 86.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 40.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 131.79999995231628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 96.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 88.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 51.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 87.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 40.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 128.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 89.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 86.20000004768372,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 37.40000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 129.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 82.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 84.09999996423721,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 45.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 85.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 47.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 125.90000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 83.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 87.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 85,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 46.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 123.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 80.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 90.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 78.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 44.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 119.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 77.90000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 82.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 45.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 84.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 45.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 120.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 84.90000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 51.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 80,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 121.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 86.20000004768372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 45.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 80.70000004768372,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 51.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 101.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 81.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 80.59999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 97.59999996423721,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 78.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 80.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 44.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 80.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 45.90000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 120.40000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 83.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 82.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 45.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 76.79999995231628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 45,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 100.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 89.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 86.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 46.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 47.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 124,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 89,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 85.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 46.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 76.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 52.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 97.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 76.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 82.40000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 44.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 80.90000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 51.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 127.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 95.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 92.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 80.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 48.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 123.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 84.60000002384186,
+            "first": false
+          }
+        ]
+      }
+    },
+    {
+      "kind": "mode-response-timings",
+      "data": {
+        "historicalCount": 10000,
+        "session": 1,
+        "coldExecuteToEditMs": 113.09999996423721,
+        "releaseIdentity": {
+          "buildId": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "outerAgentUrl": "/assets/outer-recovery-agent.js",
+          "pwaLifecycle": "prompt-close-all-v1",
+          "releaseRole": "standard",
+          "requiredDbCompatibilityFingerprint": "b3c773424e66b8e0c4cb9faa4fe42b0e55aa5b45a3243cad5ec92bf70b7bba9f",
+          "roleEntrySha256": "d0e003a3b1c964577eab08e7640651cda2607cb2dd13385c9036b3decb1afb73",
+          "roleEntryUrl": "/assets/release-role.js",
+          "schemaVersion": 1,
+          "serviceWorkerSha256": "9534a173bd672489488cc3c1657cf94dfa459953da6b78c232cc8c25151b9b3f",
+          "serviceWorkerUrl": "/sw.js",
+          "sourceSha": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+        },
+        "browserVersion": "154.0.8037.99",
+        "browserChannel": "chrome",
+        "headed": true,
+        "samples": [
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 96.39999997615814,
+            "first": true
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 63.40000003576279,
+            "first": true
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 114.80000001192093,
+            "first": true
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 63.5,
+            "first": true
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 150.10000002384186,
+            "first": true
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 91.20000004768372,
+            "first": true
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 101,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 54,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 96.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 55,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 138.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 96.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 53.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 113,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 48.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 139.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 92.40000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 94.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 54.299999952316284,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 87.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 53.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 133,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 90.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 119.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 57.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 87.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 44.90000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 134.0999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 118.90000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 92.09999996423721,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 51.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 88.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 53.40000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 134.9000000357628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 92.59999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 98.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 55.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 114.70000004768372,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 56.200000047683716,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 141.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 95.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 95.40000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 59.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 90.59999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 46.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 130.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 86.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 90.40000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 52.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 86.70000004768372,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 52.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 137.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 97.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 92.90000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 84.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 126,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 88.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 94.90000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 54.700000047683716,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 93,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 42.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 134.29999995231628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 91.79999995231628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 96.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 100.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 63.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 130.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 83.29999995231628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 90.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 81.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 45.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 124.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 92.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 95.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 52.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 87,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 133.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 91.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 54,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 93.70000004768372,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 136.79999995231628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 88.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 120.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 90.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 58.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 138.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 86.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 95.20000004768372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 56.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 89.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 139.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 90.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 95.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 92.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 48.09999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 127.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 82.79999995231628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 94.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 146.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 100.90000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 53.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 84,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 55,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 126.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 89,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 88.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 85.90000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 133.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 93.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 97,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 57.90000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 86.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 53,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 135.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 94.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 54.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 91.90000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 64.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 137.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 86,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 95.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 61.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 85.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 44.40000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 148.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 85.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 96.09999996423721,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 85.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 134.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 91.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 92.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 55.799999952316284,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 87.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 48.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 131.4000000357628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 83.29999995231628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 87,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 54.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 86.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 50.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 129,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87.90000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 98.70000004768372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.40000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 48.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 132.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 90.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 87.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 52.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 85.90000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 50.799999952316284,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 130.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 88.59999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 101,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 51.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 90.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 56.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 148.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 90.10000002384186,
+            "first": false
+          }
+        ]
+      }
+    },
+    {
+      "kind": "mode-response-timings",
+      "data": {
+        "historicalCount": 0,
+        "session": 2,
+        "coldExecuteToEditMs": 115.19999998807907,
+        "releaseIdentity": {
+          "buildId": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "outerAgentUrl": "/assets/outer-recovery-agent.js",
+          "pwaLifecycle": "prompt-close-all-v1",
+          "releaseRole": "standard",
+          "requiredDbCompatibilityFingerprint": "b3c773424e66b8e0c4cb9faa4fe42b0e55aa5b45a3243cad5ec92bf70b7bba9f",
+          "roleEntrySha256": "d0e003a3b1c964577eab08e7640651cda2607cb2dd13385c9036b3decb1afb73",
+          "roleEntryUrl": "/assets/release-role.js",
+          "schemaVersion": 1,
+          "serviceWorkerSha256": "9534a173bd672489488cc3c1657cf94dfa459953da6b78c232cc8c25151b9b3f",
+          "serviceWorkerUrl": "/sw.js",
+          "sourceSha": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+        },
+        "browserVersion": "154.0.8037.99",
+        "browserChannel": "chrome",
+        "headed": true,
+        "samples": [
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 98.70000004768372,
+            "first": true
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 55.80000001192093,
+            "first": true
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 86.69999998807907,
+            "first": true
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 59.90000003576279,
+            "first": true
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 140.10000002384186,
+            "first": true
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 88.09999996423721,
+            "first": true
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 93.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 54.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 79.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 41.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 128.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 90.40000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 86,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 85,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 39.40000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 118.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 93,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 92,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 81.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 39.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 100.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 80,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 85.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 46.40000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 80.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 51.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 122.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 84.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 82.59999996423721,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 80.40000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 40.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 101.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 84.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 86.29999995231628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 53.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 48.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 120.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 83.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 84.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 93.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 48,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 101.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 83.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 84.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 80.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 53.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 122.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 86.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 85.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50.40000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 80,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 51.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 99.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 82.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 85.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 46.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 87.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 39.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 120.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 89.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 89.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 47.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 80.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 51.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 124.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 84.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 86.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 39.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 121.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 89.40000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 88.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 47.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 82.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 45.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 122.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 88.29999995231628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 88.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 51.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 126.09999996423721,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 90.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 87.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 81.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 41.299999952316284,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 118.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 82.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 87.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 47.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 130.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 92.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 86.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 39.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 119.90000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 82,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 85.09999996423721,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 47.09999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 84.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 41.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 124.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 80.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 87,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 79.90000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 37.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 101.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 81.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 89.59999996423721,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 45.40000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 82.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 47.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 118.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 85.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 92.29999995231628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 81.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 46.09999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 130.4000000357628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 86.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 83.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 46.700000047683716,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 88.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 41.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 128.0999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 83.40000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 84.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 46.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 77.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 50.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 119.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 84.70000004768372,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 83.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 47.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 82.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 47,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 127.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 86.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 94.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 76.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 123.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 49.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 147.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 122.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 134,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 61.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 82.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 50.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 125.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 125.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 135.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 58,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 123.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 49.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 163.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 117.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 133.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 57.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 132.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 59.40000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 177.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 86.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 133,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 63.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 127.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 58.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 168.5999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 79.29999995231628,
+            "first": false
+          }
+        ]
+      }
+    },
+    {
+      "kind": "mode-response-timings",
+      "data": {
+        "historicalCount": 0,
+        "session": 3,
+        "coldExecuteToEditMs": 120.19999998807907,
+        "releaseIdentity": {
+          "buildId": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "outerAgentUrl": "/assets/outer-recovery-agent.js",
+          "pwaLifecycle": "prompt-close-all-v1",
+          "releaseRole": "standard",
+          "requiredDbCompatibilityFingerprint": "b3c773424e66b8e0c4cb9faa4fe42b0e55aa5b45a3243cad5ec92bf70b7bba9f",
+          "roleEntrySha256": "d0e003a3b1c964577eab08e7640651cda2607cb2dd13385c9036b3decb1afb73",
+          "roleEntryUrl": "/assets/release-role.js",
+          "schemaVersion": 1,
+          "serviceWorkerSha256": "9534a173bd672489488cc3c1657cf94dfa459953da6b78c232cc8c25151b9b3f",
+          "serviceWorkerUrl": "/sw.js",
+          "sourceSha": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+        },
+        "browserVersion": "154.0.8037.99",
+        "browserChannel": "chrome",
+        "headed": true,
+        "samples": [
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 151.5,
+            "first": true
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 63,
+            "first": true
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 128.4000000357628,
+            "first": true
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 65.40000003576279,
+            "first": true
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 177.0999999642372,
+            "first": true
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 126.5,
+            "first": true
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 147.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 65.09999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 116.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 57.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 134.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 88.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 88.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 51.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 114.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 62.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 163.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 119.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 73.90000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 131,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 44.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 172,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 84.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 131.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 54.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 82.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 55.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 150.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 124.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 88.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 55,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 128.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 59.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 168.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 132.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 92.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 59,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 116.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 41.09999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 133.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 132.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 90.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 62.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 81.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 167.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 122.59999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 91.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 94,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 55.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 169.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 126.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 142.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 64.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 115.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 46.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 100.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 121.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 87.90000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 61.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 139,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 167,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 127,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 121.59999996423721,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 59.799999952316284,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 115.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 41.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 150.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 122.90000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 122,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 74.40000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 125.79999995231628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 61.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 158,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 128.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 133.29999995231628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 62.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 59.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 126.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 131.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 133.5999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 57.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 128.20000004768372,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 46.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 164.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87.29999995231628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 120.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 64.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 114.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 47.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 173.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 124.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 99.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 55.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 86.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 39,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 147.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 95.40000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 143,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 63.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 99.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 42.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 164.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 134.9000000357628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 134.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 65.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 130.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 62.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 101.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 91.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 134.70000004768372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 64.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 129,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 62.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 168.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 118.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 134.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 61.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 128.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 168.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 119,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 130.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 114.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 121.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 118.59999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 126.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 59.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 125.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 57.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 168.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 129.9000000357628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 135.5999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 133,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 51.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 172.79999995231628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 119.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 131.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 92.20000004768372,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 53,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 131.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 92.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 92,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 67.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 86.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 45.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 121.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 89.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 86.09999996423721,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 85.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 56.799999952316284,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 127.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 95.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 92.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 53,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 87.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 50.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 131,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 88.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 52.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 129.0999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 87,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 96.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 58.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.70000004768372,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 42,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 121.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 82.30000001192093,
+            "first": false
+          }
+        ]
+      }
+    },
+    {
+      "kind": "mode-response-timings",
+      "data": {
+        "historicalCount": 10000,
+        "session": 2,
+        "coldExecuteToEditMs": 156.5999999642372,
+        "releaseIdentity": {
+          "buildId": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "outerAgentUrl": "/assets/outer-recovery-agent.js",
+          "pwaLifecycle": "prompt-close-all-v1",
+          "releaseRole": "standard",
+          "requiredDbCompatibilityFingerprint": "b3c773424e66b8e0c4cb9faa4fe42b0e55aa5b45a3243cad5ec92bf70b7bba9f",
+          "roleEntrySha256": "d0e003a3b1c964577eab08e7640651cda2607cb2dd13385c9036b3decb1afb73",
+          "roleEntryUrl": "/assets/release-role.js",
+          "schemaVersion": 1,
+          "serviceWorkerSha256": "9534a173bd672489488cc3c1657cf94dfa459953da6b78c232cc8c25151b9b3f",
+          "serviceWorkerUrl": "/sw.js",
+          "sourceSha": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+        },
+        "browserVersion": "154.0.8037.99",
+        "browserChannel": "chrome",
+        "headed": true,
+        "samples": [
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 99.19999998807907,
+            "first": true
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 61.09999996423721,
+            "first": true
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 134.80000001192093,
+            "first": true
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 56.89999997615814,
+            "first": true
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 182.69999998807907,
+            "first": true
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 126.69999998807907,
+            "first": true
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 124.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 64.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 91.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 39.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 166.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 125.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 98.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 64.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 80.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 52.40000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 167.5999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 119.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 89.59999996423721,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 63.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 117.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 56.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 169.4000000357628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 81.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 147.0999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 55.09999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 79.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 40.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 142.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 123.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 140.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 67.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 101.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 52,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 171.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 122.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 134.0999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 131.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 63.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 133.5999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 129,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 126.09999996423721,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 62,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 166.79999995231628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 123.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 90.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 47.700000047683716,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 56.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 170.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 118.40000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 153.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 53.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 88.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 67.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 154.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 122,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 139.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.299999952316284,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 60,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 129.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 115.90000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 123.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 60.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 122.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 51,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 158.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 124.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 137.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 59.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 122.59999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 48.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 127.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 129.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 145.70000004768372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 60.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 115.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 60.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 165.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 118.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 136.5999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 63.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 88.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 52.200000047683716,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 173.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 92.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 143.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 67.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 79.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 53.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 125.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 81.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 135.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 63.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 129.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 57.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 172.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 117.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 147.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 67.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 123.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 47.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 129.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 122,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 138.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 56.40000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 129.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 75.20000004768372,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 168.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 138,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 146.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 65.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 122.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 69.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 128.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 123.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 89,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 51.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 120.59999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 43.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 166.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 118.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 154.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 72.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 81.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 59,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 135.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 99,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 136.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 53.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 115.20000004768372,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 47.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 173.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 84.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 101.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 52.09999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 98,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 62.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 160.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 110,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 139.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 64,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 96.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 51.40000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 179.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 83.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 133.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 67.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 118.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 44.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 167.5999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 129.4000000357628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 129.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 57.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 126.79999995231628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 52.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 167.5999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 121.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 84.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 120.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 38.700000047683716,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 147.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 112.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 141.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 66.09999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 83.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 46.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 168.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 128.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 88.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 61.09999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 127.59999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 49.40000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 157.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 84.30000001192093,
+            "first": false
+          }
+        ]
+      }
+    },
+    {
+      "kind": "mode-response-timings",
+      "data": {
+        "historicalCount": 10000,
+        "session": 3,
+        "coldExecuteToEditMs": 144.0999999642372,
+        "releaseIdentity": {
+          "buildId": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "outerAgentUrl": "/assets/outer-recovery-agent.js",
+          "pwaLifecycle": "prompt-close-all-v1",
+          "releaseRole": "standard",
+          "requiredDbCompatibilityFingerprint": "b3c773424e66b8e0c4cb9faa4fe42b0e55aa5b45a3243cad5ec92bf70b7bba9f",
+          "roleEntrySha256": "d0e003a3b1c964577eab08e7640651cda2607cb2dd13385c9036b3decb1afb73",
+          "roleEntryUrl": "/assets/release-role.js",
+          "schemaVersion": 1,
+          "serviceWorkerSha256": "9534a173bd672489488cc3c1657cf94dfa459953da6b78c232cc8c25151b9b3f",
+          "serviceWorkerUrl": "/sw.js",
+          "sourceSha": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+        },
+        "browserVersion": "154.0.8037.99",
+        "browserChannel": "chrome",
+        "headed": true,
+        "samples": [
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 144.80000001192093,
+            "first": true
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 36.69999998807907,
+            "first": true
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 135.5,
+            "first": true
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 64.20000004768372,
+            "first": true
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 181.9000000357628,
+            "first": true
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 130.5,
+            "first": true
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 128.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 76.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 127.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 74,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 176.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 83.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 155.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 64.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 133.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 77.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 120.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 113.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 133.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 67,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 118.20000004768372,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 56.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 159.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 114.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 149.79999995231628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 52.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 118.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 40.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 155.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 112,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 119,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 52,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 85.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 53.09999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 173.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 88.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 89.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 58.80000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 135.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 59,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 174.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 85.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 138.9000000357628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 54.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 134.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 52.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 170.0999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 83,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 126.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 57.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 126.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 58.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 183.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 125.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 136,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 61.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 118.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 49.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 163.5999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 125.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 130.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 49.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 85.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 54,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 172.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 125.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 133.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 113.79999995231628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 45.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 143,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 101.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 130.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 65,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 136,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 53.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 133.9000000357628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 113.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 134.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 56.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 131.80000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 42.59999996423721,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 164.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 120.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 150.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 78.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 119.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 68.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 134.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 120.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 136.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 46.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 131,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 76.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 153.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 90.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 131.5999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 66.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 86.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 51.10000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 165.19999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 160.79999995231628,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 90.10000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50.90000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 131.60000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 48.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 171.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 113.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 131.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 60,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 127.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 68.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 153.89999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 121,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 135.80000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 64.90000003576279,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 127.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 51.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 136,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 124.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 137.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 54.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 116.30000001192093,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 46.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 101.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 128.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 145,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 52.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 98.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 43,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 149.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 123.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 132.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 59.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 120.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 47.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 130.39999997615814,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 99.90000003576279,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 103,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 64.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 81.09999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 64.39999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 128.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 88.39999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 133.4000000357628,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 63.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 82,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 49.19999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 150,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 126.5,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 150.30000001192093,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 62,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 96.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 43.60000002384186,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 162.70000004768372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 124.59999996423721,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 99,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 50.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 128,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 57.799999952316284,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 162.60000002384186,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 86.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 162.69999998807907,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 69.69999998807907,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 100.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 47.5,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 162.5,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 77.69999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 117.90000003576279,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 48.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 128.19999998807907,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 52.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 150.5999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 93.89999997615814,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "execute",
+            "durationMs": 101,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "focus",
+            "durationMs": 62.30000001192093,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "edit",
+            "durationMs": 129.10000002384186,
+            "first": false
+          },
+          {
+            "from": "edit",
+            "to": "focus",
+            "durationMs": 50.89999997615814,
+            "first": false
+          },
+          {
+            "from": "focus",
+            "to": "execute",
+            "durationMs": 149.0999999642372,
+            "first": false
+          },
+          {
+            "from": "execute",
+            "to": "edit",
+            "durationMs": 123,
+            "first": false
+          }
+        ]
+      }
+    },
+    {
+      "kind": "visit-response-timings",
+      "data": {
+        "decorated": false,
+        "multipleHalls": false,
+        "samples": [
+          {
+            "operation": "add",
+            "marker": 1,
+            "screenMs": 117.69999998807907,
+            "savedMs": 108.89999997615814,
+            "routeMs": 198.5,
+            "commandMethods": ["day"]
+          },
+          {
+            "commandMethods": ["day"],
+            "operation": "remove",
+            "marker": 1,
+            "screenMs": 367.69999998807907,
+            "savedMs": 394.5999999642372,
+            "routeMs": 393.39999997615814
+          },
+          {
+            "operation": "add",
+            "marker": 2,
+            "screenMs": 78.29999995231628,
+            "savedMs": 126.69999998807907,
+            "routeMs": 81.19999998807907,
+            "commandMethods": ["day"]
+          },
+          {
+            "commandMethods": ["day"],
+            "operation": "remove",
+            "marker": 2,
+            "screenMs": 244.69999998807907,
+            "savedMs": 312,
+            "routeMs": 220.69999998807907
+          },
+          {
+            "operation": "add",
+            "marker": 3,
+            "screenMs": 82.69999998807907,
+            "savedMs": 123.59999996423721,
+            "routeMs": 79.59999996423721,
+            "commandMethods": ["day"]
+          },
+          {
+            "commandMethods": ["day"],
+            "operation": "remove",
+            "marker": 3,
+            "screenMs": 249.5,
+            "savedMs": 293.5999999642372,
+            "routeMs": 223.0999999642372
+          },
+          {
+            "operation": "add",
+            "marker": 4,
+            "screenMs": 78,
+            "savedMs": 133.29999995231628,
+            "routeMs": 80.89999997615814,
+            "commandMethods": ["day"]
+          },
+          {
+            "commandMethods": ["day"],
+            "operation": "remove",
+            "marker": 4,
+            "screenMs": 244.69999998807907,
+            "savedMs": 304.2999999523163,
+            "routeMs": 225.29999995231628
+          },
+          {
+            "operation": "add",
+            "marker": 5,
+            "screenMs": 78.69999998807907,
+            "savedMs": 124.80000001192093,
+            "routeMs": 56.30000001192093,
+            "commandMethods": ["day"]
+          },
+          {
+            "commandMethods": ["day"],
+            "operation": "remove",
+            "marker": 5,
+            "screenMs": 245.60000002384186,
+            "savedMs": 312.80000001192093,
+            "routeMs": 222.80000001192093
+          }
+        ]
+      }
+    },
+    {
+      "kind": "visit-response-timings",
+      "data": {
+        "decorated": true,
+        "multipleHalls": true,
+        "samples": [
+          {
+            "operation": "add",
+            "marker": 1,
+            "screenMs": 136.9000000357628,
+            "savedMs": 140,
+            "routeMs": 237.70000004768372,
+            "commandMethods": ["day"]
+          },
+          {
+            "commandMethods": ["day"],
+            "operation": "remove",
+            "marker": 1,
+            "screenMs": 418.60000002384186,
+            "savedMs": 409.60000002384186,
+            "routeMs": 489
+          },
+          {
+            "operation": "add",
+            "marker": 2,
+            "screenMs": 110.09999996423721,
+            "savedMs": 130.5999999642372,
+            "routeMs": 191.5,
+            "commandMethods": ["day"]
+          },
+          {
+            "commandMethods": ["day"],
+            "operation": "remove",
+            "marker": 2,
+            "screenMs": 327,
+            "savedMs": 354.39999997615814,
+            "routeMs": 384.5
+          },
+          {
+            "operation": "add",
+            "marker": 3,
+            "screenMs": 112.69999998807907,
+            "savedMs": 134.5,
+            "routeMs": 169.0999999642372,
+            "commandMethods": ["day"]
+          },
+          {
+            "commandMethods": ["day"],
+            "operation": "remove",
+            "marker": 3,
+            "screenMs": 329.39999997615814,
+            "savedMs": 336,
+            "routeMs": 385.89999997615814
+          },
+          {
+            "operation": "add",
+            "marker": 4,
+            "screenMs": 125.70000004768372,
+            "savedMs": 131.5,
+            "routeMs": 195.20000004768372,
+            "commandMethods": ["day"]
+          },
+          {
+            "commandMethods": ["day"],
+            "operation": "remove",
+            "marker": 4,
+            "screenMs": 359.2000000476837,
+            "savedMs": 367.80000001192093,
+            "routeMs": 413.80000001192093
+          },
+          {
+            "operation": "add",
+            "marker": 5,
+            "screenMs": 125.60000002384186,
+            "savedMs": 125.70000004768372,
+            "routeMs": 184.10000002384186,
+            "commandMethods": ["day"]
+          },
+          {
+            "commandMethods": ["day"],
+            "operation": "remove",
+            "marker": 5,
+            "screenMs": 325.2000000476837,
+            "savedMs": 366.2000000476837,
+            "routeMs": 405.7000000476837
+          }
+        ]
+      }
+    },
+    {
+      "kind": "backup-comparison-timings",
+      "data": {
+        "session": 1,
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+        "releaseIdentity": {
+          "buildId": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "outerAgentUrl": "/assets/outer-recovery-agent.js",
+          "pwaLifecycle": "prompt-close-all-v1",
+          "releaseRole": "standard",
+          "requiredDbCompatibilityFingerprint": "b3c773424e66b8e0c4cb9faa4fe42b0e55aa5b45a3243cad5ec92bf70b7bba9f",
+          "roleEntrySha256": "d0e003a3b1c964577eab08e7640651cda2607cb2dd13385c9036b3decb1afb73",
+          "roleEntryUrl": "/assets/release-role.js",
+          "schemaVersion": 1,
+          "serviceWorkerSha256": "9534a173bd672489488cc3c1657cf94dfa459953da6b78c232cc8c25151b9b3f",
+          "serviceWorkerUrl": "/sw.js",
+          "sourceSha": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+        },
+        "browserVersion": "154.0.8037.99",
+        "browserChannel": "chrome",
+        "headed": true,
+        "fixture": "500+10000, decorated40000, 1280x900",
+        "samples": [
+          {
+            "parallel": false,
+            "longTasks": [],
+            "frameGaps": [
+              12.10000001192384, 16.69999999999709, 16.599999999998545,
+              16.80000000000291, 16.599999999998545, 16.599999999998545,
+              16.900000000001455, 16.599999999998545, 16.5, 16.80000000000291,
+              16.599999999998545, 16.599999999998545, 16.700000000004366,
+              16.599999999998545, 16.69999999999709, 16.599999999998545,
+              16.80000000000291, 16.599999999998545, 16.700000000004366,
+              16.599999999998545, 16.69999999999709, 16.700000000004366,
+              16.69999999999709, 16.69999999999709, 16.60000000000582,
+              16.599999999998545, 16.69999999999709, 16.700000000004366,
+              16.599999999998545, 16.69999999999709, 16.700000000004366,
+              16.69999999999709, 16.599999999998545, 16.700000000004366,
+              16.69999999999709, 16.69999999999709, 16.60000000000582,
+              16.69999999999709, 16.599999999998545
+            ],
+            "active": false,
+            "started": 37554.09999996424,
+            "startedEpochMs": 1791567367828,
+            "observationDurationMs": 635.3000000119209,
+            "completionMs": 613,
+            "downloadReceivedAt": 1791567368441
+          },
+          {
+            "parallel": true,
+            "longTasks": [107],
+            "frameGaps": [
+              9.300000035764242, 16.599999999998545, 16.69999999999709,
+              16.700000000004366, 116.59999999999854, 50, 16.69999999999709,
+              16.60000000000582, 16.89999999999418, 16.5, 16.60000000000582,
+              16.69999999999709, 16.69999999999709, 16.60000000000582,
+              16.69999999999709, 16.69999999999709, 16.60000000000582,
+              16.799999999995634, 16.599999999998545, 16.60000000000582,
+              16.799999999995634, 16.599999999998545, 16.700000000004366,
+              16.599999999998545, 16.69999999999709, 16.900000000001455, 16.5,
+              16.599999999998545, 16.700000000004366
+            ],
+            "active": false,
+            "started": 38853.59999996424,
+            "startedEpochMs": 1791567369127,
+            "observationDurationMs": 602.6000000238419,
+            "completionMs": 572,
+            "inputSentAt": 1791567369170,
+            "inputPaintMs": 215,
+            "downloadReceivedAt": 1791567369699
+          }
+        ]
+      }
+    },
+    {
+      "kind": "backup-comparison-timings",
+      "data": {
+        "session": 2,
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+        "releaseIdentity": {
+          "buildId": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "outerAgentUrl": "/assets/outer-recovery-agent.js",
+          "pwaLifecycle": "prompt-close-all-v1",
+          "releaseRole": "standard",
+          "requiredDbCompatibilityFingerprint": "b3c773424e66b8e0c4cb9faa4fe42b0e55aa5b45a3243cad5ec92bf70b7bba9f",
+          "roleEntrySha256": "d0e003a3b1c964577eab08e7640651cda2607cb2dd13385c9036b3decb1afb73",
+          "roleEntryUrl": "/assets/release-role.js",
+          "schemaVersion": 1,
+          "serviceWorkerSha256": "9534a173bd672489488cc3c1657cf94dfa459953da6b78c232cc8c25151b9b3f",
+          "serviceWorkerUrl": "/sw.js",
+          "sourceSha": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+        },
+        "browserVersion": "154.0.8037.99",
+        "browserChannel": "chrome",
+        "headed": true,
+        "fixture": "500+10000, decorated40000, 1280x900",
+        "samples": [
+          {
+            "parallel": false,
+            "longTasks": [],
+            "frameGaps": [
+              15.000000011918019, 16.60000000000582, 16.69999999999709,
+              16.599999999998545, 16.700000000004366, 16.69999999999709,
+              16.69999999999709, 16.60000000000582, 16.69999999999709,
+              16.69999999999709, 16.700000000004366, 16.5, 16.799999999995634,
+              16.60000000000582, 16.799999999995634, 16.599999999998545,
+              16.700000000004366, 16.599999999998545, 16.69999999999709,
+              16.60000000000582, 16.599999999998545, 16.69999999999709,
+              16.700000000004366, 16.69999999999709, 16.69999999999709,
+              16.60000000000582, 16.69999999999709, 16.599999999998545,
+              16.700000000004366, 16.69999999999709, 16.599999999998545,
+              16.700000000004366, 16.69999999999709, 16.69999999999709,
+              16.60000000000582, 16.599999999998545, 16.69999999999709
+            ],
+            "active": false,
+            "started": 34902.60000002384,
+            "startedEpochMs": 1791567405590,
+            "observationDurationMs": 608.1999999880791,
+            "completionMs": 578,
+            "downloadReceivedAt": 1791567406168
+          },
+          {
+            "parallel": true,
+            "longTasks": [95],
+            "frameGaps": [
+              5.8000000238389475, 16.700000000004366, 16.69999999999709,
+              16.599999999998545, 16.60000000000582, 83.39999999999418,
+              66.70000000000437, 16.599999999998545, 16.69999999999709,
+              16.700000000004366, 16.69999999999709, 16.599999999998545,
+              16.700000000004366, 16.69999999999709, 16.700000000004366,
+              16.599999999998545, 16.69999999999709, 16.599999999998545,
+              16.700000000004366, 16.69999999999709, 16.599999999998545,
+              16.700000000004366, 16.69999999999709, 16.599999999998545,
+              16.80000000000291, 16.5, 16.69999999999709, 16.700000000004366,
+              16.69999999999709, 16.700000000004366
+            ],
+            "active": false,
+            "started": 35963.30000001192,
+            "startedEpochMs": 1791567406651,
+            "observationDurationMs": 597.8000000119209,
+            "completionMs": 569,
+            "inputSentAt": 1791567406698,
+            "inputPaintMs": 191,
+            "downloadReceivedAt": 1791567407220
+          }
+        ]
+      }
+    },
+    {
+      "kind": "backup-comparison-timings",
+      "data": {
+        "session": 3,
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+        "releaseIdentity": {
+          "buildId": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "outerAgentUrl": "/assets/outer-recovery-agent.js",
+          "pwaLifecycle": "prompt-close-all-v1",
+          "releaseRole": "standard",
+          "requiredDbCompatibilityFingerprint": "b3c773424e66b8e0c4cb9faa4fe42b0e55aa5b45a3243cad5ec92bf70b7bba9f",
+          "roleEntrySha256": "d0e003a3b1c964577eab08e7640651cda2607cb2dd13385c9036b3decb1afb73",
+          "roleEntryUrl": "/assets/release-role.js",
+          "schemaVersion": 1,
+          "serviceWorkerSha256": "9534a173bd672489488cc3c1657cf94dfa459953da6b78c232cc8c25151b9b3f",
+          "serviceWorkerUrl": "/sw.js",
+          "sourceSha": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+          "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+        },
+        "browserVersion": "154.0.8037.99",
+        "browserChannel": "chrome",
+        "headed": true,
+        "fixture": "500+10000, decorated40000, 1280x900",
+        "samples": [
+          {
+            "parallel": false,
+            "longTasks": [],
+            "frameGaps": [
+              2.299999988077616, 16.80000000000291, 16.400000000001455,
+              16.799999999995634, 16.599999999998545, 16.700000000004366,
+              16.599999999998545, 16.80000000000291, 16.599999999998545,
+              16.69999999999709, 16.599999999998545, 16.700000000004366,
+              16.599999999998545, 17, 16.5, 16.69999999999709,
+              16.60000000000582, 16.599999999998545, 16.599999999998545,
+              16.80000000000291, 16.599999999998545, 16.69999999999709,
+              16.599999999998545, 16.700000000004366, 16.599999999998545,
+              16.80000000000291, 16.5, 16.799999999995634, 16.599999999998545,
+              16.60000000000582, 16.69999999999709, 16.80000000000291,
+              16.599999999998545, 16.69999999999709, 16.599999999998545,
+              16.80000000000291, 16.599999999998545, 16.599999999998545,
+              16.700000000004366
+            ],
+            "active": false,
+            "started": 37435,
+            "startedEpochMs": 1791567445606,
+            "observationDurationMs": 627.6000000238419,
+            "completionMs": 596,
+            "downloadReceivedAt": 1791567446202
+          },
+          {
+            "parallel": true,
+            "longTasks": [97],
+            "frameGaps": [
+              8.10000001192384, 16.799999999995634, 16.5, 16.80000000000291,
+              16.599999999998545, 99.90000000000146, 50.19999999999709,
+              16.599999999998545, 16.700000000004366, 16.599999999998545,
+              16.599999999998545, 16.700000000004366, 16.69999999999709,
+              16.69999999999709, 16.700000000004366, 16.69999999999709,
+              16.599999999998545, 16.60000000000582, 16.69999999999709,
+              16.80000000000291, 16.599999999998545, 16.599999999998545,
+              16.599999999998545, 16.700000000004366, 16.69999999999709,
+              16.80000000000291, 16.599999999998545, 16.69999999999709
+            ],
+            "active": false,
+            "started": 38494.30000001192,
+            "startedEpochMs": 1791567446665,
+            "observationDurationMs": 571.3000000119209,
+            "completionMs": 548,
+            "inputSentAt": 1791567446714,
+            "inputPaintMs": 208,
+            "downloadReceivedAt": 1791567447213
+          }
+        ]
+      }
+    }
+  ]
+}

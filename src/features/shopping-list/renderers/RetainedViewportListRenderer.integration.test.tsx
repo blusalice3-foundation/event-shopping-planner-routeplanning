@@ -61,10 +61,16 @@ beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
     function (this: HTMLElement) {
       return {
-        top: visibleKeys.has(this.dataset.viewportRowKey ?? "") ? 20 : 10000,
-        bottom: visibleKeys.has(this.dataset.viewportRowKey ?? "")
-          ? 156
-          : 10136,
+        top:
+          !this.dataset.viewportRowKey ||
+          visibleKeys.has(this.dataset.viewportRowKey)
+            ? 20
+            : 10000,
+        bottom:
+          !this.dataset.viewportRowKey ||
+          visibleKeys.has(this.dataset.viewportRowKey)
+            ? 156
+            : 10136,
         height: 136,
         width: 400,
         left: 0,
@@ -121,6 +127,70 @@ describe("retained viewport rendering", () => {
       "data-list-renderer",
       "virtual",
     );
+  });
+
+  it("preserves row heights while a list is hidden and resets them for a real width change", () => {
+    const callbacks = new Map<Element, ResizeObserverCallback>();
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(private next: ResizeObserverCallback) {}
+        observe(target: Element) {
+          callbacks.set(target, this.next);
+        }
+        unobserve(target: Element) {
+          callbacks.delete(target);
+        }
+        disconnect() {}
+      },
+    );
+    visibleKeys.add("hidden-width-cache");
+    const renderRow = vi.fn(() => (
+      <input aria-label="保持する編集" defaultValue="ユーザー登録" />
+    ));
+    const view = render(
+      <div data-viewport-list>
+        <ViewportContent
+          rowKey="hidden-width-cache"
+          defer
+          estimatedHeight={220}
+          placeholder={<span>エラーが発生しました</span>}
+          render={renderRow}
+        />
+      </div>,
+    );
+    const list = view.container.firstElementChild as HTMLElement;
+    const input = view.getByRole("textbox", { name: "保持する編集" });
+    fireEvent.change(input, { target: { value: "入力中の編集" } });
+    const rendered = renderRow.mock.calls.length;
+    const resize = (width: number) =>
+      act(() =>
+        callbacks.get(list)!(
+          [
+            {
+              target: list,
+              contentRect: new DOMRect(0, 0, width, 136),
+              borderBoxSize: [],
+              contentBoxSize: [],
+              devicePixelContentBoxSize: [],
+            },
+          ],
+          {} as ResizeObserver,
+        ),
+      );
+
+    expect(list.dataset.viewportWidth).toBe("400");
+    resize(0);
+    expect(list.dataset.viewportWidth).toBe("400");
+    resize(400);
+    expect(renderRow).toHaveBeenCalledTimes(rendered);
+    expect(view.getByRole("textbox", { name: "保持する編集" })).toBe(input);
+    expect(input).toHaveValue("入力中の編集");
+
+    resize(600);
+    expect(list.dataset.viewportWidth).toBe("600");
+    expect(renderRow.mock.calls.length).toBeGreaterThan(rendered);
+    expect(input).toHaveValue("入力中の編集");
   });
 
   it("retains an activated control, its edit and focus after leaving the viewport", () => {
@@ -766,3 +836,30 @@ it("propagates dialog retention through a memoized group and releases the row af
   leaveViewport();
   expect(view.queryByRole("textbox", { name: "item-0" })).toBeNull();
 });
+
+it.each([500, 1500])(
+  "bounds synchronous initial position measurements for %i rows",
+  (count) => {
+    const many = Array.from({ length: count }, (_, index) => ({
+      ...items[0],
+      id: `bounded-${index}`,
+    }));
+    const model = buildListRows({ items: many });
+    visibleKeys.add(model.rows[0].rowKey);
+    const measure = vi.mocked(HTMLElement.prototype.getBoundingClientRect);
+    measure.mockClear();
+    const view = render(
+      <RetainedViewportListRenderer
+        model={model}
+        accessibleLabel="計測範囲"
+        renderRow={(row) => (row.kind === "item" ? <input /> : null)}
+      />,
+    );
+    const rowMeasurements = measure.mock.instances.filter(
+      (element) => !!(element as HTMLElement).dataset.viewportRowKey,
+    );
+    expect(rowMeasurements.length).toBeLessThan(20);
+    expect(view.container.querySelectorAll("input")).toHaveLength(1);
+  },
+  15000,
+);

@@ -6,6 +6,7 @@ import type {
 import type {
   BlockDetectionSettings,
   BlockDetectionSettingsStore,
+  MapViewportState,
 } from "../../types/map";
 
 export class PersistenceSettingsRollbackError extends Error {
@@ -28,6 +29,55 @@ export interface ItemContentEdit {
     Record<string, { present: boolean; value: unknown }>
   >;
 }
+export interface ApplicationBackupChange {
+  store: keyof PersistenceSnapshot;
+  eventName: string;
+  baseline: unknown;
+  desired: unknown;
+}
+export interface ApplicationBackupFile {
+  blob: Blob;
+  exportedAt: string;
+}
+/** A compound visit transition may touch its source day and one destination day. */
+export interface ApplicationDayScope {
+  eventName: string;
+  day: string;
+  additionalDays?: readonly string[];
+}
+/** A command contains only the affected event/day and proposed field changes. */
+export type ApplicationDayMutation =
+  | {
+      kind: "mode";
+      eventName: string;
+      day: string;
+      mode?: "edit" | "execute" | "focus";
+    }
+  | {
+      kind: "patch";
+      eventName: string;
+      day: string;
+      baseline: Partial<PersistenceSnapshot>;
+      desired: Partial<PersistenceSnapshot>;
+      routeDays?: Record<string, Record<string, string[]>>;
+    }
+  | {
+      kind: "visits";
+      eventName: string;
+      day: string;
+      mapKey: string;
+      /** Omit order when accepting the current durable visit order. */
+      order?: readonly string[];
+      modeDay?: string;
+    }
+  | { kind: "day-merge"; eventName: string; day: string }
+  | {
+      kind: "map-viewport";
+      eventName: string;
+      day: string;
+      mapKey: string;
+      viewport: MapViewportState;
+    };
 export type ApplicationItemEditsResult =
   | { status: "committed"; read: ApplicationSnapshotRead }
   | { status: "review-required" };
@@ -58,6 +108,8 @@ export interface ApplicationSnapshotRead {
   snapshot: PersistenceSnapshot;
   expectedRoots: object;
   consistencyMissing: boolean;
+  /** Worker-internal scoped observation; the adapter merges it into retained UI state. */
+  scopeTarget?: ApplicationDayScope;
   /** Internal lifecycle counters; excluded from application backups. */
   eventGenerations?: Readonly<Record<string, number>>;
 }
@@ -106,6 +158,8 @@ export interface ConsistencyUpgradeArchive {
   localStorage: Record<string, string>;
 }
 export interface PersistenceCommandPort extends PreferencePersistencePort {
+  /** Align the local worker mirror with immutable state adopted after a durable commit. */
+  adoptCommittedSnapshot?(snapshot: PersistenceSnapshot): void;
   inspectConsistencyUpgrade(): Promise<ConsistencyUpgradeArchive | null>;
   bindApplicationSettings(access: {
     read(): PersistenceSnapshot;
@@ -115,9 +169,26 @@ export interface PersistenceCommandPort extends PreferencePersistencePort {
     ): Promise<void>;
   }): () => void;
   readApplicationSnapshot(): Promise<ApplicationSnapshotRead>;
+  readDayApplicationSnapshot?(
+    target: ApplicationDayScope,
+  ): Promise<ApplicationSnapshotRead>;
+  commitDayApplicationSnapshot?(
+    snapshot: PersistenceSnapshot,
+    expectedRoots: object,
+    target: ApplicationDayScope,
+  ): Promise<ApplicationSnapshotRead>;
   commitItemContentEdits?(
     edits: readonly ItemContentEdit[],
     operationIds: readonly string[],
+    expectedEventGenerations: Readonly<Record<string, number>>,
+  ): Promise<ApplicationItemEditsResult>;
+  createBackupFile?(
+    changes: readonly ApplicationBackupChange[],
+    fallback: () => PersistenceSnapshot,
+  ): Promise<ApplicationBackupFile>;
+  commitDayMutation?(
+    command: ApplicationDayMutation,
+    operationId: string,
     expectedEventGenerations: Readonly<Record<string, number>>,
   ): Promise<ApplicationItemEditsResult>;
   saveEventConsistency(

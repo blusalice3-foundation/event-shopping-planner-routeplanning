@@ -70,13 +70,14 @@ export function planDayMerge(
 ): DayMergePlan {
   if (!sameDay(requestedDay, preferredKey))
     throw new Error("統合先は同じ日付を指定してください。");
-  const next = structuredClone(snapshot);
   if (
     !duplicateEventDays(snapshot, name).some((day) =>
       sameDay(day, requestedDay),
     )
   )
-    return { snapshot: next };
+    return { snapshot: { ...snapshot, dayModes: { ...snapshot.dayModes } } };
+  const next = structuredClone({ ...snapshot, mapData: {} });
+  next.mapData = snapshot.mapData;
   const choices: MutationChoice[] = [];
   const choose = (
     id: string,

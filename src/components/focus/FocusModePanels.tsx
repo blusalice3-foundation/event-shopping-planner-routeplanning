@@ -278,6 +278,7 @@ const FocusItemRow = React.memo(
         <ViewportContent
           key={item.id}
           rowKey={"focus:" + item.id}
+          layoutKey={JSON.stringify(["focus", layoutMode])}
           estimatedHeight={layoutMode === "pc" ? 220 : 136}
           defer={
             !prewarm &&
@@ -358,6 +359,7 @@ const FocusVisitRows = React.memo(
       hidden={hidden}
       aria-hidden={hidden || undefined}
       data-focus-parked={hidden && !prewarm ? "true" : undefined}
+      data-viewport-list
       className={
         rowProps.layoutMode === "smartphone" ? "space-y-2" : "space-y-4"
       }

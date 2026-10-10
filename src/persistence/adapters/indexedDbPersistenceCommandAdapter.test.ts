@@ -210,6 +210,153 @@ describe("IndexedDB persistence command adapter", () => {
     expect(delegate.commitApplicationSnapshotAtomically).not.toHaveBeenCalled();
   });
 
+  it("reads and commits only the requested days and observes the durable result", async () => {
+    const previous = snapshot();
+    previous.eventConsistency.event = {
+      ...createEventConsistency(),
+      blockDetectionSettings: DEFAULT_BLOCK_DETECTION_SETTINGS,
+    };
+    const read = {
+      snapshot: previous,
+      expectedRoots: { revision: 1 },
+      consistencyMissing: false,
+      eventGenerations: { event: 3 },
+    };
+    const committedSettings = {
+      ...DEFAULT_BLOCK_DETECTION_SETTINGS,
+      maxBlockNameLength: 8,
+    };
+    const committed = snapshot();
+    committed.eventConsistency.event = {
+      ...createEventConsistency(),
+      blockDetectionSettings: committedSettings,
+    };
+    const saved = {
+      ...read,
+      snapshot: committed,
+      expectedRoots: { revision: 2 },
+    };
+    const readDayApplicationSnapshot = vi.fn(async () => read);
+    const commitDayApplicationSnapshot = vi.fn(async () => saved);
+    const delegate = createDelegate({
+      readDayApplicationSnapshot,
+      commitDayApplicationSnapshot,
+    });
+    const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+    const target = {
+      eventName: "event",
+      day: "1日目",
+      additionalDays: ["2日目"],
+    };
+
+    expect(adapter.readBlockDetectionSettings("event")).toBeNull();
+    expect(await adapter.readDayApplicationSnapshot!(target)).toBe(read);
+    expect(readDayApplicationSnapshot).toHaveBeenCalledExactlyOnceWith(target);
+    expect(adapter.readBlockDetectionSettings("event")).toEqual(
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(
+      await adapter.commitDayApplicationSnapshot!(
+        previous,
+        read.expectedRoots,
+        target,
+      ),
+    ).toBe(saved);
+    expect(commitDayApplicationSnapshot).toHaveBeenCalledExactlyOnceWith(
+      previous,
+      read.expectedRoots,
+      target,
+    );
+    const [submitted, expectedRoots, scope] = vi.mocked(
+      delegate.commitDayApplicationSnapshot!,
+    ).mock.calls[0];
+    expect(submitted).toBe(previous);
+    expect(expectedRoots).toBe(read.expectedRoots);
+    expect(scope).toBe(target);
+    expect(adapter.readBlockDetectionSettingsForBackup(["event"])).toEqual({
+      event: committedSettings,
+    });
+    expect(delegate.readApplicationSnapshot).not.toHaveBeenCalled();
+    expect(delegate.commitApplicationSnapshotAtomically).not.toHaveBeenCalled();
+  });
+
+  it.each(["read", "commit"] as const)(
+    "retains observed settings when the scoped %s fails",
+    async (operation) => {
+      const previous = snapshot();
+      previous.eventConsistency.event = {
+        ...createEventConsistency(),
+        blockDetectionSettings: DEFAULT_BLOCK_DETECTION_SETTINGS,
+      };
+      const read = {
+        snapshot: previous,
+        expectedRoots: { revision: 1 },
+        consistencyMissing: false,
+      };
+      const failure = new DOMException("quota", "QuotaExceededError");
+      const delegate = createDelegate({
+        readApplicationSnapshot: vi.fn(async () => read),
+        readDayApplicationSnapshot: vi.fn().mockRejectedValue(failure),
+        commitDayApplicationSnapshot: vi.fn().mockRejectedValue(failure),
+      });
+      const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+      await adapter.readApplicationSnapshot();
+      const target = { eventName: "event", day: "1日目" };
+      const pending =
+        operation === "read"
+          ? adapter.readDayApplicationSnapshot!(target)
+          : adapter.commitDayApplicationSnapshot!(
+              snapshot(),
+              read.expectedRoots,
+              target,
+            );
+
+      await expect(pending).rejects.toBe(failure);
+      expect(adapter.readBlockDetectionSettingsForBackup(["event"])).toEqual({
+        event: DEFAULT_BLOCK_DETECTION_SETTINGS,
+      });
+      expect(delegate.readApplicationSnapshot).toHaveBeenCalledOnce();
+      expect(
+        delegate.commitApplicationSnapshotAtomically,
+      ).not.toHaveBeenCalled();
+    },
+  );
+
+  it("retains observed settings when a day command needs conflict review", async () => {
+    const previous = snapshot();
+    previous.eventConsistency.event = {
+      ...createEventConsistency(),
+      blockDetectionSettings: DEFAULT_BLOCK_DETECTION_SETTINGS,
+    };
+    const review = { status: "review-required" as const };
+    const commitDayMutation = vi.fn(async () => review);
+    const delegate = createDelegate({
+      readApplicationSnapshot: vi.fn(async () => ({
+        snapshot: previous,
+        expectedRoots: {},
+        consistencyMissing: false,
+      })),
+      commitDayMutation,
+    });
+    const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+    await adapter.readApplicationSnapshot();
+    const command = { kind: "mode" as const, eventName: "event", day: "1日目" };
+    const generations = { event: 3 };
+
+    expect(
+      await adapter.commitDayMutation!(command, "application:5", generations),
+    ).toBe(review);
+    expect(commitDayMutation).toHaveBeenCalledExactlyOnceWith(
+      command,
+      "application:5",
+      generations,
+    );
+    expect(adapter.readBlockDetectionSettings("event")).toEqual(
+      DEFAULT_BLOCK_DETECTION_SETTINGS,
+    );
+    expect(delegate.commitApplicationSnapshotAtomically).not.toHaveBeenCalled();
+  });
+
   it("uses the preference port for UI preferences and canonical state for event settings", async () => {
     const delegate = createDelegate(),
       auxiliary = createAuxiliaryDelegate({

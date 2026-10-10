@@ -7,12 +7,19 @@ const PRELOAD_MARGIN_PX = 500;
 interface Subscription {
   visible: boolean;
   update(): void;
+  resetHeight(): void;
 }
 interface ViewportRegistry {
   observer: IntersectionObserver;
   subscribers: Map<Element, Subscription>;
+  visibility: WeakMap<Element, boolean>;
+  listSizes: Map<HTMLElement, number>;
+  sizeObserver?: ResizeObserver;
   requestedKeys: Map<string, number>;
-  heights: Map<string, number>;
+  initialOffsets: WeakMap<
+    Element,
+    { top: number; offset: number; width: number }
+  >;
   printing: boolean;
   backwardTab: boolean;
   keyDown: (event: KeyboardEvent) => void;
@@ -21,6 +28,46 @@ interface ViewportRegistry {
   afterPrint: () => void;
 }
 const registries = new WeakMap<Document, ViewportRegistry>();
+// Height retention outlives observer subscriptions. Bound it across long sessions.
+const heightCaches = new WeakMap<Document, Map<string, number>>();
+const heightKey = (root: HTMLElement, rowKey: string, layoutKey: string) =>
+  JSON.stringify([
+    rowKey,
+    root.closest<HTMLElement>("[data-list-renderer], [data-viewport-list]")
+      ?.dataset.viewportWidth,
+    layoutKey,
+    root.ownerDocument.defaultView?.innerWidth,
+    root.ownerDocument.defaultView?.visualViewport?.scale ?? 1,
+    root.ownerDocument.defaultView?.devicePixelRatio ?? 1,
+  ]);
+const heightCache = (document: Document) => {
+  let cache = heightCaches.get(document);
+  if (!cache) heightCaches.set(document, (cache = new Map()));
+  return cache;
+};
+function initiallyVisible(
+  root: HTMLElement,
+  registry: ViewportRegistry,
+  height: number,
+): boolean {
+  const parent =
+    root.closest<HTMLElement>("[data-viewport-list]") ?? root.parentElement;
+  if (!parent || !root.closest("[data-list-renderer], [data-viewport-list]"))
+    return withinViewport(root);
+  let position = registry.initialOffsets.get(parent);
+  if (!position) {
+    const rect = parent.getBoundingClientRect();
+    position = { top: rect.top, offset: 0, width: rect.width };
+    registry.initialOffsets.set(parent, position);
+  }
+  const top = position.top + position.offset;
+  position.offset += height;
+  const bottom =
+    (root.ownerDocument.defaultView?.innerHeight ?? 0) + PRELOAD_MARGIN_PX;
+  return (
+    top + height >= -PRELOAD_MARGIN_PX && top <= bottom && withinViewport(root)
+  );
+}
 const requestKey = (registry: ViewportRegistry, key: string) =>
   registry.requestedKeys.set(key, (registry.requestedKeys.get(key) ?? 0) + 1);
 const releaseKey = (registry: ViewportRegistry, key: string) => {
@@ -47,6 +94,7 @@ const getRegistry = (document: Document): ViewportRegistry => {
         const subscription = subscribers.get(entry.target);
         if (!subscription) continue;
         subscription.visible = entry.isIntersecting;
+        registry.visibility.set(entry.target, entry.isIntersecting);
         subscription.update();
       }
     },
@@ -55,8 +103,10 @@ const getRegistry = (document: Document): ViewportRegistry => {
   const registry: ViewportRegistry = {
     observer,
     subscribers,
+    visibility: new WeakMap(),
+    listSizes: new Map(),
     requestedKeys: new Map(),
-    heights: new Map(),
+    initialOffsets: new WeakMap(),
     printing: false,
     backwardTab: false,
     keyDown: (event) => {
@@ -86,6 +136,21 @@ const getRegistry = (document: Document): ViewportRegistry => {
       }
     },
   };
+  if (typeof ResizeObserver === "function")
+    registry.sizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const list = entry.target as HTMLElement;
+        if (entry.contentRect.width <= 0) continue;
+        const width = String(entry.contentRect.width);
+        if (list.dataset.viewportWidth === width) continue;
+        list.dataset.viewportWidth = width;
+        for (const [root, subscription] of subscribers)
+          if (
+            root.closest("[data-list-renderer], [data-viewport-list]") === list
+          )
+            subscription.resetHeight();
+      }
+    });
   document.addEventListener("keydown", registry.keyDown, true);
   document.addEventListener("focusout", registry.focusOut, true);
   document.defaultView?.addEventListener("beforeprint", registry.beforePrint);
@@ -155,6 +220,7 @@ export interface ViewportContentProps {
   readonly defer?: boolean;
   readonly retain?: boolean;
   readonly estimatedHeight?: number;
+  readonly layoutKey?: string;
   readonly placeholder: React.ReactNode;
   readonly render: () => React.ReactNode;
 }
@@ -162,7 +228,8 @@ export const ViewportContent = ({
   rowKey,
   defer = true,
   retain = false,
-  estimatedHeight,
+  estimatedHeight = 220,
+  layoutKey = "default",
   placeholder,
   render,
 }: ViewportContentProps): React.ReactElement => {
@@ -171,6 +238,7 @@ export const ViewportContent = ({
     !defer || retain || typeof IntersectionObserver !== "function",
   );
   const heightRef = useRef<number>();
+  const [, setHeightRevision] = useState(0);
   const updateRef = useRef<() => void>();
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -180,9 +248,33 @@ export const ViewportContent = ({
       return;
     }
     const registry = getRegistry(root.ownerDocument);
-    heightRef.current ??= registry.heights.get(rowKey);
+    const list = root.closest<HTMLElement>(
+      "[data-list-renderer], [data-viewport-list]",
+    );
+    if (list && !registry.listSizes.has(list)) {
+      list.dataset.viewportWidth = String(list.getBoundingClientRect().width);
+      registry.sizeObserver?.observe(list);
+    }
+    if (list)
+      registry.listSizes.set(list, (registry.listSizes.get(list) ?? 0) + 1);
+    const cachedHeight = heightCache(root.ownerDocument).get(
+      heightKey(root, rowKey, layoutKey),
+    );
+    if (heightRef.current !== cachedHeight) {
+      heightRef.current = cachedHeight;
+      if (cachedHeight !== undefined)
+        setHeightRevision((revision) => revision + 1);
+    }
     const subscription: Subscription = {
-      visible: withinViewport(root),
+      resetHeight: () => {
+        heightRef.current = heightCache(root.ownerDocument).get(
+          heightKey(root, rowKey, layoutKey),
+        );
+        setHeightRevision((revision) => revision + 1);
+      },
+      visible:
+        registry.visibility.get(root) ??
+        initiallyVisible(root, registry, cachedHeight ?? estimatedHeight),
       update: () => {
         const pinned =
           root.contains(root.ownerDocument.activeElement) ||
@@ -205,6 +297,7 @@ export const ViewportContent = ({
         );
       },
     };
+    registry.visibility.set(root, subscription.visible);
     updateRef.current = subscription.update;
     registry.subscribers.set(root, subscription);
     registry.observer.observe(root);
@@ -216,8 +309,17 @@ export const ViewportContent = ({
       root.removeEventListener(VIEWPORT_RETENTION_EVENT, subscription.update);
       registry.observer.unobserve(root);
       registry.subscribers.delete(root);
+      if (list) {
+        const count = (registry.listSizes.get(list) ?? 1) - 1;
+        if (count > 0) registry.listSizes.set(list, count);
+        else {
+          registry.listSizes.delete(list);
+          registry.sizeObserver?.unobserve(list);
+        }
+      }
       if (!registry.subscribers.size) {
         registry.observer.disconnect();
+        registry.sizeObserver?.disconnect();
         root.ownerDocument.removeEventListener(
           "keydown",
           registry.keyDown,
@@ -239,7 +341,7 @@ export const ViewportContent = ({
         registries.delete(root.ownerDocument);
       }
     };
-  }, [defer, retain, rowKey]);
+  }, [defer, retain, rowKey, layoutKey, estimatedHeight]);
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root || !activated) return;
@@ -247,7 +349,11 @@ export const ViewportContent = ({
       const height = root.offsetHeight || root.getBoundingClientRect().height;
       if (height > 0) {
         heightRef.current = height;
-        registries.get(root.ownerDocument)?.heights.set(rowKey, height);
+        const cache = heightCache(root.ownerDocument);
+        const key = heightKey(root, rowKey, layoutKey);
+        cache.delete(key);
+        cache.set(key, height);
+        if (cache.size > 4096) cache.delete(cache.keys().next().value!);
       }
     };
     measure();
@@ -255,7 +361,7 @@ export const ViewportContent = ({
       typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
     observer?.observe(root);
     return () => observer?.disconnect();
-  }, [activated, rowKey]);
+  }, [activated, rowKey, layoutKey]);
   const deferredHeight = heightRef.current ?? estimatedHeight;
   return (
     <div

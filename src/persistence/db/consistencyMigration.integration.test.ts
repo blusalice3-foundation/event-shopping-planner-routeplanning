@@ -205,7 +205,7 @@ describe("consistency migration transaction", () => {
     await new Promise<void>((resolve, reject) => {
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
-        expect(request.result.version).toBe(8);
+        expect(request.result.version).toBe(11);
         request.result.close();
         resolve();
       };
@@ -220,7 +220,7 @@ describe("pre-upgrade boundary", () => {
     const oldConnection = await legacy.openDatabase();
     expect(oldConnection.version).toBeLessThanOrEqual(7);
     const current = await import("./openDatabase");
-    expect((await current.openDatabase()).version).toBe(8);
+    expect((await current.openDatabase()).version).toBe(11);
     expect(() =>
       oldConnection.transaction(STORES.EVENT_LISTS, "readwrite"),
     ).toThrow();
