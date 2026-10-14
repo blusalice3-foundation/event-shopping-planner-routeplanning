@@ -345,8 +345,12 @@ export const ViewportContent = ({
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root || !activated) return;
-    const measure = () => {
-      const height = root.offsetHeight || root.getBoundingClientRect().height;
+    const measure = (entries?: ResizeObserverEntry[]) => {
+      const reportedHeight = entries?.[0]?.borderBoxSize?.[0]?.blockSize;
+      const height =
+        reportedHeight === undefined
+          ? root.offsetHeight || root.getBoundingClientRect().height
+          : Math.round(reportedHeight);
       if (height > 0) {
         heightRef.current = height;
         const cache = heightCache(root.ownerDocument);
@@ -356,7 +360,8 @@ export const ViewportContent = ({
         if (cache.size > 4096) cache.delete(cache.keys().next().value!);
       }
     };
-    measure();
+    if (heightRef.current === undefined || typeof ResizeObserver !== "function")
+      measure();
     const observer =
       typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
     observer?.observe(root);

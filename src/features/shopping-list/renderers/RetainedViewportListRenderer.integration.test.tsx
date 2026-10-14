@@ -193,6 +193,103 @@ describe("retained viewport rendering", () => {
     expect(input).toHaveValue("入力中の編集");
   });
 
+  it("uses reported heights without forced reads and reuses them on activation", () => {
+    const callbacks = new Map<Element, ResizeObserverCallback>();
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(private next: ResizeObserverCallback) {}
+        observe(target: Element) {
+          callbacks.set(target, this.next);
+        }
+        unobserve(target: Element) {
+          callbacks.delete(target);
+        }
+        disconnect() {}
+      },
+    );
+    visibleKeys.add("reported-height-cache");
+    const view = render(
+      <div data-viewport-list>
+        <ViewportContent
+          rowKey="reported-height-cache"
+          defer
+          estimatedHeight={220}
+          placeholder={<span>pending</span>}
+          render={() => <span>measured</span>}
+        />
+      </div>,
+    );
+    const root = view.container.querySelector<HTMLElement>(
+      "[data-viewport-row-key]",
+    )!;
+    const rectangles = vi.mocked(HTMLElement.prototype.getBoundingClientRect);
+    const resize = (borderBoxSize: ResizeObserverSize[]) =>
+      act(() =>
+        callbacks.get(root)!(
+          [
+            {
+              target: root,
+              contentRect: new DOMRect(
+                0,
+                0,
+                400,
+                borderBoxSize.length ? borderBoxSize[0].blockSize : 136,
+              ),
+              borderBoxSize,
+              contentBoxSize: [],
+              devicePixelContentBoxSize: [],
+            },
+          ],
+          {} as ResizeObserver,
+        ),
+      );
+    const intersect = (isIntersecting: boolean) =>
+      act(() =>
+        callback(
+          [
+            {
+              target: root,
+              isIntersecting,
+              boundingClientRect: new DOMRect(0, 0, 400, 136),
+              intersectionRect: isIntersecting
+                ? new DOMRect(0, 0, 400, 136)
+                : new DOMRect(),
+              intersectionRatio: Number(isIntersecting),
+              rootBounds: null,
+              time: 0,
+            },
+          ],
+          {} as IntersectionObserver,
+        ),
+      );
+
+    rectangles.mockClear();
+    resize([{ blockSize: 176, inlineSize: 400 }]);
+    expect(rectangles).not.toHaveBeenCalled();
+    intersect(false);
+    expect(root).toHaveAttribute("data-layout-height", "176px");
+
+    rectangles.mockClear();
+    intersect(true);
+    expect(rectangles).not.toHaveBeenCalled();
+    resize([{ blockSize: 0, inlineSize: 0 }]);
+    intersect(false);
+    expect(root).toHaveAttribute("data-layout-height", "176px");
+
+    intersect(true);
+    resize([{ blockSize: 212, inlineSize: 400 }]);
+    intersect(false);
+    expect(root).toHaveAttribute("data-layout-height", "212px");
+
+    intersect(true);
+    rectangles.mockClear();
+    resize([]);
+    expect(rectangles).toHaveBeenCalledTimes(1);
+    intersect(false);
+    expect(root).toHaveAttribute("data-layout-height", "136px");
+  });
+
   it("retains an activated control, its edit and focus after leaving the viewport", () => {
     const model = buildListRows({ items });
     visibleKeys.add(model.rows[0].rowKey);

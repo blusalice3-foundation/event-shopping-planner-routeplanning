@@ -1,4 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
+
+// Keep response timings free from video and trace capture on every attempt.
+test.use({ video: "off", trace: "off" });
+
 const eventName = "応答速度検証";
 const makeBackup = (
   count: number,
