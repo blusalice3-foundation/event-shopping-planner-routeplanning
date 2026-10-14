@@ -1,3 +1,9 @@
+import { planDayMutation } from "../../features/consistency/domain/dayMutation";
+import type {
+  ApplicationDayMutation,
+  PersistenceSnapshot,
+} from "../ports/PersistenceCommandPort";
+import type { MutationIntent } from "./applicationMutationCoordinator";
 import { useCallback, useMemo } from "react";
 import type { ExecuteModeItems, ShoppingItem } from "../../types/item";
 import {
@@ -58,6 +64,9 @@ export interface MapRouteCommandPorts {
   readonly state: MapRouteStatePort;
   readonly actions: MapRouteActionPort;
   readonly selectors: MapRouteSelectorPort;
+  requestMutation?(
+    intent: Omit<MutationIntent, "id">,
+  ): Promise<PersistenceSnapshot>;
 }
 
 export interface MapRouteSelection {
@@ -86,6 +95,7 @@ export const useMapRouteCommands = ({
   state,
   actions,
   selectors,
+  requestMutation,
 }: MapRouteCommandPorts): MapRouteController => {
   const {
     activeEventName,
@@ -228,6 +238,30 @@ export const useMapRouteCommands = ({
   const updateMapViewport = useCallback(
     (viewport: MapViewportState) => {
       if (!activeEventName || !isMapTab || !currentMapTabName) return;
+      if (requestMutation) {
+        const previous =
+          state.mapViewportSettings[activeEventName]?.[currentMapTabName];
+        if (
+          previous &&
+          previous.zoomLevel === viewport.zoomLevel &&
+          previous.offsetX === viewport.offsetX &&
+          previous.offsetY === viewport.offsetY
+        )
+          return;
+        const command: ApplicationDayMutation = {
+          kind: "map-viewport",
+          eventName: activeEventName,
+          day: activeEventDate,
+          mapKey: currentMapTabName,
+          viewport: { ...viewport },
+        };
+        void requestMutation({
+          events: [activeEventName],
+          dayMutation: command,
+          plan: (snapshot) => planDayMutation(snapshot, command),
+        }).catch(() => {});
+        return;
+      }
       setMapViewportSettings((current) => {
         const eventSettings = current[activeEventName] || {};
         const currentViewport = eventSettings[currentMapTabName];
@@ -248,7 +282,15 @@ export const useMapRouteCommands = ({
         };
       });
     },
-    [activeEventName, currentMapTabName, isMapTab, setMapViewportSettings],
+    [
+      activeEventName,
+      activeEventDate,
+      currentMapTabName,
+      isMapTab,
+      setMapViewportSettings,
+      requestMutation,
+      state.mapViewportSettings,
+    ],
   );
 
   const updateCurrentHallRouteSettings = useCallback(

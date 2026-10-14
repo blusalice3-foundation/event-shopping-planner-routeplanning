@@ -121,6 +121,8 @@ type GroupViewportProps = GroupContentProps & {
   retained: readonly boolean[];
   visitIds: readonly (string | undefined)[];
   getVisitId: Props["getVisitId"];
+  layoutKey: string;
+  estimatedHeight: number;
 };
 const GroupViewport = React.memo(
   ({
@@ -135,11 +137,15 @@ const GroupViewport = React.memo(
     retained,
     visitIds,
     getVisitId,
+    layoutKey,
+    estimatedHeight,
   }: GroupViewportProps) => {
     recordShoppingRender("execution-viewport");
     return (
       <ViewportContent
         rowKey={row.rowKey}
+        layoutKey={layoutKey}
+        estimatedHeight={estimatedHeight}
         retain={retained.some(Boolean)}
         defer={defer}
         placeholder={
@@ -185,6 +191,8 @@ const GroupViewport = React.memo(
     sameGroupContent(before, after) &&
     before.layoutMode === after.layoutMode &&
     before.defer === after.defer &&
+    before.layoutKey === after.layoutKey &&
+    before.estimatedHeight === after.estimatedHeight &&
     before.visitIds.every((value, index) => value === after.visitIds[index]),
 );
 /**
@@ -196,6 +204,13 @@ export const RetainedViewportListRenderer = (
 ): React.ReactElement => {
   const layoutMode = props.layoutMode ?? "pc";
   const renderGroup = props.renderGroup;
+  const layoutKey = JSON.stringify([
+    layoutMode,
+    props.model.itemRows[0]?.column,
+    props.zoomPercent,
+    props.selectionReason,
+  ]);
+  const estimatedItemHeight = layoutMode === "pc" ? 220 : 136;
   const rowStates = useRef(new Map<string, CardExpansion>());
   const anchorRef = useRef<{ key: string; top: number }>();
   const listRoot = useRef<HTMLDivElement | null>(null);
@@ -272,6 +287,8 @@ export const RetainedViewportListRenderer = (
             <ViewportContent
               key={itemRow.rowKey}
               rowKey={itemRow.rowKey}
+              layoutKey={layoutKey}
+              estimatedHeight={estimatedItemHeight}
               retain={props.pinnedRowKeys?.has(itemRow.rowKey)}
               defer={props.defer}
               placeholder={itemPlaceholder(
@@ -313,6 +330,10 @@ export const RetainedViewportListRenderer = (
             ...itemRows.map(({ row: child }) => props.getVisitId?.(child.item)),
           ]}
           getVisitId={props.getVisitId}
+          layoutKey={layoutKey}
+          estimatedHeight={
+            row.collapsed ? 44 : 44 + estimatedItemHeight * itemRows.length
+          }
         />,
       );
       index = cursor - 1;
@@ -322,6 +343,8 @@ export const RetainedViewportListRenderer = (
         <ViewportContent
           key={row.rowKey}
           rowKey={row.rowKey}
+          layoutKey={layoutKey}
+          estimatedHeight={estimatedItemHeight}
           retain={props.pinnedRowKeys?.has(row.rowKey)}
           defer={props.defer}
           placeholder={itemPlaceholder(row, layoutMode, props.getVisitId)}

@@ -24,8 +24,8 @@ import legacyMapJournalV1EmptyEventFixture from "../test/fixtures/legacy-map-jou
 import legacyMapJournalV1ProtoDayFixture from "../test/fixtures/legacy-map-journal-v1-proto-day-d2389a0.json";
 
 const DATABASE_NAME = "EventShoppingPlannerDB";
-const CURRENT_DATABASE_VERSION = 8;
-const UNSUPPORTED_DATABASE_VERSION = 9;
+const CURRENT_DATABASE_VERSION = 11;
+const UNSUPPORTED_DATABASE_VERSION = 12;
 const DATA_KEY = "data";
 const LEGACY_MIGRATION_JOURNAL_KEY =
   "__esp_internal__:migration:v1:legacy-local-storage";
@@ -6921,7 +6921,7 @@ describe("db runtime fallback resilience", () => {
     expect(localStorage.length).toBe(0);
   });
 
-  it("rejects a normal store save against v9 without writing any localStorage fallback", async () => {
+  it("rejects a normal store save against v11 without writing any localStorage fallback", async () => {
     await seedDatabase(UNSUPPORTED_DATABASE_VERSION);
     const db = await importFreshDb();
     vi.spyOn(console, "warn").mockImplementation(() => {});

@@ -40,7 +40,7 @@ import type {
 import {
   createAppBackup,
   parseAppBackup,
-  serializeAppBackup,
+  createAppBackupFile,
   type AppBackupV1,
 } from "../../utils/appBackup";
 import { downloadBlob } from "../../utils/downloadBlob";
@@ -158,6 +158,7 @@ const isAbortError = (error: unknown): boolean =>
 export const useEventTransferCommands = ({
   requestMutation,
   readExportSnapshot,
+  createBackupFile,
   appRuntime,
   startupState,
   exportEventName,
@@ -232,20 +233,21 @@ export const useEventTransferCommands = ({
 
   const handleBackupExport = useCallback(async () => {
     try {
-      const currentData = await readExportSnapshot();
-      const backup = createAppBackup(currentData, new Date());
-      const blob = new Blob([serializeAppBackup(backup)], {
-        type: "application/json;charset=utf-8",
-      });
-      const timestamp = backup.exportedAt.replace(/[:.]/g, "-");
-      downloadBlob(blob, `event-shopping-planner-backup-${timestamp}.json`);
+      const file = createBackupFile
+        ? await createBackupFile()
+        : createAppBackupFile(await readExportSnapshot());
+      const timestamp = file.exportedAt.replace(/[:.]/g, "-");
+      downloadBlob(
+        file.blob,
+        `event-shopping-planner-backup-${timestamp}.json`,
+      );
     } catch {
       console.error("Backup export failed (backup-export-failed).");
       alert(
         "バックアップを完全に保存できなかったため、ファイルを作成しませんでした。現在のデータは変更されていません。",
       );
     }
-  }, [readExportSnapshot]);
+  }, [readExportSnapshot, createBackupFile]);
 
   const handlePersistenceRecoveryExport =
     useCallback((): PersistenceRecoveryExportResult => {

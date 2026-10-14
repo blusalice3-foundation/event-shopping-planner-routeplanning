@@ -1,7 +1,7 @@
 import React from "react";
 import { ShoppingItem } from "../../types/item";
 import { BlockDefinition } from "../../types/map";
-import { resolveLocation } from "../../features/consistency/domain/membership";
+import { createLocationResolver } from "../../features/consistency/domain/membership";
 import { projectItemsToExecutionVisits } from "../../utils/visitProjection";
 import {
   normalizeBaseSpaceNumber,
@@ -37,6 +37,14 @@ const MapVisitListPanel: React.FC<MapVisitListPanelProps> = ({
 }) => {
   // 訪問先のセル情報を計算
   const visitCells: VisitCellInfo[] = React.useMemo(() => {
+    if (!isOpen) return [];
+    const resolveLocation = createLocationResolver({
+      blocks,
+      cells: [],
+      mergedCells: [],
+      maxRow: 0,
+      maxCol: 0,
+    });
     const cells: VisitCellInfo[] = [];
     const itemsById = new Map(items.map((item) => [item.id, item]));
     const visits = projectItemsToExecutionVisits(
@@ -48,10 +56,7 @@ const MapVisitListPanel: React.FC<MapVisitListPanelProps> = ({
     visits.forEach((visit, visitIndex) => {
       const item = visit.items[0];
 
-      const location = resolveLocation(
-        { blocks, cells: [], mergedCells: [], maxRow: 0, maxCol: 0 },
-        item,
-      );
+      const location = resolveLocation(item);
       if (location.status !== "resolved") return;
       const numberCell = location.location.cell;
 
@@ -78,7 +83,7 @@ const MapVisitListPanel: React.FC<MapVisitListPanelProps> = ({
     });
 
     return cells;
-  }, [items, executeModeItemIds, blocks]);
+  }, [isOpen, items, executeModeItemIds, blocks]);
 
   if (!isOpen) return null;
 

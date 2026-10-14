@@ -1,3 +1,38 @@
+import {
+  dayScopeDays,
+  matchesScopeDay,
+  sameDayScope,
+} from "../../features/consistency/domain/dayScope";
+import {
+  observeScopedDay,
+  prepareMapScopeRoots,
+  enqueueMapScopeRoots,
+  prepareSidecarRecords,
+  enqueueSidecarRecords,
+  scopeReadyKey,
+  type DayStorageTarget,
+} from "./scopedDayStorage";
+import { RUNTIME_FALLBACK_NAMESPACE } from "../../utils/persistenceResilience";
+import {
+  sameDay,
+  normalizeMapDay,
+} from "../../features/consistency/domain/context";
+import { MAPLESS_HALL_KEY } from "../../types/map";
+import { semanticEqual } from "../../utils/semanticEquality";
+import {
+  readDayRecordPayload,
+  dayRecordStores,
+  partitionDayRecordStore,
+  patchDayRecordStore,
+  enqueueDayRecordWrite,
+  enqueueDayRootDigests,
+  sidecarRecordStores,
+  adoptDayRecordWrite,
+  assertDayRecordsUnchanged,
+  DAY_RECORD_PREFIX,
+  type DayRecordState,
+  type DayRecordWrite,
+} from "./dayRecordStorage";
 import { assertEventConsistency } from "../../types/consistencyValidation";
 /**
  * Atomic full-application restore transaction.
@@ -54,6 +89,8 @@ import {
   prepareMetadataForPayload,
   readRuntimeCandidateSnapshots,
   validatePersistenceSnapshot,
+  isStoredPersistenceMetadata,
+  immutableObservedRootFieldsMatch,
   type ObservedRevisionRoot,
   type RuntimeCandidateSnapshot,
   type StoredPersistenceMetadata,
@@ -89,6 +126,9 @@ interface AppDataRestoreObservation {
   eventGenerations: Record<string, number>;
   checkpoints: Map<StoreName, PersistenceCheckpoint | null>;
   runtimeCandidates: RuntimeCandidateSnapshot<unknown>[];
+  dayRecords: Map<StoreName, DayRecordState>;
+  scopeReady: Map<StoreName, unknown>;
+  scopeTarget?: DayStorageTarget;
 }
 
 // Opaque read handles keep the verified baseline private. Caller snapshots and
@@ -252,8 +292,22 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
   const finished = transactionFinished(transaction);
   const raw = new Map<
     StoreName,
-    { payload: unknown; metadata: unknown; checkpoint: unknown }
+    {
+      payload: unknown;
+      metadata: unknown;
+      checkpoint: unknown;
+      dayRecords?: Map<string, unknown>;
+    }
   >();
+  const scopeReadyRequests = [...sidecarRecordStores, STORES.MAP_DATA].map(
+    async (store) =>
+      [
+        store,
+        await requestResult(
+          transaction.objectStore(STORES.SYNC_QUEUE).get(scopeReadyKey(store)),
+        ),
+      ] as const,
+  );
   const journalRequest = requestResult(
     transaction.objectStore(STORES.SYNC_QUEUE).get(CONSISTENCY_MIGRATION_KEY),
   );
@@ -266,8 +320,10 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
   const reads = APPLICATION_SNAPSHOT_STORE_NAMES.map(async (storeName) => {
     const payloadPromise =
       storeName === STORES.MAP_DATA
-        ? readMapEntriesFromStore(transaction.objectStore(storeName))
-        : requestResult(transaction.objectStore(storeName).get(DATA_KEY));
+        ? readMapEntriesFromStore(transaction.objectStore(storeName)).then(
+            (payload) => ({ payload }),
+          )
+        : readDayRecordPayload(transaction.objectStore(storeName));
     const metadataPromise = requestResult(
       transaction
         .objectStore(STORES.SYNC_QUEUE)
@@ -283,7 +339,7 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
       metadataPromise,
       checkpointPromise,
     ]);
-    raw.set(storeName, { payload, metadata, checkpoint });
+    raw.set(storeName, { ...payload, metadata, checkpoint });
   });
   await Promise.all([...reads, finished]);
   const [journal, archive, rawGenerations] = await Promise.all([
@@ -303,6 +359,7 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
   const roots = new Map<StoreName, ObservedRevisionRoot>();
   const checkpoints = new Map<StoreName, PersistenceCheckpoint | null>();
   const runtimeCandidates: RuntimeCandidateSnapshot<unknown>[] = [];
+  const dayRecords = new Map<StoreName, DayRecordState>();
 
   await Promise.all(
     APPLICATION_SNAPSHOT_STORE_NAMES.map(async (storeName) => {
@@ -389,6 +446,8 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
       roots.set(storeName, validation.validated.root);
       checkpoints.set(storeName, validation.validated.checkpoint);
       runtimeCandidates.push(...candidateScan.snapshots);
+      if (validation.validated.dayRecordState)
+        dayRecords.set(storeName, validation.validated.dayRecordState);
     }),
   );
 
@@ -404,11 +463,60 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
     journal,
     archive,
     eventGenerations,
+    dayRecords,
+    scopeReady: new Map(await Promise.all(scopeReadyRequests)),
   };
 }
 
-export async function readApplicationSnapshot(): Promise<ApplicationSnapshotRead> {
-  const observation = await observeAppDataRestoreState();
+let verifiedCommandCache:
+  | {
+      database: IDBDatabase;
+      observation: AppDataRestoreObservation;
+      fallbackKey: string;
+    }
+  | undefined;
+const dayCommandObservations = new WeakSet<object>();
+const frozenCommandValues = new WeakSet<object>();
+function freezeCommandValue(value: unknown): void {
+  if (!value || typeof value !== "object" || frozenCommandValues.has(value))
+    return;
+  frozenCommandValues.add(value);
+  for (const entry of Object.values(value)) freezeCommandValue(entry);
+  Object.freeze(value);
+}
+function captureCommandChanges(before: unknown, after: unknown): unknown {
+  if (before === after) return before;
+  if (
+    before &&
+    after &&
+    typeof before === "object" &&
+    typeof after === "object" &&
+    !Array.isArray(before) &&
+    !Array.isArray(after)
+  ) {
+    return Object.fromEntries(
+      Object.entries(after).map(([key, value]) => [
+        key,
+        captureCommandChanges((before as Record<string, unknown>)[key], value),
+      ]),
+    );
+  }
+  return structuredClone(after);
+}
+function runtimeFallbackKey(): string {
+  if (typeof localStorage === "undefined") return "";
+  const entries: Array<[string, string | null]> = [];
+  for (let index = 0; index < localStorage.length; index++) {
+    const key = localStorage.key(index);
+    if (key?.startsWith(RUNTIME_FALLBACK_NAMESPACE))
+      entries.push([key, localStorage.getItem(key)]);
+  }
+  return JSON.stringify(entries.sort(([a], [b]) => a.localeCompare(b)));
+}
+function rememberObservation(
+  observation: AppDataRestoreObservation,
+  share = false,
+): ApplicationSnapshotRead {
   observation.roots.forEach((root, store) =>
     expectedRevisionRoots.set(getObservedRootKey(store, DATA_KEY), root),
   );
@@ -420,18 +528,202 @@ export async function readApplicationSnapshot(): Promise<ApplicationSnapshotRead
   );
   const expectedRoots = { roots: structuredClone(observation.roots) };
   applicationSnapshotObservations.set(expectedRoots, observation);
+  if (share) {
+    freezeCommandValue(observation.snapshot);
+    dayCommandObservations.add(expectedRoots);
+  }
   return {
-    snapshot: structuredClone(observation.snapshot),
+    snapshot: share
+      ? observation.snapshot
+      : structuredClone(observation.snapshot),
     expectedRoots,
     consistencyMissing: observation.consistencyMissing,
-    eventGenerations: structuredClone(observation.eventGenerations),
+    eventGenerations: { ...observation.eventGenerations },
+    ...(observation.scopeTarget
+      ? { scopeTarget: observation.scopeTarget }
+      : {}),
   };
+}
+
+/** Worker-owned immutable cache. Every transaction still checks all revision/checkpoint heads. */
+export async function readDayCommandSnapshot(
+  target?: DayStorageTarget,
+): Promise<ApplicationSnapshotRead> {
+  const database = await openDB();
+  const cached = verifiedCommandCache;
+  const fallbackKey = runtimeFallbackKey();
+  if (
+    target &&
+    fallbackKey !== "" &&
+    fallbackKey !== "[]" &&
+    !(
+      cached?.fallbackKey === fallbackKey &&
+      cached.observation.runtimeCandidates.length === 0
+    )
+  )
+    throw new PersistenceConflictError(
+      "未確定の復旧候補があります。最新の保存状態を確認してから再試行してください。",
+    );
+  if (
+    cached?.database === database &&
+    (!cached.observation.scopeTarget ||
+      (target && sameDayScope(cached.observation.scopeTarget, target))) &&
+    (!target ||
+      dayRecordStores.every(
+        (store) =>
+          cached.observation.dayRecords.get(store)?.head.authenticatedRoots,
+      )) &&
+    cached.fallbackKey === fallbackKey &&
+    cached.observation.runtimeCandidates.length === 0 &&
+    !cached.observation.consistencyMissing &&
+    APPLICATION_SNAPSHOT_STORE_NAMES.every(
+      (store) =>
+        !cached.observation.roots.get(store)?.synthetic &&
+        cached.observation.checkpoints.get(store) != null,
+    )
+  ) {
+    const transaction = openCoordinatedTransaction(
+      database,
+      [STORES.SYNC_QUEUE],
+      "readonly",
+    );
+    const finished = transactionFinished(transaction);
+    const control = transaction.objectStore(STORES.SYNC_QUEUE);
+    const reads = APPLICATION_SNAPSHOT_STORE_NAMES.map(async (store) => {
+      const [metadata, checkpoint] = await Promise.all([
+        requestResult(
+          control.get(createPersistenceMetadataKey(store, DATA_KEY)),
+        ),
+        requestResult(
+          control.get(createPersistenceCheckpointKey(store, DATA_KEY)),
+        ),
+      ]);
+      const root = cached.observation.roots.get(store)!;
+      if (
+        !isStoredPersistenceMetadata(metadata, store, DATA_KEY) ||
+        !immutableObservedRootFieldsMatch(metadata, root)
+      )
+        return false;
+      try {
+        assertCurrentCheckpointMatchesExpected(
+          store,
+          DATA_KEY,
+          checkpoint,
+          cached.observation.checkpoints.get(store)!,
+        );
+      } catch {
+        return false;
+      }
+      return true;
+    });
+    const journal = requestResult(control.get(CONSISTENCY_MIGRATION_KEY));
+    const archive = requestResult(control.get(CONSISTENCY_ARCHIVE_KEY));
+    const generations = requestResult(control.get(EVENT_GENERATIONS_KEY));
+    const heads = await Promise.all(reads);
+    const evidence = await Promise.all([
+      journal,
+      archive,
+      generations,
+      finished,
+    ]);
+    if (
+      heads.every(Boolean) &&
+      storedValuesEqual(evidence[0], cached.observation.journal) &&
+      storedValuesEqual(evidence[1], cached.observation.archive) &&
+      storedValuesEqual(
+        readEventGenerations(evidence[2]),
+        cached.observation.eventGenerations,
+      )
+    )
+      return rememberObservation(cached.observation, true);
+  }
+  verifiedCommandCache = undefined;
+  let observation: AppDataRestoreObservation;
+  if (target) {
+    const scoped = await observeScopedDay(database, target);
+    await validateConsistencyMigrationEvidence(
+      scoped.journal,
+      scoped.archive,
+      false,
+    );
+    observation = {
+      ...scoped,
+      eventGenerations: readEventGenerations(scoped.rawGenerations),
+      consistencyMissing: false,
+      mapDataNormalized: true,
+      runtimeCandidates: [],
+      scopeTarget: target,
+    };
+  } else observation = await observeAppDataRestoreState();
+  verifiedCommandCache = {
+    database,
+    observation,
+    fallbackKey: runtimeFallbackKey(),
+  };
+  return rememberObservation(
+    observation,
+    APPLICATION_SNAPSHOT_STORE_NAMES.every(
+      (store) =>
+        !observation.roots.get(store)?.synthetic &&
+        observation.checkpoints.get(store) != null,
+    ),
+  );
+}
+export async function commitDayCommandSnapshot(
+  data: AppData,
+  expectedRoots: object,
+  target: DayStorageTarget,
+): Promise<void> {
+  await commitApplicationSnapshotAtomically(
+    data,
+    {
+      expectedRoots,
+      changedStoresOnly: true,
+    },
+    target,
+  );
+}
+export async function readApplicationSnapshot(
+  options: { shareVerified?: boolean; prepareScopedCommands?: boolean } = {},
+): Promise<ApplicationSnapshotRead> {
+  let observation = await observeAppDataRestoreState();
+  if (
+    options.prepareScopedCommands &&
+    !observation.consistencyMissing &&
+    !observation.runtimeCandidates.length &&
+    (dayRecordStores.some(
+      (store) => !observation.dayRecords.get(store)?.head.authenticatedRoots,
+    ) ||
+      [...sidecarRecordStores, STORES.MAP_DATA].some(
+        (store) =>
+          observation.scopeReady.get(store) !==
+          observation.roots.get(store)?.revision,
+      ))
+  ) {
+    const captured = rememberObservation(observation);
+    await commitApplicationSnapshotAtomically(captured.snapshot, {
+      expectedRoots: captured.expectedRoots,
+      changedStoresOnly: true,
+    });
+    observation = verifiedCommandCache!.observation;
+  }
+  verifiedCommandCache = {
+    database: await openDB(),
+    observation,
+    fallbackKey: runtimeFallbackKey(),
+  };
+  return rememberObservation(observation, options.shareVerified === true);
 }
 export async function commitApplicationSnapshotAtomically(
   data: AppData,
   options: AtomicSnapshotOptions = {},
+  dayTarget?: DayStorageTarget,
 ): Promise<void> {
-  assertEventConsistency(data.eventConsistency);
+  const verifiedCommand =
+    !!dayTarget &&
+    !!options.expectedRoots &&
+    dayCommandObservations.has(options.expectedRoots);
+  if (!verifiedCommand) assertEventConsistency(data.eventConsistency);
   const ownedObservation = options.expectedRoots
     ? applicationSnapshotObservations.get(options.expectedRoots)
     : undefined;
@@ -445,15 +737,23 @@ export async function commitApplicationSnapshotAtomically(
     ownedObservation.checkpoints.get(STORES.MAP_DATA) != null &&
     mapDescriptor?.enumerable === true &&
     "value" in mapDescriptor &&
-    storedValuesEqual(mapDescriptor.value, ownedObservation.snapshot.mapData);
+    (verifiedCommand
+      ? mapDescriptor.value === ownedObservation.snapshot.mapData
+      : storedValuesEqual(
+          mapDescriptor.value,
+          ownedObservation.snapshot.mapData,
+        ));
   // Capture all mutable caller data before awaiting. Only a private, previously
   // validated and unchanged map may bypass full restore preparation.
-  const stableData: AppData = reuseUnchangedMap
-    ? {
-        ...structuredClone({ ...data, mapData: {} }),
-        mapData: ownedObservation.snapshot.mapData,
-      }
-    : structuredClone(data);
+  const stableData: AppData =
+    verifiedCommand && ownedObservation
+      ? (captureCommandChanges(ownedObservation.snapshot, data) as AppData)
+      : reuseUnchangedMap
+        ? {
+            ...structuredClone({ ...data, mapData: {} }),
+            mapData: ownedObservation.snapshot.mapData,
+          }
+        : structuredClone(data);
   const stableMapData = reuseUnchangedMap
     ? (stableData.mapData as MapDataStore)
     : normalizeMapDataForPersistence(stableData.mapData as MapDataStore);
@@ -517,17 +817,142 @@ export async function commitApplicationSnapshotAtomically(
       (storeName) =>
         !options.changedStoresOnly ||
         options.migration ||
+        (!dayTarget &&
+          dayRecordStores.includes(storeName) &&
+          !observation.dayRecords.get(storeName)?.head.authenticatedRoots) ||
+        (!dayTarget &&
+          storeName === STORES.MAP_DATA &&
+          observation.scopeReady.get(storeName) !==
+            observation.roots.get(storeName)?.revision) ||
         observation.roots.get(storeName)?.synthetic ||
         !observation.checkpoints.get(storeName) ||
-        !storedValuesEqual(
-          observation.snapshot[storeName],
-          restorePayloads.get(storeName),
-        ),
+        !(verifiedCommand
+          ? semanticEqual(
+              observation.snapshot[storeName],
+              restorePayloads.get(storeName),
+            )
+          : storedValuesEqual(
+              observation.snapshot[storeName],
+              restorePayloads.get(storeName),
+            )),
     ),
   );
   // A confirmed save remains a real write even when its values already match.
   // Keep failure/retry behavior without rewriting large unchanged lists or maps.
   if (changedStores.size === 0) changedStores.add(STORES.DAY_MODES);
+  const dayRecordWrites = new Map<StoreName, DayRecordWrite>();
+  for (const storeName of changedStores) {
+    if (dayTarget) {
+      const before = observation.snapshot[storeName];
+      const after = stableData[storeName];
+      if (!dayRecordStores.includes(storeName) && !semanticEqual(before, after))
+        throw new Error("Day commands cannot modify this store.");
+      for (const eventName of new Set([
+        ...Object.keys(before),
+        ...Object.keys(after),
+      ]))
+        if (
+          eventName !== dayTarget.eventName &&
+          !semanticEqual(before[eventName], after[eventName])
+        )
+          throw new Error("Day commands cannot modify another event.");
+    }
+    if (!dayRecordStores.includes(storeName)) continue;
+    const state = observation.dayRecords.get(storeName);
+
+    let write: DayRecordWrite;
+    if (dayTarget) {
+      const eventName = dayTarget.eventName;
+      const previous = observation.snapshot[storeName][eventName] as
+        | Record<string, unknown>
+        | undefined;
+      const next = stableData[storeName][eventName] as
+        | Record<string, unknown>
+        | undefined;
+      const consistency = storeName === STORES.EVENT_CONSISTENCY;
+      const before = consistency
+        ? (previous?.days as Record<string, unknown> | undefined)
+        : previous;
+      const after = consistency
+        ? (next?.days as Record<string, unknown> | undefined)
+        : next;
+      const changes: Array<{
+        path: string[];
+        present: boolean;
+        value?: unknown;
+      }> = [];
+      if (!previous && next)
+        changes.push({
+          path: [],
+          present: true,
+          value: consistency ? { ...next, days: {} } : {},
+        });
+      if (previous && !next) changes.push({ path: [], present: false });
+      for (const key of new Set([
+        ...Object.keys(before ?? {}),
+        ...Object.keys(after ?? {}),
+      ])) {
+        if (semanticEqual(before?.[key], after?.[key])) continue;
+        const inTarget = dayScopeDays(dayTarget).some((targetDay) =>
+          consistency ||
+          storeName === STORES.DAY_MODES ||
+          storeName === STORES.EXECUTE_MODE_ITEMS
+            ? sameDay(key, targetDay)
+            : key.startsWith(MAPLESS_HALL_KEY + ":")
+              ? sameDay(key.slice(MAPLESS_HALL_KEY.length + 1), targetDay)
+              : normalizeMapDay(key) === normalizeMapDay(targetDay),
+        );
+        if (!inTarget)
+          throw new Error("Day commands cannot modify another date.");
+        changes.push({
+          path: consistency ? ["days", key] : [key],
+          present: Object.prototype.hasOwnProperty.call(after ?? {}, key),
+          value: after?.[key],
+        });
+      }
+      if (consistency && previous && next) {
+        const outside = (value: Record<string, unknown>) => ({
+          ...value,
+          days: undefined,
+          legacyPending: (
+            value.legacyPending as Array<{ sourceDayKey: string | null }>
+          ).filter(
+            (entry) =>
+              entry.sourceDayKey !== null &&
+              !matchesScopeDay(dayTarget, entry.sourceDayKey),
+          ),
+        });
+        if (!semanticEqual(outside(previous), outside(next)))
+          throw new Error(
+            "Day commands cannot modify event-wide consistency settings.",
+          );
+        if (
+          !semanticEqual(
+            { ...previous, days: undefined },
+            { ...next, days: undefined },
+          )
+        )
+          changes.push({
+            path: [],
+            present: true,
+            value: { ...next, days: {} },
+          });
+      }
+      write = state
+        ? await patchDayRecordStore(storeName, state, eventName, changes)
+        : await partitionDayRecordStore(
+            storeName,
+            stableData[storeName] as Record<string, unknown>,
+          );
+    } else {
+      write = await partitionDayRecordStore(
+        storeName,
+        stableData[storeName] as Record<string, unknown>,
+      );
+    }
+    dayRecordWrites.set(storeName, write);
+    restorePayloads.set(storeName, write.state.head);
+  }
   const preparedMetadata = new Map<StoreName, StoredPersistenceMetadata>();
   const preparedCheckpoints = new Map<StoreName, PersistenceCheckpoint>();
   await Promise.all(
@@ -564,6 +989,39 @@ export async function commitApplicationSnapshotAtomically(
     ? buildMapDataPuts(stableMapData)
     : [];
   const mapPutKeys = new Set(mapPuts.map(({ key }) => key));
+  const sidecars = new Map<
+    StoreName,
+    Awaited<ReturnType<typeof prepareSidecarRecords>>
+  >();
+  if (!dayTarget)
+    for (const store of sidecarRecordStores) {
+      if (
+        changedStores.has(store) ||
+        observation.scopeReady.get(store) !==
+          observation.roots.get(store)?.revision
+      ) {
+        sidecars.set(
+          store,
+          await prepareSidecarRecords(
+            store,
+            stableData[store] as Record<string, unknown>,
+            observation.scopeReady.get(store) ===
+              observation.roots.get(store)?.revision
+              ? (observation.snapshot[store] as Record<string, unknown>)
+              : undefined,
+          ),
+        );
+      }
+    }
+  const mapRevision =
+    preparedMetadata.get(STORES.MAP_DATA)?.revision ??
+    observation.roots.get(STORES.MAP_DATA)!.revision;
+  const mapScopeRoots =
+    !dayTarget &&
+    (changedStores.has(STORES.MAP_DATA) ||
+      observation.scopeReady.get(STORES.MAP_DATA) !== mapRevision)
+      ? await prepareMapScopeRoots(stableMapData, mapRevision)
+      : undefined;
 
   await new Promise<void>((resolve, reject) => {
     let transaction: IDBTransaction;
@@ -583,7 +1041,11 @@ export async function commitApplicationSnapshotAtomically(
     const currentMetadata = new Map<StoreName, unknown>();
     const currentCheckpoints = new Map<StoreName, unknown>();
     let currentMapEntries: Record<string, unknown> | null = null;
-    let remainingReads = APPLICATION_SNAPSHOT_STORE_NAMES.length * 3 + 3;
+    const currentDayRecords = new Map<StoreName, Map<string, unknown>>();
+    let remainingReads =
+      APPLICATION_SNAPSHOT_STORE_NAMES.length * (verifiedCommand ? 2 : 3) +
+      3 +
+      (verifiedCommand ? 0 : observation.dayRecords.size);
     let currentEventGenerations: unknown;
     let currentJournal: unknown;
     let currentArchive: unknown;
@@ -689,12 +1151,70 @@ export async function commitApplicationSnapshotAtomically(
             ),
           );
         }
+        for (const [store, sidecar] of sidecars) {
+          enqueueSidecarRecords(
+            transaction.objectStore(store),
+            controlStore,
+            store,
+            sidecar,
+            preparedMetadata.get(store)?.revision ??
+              observation.roots.get(store)!.revision,
+            trackRequest,
+          );
+        }
+        if (mapScopeRoots)
+          enqueueMapScopeRoots(
+            controlStore,
+            mapScopeRoots,
+            mapRevision,
+            Object.keys(observation.snapshot.mapData),
+            trackRequest,
+          );
+        for (const [store, write] of dayRecordWrites)
+          enqueueDayRootDigests(
+            controlStore,
+            store,
+            write,
+            observation.dayRecords.get(store)?.records,
+            trackRequest,
+          );
         APPLICATION_SNAPSHOT_STORE_NAMES.forEach((storeName) => {
           const observed = observation.roots.get(storeName);
           if (!observed)
             throw new Error(`Missing restore state for ${storeName}.`);
           const changed = changedStores.has(storeName);
-          if (storeName === STORES.MAP_DATA) {
+          if (!verifiedCommand && observation.dayRecords.has(storeName))
+            assertDayRecordsUnchanged(
+              observation.dayRecords.get(storeName)!.records,
+              currentDayRecords.get(storeName)!,
+            );
+          if (verifiedCommand) {
+            const metadata = currentMetadata.get(storeName);
+            if (
+              !isStoredPersistenceMetadata(metadata, storeName, DATA_KEY) ||
+              !immutableObservedRootFieldsMatch(metadata, observed)
+            )
+              throw new PersistenceConflictError(
+                `${storeName} changed after the verified command read.`,
+              );
+            if (changed) {
+              if (storeName === STORES.MAP_DATA)
+                throw new Error("Day commands cannot modify map geometry.");
+              const dayWrite = dayRecordWrites.get(storeName);
+              if (dayWrite)
+                enqueueDayRecordWrite(
+                  transaction.objectStore(storeName),
+                  dayWrite,
+                  trackRequest,
+                );
+              else
+                trackRequest(
+                  transaction
+                    .objectStore(storeName)
+                    .put(restorePayloads.get(storeName), DATA_KEY),
+                );
+            }
+          } else if (storeName === STORES.MAP_DATA) {
             const currentEntries = currentMapEntries;
             if (currentEntries === null)
               throw new Error("Missing mapData restore CAS snapshot.");
@@ -725,12 +1245,21 @@ export async function commitApplicationSnapshotAtomically(
               currentMetadata.get(storeName),
               observed,
             );
-            if (changed)
-              trackRequest(
-                transaction
-                  .objectStore(storeName)
-                  .put(restorePayloads.get(storeName), DATA_KEY),
-              );
+            if (changed) {
+              const dayWrite = dayRecordWrites.get(storeName);
+              if (dayWrite)
+                enqueueDayRecordWrite(
+                  transaction.objectStore(storeName),
+                  dayWrite,
+                  trackRequest,
+                );
+              else
+                trackRequest(
+                  transaction
+                    .objectStore(storeName)
+                    .put(restorePayloads.get(storeName), DATA_KEY),
+                );
+            }
           }
           assertCurrentCheckpointMatchesExpected(
             storeName,
@@ -810,6 +1339,31 @@ export async function commitApplicationSnapshotAtomically(
           commitIfReady();
         };
 
+        if (verifiedCommand) return;
+        if (observation.dayRecords.has(storeName)) {
+          const rows = new Map<string, unknown>();
+          const cursorRequest = transaction
+            .objectStore(storeName)
+            .openCursor(
+              IDBKeyRange.bound(
+                DAY_RECORD_PREFIX,
+                DAY_RECORD_PREFIX + "\uffff",
+              ),
+            );
+          cursorRequest.onerror = () => {
+            failure = failure ?? cursorRequest.error;
+          };
+          cursorRequest.onsuccess = () => {
+            const cursor = cursorRequest.result;
+            if (cursor) {
+              rows.set(String(cursor.key), cursor.value);
+              cursor.continue();
+            } else {
+              currentDayRecords.set(storeName, rows);
+              commitIfReady();
+            }
+          };
+        }
         if (storeName === STORES.MAP_DATA) {
           const mapEntries: Record<string, unknown> = {};
           const mapCursor = transaction.objectStore(storeName).openCursor();
@@ -847,6 +1401,10 @@ export async function commitApplicationSnapshotAtomically(
     }
   });
 
+  const nextDayRecords = new Map(observation.dayRecords);
+  dayRecordWrites.forEach((write, store) =>
+    nextDayRecords.set(store, adoptDayRecordWrite(write)),
+  );
   preparedMetadata.forEach((metadata, storeName) => {
     const checkpoint = preparedCheckpoints.get(storeName);
     if (!checkpoint) {
@@ -867,6 +1425,52 @@ export async function commitApplicationSnapshotAtomically(
     );
   });
   cleanupRuntimeCandidateSnapshots(observation.runtimeCandidates);
+  if (!options.migration) {
+    const roots = new Map(observation.roots),
+      checkpoints = new Map(observation.checkpoints);
+    preparedMetadata.forEach((metadata, store) => {
+      roots.set(store, metadata);
+      checkpoints.set(store, preparedCheckpoints.get(store)!);
+    });
+    verifiedCommandCache = {
+      database,
+      observation: {
+        ...observation,
+        roots,
+        checkpoints,
+        snapshot: stableData,
+        scopeReady: new Map([
+          ...observation.scopeReady,
+          ...[...sidecars.keys()].map(
+            (store) =>
+              [
+                store,
+                preparedMetadata.get(store)?.revision ??
+                  observation.roots.get(store)!.revision,
+              ] as const,
+          ),
+          ...(mapScopeRoots ? [[STORES.MAP_DATA, mapRevision] as const] : []),
+        ]),
+        dayRecords: nextDayRecords,
+        consistencyMissing: false,
+        mapDataNormalized: true,
+        eventGenerations: Object.fromEntries(
+          [
+            ...new Set([
+              ...Object.keys(observation.eventGenerations),
+              ...(options.invalidatedEvents ?? []),
+            ]),
+          ].map((event) => [
+            event,
+            (observation.eventGenerations[event] ?? 0) +
+              (options.invalidatedEvents?.includes(event) ? 1 : 0),
+          ]),
+        ),
+        runtimeCandidates: [],
+      },
+      fallbackKey: runtimeFallbackKey(),
+    };
+  } else verifiedCommandCache = undefined;
 }
 
 /** Compatibility entry point for backup restore callers. */

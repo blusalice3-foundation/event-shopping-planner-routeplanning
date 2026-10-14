@@ -404,3 +404,40 @@ describe("useMapRouteCommands", () => {
     expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
   });
 });
+
+it("sends viewport cleanup for the captured source date without using the whole-state setter", () => {
+  const harness = createHarness();
+  const requestMutation = vi.fn().mockResolvedValue({});
+  const { result } = renderHook(() =>
+    useMapRouteCommands({ ...harness.ports, requestMutation }),
+  );
+  const before = harness.stores.mapViewportSettings;
+  act(() =>
+    result.current.updateMapViewport({
+      zoomLevel: 100,
+      offsetX: 4,
+      offsetY: 5,
+    }),
+  );
+  expect(requestMutation).not.toHaveBeenCalled();
+  act(() =>
+    result.current.updateMapViewport({
+      zoomLevel: 125,
+      offsetX: 15,
+      offsetY: 25,
+    }),
+  );
+  expect(harness.stores.mapViewportSettings).toBe(before);
+  expect(requestMutation).toHaveBeenCalledWith(
+    expect.objectContaining({
+      events: [EVENT],
+      dayMutation: {
+        kind: "map-viewport",
+        eventName: EVENT,
+        day: DAY_ONE,
+        mapKey: MAP_ONE,
+        viewport: { zoomLevel: 125, offsetX: 15, offsetY: 25 },
+      },
+    }),
+  );
+});

@@ -1805,7 +1805,8 @@ const MapView: React.FC<MapViewProps> = ({
   return (
     <div
       data-route-pending={routeCalculation.pending ? "true" : "false"}
-      className="relative h-[calc(100vh-140px)] overflow-hidden bg-slate-100 dark:bg-slate-900"
+      data-route-item-count={mapInsertRoutePoints.length}
+      className="relative flex h-[calc(100vh-140px)] flex-col overflow-hidden bg-slate-100 dark:bg-slate-900"
     >
       {(waitingRouteInsert || routeCalculation.error) && (
         <p
@@ -1867,8 +1868,22 @@ const MapView: React.FC<MapViewProps> = ({
           {zoomLevel}%
         </div>
       </div>
+      {visitMergeNotice && (
+        <div
+          role="status"
+          className="absolute left-4 top-4 z-30 max-w-sm rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 shadow-lg dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100"
+        >
+          {visitMergeNotice}
+        </div>
+      )}
+      {hasRouteDiagnosticIssue(routeDiagnostics) && (
+        <RouteDiagnosticsOverlay diagnostics={routeDiagnostics} />
+      )}
       {mapRouteInsertPending && (
-        <div className="absolute left-4 top-4 z-20 max-w-sm rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-lg dark:border-slate-700 dark:bg-slate-800">
+        <div
+          role="status"
+          className="shrink-0 rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-lg dark:border-slate-700 dark:bg-slate-800"
+        >
           <div className="font-medium text-slate-900 dark:text-slate-100">
             {mapRouteInsertPending.message}
           </div>
@@ -1886,17 +1901,9 @@ const MapView: React.FC<MapViewProps> = ({
           </button>
         </div>
       )}
-      {visitMergeNotice && (
-        <div
-          role="status"
-          className="absolute left-4 top-4 z-30 max-w-sm rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 shadow-lg dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100"
-        >
-          {visitMergeNotice}
-        </div>
-      )}
       {mapRouteInsertPending &&
         mapRouteInsertPending.duplicateCandidates.length > 0 && (
-          <div className="absolute left-4 top-28 z-20 max-w-sm rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+          <div className="shrink-0 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
             {mapRouteInsertPending.duplicateCandidates.map((candidate) => (
               <button
                 key={`${candidate.itemId}-${candidate.order}`}
@@ -1909,48 +1916,47 @@ const MapView: React.FC<MapViewProps> = ({
             ))}
           </div>
         )}
-      {hasRouteDiagnosticIssue(routeDiagnostics) && (
-        <RouteDiagnosticsOverlay diagnostics={routeDiagnostics} />
-      )}
-      {/* Map canvas */}
-      <MapCanvas
-        mapData={mapDataForCanvas}
-        mapName={mapName}
-        eventDate={mapDayName}
-        items={filteredItems}
-        executeModeItemIds={filteredExecuteModeItemIds}
-        zoomLevel={zoomLevel}
-        isRouteVisible={
-          isRouteVisible && (halls.length === 0 || selectedHallId !== "all")
-        }
-        routePointsOverride={routePointsForCanvas}
-        routeSegmentsOverride={routeSegmentsForCanvas}
-        routeInsertMissMapDataOverride={routeInsertMissMapDataForCanvas}
-        forceRouteVisible={mapRouteInsertPending !== null}
-        routeInsertSelectionActive={mapRouteInsertPending !== null}
-        onRouteInsertHit={handleRouteInsertHit}
-        onRouteInsertMiss={handleRouteInsertMiss}
-        onCellClick={handleCellClick}
-        selectedHall={
-          selectedHallId !== "all"
-            ? halls.find((h) => h.id === selectedHallId)
-            : undefined
-        }
-        vertexSelectionMode={vertexSelectionMode}
-        cellSelectionMode={cellSelectionMode}
-        highlightedCell={highlightedCell}
-        onZoomChange={setZoomLevel}
-        rotationAngle={rotationAngle}
-        onRotationAngleChange={onRotationAngleChange}
-        selectionGuideOptions={selectionGuideOptions}
-        initialOffset={
-          initialViewport
-            ? { x: initialViewport.offsetX, y: initialViewport.offsetY }
-            : undefined
-        }
-        offsetRef={canvasOffsetRef}
-        numberCellOutlineStyle={numberCellOutlineStyle}
-      />
+      <div className="relative min-h-0 flex-1">
+        {/* Map canvas */}
+        <MapCanvas
+          mapData={mapDataForCanvas}
+          mapName={mapName}
+          eventDate={mapDayName}
+          items={filteredItems}
+          executeModeItemIds={filteredExecuteModeItemIds}
+          zoomLevel={zoomLevel}
+          isRouteVisible={
+            isRouteVisible && (halls.length === 0 || selectedHallId !== "all")
+          }
+          routePointsOverride={routePointsForCanvas}
+          routeSegmentsOverride={routeSegmentsForCanvas}
+          routeInsertMissMapDataOverride={routeInsertMissMapDataForCanvas}
+          forceRouteVisible={mapRouteInsertPending !== null}
+          routeInsertSelectionActive={mapRouteInsertPending !== null}
+          onRouteInsertHit={handleRouteInsertHit}
+          onRouteInsertMiss={handleRouteInsertMiss}
+          onCellClick={handleCellClick}
+          selectedHall={
+            selectedHallId !== "all"
+              ? halls.find((h) => h.id === selectedHallId)
+              : undefined
+          }
+          vertexSelectionMode={vertexSelectionMode}
+          cellSelectionMode={cellSelectionMode}
+          highlightedCell={highlightedCell}
+          onZoomChange={setZoomLevel}
+          rotationAngle={rotationAngle}
+          onRotationAngleChange={onRotationAngleChange}
+          selectionGuideOptions={selectionGuideOptions}
+          initialOffset={
+            initialViewport
+              ? { x: initialViewport.offsetX, y: initialViewport.offsetY }
+              : undefined
+          }
+          offsetRef={canvasOffsetRef}
+          numberCellOutlineStyle={numberCellOutlineStyle}
+        />
+      </div>
       {/* Cell detail popup */}
       <CellItemsPopup
         isOpen={popupState.isOpen}

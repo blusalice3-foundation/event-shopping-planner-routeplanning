@@ -24,12 +24,19 @@ function routeGeometryInputs(job: RouteJob): unknown[] {
         ];
 }
 
+function routeJobEnabled(job: RouteJob): boolean {
+  if (job.kind === "segments") return job.enabled;
+  if (job.kind === "focus")
+    return job.enabled !== false && job.mapData !== null;
+  return !!(job.params.includeDisplayRoute || job.params.includeMapInsertRoute);
+}
 /** Never expose a stale route. Terminating an obsolete worker interrupts its search. */
 export function useRouteCalculation<K extends RouteJob["kind"]>(
   job: RouteJob & { kind: K },
 ) {
-  // Build the key only when geometry inputs change, before entering the worker.
-  const geometryInputs = routeGeometryInputs(job);
+  const enabled = routeJobEnabled(job);
+  // Disabled routes must not scan geometry, construct a worker, or send a job.
+  const geometryInputs = enabled ? routeGeometryInputs(job) : [job.kind, false];
   const keyCache = useRef<{ inputs: unknown[]; key: string }>();
   if (
     !keyCache.current ||
@@ -37,7 +44,10 @@ export function useRouteCalculation<K extends RouteJob["kind"]>(
       (input, index) => input !== keyCache.current!.inputs[index],
     )
   )
-    keyCache.current = { inputs: geometryInputs, key: routeJobKey(job) };
+    keyCache.current = {
+      inputs: geometryInputs,
+      key: enabled ? routeJobKey(job) : `${job.kind}:disabled`,
+    };
   const key = keyCache.current.key;
   const requestNumber = useRef(0);
   const jobRef = useRef(job);
@@ -52,15 +62,23 @@ export function useRouteCalculation<K extends RouteJob["kind"]>(
   }>();
   const synchronous = useMemo(
     () =>
-      available
+      available || !enabled
         ? undefined
         : {
             key,
             result: calculateRouteJob(jobRef.current) as RouteJobResults[K],
           },
-    [available, key],
+    [available, enabled, key],
   );
   useEffect(() => {
+    if (!enabled) {
+      ++requestNumber.current;
+      workerRef.current?.terminate();
+      workerRef.current = null;
+      busyRef.current = false;
+      setCompleted(undefined);
+      return;
+    }
     if (!available) return;
     if (busyRef.current) {
       workerRef.current?.terminate();
@@ -124,7 +142,7 @@ export function useRouteCalculation<K extends RouteJob["kind"]>(
       // Ignore a reply arriving after the input changed but before the next request.
       if (workerRef.current) workerRef.current.onmessage = null;
     };
-  }, [available, key]);
+  }, [available, enabled, key]);
   useEffect(
     () => () => {
       workerRef.current?.terminate();
@@ -143,8 +161,8 @@ export function useRouteCalculation<K extends RouteJob["kind"]>(
     synchronous ?? (completed?.key === key ? completed : undefined);
   return {
     result: current?.result ?? placeholder,
-    pending: !current,
-    error: completed?.key === key ? completed.error : undefined,
+    pending: enabled && !current,
+    error: enabled && completed?.key === key ? completed.error : undefined,
     key,
   };
 }

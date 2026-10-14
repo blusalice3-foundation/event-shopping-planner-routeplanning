@@ -106,3 +106,42 @@ it("rejects a retired response when geometry returns to the same key", () => {
   act(() => current.onmessage!({ data: { key, result: [] } } as MessageEvent));
   expect(hook.result.current.pending).toBe(false);
 });
+
+it("does not inspect geometry or start a worker while disabled and discards cancelled results", () => {
+  vi.stubGlobal("Worker", TestWorker);
+  const geometry = {
+    ...map,
+    get cells() {
+      return map.cells;
+    },
+  };
+  const cells = vi.spyOn(geometry, "cells", "get");
+  const hook = renderHook(
+    ({ enabled }) =>
+      useRouteCalculation({
+        kind: "segments",
+        mapData: geometry,
+        points: [
+          { row: 1, col: 1 },
+          { row: 2, col: 2 },
+        ],
+        enabled,
+      }),
+    { initialProps: { enabled: false } },
+  );
+  expect(instances).toHaveLength(0);
+  expect(cells).not.toHaveBeenCalled();
+  expect(hook.result.current.pending).toBe(false);
+  hook.rerender({ enabled: true });
+  const worker = instances[0],
+    reply = worker.onmessage!;
+  const key = worker.postMessage.mock.calls[0][0].key;
+  hook.rerender({ enabled: false });
+  expect(worker.terminate).toHaveBeenCalledOnce();
+  act(() => reply({ data: { key, result: ["cancelled"] } } as MessageEvent));
+  expect(hook.result.current.result).toEqual([]);
+  expect(hook.result.current.pending).toBe(false);
+  hook.rerender({ enabled: true });
+  expect(instances).toHaveLength(2);
+  expect(hook.result.current.pending).toBe(true);
+});

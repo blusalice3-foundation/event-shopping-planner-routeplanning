@@ -1,6 +1,8 @@
+import { createBackupInWorker } from "./backupWorker";
 import { inspectConsistencyUpgrade } from "../db/consistencyUpgrade";
 import type {
   PersistenceCommandPort,
+  ApplicationDayScope,
   PersistenceSnapshot,
   PreferencePersistencePort,
 } from "../../app/ports/PersistenceCommandPort";
@@ -36,6 +38,9 @@ export type IndexedDbPersistenceCommandDelegate = Pick<
   | "renameEventAtomically"
 > & {
   commitItemContentEdits?: PersistenceCommandPort["commitItemContentEdits"];
+  commitDayMutation?: PersistenceCommandPort["commitDayMutation"];
+  readDayApplicationSnapshot?: PersistenceCommandPort["readDayApplicationSnapshot"];
+  commitDayApplicationSnapshot?: PersistenceCommandPort["commitDayApplicationSnapshot"];
   adoptRecoveryCandidate(
     candidate: Parameters<PersistenceCommandPort["adoptRecoveryCandidate"]>[0],
   ): Promise<unknown>;
@@ -84,10 +89,46 @@ export function createIndexedDbPersistenceCommandAdapter(
     };
   return {
     inspectConsistencyUpgrade,
+    ...(delegate.readDayApplicationSnapshot
+      ? {
+          readDayApplicationSnapshot: async (target: ApplicationDayScope) => {
+            const result = await delegate.readDayApplicationSnapshot!(target);
+            observed = result.snapshot;
+            return result;
+          },
+          commitDayApplicationSnapshot: async (
+            snapshot: PersistenceSnapshot,
+            expectedRoots: object,
+            target: ApplicationDayScope,
+          ) => {
+            const result = await delegate.commitDayApplicationSnapshot!(
+              snapshot,
+              expectedRoots,
+              target,
+            );
+            observed = result.snapshot;
+            return result;
+          },
+        }
+      : {}),
+    createBackupFile: createBackupInWorker,
     ...(delegate.commitItemContentEdits
       ? {
           commitItemContentEdits: async (...args) => {
             const result = await delegate.commitItemContentEdits!(...args);
+            if (result.status === "committed") observed = result.read.snapshot;
+            return result;
+          },
+        }
+      : {}),
+    ...(delegate.commitDayMutation
+      ? {
+          commitDayMutation: async (
+            ...args: Parameters<
+              NonNullable<PersistenceCommandPort["commitDayMutation"]>
+            >
+          ) => {
+            const result = await delegate.commitDayMutation!(...args);
             if (result.status === "committed") observed = result.read.snapshot;
             return result;
           },

@@ -1,3 +1,8 @@
+import {
+  DAY_RECORD_PREFIX,
+  dayRecordRootDigestKey,
+  partitionDayRecordStore,
+} from "../../src/persistence/db/dayRecordStorage";
 import ExcelJS from "exceljs";
 import type { PersistenceSnapshot } from "../../src/app/ports/PersistenceCommandPort";
 import { planEventRestore } from "../../src/features/consistency/domain/eventMutations";
@@ -106,11 +111,55 @@ async function stored(page: Page, store: string, key = "data") {
       });
       try {
         return await new Promise<unknown>((resolve, reject) => {
-          const request = database
+          const store = database
             .transaction(name, "readonly")
-            .objectStore(name)
-            .get(key);
-          request.onsuccess = () => resolve(request.result);
+            .objectStore(name);
+          const request = store.get(key);
+          request.onsuccess = () => {
+            const head = request.result;
+            if (
+              key !== "data" ||
+              head?.kind !== "event-shopping-planner-day-records"
+            ) {
+              resolve(head);
+              return;
+            }
+            const prefix = "__esp_internal__:day-record:v1:";
+            const rows: Array<{
+              eventName: string;
+              path: string[];
+              value: unknown;
+            }> = [];
+            const cursor = store.openCursor(
+              IDBKeyRange.bound(prefix, prefix + "\uffff"),
+            );
+            cursor.onerror = () => reject(cursor.error);
+            cursor.onsuccess = () => {
+              const row = cursor.result;
+              if (row) {
+                rows.push(row.value);
+                row.continue();
+                return;
+              }
+              const data: Record<string, Record<string, unknown>> = {};
+              for (const row of rows.filter((row) => !row.path.length))
+                Object.defineProperty(data, row.eventName, {
+                  value: row.value,
+                  enumerable: true,
+                });
+              for (const row of rows.filter((row) => row.path.length)) {
+                const parent =
+                  row.path.length === 2
+                    ? (data[row.eventName].days as Record<string, unknown>)
+                    : data[row.eventName];
+                Object.defineProperty(parent, row.path.at(-1)!, {
+                  value: row.value,
+                  enumerable: true,
+                });
+              }
+              resolve(data);
+            };
+          };
           request.onerror = () => reject(request.error);
         });
       } finally {
@@ -1372,41 +1421,44 @@ test.describe("spreadsheet and save-conflict connections", () => {
   }
 
   async function forceThreeSnapshotConflicts(page: Page) {
-    await persistenceRealm(page).evaluate((name) => {
-      const original = IDBObjectStore.prototype.get;
-      let remaining = 3;
-      const state = { count: 0 };
-      Object.assign(globalThis, { __forcedConsistencyConflicts: state });
-      IDBObjectStore.prototype.get = function (key) {
-        const request = original.call(this, key);
-        if (
-          remaining > 0 &&
-          this.name === "eventLists" &&
-          key === "data" &&
-          this.transaction.mode === "readwrite" &&
-          this.transaction.objectStoreNames.contains("eventConsistency")
-        ) {
-          remaining--;
-          request.addEventListener(
-            "success",
-            () => {
-              // Change only the transaction's CAS observation; no corrupt value is written to the DB.
-              const value = structuredClone(request.result) as Record<
-                string,
-                Array<Record<string, unknown>>
-              >;
-              value[name][0].remarks = `concurrent writer ${++state.count}`;
-              Object.defineProperty(request, "result", { value });
-            },
-            { once: true },
-          );
-          if (remaining === 0) IDBObjectStore.prototype.get = original;
-        }
-        return request;
-      };
-    }, eventName);
+    await persistenceRealm(page).evaluate(
+      (metadataKey) => {
+        const original = IDBObjectStore.prototype.get;
+        let remaining = 3;
+        const state = { count: 0 };
+        Object.assign(globalThis, { __forcedConsistencyConflicts: state });
+        IDBObjectStore.prototype.get = function (key) {
+          const request = original.call(this, key);
+          if (
+            remaining > 0 &&
+            this.name === "syncQueue" &&
+            key === metadataKey &&
+            this.transaction.mode === "readwrite" &&
+            this.transaction.objectStoreNames.contains("eventConsistency")
+          ) {
+            remaining--;
+            request.addEventListener(
+              "success",
+              () => {
+                // Both whole snapshots and cached day commands CAS against this revision.
+                // Change only the observation; no corrupt value is written to IndexedDB.
+                const value = {
+                  ...request.result,
+                  revision: request.result.revision + 1,
+                };
+                state.count++;
+                Object.defineProperty(request, "result", { value });
+              },
+              { once: true },
+            );
+            if (remaining === 0) IDBObjectStore.prototype.get = original;
+          }
+          return request;
+        };
+      },
+      createPersistenceMetadataKey("eventLists", "data"),
+    );
   }
-
   async function forceSnapshotAbort(page: Page) {
     await persistenceRealm(page).evaluate(() => {
       const original = IDBObjectStore.prototype.put;
@@ -2106,7 +2158,7 @@ test("focus map shows mixed execution counts separately from candidates and the 
     .toEqual(expect.arrayContaining(["後始", "後1", "遅1", "候補1"]));
 });
 
-test("a standalone execute reorder writes only its store and survives reload", async ({
+test("a standalone execute reorder writes only its changed payload and survives reload", async ({
   page,
 }) => {
   const source = migrateLegacyConsistency(
@@ -2117,16 +2169,15 @@ test("a standalone execute reorder writes only its store and survives reload", a
   source.eventConsistency[eventName].days = {};
   await loadSavedSnapshot(page, source);
   await persistenceRealm(page).evaluate(() => {
-    const writes: string[][] = [];
+    const writes: string[] = [];
     Object.assign(globalThis, { __reorderTransactions: writes });
-    const original = IDBDatabase.prototype.transaction;
-    IDBDatabase.prototype.transaction = function (
+    const original = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (
       ...args: Parameters<typeof original>
     ) {
-      const transaction = original.apply(this, args);
-      if (args[1] === "readwrite")
-        writes.push(Array.from(transaction.objectStoreNames));
-      return transaction;
+      if (args[1] === "data" && this.name !== "syncQueue")
+        writes.push(this.name);
+      return original.apply(this, args);
     };
   });
   const row = page.locator('[data-item-id="2"]');
@@ -2136,18 +2187,10 @@ test("a standalone execute reorder writes only its store and survives reload", a
     .toMatchObject({ [eventName]: { "1日目": ["2", "1"] } });
   const writes = await persistenceRealm(page).evaluate(
     () =>
-      (globalThis as typeof globalThis & { __reorderTransactions: string[][] })
+      (globalThis as typeof globalThis & { __reorderTransactions: string[] })
         .__reorderTransactions,
   );
-  expect(writes.some((stores) => stores.includes("executeModeItems"))).toBe(
-    true,
-  );
-  expect(
-    writes.every(
-      (stores) =>
-        !stores.includes("eventLists") && !stores.includes("eventConsistency"),
-    ),
-  ).toBe(true);
+  expect(writes).toEqual(["executeModeItems"]);
   await page.reload();
   await expect(
     page.locator('input[aria-label="バックアップファイルを選択"]'),
@@ -2539,8 +2582,8 @@ test("confirmation disables cancellation, choices and repeated saving during its
         if (
           !intercepted &&
           this.mode === "readonly" &&
-          this.objectStoreNames.contains("eventConsistency") &&
-          this.objectStoreNames.contains("eventLists")
+          // A cached day read verifies revisions/checkpoints in the control store.
+          this.objectStoreNames.contains("syncQueue")
         ) {
           intercepted = true;
           descriptor.set!.call(this, (event: Event) => {
@@ -2702,12 +2745,13 @@ async function addDurableDuplicateMode(
   page: Page,
   mode: "edit" | "execute" = "execute",
 ) {
-  // Simulate another writer using the application's integrity metadata generators.
+  // Simulate a DB 10 writer: payload, authenticated date index, metadata and checkpoint commit together.
   const modes = (await stored(page, "dayModes")) as Record<
     string,
     Record<string, string>
   >;
   modes[eventName][" 1日目　"] = mode;
+  const write = await partitionDayRecordStore("dayModes", modes);
   const metadataKey = createPersistenceMetadataKey("dayModes", "data");
   const checkpointKey = createPersistenceCheckpointKey("dayModes", "data");
   const previous = (await stored(
@@ -2723,7 +2767,7 @@ async function addDurableDuplicateMode(
   const metadata = await prepareMetadataForPayload(
     "dayModes",
     "data",
-    modes,
+    write.state.head,
     previous.revision,
   );
   const checkpoint = createNextPersistenceCheckpoint(
@@ -2733,7 +2777,16 @@ async function addDurableDuplicateMode(
     previousCheckpoint,
   );
   await page.evaluate(
-    async ({ modes, metadataKey, checkpointKey, metadata, checkpoint }) => {
+    async ({
+      head,
+      records,
+      roots,
+      prefix,
+      metadataKey,
+      checkpointKey,
+      metadata,
+      checkpoint,
+    }) => {
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open("EventShoppingPlannerDB");
         request.onsuccess = () => resolve(request.result);
@@ -2745,7 +2798,12 @@ async function addDurableDuplicateMode(
             ["dayModes", "syncQueue"],
             "readwrite",
           );
-          transaction.objectStore("dayModes").put(modes, "data");
+          const payload = transaction.objectStore("dayModes");
+          payload.delete(IDBKeyRange.bound(prefix, prefix + "\uffff"));
+          for (const [key, record] of records) payload.put(record, key);
+          payload.put(head, "data");
+          for (const [key, digest] of roots)
+            transaction.objectStore("syncQueue").put(digest, key);
           transaction.objectStore("syncQueue").put(metadata, metadataKey);
           transaction.objectStore("syncQueue").put(checkpoint, checkpointKey);
           transaction.oncomplete = () => resolve();
@@ -2756,7 +2814,24 @@ async function addDurableDuplicateMode(
         database.close();
       }
     },
-    { modes, metadataKey, checkpointKey, metadata, checkpoint },
+    {
+      head: write.state.head,
+      records: [...write.puts],
+      roots: [...write.puts.values()]
+        .filter((record) => record.path.length === 0)
+        .map(
+          (record) =>
+            [
+              dayRecordRootDigestKey("dayModes", record.eventName),
+              record.digest,
+            ] as const,
+        ),
+      prefix: DAY_RECORD_PREFIX,
+      metadataKey,
+      checkpointKey,
+      metadata,
+      checkpoint,
+    },
   );
 }
 
@@ -3940,5 +4015,97 @@ for (const outcome of ["save", "cancel", "abort"] as const) {
       page.locator('input[aria-label="バックアップファイルを選択"]'),
     ).toBeAttached();
     await check();
+  });
+}
+
+for (const choice of ["保存して確定", "キャンセル（破棄）"] as const) {
+  test(`visit long press commits source visits and a different target mode with scoped commands: ${choice}`, async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const state = window as unknown as { visitDayCommands: unknown[] };
+      state.visitDayCommands = [];
+      const NativeWorker = window.Worker;
+      window.Worker = class extends NativeWorker {
+        constructor(url: string | URL, options?: WorkerOptions) {
+          super(url, options);
+          if (!String(url).includes("persistence.worker")) return;
+          const send = this.postMessage.bind(this);
+          this.postMessage = (message: {
+            method?: string;
+            args?: unknown[];
+          }) => {
+            if (message.method) state.visitDayCommands.push(message);
+            send(message);
+          };
+        }
+      };
+    });
+    await restore(page, mapBackup());
+    const beforeModes = (await stored(page, "dayModes")) as Record<
+      string,
+      Record<string, string>
+    >;
+    await reorderVisitList(page);
+    await page.evaluate(() => {
+      (window as unknown as { visitDayCommands: unknown[] }).visitDayCommands =
+        [];
+    });
+    await page.getByRole("button", { name: /^2日目/ }).hover();
+    await page.mouse.down();
+    await expect(
+      page.getByRole("heading", { name: "変更を保存しますか？" }),
+    ).toBeVisible();
+    await page.mouse.up();
+    await page.getByRole("button", { name: choice, exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "変更を保存しますか？" }),
+    ).toBeHidden();
+    const order = choice === "保存して確定" ? ["2", "1"] : ["1", "2"];
+    await expect
+      .poll(() => stored(page, "executeModeItems"))
+      .toEqual({
+        [eventName]: { "1日目": order, "2日目": ["3"] },
+      });
+    const modes = {
+      [eventName]: { ...beforeModes[eventName], "2日目": "execute" },
+    };
+    await expect.poll(() => stored(page, "dayModes")).toEqual(modes);
+    const commands = await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            visitDayCommands: Array<{ method: string; args: unknown[] }>;
+          }
+        ).visitDayCommands,
+    );
+    expect(commands.map((command) => command.method)).toEqual(["day", "day"]);
+    expect(commands[1]).toMatchObject({
+      method: "day",
+      args: [
+        {
+          kind: "map-viewport",
+          eventName,
+          day: "1日目",
+          mapKey: "1日目マップ",
+        },
+        expect.any(String),
+        expect.any(Object),
+      ],
+    });
+    expect(commands[0]).toMatchObject({
+      method: "day",
+      args: [
+        { kind: "visits", eventName, day: "1日目", modeDay: "2日目" },
+        expect.any(String),
+        expect.any(Object),
+      ],
+    });
+    await page.reload();
+    await page.getByText(eventName, { exact: true }).click();
+    expect(await stored(page, "executeModeItems")).toEqual({
+      [eventName]: { "1日目": order, "2日目": ["3"] },
+    });
+    expect(await stored(page, "dayModes")).toEqual(modes);
   });
 }

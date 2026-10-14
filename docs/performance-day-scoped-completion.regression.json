@@ -1,0 +1,801 @@
+{
+  "schemaVersion": 1,
+  "releaseIdentity": {
+    "buildId": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+    "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+    "outerAgentUrl": "/assets/outer-recovery-agent.js",
+    "pwaLifecycle": "prompt-close-all-v1",
+    "releaseRole": "standard",
+    "requiredDbCompatibilityFingerprint": "b3c773424e66b8e0c4cb9faa4fe42b0e55aa5b45a3243cad5ec92bf70b7bba9f",
+    "roleEntrySha256": "d0e003a3b1c964577eab08e7640651cda2607cb2dd13385c9036b3decb1afb73",
+    "roleEntryUrl": "/assets/release-role.js",
+    "schemaVersion": 1,
+    "serviceWorkerSha256": "9534a173bd672489488cc3c1657cf94dfa459953da6b78c232cc8c25151b9b3f",
+    "serviceWorkerUrl": "/sw.js",
+    "sourceSha": "dd2ff879213e292c0140dad08aae5ad60f34d511",
+    "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+  },
+  "reportFiles": [
+    ".tmp-day-completion-browser-all-verified.json",
+    ".tmp-day-completion-adapters-complete.json",
+    ".tmp-day-completion-browser-remaining.json"
+  ],
+  "uniqueTests": 129,
+  "passed": true,
+  "tests": [
+    {
+      "file": "a11y-flows.spec.ts",
+      "title": "@a11y representative list, focus, map, and dialog flows have no moderate-or-higher violations",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "a11y-flows.spec.ts",
+      "title": "@layout focus keeps the complete space header pinned across map, layout, and display zoom changes",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "a day-tab long press can confirm focus mode through a day merge and reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "a failed long-press save keeps the current day and persisted modes",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "a focused standalone merge shows its saved mode and handles abort without losing records",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "a focused standalone merge shows its saved mode and handles cancel without losing records",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "a focused standalone merge shows its saved mode and handles save without losing records",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "a migrated database starts when legacy localStorage reads fail",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "a stale edit asks before replacing another tab's memo and reconfirms further changes",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "a standalone execute reorder writes only its changed payload and survives reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "another-tab equal replacement expires the old visit cancel and reopens from the restored baseline",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "another-tab equal replacement expires the old visit discard transition and reopens from the restored baseline",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "another-tab equal replacement expires the old visit reorder and reopens from the restored baseline",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "another-tab equal replacement expires the old visit save and reopens from the restored baseline",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "another-tab equal replacement expires the old visit undo and reopens from the restored baseline",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "block definition waits for renewed approval after another tab changes priority",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "confirmation disables cancellation, choices and repeated saving during its durable read",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "confirming a long press preserves the target mode when source-day merge abort occurs",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "confirming a long press preserves the target mode when source-day merge cancel occurs",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "day merge choices change the adopted order, mode, map and destination and survive reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "event-list navigation waits for the visit transition answer: キャンセル（破棄）",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "event-list navigation waits for the visit transition answer: 保存して確定",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "failed hall-order save keeps DB, screen and JSON unchanged: abort, discard, reorder",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "failed hall-order save keeps DB, screen and JSON unchanged: abort, discard, settings",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "failed hall-order save keeps DB, screen and JSON unchanged: abort, retry, reorder",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "failed hall-order save keeps DB, screen and JSON unchanged: abort, retry, settings",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "failed hall-order save keeps DB, screen and JSON unchanged: conflicts, discard, reorder",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "failed hall-order save keeps DB, screen and JSON unchanged: conflicts, discard, settings",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "failed hall-order save keeps DB, screen and JSON unchanged: conflicts, retry, reorder",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "failed hall-order save keeps DB, screen and JSON unchanged: conflicts, retry, settings",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "failed purchase survives a subsequent rename and its current values are confirmed",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "failed purchase survives a subsequent restore and its current values are confirmed",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "failed visit discard keeps event navigation, undo history and cancel baseline pending",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "focus map shows mixed execution counts separately from candidates and the current marker",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "full Excel keeps undated mapless legacy halls through Worker export and restore",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "hall-order save preserves mixed legacy metadata on split lists and reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "item editor shows location ambiguity separately and cancellation preserves items",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "item edits require a map selection before saving and preserve both maps on cancellation",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "item move renews approval after another tab changes its hidden source assignment: cancel",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "item move renews approval after another tab changes its hidden source assignment: save",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "JSON restore reviews duplicate day destination and mode before one atomic abort",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "JSON restore reviews duplicate day destination and mode before one atomic cancel",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "JSON restore reviews duplicate day destination and mode before one atomic save",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "legacy JSON restores atomically and target-day long press persists exactly once",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "legacy mixed hall order keeps the saved simple sequence in the editor after reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "legacy shared-map empty visits are retained for review after restore and reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "long press confirms settings-only duplicate days before changing the displayed day",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "map item edit priority change preserves newer purchases after saving and reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "map item edit priority change retains the purchase accepted while its save is pending",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "map reimport saves the chosen actual map and displays it after reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "map reimport skips impact review and preserves another selected map day",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "map selection waits for the visit transition answer: キャンセル（破棄）",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "map selection waits for the visit transition answer: 保存して確定",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "mode review is renewed after another tab resolves duplicate dates and can cancel",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "mode review is renewed after another tab resolves duplicate dates and can save",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "ordinary item edit carries its chosen simple hall through a selectable day merge",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "ordinary item edit reviews mode-only duplicate dates and handles abort atomically",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "ordinary item edit reviews mode-only duplicate dates and handles cancel atomically",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "ordinary item edit reviews mode-only duplicate dates and handles save atomically",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "ordinary mode change saves its confirmed default mode after a day merge and reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "ordinary mode change saves its confirmed edit mode after a day merge and reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "ordinary mode change saves its confirmed execute mode after a day merge and reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "ordinary mode change saves its confirmed focus mode after a day merge and reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "ordinary reorder reviews mode-only duplicate dates and handles abort atomically",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "ordinary reorder reviews mode-only duplicate dates and handles cancel atomically",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "ordinary reorder reviews mode-only duplicate dates and handles save atomically",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "priority text inside a hall ID keeps the hall name in the map order dialog",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "renaming a detailed hall preserves mixed order in every map and after reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "renaming a simple hall preserves mixed order in every map and after reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "save abort retains accepted purchase, JSON backup and explicit discard",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "save abort retains accepted purchase, JSON backup and explicit retry",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "save conflicts retains accepted purchase, JSON backup and explicit discard",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "save conflicts retains accepted purchase, JSON backup and explicit retry",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "search brings an initially unmounted item into view and repeats after another search",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "split legacy visit lists restore and remain separate after reorder and reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "spreadsheet items-only opens review after CSV success and persists the reviewed update",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "spreadsheet source-switch opens review after CSV success and persists the reviewed update",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "stale block edit never recreates maps removed by another tab's replacement: before apply, all maps",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "stale block edit never recreates maps removed by another tab's replacement: before apply, edited map",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "stale block edit never recreates maps removed by another tab's replacement: confirmation, all maps",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "stale block edit never recreates maps removed by another tab's replacement: confirmation, edited map",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "visit discard reviews settings-only duplicates introduced while open",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "visit opening merge abort preserves the previous data and can be retried",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "visit opening reviews contexts duplicate day keys before creating history",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "visit opening reviews execution duplicate day keys before creating history",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "visit opening reviews modes duplicate day keys before creating history",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "visit panel priority change preserves newer purchases after saving and reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "visit panel priority change retains the purchase accepted while its save is pending",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "visit reorder merge abort preserves the previous data and can be retried",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "visit reorder renews duplicate-day review after the saved modes change",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "visit reorder reviews settings-only duplicates introduced while open",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "cross-feature-consistency.spec.ts",
+      "title": "visit save reviews settings-only duplicates introduced while open",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "csp-full-flows.spec.ts",
+      "title": "downloads a browser-created Blob without a CSP violation",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "csp-full-flows.spec.ts",
+      "title": "handles a same-origin API error response without a CSP violation",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "csp-full-flows.spec.ts",
+      "title": "keeps a controlled offline reload violation-free",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "csp-full-flows.spec.ts",
+      "title": "keeps normal, controlled, and explicit update flows violation-free",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "csp-full-flows.spec.ts",
+      "title": "loads the emitted XLSX module Worker and receives INVALID_REQUEST",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "csp-full-flows.spec.ts",
+      "title": "renders recovery for mismatched versioned identity bytes without a CSP violation",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "foundation.spec.ts",
+      "title": "@a11y has no moderate, serious, or critical automated accessibility violations",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "foundation.spec.ts",
+      "title": "keeps the controlled application available during an offline reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "foundation.spec.ts",
+      "title": "loads the source-bound PWA without remote runtime dependencies",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "foundation.spec.ts",
+      "title": "persistence status visibility changes immediately and survives reload",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "local-css-presentation.spec.ts",
+      "title": "binds one local application stylesheet and statically hides loading",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "local-css-presentation.spec.ts",
+      "title": "keeps explicit light and dark computed visual signatures distinct",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "local-css-presentation.spec.ts",
+      "title": "prepaints every stored theme before the first rendered frame",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "local-css-presentation.spec.ts",
+      "title": "renders under print media and produces a valid in-memory PDF",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "local-css-presentation.spec.ts",
+      "title": "renders without horizontal overflow at smartphone and desktop breakpoints",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "local-css-presentation.spec.ts",
+      "title": "resolves runtime layout data through the static stylesheet",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "local-css-presentation.spec.ts",
+      "title": "validates the runtime manifest and Chromium installability contract",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "performance-adapters.smoke.spec.ts",
+      "title": "commits a valid XLSX through the public Worker and persistence surface",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "performance-adapters.smoke.spec.ts",
+      "title": "executes the foundation family against the standard artifact",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "performance-adapters.smoke.spec.ts",
+      "title": "executes the full-list family against the standard artifact",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "performance-adapters.smoke.spec.ts",
+      "title": "executes the XLSX Worker family against the standard artifact",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "performance-adapters.smoke.spec.ts",
+      "title": "round-trips a staged event through the real public export",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "responsive-performance.spec.ts",
+      "title": "bounded DOM and response timings: 150 items, 40000 cells, 10000 historical items",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "responsive-performance.spec.ts",
+      "title": "bounded DOM and response timings: 1500 items, 40000 cells, 10000 historical items",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "responsive-performance.spec.ts",
+      "title": "bounded DOM and response timings: 500 items, 40000 cells, 10000 historical items",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "responsive-performance.spec.ts",
+      "title": "direct field commands review another tab and retain inputs across worker save failure",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "responsive-performance.spec.ts",
+      "title": "mode transitions preserve decorated 40000-cell maps and multiple halls, concentrated=false",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "responsive-performance.spec.ts",
+      "title": "mode transitions preserve decorated 40000-cell maps and multiple halls, concentrated=true",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "retained-viewport.spec.ts",
+      "title": "a large single space defers cards inside the group",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "retained-viewport.spec.ts",
+      "title": "focus map remains correct after quantity, purchase and visibility changes",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "retained-viewport.spec.ts",
+      "title": "focus mode defers a large visit with the map shown and hidden",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "retained-viewport.spec.ts",
+      "title": "focus retains an edited offscreen item until the dialog closes",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "retained-viewport.spec.ts",
+      "title": "keyboard focus reaches the native controls of a pending PC row",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "retained-viewport.spec.ts",
+      "title": "retained viewport preserves offscreen navigation, native values and saving: pc",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "retained-viewport.spec.ts",
+      "title": "retained viewport preserves offscreen navigation, native values and saving: smartphone",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "shopping-item-rendering.spec.ts",
+      "title": "native card choices keep their values and save across day changes: pc",
+      "project": "chromium",
+      "status": "passed"
+    },
+    {
+      "file": "shopping-item-rendering.spec.ts",
+      "title": "native card choices keep their values and save across day changes: smartphone",
+      "project": "chromium",
+      "status": "passed"
+    }
+  ]
+}

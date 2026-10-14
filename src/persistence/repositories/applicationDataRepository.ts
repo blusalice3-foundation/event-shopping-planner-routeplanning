@@ -10,11 +10,18 @@ import {
   transactionFinished,
 } from "../db/transactionCoordinator";
 import { requestPersistenceControlRecords } from "./controlRepository";
+import {
+  DAY_RECORD_PREFIX,
+  readDayRecordPayload,
+  hasDayRecordHead,
+  decodeDayRecords,
+} from "../db/dayRecordStorage";
 
 export interface RawPersistenceSnapshot {
   readonly payload: unknown;
   readonly metadata: unknown;
   readonly checkpoint: unknown;
+  readonly dayRecords?: Map<string, unknown>;
 }
 
 export async function readPersistenceSnapshotOnce(
@@ -32,16 +39,19 @@ export async function readPersistenceSnapshotOnce(
     "readonly",
   );
   const finished = transactionFinished(transaction);
-  const payloadRequest = transaction.objectStore(storeName).get(key);
+  const payloadRequest = readDayRecordPayload(
+    transaction.objectStore(storeName),
+    key,
+  );
   const { metadataRequest, checkpointRequest } =
     requestPersistenceControlRecords(transaction, storeName, key);
   const [payload, metadata, checkpoint] = await Promise.all([
-    requestResult(payloadRequest),
+    payloadRequest,
     requestResult(metadataRequest),
     requestResult(checkpointRequest),
   ]);
   await finished;
-  return { payload, metadata, checkpoint };
+  return { ...payload, metadata, checkpoint };
 }
 
 export async function deleteApplicationDataRecord(
@@ -72,6 +82,9 @@ export async function deleteApplicationDataRecord(
   });
 }
 
+const isDayRecordKey = (key: IDBValidKey): boolean =>
+  typeof key === "string" && key.startsWith(DAY_RECORD_PREFIX);
+
 const isInternalRecordKey = (key: IDBValidKey): boolean =>
   typeof key === "string" && key.startsWith(INTERNAL_RECORD_PREFIX);
 
@@ -98,7 +111,8 @@ export async function getAllApplicationDataKeys(
           request.result
             .filter(
               (key) =>
-                storeName !== STORES.SYNC_QUEUE || !isInternalRecordKey(key),
+                !isDayRecordKey(key) &&
+                (storeName !== STORES.SYNC_QUEUE || !isInternalRecordKey(key)),
             )
             .map((key) => String(key)),
         );
@@ -124,7 +138,8 @@ export async function getAllApplicationData<T>(
 ): Promise<Record<string, T>> {
   const loadOnce = async (): Promise<Record<string, T>> => {
     const database = await openDatabase();
-    return new Promise((resolve, reject) => {
+    const dayRecords = new Map<string, unknown>();
+    const result = await new Promise<Record<string, T>>((resolve, reject) => {
       const transaction = openCoordinatedTransaction(
         database,
         storeName,
@@ -141,7 +156,9 @@ export async function getAllApplicationData<T>(
       cursorRequest.onsuccess = (event) => {
         const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
         if (cursor) {
-          if (
+          if (isDayRecordKey(cursor.key)) {
+            dayRecords.set(String(cursor.key), cursor.value);
+          } else if (
             storeName !== STORES.SYNC_QUEUE ||
             !isInternalRecordKey(cursor.key)
           ) {
@@ -156,6 +173,10 @@ export async function getAllApplicationData<T>(
         reject(transaction.error || cursorRequest.error);
       };
     });
+    if (hasDayRecordHead(result.data))
+      result.data = (await decodeDayRecords(storeName, result.data, dayRecords))
+        .data as T;
+    return result;
   };
 
   try {

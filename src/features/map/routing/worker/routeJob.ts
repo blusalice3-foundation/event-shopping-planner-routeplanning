@@ -29,6 +29,7 @@ export type RouteJob =
     }
   | {
       kind: "focus";
+      enabled?: boolean;
       mapData: DayMapData | null;
       visitKeys: string[];
       cells: ReadonlyMap<string, FocusRouteCell>;

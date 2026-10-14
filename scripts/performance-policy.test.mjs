@@ -440,13 +440,25 @@ test("keeps legacy and consistency-aware export setup storage contracts distinct
     true,
   );
   assert.equal(isValidExportSetupStorageBinding(modern), true);
+  assert.equal(
+    isValidExportSetupStorageBinding({ ...modern, databaseVersion: 9 }),
+    true,
+  );
+  assert.equal(
+    isValidExportSetupStorageBinding({ ...modern, databaseVersion: 10 }),
+    true,
+  );
+  assert.equal(
+    isValidExportSetupStorageBinding({ ...modern, databaseVersion: 11 }),
+    true,
+  );
   for (const invalid of [
     null,
     { ...legacy, databaseVersion: 4 },
     { ...legacy, databaseVersion: 8 },
     { ...legacy, transactionStores: modern.transactionStores },
     { ...modern, databaseVersion: 7 },
-    { ...modern, databaseVersion: 9 },
+    { ...modern, databaseVersion: 12 },
     { ...modern, databaseVersion: 8.1 },
     { ...modern, transactionStores: legacy.transactionStores },
     { ...modern, transactionStores: [...modern.transactionStores, "unknown"] },

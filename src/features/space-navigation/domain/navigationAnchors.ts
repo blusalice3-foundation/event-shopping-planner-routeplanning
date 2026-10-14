@@ -61,8 +61,38 @@ export function observeViewportAnchors(
     attributes: true,
     attributeFilter,
   });
+  const initialCandidates = () => {
+    const candidates = new Set<HTMLElement>();
+    const document = container.ownerDocument;
+    const view = document.defaultView;
+    if (typeof document.elementsFromPoint === "function" && view) {
+      const rect = container.getBoundingClientRect();
+      const x = Math.max(
+        0,
+        Math.min(view.innerWidth - 1, rect.left + rect.width / 2),
+      );
+      for (let y = 0; y < view.innerHeight; y += 80) {
+        for (const element of document.elementsFromPoint(x, y)) {
+          const row = element.closest<HTMLElement>(selector);
+          if (row && container.contains(row)) candidates.add(row);
+        }
+      }
+    } else {
+      // Environments without hit testing still avoid measuring the entire list.
+      for (const element of all) {
+        candidates.add(element);
+        if (candidates.size >= 16) break;
+      }
+    }
+    return candidates;
+  };
   return {
-    candidates: () => (intersection && receivedIntersection ? visible : all),
+    candidates: () =>
+      intersection
+        ? receivedIntersection
+          ? visible
+          : initialCandidates()
+        : all,
     dispose: () => {
       mutations.disconnect();
       intersection?.disconnect();

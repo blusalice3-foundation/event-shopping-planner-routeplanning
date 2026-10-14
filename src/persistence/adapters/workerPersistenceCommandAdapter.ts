@@ -1,3 +1,5 @@
+import { reuseEqualReferences } from "../../utils/semanticEquality";
+import { adoptScopedDaySnapshot } from "../../features/consistency/domain/dayMutation";
 import type {
   ApplicationSnapshotRead,
   AtomicSnapshotOptions,
@@ -16,7 +18,10 @@ import {
   createIndexedDbPersistenceCommandAdapter,
   type IndexedDbPersistenceCommandDelegate,
 } from "./indexedDbPersistenceCommandAdapter";
-import type { WorkerSnapshotRead } from "../worker/snapshotDelta";
+import {
+  applySnapshotBranches,
+  type WorkerSnapshotRead,
+} from "../worker/snapshotDelta";
 
 /** One worker owns storage transactions. Ordinary edits send only fields and operation IDs. */
 export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort {
@@ -25,6 +30,9 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
   let worker: Worker | undefined;
   let sequence = 0;
   let mirror: PersistenceSnapshot | undefined;
+  let applicationAccess:
+    | Parameters<PersistenceCommandPort["bindApplicationSettings"]>[0]
+    | undefined;
   const pending = new Map<
     number,
     {
@@ -34,9 +42,19 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
     }
   >();
   const read = (value: WorkerSnapshotRead): ApplicationSnapshotRead => {
-    mirror = value.delta.full ?? { ...mirror!, ...value.delta.stores };
+    mirror = value.delta.scope
+      ? adoptScopedDaySnapshot(
+          mirror,
+          value.delta.scope.snapshot,
+          value.delta.scope.target,
+        )
+      : (value.delta.full ?? { ...mirror!, ...value.delta.stores });
     if (value.delta.items?.length)
       mirror = applyItemContentEdits(mirror, value.delta.items);
+    if (value.delta.branches?.length)
+      mirror = applySnapshotBranches(mirror, value.delta.branches);
+    if (applicationAccess)
+      mirror = reuseEqualReferences(applicationAccess.read(), mirror);
     return {
       snapshot: mirror,
       expectedRoots: { workerObservation: value.observationId },
@@ -96,7 +114,7 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
           pending.clear();
           worker?.terminate();
           worker = undefined;
-          mirror = undefined;
+          // Retain the accepted mirror so a restarted worker can return only the target day.
         };
       }
       const storage = new Map<string, string>();
@@ -138,12 +156,36 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
           options?.expectedRoots as { workerObservation?: number } | undefined
         )?.workerObservation,
       },
-    ]).then(() => undefined);
+    ]).then(() => {
+      mirror = snapshot;
+    });
   const delegate: IndexedDbPersistenceCommandDelegate = {
     ...db,
     readApplicationSnapshot: async () =>
       read((await call("read", [])) as WorkerSnapshotRead),
     commitApplicationSnapshotAtomically: commit,
+    readDayApplicationSnapshot: async (target) =>
+      read((await call("readDay", [target])) as WorkerSnapshotRead),
+    commitDayApplicationSnapshot: async (snapshot, expectedRoots, target) =>
+      read(
+        (await call("commitDay", [
+          snapshot,
+          (expectedRoots as { workerObservation: number }).workerObservation,
+          target,
+        ])) as WorkerSnapshotRead,
+      ),
+    commitDayMutation: async (command, operationId, expectedGenerations) => {
+      const result = (await call("day", [
+        command,
+        operationId,
+        expectedGenerations,
+      ])) as
+        | { status: "review-required" }
+        | { status: "committed"; read: WorkerSnapshotRead };
+      return result.status === "committed"
+        ? { ...result, read: read(result.read) }
+        : result;
+    },
     commitItemContentEdits: async (
       edits,
       operationIds,
@@ -179,5 +221,19 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
         call(method, args).then(() => undefined),
     });
   }
-  return createIndexedDbPersistenceCommandAdapter(delegate);
+  const adapter = createIndexedDbPersistenceCommandAdapter(delegate);
+  return {
+    ...adapter,
+    adoptCommittedSnapshot(snapshot) {
+      mirror = snapshot;
+    },
+    bindApplicationSettings(access) {
+      applicationAccess = access;
+      const release = adapter.bindApplicationSettings(access);
+      return () => {
+        if (applicationAccess === access) applicationAccess = undefined;
+        release();
+      };
+    },
+  };
 }

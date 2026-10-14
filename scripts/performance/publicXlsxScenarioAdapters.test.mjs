@@ -299,7 +299,7 @@ test("round-trips the production UI export download through the public Worker", 
         return {
           contract: argument.contract,
           databaseName: "EventShoppingPlannerDB",
-          databaseVersion: 8,
+          databaseVersion: 10,
           storeName: "eventLists",
           controlStoreName: "syncQueue",
           key: "data",
@@ -451,7 +451,7 @@ test("round-trips the production UI export download through the public Worker", 
       timing: "excluded-from-measurement-v1",
       readback: "separate-readonly-transaction-v1",
       databaseName: "EventShoppingPlannerDB",
-      databaseVersion: 8,
+      databaseVersion: 10,
       storeName: "eventLists",
       controlStoreName: "syncQueue",
       key: "data",
@@ -488,7 +488,7 @@ test("keeps the XLSX adapter free of synthetic download and legacy target hooks"
   assert.match(source, /await readFile\(downloadPath\)/);
 });
 
-test("stages an initialized empty DB v8 root while preserving its parent revision", async (t) => {
+test("stages initialized empty DB 9/10/11 roots while preserving their parent revisions", async (t) => {
   const originalIndexedDb = globalThis.indexedDB;
   const metadataKey = "__esp_internal__:meta:v1:eventLists:data";
   const checkpointKey = "__esp_internal__:checkpoint:v1:eventLists:data";
@@ -548,6 +548,10 @@ test("stages an initialized empty DB v8 root while preserving its parent revisio
   try {
     for (const mutation of [
       "none",
+      "partitioned-empty",
+      "partitioned-empty-v11",
+      "partitioned-stray",
+      "partitioned-digest",
       "data",
       "digest",
       "checkpoint",
@@ -557,11 +561,17 @@ test("stages an initialized empty DB v8 root while preserving its parent revisio
       "timestamp",
     ]) {
       await t.test(mutation, async () => {
+        const databaseVersion =
+          mutation === "partitioned-empty-v11"
+            ? 11
+            : mutation.startsWith("partitioned")
+              ? 10
+              : 9;
         globalThis.indexedDB = new IDBFactory();
         const database = await new Promise((resolve, reject) => {
           const request = globalThis.indexedDB.open(
             "EventShoppingPlannerDB",
-            8,
+            databaseVersion,
           );
           request.onupgradeneeded = () => {
             for (const storeName of [
@@ -600,6 +610,43 @@ test("stages an initialized empty DB v8 root while preserving its parent revisio
               revision: consistencyMetadata.revision,
             },
           };
+          const emptyHead = {
+            kind: "event-shopping-planner-day-records",
+            version: 1,
+            storeName: "eventConsistency",
+            count: 0,
+            checksum: "0".repeat(64),
+            authenticatedRoots: true,
+          };
+          if (mutation.startsWith("partitioned")) {
+            const canonical = JSON.stringify(
+              emptyHead,
+              Object.keys(emptyHead).sort(),
+            );
+            let hash = 0xcbf29ce484222325n;
+            for (let index = 0; index < canonical.length; index++)
+              hash = BigInt.asUintN(
+                64,
+                (hash ^ BigInt(canonical.charCodeAt(index))) * 0x100000001b3n,
+              );
+            consistencyMetadata.baseRevision =
+              "initialized-empty-before-partition";
+            consistencyMetadata.payloadDigest.value = sha256Bytes(
+              Buffer.from(canonical),
+            );
+            consistencyMetadata.payloadFingerprint.canonicalLength =
+              canonical.length;
+            consistencyMetadata.payloadFingerprint.value = hash
+              .toString(16)
+              .padStart(16, "0");
+            consistencyCheckpoint.committedRoot.baseRevision =
+              consistencyMetadata.baseRevision;
+            consistencyCheckpoint.committedRoot.digest = structuredClone(
+              consistencyMetadata.payloadDigest,
+            );
+          }
+          if (mutation === "partitioned-digest")
+            consistencyMetadata.payloadDigest.value = "0".repeat(64);
           if (mutation === "consistency-digest") {
             consistencyMetadata.payloadDigest.value = "0".repeat(64);
           }
@@ -622,7 +669,11 @@ test("stages an initialized empty DB v8 root while preserving its parent revisio
             transaction
               .objectStore("eventConsistency")
               .put(
-                mutation === "consistency-data" ? { "existing-event": {} } : {},
+                mutation.startsWith("partitioned")
+                  ? emptyHead
+                  : mutation === "consistency-data"
+                    ? { "existing-event": {} }
+                    : {},
                 "data",
               );
             transaction
@@ -637,6 +688,10 @@ test("stages an initialized empty DB v8 root while preserving its parent revisio
                 consistencyCheckpoint,
                 "__esp_internal__:checkpoint:v1:eventConsistency:data",
               );
+            if (mutation === "partitioned-stray")
+              transaction
+                .objectStore("eventConsistency")
+                .put({}, "__esp_internal__:day-record:v1:stray");
             transaction.oncomplete = resolve;
             transaction.onabort = () => reject(transaction.error);
           });
@@ -657,9 +712,13 @@ test("stages an initialized empty DB v8 root while preserving its parent revisio
                 "__esp_internal__:checkpoint:v1:eventConsistency:data",
               ),
             ]);
-          if (mutation === "none") {
+          if (
+            ["none", "partitioned-empty", "partitioned-empty-v11"].includes(
+              mutation,
+            )
+          ) {
             const staged = await stageCanonicalExportEventLists(stageOptions);
-            assert.equal(staged.receipt.databaseVersion, 8);
+            assert.equal(staged.receipt.databaseVersion, databaseVersion);
             const [
               payload,
               metadata,

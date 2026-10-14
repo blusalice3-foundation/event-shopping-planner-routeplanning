@@ -1,4 +1,5 @@
 import {
+  createPersistenceIntegrityDescriptors,
   createPersistenceCheckpointKey,
   createPersistenceMetadataKey,
   createRuntimeFallbackCandidate,
@@ -17,6 +18,21 @@ import type {
   PersistenceRecordOperations,
 } from "../contracts/persistence";
 import { STORES, type StoreName } from "../db/constants";
+import {
+  DAY_RECORD_PREFIX,
+  hasDayRecordHead,
+  dayRecordStores,
+  assertDayRecordsUnchanged,
+  partitionDayRecordStore,
+  enqueueDayRecordWrite,
+  enqueueDayRootDigests,
+  sidecarRecordStores,
+  type DayRecord,
+} from "../db/dayRecordStorage";
+import {
+  prepareSidecarRecords,
+  enqueueSidecarRecords,
+} from "../db/scopedDayStorage";
 import { PersistenceConflictError } from "../db/errors";
 import {
   ensureStoreExists,
@@ -68,7 +84,59 @@ async function writeDataWithMetadataOnce<T>(
   expectedCheckpoint: PersistenceCheckpoint | null,
   metadata: StoredPersistenceMetadata,
   checkpoint: PersistenceCheckpoint,
-): Promise<void> {
+): Promise<{
+  metadata: StoredPersistenceMetadata;
+  checkpoint: PersistenceCheckpoint;
+}> {
+  const dayWrite =
+    key === "data" && dayRecordStores.includes(storeName)
+      ? await partitionDayRecordStore(
+          storeName,
+          data as Record<string, unknown>,
+        )
+      : undefined;
+  const sidecar =
+    key === "data" && sidecarRecordStores.some((store) => store === storeName)
+      ? await prepareSidecarRecords(
+          storeName,
+          data as Record<string, unknown>,
+          undefined,
+        )
+      : undefined;
+  if (dayWrite) {
+    const descriptors = await createPersistenceIntegrityDescriptors(
+      dayWrite.state.head,
+    );
+    metadata = {
+      ...metadata,
+      payloadDigest: descriptors.digest,
+      payloadFingerprint: descriptors.fingerprint,
+    };
+    checkpoint = {
+      ...checkpoint,
+      committedRoot: {
+        ...checkpoint.committedRoot,
+        digest: descriptors.digest,
+      },
+    };
+  }
+  let expectedDayRecords: Map<string, unknown> | undefined;
+  if (key === "data" && dayRecordStores.includes(storeName)) {
+    const snapshot = await readPersistenceSnapshotWithRetry(storeName, key);
+    if (hasDayRecordHead(snapshot.payload)) {
+      const validation = await validatePersistenceSnapshot(
+        storeName,
+        key,
+        snapshot,
+      );
+      if ("conflict" in validation)
+        throw (
+          validation.conflict.error ??
+          new PersistenceConflictError("日付レコードを検証できません。")
+        );
+      expectedDayRecords = snapshot.dayRecords;
+    }
+  }
   const database = await openDatabase();
   ensureStoreExists(database, storeName);
   ensureStoreExists(database, STORES.SYNC_QUEUE);
@@ -117,6 +185,8 @@ async function writeDataWithMetadataOnce<T>(
       let metadataLoaded = false;
       let checkpointLoaded = false;
       let writesQueued = false;
+      let dayRecordsLoaded = !expectedDayRecords;
+      const currentDayRecords = new Map<string, unknown>();
 
       const abortWith = (error: unknown) => {
         failure = error;
@@ -131,7 +201,8 @@ async function writeDataWithMetadataOnce<T>(
           writesQueued ||
           !payloadLoaded ||
           !metadataLoaded ||
-          !checkpointLoaded
+          !checkpointLoaded ||
+          !dayRecordsLoaded
         )
           return;
         writesQueued = true;
@@ -149,7 +220,46 @@ async function writeDataWithMetadataOnce<T>(
             currentCheckpoint,
             expectedCheckpoint,
           );
-          const payloadPut = payloadStore.put(data, key);
+          if (expectedDayRecords)
+            assertDayRecordsUnchanged(expectedDayRecords, currentDayRecords);
+          const track = (request: IDBRequest) => {
+            request.onerror = () => {
+              failure = failure ?? request.error;
+            };
+          };
+          if (dayWrite) {
+            enqueueDayRecordWrite(payloadStore, dayWrite, track);
+            enqueueDayRootDigests(
+              controlStore,
+              storeName,
+              dayWrite,
+              expectedDayRecords as Map<string, DayRecord> | undefined,
+              track,
+            );
+          } else if (hasDayRecordHead(currentPayload)) {
+            const removed = payloadStore.delete(
+              IDBKeyRange.bound(
+                DAY_RECORD_PREFIX,
+                DAY_RECORD_PREFIX + "\uffff",
+              ),
+            );
+            removed.onerror = () => {
+              failure = failure ?? removed.error;
+            };
+          }
+          if (sidecar)
+            enqueueSidecarRecords(
+              payloadStore,
+              controlStore,
+              storeName,
+              sidecar,
+              metadata.revision,
+              track,
+            );
+          const payloadPut = payloadStore.put(
+            dayWrite?.state.head ?? data,
+            key,
+          );
           const metadataPut = controlStore.put(metadata, metadataKey);
           const checkpointPut = controlStore.put(checkpoint, checkpointKey);
           payloadPut.onerror = () => {
@@ -166,6 +276,24 @@ async function writeDataWithMetadataOnce<T>(
         }
       };
 
+      if (expectedDayRecords) {
+        const cursorRequest = payloadStore.openCursor(
+          IDBKeyRange.bound(DAY_RECORD_PREFIX, DAY_RECORD_PREFIX + "\uffff"),
+        );
+        cursorRequest.onerror = () => {
+          failure = failure ?? cursorRequest.error;
+        };
+        cursorRequest.onsuccess = () => {
+          const cursor = cursorRequest.result;
+          if (cursor) {
+            currentDayRecords.set(String(cursor.key), cursor.value);
+            cursor.continue();
+          } else {
+            dayRecordsLoaded = true;
+            commitIfReady();
+          }
+        };
+      }
       payloadRequest.onerror = () => {
         failure =
           failure ??
@@ -208,6 +336,7 @@ async function writeDataWithMetadataOnce<T>(
       }
     }
   });
+  return { metadata, checkpoint };
 }
 
 export async function saveApplicationRecord<T>(
@@ -349,9 +478,9 @@ export async function saveApplicationRecord<T>(
     );
 
   try {
-    await saveOnce();
-    expectedRevisionRoots.set(observedKey, metadata);
-    expectedPersistenceCheckpoints.set(observedKey, checkpoint);
+    const saved = await saveOnce();
+    expectedRevisionRoots.set(observedKey, saved.metadata);
+    expectedPersistenceCheckpoints.set(observedKey, saved.checkpoint);
     cleanupRuntimeCandidateSnapshots(absorbedForCommit);
     return;
   } catch (firstError) {
@@ -364,9 +493,9 @@ export async function saveApplicationRecord<T>(
     resetDatabaseConnection();
 
     try {
-      await saveOnce();
-      expectedRevisionRoots.set(observedKey, metadata);
-      expectedPersistenceCheckpoints.set(observedKey, checkpoint);
+      const saved = await saveOnce();
+      expectedRevisionRoots.set(observedKey, saved.metadata);
+      expectedPersistenceCheckpoints.set(observedKey, saved.checkpoint);
       cleanupRuntimeCandidateSnapshots(absorbedForCommit);
       return;
     } catch (retryError) {

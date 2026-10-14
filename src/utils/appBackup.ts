@@ -1102,6 +1102,7 @@ const validateAppData = (
   data: UnknownRecord,
   errors: string[],
   referenceErrors: string[] = errors,
+  validatedMaps?: WeakSet<object>,
 ): void => {
   const sections = getSections(data, errors);
   const knownEvents = new Set<string>();
@@ -1242,11 +1243,13 @@ const validateAppData = (
       const boundsByMap = new Map<string, MapBounds>();
       mapBoundsByEvent.set(eventName, boundsByMap);
       Object.entries(mapsByName).forEach(([mapName, rawDayMap]) => {
-        const bounds = validateDayMapData(
-          rawDayMap,
-          `${eventPath}.${mapName}`,
-          errors,
-        );
+        const bounds =
+          isRecord(rawDayMap) && validatedMaps?.has(rawDayMap)
+            ? {
+                maxRow: rawDayMap.maxRow as number,
+                maxCol: rawDayMap.maxCol as number,
+              }
+            : validateDayMapData(rawDayMap, `${eventPath}.${mapName}`, errors);
         if (bounds) boundsByMap.set(mapName, bounds);
       });
     });
@@ -1677,16 +1680,23 @@ const normalizeAppDataForBackup = (data: AppData): AppData => {
 };
 
 /** Structural validation must run before any reference can be removed. */
-export function validateSnapshotStructure(data: unknown, v2 = true): string[] {
+export function validateSnapshotStructure(
+  data: unknown,
+  v2 = true,
+  validatedMaps?: WeakSet<object>,
+): string[] {
   const errors: string[] = [];
   if (!isRecord(data)) return ["data: オブジェクトである必要があります"];
-  validateAppData(data, errors, []);
+  validateAppData(data, errors, [], validatedMaps);
   if (v2) errors.push(...validateEventConsistency(data.eventConsistency));
   return errors;
 }
-export function validateSnapshotReferences(data: AppData): string[] {
+export function validateSnapshotReferences(
+  data: AppData,
+  validatedMaps?: WeakSet<object>,
+): string[] {
   const errors: string[] = [];
-  validateAppData(data as unknown as UnknownRecord, [], errors);
+  validateAppData(data as unknown as UnknownRecord, [], errors, validatedMaps);
   errors.push(...validateConsistencyReferences(data));
   return errors;
 }
@@ -1702,11 +1712,13 @@ export function createAppBackup(
     Object.prototype.hasOwnProperty.call(source, "eventConsistency"),
   );
   if (errors.length) throw new Error(errors.join("\n"));
-  const migration = migrateLegacyConsistency(
+  const migration = Object.prototype.hasOwnProperty.call(
     source,
-    eventSettings.blockDetectionSettings,
-  );
-  const repaired = reconcileConsistencyReferences(migration.data);
+    "eventConsistency",
+  )
+    ? { data: source as AppData, changes: [] }
+    : migrateLegacyConsistency(source, eventSettings.blockDetectionSettings);
+  const repaired = reconcileConsistencyReferences(migration.data, false);
   const normalized = normalizeAppDataForBackup(repaired.data);
   const referenceErrors = validateSnapshotReferences(normalized);
   if (referenceErrors.length) throw new Error(referenceErrors.join("\n"));
@@ -1800,4 +1812,26 @@ export function parseAppBackup(source: unknown): AppBackupParseResult {
       ],
     };
   }
+}
+
+/** Internal generation has just validated and normalized this data once. */
+export function createAppBackupFile(
+  data: AppData | LegacySnapshot,
+  exportedAt = new Date(),
+) {
+  const backup = createAppBackup(data, exportedAt);
+  const source = JSON.stringify(
+    {
+      kind: backup.kind,
+      version: backup.version,
+      exportedAt: backup.exportedAt,
+      data: backup.data,
+    },
+    null,
+    2,
+  );
+  return {
+    blob: new Blob([source], { type: "application/json;charset=utf-8" }),
+    exportedAt: backup.exportedAt,
+  };
 }

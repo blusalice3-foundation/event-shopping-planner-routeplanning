@@ -17,9 +17,12 @@ import {
 import { materializeMapData } from "../repositories/mapRepository";
 import { validateCheckpointForRoot } from "./checkpoint";
 import type { RecoveryAdoptionStoreName } from "./recoverySourceEvidence";
+import { hasDayRecordHead } from "../db/dayRecordStorage";
 
 export interface RecoveryAdoptionCurrentEvidence {
   payload?: unknown;
+  dayRecords?: Array<[string, unknown]>;
+  decodedDayPayload?: unknown;
   mapEntries?: Record<string, unknown>;
   metadata: unknown;
   checkpoint: unknown;
@@ -58,6 +61,13 @@ export function materializeRecoveryAdoptionCurrentPayload(
     }
     return materializeMapData(evidence.mapEntries).data;
   }
+  if (hasDayRecordHead(evidence.payload)) {
+    if (evidence.decodedDayPayload === undefined)
+      throw new PersistenceConflictError(
+        "日付レコードの復旧候補を検証できません。",
+      );
+    return evidence.decodedDayPayload;
+  }
   return evidence.payload;
 }
 
@@ -72,8 +82,15 @@ export async function getTrustedRecoveryAdoptionRoot(
     return null;
   }
   let payload: unknown;
+  if (
+    hasDayRecordHead(evidence.payload) &&
+    evidence.decodedDayPayload === undefined
+  )
+    return null;
   try {
-    payload = materializeRecoveryAdoptionCurrentPayload(storeName, evidence);
+    payload = hasDayRecordHead(evidence.payload)
+      ? evidence.payload
+      : materializeRecoveryAdoptionCurrentPayload(storeName, evidence);
     if (
       !(await verifyPersistenceDigest(
         payload,

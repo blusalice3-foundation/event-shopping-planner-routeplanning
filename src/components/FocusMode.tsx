@@ -1305,6 +1305,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
   }, [allVisitKeys, visitKeyCellMap, routeCoordsSignature]);
   const { result: precomputedRouteCalculation } = useRouteCalculation({
     kind: "focus",
+    enabled: isMapVisible,
     mapData: currentRouteMapData,
     visitKeys: allVisitKeys,
     cells: visitKeyCellMap,

@@ -714,3 +714,48 @@ it("coalesces queued field commands in order without crossing a structural comma
     remarks: "ユーザー登録",
   });
 });
+
+it("checks an expired visit session before sending a queued day command", async () => {
+  let applicable = true;
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const base = setup();
+  const commitDayMutation = vi.fn();
+  const coordinator = createApplicationMutationCoordinator({
+    readCurrent: base.read,
+    readDurable: base.readDurable,
+    commit: base.commit,
+    apply: () => {},
+    drain: async () => {
+      await gate;
+    },
+    commitDayMutation,
+  });
+  const pending = coordinator.request({
+    id: "old-session",
+    events: ["event"],
+    dayMutation: {
+      kind: "visits",
+      eventName: "event",
+      day: "1日目",
+      mapKey: "1日目マップ",
+      order: ["A"],
+    },
+    assertApplicable() {
+      if (!applicable) throw new Error("訪問リストの操作は終了しています。");
+    },
+    plan(snapshot) {
+      return { snapshot };
+    },
+  });
+  const rejected =
+    expect(pending).rejects.toThrow("訪問リストの操作は終了しています。");
+  applicable = false;
+  release();
+  await rejected;
+  expect(commitDayMutation).not.toHaveBeenCalled();
+  expect(base.readDurable).not.toHaveBeenCalled();
+  expect(base.commit).not.toHaveBeenCalled();
+});

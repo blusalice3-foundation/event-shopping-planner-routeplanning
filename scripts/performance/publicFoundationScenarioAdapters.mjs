@@ -14,8 +14,8 @@ const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const GIT_SHA_PATTERN = /^[0-9a-f]{40}$/;
 const DATABASE_NAME = "EventShoppingPlannerDB";
 const DATA_KEY = "data";
-const CURRENT_DATABASE_VERSION = 8;
-const MAX_FORWARD_DATABASE_VERSION = 8;
+const CURRENT_DATABASE_VERSION = 9;
+const MAX_FORWARD_DATABASE_VERSION = 9;
 const REQUIRED_DATABASE_STORES = Object.freeze([
   "dayModes",
   "eventConsistency",

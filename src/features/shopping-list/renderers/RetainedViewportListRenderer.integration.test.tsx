@@ -61,10 +61,16 @@ beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
     function (this: HTMLElement) {
       return {
-        top: visibleKeys.has(this.dataset.viewportRowKey ?? "") ? 20 : 10000,
-        bottom: visibleKeys.has(this.dataset.viewportRowKey ?? "")
-          ? 156
-          : 10136,
+        top:
+          !this.dataset.viewportRowKey ||
+          visibleKeys.has(this.dataset.viewportRowKey)
+            ? 20
+            : 10000,
+        bottom:
+          !this.dataset.viewportRowKey ||
+          visibleKeys.has(this.dataset.viewportRowKey)
+            ? 156
+            : 10136,
         height: 136,
         width: 400,
         left: 0,
@@ -121,6 +127,167 @@ describe("retained viewport rendering", () => {
       "data-list-renderer",
       "virtual",
     );
+  });
+
+  it("preserves row heights while a list is hidden and resets them for a real width change", () => {
+    const callbacks = new Map<Element, ResizeObserverCallback>();
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(private next: ResizeObserverCallback) {}
+        observe(target: Element) {
+          callbacks.set(target, this.next);
+        }
+        unobserve(target: Element) {
+          callbacks.delete(target);
+        }
+        disconnect() {}
+      },
+    );
+    visibleKeys.add("hidden-width-cache");
+    const renderRow = vi.fn(() => (
+      <input aria-label="保持する編集" defaultValue="ユーザー登録" />
+    ));
+    const view = render(
+      <div data-viewport-list>
+        <ViewportContent
+          rowKey="hidden-width-cache"
+          defer
+          estimatedHeight={220}
+          placeholder={<span>エラーが発生しました</span>}
+          render={renderRow}
+        />
+      </div>,
+    );
+    const list = view.container.firstElementChild as HTMLElement;
+    const input = view.getByRole("textbox", { name: "保持する編集" });
+    fireEvent.change(input, { target: { value: "入力中の編集" } });
+    const rendered = renderRow.mock.calls.length;
+    const resize = (width: number) =>
+      act(() =>
+        callbacks.get(list)!(
+          [
+            {
+              target: list,
+              contentRect: new DOMRect(0, 0, width, 136),
+              borderBoxSize: [],
+              contentBoxSize: [],
+              devicePixelContentBoxSize: [],
+            },
+          ],
+          {} as ResizeObserver,
+        ),
+      );
+
+    expect(list.dataset.viewportWidth).toBe("400");
+    resize(0);
+    expect(list.dataset.viewportWidth).toBe("400");
+    resize(400);
+    expect(renderRow).toHaveBeenCalledTimes(rendered);
+    expect(view.getByRole("textbox", { name: "保持する編集" })).toBe(input);
+    expect(input).toHaveValue("入力中の編集");
+
+    resize(600);
+    expect(list.dataset.viewportWidth).toBe("600");
+    expect(renderRow.mock.calls.length).toBeGreaterThan(rendered);
+    expect(input).toHaveValue("入力中の編集");
+  });
+
+  it("uses reported heights without forced reads and reuses them on activation", () => {
+    const callbacks = new Map<Element, ResizeObserverCallback>();
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(private next: ResizeObserverCallback) {}
+        observe(target: Element) {
+          callbacks.set(target, this.next);
+        }
+        unobserve(target: Element) {
+          callbacks.delete(target);
+        }
+        disconnect() {}
+      },
+    );
+    visibleKeys.add("reported-height-cache");
+    const view = render(
+      <div data-viewport-list>
+        <ViewportContent
+          rowKey="reported-height-cache"
+          defer
+          estimatedHeight={220}
+          placeholder={<span>pending</span>}
+          render={() => <span>measured</span>}
+        />
+      </div>,
+    );
+    const root = view.container.querySelector<HTMLElement>(
+      "[data-viewport-row-key]",
+    )!;
+    const rectangles = vi.mocked(HTMLElement.prototype.getBoundingClientRect);
+    const resize = (borderBoxSize: ResizeObserverSize[]) =>
+      act(() =>
+        callbacks.get(root)!(
+          [
+            {
+              target: root,
+              contentRect: new DOMRect(
+                0,
+                0,
+                400,
+                borderBoxSize.length ? borderBoxSize[0].blockSize : 136,
+              ),
+              borderBoxSize,
+              contentBoxSize: [],
+              devicePixelContentBoxSize: [],
+            },
+          ],
+          {} as ResizeObserver,
+        ),
+      );
+    const intersect = (isIntersecting: boolean) =>
+      act(() =>
+        callback(
+          [
+            {
+              target: root,
+              isIntersecting,
+              boundingClientRect: new DOMRect(0, 0, 400, 136),
+              intersectionRect: isIntersecting
+                ? new DOMRect(0, 0, 400, 136)
+                : new DOMRect(),
+              intersectionRatio: Number(isIntersecting),
+              rootBounds: null,
+              time: 0,
+            },
+          ],
+          {} as IntersectionObserver,
+        ),
+      );
+
+    rectangles.mockClear();
+    resize([{ blockSize: 176, inlineSize: 400 }]);
+    expect(rectangles).not.toHaveBeenCalled();
+    intersect(false);
+    expect(root).toHaveAttribute("data-layout-height", "176px");
+
+    rectangles.mockClear();
+    intersect(true);
+    expect(rectangles).not.toHaveBeenCalled();
+    resize([{ blockSize: 0, inlineSize: 0 }]);
+    intersect(false);
+    expect(root).toHaveAttribute("data-layout-height", "176px");
+
+    intersect(true);
+    resize([{ blockSize: 212, inlineSize: 400 }]);
+    intersect(false);
+    expect(root).toHaveAttribute("data-layout-height", "212px");
+
+    intersect(true);
+    rectangles.mockClear();
+    resize([]);
+    expect(rectangles).toHaveBeenCalledTimes(1);
+    intersect(false);
+    expect(root).toHaveAttribute("data-layout-height", "136px");
   });
 
   it("retains an activated control, its edit and focus after leaving the viewport", () => {
@@ -766,3 +933,30 @@ it("propagates dialog retention through a memoized group and releases the row af
   leaveViewport();
   expect(view.queryByRole("textbox", { name: "item-0" })).toBeNull();
 });
+
+it.each([500, 1500])(
+  "bounds synchronous initial position measurements for %i rows",
+  (count) => {
+    const many = Array.from({ length: count }, (_, index) => ({
+      ...items[0],
+      id: `bounded-${index}`,
+    }));
+    const model = buildListRows({ items: many });
+    visibleKeys.add(model.rows[0].rowKey);
+    const measure = vi.mocked(HTMLElement.prototype.getBoundingClientRect);
+    measure.mockClear();
+    const view = render(
+      <RetainedViewportListRenderer
+        model={model}
+        accessibleLabel="計測範囲"
+        renderRow={(row) => (row.kind === "item" ? <input /> : null)}
+      />,
+    );
+    const rowMeasurements = measure.mock.instances.filter(
+      (element) => !!(element as HTMLElement).dataset.viewportRowKey,
+    );
+    expect(rowMeasurements.length).toBeLessThan(20);
+    expect(view.container.querySelectorAll("input")).toHaveLength(1);
+  },
+  15000,
+);

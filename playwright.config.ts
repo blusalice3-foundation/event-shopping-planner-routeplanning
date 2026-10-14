@@ -30,6 +30,9 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
+        userAgent: undefined,
+        channel: process.env.PERFORMANCE_BROWSER_CHANNEL,
+        headless: process.env.PERFORMANCE_HEADED !== "1",
       },
     },
   ],

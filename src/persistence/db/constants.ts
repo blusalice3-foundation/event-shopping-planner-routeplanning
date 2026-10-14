@@ -1,6 +1,6 @@
 export const DB_NAME = "EventShoppingPlannerDB";
-export const DB_VERSION = 8;
-export const MAX_FORWARD_COMPATIBLE_DB_VERSION = 8;
+export const DB_VERSION = 11;
+export const MAX_FORWARD_COMPATIBLE_DB_VERSION = 11;
 export const DATABASE_OPEN_BLOCKED_TIMEOUT_MS = 5_000;
 export const DATA_KEY = "data";
 export const MAP_DATA_LEGACY_KEY = "data";
