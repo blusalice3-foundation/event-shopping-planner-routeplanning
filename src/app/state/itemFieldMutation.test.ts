@@ -7,6 +7,10 @@ import type {
 import type { ShoppingItem } from "../../types/item";
 import { applyItemContentEdits } from "./itemContentEdits";
 import { planItemContentMutation } from "./itemFieldMutation";
+import {
+  createItemContentGuard,
+  registerItemGuardGenerations,
+} from "../../utils/itemContentGuard";
 const item: ShoppingItem = {
   id: "1",
   circle: "ユーザー登録",
@@ -108,7 +112,15 @@ describe("limited purchase quantities changed before persistence", () => {
         quantity: latest,
         remarks: "他タブのメモ",
       };
+      registerItemGuardGenerations(base, { event: 0 });
       const intent: ItemContentEdit = {
+        guard: createItemContentGuard(
+          base,
+          "event",
+          baseline,
+          "limited-single",
+          0,
+        ),
         ...edit(
           "purchaseStatus",
           kind === "purchased" ? "Purchased" : "LimitedPurchase",

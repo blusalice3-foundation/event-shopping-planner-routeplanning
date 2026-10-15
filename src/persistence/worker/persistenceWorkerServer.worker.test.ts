@@ -1057,6 +1057,96 @@ it("writes none of a mixed item batch before review when one guarded target leav
   expect(put).not.toHaveBeenCalled();
 });
 
+it.each([
+  [false, false],
+  [false, true],
+  [true, false],
+  [true, true],
+])(
+  "rejects unguarded limited intent before any worker write, operationKind=%s, fields=%s",
+  async (withOperationKind, withFields) => {
+    const { server, commit } = await setup();
+    const remote = await db.readApplicationSnapshot();
+    Object.assign(remote.snapshot.eventLists.event[0]!, {
+      eventDate: "2日目",
+      quantity: 5,
+      remarks: "他タブのメモ",
+    });
+    await db.commitApplicationSnapshotAtomically(remote.snapshot, {
+      expectedRoots: remote.expectedRoots,
+      changedStoresOnly: true,
+    });
+    const before = (await db.readApplicationSnapshot()).snapshot;
+    const put = vi.spyOn(IDBObjectStore.prototype, "put");
+    const request: ItemContentEdit = {
+      ...edit("purchaseStatus", "LimitedPurchase"),
+      operationKind: withOperationKind ? "limited-input" : undefined,
+      limitedPurchase: {
+        kind: "limited",
+        actual: 1,
+        planned: 5,
+        plannedEdited: false,
+      },
+      fields: withFields
+        ? {
+            purchaseStatus: { present: true, value: "LimitedPurchase" },
+            limitedPurchasedQuantity: { present: true, value: 1 },
+          }
+        : {},
+    };
+    expect(
+      await server.items(
+        structuredClone([
+          request,
+          edit("remarks", "正常なメモ", { ...item, remarks: "他タブのメモ" }),
+        ]),
+        ["missing-guard"],
+        {},
+      ),
+    ).toEqual({ status: "review-required" });
+    expect(commit).not.toHaveBeenCalled();
+    expect(put).not.toHaveBeenCalled();
+    expect((await db.readApplicationSnapshot()).snapshot).toEqual(before);
+  },
+);
+
+it("requires a current accepted snapshot for a backup with unmarked limited intent", async () => {
+  const { buildWorkerBackup } = await import("./backupWorkerServer");
+  await setup();
+  const read = vi.fn(db.readApplicationSnapshot);
+  expect(
+    await buildWorkerBackup(read, {
+      changes: [
+        {
+          store: "eventLists",
+          eventName: "event",
+          baseline: [item],
+          desired: [
+            {
+              ...item,
+              quantity: 5,
+              purchaseStatus: "LimitedPurchase",
+              limitedPurchasedQuantity: 1,
+            },
+          ],
+        },
+      ],
+      guardedItemEdits: [
+        {
+          ...edit("purchaseStatus", "LimitedPurchase"),
+          limitedPurchase: {
+            kind: "limited",
+            actual: 1,
+            planned: 5,
+            plannedEdited: false,
+          },
+        },
+      ],
+    }),
+  ).toEqual({ needsSnapshot: true });
+  expect(read).not.toHaveBeenCalled();
+});
+
 it("requests a freshly guarded accepted snapshot for worker backup instead of replaying a whole-item delta", async () => {
   const { buildWorkerBackup } = await import("./backupWorkerServer");
   const { createItemContentGuard } =

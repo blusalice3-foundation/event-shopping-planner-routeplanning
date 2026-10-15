@@ -125,11 +125,18 @@ export function createItemContentGuard(
         }),
   };
 }
+export function requiresItemContentGuard(edit: ItemContentEdit): boolean {
+  return (
+    edit.operationKind === "limited-input" ||
+    !!edit.guard ||
+    edit.limitedPurchase !== undefined
+  );
+}
 export function itemContentGuardFailure(
   snapshot: PersistenceSnapshot,
   edit: ItemContentEdit,
 ): string | undefined {
-  if (edit.operationKind !== "limited-input" && !edit.guard) return undefined;
+  if (!requiresItemContentGuard(edit)) return undefined;
   const guard = edit.guard;
   if (
     !guard ||

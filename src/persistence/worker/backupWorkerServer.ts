@@ -8,6 +8,7 @@ import type {
 } from "../../app/ports/PersistenceCommandPort";
 import { applyChangedFields } from "../../features/consistency/domain/mutations";
 import { createAppBackupFile } from "../../utils/appBackup";
+import { requiresItemContentGuard } from "../../utils/itemContentGuard";
 
 export async function buildWorkerBackup(
   read: () => Promise<ApplicationSnapshotRead>,
@@ -21,9 +22,7 @@ export async function buildWorkerBackup(
   // Never rebase its unguarded whole-item diff onto a newer durable snapshot.
   if (
     !request.snapshot &&
-    request.guardedItemEdits?.some(
-      (edit) => edit.guard || edit.operationKind === "limited-input",
-    )
+    request.guardedItemEdits?.some(requiresItemContentGuard)
   )
     return { needsSnapshot: true };
   let snapshot = request.snapshot;

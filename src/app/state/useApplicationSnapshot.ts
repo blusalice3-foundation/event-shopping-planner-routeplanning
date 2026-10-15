@@ -2,6 +2,7 @@ import { recordEntry, setOwnValue } from "../../utils/ownRecord";
 import {
   registerItemGuardGenerations,
   inheritItemGuardGenerations,
+  requiresItemContentGuard,
 } from "../../utils/itemContentGuard";
 import {
   semanticEqual,
@@ -442,9 +443,7 @@ export function useApplicationSnapshot(
               (batch) =>
                 batch.acceptedItemContentEdits ?? batch.itemContentEdits ?? [],
             )
-            .filter(
-              (edit) => edit.guard || edit.operationKind === "limited-input",
-            );
+            .filter(requiresItemContentGuard);
           return persistence.createBackupFile(
             changes,
             () => (guardedItemEdits.length ? readAcceptedSnapshot() : accepted),

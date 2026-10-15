@@ -128,6 +128,86 @@ describe("guarded accepted input", () => {
     expect(planItemContentMutation(snapshot, [edit]).skipCommit).toBe(true);
     expect(applyItemContentEdits(snapshot, [edit])).toBe(snapshot);
   });
+  it.each([false, true])(
+    "rejects limited purchase intent without a guard, operationKind present=%s",
+    (withOperationKind) => {
+      const snapshot = source();
+      snapshot.eventLists.event[0] = { ...item, eventDate: "2日目" };
+      const edit: ItemContentEdit = {
+        ...limited(snapshot),
+        operationKind: withOperationKind ? "limited-input" : undefined,
+        guard: undefined,
+        limitedPurchase: {
+          kind: "limited",
+          actual: 1,
+          planned: 5,
+          plannedEdited: false,
+        },
+      };
+      const plan = planItemContentMutation(snapshot, [edit]);
+      expect(plan.skipCommit).toBe(true);
+      expect(plan.itemContentEdits).toEqual([]);
+      expect(plan.invalidItemContentEdits).toEqual([edit]);
+      expect(plan.confirmation?.details.join("\n")).toContain(
+        "限数入力の対象条件を確認できません。",
+      );
+      expect(applyItemContentEdits(snapshot, [edit])).toBe(snapshot);
+      const memo: ItemContentEdit = {
+        eventName: "event",
+        itemId: item.id,
+        baseline: { remarks: item.remarks },
+        fields: { remarks: { present: true, value: "保持するメモ" } },
+      };
+      const mixed = planItemContentMutation(snapshot, [edit, memo]);
+      expect(mixed.itemContentEdits).toEqual([memo]);
+      expect(mixed.skipCommit).toBe(false);
+      for (const next of [
+        mixed.snapshot,
+        applyItemContentEdits(snapshot, [edit, memo]),
+      ]) {
+        expect(next.eventLists.event[0]).toMatchObject({
+          eventDate: "2日目",
+          remarks: "保持するメモ",
+          purchaseStatus: "None",
+        });
+        expect(next.eventLists.event[0]).not.toHaveProperty(
+          "limitedPurchasedQuantity",
+        );
+        const backup = parseAppBackup(createAppBackup(next));
+        expect(backup.ok).toBe(true);
+        if (backup.ok)
+          expect(backup.data.eventLists.event).toEqual(next.eventLists.event);
+      }
+    },
+  );
+  it("accepts a valid single-item guard and intent without an operationKind", () => {
+    const snapshot = source();
+    snapshot.executeModeItems.event["1日目"] = [];
+    const edit: ItemContentEdit = {
+      ...limited(snapshot),
+      operationKind: undefined,
+      guard: createItemContentGuard(
+        snapshot,
+        "event",
+        item,
+        "limited-single",
+        3,
+      ),
+      limitedPurchase: {
+        kind: "limited",
+        actual: 1,
+        planned: 5,
+        plannedEdited: false,
+      },
+    };
+    const plan = planItemContentMutation(snapshot, [edit]);
+    expect(plan.confirmation).toBeUndefined();
+    expect(plan.snapshot.eventLists.event[0]).toMatchObject({
+      quantity: 5,
+      purchaseStatus: "LimitedPurchase",
+      limitedPurchasedQuantity: 1,
+    });
+  });
   it("confirms each explicitly edited field against its own starting value", () => {
     const snapshot = source();
     snapshot.eventLists.event[0] = {
