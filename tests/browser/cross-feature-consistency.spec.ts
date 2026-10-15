@@ -4251,3 +4251,94 @@ for (const replaced of [false, true]) {
     }
   });
 }
+
+for (const format of ["legacy", "google"] as const) {
+  test(`header-like first CSV item requires format selection and survives save/reload: ${format} @additional-consistency @csv-header`, async ({
+    page,
+  }) => {
+    const name = `CSV先頭品目-${format}`;
+    const csvRow = (cells: string[]) =>
+      [...Array<string>(format === "google" ? 12 : 0).fill(""), ...cells].join(
+        ",",
+      );
+    const csvText = [
+      csvRow(["サークル名", "1日目", "A", "01a", "先頭の新刊", "500"]),
+      csvRow(["サークルB", "1日目", "A", "02a", "次の新刊", "700"]),
+    ].join("\n");
+    const messages: string[] = [];
+    page.on("dialog", async (dialog) => {
+      messages.push(dialog.message());
+      await dialog.accept();
+    });
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "新規リスト作成", exact: true })
+      .click();
+    await page.getByLabel("即売会名", { exact: true }).fill(name);
+    const before = await stored(page, "eventLists");
+    await page
+      .getByLabel("CSVファイルからインポート", { exact: true })
+      .setInputFiles({
+        name: "headerless.csv",
+        mimeType: "text/csv",
+        buffer: Buffer.from(csvText, "utf8"),
+      });
+    await expect
+      .poll(() => messages)
+      .toContain("CSVの列形式と見出しの有無を選択してください。");
+    expect(await stored(page, "eventLists")).toEqual(before);
+    await expect(page.getByLabel("即売会名", { exact: true })).toHaveValue(
+      name,
+    );
+    const retry = page.getByRole("button", {
+      name: "選択したCSVを再試行",
+      exact: true,
+    });
+    await expect(retry).toBeEnabled();
+    await page
+      .getByLabel("CSVの列形式", { exact: true })
+      .selectOption(`${format}-data`);
+    await retry.click();
+    const review = page.getByRole("dialog", {
+      name: "所属・配置の変更を確認",
+      exact: true,
+    });
+    await expect(review).toBeVisible();
+    await expect(review).toContainText("サークル名・先頭の新刊");
+    await expect(review).toContainText("サークルB・次の新刊");
+    expect(await stored(page, "eventLists")).toEqual(before);
+    await review
+      .getByRole("button", { name: "確認して保存", exact: true })
+      .click();
+    await expect(review).toBeHidden();
+    await expect(
+      page.getByRole("heading", { name, exact: true }),
+    ).toBeVisible();
+    const expectedItems = [
+      expect.objectContaining({
+        circle: "サークル名",
+        number: "01a",
+        title: "先頭の新刊",
+        price: 500,
+      }),
+      expect.objectContaining({
+        circle: "サークルB",
+        number: "02a",
+        title: "次の新刊",
+        price: 700,
+      }),
+    ];
+    await expect
+      .poll(() => stored(page, "eventLists"))
+      .toMatchObject({ [name]: expectedItems });
+    const saved = (await stored(page, "eventLists")) as Record<
+      string,
+      Array<{ id: string }>
+    >;
+    expect(saved[name]).toHaveLength(2);
+    expect(new Set(saved[name].map(({ id }) => id)).size).toBe(2);
+    expect(JSON.stringify(saved[name])).not.toContain("sourceRowId");
+    await page.reload();
+    expect(await stored(page, "eventLists")).toEqual(saved);
+  });
+}

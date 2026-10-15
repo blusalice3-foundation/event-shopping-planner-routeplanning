@@ -107,12 +107,20 @@ export function readEventCsv(csvText: string, options?: EventCsvOptions) {
     record.cells[0] === "#METADATA" &&
     record.cells.slice(3).every((cell) => !cell.trim());
   const first = nonempty.find((record) => !isMetadata(record));
+  // A single heading-like value can be item data. Only auto-select a unique
+  // positional header; explicit options still allow custom headings.
+  const headerFormats = (["google", "legacy"] as const).filter((format) => {
+    const offset = format === "google" ? 12 : 0;
+    const cells = first?.cells;
+    return (
+      cells?.[offset]?.trim() === "サークル名" &&
+      cells[offset + 1]?.trim() === "参加日" &&
+      cells[offset + 2]?.trim() === "ブロック" &&
+      ["番号", "ナンバー"].includes(cells[offset + 3]?.trim() ?? "")
+    );
+  });
   const headerFormat =
-    first?.cells[12]?.trim() === "サークル名"
-      ? "google"
-      : first?.cells[0]?.trim() === "サークル名"
-        ? "legacy"
-        : undefined;
+    headerFormats.length === 1 ? headerFormats[0] : undefined;
   if (!options) {
     if (!headerFormat) throw new CsvFormatSelectionRequired();
     options = { format: headerFormat, header: true };
@@ -125,7 +133,7 @@ export function readEventCsv(csvText: string, options?: EventCsvOptions) {
   const offset = format === "google" ? 12 : 0;
   if (options.header) {
     const headerCells = first.cells.slice(offset, offset + 4);
-    const recognizable = headerFormat === format;
+    const recognizable = first.cells[offset]?.trim() === "サークル名";
     const legacySingleHeading =
       format === "google" &&
       first.cells.length === 1 &&

@@ -4,6 +4,9 @@ import {
   buildGoogleSheetCsvRequest,
   fetchGoogleSheetCsv,
   parseEventItemsFromCsv,
+  readEventCsv,
+  CsvFormatSelectionRequired,
+  type EventCsvFormat,
 } from "./sheetImport";
 import { createEventUpdateDiff } from "./updateDiff";
 
@@ -26,6 +29,183 @@ function csvRow(
     .map((cell) => (cell.includes(",") ? `"${cell}"` : cell))
     .join(",");
 }
+
+const formatRow = (format: EventCsvFormat, cells: string[]) =>
+  [...Array<string>(format === "google" ? 12 : 0).fill(""), ...cells].join(",");
+
+for (const format of ["legacy", "google"] as const) {
+  describe(`readEventCsv ${format} format selection`, () => {
+    it.each([
+      ["サークル名", "1日目", "東A", "01a"],
+      ["サークル名", "参加日", "東A", "01a"],
+      ["サークル名", "参加日", "ブロック", "01a"],
+    ])(
+      "asks before dropping header-like first data: %s,%s,%s,%s",
+      (...first) => {
+        const text = [
+          formatRow(format, [...first, "先頭の新刊", "500"]),
+          formatRow(format, [
+            "サークルB",
+            "1日目",
+            "東A",
+            "02a",
+            "次の新刊",
+            "700",
+          ]),
+        ].join("\n");
+        expect(() => readEventCsv(text)).toThrow(CsvFormatSelectionRequired);
+        const result = readEventCsv(text, { format, header: false });
+        expect(result.warnings).toEqual([]);
+        expect(
+          result.rows.map(({ lineNumber, item }) => [lineNumber, item]),
+        ).toEqual([
+          [
+            1,
+            expect.objectContaining({
+              circle: first[0],
+              eventDate: first[1],
+              block: first[2],
+              number: first[3],
+              title: "先頭の新刊",
+              price: 500,
+            }),
+          ],
+          [
+            2,
+            expect.objectContaining({
+              circle: "サークルB",
+              title: "次の新刊",
+              price: 700,
+            }),
+          ],
+        ]);
+        expect(
+          new Set(result.rows.map(({ sourceRowId }) => sourceRowId)).size,
+        ).toBe(2);
+      },
+    );
+
+    it.each([
+      ["番号", "価格"],
+      ["ナンバー", "頒布価格"],
+    ])("recognizes positional headings with %s and %s", (number, price) => {
+      const text = [
+        "\uFEFF",
+        "#METADATA,spreadsheetUrl,https://docs.google.com/spreadsheets/d/example/edit",
+        "",
+        formatRow(format, [
+          " サークル名　",
+          "参加日",
+          "ブロック",
+          number,
+          "タイトル",
+          price,
+        ]),
+        formatRow(format, ["サークルA", "1日目", "東A", "01a", "新刊", "500"]),
+      ].join("\n");
+      const result = readEventCsv(text);
+      expect(result.format).toBe(format);
+      expect(result.warnings).toEqual([]);
+      expect(result.rows).toEqual([
+        expect.objectContaining({
+          lineNumber: 5,
+          item: expect.objectContaining({ circle: "サークルA", price: 500 }),
+        }),
+      ]);
+      expect(result.spreadsheetUrl).toContain("/example/edit");
+    });
+
+    it("preserves a single heading when the caller has confirmed the format", () => {
+      const text = [
+        formatRow(format, ["サークル名"]),
+        formatRow(format, ["サークル名", "1日目", "東A", "01a", "新刊", "500"]),
+      ].join("\n");
+      expect(() => readEventCsv(text)).toThrow(CsvFormatSelectionRequired);
+      expect(readEventCsv(text, { format, header: true }).rows).toEqual([
+        expect.objectContaining({
+          lineNumber: 2,
+          item: expect.objectContaining({
+            circle: "サークル名",
+            title: "新刊",
+          }),
+        }),
+      ]);
+    });
+
+    it("accepts known headings without optional columns, including an empty sheet", () => {
+      const header = formatRow(format, [
+        "サークル名",
+        "参加日",
+        "ブロック",
+        "番号",
+      ]);
+      expect(readEventCsv(header).rows).toEqual([]);
+      const result = readEventCsv(
+        `${header}\n${formatRow(format, ["サークルA", "1日目", "東A", "01a"])}`,
+      );
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0].item).toMatchObject({
+        circle: "サークルA",
+        title: "",
+        price: null,
+        rawQuantity: "",
+      });
+    });
+
+    it("keeps custom headings available through explicit selection", () => {
+      const text = [
+        formatRow(format, [
+          "出展者",
+          "日程",
+          "区画",
+          "スペース",
+          "作品",
+          "金額",
+        ]),
+        formatRow(format, ["サークル名", "1日目", "東A", "01a", "新刊", "500"]),
+      ].join("\n");
+      expect(() => readEventCsv(text)).toThrow(CsvFormatSelectionRequired);
+      expect(readEventCsv(text, { format, header: true }).rows).toEqual([
+        expect.objectContaining({
+          lineNumber: 2,
+          item: expect.objectContaining({
+            circle: "サークル名",
+            title: "新刊",
+          }),
+        }),
+      ]);
+    });
+  });
+}
+
+it("requires selection when both A and M positions have known headings", () => {
+  const heading = ["サークル名", "参加日", "ブロック", "番号"];
+  const first = [...heading, ...Array<string>(8).fill(""), ...heading].join(
+    ",",
+  );
+  const data = [
+    "A列のサークル",
+    "1日目",
+    "東A",
+    "01a",
+    ...Array<string>(8).fill(""),
+    "M列のサークル",
+    "1日目",
+    "東A",
+    "02a",
+  ].join(",");
+  const text = `${first}\n${data}`;
+  expect(() => readEventCsv(text)).toThrow(CsvFormatSelectionRequired);
+  for (const format of ["legacy", "google"] as const) {
+    expect(readEventCsv(text, { format, header: true }).rows).toEqual([
+      expect.objectContaining({
+        item: expect.objectContaining({
+          circle: format === "legacy" ? "A列のサークル" : "M列のサークル",
+        }),
+      }),
+    ]);
+  }
+});
 
 describe("parseEventItemsFromCsv quantity", () => {
   it("空欄・不正値・正常値を丸めずに差分処理へ渡す", () => {
