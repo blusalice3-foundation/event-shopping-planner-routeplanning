@@ -1142,3 +1142,80 @@ it.each(["constructor", "__proto__", "toString", "hasOwnProperty"])(
     expect(Object.getPrototypeOf(current.eventLists)).toBe(Object.prototype);
   },
 );
+
+it.each([false, true])(
+  "rechecks purchase quantities on the worker path, CAS retry=%s",
+  async (retry) => {
+    const { createItemContentGuard } =
+      await import("../../utils/itemContentGuard");
+    const { server } = await setup();
+    const before = await db.readApplicationSnapshot();
+    Object.assign(before.snapshot.eventLists.event[0]!, { quantity: 5 });
+    await db.commitApplicationSnapshotAtomically(before.snapshot, {
+      expectedRoots: before.expectedRoots,
+      changedStoresOnly: true,
+    });
+    const target = { ...item, quantity: 5 };
+    const intent: ItemContentEdit = {
+      ...edit("purchaseStatus", "Purchased", target),
+      operationKind: "limited-input",
+      guard: createItemContentGuard(
+        before.snapshot,
+        "event",
+        target as import("../../types/item").ShoppingItem,
+        "limited-single",
+        0,
+      ),
+      limitedPurchase: {
+        kind: "purchased",
+        actual: 5,
+        planned: 5,
+        plannedEdited: false,
+        observedPlanned: 5,
+      },
+    };
+    const changeQuantity = async () => {
+      const remote = await db.readApplicationSnapshot();
+      Object.assign(remote.snapshot.eventLists.event[0]!, {
+        quantity: 9,
+        remarks: "他タブのメモ",
+      });
+      await db.commitApplicationSnapshotAtomically(remote.snapshot, {
+        expectedRoots: remote.expectedRoots,
+        changedStoresOnly: true,
+      });
+    };
+    let injected = false;
+    const commit = vi.fn(
+      async (
+        ...args: Parameters<typeof db.commitApplicationSnapshotAtomically>
+      ) => {
+        if (retry && !injected) {
+          injected = true;
+          await changeQuantity();
+        }
+        return db.commitApplicationSnapshotAtomically(...args);
+      },
+    );
+    if (!retry) await changeQuantity();
+    const worker = retry
+      ? createPersistenceWorkerServer({
+          readApplicationSnapshot: db.readApplicationSnapshot,
+          commitApplicationSnapshotAtomically: commit,
+        })
+      : server;
+    const request = structuredClone(intent);
+    expect(await worker.items([request], ["quantity-review"], {})).toEqual({
+      status: "review-required",
+    });
+    expect(commit).toHaveBeenCalledTimes(retry ? 1 : 0);
+    expect(
+      (await db.readApplicationSnapshot()).snapshot.eventLists.event[0],
+    ).toMatchObject({
+      quantity: 9,
+      purchaseStatus: "None",
+      remarks: "他タブのメモ",
+    });
+    expect(request.limitedPurchase).toMatchObject({ actual: 5 });
+  },
+);

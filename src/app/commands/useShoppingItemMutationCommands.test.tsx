@@ -1089,3 +1089,37 @@ it("keeps a new input or view intact when an older import finishes saving", asyn
   expect(h.spies.openEvent).not.toHaveBeenCalled();
   expect(h.spies.showImport).not.toHaveBeenCalled();
 });
+
+it.each([false, true])(
+  "passes limited purchase intent through single and bulk field commands, bulk=%s",
+  async (bulk) => {
+    const { buildLimitedPurchaseDialogUpdate } =
+      await import("../../utils/limitedPurchaseIntent");
+    const original = item("limited", { quantity: 5 });
+    const h = createHarness({
+      eventLists: { [EVENT]: [original] },
+      items: [original],
+    });
+    const updateItemFields = vi.fn();
+    h.ports.actions.updateItemFields = updateItemFields;
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(h.ports),
+    );
+    const intent = {
+      kind: "purchased",
+      actual: 5,
+      planned: 5,
+      plannedEdited: false,
+      observedPlanned: 5,
+    } as const;
+    const updated = buildLimitedPurchaseDialogUpdate(original, intent)!;
+    act(() =>
+      bulk
+        ? result.current.updateItems([updated])
+        : result.current.updateItem(updated),
+    );
+    const call = updateItemFields.mock.calls[0][0];
+    expect((bulk ? call[0] : call).limitedPurchase).toEqual(intent);
+    expect(updated).not.toHaveProperty("limitedPurchase");
+  },
+);

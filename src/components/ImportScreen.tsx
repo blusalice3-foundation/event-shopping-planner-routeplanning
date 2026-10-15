@@ -171,6 +171,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
       return;
     }
 
+    inputGeneration.current++;
     setCircles(result.columns.circles);
     setEventDates(result.columns.eventDates);
     setBlocks(result.columns.blocks);

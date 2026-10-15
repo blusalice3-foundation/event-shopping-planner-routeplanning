@@ -616,7 +616,16 @@ export function useApplicationSnapshot(
                     ([key]) => !overwritten.has(key),
                   ),
                 );
-                return Object.keys(fields).length ? [{ ...edit, fields }] : [];
+                const limitedPurchase = [
+                  "quantity",
+                  "purchaseStatus",
+                  "limitedPurchasedQuantity",
+                ].some((key) => overwritten.has(key))
+                  ? undefined
+                  : edit.limitedPurchase;
+                return Object.keys(fields).length || limitedPurchase
+                  ? [{ ...edit, fields, limitedPurchase }]
+                  : [];
               });
             }
             earlier.acceptedBase = applyChangedFields(
@@ -937,14 +946,15 @@ export function useApplicationSnapshot(
             { present: value !== undefined, value },
           ]),
         );
-        return Object.keys(fields).length
+        return Object.keys(fields).length || input.limitedPurchase
           ? [
               {
                 eventName: input.eventName,
                 itemId: input.itemId,
                 fields,
+                limitedPurchase: input.limitedPurchase,
                 baseline: input.baseline as unknown as Record<string, unknown>,
-                ...(input.guard
+                ...(input.guard || input.limitedPurchase
                   ? {
                       guard: input.guard,
                       operationKind: "limited-input" as const,
@@ -961,7 +971,10 @@ export function useApplicationSnapshot(
       }
       const accepted = planItemContentMutation(source, proposedEdits);
       const next = accepted.snapshot;
-      if (next === source) {
+      if (
+        next === source &&
+        !proposedEdits.some((edit) => edit.limitedPurchase)
+      ) {
         if (inputs.some((input) => input.saveImmediately)) flushDraft();
         finishInput();
         return;
@@ -984,6 +997,8 @@ export function useApplicationSnapshot(
         // guarded edit can reverse the user's final choice for the same item.
         if (
           previous &&
+          !previous.limitedPurchase &&
+          !edit.limitedPurchase &&
           previous.eventName === edit.eventName &&
           previous.itemId === edit.itemId &&
           JSON.stringify(previous.guard ?? null) ===

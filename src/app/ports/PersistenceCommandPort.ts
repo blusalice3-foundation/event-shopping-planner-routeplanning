@@ -1,3 +1,4 @@
+import type { LimitedPurchaseDialogResult } from "../../types/limitedPurchase";
 import type { EventConsistencyStore } from "../../types/consistency";
 import type {
   StartupRecoveryBundle,
@@ -33,6 +34,7 @@ export interface ItemContentGuard {
   readonly mapContext?: string;
 }
 export interface ItemContentEdit {
+  readonly limitedPurchase?: LimitedPurchaseDialogResult;
   readonly operationKind?: "limited-input";
   readonly guard?: ItemContentGuard;
   readonly eventName: string;

@@ -5,6 +5,7 @@ import { ownValue, recordEntry } from "../../utils/ownRecord";
 import {
   itemUpdateBaseline,
   itemExplicitFields,
+  itemLimitedPurchaseIntent,
 } from "../../utils/itemUpdateBaseline";
 import { useCallback, useRef } from "react";
 import type { UpdateItemFieldsInput } from "../state/itemFieldMutation";
@@ -583,6 +584,7 @@ export const useShoppingItemMutationCommands = ({
           baseline: renderedItem ?? currentItem,
           saveImmediately: options?.saveImmediately,
           guard: itemUpdateGuard(updatedItem),
+          limitedPurchase: itemLimitedPurchaseIntent(updatedItem),
         };
         if (fieldCommandBatch.current) fieldCommandBatch.current.push(command);
         else updateItemFields(command);

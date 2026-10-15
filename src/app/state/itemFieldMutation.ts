@@ -1,3 +1,4 @@
+import { resolveLimitedPurchaseIntent } from "../../utils/limitedPurchaseIntent";
 import { recordEntry } from "../../utils/ownRecord";
 import { itemContentGuardFailure } from "../../utils/itemContentGuard";
 import type { ShoppingItem, ViewMode } from "../../types/item";
@@ -33,6 +34,7 @@ export interface UpdateItemFieldsInput {
   readonly baseline: ShoppingItem;
   readonly saveImmediately?: boolean;
   readonly guard?: ItemContentEdit["guard"];
+  readonly limitedPurchase?: ItemContentEdit["limitedPurchase"];
 }
 
 /** Field-only plans do not change membership, visit order or map references. */
@@ -43,6 +45,14 @@ export function planItemContentMutation(
   const normalizedItems = new Map<string, ShoppingItem>();
   const conflicts: ChangedFieldConflict[] = [];
   const normalizedEdits: ItemContentEdit[] = [];
+  const quantityReviews: Array<{
+    eventName: string;
+    itemId: string;
+    actual: number;
+    planned: number;
+    observedPlanned: number;
+    purchaseStatus: string;
+  }> = [];
   const skipped: Array<{ edit: ItemContentEdit; reason: string }> = [];
   for (const edit of edits) {
     const reason = itemContentGuardFailure(source, edit);
@@ -76,6 +86,30 @@ export function planItemContentMutation(
       if (field.present) Object.assign(desired, { [key]: field.value });
       else delete (desired as unknown as Record<string, unknown>)[key];
     }
+    if (edit.limitedPurchase) {
+      const resolved = resolveLimitedPurchaseIntent(
+        current,
+        edit.limitedPurchase,
+      );
+      if (!resolved) throw new Error("Invalid limited purchase quantities.");
+      desired.quantity = resolved.updated.quantity;
+      desired.purchaseStatus = resolved.updated.purchaseStatus;
+      delete desired.limitedPurchasedQuantity;
+      if (resolved.updated.limitedPurchasedQuantity !== undefined)
+        desired.limitedPurchasedQuantity =
+          resolved.updated.limitedPurchasedQuantity;
+      if (resolved.requiresConfirmation && resolved.actual !== undefined)
+        quantityReviews.push({
+          eventName: edit.eventName,
+          itemId: edit.itemId,
+          actual: resolved.actual,
+          planned: desired.quantity,
+          observedPlanned:
+            edit.limitedPurchase.observedPlanned ??
+            edit.limitedPurchase.planned,
+          purchaseStatus: desired.purchaseStatus,
+        });
+    }
     const mode = recordEntry(source.dayModes, edit.eventName)?.[
       current.eventDate
     ] as ViewMode | undefined;
@@ -105,6 +139,22 @@ export function planItemContentMutation(
     { snapshot: applyItemContentEdits(source, normalizedEdits) },
     conflicts,
   );
+  if (quantityReviews.length) {
+    plan.confirmation = {
+      title: "予定数量が変わった購入数を確認",
+      details: [
+        ...quantityReviews.map(
+          ({ itemId, actual, planned, purchaseStatus }) =>
+            `${itemId}: 入力した実購入数は${actual}個です。最新の予定数量${planned}個に対し、${purchaseStatus === "Purchased" ? "購入済み" : "限数購入"}として保存します。`,
+        ),
+        ...(plan.confirmation?.details ?? []),
+      ],
+      comparison: {
+        quantities: quantityReviews,
+        related: plan.confirmation?.comparison ?? null,
+      },
+    };
+  }
   if (skipped.length) {
     plan.confirmation = {
       title: "対象外になった限数入力を確認",

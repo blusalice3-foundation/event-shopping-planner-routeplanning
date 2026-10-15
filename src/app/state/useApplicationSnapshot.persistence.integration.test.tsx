@@ -529,3 +529,97 @@ it("keeps the order of normal, guarded, then normal field edits in one accepted 
   ).toBe(5);
   expect(h.result.current.application.confirmations).toEqual([]);
 });
+
+it("retains entered amounts through no-op acceptance, quantity review and a second remote change", async () => {
+  const { createItemContentGuard } =
+    await import("../../utils/itemContentGuard");
+  const h = await harness();
+  const baseline = h.result.current.application.values.eventLists[EVENT][0];
+  const guard = createItemContentGuard(
+    h.result.current.application.raw,
+    EVENT,
+    baseline,
+    "limited-single",
+    0,
+  );
+  const remote = await db.readApplicationSnapshot();
+  Object.assign(remote.snapshot.eventLists[EVENT][0]!, {
+    quantity: 9,
+    remarks: "他タブのメモ",
+  });
+  await db.commitApplicationSnapshotAtomically(remote.snapshot, {
+    expectedRoots: remote.expectedRoots,
+    changedStoresOnly: true,
+  });
+  act(() =>
+    h.result.current.application.updateItemFields({
+      eventName: EVENT,
+      itemId: baseline.id,
+      baseline,
+      guard,
+      changes: {},
+      limitedPurchase: {
+        kind: "purchased",
+        actual: 2,
+        planned: 2,
+        plannedEdited: false,
+        observedPlanned: 2,
+      },
+    }),
+  );
+  await waitFor(() =>
+    expect(h.result.current.application.confirmations).toHaveLength(1),
+  );
+  expect(
+    h.result.current.application.confirmations[0].confirmation.details.join(
+      "\n",
+    ),
+  ).toContain("実購入数は2個");
+  const exported =
+    await h.result.current.application.coordinator.readExportSnapshot();
+  expect(exported.eventLists[EVENT][0]).toMatchObject({
+    quantity: 2,
+    purchaseStatus: "Purchased",
+  });
+  const oldToken = h.result.current.application.confirmations[0].token;
+  const newer = await db.readApplicationSnapshot();
+  Object.assign(newer.snapshot.eventLists[EVENT][0]!, { quantity: 7 });
+  await db.commitApplicationSnapshotAtomically(newer.snapshot, {
+    expectedRoots: newer.expectedRoots,
+    changedStoresOnly: true,
+  });
+  await act(async () => {
+    h.result.current.application.confirm(oldToken);
+    await expect(h.result.current.application.flush()).rejects.toThrow(
+      "保存前の確認を完了してください。",
+    );
+  });
+  await waitFor(() =>
+    expect(
+      h.result.current.application.confirmations[0]?.token.signature,
+    ).not.toBe(oldToken.signature),
+  );
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.eventLists[EVENT][0],
+  ).not.toHaveProperty("limitedPurchasedQuantity");
+  const token = h.result.current.application.confirmations[0].token;
+  await act(async () => {
+    h.result.current.application.confirm(token);
+    await h.result.current.application.flush();
+  });
+  await waitFor(() =>
+    expect(h.result.current.application.pendingCount).toBe(0),
+  );
+  const saved = (await db.readApplicationSnapshot()).snapshot;
+  expect(saved.eventLists[EVENT][0]).toMatchObject({
+    quantity: 7,
+    purchaseStatus: "LimitedPurchase",
+    limitedPurchasedQuantity: 2,
+    remarks: "他タブのメモ",
+  });
+  expect(saved.eventLists[EVENT][0]).not.toHaveProperty("limitedPurchase");
+  expect(saved.eventLists[EVENT].slice(1)).toEqual(
+    h.seed.eventLists[EVENT].slice(1),
+  );
+  expect(saved.executeModeItems).toEqual(h.seed.executeModeItems);
+});
