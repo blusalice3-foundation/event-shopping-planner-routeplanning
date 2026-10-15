@@ -1,5 +1,6 @@
 import type {
   ApplicationBackupChange,
+  ItemContentEdit,
   PersistenceSnapshot,
 } from "../../app/ports/PersistenceCommandPort";
 import { db } from "../facade/indexedDbPersistence";
@@ -26,6 +27,7 @@ Object.defineProperty(globalThis, "localStorage", {
 self.onmessage = async (
   event: MessageEvent<{
     changes: ApplicationBackupChange[];
+    guardedItemEdits?: readonly ItemContentEdit[];
     snapshot?: PersistenceSnapshot;
   }>,
 ) => {

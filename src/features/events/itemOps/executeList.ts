@@ -1,3 +1,4 @@
+import { recordEntry } from "../../../utils/ownRecord";
 import type {
   DayMapData,
   HallDefinition,
@@ -150,7 +151,7 @@ export function expandMapExecuteInsertItemIds(
 ): string[] {
   return expandSameSpacePriorityItemIds(itemIds, allItems, {
     dayName,
-    excludedIds: new Set(executeModeItems[dayName] || []),
+    excludedIds: new Set(recordEntry(executeModeItems, dayName) || []),
     excludeSeedIdsFromSiblingExpansion: true,
   });
 }
@@ -163,7 +164,7 @@ export function expandExecuteRemovalItemIds(
 ): string[] {
   return expandSameSpacePriorityItemIds(itemIds, allItems, {
     dayName,
-    sourceIds: new Set(executeModeItems[dayName] || []),
+    sourceIds: new Set(recordEntry(executeModeItems, dayName) || []),
   });
 }
 
@@ -243,7 +244,7 @@ export function repositionExecuteItemAfterIdentityChangeWithResult(
   if (previousKey === updatedKey) return { executeModeItems };
 
   const sourceDays = Object.keys(executeModeItems).filter((dayName) =>
-    (executeModeItems[dayName] || []).includes(updatedItem.id),
+    (recordEntry(executeModeItems, dayName) || []).includes(updatedItem.id),
   );
   if (sourceDays.length === 0) return { executeModeItems };
 
@@ -270,7 +271,7 @@ export function repositionExecuteItemAfterIdentityChangeWithResult(
   let departedFirstSourceMember = false;
   let sourceVisitSurvives = false;
   sourceDays.forEach((dayName) => {
-    const sourceIds = executeModeItems[dayName] || [];
+    const sourceIds = recordEntry(executeModeItems, dayName) || [];
     const sourceVisitMemberIds = sourceIds.filter((itemId) => {
       if (itemId === updatedItem.id) return true;
       const item = itemsMap.get(itemId);
@@ -367,7 +368,7 @@ export function computeInsertIntoExecuteAtPosition(
     ) => boolean;
   } = {},
 ): ExecutePositionInsertResult {
-  const currentDayItems = [...(executeModeItems[dayName] || [])];
+  const currentDayItems = [...(recordEntry(executeModeItems, dayName) || [])];
 
   const insertedItemIds =
     options.expandSiblings === false
@@ -535,7 +536,7 @@ export function computeAddToExecuteListFromMapWithResult(
     return { accepted: false, executeModeItems, insertedItemIds: [] };
   }
 
-  const dayItems = [...(executeModeItems[dayName] || [])];
+  const dayItems = [...(recordEntry(executeModeItems, dayName) || [])];
   const itemsMap = new Map(allItems.map((item) => [item.id, item]));
   const insertGroups = groupInsertItemIdsByVisit(insertItemIds, itemsMap);
   const mergedIntoVisitItemIds: string[] = [];
@@ -764,7 +765,7 @@ export function computeRemoveFromExecuteListFromMapWithResult(
     ? expandExecuteRemovalItemIds(itemIds, dayName, allItems, executeModeItems)
     : itemIds;
   const removedItemIdsSet = new Set(removedItemIds);
-  const dayItems = (executeModeItems[dayName] || []).filter(
+  const dayItems = (recordEntry(executeModeItems, dayName) || []).filter(
     (id) => !removedItemIdsSet.has(id),
   );
 
@@ -788,7 +789,7 @@ export function computeMoveToExecuteColumnWithResult(
   executeModeItems: ExecuteModeItems,
   selectedBlockFilters: Set<string>,
 ): ExecutePositionInsertResult {
-  const executeIdsSet = new Set(executeModeItems[dayName] || []);
+  const executeIdsSet = new Set(recordEntry(executeModeItems, dayName) || []);
   const normalizedDayName = normalizeExecutionVisitDay(dayName);
   const currentTabItems = allItems.filter(
     (item) => normalizeExecutionVisitDay(item.eventDate) === normalizedDayName,
@@ -807,7 +808,7 @@ export function computeMoveToExecuteColumnWithResult(
   const itemsToMove = candidateItems.filter((item) => itemIdsSet.has(item.id));
   const orderedItemIds = itemsToMove.map((item) => item.id);
 
-  const currentDayItems = [...(executeModeItems[dayName] || [])];
+  const currentDayItems = [...(recordEntry(executeModeItems, dayName) || [])];
   const existingIdsSet = new Set(currentDayItems);
   const newItemIds = orderedItemIds.filter((id) => !existingIdsSet.has(id));
   if (newItemIds.length === 0) {
@@ -885,7 +886,7 @@ export function computeRemoveFromExecuteColumn(
   executeModeItems: ExecuteModeItems,
   dayName: string,
 ): ExecuteModeItems {
-  const currentDayItems = (executeModeItems[dayName] || []).filter(
+  const currentDayItems = (recordEntry(executeModeItems, dayName) || []).filter(
     (id) => !itemIds.includes(id),
   );
   return {
@@ -907,7 +908,7 @@ export function reorderExecuteIdsForSpaceAdjacency(
   executeModeItems: ExecuteModeItems,
   dayName: string,
 ): ExecuteModeItems {
-  const currentDayItems = executeModeItems[dayName] || [];
+  const currentDayItems = recordEntry(executeModeItems, dayName) || [];
   if (!currentDayItems.includes(itemId)) return executeModeItems;
 
   const itemsMap = new Map(allItems.map((item) => [item.id, item]));

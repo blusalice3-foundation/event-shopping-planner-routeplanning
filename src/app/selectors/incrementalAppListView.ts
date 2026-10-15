@@ -1,3 +1,4 @@
+import { recordEntry } from "../../utils/ownRecord";
 import {
   type ExecuteColumnItemsSelectorInput,
   type BaseFilteredItemsSelectorInput,
@@ -56,7 +57,7 @@ export function createAppListViewProjectors() {
   return {
     execute(input: ExecuteColumnItemsSelectorInput) {
       const ids = input.activeEventName
-        ? (input.executeModeItems[input.activeEventName]?.[
+        ? (recordEntry(input.executeModeItems, input.activeEventName)?.[
             input.activeEventDate
           ] ?? EMPTY_IDS)
         : EMPTY_IDS;
@@ -73,7 +74,9 @@ export function createAppListViewProjectors() {
     },
     base(input: BaseFilteredItemsSelectorInput) {
       const mode = input.activeEventName
-        ? input.dayModes[input.activeEventName]?.[input.activeEventDate]
+        ? recordEntry(input.dayModes, input.activeEventName)?.[
+            input.activeEventDate
+          ]
         : undefined;
       if (mode !== "execute") return input.currentTabItems;
       if (input.sortState === "Manual") return input.executeColumnItems;
@@ -91,7 +94,9 @@ export function createAppListViewProjectors() {
       );
       recentIds = input.recentlyChangedItemIds;
       const mode = input.activeEventName
-        ? input.dayModes[input.activeEventName]?.[input.activeEventDate]
+        ? recordEntry(input.dayModes, input.activeEventName)?.[
+            input.activeEventDate
+          ]
         : undefined;
       const base = itemPositions(input.baseFilteredItems);
       return temporaryItems(
@@ -107,7 +112,9 @@ export function createAppListViewProjectors() {
     },
     visible(input: VisibleItemsSelectorInput) {
       const mode = input.activeEventName
-        ? input.dayModes[input.activeEventName]?.[input.activeEventDate]
+        ? recordEntry(input.dayModes, input.activeEventName)?.[
+            input.activeEventDate
+          ]
         : undefined;
       if (mode !== "execute") return { visibleItems: input.baseFilteredItems };
       if (input.sortState === "Manual")
@@ -128,7 +135,7 @@ export function createAppListViewProjectors() {
     candidate(input: CandidateColumnItemsSelectorInput) {
       candidateInput = input;
       const ids = input.activeEventName
-        ? (input.executeModeItems[input.activeEventName]?.[
+        ? (recordEntry(input.executeModeItems, input.activeEventName)?.[
             input.activeEventDate
           ] ?? EMPTY_IDS)
         : EMPTY_IDS;
@@ -158,7 +165,9 @@ export function createAppListViewProjectors() {
     },
     blocks(input: BlockOptionsSelectorInput) {
       const ids = input.activeEventName
-        ? input.executeModeItems[input.activeEventName]?.[input.activeEventDate]
+        ? recordEntry(input.executeModeItems, input.activeEventName)?.[
+            input.activeEventDate
+          ]
         : undefined;
       return blocks(
         input.currentTabItems,

@@ -1,3 +1,8 @@
+import { recordEntry } from "../../utils/ownRecord";
+import {
+  itemContentGuardFailure,
+  inheritItemGuardGenerations,
+} from "../../utils/itemContentGuard";
 import type {
   ItemContentEdit,
   PersistenceSnapshot,
@@ -31,8 +36,8 @@ export function collectItemContentEdits(
   if (events.length !== Object.keys(next.eventLists).length) return undefined;
   const edits: ItemContentEdit[] = [];
   for (const eventName of events) {
-    const previous = base.eventLists[eventName];
-    const current = next.eventLists[eventName];
+    const previous = recordEntry(base.eventLists, eventName);
+    const current = recordEntry(next.eventLists, eventName);
     if (!current || previous.length !== current.length) return undefined;
     for (let index = 0; index < previous.length; index++) {
       const before = previous[index];
@@ -82,13 +87,14 @@ export function applyItemContentEdits(
 ): PersistenceSnapshot {
   const byEvent = new Map<string, Map<string, ItemContentEdit["fields"]>>();
   for (const edit of edits) {
+    if (itemContentGuardFailure(source, edit)) continue;
     let items = byEvent.get(edit.eventName);
     if (!items) byEvent.set(edit.eventName, (items = new Map()));
     items.set(edit.itemId, { ...items.get(edit.itemId), ...edit.fields });
   }
   let lists = source.eventLists;
   for (const [eventName, changes] of byEvent) {
-    const items = source.eventLists[eventName];
+    const items = recordEntry(source.eventLists, eventName);
     if (!items) continue;
     let next = items;
     const changedIndices: number[] = [];
@@ -123,5 +129,5 @@ export function applyItemContentEdits(
   }
   return lists === source.eventLists
     ? source
-    : { ...source, eventLists: lists };
+    : inheritItemGuardGenerations(source, { ...source, eventLists: lists });
 }

@@ -1,3 +1,8 @@
+import { recordEntry } from "../../utils/ownRecord";
+import {
+  buildFocusSessionKey,
+  parseFocusSessionKey,
+} from "../../utils/focusSessionKey";
 import type { ApplicationMutationPort } from "../ports/ApplicationMutationPort";
 import {
   planEventDelete,
@@ -46,7 +51,7 @@ export const removeFocusModeSessionByEvent = (
   const next: Record<string, FocusModeSessionState> = {};
 
   Object.entries(sessions).forEach(([key, value]) => {
-    if (key.startsWith(`${eventName}::`)) {
+    if (parseFocusSessionKey(key)?.[0] === eventName) {
       changed = true;
       return;
     }
@@ -65,9 +70,9 @@ export const renameFocusModeSessionKeys = (
   const next: Record<string, FocusModeSessionState> = {};
 
   Object.entries(sessions).forEach(([key, value]) => {
-    if (key.startsWith(`${oldEventName}::`)) {
-      const suffix = key.slice(oldEventName.length);
-      next[`${newEventName}${suffix}`] = value;
+    const owner = parseFocusSessionKey(key);
+    if (owner?.[0] === oldEventName) {
+      next[buildFocusSessionKey(newEventName, owner[1])] = value;
       changed = true;
     } else {
       next[key] = value;
@@ -139,7 +144,7 @@ export const useEventLifecycleCommands = ({
 }: EventLifecycleCommandPorts): EventLifecycleCommands => {
   const selectEvent = useCallback(
     (eventName: string) => {
-      const tab = resolveEventListTab(eventLists[eventName] || []);
+      const tab = resolveEventListTab(recordEntry(eventLists, eventName) || []);
       if (!tab) {
         notify("参加日がないため処理を停止しました。");
         return;

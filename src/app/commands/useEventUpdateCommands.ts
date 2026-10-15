@@ -1,4 +1,7 @@
-import { useCallback } from "react";
+import { bulkImportFailureStatus } from "../../utils/importOutcome";
+import { recordEntry } from "../../utils/ownRecord";
+import { useCallback, useRef } from "react";
+import type { BulkImportResult } from "../../types/import";
 import type {
   EventMetadata,
   ExecuteModeItems,
@@ -53,7 +56,7 @@ export interface EventUpdateActionPort {
     eventName: string,
     items: ImportedShoppingItem[],
     metadata?: BulkAddMetadata,
-  ): Promise<void>;
+  ): Promise<BulkImportResult>;
   commitEventUpdateState(state: EventUpdateCommitState): Promise<boolean>;
   openEventUpdate(pending: PendingEventUpdate): void;
   openUrlUpdate(eventName: string): void;
@@ -116,6 +119,20 @@ export const useEventUpdateCommands = ({
     confirmEventOverlay,
   } = actions;
   const { notify, reportError } = effects;
+  const importCompletion =
+    useRef<PendingDuplicateEventImport["complete"]>(undefined);
+  const savingImport = useRef(false);
+  const finishImport = useCallback(
+    (result: BulkImportResult) => {
+      const complete =
+        importCompletion.current ??
+        pendingEventUpdate?.onImportComplete ??
+        pendingDuplicateEvent?.complete;
+      complete?.(result);
+      importCompletion.current = undefined;
+    },
+    [pendingEventUpdate?.onImportComplete, pendingDuplicateEvent?.complete],
+  );
 
   const previewEventUpdate = useCallback(
     async ({
@@ -128,17 +145,23 @@ export const useEventUpdateCommands = ({
       closeEventOverlay();
       pendingEventUpdateBaseItemsRef.current = null;
 
-      const latestItems = eventListsRef.current[eventName];
-      if (!latestItems) return;
+      const latestItems = recordEntry(eventListsRef.current, eventName);
+      if (!latestItems) {
+        finishImport({ status: "invalidated" });
+        return;
+      }
       const currentItems = structuredClone(latestItems);
       const requestEpoch = eventUpdatePreviewEpochRef.current;
       const eventGeneration = getEventGeneration?.(eventName);
       const isCurrentRequest = () =>
         eventUpdatePreviewEpochRef.current === requestEpoch &&
         getEventGeneration?.(eventName) === eventGeneration &&
-        eventUpdateItemsMatch(eventListsRef.current[eventName], currentItems);
+        eventUpdateItemsMatch(
+          recordEntry(eventListsRef.current, eventName),
+          currentItems,
+        );
 
-      await settleEventUpdatePreviewIfCurrent({
+      const previewResult = await settleEventUpdatePreviewIfCurrent({
         loadPreview: () =>
           buildEventUpdateDiffFromSpreadsheet(currentItems, source),
         isCurrent: isCurrentRequest,
@@ -151,6 +174,9 @@ export const useEventUpdateCommands = ({
                   eventName,
                   diff: updateDiff,
                   ...(eventGeneration === undefined ? {} : { eventGeneration }),
+                  ...(importCompletion.current
+                    ? { onImportComplete: importCompletion.current }
+                    : {}),
                   nextSource: source,
                 }
               : {
@@ -158,14 +184,26 @@ export const useEventUpdateCommands = ({
                   eventName,
                   diff: updateDiff,
                   ...(eventGeneration === undefined ? {} : { eventGeneration }),
+                  ...(importCompletion.current
+                    ? { onImportComplete: importCompletion.current }
+                    : {}),
                 },
           );
         },
-        onError,
+        onError: (error) => {
+          if (error instanceof Error) notify(error.message);
+          onError(error);
+        },
       });
+      if (previewResult !== "committed")
+        finishImport({
+          status: previewResult === "stale" ? "invalidated" : "failed",
+        });
     },
     [
       getEventGeneration,
+      finishImport,
+      notify,
       eventListsRef,
       eventUpdatePreviewEpochRef,
       closeEventOverlay,
@@ -176,7 +214,9 @@ export const useEventUpdateCommands = ({
 
   const handleUpdateEvent = useCallback(
     async (eventName: string): Promise<void> => {
-      const source = resolveSpreadsheetSource(eventMetadata[eventName]);
+      const source = resolveSpreadsheetSource(
+        recordEntry(eventMetadata, eventName),
+      );
       if (!source) {
         eventUpdatePreviewEpochRef.current += 1;
         openUrlUpdate(eventName);
@@ -205,7 +245,26 @@ export const useEventUpdateCommands = ({
   const handleDuplicateEventResolution = useCallback(
     async (resolution: DuplicateEventResolution): Promise<void> => {
       const pending = pendingDuplicateEvent;
+      if (savingImport.current) return;
       if (!pending) return;
+      if (pending.metadata?.request?.isCurrent?.() === false) {
+        pending.complete?.({ status: "invalidated" });
+        closeEventOverlay();
+        return;
+      }
+      if (
+        pending.eventGeneration !== undefined &&
+        pending.eventGeneration !==
+          getEventGeneration?.(pending.analysis.eventName)
+      ) {
+        pending.complete?.({ status: "invalidated" });
+        closeEventOverlay();
+        notify(
+          "対象イベントが変更されたため取込みを終了しました。入力を確認して再試行してください。",
+        );
+        return;
+      }
+      importCompletion.current = pending.complete;
       eventUpdatePreviewEpochRef.current += 1;
       closeEventOverlay();
 
@@ -218,23 +277,43 @@ export const useEventUpdateCommands = ({
               source: "spreadsheet",
             }
           : pending.metadata;
-        await applyBulkAdd(
-          resolution.eventName,
-          resolution.items,
-          nextMetadata,
-        );
+        savingImport.current = true;
+        try {
+          finishImport(
+            await applyBulkAdd(
+              resolution.eventName,
+              resolution.items,
+              nextMetadata,
+            ),
+          );
+        } catch {
+          finishImport({ status: "failed" });
+        } finally {
+          savingImport.current = false;
+        }
         return;
       }
 
       if (resolution.action === "append-fixed-items") {
         if (resolution.items.length === 0) {
+          finishImport({ status: "no-additions" });
           notify(
             `追加できる新しい品目はありません。完全一致の${resolution.duplicateItemCount}件は追加対象から除かれました。`,
           );
         } else {
-          await applyBulkAdd(resolution.eventName, resolution.items, {
-            source: "app",
-          });
+          savingImport.current = true;
+          try {
+            finishImport(
+              await applyBulkAdd(resolution.eventName, resolution.items, {
+                source: "app",
+                request: pending.metadata?.request,
+              }),
+            );
+          } catch {
+            finishImport({ status: "failed" });
+          } finally {
+            savingImport.current = false;
+          }
         }
         return;
       }
@@ -274,6 +353,8 @@ export const useEventUpdateCommands = ({
     },
     [
       applyBulkAdd,
+      finishImport,
+      getEventGeneration,
       closeEventOverlay,
       eventUpdatePreviewEpochRef,
       notify,
@@ -285,17 +366,23 @@ export const useEventUpdateCommands = ({
   );
 
   const handleDuplicateEventCancel = useCallback(() => {
+    if (savingImport.current) return;
+
+    finishImport({ status: "cancelled" });
     eventUpdatePreviewEpochRef.current += 1;
     closeEventOverlay();
-  }, [closeEventOverlay, eventUpdatePreviewEpochRef]);
+  }, [closeEventOverlay, eventUpdatePreviewEpochRef, finishImport]);
 
   const handleCancelUpdate = useCallback(() => {
+    if (savingImport.current) return;
+    finishImport({ status: "cancelled" });
+    eventUpdatePreviewEpochRef.current += 1;
     closeEventOverlay();
-  }, [closeEventOverlay]);
+  }, [closeEventOverlay, eventUpdatePreviewEpochRef, finishImport]);
 
   const handleConfirmUpdate = useCallback(
     async (options: EventUpdateApplyOptions): Promise<void> => {
-      if (!pendingEventUpdate) return;
+      if (!pendingEventUpdate || savingImport.current) return;
 
       const generationMatches =
         pendingEventUpdate.eventGeneration === undefined ||
@@ -314,6 +401,7 @@ export const useEventUpdateCommands = ({
           })
         : null;
       if (!nextState) {
+        finishImport({ status: "invalidated" });
         closeEventOverlay();
         notify(
           "確認中にイベントの品目が変更または削除されたため、更新元も品目も変更していません。もう一度更新してください。",
@@ -321,13 +409,36 @@ export const useEventUpdateCommands = ({
         return;
       }
 
-      if (!(await commitEventUpdateState(nextState))) return;
+      savingImport.current = true;
+      try {
+        if (!(await commitEventUpdateState(nextState))) {
+          finishImport({ status: "failed" });
+          return;
+        }
+      } catch (error) {
+        const status = bulkImportFailureStatus(error);
+        finishImport({ status });
+        if (status === "unknown" || status === "committed-ui-failed") {
+          closeEventOverlay();
+          notify(
+            "保存結果の確認が必要です。再取込みせず、画面を再読み込みして保存内容を確認してください。",
+          );
+        } else if (status === "failed")
+          notify(
+            "イベントを保存できませんでした。表示内容は変更されていません。",
+          );
+        return;
+      } finally {
+        savingImport.current = false;
+      }
+      finishImport({ status: "saved" });
       pendingEventUpdateBaseItemsRef.current = null;
       confirmEventOverlay();
       notify("アイテムを更新しました。");
     },
     [
       commitEventUpdateState,
+      finishImport,
       closeEventOverlay,
       confirmEventOverlay,
       eventListsRef,
@@ -346,7 +457,7 @@ export const useEventUpdateCommands = ({
       if (!pendingUpdateEventName) return;
 
       const eventName = pendingUpdateEventName;
-      const currentMetadata = eventMetadata[eventName];
+      const currentMetadata = recordEntry(eventMetadata, eventName);
       const normalizedSheetName =
         sheetName || currentMetadata?.spreadsheetSheetName || "";
 

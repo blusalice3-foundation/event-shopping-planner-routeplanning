@@ -1,3 +1,4 @@
+import { recordEntry } from "../../utils/ownRecord";
 import {
   useCallback,
   useEffect,
@@ -268,18 +269,20 @@ export const useMapEditorCommands = ({
         return [];
       }
 
-      const halls = hallDefinitions[activeEventName]?.[currentMapTabName] ?? [];
-      const routeSettings = hallRouteSettings[activeEventName]?.[
+      const halls =
+        recordEntry(hallDefinitions, activeEventName)?.[currentMapTabName] ??
+        [];
+      const routeSettings = recordEntry(hallRouteSettings, activeEventName)?.[
         currentMapTabName
       ] ?? { hallOrder: [], hallVisitLists: [] };
       const result = computeAddToExecuteListFromMapWithResult(
         itemId,
         activeEventDate,
         items,
-        executeModeItemsRef.current[activeEventName] ?? {},
+        recordEntry(executeModeItemsRef.current, activeEventName) ?? {},
         halls,
         routeSettings,
-        mapData[activeEventName]?.[currentMapTabName],
+        recordEntry(mapData, activeEventName)?.[currentMapTabName],
       );
       if (!result.accepted) return [];
       commitExecuteModeItemsForEvent(activeEventName, result.executeModeItems);
@@ -310,7 +313,7 @@ export const useMapEditorCommands = ({
         [itemId],
         referenceItemId,
         position,
-        executeModeItemsRef.current[activeEventName] ?? {},
+        recordEntry(executeModeItemsRef.current, activeEventName) ?? {},
         activeEventDate,
         items,
         {
@@ -342,7 +345,7 @@ export const useMapEditorCommands = ({
       if (!activeEventName || !isMapTab || !activeEventDate) return undefined;
       const result = computeRemoveFromExecuteListFromMapWithResult(
         [itemId],
-        executeModeItemsRef.current[activeEventName] ?? {},
+        recordEntry(executeModeItemsRef.current, activeEventName) ?? {},
         activeEventDate,
         items,
       );
@@ -369,16 +372,20 @@ export const useMapEditorCommands = ({
       ) {
         return [];
       }
-      const halls = hallDefinitions[activeEventName]?.[currentMapTabName] ?? [];
-      const routeSettings = hallRouteSettings[activeEventName]?.[
+      const halls =
+        recordEntry(hallDefinitions, activeEventName)?.[currentMapTabName] ??
+        [];
+      const routeSettings = recordEntry(hallRouteSettings, activeEventName)?.[
         currentMapTabName
       ] ?? { hallOrder: [], hallVisitLists: [] };
-      const currentMap = mapData[activeEventName]?.[currentMapTabName];
+      const currentMap = recordEntry(mapData, activeEventName)?.[
+        currentMapTabName
+      ];
       const result = computeBatchAddToExecuteListFromMapWithResult(
         itemIds,
         activeEventDate,
         items,
-        executeModeItemsRef.current[activeEventName] ?? {},
+        recordEntry(executeModeItemsRef.current, activeEventName) ?? {},
         halls,
         routeSettings,
         currentMap,
@@ -412,7 +419,7 @@ export const useMapEditorCommands = ({
         itemIds,
         referenceItemId,
         position,
-        executeModeItemsRef.current[activeEventName] ?? {},
+        recordEntry(executeModeItemsRef.current, activeEventName) ?? {},
         activeEventDate,
         items,
         {
@@ -444,7 +451,7 @@ export const useMapEditorCommands = ({
       if (!activeEventName || !isMapTab || !activeEventDate) return undefined;
       const result = computeRemoveFromExecuteListFromMapWithResult(
         itemIds,
-        executeModeItemsRef.current[activeEventName] ?? {},
+        recordEntry(executeModeItemsRef.current, activeEventName) ?? {},
         activeEventDate,
         items,
       );
@@ -478,9 +485,9 @@ export const useMapEditorCommands = ({
     ): FocusModeAddItemResult | undefined => {
       if (!activeEventName) return;
       const result = computeAddItemFromFocusMode(
-        eventLists[activeEventName] ?? [],
+        recordEntry(eventLists, activeEventName) ?? [],
         newItem,
-        executeModeItemsRef.current[activeEventName] ?? {},
+        recordEntry(executeModeItemsRef.current, activeEventName) ?? {},
       );
       setEventLists((previous) => ({
         ...previous,
@@ -511,7 +518,7 @@ export const useMapEditorCommands = ({
     (itemId: string): void => {
       if (!activeEventName || !isMapTab || !activeEventDate) return;
       updateExecuteModeItems((previous) => {
-        const eventItems = previous[activeEventName] ?? {};
+        const eventItems = recordEntry(previous, activeEventName) ?? {};
         const dayItemIds = eventItems[activeEventDate] ?? [];
         const targetItem = items.find((item) => item.id === itemId);
         const targetVisitKey = targetItem
@@ -545,7 +552,7 @@ export const useMapEditorCommands = ({
     (itemId: string): void => {
       if (!activeEventName || !isMapTab || !activeEventDate) return;
       updateExecuteModeItems((previous) => {
-        const eventItems = previous[activeEventName] ?? {};
+        const eventItems = recordEntry(previous, activeEventName) ?? {};
         const dayItemIds = eventItems[activeEventDate] ?? [];
         const targetItem = items.find((item) => item.id === itemId);
         const targetVisitKey = targetItem
@@ -582,15 +589,17 @@ export const useMapEditorCommands = ({
     ): Promise<void> => {
       if (!activeEventName || !visitListPanelMapTab) return;
       const halls =
-        hallDefinitions[activeEventName]?.[visitListPanelMapTab] ?? [];
+        recordEntry(hallDefinitions, activeEventName)?.[visitListPanelMapTab] ??
+        [];
       const result = computeUpdateItemPriority(
         itemId,
         priorityLevel,
         items,
         halls,
-        mapData[activeEventName]?.[visitListPanelMapTab],
-        hallRouteSettings[activeEventName]?.[visitListPanelMapTab] ??
-          emptyHallRouteSettings(),
+        recordEntry(mapData, activeEventName)?.[visitListPanelMapTab],
+        recordEntry(hallRouteSettings, activeEventName)?.[
+          visitListPanelMapTab
+        ] ?? emptyHallRouteSettings(),
       );
       const nextEventLists = {
         ...eventLists,
@@ -599,7 +608,7 @@ export const useMapEditorCommands = ({
       const nextHallRouteSettings = {
         ...hallRouteSettings,
         [activeEventName]: {
-          ...hallRouteSettings[activeEventName],
+          ...recordEntry(hallRouteSettings, activeEventName),
           [visitListPanelMapTab]: result.hallRouteSettings,
         },
       };
@@ -610,7 +619,7 @@ export const useMapEditorCommands = ({
       if (!updatedItem) return;
       const repositionResult =
         repositionExecuteItemAfterIdentityChangeWithResult(
-          executeModeItemsRef.current[activeEventName] ?? {},
+          recordEntry(executeModeItemsRef.current, activeEventName) ?? {},
           changedItem,
           updatedItem,
           result.items,
@@ -652,16 +661,17 @@ export const useMapEditorCommands = ({
       priorityLevel: MapEditorPriorityLevel,
     ): Promise<void> => {
       if (!activeEventName) return;
-      const currentItems = eventLists[activeEventName] ?? [];
+      const currentItems = recordEntry(eventLists, activeEventName) ?? [];
       const changedItem = currentItems.find((item) => item.id === itemId);
       if (!changedItem) return;
       const resolvedHallId = getItemHallId(changedItem, changedItem.eventDate);
       const mapTabForItem = getMapTabForDate(changedItem.eventDate);
       const mapHallIds = new Set(
         mapTabForItem
-          ? (hallDefinitions[activeEventName]?.[mapTabForItem] ?? []).map(
-              (hall) => hall.id,
-            )
+          ? (
+              recordEntry(hallDefinitions, activeEventName)?.[mapTabForItem] ??
+              []
+            ).map((hall) => hall.id)
           : [],
       );
       const targetKey =
@@ -672,11 +682,11 @@ export const useMapEditorCommands = ({
         itemId,
         priorityLevel,
         currentItems,
-        hallDefinitions[activeEventName]?.[targetKey] ?? [],
+        recordEntry(hallDefinitions, activeEventName)?.[targetKey] ?? [],
         targetKey.startsWith(MAPLESS_HALL_KEY)
           ? undefined
-          : mapData[activeEventName]?.[targetKey],
-        hallRouteSettings[activeEventName]?.[targetKey] ??
+          : recordEntry(mapData, activeEventName)?.[targetKey],
+        recordEntry(hallRouteSettings, activeEventName)?.[targetKey] ??
           emptyHallRouteSettings(),
       );
       const nextEventLists = {
@@ -686,7 +696,7 @@ export const useMapEditorCommands = ({
       const nextHallRouteSettings = {
         ...hallRouteSettings,
         [activeEventName]: {
-          ...hallRouteSettings[activeEventName],
+          ...recordEntry(hallRouteSettings, activeEventName),
           [targetKey]: result.hallRouteSettings,
         },
       };
@@ -694,7 +704,7 @@ export const useMapEditorCommands = ({
       if (!updatedItem) return;
       const repositionResult =
         repositionExecuteItemAfterIdentityChangeWithResult(
-          executeModeItemsRef.current[activeEventName] ?? {},
+          recordEntry(executeModeItemsRef.current, activeEventName) ?? {},
           changedItem,
           updatedItem,
           result.items,
@@ -737,16 +747,17 @@ export const useMapEditorCommands = ({
       oldPriorityLevel: MapEditorPriorityLevel,
     ): void => {
       if (!activeEventName) return;
-      const currentItems = eventLists[activeEventName] ?? [];
+      const currentItems = recordEntry(eventLists, activeEventName) ?? [];
       const changedItem = currentItems.find((item) => item.id === itemId);
       if (!changedItem) return;
       const resolvedHallId = getItemHallId(changedItem, changedItem.eventDate);
       const mapTabForItem = getMapTabForDate(changedItem.eventDate);
       const mapHallIds = new Set(
         mapTabForItem
-          ? (hallDefinitions[activeEventName]?.[mapTabForItem] ?? []).map(
-              (hall) => hall.id,
-            )
+          ? (
+              recordEntry(hallDefinitions, activeEventName)?.[mapTabForItem] ??
+              []
+            ).map((hall) => hall.id)
           : [],
       );
       const targetKey =
@@ -763,17 +774,17 @@ export const useMapEditorCommands = ({
         newPriorityLevel,
         oldPriorityLevel,
         itemsAfter,
-        hallDefinitions[activeEventName]?.[targetKey] ?? [],
+        recordEntry(hallDefinitions, activeEventName)?.[targetKey] ?? [],
         targetKey.startsWith(MAPLESS_HALL_KEY)
           ? undefined
-          : mapData[activeEventName]?.[targetKey],
-        hallRouteSettings[activeEventName]?.[targetKey] ??
+          : recordEntry(mapData, activeEventName)?.[targetKey],
+        recordEntry(hallRouteSettings, activeEventName)?.[targetKey] ??
           emptyHallRouteSettings(),
       );
       setHallRouteSettings((previous) => ({
         ...previous,
         [activeEventName]: {
-          ...previous[activeEventName],
+          ...recordEntry(previous, activeEventName),
           [targetKey]: nextSettings,
         },
       }));
@@ -804,7 +815,7 @@ export const useMapEditorCommands = ({
       setMapData((previous) => ({
         ...previous,
         [activeEventName]: {
-          ...previous[activeEventName],
+          ...recordEntry(previous, activeEventName),
           [currentMapTabName]: {
             ...currentMapData,
             blocks,
@@ -900,14 +911,17 @@ export const useMapEditorCommands = ({
       if (!activeEventName || !activeEventDate) return;
 
       const sourceKey = getMaplessKey(activeEventDate);
-      const sourceHalls = hallDefinitions[activeEventName]?.[sourceKey] ?? [];
+      const sourceHalls =
+        recordEntry(hallDefinitions, activeEventName)?.[sourceKey] ?? [];
       if (sourceHalls.length === 0) return;
       const clonedByDate = cloneHallsForDates(sourceHalls, targetDates);
 
       const nextHallDefinitions = (() => {
         const updated: HallDefinitionsStore = {
           ...hallDefinitions,
-          [activeEventName]: { ...hallDefinitions[activeEventName] },
+          [activeEventName]: {
+            ...recordEntry(hallDefinitions, activeEventName),
+          },
         };
         for (const date of targetDates) {
           const targetKey = getMaplessKey(date);
@@ -921,14 +935,16 @@ export const useMapEditorCommands = ({
       const nextHallRouteSettings = (() => {
         const updated: HallRouteSettingsStore = {
           ...hallRouteSettings,
-          [activeEventName]: { ...hallRouteSettings[activeEventName] },
+          [activeEventName]: {
+            ...recordEntry(hallRouteSettings, activeEventName),
+          },
         };
         for (const date of targetDates) {
           const targetKey = getMaplessKey(date);
           const cloned = clonedByDate.get(date);
           if (!cloned) continue;
           const sourceSettings =
-            hallRouteSettings[activeEventName]?.[sourceKey] ??
+            recordEntry(hallRouteSettings, activeEventName)?.[sourceKey] ??
             emptyHallRouteSettings();
           updated[activeEventName][targetKey] = remapHallRouteSettings(
             sourceSettings,
@@ -970,7 +986,8 @@ export const useMapEditorCommands = ({
       if (!activeEventName || !isMapTab || !currentMapTabName) return;
 
       const sourceHalls =
-        hallDefinitions[activeEventName]?.[currentMapTabName] ?? [];
+        recordEntry(hallDefinitions, activeEventName)?.[currentMapTabName] ??
+        [];
       if (sourceHalls.length === 0) return;
       const targetMapTabsByDate = new Map<string, string>();
       for (const date of targetDates) {
@@ -988,7 +1005,9 @@ export const useMapEditorCommands = ({
       const nextHallDefinitions = (() => {
         const updated: HallDefinitionsStore = {
           ...hallDefinitions,
-          [activeEventName]: { ...hallDefinitions[activeEventName] },
+          [activeEventName]: {
+            ...recordEntry(hallDefinitions, activeEventName),
+          },
         };
         for (const [date, { halls }] of clonedByDate) {
           const targetMapTab = targetMapTabsByDate.get(date);
@@ -1000,14 +1019,17 @@ export const useMapEditorCommands = ({
       const nextHallRouteSettings = (() => {
         const updated: HallRouteSettingsStore = {
           ...hallRouteSettings,
-          [activeEventName]: { ...hallRouteSettings[activeEventName] },
+          [activeEventName]: {
+            ...recordEntry(hallRouteSettings, activeEventName),
+          },
         };
         for (const [date, { idMap }] of clonedByDate) {
           const targetMapTab = targetMapTabsByDate.get(date);
           if (!targetMapTab) continue;
           const sourceSettings =
-            hallRouteSettings[activeEventName]?.[currentMapTabName] ??
-            emptyHallRouteSettings();
+            recordEntry(hallRouteSettings, activeEventName)?.[
+              currentMapTabName
+            ] ?? emptyHallRouteSettings();
           updated[activeEventName][targetMapTab] = remapHallRouteSettings(
             sourceSettings,
             idMap,

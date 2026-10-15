@@ -7,7 +7,7 @@ export function rememberItemUpdateBaseline(
   updated: ShoppingItem,
   baseline: ShoppingItem,
 ): ShoppingItem {
-  baselines.set(updated, baseline);
+  if (!baselines.has(updated)) baselines.set(updated, baseline);
   return updated;
 }
 
@@ -16,3 +16,13 @@ export function itemUpdateBaseline(
 ): ShoppingItem | undefined {
   return baselines.get(updated);
 }
+
+const explicitFields = new WeakMap<ShoppingItem, readonly string[]>();
+export function rememberExplicitItemFields(
+  item: ShoppingItem,
+  fields: readonly string[],
+) {
+  explicitFields.set(item, fields);
+}
+export const itemExplicitFields = (item: ShoppingItem): readonly string[] =>
+  explicitFields.get(item) ?? [];

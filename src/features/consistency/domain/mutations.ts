@@ -1,3 +1,5 @@
+import { ownValue } from "../../../utils/ownRecord";
+import { recordEntry, setOwnValue } from "../../../utils/ownRecord";
 import { semanticEqual } from "../../../utils/semanticEquality";
 import type { ApplicationSnapshotCommitContext } from "../../../app/commands/ApplicationSnapshotCommitPort";
 import { interpretLegacyGroup } from "./context";
@@ -83,9 +85,14 @@ export function applyChangedFields(
       ...Object.keys(base),
       ...Object.keys(desired),
     ])) {
-      if (equal(base[key], desired[key])) continue;
+      if (equal(ownValue(base, key), ownValue(desired, key))) continue;
       const value = Object.prototype.hasOwnProperty.call(desired, key)
-        ? applyChangedFields(base[key], desired[key], latest[key], options)
+        ? applyChangedFields(
+            ownValue(base, key),
+            ownValue(desired, key),
+            ownValue(latest, key),
+            options,
+          )
         : undefined;
       if (value === undefined) delete result[key];
       else
@@ -178,10 +185,12 @@ export function changedFieldConflicts(
     return [
       ...new Set([...Object.keys(base), ...Object.keys(desired)]),
     ].flatMap((key) =>
-      changedFieldConflicts(base[key], desired[key], latest[key], [
-        ...path,
-        key,
-      ]),
+      changedFieldConflicts(
+        ownValue(base, key),
+        ownValue(desired, key),
+        ownValue(latest, key),
+        [...path, key],
+      ),
     );
   const identifiable = (
     value: unknown,
@@ -268,7 +277,8 @@ function projectedMutationDays(
   if (input.eventName) add(input.eventName, input.day);
 
   for (const [eventName, items] of Object.entries(patch.eventLists ?? {})) {
-    const old = (projected.eventLists[eventName] ?? []) as ShoppingItem[];
+    const old = (recordEntry(projected.eventLists, eventName) ??
+      []) as ShoppingItem[];
     const next = items as ShoppingItem[];
     const oldById = new Map(
       old.map((item, index) => [item.id, { item, index }]),
@@ -289,9 +299,9 @@ function projectedMutationDays(
     for (const [eventName, days] of Object.entries(patch[store] ?? {}))
       for (const day of new Set([
         ...Object.keys(days),
-        ...Object.keys(projected[store][eventName] ?? {}),
+        ...Object.keys(recordEntry(projected[store], eventName) ?? {}),
       ]))
-        if (!equal(days[day], projected[store][eventName]?.[day]))
+        if (!equal(days[day], recordEntry(projected[store], eventName)?.[day]))
           add(eventName, day);
   for (const [eventName, routes] of Object.entries(input.routeDays ?? {}))
     for (const days of Object.values(routes))
@@ -300,17 +310,20 @@ function projectedMutationDays(
     ...Object.keys(patch.hallDefinitions ?? {}),
     ...Object.keys(patch.mapData ?? {}),
   ])) {
-    const maps = (patch.mapData?.[eventName] ??
-      source.mapData[eventName]) as Record<string, DayMapData>;
+    const maps = (recordEntry(patch.mapData, eventName) ??
+      recordEntry(source.mapData, eventName)) as Record<string, DayMapData>;
     const changedMaps = new Set<string>();
     for (const store of ["hallDefinitions", "mapData"] as const) {
-      if (!patch[store]?.[eventName]) continue;
+      if (!recordEntry(patch[store], eventName)) continue;
       for (const key of new Set([
-        ...Object.keys(source[store][eventName] ?? {}),
-        ...Object.keys(patch[store][eventName]),
+        ...Object.keys(recordEntry(source[store], eventName) ?? {}),
+        ...Object.keys(recordEntry(patch[store], eventName)),
       ])) {
         if (
-          equal(source[store][eventName]?.[key], patch[store][eventName][key])
+          equal(
+            recordEntry(source[store], eventName)?.[key],
+            recordEntry(patch[store], eventName)[key],
+          )
         )
           continue;
         if (key.startsWith(`${MAPLESS_HALL_KEY}:`))
@@ -319,15 +332,17 @@ function projectedMutationDays(
       }
     }
     for (const day of collectEventDays(
-      (source.eventLists[eventName] as ShoppingItem[]) ?? [],
-      source.executeModeItems[eventName],
-      source.dayModes[eventName],
-      source.eventConsistency[eventName]?.days,
+      (recordEntry(source.eventLists, eventName) as ShoppingItem[]) ?? [],
+      recordEntry(source.executeModeItems, eventName),
+      recordEntry(source.dayModes, eventName),
+      recordEntry(source.eventConsistency, eventName)?.days,
     )) {
       if (
-        dayMapDependencies(maps, source.eventConsistency[eventName], day).some(
-          (key) => changedMaps.has(key),
-        )
+        dayMapDependencies(
+          maps,
+          recordEntry(source.eventConsistency, eventName),
+          day,
+        ).some((key) => changedMaps.has(key))
       )
         add(eventName, day);
     }
@@ -372,7 +387,7 @@ function remapProjectedHalls(
         for (const [key, halls] of Object.entries(sources)) {
           const simple = key.startsWith(`${MAPLESS_HALL_KEY}:`)
             ? resolveSimpleKey(
-                merged.hallDefinitions[name],
+                recordEntry(merged.hallDefinitions, name),
                 key.slice(MAPLESS_HALL_KEY.length + 1),
               )
             : undefined;
@@ -447,18 +462,20 @@ export function planProjectedMutation(
     reviewedPatch.dayModes = {
       ...(reviewedPatch.dayModes ?? projection.dayModes),
       [eventName]: {
-        ...(reviewedPatch.dayModes?.[eventName] ??
-          projection.dayModes[eventName]),
+        ...(recordEntry(reviewedPatch.dayModes, eventName) ??
+          recordEntry(projection.dayModes, eventName)),
         [normalizeExecutionVisitDay(day)]: mode,
       },
     };
   }
   const defaults: Record<string, string> = {};
   for (const { eventName, day } of targets) {
-    const mode = Object.entries(patch.dayModes?.[eventName] ?? {}).find(
+    const mode = Object.entries(
+      recordEntry(patch.dayModes, eventName) ?? {},
+    ).find(
       ([key, value]) =>
         sameDay(key, day) &&
-        !equal(projection.dayModes[eventName]?.[key], value),
+        !equal(recordEntry(projection.dayModes, eventName)?.[key], value),
     )?.[1];
     if (mode !== undefined)
       defaults[`${dayMergeChoicePrefix(eventName, day)}mode`] = mode;
@@ -505,16 +522,16 @@ export function planProjectedMutation(
           )
             continue;
           const key = normalizeExecutionVisitDay(day);
-          const mode = after.dayModes[eventName]?.[key];
+          const mode = recordEntry(after.dayModes, eventName)?.[key];
           if (mode === undefined) continue;
-          rebased.dayModes[eventName] = {
+          setOwnValue(rebased.dayModes, eventName, {
             ...Object.fromEntries(
-              Object.entries(rebased.dayModes[eventName] ?? {}).filter(
-                ([candidate]) => !sameDay(candidate, day),
-              ),
+              Object.entries(
+                recordEntry(rebased.dayModes, eventName) ?? {},
+              ).filter(([candidate]) => !sameDay(candidate, day)),
             ),
             [key]: mode,
-          };
+          });
         }
       return planProjectedMutationAfterMerge(merged, rebased, {
         ...input,
@@ -579,17 +596,20 @@ function planProjectedMutationAfterMerge(
         [key]: Object.fromEntries(
           Object.entries(patch[key]).map(([name, days]) => [
             name,
-            equal(days, beforeProjection[key][name])
-              ? source[key][name]
+            equal(days, recordEntry(beforeProjection[key], name))
+              ? recordEntry(source[key], name)
               : preserveDayBucketKeys(
-                  source[key][name] as Record<string, unknown> | undefined,
+                  recordEntry(source[key], name) as
+                    | Record<string, unknown>
+                    | undefined,
                   days,
                 ),
           ]),
         ),
       });
   for (const eventName of Object.keys(next.eventLists))
-    next.eventConsistency[eventName] ??= createEventConsistency();
+    if (!recordEntry(next.eventConsistency, eventName))
+      setOwnValue(next.eventConsistency, eventName, createEventConsistency());
   if (patch.hallDefinitions) {
     next.hallDefinitions = Object.fromEntries(
       Object.entries(patch.hallDefinitions).map(([eventName, sources]) => [
@@ -599,7 +619,7 @@ function planProjectedMutationAfterMerge(
             key.startsWith(`${MAPLESS_HALL_KEY}:`)
               ? (() => {
                   const found = resolveSimpleKey(
-                    source.hallDefinitions[eventName],
+                    recordEntry(source.hallDefinitions, eventName),
                     key.slice(MAPLESS_HALL_KEY.length + 1),
                   );
                   if (found.status === "ambiguous")
@@ -629,7 +649,8 @@ function planProjectedMutationAfterMerge(
     );
 
     for (const eventName of Object.keys(next.eventLists))
-      next.eventConsistency[eventName] ??= createEventConsistency();
+      if (!recordEntry(next.eventConsistency, eventName))
+        setOwnValue(next.eventConsistency, eventName, createEventConsistency());
   }
   // Route updates carry an explicit day; a map name is never a day bucket.
   for (const eventName of new Set([
@@ -646,33 +667,38 @@ function planProjectedMutationAfterMerge(
         ]
       : []),
   ])) {
-    const event = next.eventConsistency[eventName];
+    const event = recordEntry(next.eventConsistency, eventName);
     if (!event) continue;
     const changedRoutes =
       !equal(
         patch.hallRouteSettings
-          ? patch.hallRouteSettings[eventName]
-          : beforeProjection.hallRouteSettings[eventName],
-        beforeProjection.hallRouteSettings[eventName],
+          ? recordEntry(patch.hallRouteSettings, eventName)
+          : recordEntry(beforeProjection.hallRouteSettings, eventName),
+        recordEntry(beforeProjection.hallRouteSettings, eventName),
       ) ||
       !equal(
         patch.routeSettings
-          ? patch.routeSettings[eventName]
-          : beforeProjection.routeSettings[eventName],
-        beforeProjection.routeSettings[eventName],
+          ? recordEntry(patch.routeSettings, eventName)
+          : recordEntry(beforeProjection.routeSettings, eventName),
+        recordEntry(beforeProjection.routeSettings, eventName),
       );
     if (!changedRoutes) continue;
     const routeDays = (key: string) =>
       input.routeDays?.[eventName]?.[key] ?? [input.day];
     const routeDay = (day: string) =>
       ensureDayConsistency(event, day, [
-        next.executeModeItems[eventName],
-        next.dayModes[eventName],
+        recordEntry(next.executeModeItems, eventName),
+        recordEntry(next.dayModes, eventName),
       ]);
     for (const [key, raw] of Object.entries(
-      patch.hallRouteSettings?.[eventName] ?? {},
+      recordEntry(patch.hallRouteSettings, eventName) ?? {},
     )) {
-      if (equal(raw, beforeProjection.hallRouteSettings[eventName]?.[key]))
+      if (
+        equal(
+          raw,
+          recordEntry(beforeProjection.hallRouteSettings, eventName)?.[key],
+        )
+      )
         continue;
       for (const day of routeDays(key)) {
         const targetDay = routeDay(day);
@@ -685,7 +711,7 @@ function planProjectedMutationAfterMerge(
           const candidates = interpretLegacyGroup(
             id,
             getContextHalls(
-              next.hallDefinitions[eventName] as Record<
+              recordEntry(next.hallDefinitions, eventName) as Record<
                 string,
                 HallDefinition[]
               >,
@@ -741,11 +767,11 @@ function planProjectedMutationAfterMerge(
     }
     if (patch.hallRouteSettings) {
       for (const key of Object.keys(
-        beforeProjection.hallRouteSettings[eventName] ?? {},
+        recordEntry(beforeProjection.hallRouteSettings, eventName) ?? {},
       ))
         if (
           !Object.prototype.hasOwnProperty.call(
-            patch.hallRouteSettings[eventName] ?? {},
+            recordEntry(patch.hallRouteSettings, eventName) ?? {},
             key,
           )
         ) {
@@ -761,11 +787,11 @@ function planProjectedMutationAfterMerge(
     }
     if (patch.routeSettings) {
       for (const key of Object.keys(
-        beforeProjection.routeSettings[eventName] ?? {},
+        recordEntry(beforeProjection.routeSettings, eventName) ?? {},
       ))
         if (
           !Object.prototype.hasOwnProperty.call(
-            patch.routeSettings[eventName] ?? {},
+            recordEntry(patch.routeSettings, eventName) ?? {},
             key,
           )
         )
@@ -773,9 +799,14 @@ function planProjectedMutationAfterMerge(
             ensureVisitContext(routeDay(day), key).route = null;
     }
     for (const [mapKey, raw] of Object.entries(
-      patch.routeSettings?.[eventName] ?? {},
+      recordEntry(patch.routeSettings, eventName) ?? {},
     )) {
-      if (!equal(raw, beforeProjection.routeSettings[eventName]?.[mapKey]))
+      if (
+        !equal(
+          raw,
+          recordEntry(beforeProjection.routeSettings, eventName)?.[mapKey],
+        )
+      )
         for (const day of routeDays(mapKey))
           ensureVisitContext(routeDay(day), mapKey).route = structuredClone(
             raw as RouteSettings,
@@ -786,47 +817,62 @@ function planProjectedMutationAfterMerge(
     const items = rawItems as ShoppingItem[];
     const currentById = new Map(items.map((item) => [item.id, item]));
     const previous = new Map(
-      ((source.eventLists[eventName] as ShoppingItem[] | undefined) ?? []).map(
-        (item) => [item.id, item],
-      ),
+      (
+        (recordEntry(source.eventLists, eventName) as
+          | ShoppingItem[]
+          | undefined) ?? []
+      ).map((item) => [item.id, item]),
     );
     const oldDisplayed = new Map(
       (
-        (beforeProjection.eventLists[eventName] as
+        (recordEntry(beforeProjection.eventLists, eventName) as
           | ShoppingItem[]
           | undefined) ?? []
       ).map((item) => [item.id, item]),
     );
     const newDisplayed = new Map(
       (
-        (proposed.eventLists[eventName] as ShoppingItem[] | undefined) ?? []
+        (recordEntry(proposed.eventLists, eventName) as
+          | ShoppingItem[]
+          | undefined) ?? []
       ).map((item) => [item.id, item]),
     );
-    const maps = (next.mapData[eventName] ?? {}) as Record<string, DayMapData>;
-    const definitions = (next.hallDefinitions[eventName] ?? {}) as Record<
+    const maps = (recordEntry(next.mapData, eventName) ?? {}) as Record<
       string,
-      HallDefinition[]
+      DayMapData
     >;
-    const event = next.eventConsistency[eventName];
+    const definitions = (recordEntry(next.hallDefinitions, eventName) ??
+      {}) as Record<string, HallDefinition[]>;
+    const event = recordEntry(next.eventConsistency, eventName);
     const definitionChanged =
       !equal(
-        source.hallDefinitions[eventName],
-        next.hallDefinitions[eventName],
-      ) || !equal(source.mapData[eventName], next.mapData[eventName]);
+        recordEntry(source.hallDefinitions, eventName),
+        recordEntry(next.hallDefinitions, eventName),
+      ) ||
+      !equal(
+        recordEntry(source.mapData, eventName),
+        recordEntry(next.mapData, eventName),
+      );
     const changedDefinitionKeys = new Set(
       [
-        ...Object.keys(source.hallDefinitions[eventName] ?? {}),
+        ...Object.keys(recordEntry(source.hallDefinitions, eventName) ?? {}),
         ...Object.keys(definitions),
       ].filter(
         (key) =>
-          !equal(source.hallDefinitions[eventName]?.[key], definitions[key]),
+          !equal(
+            recordEntry(source.hallDefinitions, eventName)?.[key],
+            definitions[key],
+          ),
       ),
     );
     const changedMapKeys = new Set(
       [
-        ...Object.keys(source.mapData[eventName] ?? {}),
+        ...Object.keys(recordEntry(source.mapData, eventName) ?? {}),
         ...Object.keys(maps),
-      ].filter((key) => !equal(source.mapData[eventName]?.[key], maps[key])),
+      ].filter(
+        (key) =>
+          !equal(recordEntry(source.mapData, eventName)?.[key], maps[key]),
+      ),
     );
     const affectedDays = new Set<string>();
     const affect = (day: string) =>
@@ -845,9 +891,10 @@ function planProjectedMutationAfterMerge(
       }
     }
     for (const [day, ids] of Object.entries(
-      next.executeModeItems[eventName] ?? {},
+      recordEntry(next.executeModeItems, eventName) ?? {},
     ))
-      if (!equal(ids, source.executeModeItems[eventName]?.[day])) affect(day);
+      if (!equal(ids, recordEntry(source.executeModeItems, eventName)?.[day]))
+        affect(day);
     if (definitionChanged)
       for (const dayKey of new Set(items.map((item) => item.eventDate))) {
         const candidateMaps = new Set(dayMapDependencies(maps, event, dayKey));
@@ -864,8 +911,8 @@ function planProjectedMutationAfterMerge(
         )
           continue;
         const day = ensureDayConsistency(event, dayKey, [
-          next.executeModeItems[eventName],
-          next.dayModes[eventName],
+          recordEntry(next.executeModeItems, eventName),
+          recordEntry(next.dayModes, eventName),
         ]);
         const selected = resolveDayMap(maps, dayKey, day.selectedMapKey);
         for (const key of candidateMaps)
@@ -916,8 +963,8 @@ function planProjectedMutationAfterMerge(
         continue;
       if (identityChanged) affect(item.eventDate);
       const day = ensureDayConsistency(event, item.eventDate, [
-        next.executeModeItems[eventName],
-        next.dayModes[eventName],
+        recordEntry(next.executeModeItems, eventName),
+        recordEntry(next.dayModes, eventName),
       ]);
       const selected = resolveDayMap(maps, item.eventDate, day.selectedMapKey);
       const mapKeys = identityChanged
@@ -1048,8 +1095,10 @@ function planProjectedMutationAfterMerge(
     for (const { day, mapKey, context } of mapContextEntries(event)) {
       const oldContext =
         mapKey === null
-          ? source.eventConsistency[eventName]?.days[day]?.mapless
-          : source.eventConsistency[eventName]?.days[day]?.maps[mapKey];
+          ? recordEntry(source.eventConsistency, eventName)?.days[day]?.mapless
+          : recordEntry(source.eventConsistency, eventName)?.days[day]?.maps[
+              mapKey
+            ];
       const definitionAffected =
         (mapKey !== null &&
           (changedMapKeys.has(mapKey) || changedDefinitionKeys.has(mapKey))) ||
@@ -1064,9 +1113,12 @@ function planProjectedMutationAfterMerge(
         equal(context, oldContext)
       )
         continue;
-      const executeKey = existingDayKey(next.executeModeItems[eventName], day);
+      const executeKey = existingDayKey(
+        recordEntry(next.executeModeItems, eventName),
+        day,
+      );
       const ids = executeKey
-        ? next.executeModeItems[eventName][executeKey]
+        ? recordEntry(next.executeModeItems, eventName)[executeKey]
         : [];
       const byId = new Map(items.map((item) => [item.id, item]));
       const ordered = projectItemsToExecutionVisits(
@@ -1255,8 +1307,11 @@ function planProjectedMutationAfterMerge(
     patch.hallDefinitions !== undefined ||
     patch.mapData !== undefined;
   for (const { eventName, day, mapKey } of affectedContexts) {
-    const beforeDay = source.eventConsistency[eventName]?.days[day];
-    const afterDay = repaired.data.eventConsistency[eventName]?.days[day];
+    const beforeDay = recordEntry(source.eventConsistency, eventName)?.days[
+      day
+    ];
+    const afterDay = recordEntry(repaired.data.eventConsistency, eventName)
+      ?.days[day];
     const before =
       mapKey === null ? beforeDay?.mapless : beforeDay?.maps[mapKey];
     const after = mapKey === null ? afterDay?.mapless : afterDay?.maps[mapKey];
@@ -1271,7 +1326,7 @@ function planProjectedMutationAfterMerge(
     });
     if (!after || !describeAffectedContexts) continue;
     const halls = getContextHalls(
-      repaired.data.hallDefinitions[eventName] as Record<
+      recordEntry(repaired.data.hallDefinitions, eventName) as Record<
         string,
         HallDefinition[]
       >,
@@ -1292,15 +1347,20 @@ function planProjectedMutationAfterMerge(
       return `${name}（${priority}）`;
     };
     const itemNames = new Map(
-      (repaired.data.eventLists[eventName] as ShoppingItem[]).map((item) => [
-        item.id,
-        `${item.circle}・${item.title}（${item.block}-${item.number}）`,
-      ]),
+      (recordEntry(repaired.data.eventLists, eventName) as ShoppingItem[]).map(
+        (item) => [
+          item.id,
+          `${item.circle}・${item.title}（${item.block}-${item.number}）`,
+        ],
+      ),
     );
     const itemLabel = (id: string) => itemNames.get(id) ?? "削除済みの品目";
     const scope = `${day} / ${mapKey ?? "マップなし"}`;
     const beforeHalls = getContextHalls(
-      source.hallDefinitions[eventName] as Record<string, HallDefinition[]>,
+      recordEntry(source.hallDefinitions, eventName) as Record<
+        string,
+        HallDefinition[]
+      >,
       day,
       mapKey,
     );
@@ -1340,27 +1400,45 @@ function planProjectedMutationAfterMerge(
         Object.keys(patch.hallDefinitions ?? {})
           .filter(
             (name) =>
-              !equal(source.hallDefinitions[name], next.hallDefinitions[name]),
+              !equal(
+                recordEntry(source.hallDefinitions, name),
+                recordEntry(next.hallDefinitions, name),
+              ),
           )
-          .map((name) => [name, source.hallDefinitions[name]]),
+          .map((name) => [name, recordEntry(source.hallDefinitions, name)]),
       ),
       previousMaps: Object.fromEntries(
         Object.keys(patch.mapData ?? {})
-          .filter((name) => !equal(source.mapData[name], next.mapData[name]))
-          .map((name) => [name, source.mapData[name]]),
+          .filter(
+            (name) =>
+              !equal(
+                recordEntry(source.mapData, name),
+                recordEntry(next.mapData, name),
+              ),
+          )
+          .map((name) => [name, recordEntry(source.mapData, name)]),
       ),
       definitions: Object.fromEntries(
         Object.keys(patch.hallDefinitions ?? {})
           .filter(
             (name) =>
-              !equal(source.hallDefinitions[name], next.hallDefinitions[name]),
+              !equal(
+                recordEntry(source.hallDefinitions, name),
+                recordEntry(next.hallDefinitions, name),
+              ),
           )
-          .map((name) => [name, next.hallDefinitions[name]]),
+          .map((name) => [name, recordEntry(next.hallDefinitions, name)]),
       ),
       maps: Object.fromEntries(
         Object.keys(patch.mapData ?? {})
-          .filter((name) => !equal(source.mapData[name], next.mapData[name]))
-          .map((name) => [name, next.mapData[name]]),
+          .filter(
+            (name) =>
+              !equal(
+                recordEntry(source.mapData, name),
+                recordEntry(next.mapData, name),
+              ),
+          )
+          .map((name) => [name, recordEntry(next.mapData, name)]),
       ),
     });
     if (details.length === 0)

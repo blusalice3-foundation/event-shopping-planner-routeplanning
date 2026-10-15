@@ -948,3 +948,197 @@ it("prepares valid legacy map records before accepting scoped commands after res
     saved.mapData.event,
   );
 });
+
+it.each([0, 10000])(
+  "guards limited input on the existing whole-snapshot item path, history=%i",
+  async (history) => {
+    const { createItemContentGuard } =
+      await import("../../utils/itemContentGuard");
+    const { dayRecordKey } = await import("../db/dayRecordStorage");
+    const data = seed();
+    const target = { ...item, quantity: 5 };
+    data.eventLists.event = [
+      target,
+      { ...item, id: "day2", eventDate: "2日目", remarks: "別日の記録" },
+    ];
+    data.executeModeItems.event["1日目"] = ["1"];
+    data.eventLists.past = Array.from({ length: history }, (_, index) => ({
+      ...item,
+      id: "past-" + index,
+    }));
+    data.eventConsistency.past = createEventConsistency();
+    const initial = await db.readApplicationSnapshot();
+    await db.commitApplicationSnapshotAtomically(data, {
+      expectedRoots: initial.expectedRoots,
+    });
+    const server = createPersistenceWorkerServer(db);
+    await server.read();
+    const guard = createItemContentGuard(
+      data,
+      "event",
+      target as import("../../types/item").ShoppingItem,
+      "limited-focus",
+      0,
+    );
+    const get = vi.spyOn(IDBObjectStore.prototype, "get");
+    const put = vi.spyOn(IDBObjectStore.prototype, "put");
+    const read = vi.spyOn(db, "readApplicationSnapshot");
+    const result = await server.items(
+      [
+        {
+          eventName: "event",
+          itemId: "1",
+          baseline: target,
+          operationKind: "limited-input",
+          guard,
+          fields: {
+            purchaseStatus: { present: true, value: "LimitedPurchase" },
+            limitedPurchasedQuantity: { present: true, value: 1 },
+          },
+        },
+      ],
+      ["guarded"],
+      {},
+    );
+    expect(result.status).toBe("committed");
+    expect(read).toHaveBeenCalledTimes(1);
+    // DB 11 deliberately reads the shared payload and writes that same payload.
+    expect(get.mock.calls.some(([key]) => key === "data")).toBe(true);
+    const writes = put.mock.calls.map((args, index) => [
+      (put.mock.contexts[index] as IDBObjectStore).name,
+      args[1],
+    ]);
+    expect(writes).toContainEqual(["eventLists", "data"]);
+    expect(writes).toContainEqual(["eventLists", dayRecordKey("event", [])]);
+    expect(writes).not.toContainEqual(["eventLists", dayRecordKey("past", [])]);
+    expect(
+      writes.every(
+        ([store]) => store === "eventLists" || store === "syncQueue",
+      ),
+    ).toBe(true);
+    const durable = (await db.readApplicationSnapshot()).snapshot;
+    expect(durable.eventLists.event[0]).toMatchObject({
+      purchaseStatus: "LimitedPurchase",
+      limitedPurchasedQuantity: 1,
+      quantity: 5,
+    });
+    expect(durable.eventLists.event[1]).toEqual(data.eventLists.event[1]);
+    expect(durable.eventLists.past).toEqual(data.eventLists.past);
+    expect(durable.eventConsistency).toEqual(data.eventConsistency);
+    expect(durable.executeModeItems).toEqual(data.executeModeItems);
+  },
+);
+
+it("writes none of a mixed item batch before review when one guarded target leaves execution", async () => {
+  const { createItemContentGuard } =
+    await import("../../utils/itemContentGuard");
+  const { server } = await setup();
+  const guarded: ItemContentEdit = {
+    ...edit("limitedPurchasedQuantity", 1),
+    operationKind: "limited-input",
+    guard: createItemContentGuard(
+      seed(),
+      "event",
+      item as import("../../types/item").ShoppingItem,
+      "limited-focus",
+      0,
+    ),
+  };
+  const put = vi.spyOn(IDBObjectStore.prototype, "put");
+  expect(
+    (
+      await server.items(
+        [guarded, edit("remarks", "正常なメモ")],
+        ["mixed"],
+        {},
+      )
+    ).status,
+  ).toBe("review-required");
+  expect(put).not.toHaveBeenCalled();
+});
+
+it("requests a freshly guarded accepted snapshot for worker backup instead of replaying a whole-item delta", async () => {
+  const { buildWorkerBackup } = await import("./backupWorkerServer");
+  const { createItemContentGuard } =
+    await import("../../utils/itemContentGuard");
+  const read = vi.fn(db.readApplicationSnapshot);
+  const result = await buildWorkerBackup(read, {
+    changes: [
+      {
+        store: "eventLists",
+        eventName: "event",
+        baseline: [item],
+        desired: [{ ...item, limitedPurchasedQuantity: 1 }],
+      },
+    ],
+    guardedItemEdits: [
+      {
+        ...edit("limitedPurchasedQuantity", 1),
+        operationKind: "limited-input",
+        guard: createItemContentGuard(
+          seed(),
+          "event",
+          item as import("../../types/item").ShoppingItem,
+          "limited-focus",
+          0,
+        ),
+      },
+    ],
+  });
+  expect(result).toEqual({ needsSnapshot: true });
+  expect(read).not.toHaveBeenCalled();
+});
+
+it.each(["constructor", "__proto__", "toString", "hasOwnProperty"])(
+  "saves guarded input for the literal event name %s without inherited generation values",
+  async (name) => {
+    const { createItemContentGuard } =
+      await import("../../utils/itemContentGuard");
+    const data = seed();
+    const target = {
+      ...item,
+      quantity: 5,
+    } as import("../../types/item").ShoppingItem;
+    data.eventLists = { [name]: [target] };
+    data.dayModes = { [name]: { "1日目": "execute" } };
+    data.eventConsistency = { [name]: createEventConsistency() };
+    data.executeModeItems = { [name]: { "1日目": [target.id] } };
+    const initial = await db.readApplicationSnapshot();
+    await db.commitApplicationSnapshotAtomically(data, {
+      expectedRoots: initial.expectedRoots,
+    });
+    const server = createPersistenceWorkerServer(db);
+    await server.read();
+    const guard = createItemContentGuard(
+      data,
+      name,
+      target,
+      "limited-focus",
+      0,
+    );
+    const result = await server.items(
+      [
+        {
+          eventName: name,
+          itemId: target.id,
+          baseline: { ...target },
+          operationKind: "limited-input",
+          guard,
+          fields: {
+            purchaseStatus: { present: true, value: "LimitedPurchase" },
+            limitedPurchasedQuantity: { present: true, value: 1 },
+          },
+        },
+      ],
+      ["reserved"],
+      {},
+    );
+    expect(result.status).toBe("committed");
+    const current = (await db.readApplicationSnapshot()).snapshot;
+    expect(current.eventLists[name][0]).toMatchObject({
+      quantity: 5,
+      limitedPurchasedQuantity: 1,
+    });
+    expect(Object.getPrototypeOf(current.eventLists)).toBe(Object.prototype);
+  },
+);

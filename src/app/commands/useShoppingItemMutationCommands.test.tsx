@@ -424,14 +424,18 @@ describe("useShoppingItemMutationCommands", () => {
       useShoppingItemMutationCommands(harness.ports),
     );
 
-    let accepted = true;
+    let accepted:
+      | ReturnType<
+          ReturnType<typeof useShoppingItemMutationCommands>["handleBulkAdd"]
+        >
+      | undefined;
     act(() => {
       accepted = result.current.handleBulkAdd(EVENT, [bulkItem("incoming")], {
         source: "spreadsheet",
       });
     });
 
-    expect(accepted).toBe(false);
+    expect(accepted).toBeInstanceOf(Promise);
     expect(harness.refs.eventUpdatePreviewEpochRef.current).toBe(1);
     expect(harness.stores.pendingDuplicateEvent?.analysis.kind).toBe(
       "different-source",
@@ -449,15 +453,25 @@ describe("useShoppingItemMutationCommands", () => {
       useShoppingItemMutationCommands(harness.ports),
     );
 
-    let accepted = false;
+    let accepted:
+      | Awaited<
+          ReturnType<
+            ReturnType<typeof useShoppingItemMutationCommands>["handleBulkAdd"]
+          >
+        >
+      | undefined;
     await act(async () => {
-      accepted = result.current.handleBulkAdd(EVENT, [bulkItem("manual")], {
-        source: "app",
-      });
+      accepted = await result.current.handleBulkAdd(
+        EVENT,
+        [bulkItem("manual")],
+        {
+          source: "app",
+        },
+      );
       await Promise.resolve();
     });
 
-    expect(accepted).toBe(true);
+    expect(accepted).toEqual({ status: "saved" });
     expect(harness.stores.eventLists[EVENT]).toHaveLength(2);
     expect(harness.stores.eventLists[EVENT][1]).toMatchObject({
       source: "app",
@@ -1039,4 +1053,39 @@ it("preserves every accepted transition when a rapid cycle returns to the render
     purchaseStatus: "SoldOut",
     remarks: "通販･頒布確認：可能",
   });
+});
+
+it("distinguishes a saved import from failure to navigate after its commit", async () => {
+  const h = createHarness({ activeEventName: null, eventLists: {} });
+  h.spies.openEvent.mockImplementation(() => {
+    throw new Error("UI failed");
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  const outcome = await result.current.applyBulkAdd("新規", [bulkItem("A")]);
+  expect(outcome.status).toBe("committed-ui-failed");
+  expect(h.stores.eventLists["新規"]).toHaveLength(1);
+  expect(
+    h.ports.persistence!.commitApplicationSnapshotPatch,
+  ).toHaveBeenCalledTimes(1);
+});
+it("keeps a new input or view intact when an older import finishes saving", async () => {
+  const h = createHarness({ activeEventName: null, eventLists: {} });
+  let current = true;
+  let finish!: () => void;
+  h.ports.persistence!.commitApplicationSnapshotPatch = vi.fn(
+    () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  const pending = result.current.applyBulkAdd("旧入力", [bulkItem("A")], {
+    request: { id: "old", isCurrent: () => current },
+  });
+  current = false;
+  finish();
+  expect((await pending).status).toBe("saved");
+  expect(h.spies.notify).not.toHaveBeenCalled();
+  expect(h.spies.openEvent).not.toHaveBeenCalled();
+  expect(h.spies.showImport).not.toHaveBeenCalled();
 });

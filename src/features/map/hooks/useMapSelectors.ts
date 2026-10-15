@@ -1,3 +1,4 @@
+import { recordEntry } from "../../../utils/ownRecord";
 import { useCallback, useMemo, useRef } from "react";
 import type {
   DayMapData,
@@ -38,7 +39,7 @@ export function useMapSelectors({
   const mapTabs = useMemo(
     () =>
       Object.keys(
-        activeEventName ? (mapData[activeEventName] ?? {}) : {},
+        activeEventName ? (recordEntry(mapData, activeEventName) ?? {}) : {},
       ).sort(),
     [activeEventName, mapData],
   );
@@ -46,9 +47,9 @@ export function useMapSelectors({
     (date: string): string | null => {
       if (!activeEventName) return null;
       const result = resolveDayMap(
-        mapData[activeEventName],
+        recordEntry(mapData, activeEventName),
         date,
-        getDayConsistency(eventConsistency?.[activeEventName], date)
+        getDayConsistency(recordEntry(eventConsistency, activeEventName), date)
           ?.selectedMapKey,
       );
       return result.status === "resolved" ? result.key : null;
@@ -58,7 +59,9 @@ export function useMapSelectors({
   const getSimpleKey = useCallback(
     (date: string): string | null => {
       const result = resolveSimpleKey(
-        activeEventName ? hallDefinitions[activeEventName] : undefined,
+        activeEventName
+          ? recordEntry(hallDefinitions, activeEventName)
+          : undefined,
         date,
       );
       return result.status === "resolved"
@@ -95,7 +98,7 @@ export function useMapSelectors({
       if (!activeEventName) return [];
       const map = getMapTabForDate(date),
         simple = getSimpleKey(date),
-        definitions = hallDefinitions[activeEventName];
+        definitions = recordEntry(hallDefinitions, activeEventName);
       const key = JSON.stringify([activeEventName, date, map, simple]);
       const mapped = map ? definitions?.[map] : undefined;
       const simpleHalls = simple ? definitions?.[simple] : undefined;
@@ -113,7 +116,7 @@ export function useMapSelectors({
     (date: string): DayMapData | null => {
       const map = getMapTabForDate(date);
       return activeEventName && map
-        ? (mapData[activeEventName]?.[map] ?? null)
+        ? (recordEntry(mapData, activeEventName)?.[map] ?? null)
         : null;
     },
     [activeEventName, mapData, getMapTabForDate],
@@ -123,7 +126,7 @@ export function useMapSelectors({
       if (!activeEventName) return { hallOrder: [], hallVisitLists: [] };
       const map = getMapTabForDate(date),
         simple = getSimpleKey(date),
-        settings = hallRouteSettings[activeEventName];
+        settings = recordEntry(hallRouteSettings, activeEventName);
       const selected = map
         ? settings?.[map]
         : simple

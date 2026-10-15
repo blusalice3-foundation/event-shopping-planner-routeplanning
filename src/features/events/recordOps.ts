@@ -1,3 +1,4 @@
+import { setOwnValue } from "../../utils/ownRecord";
 export function removeRecordKey<T>(
   record: Record<string, T>,
   key: string,
@@ -25,7 +26,7 @@ export function renameRecordKey<T>(
 ): Record<string, T> {
   const nextRecord = { ...record };
   if (Object.prototype.hasOwnProperty.call(nextRecord, oldKey)) {
-    nextRecord[newKey] = nextRecord[oldKey];
+    setOwnValue(nextRecord, newKey, nextRecord[oldKey]);
     delete nextRecord[oldKey];
   }
   return nextRecord;

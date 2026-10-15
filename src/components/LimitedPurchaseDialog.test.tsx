@@ -87,7 +87,13 @@ describe("LimitedPurchaseDialog", () => {
     await user.type(plannedInput, "06");
     await user.click(within(dialog).getAllByRole("button")[0]);
 
-    expect(onSubmit).toHaveBeenCalledWith({ kind: "defer", planned: 6 });
+    expect(onSubmit).toHaveBeenCalledWith({
+      kind: "defer",
+      planned: 6,
+      plannedEdited: true,
+      baselinePlanned: 5,
+      observedPlanned: 5,
+    });
   });
 
   it("converts to purchased after app confirmation when actual equals planned", async () => {
@@ -108,7 +114,16 @@ describe("LimitedPurchaseDialog", () => {
       within(confirmDialog).getByRole("button", { name: "購入済にする" }),
     );
 
-    expect(onSubmit).toHaveBeenCalledWith({ kind: "purchased", planned: 5 });
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "purchased",
+        planned: 5,
+        actual: expect.any(Number),
+        plannedEdited: false,
+        baselinePlanned: 5,
+        observedPlanned: 5,
+      }),
+    );
   });
 
   it("blocks saving and deferring when planned quantity is 1", async () => {
@@ -168,7 +183,16 @@ describe("LimitedPurchaseDialog", () => {
     const excessDialog = screen.getAllByRole("dialog")[1];
     await user.click(within(excessDialog).getAllByRole("button")[1]);
 
-    expect(onSubmit).toHaveBeenCalledWith({ kind: "purchased", planned: 5 });
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "purchased",
+        planned: 5,
+        actual: expect.any(Number),
+        plannedEdited: false,
+        baselinePlanned: 5,
+        observedPlanned: 5,
+      }),
+    );
   });
 
   it("resets inputs when the target item changes even if quantities are similar", async () => {
@@ -209,3 +233,37 @@ describe("LimitedPurchaseDialog", () => {
     expect(inputs[1]).toHaveValue("6");
   });
 });
+
+it.each([5, 6])(
+  "preserves actual %i and invalidates an old equal/excess confirmation after an external planned change",
+  async (actual) => {
+    const user = userEvent.setup();
+    const submit = vi.fn();
+    const props = {
+      isOpen: true,
+      itemId: "1",
+      initialPlanned: 5,
+      onSubmit: submit,
+      onCancel: vi.fn(),
+    };
+    const rendered = render(<LimitedPurchaseDialog {...props} />);
+    await user.type(screen.getAllByRole("textbox")[0], String(actual));
+    await clickPrimaryButton(user);
+    expect(screen.getAllByRole("dialog")).toHaveLength(2);
+    rendered.rerender(<LimitedPurchaseDialog {...props} initialPlanned={9} />);
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(screen.getAllByRole("textbox")[0]).toHaveValue(String(actual));
+    expect(screen.getAllByRole("textbox")[1]).toHaveValue("9");
+    expect(submit).not.toHaveBeenCalled();
+    await clickPrimaryButton(user);
+    expect(submit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "limited",
+        actual,
+        planned: 9,
+        plannedEdited: false,
+        baselinePlanned: 5,
+      }),
+    );
+  },
+);

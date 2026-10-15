@@ -1,3 +1,7 @@
+import type { DayMapData } from "../types/map";
+import type { ShoppingItem } from "../types/item";
+import { createLocationResolver } from "../features/consistency/domain/membership";
+import { normalizeExecutionVisitDay } from "./visitProjection";
 import { areMapRouteGroupKeysCompatible } from "./hallGrouping";
 import type { MapRoutePoint } from "./mapRoutePoints";
 
@@ -55,4 +59,45 @@ export function validateMapSmartInsert(
   }
 
   return { ok: true };
+}
+
+/** Use the same map and location resolution for every insertion entry point. */
+export function createNearbyVisitSelector(map: DayMapData) {
+  const resolve = createLocationResolver(map);
+  const blockKey = (block: DayMapData["blocks"][number]) =>
+    JSON.stringify([
+      block.name,
+      block.startRow,
+      block.startCol,
+      block.endRow,
+      block.endCol,
+    ]);
+  return (
+    item: ShoppingItem,
+    ids: readonly string[],
+    items: ReadonlyMap<string, ShoppingItem>,
+  ) => {
+    const location = resolve(item);
+    if (location.status !== "resolved") return [];
+    const key = blockKey(location.location.block);
+    const result: Array<{ item: ShoppingItem; visitIndex: number }> = [];
+    ids.forEach((id, visitIndex) => {
+      const existing = items.get(id);
+      if (
+        !existing ||
+        normalizeExecutionVisitDay(existing.eventDate) !==
+          normalizeExecutionVisitDay(item.eventDate)
+      )
+        return;
+      const other = resolve(existing);
+      if (
+        other.status === "resolved" &&
+        blockKey(other.location.block) === key &&
+        Math.abs(other.location.numberValue - location.location.numberValue) <=
+          3
+      )
+        result.push({ item: existing, visitIndex });
+    });
+    return result;
+  };
 }

@@ -4109,3 +4109,145 @@ for (const choice of ["保存して確定", "キャンセル（破棄）"] as co
     expect(await stored(page, "dayModes")).toEqual(modes);
   });
 }
+
+test("300 by 500 cell map supports hall selection and routing @additional-consistency", async ({
+  page,
+}) => {
+  test.setTimeout(180000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  const source = mapBackup();
+  const map = source.data.mapData[eventName]["1日目マップ"];
+  const large = {
+    ...map,
+    maxRow: 300,
+    maxCol: 500,
+    cells: Array.from({ length: 150000 }, (_, index) => ({
+      row: Math.floor(index / 500) + 1,
+      col: (index % 500) + 1,
+      value: null,
+      backgroundColor: null,
+      borders: { top: null, right: null, bottom: null, left: null },
+    })),
+  };
+  source.data.mapData[eventName] = {
+    "1日目マップ": large,
+    "１日目マップ": large,
+  };
+  const hall = source.data.hallDefinitions[eventName]["1日目マップ"][0];
+  hall.vertices = [
+    { row: 1, col: 1 },
+    { row: 1, col: 500 },
+    { row: 300, col: 500 },
+    { row: 300, col: 1 },
+  ];
+  await restore(page, source);
+  await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+  await page.getByTitle("表示ホール: 全ホール", { exact: true }).click();
+  await page.getByRole("button", { name: /東館/ }).click();
+  await expect(
+    page.getByTitle("表示ホール: 東館", { exact: true }),
+  ).toBeVisible();
+  const routeOff = page.getByTitle("ルート表示: 無効", { exact: true });
+  if (await routeOff.count()) await routeOff.click();
+  await expect(
+    page.getByTitle("ルート表示: 有効", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("経路を計算しています…", { exact: true }),
+  ).toHaveCount(0, { timeout: 60000 });
+  await expect(page.locator("canvas").first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+for (const replaced of [false, true]) {
+  test(`single limited input preserves the event generation, replaced=${replaced} @additional-consistency`, async ({
+    page,
+    context,
+  }) => {
+    await page.addInitScript(() =>
+      localStorage.setItem("purchaseStatusControlMode", "radial"),
+    );
+    const original = backup([item("1")]);
+    const source = {
+      ...original,
+      data: {
+        ...original.data,
+        eventLists: { [eventName]: [{ ...item("1"), quantity: 5 }] },
+      },
+    };
+    await restore(page, source);
+    await page
+      .locator('[data-item-id="1"]')
+      .getByRole("button", { name: /Current status:/ })
+      .click();
+    await page
+      .getByRole("radio", { name: "LimitedPurchaseに変更", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog", {
+      name: "限数購入の数量",
+      exact: true,
+    });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("textbox").first().fill("1");
+    if (replaced) {
+      const other = await context.newPage();
+      await restore(
+        other,
+        {
+          ...source,
+          data: {
+            ...source.data,
+            eventLists: {
+              [eventName]: [
+                { ...item("1"), quantity: 9, remarks: "復元した記録" },
+              ],
+            },
+          },
+        },
+        `「${eventName}」の復元内容を確認`,
+      );
+      await other.close();
+      await page.bringToFront();
+    }
+    if (await dialog.isVisible())
+      await dialog.getByRole("button", { name: "保存", exact: true }).click();
+    if (replaced) {
+      await expect
+        .poll(
+          async () =>
+            (await dialog.count()) === 0 ||
+            (await page
+              .getByText(
+                /対象のイベントまたは参加日が変更されました|対象外になった限数入力/,
+              )
+              .count()) > 0,
+        )
+        .toBe(true);
+      const saved = await stored(page, "eventLists");
+      expect(saved).toMatchObject({
+        [eventName]: [
+          { quantity: 9, purchaseStatus: "None", remarks: "復元した記録" },
+        ],
+      });
+    } else {
+      await expect(dialog).toBeHidden();
+      await expect
+        .poll(() => stored(page, "eventLists"))
+        .toMatchObject({
+          [eventName]: [
+            {
+              quantity: 5,
+              purchaseStatus: "LimitedPurchase",
+              limitedPurchasedQuantity: 1,
+            },
+          ],
+        });
+      await page.reload();
+      await page.getByText(eventName, { exact: true }).click();
+      expect(await stored(page, "eventLists")).toMatchObject({
+        [eventName]: [{ quantity: 5, limitedPurchasedQuantity: 1 }],
+      });
+    }
+  });
+}

@@ -1,3 +1,4 @@
+import { recordEntry } from "../../utils/ownRecord";
 import type { SortState } from "../../features/app-shell/types";
 import {
   buildMovePlan,
@@ -50,7 +51,8 @@ export const selectMapVisitListItems = (
       item,
     ]),
   );
-  const eventExecuteItems = input.executeModeItems[input.activeEventName] ?? {};
+  const eventExecuteItems =
+    recordEntry(input.executeModeItems, input.activeEventName) ?? {};
   const executeDayKey =
     findExecutionDayBucketKey(Object.keys(eventExecuteItems), dayName) ??
     dayName;
@@ -75,8 +77,9 @@ export const selectExecuteColumnItems = (
 ): ShoppingItem[] => {
   if (!input.activeEventName) return [];
   const executeIds =
-    input.executeModeItems[input.activeEventName]?.[input.activeEventDate] ??
-    [];
+    recordEntry(input.executeModeItems, input.activeEventName)?.[
+      input.activeEventDate
+    ] ?? [];
   const itemsById = new Map(input.items.map((item) => [item.id, item]));
   return flattenExecutionVisitProjection(
     executeIds
@@ -100,7 +103,9 @@ export const selectBaseFilteredItems = (
   const itemsForTab = input.currentTabItems;
   if (!input.activeEventName) return itemsForTab;
 
-  const mode = input.dayModes[input.activeEventName]?.[input.activeEventDate];
+  const mode = recordEntry(input.dayModes, input.activeEventName)?.[
+    input.activeEventDate
+  ];
   if (mode !== "execute") return itemsForTab;
   const sortState = input.sortState;
   if (sortState === "Manual") return input.executeColumnItems;
@@ -124,7 +129,9 @@ export const selectTemporaryVisibleItems = (
   input: TemporaryVisibleItemsSelectorInput,
 ): ShoppingItem[] => {
   if (!input.activeEventName) return [];
-  const mode = input.dayModes[input.activeEventName]?.[input.activeEventDate];
+  const mode = recordEntry(input.dayModes, input.activeEventName)?.[
+    input.activeEventDate
+  ];
   if (mode !== "execute" || input.sortState === "Manual") return [];
 
   const baseFilteredItemIds = new Set(
@@ -157,7 +164,9 @@ export const selectVisibleItems = (
   input: VisibleItemsSelectorInput,
 ): VisibleItemsSelection => {
   const mode = input.activeEventName
-    ? input.dayModes[input.activeEventName]?.[input.activeEventDate]
+    ? recordEntry(input.dayModes, input.activeEventName)?.[
+        input.activeEventDate
+      ]
     : undefined;
   const includeTemporary = mode === "execute" && input.sortState !== "Manual";
   const visibleItemIds = new Set([
@@ -319,8 +328,9 @@ export const selectBlockOptions = (
   }
 
   const executeIds = new Set(
-    input.executeModeItems[input.activeEventName]?.[input.activeEventDate] ??
-      [],
+    recordEntry(input.executeModeItems, input.activeEventName)?.[
+      input.activeEventDate
+    ] ?? [],
   );
   const candidateItems = input.currentTabItems.filter(
     (item) => !executeIds.has(item.id),
@@ -359,7 +369,7 @@ export const selectCurrentMaplessHalls = (
 ): HallDefinitionsStore[string][string] => {
   if (!input.activeEventName || !input.activeEventDate) return [];
   return (
-    input.hallDefinitions[input.activeEventName]?.[
+    recordEntry(input.hallDefinitions, input.activeEventName)?.[
       getMaplessKey(input.activeEventDate)
     ] ?? []
   );
@@ -379,8 +389,9 @@ export const selectCandidateColumnItems = (
 ): ShoppingItem[] => {
   if (!input.activeEventName) return [];
   const executeIds = new Set(
-    input.executeModeItems[input.activeEventName]?.[input.activeEventDate] ??
-      [],
+    recordEntry(input.executeModeItems, input.activeEventName)?.[
+      input.activeEventDate
+    ] ?? [],
   );
   let filtered = input.currentTabItems.filter(
     (item) => !executeIds.has(item.id),
@@ -421,7 +432,9 @@ export const selectVisibleSearchMatches = (
 ): string[] => {
   if (input.searchMatches.length === 0) return [];
   const mode = input.activeEventName
-    ? input.dayModes[input.activeEventName]?.[input.activeEventDate]
+    ? recordEntry(input.dayModes, input.activeEventName)?.[
+        input.activeEventDate
+      ]
     : undefined;
   const visibleItemIds =
     mode === "execute"
@@ -457,8 +470,9 @@ export const selectMovePlanState = (
   input: MovePlanStateSelectorInput,
 ): MovePlanStateSelection => {
   const currentExecuteOrderedIds = input.activeEventName
-    ? (input.executeModeItems[input.activeEventName]?.[input.activeEventDate] ??
-      [])
+    ? (recordEntry(input.executeModeItems, input.activeEventName)?.[
+        input.activeEventDate
+      ] ?? [])
     : [];
   const candidateSourceOrderedIds = getCandidateSourceOrderedIds(
     input.items,

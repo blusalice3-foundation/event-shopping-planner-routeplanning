@@ -1,3 +1,5 @@
+import type { BulkImportResult } from "../../types/import";
+import { recordEntry } from "../../utils/ownRecord";
 import type {
   EventMetadata,
   ExecuteModeItems,
@@ -8,7 +10,10 @@ import {
   applyEventUpdateToItems,
   type EventUpdateApplyOptions,
 } from "./updateApply";
-import { fetchEventItemsFromSpreadsheet } from "./sheetImport";
+import {
+  fetchEventItemsFromSpreadsheet,
+  CsvReviewRequired,
+} from "./sheetImport";
 import {
   createEventUpdateDiff,
   normalizeSheetItemsUrls,
@@ -26,12 +31,14 @@ export type PendingEventUpdate =
       eventName: string;
       diff: EventUpdateDiff;
       eventGeneration?: number;
+      onImportComplete?: (result: BulkImportResult) => void;
     }
   | {
       kind: "source-switch";
       eventName: string;
       diff: EventUpdateDiff;
       eventGeneration?: number;
+      onImportComplete?: (result: BulkImportResult) => void;
       nextSource: SpreadsheetSource;
     };
 
@@ -72,19 +79,31 @@ export function applyPendingEventUpdate({
   baseItems: ShoppingItem[] | null;
   options: EventUpdateApplyOptions;
 }): EventUpdateCommitState | null {
-  const currentItems = state.eventLists[pending.eventName];
+  if (pending.diff.csvReview && !options.acceptCsvExclusions) return null;
+  const currentItems = recordEntry(state.eventLists, pending.eventName);
+  const diff = pending.diff.matching
+    ? createEventUpdateDiff(
+        currentItems ?? [],
+        pending.diff.matching.sheetItems,
+        options.identityChoices,
+      )
+    : pending.diff;
+  if (diff.unresolvedMatches?.length) return null;
   if (!currentItems || !eventUpdateItemsMatch(currentItems, baseItems)) {
     return null;
   }
 
-  const currentExecuteModeItems = state.executeModeItems[pending.eventName];
+  const currentExecuteModeItems = recordEntry(
+    state.executeModeItems,
+    pending.eventName,
+  );
   const nextExecuteModeItems = currentExecuteModeItems
     ? {
         ...state.executeModeItems,
         [pending.eventName]: Object.fromEntries(
           Object.entries(currentExecuteModeItems).map(([dayName, itemIds]) => [
             dayName,
-            pending.diff.itemsToDelete.reduce(
+            diff.itemsToDelete.reduce(
               (remainingItemIds, deletedItem) =>
                 removeExecutionVisitMemberPreservingBasePosition(
                   remainingItemIds,
@@ -105,7 +124,8 @@ export function applyPendingEventUpdate({
             spreadsheetUrl: pending.nextSource.url,
             spreadsheetSheetName: pending.nextSource.sheetName,
             lastImportDate:
-              state.eventMetadata[pending.eventName]?.lastImportDate || "",
+              recordEntry(state.eventMetadata, pending.eventName)
+                ?.lastImportDate || "",
           },
         }
       : state.eventMetadata;
@@ -113,11 +133,7 @@ export function applyPendingEventUpdate({
   return {
     eventLists: {
       ...state.eventLists,
-      [pending.eventName]: applyEventUpdateToItems(
-        currentItems,
-        pending.diff,
-        options,
-      ),
+      [pending.eventName]: applyEventUpdateToItems(currentItems, diff, options),
     },
     eventMetadata: nextEventMetadata,
     executeModeItems: nextExecuteModeItems,
@@ -141,10 +157,21 @@ export async function buildEventUpdateDiffFromSpreadsheet(
   currentItems: ShoppingItem[],
   source: SpreadsheetSource,
 ): Promise<EventUpdateDiff> {
-  const sheetItems = await fetchEventItemsFromSpreadsheet(
-    source.url,
-    source.sheetName,
-  );
+  let sheetItems;
+  let csvReview;
+  try {
+    sheetItems = await fetchEventItemsFromSpreadsheet(
+      source.url,
+      source.sheetName,
+    );
+  } catch (error) {
+    if (!(error instanceof CsvReviewRequired)) throw error;
+    sheetItems = error.items;
+    csvReview = { warnings: error.warnings, itemCount: sheetItems.length };
+  }
   const normalizedSheetItems = normalizeSheetItemsUrls(sheetItems);
-  return createEventUpdateDiff(currentItems, normalizedSheetItems);
+  return {
+    ...createEventUpdateDiff(currentItems, normalizedSheetItems),
+    ...(csvReview ? { csvReview } : {}),
+  };
 }

@@ -1,3 +1,4 @@
+import { recordEntry } from "../../utils/ownRecord";
 import {
   dayScopeDays,
   matchesScopeDay,
@@ -1462,7 +1463,7 @@ export async function commitApplicationSnapshotAtomically(
             ]),
           ].map((event) => [
             event,
-            (observation.eventGenerations[event] ?? 0) +
+            (recordEntry(observation.eventGenerations, event) ?? 0) +
               (options.invalidatedEvents?.includes(event) ? 1 : 0),
           ]),
         ),

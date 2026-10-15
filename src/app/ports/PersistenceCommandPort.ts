@@ -21,7 +21,20 @@ export class PersistenceSettingsRollbackError extends Error {
   }
 }
 
+export interface ItemContentGuard {
+  readonly kind: "limited-single" | "limited-list" | "limited-focus";
+  readonly operationId: string;
+  readonly itemId: string;
+  readonly eventName: string;
+  readonly day: string;
+  readonly eventGeneration: number;
+  readonly visitKey?: string;
+  readonly requireExecute: boolean;
+  readonly mapContext?: string;
+}
 export interface ItemContentEdit {
+  readonly operationKind?: "limited-input";
+  readonly guard?: ItemContentGuard;
   readonly eventName: string;
   readonly itemId: string;
   readonly baseline?: Readonly<Record<string, unknown>>;
@@ -185,6 +198,7 @@ export interface PersistenceCommandPort extends PreferencePersistencePort {
   createBackupFile?(
     changes: readonly ApplicationBackupChange[],
     fallback: () => PersistenceSnapshot,
+    guardedItemEdits?: readonly ItemContentEdit[],
   ): Promise<ApplicationBackupFile>;
   commitDayMutation?(
     command: ApplicationDayMutation,

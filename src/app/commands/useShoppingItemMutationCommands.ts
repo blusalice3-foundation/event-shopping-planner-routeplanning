@@ -1,4 +1,11 @@
-import { itemUpdateBaseline } from "../../utils/itemUpdateBaseline";
+import { bulkImportFailureStatus } from "../../utils/importOutcome";
+import { itemUpdateGuard } from "../../utils/itemContentGuard";
+import type { BulkImportResult } from "../../types/import";
+import { ownValue, recordEntry } from "../../utils/ownRecord";
+import {
+  itemUpdateBaseline,
+  itemExplicitFields,
+} from "../../utils/itemUpdateBaseline";
 import { useCallback, useRef } from "react";
 import type { UpdateItemFieldsInput } from "../state/itemFieldMutation";
 import { editableItemContentFields } from "../state/itemContentEdits";
@@ -61,6 +68,7 @@ export interface MutableCommandValue<T> {
 }
 
 export interface ShoppingItemMutationStatePort {
+  getEventGeneration?: (eventName: string) => number;
   readonly activeEventName: string | null;
   readonly activeEventDate: string;
   readonly eventLists: EventLists;
@@ -135,12 +143,12 @@ export interface ShoppingItemMutationCommands {
     eventName: string,
     newItemsData: BulkAddItemInput[],
     metadata?: BulkAddMetadata,
-  ): Promise<void>;
+  ): Promise<BulkImportResult>;
   handleBulkAdd(
     eventName: string,
     newItemsData: BulkAddItemInput[],
     metadata?: BulkAddMetadata,
-  ): boolean;
+  ): Promise<BulkImportResult>;
   updateItem(
     updatedItem: ShoppingItem,
     baseline?: ShoppingItem,
@@ -303,9 +311,21 @@ export const useShoppingItemMutationCommands = ({
       eventName: string,
       newItemsData: BulkAddItemInput[],
       metadata?: BulkAddMetadata,
-    ): Promise<void> => {
+    ): Promise<BulkImportResult> => {
+      if (metadata?.request?.isCurrent?.() === false)
+        return { status: "invalidated" };
+      metadata?.request?.progress?.("saving");
       const newItems = buildBulkAddItems(newItemsData, metadata);
-      const isNewEvent = !eventLists[eventName];
+      const inputRows = new Map(
+        metadata?.sourceRows?.map((row) => [row.item, row.sourceRowId]),
+      );
+      const sourceRowIds = new Map(
+        newItemsData.flatMap((item, index) => {
+          const row = inputRows.get(item);
+          return row ? [[row, newItems[index].id] as const] : [];
+        }),
+      );
+      const isNewEvent = !ownValue(eventLists, eventName);
       let nextEventLists = eventLists;
       let nextExecuteModeItems = executeModeItemsRef.current;
       let nextEventMetadata = eventMetadata;
@@ -315,6 +335,7 @@ export const useShoppingItemMutationCommands = ({
         const layoutResult = buildLayoutAppliedEventItems(
           newItems,
           metadata.layoutInfo,
+          sourceRowIds,
         );
         nextEventLists = {
           ...eventLists,
@@ -327,7 +348,10 @@ export const useShoppingItemMutationCommands = ({
       } else {
         nextEventLists = {
           ...eventLists,
-          [eventName]: [...(eventLists[eventName] || []), ...newItems],
+          [eventName]: [
+            ...(ownValue(eventLists, eventName) || []),
+            ...newItems,
+          ],
         };
       }
 
@@ -363,27 +387,39 @@ export const useShoppingItemMutationCommands = ({
           executeModeItems: nextExecuteModeItems,
           dayModes: nextDayModes,
         });
-      } catch {
+      } catch (error) {
+        const status = bulkImportFailureStatus(error);
+        if (status === "committed-ui-failed" || status === "cancelled")
+          return { status };
         notify(
-          "イベントを保存できませんでした。表示内容は変更されていません。",
+          status === "failed"
+            ? "イベントを保存できませんでした。表示内容は変更されていません。"
+            : "保存結果の確認が必要です。再取込みせず、画面を再読み込みして保存内容を確認してください。",
         );
-        return;
+        return { status };
       }
 
-      const uiPlan = buildBulkAddUiPlan(
-        eventName,
-        newItems,
-        isNewEvent,
-        eventLists[eventName] || [],
-      );
-      notify(uiPlan.alertMessage);
-      if (uiPlan.nextActiveTab) {
-        navigation.openEvent(
-          uiPlan.nextActiveEventName ?? eventName,
-          uiPlan.nextActiveTab,
+      if (metadata?.request?.isCurrent?.() === false)
+        return { status: "saved" };
+      try {
+        const uiPlan = buildBulkAddUiPlan(
+          eventName,
+          newItems,
+          isNewEvent,
+          ownValue(eventLists, eventName) || [],
         );
-      } else if (uiPlan.nextActiveEventName) {
-        navigation.showImport(uiPlan.nextActiveEventName);
+        notify(uiPlan.alertMessage);
+        if (uiPlan.nextActiveTab) {
+          navigation.openEvent(
+            uiPlan.nextActiveEventName ?? eventName,
+            uiPlan.nextActiveTab,
+          );
+        } else if (uiPlan.nextActiveEventName) {
+          navigation.showImport(uiPlan.nextActiveEventName);
+        }
+        return { status: "saved" };
+      } catch {
+        return { status: "committed-ui-failed" };
       }
     },
     [
@@ -402,7 +438,7 @@ export const useShoppingItemMutationCommands = ({
       eventName: string,
       newItemsData: BulkAddItemInput[],
       metadata?: BulkAddMetadata,
-    ): boolean => {
+    ): Promise<BulkImportResult> => {
       eventUpdatePreviewEpochRef.current += 1;
       const normalizedEventName = eventName.trim();
       const isExplicitAddToOpenEvent =
@@ -411,8 +447,7 @@ export const useShoppingItemMutationCommands = ({
         Object.prototype.hasOwnProperty.call(eventLists, normalizedEventName);
 
       if (isExplicitAddToOpenEvent) {
-        applyBulkAdd(normalizedEventName, newItemsData, metadata);
-        return true;
+        return applyBulkAdd(normalizedEventName, newItemsData, metadata);
       }
 
       const analysis = analyzeDuplicateEventImport({
@@ -425,12 +460,22 @@ export const useShoppingItemMutationCommands = ({
         eventMetadata,
       });
       if (analysis.kind === "create") {
-        applyBulkAdd(analysis.eventName, analysis.incomingItems, metadata);
-        return true;
+        return applyBulkAdd(
+          analysis.eventName,
+          analysis.incomingItems,
+          metadata,
+        );
       }
 
-      openDuplicateEvent({ analysis, metadata });
-      return false;
+      metadata?.request?.progress?.("review");
+      return new Promise((complete) =>
+        openDuplicateEvent({
+          analysis,
+          metadata,
+          complete,
+          eventGeneration: state.getEventGeneration?.(normalizedEventName),
+        }),
+      );
     },
     [
       activeEventName,
@@ -439,6 +484,7 @@ export const useShoppingItemMutationCommands = ({
       eventMetadata,
       eventUpdatePreviewEpochRef,
       openDuplicateEvent,
+      state,
     ],
   );
 
@@ -450,14 +496,20 @@ export const useShoppingItemMutationCommands = ({
       options?: { saveImmediately?: boolean },
     ) => {
       if (!activeEventName) return;
-      const currentMode = dayModes[activeEventName]?.[activeEventDate];
-      const currentItems = eventListsRef.current[activeEventName] || [];
+      const currentMode = recordEntry(dayModes, activeEventName)?.[
+        activeEventDate
+      ];
+      const currentItems =
+        recordEntry(eventListsRef.current, activeEventName) || [];
       const currentItem = indexedItem(currentItems, updatedItem.id);
       if (!currentItem) return;
       const renderedItem =
         baseline ??
         itemUpdateBaseline(updatedItem) ??
-        indexedItem(eventLists[activeEventName] ?? [], updatedItem.id);
+        indexedItem(
+          recordEntry(eventLists, activeEventName) ?? [],
+          updatedItem.id,
+        );
       const intendedItem = renderedItem
         ? (applyChangedFields(
             renderedItem,
@@ -465,6 +517,12 @@ export const useShoppingItemMutationCommands = ({
             currentItem,
           ) as ShoppingItem)
         : updatedItem;
+      const forcedFields = itemExplicitFields(updatedItem);
+      for (const key of forcedFields) {
+        Object.assign(intendedItem, {
+          [key]: (updatedItem as unknown as Record<string, unknown>)[key],
+        });
+      }
       const fieldOnly =
         updateItemFields &&
         [
@@ -522,8 +580,9 @@ export const useShoppingItemMutationCommands = ({
           eventName: activeEventName,
           itemId: updatedItem.id,
           changes,
-          baseline: currentItem,
+          baseline: renderedItem ?? currentItem,
           saveImmediately: options?.saveImmediately,
+          guard: itemUpdateGuard(updatedItem),
         };
         if (fieldCommandBatch.current) fieldCommandBatch.current.push(command);
         else updateItemFields(command);
@@ -541,7 +600,7 @@ export const useShoppingItemMutationCommands = ({
           buildExecutionVisitProjectionKey(finalUpdatedItem)
       ) {
         const currentEventItems =
-          executeModeItemsRef.current[activeEventName] || {};
+          recordEntry(executeModeItemsRef.current, activeEventName) || {};
         const repositionResult =
           repositionExecuteItemAfterIdentityChangeWithResult(
             currentEventItems,
@@ -619,13 +678,13 @@ export const useShoppingItemMutationCommands = ({
       setSortState("Manual");
       setBlockSortDirection(null);
 
-      const mode = dayModes[activeEventName]?.[activeEventDate];
+      const mode = recordEntry(dayModes, activeEventName)?.[activeEventDate];
       const spaceGroupIds = spaceGroupDragItemIdsRef.current;
       const effectiveSelectedIds = new Set(spaceGroupIds ?? selectedItemIds);
       spaceGroupDragItemIdsRef.current = null;
 
       const currentEventExecuteItems =
-        executeModeItemsRef.current[activeEventName] || {};
+        recordEntry(executeModeItemsRef.current, activeEventName) || {};
       const currentExecuteItems = currentEventExecuteItems[activeEventDate]
         ? {
             ...currentEventExecuteItems,
@@ -639,9 +698,9 @@ export const useShoppingItemMutationCommands = ({
         if (effectiveSelectedIds.size <= 1) return false;
         const spaceKeys = new Set<string>();
         effectiveSelectedIds.forEach((id) => {
-          const selectedItem = (eventLists[activeEventName] || []).find(
-            (candidate) => candidate.id === id,
-          );
+          const selectedItem = (
+            recordEntry(eventLists, activeEventName) || []
+          ).find((candidate) => candidate.id === id);
           if (selectedItem) {
             spaceKeys.add(getSpaceKey(selectedItem.block, selectedItem.number));
           }
@@ -662,7 +721,7 @@ export const useShoppingItemMutationCommands = ({
         sourceColumn,
         mode: mode as ViewMode | undefined,
         effectiveSelectedIds,
-        allItems: eventLists[activeEventName] || [],
+        allItems: recordEntry(eventLists, activeEventName) || [],
         executeModeItems: currentExecuteItems,
         dayName: activeEventDate,
         selectedBlockFilters: new Set(selectedBlockFilters),
@@ -718,9 +777,9 @@ export const useShoppingItemMutationCommands = ({
       setSortState("Manual");
       setBlockSortDirection(null);
 
-      const mode = dayModes[activeEventName]?.[activeEventDate];
+      const mode = recordEntry(dayModes, activeEventName)?.[activeEventDate];
       const currentEventExecuteItems =
-        executeModeItemsRef.current[activeEventName] || {};
+        recordEntry(executeModeItemsRef.current, activeEventName) || {};
       const spaceGroupIds = spaceGroupDragItemIdsRef.current;
 
       if (mode === "edit" && targetColumn === "execute") {
@@ -741,7 +800,7 @@ export const useShoppingItemMutationCommands = ({
           updateExecuteModeItems((current) => ({
             ...current,
             [activeEventName]: {
-              ...current[activeEventName],
+              ...recordEntry(current, activeEventName),
               [activeEventDate]: visitMoveResult.reordered!,
             },
           }));
@@ -763,7 +822,7 @@ export const useShoppingItemMutationCommands = ({
         targetColumn,
         mode as ViewMode | undefined,
         effectiveSelectedIds,
-        eventLists[activeEventName] || [],
+        recordEntry(eventLists, activeEventName) || [],
         currentEventExecuteItems,
         activeEventDate,
         hallCheck,
@@ -816,7 +875,9 @@ export const useShoppingItemMutationCommands = ({
     (itemIds: string[]) => {
       if (!activeEventName) return;
       const currentExecuteIds =
-        executeModeItemsRef.current[activeEventName]?.[activeEventDate] || [];
+        recordEntry(executeModeItemsRef.current, activeEventName)?.[
+          activeEventDate
+        ] || [];
       const plan = buildMovePlan({
         requestedIds: itemIds,
         sourceOrderedIds: getCandidateSourceOrderedIds(
@@ -829,7 +890,7 @@ export const useShoppingItemMutationCommands = ({
         expansionPolicy: "same-visit",
       });
       const currentEventItems =
-        executeModeItemsRef.current[activeEventName] || {};
+        recordEntry(executeModeItemsRef.current, activeEventName) || {};
       const moveResult = computeMoveToExecuteColumnWithResult(
         plan.effective,
         activeEventDate,
@@ -868,7 +929,9 @@ export const useShoppingItemMutationCommands = ({
       const plan = buildMovePlan({
         requestedIds: itemIds,
         sourceOrderedIds:
-          executeModeItemsRef.current[activeEventName]?.[activeEventDate] || [],
+          recordEntry(executeModeItemsRef.current, activeEventName)?.[
+            activeEventDate
+          ] || [],
         allItems: items,
         dayName: activeEventDate,
         expansionPolicy: "same-visit",
@@ -877,7 +940,7 @@ export const useShoppingItemMutationCommands = ({
         ...current,
         [activeEventName]: computeRemoveFromExecuteColumn(
           plan.effective,
-          current[activeEventName] || {},
+          recordEntry(current, activeEventName) || {},
           activeEventDate,
         ),
       }));
@@ -897,9 +960,9 @@ export const useShoppingItemMutationCommands = ({
     if (!itemToDelete || !activeEventName) return;
 
     const result = computeDeleteItem(
-      eventLists[activeEventName] || [],
+      recordEntry(eventLists, activeEventName) || [],
       itemToDelete.id,
-      executeModeItemsRef.current[activeEventName] || {},
+      recordEntry(executeModeItemsRef.current, activeEventName) || {},
     );
     setEventLists((current) => ({
       ...current,
@@ -926,7 +989,7 @@ export const useShoppingItemMutationCommands = ({
     const nextDirection: BlockSortDirection =
       blockSortDirection === "asc" ? "desc" : "asc";
     setEventLists((current) => {
-      const allItems = [...(current[activeEventName] || [])];
+      const allItems = [...(recordEntry(current, activeEventName) || [])];
       const itemsForDate = allItems.filter((item) =>
         isSameExecutionVisitDay(item.eventDate, activeEventDate),
       );
@@ -969,10 +1032,12 @@ export const useShoppingItemMutationCommands = ({
     const nextDirection: BlockSortDirection =
       blockSortDirection === "asc" ? "desc" : "asc";
     const executeIds = new Set(
-      executeModeItemsRef.current[activeEventName]?.[activeEventDate] || [],
+      recordEntry(executeModeItemsRef.current, activeEventName)?.[
+        activeEventDate
+      ] || [],
     );
     setEventLists((current) => {
-      const allItems = [...(current[activeEventName] || [])];
+      const allItems = [...(recordEntry(current, activeEventName) || [])];
       const candidateItems = allItems.filter(
         (item) =>
           isSameExecutionVisitDay(item.eventDate, activeEventDate) &&
@@ -1025,10 +1090,12 @@ export const useShoppingItemMutationCommands = ({
     const nextDirection: BlockSortDirection =
       candidateNumberSortDirection === "asc" ? "desc" : "asc";
     const executeIds = new Set(
-      executeModeItemsRef.current[activeEventName]?.[activeEventDate] || [],
+      recordEntry(executeModeItemsRef.current, activeEventName)?.[
+        activeEventDate
+      ] || [],
     );
     setEventLists((current) => {
-      const allItems = [...(current[activeEventName] || [])];
+      const allItems = [...(recordEntry(current, activeEventName) || [])];
       const candidateItems = allItems.filter(
         (item) =>
           isSameExecutionVisitDay(item.eventDate, activeEventDate) &&

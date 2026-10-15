@@ -1,3 +1,6 @@
+import { recordEntry } from "../../utils/ownRecord";
+import { buildFocusSessionKey } from "../../utils/focusSessionKey";
+export { buildFocusSessionKey } from "../../utils/focusSessionKey";
 import type { FocusModeSessionState } from "../../types/focus";
 import type { DayModeState, ShoppingItem, ViewMode } from "../../types/item";
 import type {
@@ -55,7 +58,7 @@ export const selectHallExecuteCount = (
     return 0;
   }
 
-  const days = input.executeModeItems[input.activeEventName];
+  const days = recordEntry(input.executeModeItems, input.activeEventName);
   const day = resolveDayKey(days, input.activeEventDate);
   const executeIds = [
     ...new Set(day.status === "resolved" ? days[day.key] : []),
@@ -181,15 +184,10 @@ export const selectCurrentMode = (
   input: CurrentModeSelectorInput,
 ): ViewMode => {
   if (!input.activeEventName) return "execute";
-  const modes = input.dayModes[input.activeEventName];
+  const modes = recordEntry(input.dayModes, input.activeEventName);
   if (!modes || !input.activeEventDate) return "edit";
   return modes[input.activeEventDate] ?? "edit";
 };
-
-export const buildFocusSessionKey = (
-  eventName: string,
-  eventDate: string,
-): string => `${eventName}::${eventDate}`;
 
 export interface CurrentFocusSessionSelectorInput {
   readonly activeEventName: string | null;
@@ -314,13 +312,13 @@ export const selectCurrentMapRotations = (
 ): MapRotationSelection => {
   const mapTab =
     input.activeEventName && input.isMapTab && input.currentMapTabName
-      ? input.mapRotationSettings[input.activeEventName]?.[
+      ? recordEntry(input.mapRotationSettings, input.activeEventName)?.[
           input.currentMapTabName
         ]
       : undefined;
   const focus =
     input.activeEventName && input.currentFocusMapName
-      ? input.mapRotationSettings[input.activeEventName]?.[
+      ? recordEntry(input.mapRotationSettings, input.activeEventName)?.[
           input.currentFocusMapName
         ]
       : undefined;
@@ -343,7 +341,7 @@ export const selectCurrentMapViewport = (
   if (!input.activeEventName || !input.isMapTab || !input.currentMapTabName) {
     return undefined;
   }
-  return input.mapViewportSettings[input.activeEventName]?.[
+  return recordEntry(input.mapViewportSettings, input.activeEventName)?.[
     input.currentMapTabName
   ];
 };

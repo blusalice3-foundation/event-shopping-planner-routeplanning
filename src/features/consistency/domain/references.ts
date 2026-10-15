@@ -1,3 +1,4 @@
+import { recordEntry } from "../../../utils/ownRecord";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
 import type { ShoppingItem } from "../../../types/item";
 import type { HallDefinition } from "../../../types/map";
@@ -26,20 +27,20 @@ export function reconcileConsistencyReferences(
       return item !== undefined && sameDay(item.eventDate, day);
     };
     for (const [day, ids] of Object.entries(
-      data.executeModeItems[eventName] ?? {},
+      recordEntry(data.executeModeItems, eventName) ?? {},
     )) {
       const retained = ids.filter((id) => inDay(id, day));
       if (retained.length !== ids.length) {
-        data.executeModeItems[eventName][day] = retained;
+        recordEntry(data.executeModeItems, eventName)[day] = retained;
         changed(
           `${eventName}.executeModeItems.${day}`,
           "削除済み品目・旧日付への参照を整理します。",
         );
       }
     }
-    const event = data.eventConsistency[eventName];
+    const event = recordEntry(data.eventConsistency, eventName);
     if (!event) continue;
-    const definitions = data.hallDefinitions[eventName] as
+    const definitions = recordEntry(data.hallDefinitions, eventName) as
       | Record<string, HallDefinition[]>
       | undefined;
     for (const { day, mapKey, context } of mapContextEntries(event)) {
@@ -114,12 +115,11 @@ export function validateConsistencyReferences(
       continue;
     }
     const items = new Map(
-      (data.eventLists[eventName] as ShoppingItem[]).map((item) => [
-        item.id,
-        item,
-      ]),
+      (recordEntry(data.eventLists, eventName) as ShoppingItem[]).map(
+        (item) => [item.id, item],
+      ),
     );
-    const definitions = data.hallDefinitions[eventName] as
+    const definitions = recordEntry(data.hallDefinitions, eventName) as
       | Record<string, HallDefinition[]>
       | undefined;
     for (const { day, mapKey, context } of mapContextEntries(event)) {
@@ -127,7 +127,7 @@ export function validateConsistencyReferences(
       if (
         mapKey !== null &&
         (!Object.prototype.hasOwnProperty.call(
-          data.mapData[eventName] ?? {},
+          recordEntry(data.mapData, eventName) ?? {},
           mapKey,
         ) ||
           normalizeMapDay(mapKey) !== normalizeMapDay(day))

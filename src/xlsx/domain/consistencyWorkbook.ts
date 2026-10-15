@@ -1,3 +1,4 @@
+import { recordEntry, setOwnValue } from "../../utils/ownRecord";
 import xlsxLimits from "../../../config/xlsx-limits.json";
 import type { EventWorkbookAdditionalData } from "./eventWorkbook";
 import { createAppBackup } from "../../utils/appBackup";
@@ -113,7 +114,8 @@ function count(
   snapshot: PersistenceSnapshot,
   name: string,
 ): Record<WorkbookContentSection, number> {
-  const event = snapshot.eventConsistency[name] ?? createEventConsistency();
+  const event =
+    recordEntry(snapshot.eventConsistency, name) ?? createEventConsistency();
   const days = Object.values(event.days),
     mapless = days.flatMap((day) => (day.mapless ? [day.mapless] : [])),
     mapped = days.flatMap((day) => Object.values(day.maps));
@@ -134,19 +136,20 @@ function count(
             : context.hallOrder.length),
       0,
     );
-  const halls = entries(snapshot.hallDefinitions[name] ?? {});
+  const halls = entries(recordEntry(snapshot.hallDefinitions, name) ?? {});
   return {
-    items: snapshot.eventLists[name]?.length ?? 0,
-    metadata: snapshot.eventMetadata[name] ? 1 : 0,
+    items: recordEntry(snapshot.eventLists, name)?.length ?? 0,
+    metadata: recordEntry(snapshot.eventMetadata, name) ? 1 : 0,
     layout:
-      Object.values(snapshot.executeModeItems[name] ?? {}).reduce(
+      Object.values(recordEntry(snapshot.executeModeItems, name) ?? {}).reduce(
         (n, ids) => n + ids.length,
         0,
-      ) + Object.keys(snapshot.dayModes[name] ?? {}).length,
-    maps: Object.keys(snapshot.mapData[name] ?? {}).length,
+      ) + Object.keys(recordEntry(snapshot.dayModes, name) ?? {}).length,
+    maps: Object.keys(recordEntry(snapshot.mapData, name) ?? {}).length,
     mapSettings:
-      Object.keys(snapshot.mapRotationSettings[name] ?? {}).length +
-      Object.keys(snapshot.mapViewportSettings[name] ?? {}).length,
+      Object.keys(recordEntry(snapshot.mapRotationSettings, name) ?? {})
+        .length +
+      Object.keys(recordEntry(snapshot.mapViewportSettings, name) ?? {}).length,
     blockDetectionSettings: event.blockDetectionSettings ? 1 : 0,
     selectedMaps: days.filter((day) => day.selectedMapKey !== null).length,
     simpleHalls: halls
@@ -179,41 +182,66 @@ export function selectWorkbookContent(
   const next = Object.fromEntries(
     Object.keys(source).map((key) => [key, {}]),
   ) as unknown as PersistenceSnapshot;
-  next.eventLists[name] = (source.eventLists[name] as ShoppingItem[]).map(
-    (item) => {
+  setOwnValue(
+    next.eventLists,
+    name,
+    (recordEntry(source.eventLists, name) as ShoppingItem[]).map((item) => {
       const copy = { ...item };
       delete copy.manualHallId;
       return copy;
-    },
+    }),
   );
-  if (full && source.eventMetadata[name])
-    next.eventMetadata[name] = structuredClone(source.eventMetadata[name]);
-  if (L) {
-    next.executeModeItems[name] = structuredClone(
-      source.executeModeItems[name] ?? {},
+  if (full && recordEntry(source.eventMetadata, name))
+    setOwnValue(
+      next.eventMetadata,
+      name,
+      structuredClone(recordEntry(source.eventMetadata, name)),
     );
-    next.dayModes[name] = structuredClone(source.dayModes[name] ?? {});
+  if (L) {
+    setOwnValue(
+      next.executeModeItems,
+      name,
+      structuredClone(recordEntry(source.executeModeItems, name) ?? {}),
+    );
+    setOwnValue(
+      next.dayModes,
+      name,
+      structuredClone(recordEntry(source.dayModes, name) ?? {}),
+    );
   }
   if (M) {
-    next.mapData[name] = structuredClone(source.mapData[name] ?? {});
-    next.mapRotationSettings[name] = structuredClone(
-      source.mapRotationSettings[name] ?? {},
+    setOwnValue(
+      next.mapData,
+      name,
+      structuredClone(recordEntry(source.mapData, name) ?? {}),
     );
-    next.mapViewportSettings[name] = structuredClone(
-      source.mapViewportSettings[name] ?? {},
+    setOwnValue(
+      next.mapRotationSettings,
+      name,
+      structuredClone(recordEntry(source.mapRotationSettings, name) ?? {}),
+    );
+    setOwnValue(
+      next.mapViewportSettings,
+      name,
+      structuredClone(recordEntry(source.mapViewportSettings, name) ?? {}),
     );
   }
   if (R)
-    next.hallDefinitions[name] = structuredClone(
-      Object.fromEntries(
-        entries(source.hallDefinitions[name] ?? {}).filter(
-          ([key]) => M || key.startsWith(`${MAPLESS_HALL_KEY}:`),
+    setOwnValue(
+      next.hallDefinitions,
+      name,
+      structuredClone(
+        Object.fromEntries(
+          entries(recordEntry(source.hallDefinitions, name) ?? {}).filter(
+            ([key]) => M || key.startsWith(`${MAPLESS_HALL_KEY}:`),
+          ),
         ),
       ),
     );
-  const original = source.eventConsistency[name] ?? createEventConsistency(),
+  const original =
+      recordEntry(source.eventConsistency, name) ?? createEventConsistency(),
     event = createEventConsistency();
-  next.eventConsistency[name] = event;
+  setOwnValue(next.eventConsistency, name, event);
   if (M)
     event.blockDetectionSettings = structuredClone(
       original.blockDetectionSettings,

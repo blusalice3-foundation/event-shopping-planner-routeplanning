@@ -1,3 +1,4 @@
+import { recordEntry, setOwnValue } from "../../../utils/ownRecord";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
 import type { MutationPlan } from "../../../app/commands/applicationMutationCoordinator";
 import { semanticSignature } from "../../../app/commands/applicationMutationCoordinator";
@@ -49,7 +50,7 @@ export function planLegacyResolution(
   choice: LegacyResolutionChoice,
 ): MutationPlan {
   const next = structuredClone(source),
-    event = next.eventConsistency[name];
+    event = recordEntry(next.eventConsistency, name);
   const index =
     event?.legacyPending.findIndex(
       (entry) => legacyPendingIdentity(entry) === identity,
@@ -61,20 +62,22 @@ export function planLegacyResolution(
   const entry = event.legacyPending[index];
   if (entry.payload.kind === "hall-definitions")
     choice = { ...choice, mapKey: null };
-  const items = next.eventLists[name] as ShoppingItem[];
+  const items = recordEntry(next.eventLists, name) as ShoppingItem[];
   const days = collectEventDays(
     items,
-    next.executeModeItems[name],
-    next.dayModes[name],
+    recordEntry(next.executeModeItems, name),
+    recordEntry(next.dayModes, name),
     event.days,
   );
   if (!days.some((day) => sameDay(day, choice.day)))
     throw new Error("保存先の日付を選択してください。");
   const day = ensureDayConsistency(event, choice.day, [
-    next.executeModeItems[name],
-    next.dayModes[name],
+    recordEntry(next.executeModeItems, name),
+    recordEntry(next.dayModes, name),
   ]);
-  const maps = next.mapData[name] as Record<string, DayMapData> | undefined;
+  const maps = recordEntry(next.mapData, name) as
+    | Record<string, DayMapData>
+    | undefined;
   if (
     choice.mapKey !== null &&
     !resolveDayMap(maps, choice.day).candidates.some(
@@ -82,7 +85,8 @@ export function planLegacyResolution(
     )
   )
     throw new Error("この日付で利用できるマップを選択してください。");
-  const definitions = (next.hallDefinitions[name] ??= {}) as Record<
+  const definitions = (recordEntry(next.hallDefinitions, name) ??
+    setOwnValue(next.hallDefinitions, name, {})) as Record<
     string,
     HallDefinition[]
   >;
@@ -232,11 +236,14 @@ export function planLegacyResolution(
       details: [
         ...details,
         ...(plan.confirmation?.details ?? []),
-        `変更後の関連設定\n${JSON.stringify(plan.snapshot.eventConsistency[name].days, null, 2)}`,
+        `変更後の関連設定\n${JSON.stringify(recordEntry(plan.snapshot.eventConsistency, name).days, null, 2)}`,
       ],
       comparison: {
         original: entry,
-        resolvedPending: source.eventConsistency[name].legacyPending.filter(
+        resolvedPending: recordEntry(
+          source.eventConsistency,
+          name,
+        ).legacyPending.filter(
           (pending) =>
             !event.legacyPending.some(
               (retained) =>
@@ -245,9 +252,9 @@ export function planLegacyResolution(
             ),
         ),
         choice,
-        definitions: next.hallDefinitions[name],
-        before: source.eventConsistency[name].days,
-        after: plan.snapshot.eventConsistency[name].days,
+        definitions: recordEntry(next.hallDefinitions, name),
+        before: recordEntry(source.eventConsistency, name).days,
+        after: recordEntry(plan.snapshot.eventConsistency, name).days,
       },
     },
   };

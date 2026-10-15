@@ -1,3 +1,4 @@
+import { recordEntry } from "./ownRecord";
 import { registerItemChanges } from "./itemIndex";
 
 /** Compare the canonical JSON values used by mutation plans without allocating strings. */
@@ -121,7 +122,7 @@ export function reuseEqualReferences<T>(previous: T, next: T): T {
     previousKeys.length === keys.length &&
     (!arrays || (previous as unknown[]).length === (next as unknown[]).length);
   for (const [index, key] of keys.entries()) {
-    const value = reuseEqualReferences(before[key], after[key]);
+    const value = reuseEqualReferences(recordEntry(before, key), after[key]);
     Object.defineProperty(result, key, {
       value,
       enumerable: true,
@@ -153,7 +154,7 @@ export function reuseEqualItemLists<T extends Record<string, unknown[]>>(
   const result: Record<string, unknown[]> = { ...next };
   let unchanged = Object.keys(previous).length === Object.keys(next).length;
   for (const [name, items] of Object.entries(next)) {
-    const before = previous[name];
+    const before = recordEntry(previous, name);
     if (!before) {
       unchanged = false;
       continue;

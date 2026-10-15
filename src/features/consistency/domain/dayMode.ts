@@ -1,3 +1,4 @@
+import { recordEntry, setOwnValue } from "../../../utils/ownRecord";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
 import type {
   MutationPlan,
@@ -13,12 +14,14 @@ export function planDayModeToggle(
   day: string,
   choices: MutationChoices = {},
 ): MutationPlan {
-  if (!source.eventLists[eventName])
+  if (!recordEntry(source.eventLists, eventName))
     throw new Error("イベントが見つかりません。");
   const { mode: selectedMode, ...otherChoices } = choices;
   const initial = planDayMerge(source, eventName, day, undefined, otherChoices);
-  const key = existingDayKey(initial.snapshot.dayModes[eventName], day) ?? day;
-  const before = initial.snapshot.dayModes[eventName]?.[key];
+  const key =
+    existingDayKey(recordEntry(initial.snapshot.dayModes, eventName), day) ??
+    day;
+  const before = recordEntry(initial.snapshot.dayModes, eventName)?.[key];
   const mode =
     selectedMode === "edit" ||
     selectedMode === "execute" ||
@@ -31,7 +34,10 @@ export function planDayModeToggle(
     ? planDayMerge(source, eventName, day, undefined, { ...otherChoices, mode })
     : initial;
   const next = merged.snapshot;
-  next.dayModes[eventName] = { ...next.dayModes[eventName], [key]: mode };
+  setOwnValue(next.dayModes, eventName, {
+    ...recordEntry(next.dayModes, eventName),
+    [key]: mode,
+  });
   return {
     ...merged,
     ...(merged.confirmation

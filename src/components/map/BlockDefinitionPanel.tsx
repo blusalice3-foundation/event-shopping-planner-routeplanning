@@ -1,3 +1,4 @@
+import { minimum, maximum } from "../../utils/numericExtrema";
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   DayMapData,
@@ -151,10 +152,10 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
       const rows = cells.map((c) => c.row),
         cols = cells.map((c) => c.col);
       const range = {
-        startRow: Math.min(...rows),
-        startCol: Math.min(...cols),
-        endRow: Math.max(...rows),
-        endCol: Math.max(...cols),
+        startRow: minimum(rows),
+        startCol: minimum(cols),
+        endRow: maximum(rows),
+        endCol: maximum(cols),
       };
       const numCells = detectNumberCells(
         range.startRow,
@@ -168,10 +169,10 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
       const rows = cells.map((c) => c.row),
         cols = cells.map((c) => c.col);
       const newRange: MultiRange = {
-        startRow: Math.min(...rows),
-        startCol: Math.min(...cols),
-        endRow: Math.max(...rows),
-        endCol: Math.max(...cols),
+        startRow: minimum(rows),
+        startCol: minimum(cols),
+        endRow: maximum(rows),
+        endCol: maximum(cols),
       };
       setMultiRanges((prev) => [...prev, newRange]);
     } else if (type === "rangeStart" && cells.length >= 2) {

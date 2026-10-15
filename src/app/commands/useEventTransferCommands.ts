@@ -1,3 +1,4 @@
+import { recordEntry } from "../../utils/ownRecord";
 import type { ApplicationMutationPort } from "../ports/ApplicationMutationPort";
 import type { EventConsistencyStore } from "../../types/consistency";
 import { planEventRestore } from "../../features/consistency/domain/eventMutations";
@@ -204,7 +205,9 @@ export const useEventTransferCommands = ({
         const snapshot = structuredClone(await readExportSnapshot());
         if (request !== exportRequestRef.current) return;
         if (
-          !hasExportableItems(snapshot.eventLists[eventName] as ShoppingItem[])
+          !hasExportableItems(
+            recordEntry(snapshot.eventLists, eventName) as ShoppingItem[],
+          )
         ) {
           alert("出力できるアイテムがありません。");
           return;
@@ -328,9 +331,10 @@ export const useEventTransferCommands = ({
             choices,
           ),
       });
-      const restoredItems = nextData.eventLists[
-        targetEventName
-      ] as ShoppingItem[];
+      const restoredItems = recordEntry(
+        nextData.eventLists,
+        targetEventName,
+      ) as ShoppingItem[];
       const restoredTab = resolveEventListTab(restoredItems);
       const deferLargeXlsxOpen = shouldDeferLargeXlsxRestoreOpen({
         isXlsxRestore: pendingXlsxRestoreCompletion !== null,
@@ -380,9 +384,10 @@ export const useEventTransferCommands = ({
 
       options = structuredClone(options);
       const exportSnapshot = exportSession.snapshot;
-      const itemsToExport = exportSnapshot.eventLists[
-        exportEventName
-      ] as ShoppingItem[];
+      const itemsToExport = recordEntry(
+        exportSnapshot.eventLists,
+        exportEventName,
+      ) as ShoppingItem[];
       if (!hasExportableItems(itemsToExport)) {
         return;
       }
@@ -408,16 +413,21 @@ export const useEventTransferCommands = ({
           exportEventName,
           itemsToExport,
           options,
-          exportSnapshot.eventMetadata[exportEventName] as EventMetadata,
+          recordEntry(
+            exportSnapshot.eventMetadata,
+            exportEventName,
+          ) as EventMetadata,
           {
             ...(exportSnapshot as unknown as PersistedStateValues),
-            blockDetectionSettings: exportSnapshot.eventConsistency[
-              exportEventName
-            ]?.blockDetectionSettings
+            blockDetectionSettings: recordEntry(
+              exportSnapshot.eventConsistency,
+              exportEventName,
+            )?.blockDetectionSettings
               ? {
-                  [exportEventName]:
-                    exportSnapshot.eventConsistency[exportEventName]
-                      .blockDetectionSettings!,
+                  [exportEventName]: recordEntry(
+                    exportSnapshot.eventConsistency,
+                    exportEventName,
+                  ).blockDetectionSettings!,
                 }
               : {},
           },

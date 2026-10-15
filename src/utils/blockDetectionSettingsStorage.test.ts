@@ -214,3 +214,22 @@ describe("blockDetectionSettingsStorage", () => {
     expect(loadBlockDetectionSettings("春イベント")).toEqual(makeSettings(7));
   });
 });
+
+it.each(["constructor", "__proto__", "toString", "hasOwnProperty"])(
+  "preserves settings for the literal event name %s",
+  (name) => {
+    localStorage.clear();
+    expect(loadBlockDetectionSettings(name)).toBeNull();
+    saveBlockDetectionSettings(name, makeSettings(5));
+    expect(loadBlockDetectionSettings(name)).toEqual(makeSettings(5));
+    const stored = readBlockDetectionSettingsStoreForBackup([name]);
+    expect(Object.prototype.hasOwnProperty.call(stored, name)).toBe(true);
+    expect(Object.getPrototypeOf(stored)).toBe(Object.prototype);
+    renameBlockDetectionSettingsForEvent(name, "別名");
+    expect(loadBlockDetectionSettings(name)).toBeNull();
+    expect(loadBlockDetectionSettings("別名")).toEqual(makeSettings(5));
+    renameBlockDetectionSettingsForEvent("別名", name);
+    removeBlockDetectionSettingsForEvent(name);
+    expect(loadBlockDetectionSettings(name)).toBeNull();
+  },
+);

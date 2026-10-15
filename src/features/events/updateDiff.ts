@@ -1,5 +1,9 @@
 import type { PurchaseStatus, ShoppingItem } from "../../types/item";
-import { getItemKey, getItemKeyWithoutTitle } from "../../utils/itemComparison";
+import {
+  matchSheetItems,
+  type SheetMatchChoice,
+  type SheetIdentityChoices,
+} from "./sheetMatching";
 import {
   decideSheetQuantity,
   type QuantitySyncDecision,
@@ -87,6 +91,13 @@ export type AppFieldSyncCandidate = {
 };
 
 export type EventUpdateDiff = {
+  csvReview?: { warnings: string[]; itemCount: number };
+  matching?: {
+    currentItems: ShoppingItem[];
+    sheetItems: SheetItem[];
+    proposals: SheetMatchChoice[];
+  };
+  unresolvedMatches?: SheetMatchChoice[];
   itemsToDelete: ShoppingItem[];
   itemsToUpdate: ShoppingItem[];
   itemsToAdd: SpreadsheetItemToAdd[];
@@ -270,16 +281,9 @@ export function normalizeSheetItemsUrls(sheetItems: SheetItem[]): SheetItem[] {
 export function createEventUpdateDiff(
   currentItems: ShoppingItem[],
   sheetItems: SheetItem[],
+  identityChoices: SheetIdentityChoices = {},
 ): EventUpdateDiff {
-  const currentItemsMapWithAll = new Map(
-    currentItems.map((item) => [getItemKey(item), item]),
-  );
-  const sheetItemsMapWithoutTitle = new Map(
-    sheetItems.map((item) => [getItemKeyWithoutTitle(item), item]),
-  );
-  const currentItemsMapWithoutTitle = new Map(
-    currentItems.map((item) => [getItemKeyWithoutTitle(item), item]),
-  );
+  const matching = matchSheetItems(currentItems, sheetItems, identityChoices);
 
   const itemsToDelete: ShoppingItem[] = [];
   const itemsToUpdate: ShoppingItem[] = [];
@@ -293,8 +297,7 @@ export function createEventUpdateDiff(
   let protectedFromUpdate = 0;
 
   currentItems.forEach((item) => {
-    const keyWithoutTitle = getItemKeyWithoutTitle(item);
-    if (!sheetItemsMapWithoutTitle.has(keyWithoutTitle)) {
+    if (!matching.used.has(item.id)) {
       const protectionLevel = getEffectiveProtectionLevel(item);
       if (protectionLevel !== "full") {
         itemsToDelete.push(item);
@@ -304,12 +307,8 @@ export function createEventUpdateDiff(
     }
   });
 
-  sheetItems.forEach((sheetItem) => {
-    const keyWithAll = getItemKey(sheetItem);
-    const keyWithoutTitle = getItemKeyWithoutTitle(sheetItem);
-    const existing =
-      currentItemsMapWithAll.get(keyWithAll) ??
-      currentItemsMapWithoutTitle.get(keyWithoutTitle);
+  sheetItems.forEach((sheetItem, row) => {
+    const existing = matching.matches.get(row);
 
     if (!existing) {
       const quantityDecision = decideSheetQuantity(
@@ -421,6 +420,12 @@ export function createEventUpdateDiff(
   });
 
   return {
+    ...(matching.proposals.length
+      ? {
+          matching: { currentItems, sheetItems, proposals: matching.proposals },
+        }
+      : {}),
+    unresolvedMatches: matching.unresolved,
     itemsToDelete,
     itemsToUpdate,
     itemsToAdd,

@@ -1,3 +1,4 @@
+import { recordEntry, setOwnValue } from "../../../utils/ownRecord";
 import type { ShoppingItem } from "../../../types/item";
 import {
   MAPLESS_HALL_KEY,
@@ -22,7 +23,7 @@ const normalizeHallDefinitions = (
   const next: HallDefinitionsStore = {};
 
   for (const eventName of Object.keys(hallDefinitions)) {
-    const byTab = { ...hallDefinitions[eventName] };
+    const byTab = { ...recordEntry(hallDefinitions, eventName) };
     const maplessById = new Map<string, HallDefinition>();
 
     for (const hall of byTab[MAPLESS_HALL_KEY] ?? []) {
@@ -55,7 +56,7 @@ const normalizeHallDefinitions = (
 
     const collectedMapless = Array.from(maplessById.values());
     if (collectedMapless.length > 0) {
-      const dates = extractEventDates(eventLists[eventName] ?? []);
+      const dates = extractEventDates(recordEntry(eventLists, eventName) ?? []);
       for (const date of dates) {
         const dateKey = getMaplessKey(date);
         if (!byTab[dateKey] || byTab[dateKey].length === 0) {
@@ -69,7 +70,7 @@ const normalizeHallDefinitions = (
       changed = true;
     }
 
-    next[eventName] = byTab;
+    setOwnValue(next, eventName, byTab);
   }
 
   return changed ? next : hallDefinitions;
@@ -83,10 +84,10 @@ const normalizeHallRouteSettings = (
   const next: HallRouteSettingsStore = {};
 
   for (const eventName of Object.keys(hallRouteSettings)) {
-    const byTab = { ...hallRouteSettings[eventName] };
+    const byTab = { ...recordEntry(hallRouteSettings, eventName) };
     const oldSettings = byTab[MAPLESS_HALL_KEY];
     if (oldSettings != null) {
-      const dates = extractEventDates(eventLists[eventName] ?? []);
+      const dates = extractEventDates(recordEntry(eventLists, eventName) ?? []);
       for (const date of dates) {
         const dateKey = getMaplessKey(date);
         if (!byTab[dateKey]) {
@@ -103,7 +104,7 @@ const normalizeHallRouteSettings = (
       delete byTab[MAPLESS_HALL_KEY];
       changed = true;
     }
-    next[eventName] = byTab;
+    setOwnValue(next, eventName, byTab);
   }
 
   return changed ? next : hallRouteSettings;

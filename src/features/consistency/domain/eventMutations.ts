@@ -1,3 +1,5 @@
+import { ownValue } from "../../../utils/ownRecord";
+import { recordEntry } from "../../../utils/ownRecord";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
 import type {
   MutationChoices,
@@ -13,7 +15,7 @@ export function eventSnapshot(
   return Object.fromEntries(
     Object.entries(snapshot).map(([key, values]) => [
       key,
-      values[name] ?? null,
+      ownValue(values as Record<string, unknown>, name) ?? null,
     ]),
   );
 }
@@ -113,7 +115,7 @@ export function planEventRename(
     )
   )
     throw new Error("同名のイベントが既に存在します。");
-  if (!snapshot.eventLists[oldName])
+  if (!recordEntry(snapshot.eventLists, oldName))
     throw new Error("変更元のイベントが見つかりません。");
   const next = Object.fromEntries(
     Object.entries(snapshot).map(([key, values]) => [

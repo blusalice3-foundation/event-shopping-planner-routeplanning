@@ -1,3 +1,4 @@
+import { recordEntry } from "../../../utils/ownRecord";
 import type { HallSelectionIntent } from "../../../types/consistency";
 import type { ItemMembershipPreview } from "../../consistency/domain/itemEdit";
 import { applyChangedFields } from "../../consistency/domain/mutations";
@@ -474,6 +475,8 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
 
       {pendingEventUpdate && (
         <UpdateConfirmationModal
+          matching={pendingEventUpdate.diff.matching}
+          csvReview={pendingEventUpdate.diff.csvReview}
           itemsToDelete={pendingEventUpdate.diff.itemsToDelete}
           itemsToUpdate={pendingEventUpdate.diff.itemsToUpdate}
           itemsToAdd={pendingEventUpdate.diff.itemsToAdd}
@@ -503,7 +506,8 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
         <UrlUpdateDialog
           currentUrl={
             pendingUpdateEventName
-              ? eventMetadata[pendingUpdateEventName]?.spreadsheetUrl || ""
+              ? recordEntry(eventMetadata, pendingUpdateEventName)
+                  ?.spreadsheetUrl || ""
               : ""
           }
           onConfirm={handleUrlUpdate}
@@ -531,8 +535,8 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
           hasMapData={
             !!(
               exportEventName &&
-              mapData[exportEventName] &&
-              Object.keys(mapData[exportEventName]).length > 0
+              recordEntry(mapData, exportEventName) &&
+              Object.keys(recordEntry(mapData, exportEventName)).length > 0
             )
           }
         />

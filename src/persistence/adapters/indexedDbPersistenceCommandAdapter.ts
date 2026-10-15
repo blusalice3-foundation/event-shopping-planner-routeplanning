@@ -1,3 +1,4 @@
+import { recordEntry, setOwnValue } from "../../utils/ownRecord";
 import { createBackupInWorker } from "./backupWorker";
 import { inspectConsistencyUpgrade } from "../db/consistencyUpgrade";
 import type {
@@ -149,13 +150,16 @@ export function createIndexedDbPersistenceCommandAdapter(
     },
     readBlockDetectionSettings: (eventName) =>
       structuredClone(
-        read()?.eventConsistency[eventName]?.blockDetectionSettings ?? null,
+        recordEntry(read()?.eventConsistency, eventName)
+          ?.blockDetectionSettings ?? null,
       ),
     readBlockDetectionSettingsForBackup(eventNames) {
       const settings: BlockDetectionSettingsStore = {};
       for (const eventName of eventNames) {
-        const value =
-          read()?.eventConsistency[eventName]?.blockDetectionSettings;
+        const value = recordEntry(
+          read()?.eventConsistency,
+          eventName,
+        )?.blockDetectionSettings;
         if (value)
           Object.defineProperty(settings, eventName, {
             value: structuredClone(value),
@@ -212,8 +216,9 @@ export function createIndexedDbPersistenceCommandAdapter(
     restoreAppDataWithBlockDetectionSettings(snapshot, eventName, settings) {
       const next = structuredClone(snapshot);
       next.eventConsistency ??= {};
-      next.eventConsistency[eventName] ??= createEventConsistency();
-      next.eventConsistency[eventName].blockDetectionSettings =
+      if (!recordEntry(next.eventConsistency, eventName))
+        setOwnValue(next.eventConsistency, eventName, createEventConsistency());
+      recordEntry(next.eventConsistency, eventName).blockDetectionSettings =
         structuredClone(settings);
       return commit(next, { invalidatedEvents: [eventName] });
     },

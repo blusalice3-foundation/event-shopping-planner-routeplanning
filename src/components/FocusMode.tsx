@@ -1,3 +1,15 @@
+import { recordEntry } from "../utils/ownRecord";
+import { ItemGuardContext } from "../features/shopping-list/renderers/ViewportRowState";
+import type { ItemContentGuard } from "../app/ports/PersistenceCommandPort";
+import {
+  rememberItemUpdateGuard,
+  sameItemGuardTarget,
+} from "../utils/itemContentGuard";
+import {
+  buildExecutionVisitProjectionKey as limitedVisitKey,
+  normalizeExecutionVisitDay as limitedDay,
+} from "../utils/visitProjection";
+import { buildLimitedPurchaseDialogUpdate } from "../utils/limitedPurchaseIntent";
 import { navigatorEntryIndex } from "../features/space-navigation/domain/navigatorEntryIndex";
 import { useContext } from "react";
 import {
@@ -93,8 +105,6 @@ import { useRouteCalculation } from "../features/map/routing/useRouteCalculation
 import { buildRouteDiagnostics } from "../utils/routeDiagnostics";
 import { acquireBodyScrollLock } from "../utils/bodyScrollLock";
 import {
-  applyLimitedPurchase,
-  applyPurchasedFromLimitedInput,
   clearLimitedPurchase,
   getActualPurchasedQuantity,
   getChargeableQuantity,
@@ -417,6 +427,30 @@ const FocusMode: React.FC<FocusModeProps> = ({
   const executeItemsRoutingSignature = useMemo(() => {
     return buildItemRoutingSignature(routingItems, executeModeItemIds);
   }, [routingItems, executeModeItemIds]);
+  const captureItemGuard = useContext(ItemGuardContext);
+  const limitedTargetsRef = useRef(
+    new Map<string, { item: ShoppingItem; guard?: ItemContentGuard }>(),
+  );
+  const isCurrentLimitedTarget = useStableCallback((item: ShoppingItem) => {
+    const target = limitedTargetsRef.current.get(item.id);
+    if (
+      !target ||
+      limitedDay(target.item.eventDate) !== limitedDay(item.eventDate) ||
+      limitedVisitKey(target.item) !== limitedVisitKey(item)
+    )
+      return false;
+    if (
+      target.guard &&
+      captureItemGuard &&
+      !sameItemGuardTarget(
+        target.guard,
+        captureItemGuard(item, target.guard.kind),
+      )
+    )
+      return false;
+    if (!executeModeItemIdSet.has(item.id)) return false;
+    return true;
+  });
   const readAcceptedItem = useContext(AcceptedItemContext);
   const commitItemCommands = useContext(ItemCommandContext);
   const getLatestItemById = useStableCallback(
@@ -1146,7 +1180,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
   // 現在のマップデータ
   const currentMapData = useMemo(() => {
     if (!currentMapName || !mapData) return null;
-    return mapData[currentMapName] || null;
+    return recordEntry(mapData, currentMapName) || null;
   }, [currentMapName, mapData]);
 
   const currentVisitLookupMapSignature = useMemo(() => {
@@ -2102,7 +2136,11 @@ const FocusMode: React.FC<FocusModeProps> = ({
       let skipped = 0;
       for (let index = startIndex; index < queueIds.length; index += 1) {
         const latestItem = getLatestItemById(queueIds[index]);
-        if (latestItem !== undefined && isLimitedBulkInputTarget(latestItem)) {
+        if (
+          latestItem !== undefined &&
+          isCurrentLimitedTarget(latestItem) &&
+          isLimitedBulkInputTarget(latestItem)
+        ) {
           setLimitedBulkDialogContext({
             itemSnapshot: latestItem,
             queueIds,
@@ -2125,35 +2163,26 @@ const FocusMode: React.FC<FocusModeProps> = ({
       getLatestItemById,
       isInspecting,
       isLimitedBulkInputTarget,
+      isCurrentLimitedTarget,
     ],
   );
 
-  const commitLimitedDialogResult = useCallback(
+  const commitLimitedDialogResult = useStableCallback(
     (baseItem: ShoppingItem, result: LimitedPurchaseDialogResult) => {
-      if (isInspecting) {
-        setNotification("内容確認中は限数を保存できません");
-        return;
-      }
-      if (result.kind === "limited") {
-        updateItemWithDeferredCleanup(
-          applyLimitedPurchase(baseItem, {
-            actual: result.actual,
-            planned: result.planned,
-          }),
+      if (isInspecting) return false;
+      const updated = buildLimitedPurchaseDialogUpdate(baseItem, result);
+      if (!updated) {
+        setNotification(
+          "購入予定量が変わりました。入力を確認して保存してください。",
         );
-        return;
+        return false;
       }
-      if (result.kind === "purchased") {
-        updateItemWithDeferredCleanup(
-          applyPurchasedFromLimitedInput(baseItem, result.planned),
-        );
-        return;
-      }
-      updateItemWithDeferredCleanup(
-        applyLimitedPurchase(baseItem, { planned: result.planned }),
-      );
+
+      const guard = limitedTargetsRef.current.get(baseItem.id)?.guard;
+      if (guard) rememberItemUpdateGuard(updated, guard);
+      updateItemWithDeferredCleanup(updated);
+      return true;
     },
-    [isInspecting, setNotification, updateItemWithDeferredCleanup],
   );
 
   const startLimitedBulkFlow = useCallback(
@@ -2163,6 +2192,12 @@ const FocusMode: React.FC<FocusModeProps> = ({
         setNotification("内容確認中は限数を変更できません");
         return;
       }
+      limitedTargetsRef.current = new Map(
+        targetItems.map((item) => [
+          item.id,
+          { item, guard: captureItemGuard?.(item, "limited-focus") },
+        ]),
+      );
       const allAlreadyLimited =
         targetItems.length > 0 &&
         targetItems.every((item) => item.purchaseStatus === "LimitedPurchase");
@@ -2233,6 +2268,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     },
     [
       advanceLimitedBulkToNextTarget,
+      captureItemGuard,
       clearLimitedBulkMessage,
       isInspecting,
       setNotification,
@@ -2252,9 +2288,11 @@ const FocusMode: React.FC<FocusModeProps> = ({
       }
       if (limitedBulkDialogContext === null) return;
 
-      const latestItem = getLatestItemById(
+      const candidate = getLatestItemById(
         limitedBulkDialogContext.itemSnapshot.id,
       );
+      const latestItem =
+        candidate && isCurrentLimitedTarget(candidate) ? candidate : undefined;
       const isActiveFlow = isActiveLimitedBulkFlow(
         limitedBulkDialogContext.flowToken,
       );
@@ -2300,7 +2338,8 @@ const FocusMode: React.FC<FocusModeProps> = ({
               submitDecision.baseItem.id,
             );
           }
-          commitLimitedDialogResult(submitDecision.baseItem, result);
+          if (!commitLimitedDialogResult(submitDecision.baseItem, result))
+            return;
           setLimitedBulkDialogContext(null);
           advanceLimitedBulkToNextTarget(
             limitedBulkDialogContext.queueIds,
@@ -2320,6 +2359,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     [
       advanceLimitedBulkToNextTarget,
       commitLimitedDialogResult,
+      isCurrentLimitedTarget,
       getLatestItemById,
       isActiveLimitedBulkFlow,
       isInspecting,
@@ -2992,7 +3032,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
       }
       initialPlanned={
         limitedBulkDialogItemSnapshot
-          ? getPlannedQuantity(limitedBulkDialogItemSnapshot)
+          ? getPlannedQuantity(
+              getLatestItemById(limitedBulkDialogItemSnapshot.id) ??
+                limitedBulkDialogItemSnapshot,
+            )
           : 1
       }
       showDeferButton

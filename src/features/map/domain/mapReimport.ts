@@ -1,3 +1,4 @@
+import { recordEntry, setOwnValue } from "../../../utils/ownRecord";
 import type {
   DayMapData,
   HallDefinitionsStore,
@@ -71,7 +72,7 @@ const clonePlainValue = <T>(value: T): T => {
   if (value !== null && typeof value === "object") {
     const clone: Record<string, unknown> = {};
     Object.entries(value as Record<string, unknown>).forEach(([key, entry]) => {
-      clone[key] = clonePlainValue(entry);
+      setOwnValue(clone, key, clonePlainValue(entry));
     });
     return clone as T;
   }
@@ -86,7 +87,10 @@ const hasOwnDayKey = <T>(
   eventName: string,
   dayKey: string,
 ): boolean =>
-  Object.prototype.hasOwnProperty.call(store[eventName] || {}, dayKey);
+  Object.prototype.hasOwnProperty.call(
+    recordEntry(store, eventName) || {},
+    dayKey,
+  );
 
 const countManualAssignments = ({
   items,
@@ -159,18 +163,18 @@ export const buildMapReimportPlan = ({
     throw new Error(`取り込み先のイベント「${eventName}」が見つかりません。`);
   }
 
-  const eventItems = state.eventLists[eventName];
+  const eventItems = recordEntry(state.eventLists, eventName);
   const plannedTargets = targets.map((target): PlannedMapReimportTarget => {
     const eventDate = target.eventDate.trim();
     const mapTabName = target.mapTabName;
     const maplessKey = getMaplessKey(eventDate);
     const oldMapHallIds = unique(
-      (state.hallDefinitions[eventName]?.[mapTabName] || []).map(
+      (recordEntry(state.hallDefinitions, eventName)?.[mapTabName] || []).map(
         (hall) => hall.id,
       ),
     );
     const oldMaplessHallIds = unique(
-      (state.hallDefinitions[eventName]?.[maplessKey] || []).map(
+      (recordEntry(state.hallDefinitions, eventName)?.[maplessKey] || []).map(
         (hall) => hall.id,
       ),
     );
@@ -213,7 +217,9 @@ export const buildMapReimportPlan = ({
         items: eventItems,
         eventDate: target.eventDate,
       });
-      const currentRoute = state.routeSettings[eventName]?.[target.mapTabName];
+      const currentRoute = recordEntry(state.routeSettings, eventName)?.[
+        target.mapTabName
+      ];
 
       summary.targetDayCount += 1;
       summary.visitPointCount += currentRoute?.visitOrder?.length || 0;
@@ -242,9 +248,10 @@ export const buildMapReimportPlan = ({
         : 0;
       summary.maplessHallDefinitionCount += target.oldMaplessHallIds.length;
       summary.maplessManualAssignmentCount += allManualCount - baseManualCount;
-      summary.maplessHallRouteDayCount += state.hallRouteSettings[eventName]?.[
-        target.maplessKey
-      ]
+      summary.maplessHallRouteDayCount += recordEntry(
+        state.hallRouteSettings,
+        eventName,
+      )?.[target.maplessKey]
         ? 1
         : 0;
       return summary;
@@ -278,7 +285,7 @@ const removeEventKeys = <T>(
   eventName: string,
   keys: ReadonlySet<string>,
 ): Record<string, Record<string, T>> => {
-  const currentEvent = store[eventName];
+  const currentEvent = recordEntry(store, eventName);
   if (!currentEvent || !Array.from(keys).some((key) => key in currentEvent)) {
     return store;
   }
@@ -304,14 +311,14 @@ export const applyMapReimportPlan = <TState extends MapReimportState>(
     : new Set([...mapTabKeys, ...maplessKeys]);
 
   const nextEventMapData = {
-    ...(state.mapData[plan.eventName] || {}),
+    ...(recordEntry(state.mapData, plan.eventName) || {}),
   };
   plan.targets.forEach((target) => {
     nextEventMapData[target.mapTabName] = clonePlainValue(target.mapData);
   });
 
   let nextRouteSettings = state.routeSettings;
-  const currentEventRoutes = state.routeSettings[plan.eventName];
+  const currentEventRoutes = recordEntry(state.routeSettings, plan.eventName);
   if (
     currentEventRoutes &&
     plan.targets.some((target) => currentEventRoutes[target.mapTabName])
@@ -333,7 +340,7 @@ export const applyMapReimportPlan = <TState extends MapReimportState>(
     };
   }
 
-  const currentItems = state.eventLists[plan.eventName] || [];
+  const currentItems = recordEntry(state.eventLists, plan.eventName) || [];
   let itemsChanged = false;
   const nextItems = currentItems.map((item) => {
     const target = plan.targets.find(
@@ -355,7 +362,7 @@ export const applyMapReimportPlan = <TState extends MapReimportState>(
   });
 
   const nextRotationForEvent = {
-    ...(state.mapRotationSettings[plan.eventName] || {}),
+    ...(recordEntry(state.mapRotationSettings, plan.eventName) || {}),
   };
   plan.targets.forEach((target) => {
     nextRotationForEvent[target.mapTabName] = {

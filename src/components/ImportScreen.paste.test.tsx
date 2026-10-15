@@ -6,7 +6,9 @@ import type { ComponentProps } from "react";
 import ImportScreen from "./ImportScreen";
 
 const renderImportScreen = (
-  onBulkAdd: ComponentProps<typeof ImportScreen>["onBulkAdd"] = vi.fn(),
+  onBulkAdd: ComponentProps<typeof ImportScreen>["onBulkAdd"] = vi.fn(
+    async () => ({ status: "saved" as const }),
+  ),
 ) =>
   render(
     <ImportScreen
@@ -87,7 +89,7 @@ describe("ImportScreenの7列貼り付け", () => {
   });
 
   it("同名確認へ進む場合は入力内容を消さない", () => {
-    const onBulkAdd = vi.fn(() => false);
+    const onBulkAdd = vi.fn(async () => ({ status: "cancelled" as const }));
     renderImportScreen(onBulkAdd);
     fireEvent.change(screen.getByLabelText("即売会名"), {
       target: { value: "既存イベント" },
@@ -131,7 +133,7 @@ describe("ImportScreenの7列貼り付け", () => {
     );
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     const onBulkAdd = vi.fn<ComponentProps<typeof ImportScreen>["onBulkAdd"]>(
-      () => true,
+      async () => ({ status: "saved" }) as const,
     );
     renderImportScreen(onBulkAdd);
     fireEvent.change(screen.getByLabelText("即売会名"), {

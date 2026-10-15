@@ -33,8 +33,12 @@ describe("itemComparison utilities", () => {
       title: "New Book",
     });
 
-    expect(getItemKey(item)).toBe("ABC|2日目|B|12a|New Book");
-    expect(getItemKeyWithoutTitle(item)).toBe("ABC|2日目|B|12a");
+    expect(getItemKey(item)).toBe(
+      JSON.stringify(["ABC", "2日目", "B", "12a", "New Book"]),
+    );
+    expect(getItemKeyWithoutTitle(item)).toBe(
+      JSON.stringify(["ABC", "2日目", "B", "12a"]),
+    );
   });
 
   it("inserts within same-day block order using locale-aware numeric compare", () => {

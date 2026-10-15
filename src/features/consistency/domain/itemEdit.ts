@@ -1,3 +1,4 @@
+import { recordEntry } from "../../../utils/ownRecord";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
 import type { ShoppingItem, ViewMode } from "../../../types/item";
 import type { HallSelectionIntent } from "../../../types/consistency";
@@ -40,7 +41,7 @@ export function planItemEdit(
   choices: MutationChoices = {},
 ) {
   const original = (
-    snapshot.eventLists[eventName] as ShoppingItem[] | undefined
+    recordEntry(snapshot.eventLists, eventName) as ShoppingItem[] | undefined
   )?.find((item) => item.id === edited.id);
   if (!original)
     throw new Error("品目が削除されています。編集を開き直してください。");
@@ -68,9 +69,9 @@ function planItemEditAfterMerge(
   edited: ShoppingItem,
   selection: HallSelectionIntent,
 ) {
-  const original = (snapshot.eventLists[eventName] as ShoppingItem[]).find(
-    (item) => item.id === edited.id,
-  )!;
+  const original = (
+    recordEntry(snapshot.eventLists, eventName) as ShoppingItem[]
+  ).find((item) => item.id === edited.id)!;
   const clean = (item: ShoppingItem) => {
     const next = { ...item };
     delete next.manualHallId;
@@ -82,14 +83,14 @@ function planItemEditAfterMerge(
     original,
   ) as ShoppingItem;
   const modeKey = existingDayKey(
-    snapshot.dayModes[eventName],
+    recordEntry(snapshot.dayModes, eventName),
     original.eventDate,
   );
   const mode = modeKey
-    ? (snapshot.dayModes[eventName][modeKey] as ViewMode)
+    ? (recordEntry(snapshot.dayModes, eventName)[modeKey] as ViewMode)
     : undefined;
   const items = computeUpdateItem(
-    snapshot.eventLists[eventName] as ShoppingItem[],
+    recordEntry(snapshot.eventLists, eventName) as ShoppingItem[],
     delta,
     mode,
     original.protectionLevel,
@@ -97,7 +98,7 @@ function planItemEditAfterMerge(
   ).items;
   const changed = items.find((item) => item.id === edited.id)!;
   const execute = repositionExecuteItemAfterIdentityChangeWithResult(
-    snapshot.executeModeItems[eventName] ?? {},
+    recordEntry(snapshot.executeModeItems, eventName) ?? {},
     original,
     changed,
     items,
@@ -109,7 +110,7 @@ function planItemEditAfterMerge(
   );
   // Keep displayed choices on untouched items; the edited item's explicit intent is separate.
   const displayedItems = (
-    projection.eventLists[eventName] as ShoppingItem[]
+    recordEntry(projection.eventLists, eventName) as ShoppingItem[]
   ).map((item) =>
     item.id === changed.id
       ? { ...changed, manualHallId: item.manualHallId }
@@ -159,22 +160,25 @@ export function previewItemEdit(
     ];
   }
   const day = getDayConsistency(
-    snapshot.eventConsistency[eventName],
+    recordEntry(snapshot.eventConsistency, eventName),
     edited.eventDate,
   );
   const map = resolveDayMap(
-    snapshot.mapData[eventName] as Record<string, DayMapData>,
+    recordEntry(snapshot.mapData, eventName) as Record<string, DayMapData>,
     edited.eventDate,
     day?.selectedMapKey,
   );
   const halls = getContextHalls(
-    snapshot.hallDefinitions[eventName] as Record<string, HallDefinition[]>,
+    recordEntry(snapshot.hallDefinitions, eventName) as Record<
+      string,
+      HallDefinition[]
+    >,
     edited.eventDate,
     map.status === "resolved" ? map.key : null,
   );
-  const items = (snapshot.eventLists[eventName] as ShoppingItem[]).map(
-    (item) => (item.id === edited.id ? edited : item),
-  );
+  const items = (
+    recordEntry(snapshot.eventLists, eventName) as ShoppingItem[]
+  ).map((item) => (item.id === edited.id ? edited : item));
   const membership = resolveMembership(edited, {
     items,
     day: edited.eventDate,

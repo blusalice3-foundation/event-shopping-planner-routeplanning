@@ -1,3 +1,4 @@
+import { recordEntry } from "../../utils/ownRecord";
 import { planDayMutation } from "../../features/consistency/domain/dayMutation";
 import type {
   ApplicationDayMutation,
@@ -155,7 +156,8 @@ export const useMapRouteCommands = ({
   const globalHallRouteSettings = useMemo(() => {
     const executeIds =
       activeEventName && activeEventDate
-        ? executeModeItems[activeEventName]?.[activeEventDate] || []
+        ? recordEntry(executeModeItems, activeEventName)?.[activeEventDate] ||
+          []
         : [];
     return buildMergedHallRouteSettings({
       eventName: activeEventName,
@@ -196,7 +198,7 @@ export const useMapRouteCommands = ({
     ) => {
       const normalizedAngle = normalizeRotationAngle(angle);
       setMapRotationSettings((current) => {
-        const eventSettings = current[eventName] || {};
+        const eventSettings = recordEntry(current, eventName) || {};
         const currentState = resolveDayMapRotationState(eventSettings[mapName]);
         const nextState =
           screen === "mapTab"
@@ -239,8 +241,10 @@ export const useMapRouteCommands = ({
     (viewport: MapViewportState) => {
       if (!activeEventName || !isMapTab || !currentMapTabName) return;
       if (requestMutation) {
-        const previous =
-          state.mapViewportSettings[activeEventName]?.[currentMapTabName];
+        const previous = recordEntry(
+          state.mapViewportSettings,
+          activeEventName,
+        )?.[currentMapTabName];
         if (
           previous &&
           previous.zoomLevel === viewport.zoomLevel &&
@@ -263,7 +267,7 @@ export const useMapRouteCommands = ({
         return;
       }
       setMapViewportSettings((current) => {
-        const eventSettings = current[activeEventName] || {};
+        const eventSettings = recordEntry(current, activeEventName) || {};
         const currentViewport = eventSettings[currentMapTabName];
         if (
           currentViewport &&
@@ -299,7 +303,7 @@ export const useMapRouteCommands = ({
       setHallRouteSettings((current) => ({
         ...current,
         [activeEventName]: {
-          ...current[activeEventName],
+          ...recordEntry(current, activeEventName),
           [currentMapTabName]: settings,
         },
       }));
@@ -316,7 +320,10 @@ export const useMapRouteCommands = ({
       if (!key) return;
       setHallRouteSettings((current) => ({
         ...current,
-        [activeEventName]: { ...current[activeEventName], [key]: settings },
+        [activeEventName]: {
+          ...recordEntry(current, activeEventName),
+          [key]: settings,
+        },
       }));
     },
     [activeEventDate, activeEventName, globalMapTabName, setHallRouteSettings],
@@ -328,13 +335,15 @@ export const useMapRouteCommands = ({
       const dayName = activeEventDate;
       const mapTabName = getMapTabForDate(dayName);
       const currentMapData = mapTabName
-        ? mapData[activeEventName]?.[mapTabName]
+        ? recordEntry(mapData, activeEventName)?.[mapTabName]
         : undefined;
       const mapHalls = mapTabName
-        ? hallDefinitions[activeEventName]?.[mapTabName] || []
+        ? recordEntry(hallDefinitions, activeEventName)?.[mapTabName] || []
         : [];
       const maplessHalls =
-        hallDefinitions[activeEventName]?.[getMaplessKey(dayName)] || [];
+        recordEntry(hallDefinitions, activeEventName)?.[
+          getMaplessKey(dayName)
+        ] || [];
       const halls = [...mapHalls, ...maplessHalls];
       const currentHallRouteSettings = getCombinedHallRouteSettingsForDate({
         eventName: activeEventName,
@@ -344,7 +353,7 @@ export const useMapRouteCommands = ({
       });
 
       updateExecuteModeItems((current) => {
-        const eventItems = current[activeEventName] || {};
+        const eventItems = recordEntry(current, activeEventName) || {};
         const dayItems = [...(eventItems[dayName] || [])];
         if (dayItems.length === 0) return current;
         return {

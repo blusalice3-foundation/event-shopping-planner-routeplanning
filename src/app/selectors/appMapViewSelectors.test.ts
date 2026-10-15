@@ -189,10 +189,10 @@ describe("appMapViewSelectors", () => {
       selectCurrentFocusSession({
         activeEventName: "event",
         activeEventDate: "1日目",
-        focusModeSessions: { "event::1日目": state },
+        focusModeSessions: { [JSON.stringify(["event", "1日目"])]: state },
       }),
     ).toEqual({
-      sessionKey: "event::1日目",
+      sessionKey: JSON.stringify(["event", "1日目"]),
       resumeState: state,
       mapName: "1日目マップ",
     });
@@ -202,7 +202,10 @@ describe("appMapViewSelectors", () => {
           event: [item("one"), item("two", { eventDate: "2日目" })],
         },
       }),
-    ]).toEqual(["event::1日目", "event::2日目"]);
+    ]).toEqual([
+      JSON.stringify(["event", "1日目"]),
+      JSON.stringify(["event", "2日目"]),
+    ]);
     expect(areFocusModeSessionStatesEqual(state, structuredClone(state))).toBe(
       true,
     );

@@ -1,3 +1,4 @@
+import { minimum } from "../../../utils/numericExtrema";
 import type { ShoppingItem } from "../../../types/item";
 import { buildExecutionVisitProjectionKey } from "../../../utils/visitProjection";
 /** Only reorder surviving known slots; new visits and new members retain theirs. */
@@ -27,8 +28,8 @@ export function applyVisitHistory(
     );
     known.sort(
       (a, b) =>
-        Math.min(...visits.get(a)!.map((id) => rank.get(id) ?? Infinity)) -
-        Math.min(...visits.get(b)!.map((id) => rank.get(id) ?? Infinity)),
+        minimum(visits.get(a)!.map((id) => rank.get(id) ?? Infinity)) -
+        minimum(visits.get(b)!.map((id) => rank.get(id) ?? Infinity)),
     );
     const knownSet = new Set(known);
     let visitIndex = 0;

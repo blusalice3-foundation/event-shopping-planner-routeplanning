@@ -1,3 +1,4 @@
+import { recordEntry } from "../../utils/ownRecord";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { planDayModeToggle } from "../../features/consistency/domain/dayMode";
 import {
@@ -141,13 +142,15 @@ export const useMapVisitListCommands = ({
       const target = { event, day: requestedDay, generation };
       const open = (snapshot?: PersistenceSnapshot) => {
         const days =
-          snapshot?.executeModeItems[event] ??
-          value.executeModeItems[event] ??
+          recordEntry(snapshot?.executeModeItems, event) ??
+          recordEntry(value.executeModeItems, event) ??
           {};
         const day = existingDayKey(days, requestedDay) ?? requestedDay;
         const selectedMap = snapshot
-          ? getDayConsistency(snapshot.eventConsistency[event], day)
-              ?.selectedMapKey
+          ? getDayConsistency(
+              recordEntry(snapshot.eventConsistency, event),
+              day,
+            )?.selectedMapKey
           : null;
         const resolvedMap = selectedMap ?? map;
         if (
@@ -176,8 +179,10 @@ export const useMapVisitListCommands = ({
         ? duplicateEventDays(snapshot, event).some((day) =>
             sameDay(day, requestedDay),
           )
-        : resolveDayKey(value.executeModeItems[event], requestedDay).status ===
-          "ambiguous";
+        : resolveDayKey(
+            recordEntry(value.executeModeItems, event),
+            requestedDay,
+          ).status === "ambiguous";
       if (!duplicates) {
         open(snapshot);
         return;
@@ -308,15 +313,17 @@ export const useMapVisitListCommands = ({
       }).then((snapshot) => {
         if (!valid(value) || session.current !== value) return;
         const day = existingDayKey(
-          snapshot.executeModeItems[value.event],
+          recordEntry(snapshot.executeModeItems, value.event),
           value.day,
         );
         value.latest = day
-          ? [...snapshot.executeModeItems[value.event][day]]
+          ? [...recordEntry(snapshot.executeModeItems, value.event)[day]]
           : [];
         const map = day
-          ? (getDayConsistency(snapshot.eventConsistency[value.event], day)
-              ?.selectedMapKey ?? value.map)
+          ? (getDayConsistency(
+              recordEntry(snapshot.eventConsistency, value.event),
+              day,
+            )?.selectedMapKey ?? value.map)
           : value.map;
         // The worker fast path does not invoke the reviewed UI planner.
         if (!rebase && day && (day !== value.day || map !== value.map))
@@ -378,7 +385,7 @@ export const useMapVisitListCommands = ({
       });
       if (!valid(value) || session.current !== value) return;
       const currentDay = existingDayKey(
-        currentSnapshot.executeModeItems[value.event],
+        recordEntry(currentSnapshot.executeModeItems, value.event),
         value.day,
       );
       if (merged || (currentDay && currentDay !== value.day))
@@ -387,11 +394,13 @@ export const useMapVisitListCommands = ({
         value.day = currentDay;
         value.map =
           getDayConsistency(
-            currentSnapshot.eventConsistency[value.event],
+            recordEntry(currentSnapshot.eventConsistency, value.event),
             currentDay,
           )?.selectedMapKey ?? value.map;
         value.latest = [
-          ...currentSnapshot.executeModeItems[value.event][currentDay],
+          ...recordEntry(currentSnapshot.executeModeItems, value.event)[
+            currentDay
+          ],
         ];
       }
       value.baseline = [...value.latest];

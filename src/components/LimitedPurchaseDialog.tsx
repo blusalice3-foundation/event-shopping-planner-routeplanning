@@ -59,11 +59,24 @@ export default function LimitedPurchaseDialog({
   const [error, setError] = useState<string | null>(null);
   const [excessConfirm, setExcessConfirm] = useState<{
     planned: number;
+    actual: number;
+    observedPlanned: number;
   } | null>(null);
   const [sameQuantityConfirm, setSameQuantityConfirm] = useState<{
     planned: number;
+    actual: number;
+    observedPlanned: number;
   } | null>(null);
   const saveButtonRef = useRef<HTMLButtonElement | null>(null);
+  const plannedEdited = useRef(false);
+  const baselinePlanned = useRef(initialPlanned);
+  const initialValues = useRef({ initialActual, initialPlanned });
+  initialValues.current = { initialActual, initialPlanned };
+  const intent = () => ({
+    plannedEdited: plannedEdited.current,
+    baselinePlanned: baselinePlanned.current,
+    observedPlanned: initialPlanned,
+  });
 
   useEffect(() => {
     if (!isOpen) {
@@ -72,12 +85,24 @@ export default function LimitedPurchaseDialog({
       setSameQuantityConfirm(null);
       return;
     }
-    setActualText(initialActual === undefined ? "" : String(initialActual));
-    setPlannedText(String(initialPlanned));
+    const { initialActual: actual, initialPlanned: planned } =
+      initialValues.current;
+    plannedEdited.current = false;
+    baselinePlanned.current = planned;
+    setActualText(actual === undefined ? "" : String(actual));
+    setPlannedText(String(planned));
     setError(null);
     setExcessConfirm(null);
     setSameQuantityConfirm(null);
-  }, [isOpen, itemId, dialogKey, initialActual, initialPlanned]);
+  }, [isOpen, itemId, dialogKey]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!plannedEdited.current) setPlannedText(String(initialPlanned));
+    setSameQuantityConfirm(null);
+    setExcessConfirm(null);
+    setError(null);
+  }, [initialPlanned, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -148,7 +173,11 @@ export default function LimitedPurchaseDialog({
     }
 
     if (actual === planned) {
-      setSameQuantityConfirm({ planned });
+      setSameQuantityConfirm({
+        planned,
+        actual,
+        observedPlanned: initialPlanned,
+      });
       return;
     }
 
@@ -158,11 +187,11 @@ export default function LimitedPurchaseDialog({
     }
 
     if (actual > planned) {
-      setExcessConfirm({ planned });
+      setExcessConfirm({ planned, actual, observedPlanned: initialPlanned });
       return;
     }
 
-    onSubmit({ kind: "limited", actual, planned });
+    onSubmit({ kind: "limited", actual, planned, ...intent() });
   };
 
   const handleDefer = () => {
@@ -175,7 +204,7 @@ export default function LimitedPurchaseDialog({
     }
 
     if (validation.ok) {
-      onSubmit({ kind: "defer", planned: planned! });
+      onSubmit({ kind: "defer", planned: planned!, ...intent() });
       return;
     }
 
@@ -230,6 +259,7 @@ export default function LimitedPurchaseDialog({
             <input
               value={plannedText}
               onChange={(e) => {
+                plannedEdited.current = true;
                 setPlannedText(e.target.value);
                 setError(null);
               }}
@@ -285,7 +315,16 @@ export default function LimitedPurchaseDialog({
         onCancel={closeSameQuantityConfirm}
         onConfirm={() => {
           if (!sameQuantityConfirm) return;
-          onSubmit({ kind: "purchased", planned: sameQuantityConfirm.planned });
+          if (sameQuantityConfirm.observedPlanned !== initialPlanned) {
+            closeSameQuantityConfirm();
+            return;
+          }
+          onSubmit({
+            kind: "purchased",
+            planned: sameQuantityConfirm.planned,
+            actual: sameQuantityConfirm.actual,
+            ...intent(),
+          });
           setSameQuantityConfirm(null);
         }}
       />
@@ -295,7 +334,16 @@ export default function LimitedPurchaseDialog({
         onFix={closeExcessConfirm}
         onConvertToPurchased={() => {
           if (!excessConfirm) return;
-          onSubmit({ kind: "purchased", planned: excessConfirm.planned });
+          if (excessConfirm.observedPlanned !== initialPlanned) {
+            closeExcessConfirm();
+            return;
+          }
+          onSubmit({
+            kind: "purchased",
+            planned: excessConfirm.planned,
+            actual: excessConfirm.actual,
+            ...intent(),
+          });
           setExcessConfirm(null);
         }}
       />

@@ -1,8 +1,9 @@
+import { recordEntry } from "../../utils/ownRecord";
+import { itemContentGuardFailure } from "../../utils/itemContentGuard";
 import type { ShoppingItem, ViewMode } from "../../types/item";
 import type { PersistenceSnapshot } from "../ports/PersistenceCommandPort";
 import { computeUpdateItem } from "../../features/events/itemOps/crud";
 import {
-  changedFieldConflicts,
   confirmChangedFieldConflicts,
   type ChangedFieldConflict,
 } from "../../features/consistency/domain/mutations";
@@ -31,6 +32,7 @@ export interface UpdateItemFieldsInput {
   >;
   readonly baseline: ShoppingItem;
   readonly saveImmediately?: boolean;
+  readonly guard?: ItemContentEdit["guard"];
 }
 
 /** Field-only plans do not change membership, visit order or map references. */
@@ -41,8 +43,14 @@ export function planItemContentMutation(
   const normalizedItems = new Map<string, ShoppingItem>();
   const conflicts: ChangedFieldConflict[] = [];
   const normalizedEdits: ItemContentEdit[] = [];
+  const skipped: Array<{ edit: ItemContentEdit; reason: string }> = [];
   for (const edit of edits) {
-    const items = source.eventLists[edit.eventName] as
+    const reason = itemContentGuardFailure(source, edit);
+    if (reason) {
+      skipped.push({ edit, reason });
+      continue;
+    }
+    const items = recordEntry(source.eventLists, edit.eventName) as
       | ShoppingItem[]
       | undefined;
     const itemKey = JSON.stringify([edit.eventName, edit.itemId]);
@@ -55,21 +63,22 @@ export function planItemContentMutation(
       if (!editableItemContentFields.has(key))
         throw new Error("Invalid item field.");
       if (edit.baseline) {
-        conflicts.push(
-          ...changedFieldConflicts(
-            edit.baseline[key],
-            field.value,
-            (current as unknown as Record<string, unknown>)[key],
-            ["eventLists", edit.eventName, edit.itemId, key],
-          ),
-        );
+        const baseline = edit.baseline[key];
+        const latest = (current as unknown as Record<string, unknown>)[key];
+        if (!Object.is(baseline, latest) && !Object.is(field.value, latest))
+          conflicts.push({
+            baseline,
+            current: latest,
+            desired: field.value,
+            path: ["eventLists", edit.eventName, edit.itemId, key],
+          });
       }
       if (field.present) Object.assign(desired, { [key]: field.value });
       else delete (desired as unknown as Record<string, unknown>)[key];
     }
-    const mode = source.dayModes[edit.eventName]?.[current.eventDate] as
-      | ViewMode
-      | undefined;
+    const mode = recordEntry(source.dayModes, edit.eventName)?.[
+      current.eventDate
+    ] as ViewMode | undefined;
     const normalized = computeUpdateItem(
       [current],
       desired,
@@ -92,11 +101,27 @@ export function planItemContentMutation(
     normalizedEdits.push(normalizedEdit);
     normalizedItems.set(itemKey, normalized);
   }
+  const plan = confirmChangedFieldConflicts(
+    { snapshot: applyItemContentEdits(source, normalizedEdits) },
+    conflicts,
+  );
+  if (skipped.length) {
+    plan.confirmation = {
+      title: "対象外になった限数入力を確認",
+      details: [
+        ...skipped.map(
+          ({ edit, reason }) =>
+            `${edit.itemId}: ${reason} この入力は適用しません。`,
+        ),
+        ...(plan.confirmation?.details ?? []),
+      ],
+      comparison: { skipped, conflicts: plan.confirmation?.comparison ?? null },
+    };
+  }
   return {
-    ...confirmChangedFieldConflicts(
-      { snapshot: applyItemContentEdits(source, normalizedEdits) },
-      conflicts,
-    ),
+    ...plan,
+    invalidItemContentEdits: skipped.map(({ edit }) => edit),
+    skipCommit: skipped.length > 0 && normalizedEdits.length === 0,
     itemContentEdits: normalizedEdits,
   };
 }

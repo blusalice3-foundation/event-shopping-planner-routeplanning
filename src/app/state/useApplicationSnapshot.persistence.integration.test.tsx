@@ -405,3 +405,127 @@ it.each(
     ).toEqual(expected);
   },
 );
+
+it("excludes a moved limited target from accepted display and export, then saves the valid memo after review", async () => {
+  const { createItemContentGuard } =
+    await import("../../utils/itemContentGuard");
+  const h = await harness();
+  const baseline = h.result.current.application.values.eventLists[EVENT][0];
+  const guard = createItemContentGuard(
+    h.result.current.application.raw,
+    EVENT,
+    baseline,
+    "limited-focus",
+    0,
+  );
+  const remote = await db.readApplicationSnapshot();
+  remote.snapshot.executeModeItems[EVENT][DAY] = ["2"];
+  await db.commitApplicationSnapshotAtomically(remote.snapshot, {
+    expectedRoots: remote.expectedRoots,
+    changedStoresOnly: true,
+  });
+  act(() => {
+    h.result.current.application.updateItemFields([
+      {
+        eventName: EVENT,
+        itemId: "1",
+        baseline,
+        guard,
+        changes: {
+          purchaseStatus: "LimitedPurchase",
+          limitedPurchasedQuantity: 1,
+        },
+      },
+      {
+        eventName: EVENT,
+        itemId: "1",
+        baseline,
+        changes: { remarks: "保持する正常入力" },
+      },
+    ]);
+  });
+  await waitFor(() =>
+    expect(h.result.current.application.confirmations).toHaveLength(1),
+  );
+  expect(h.result.current.application.confirmations[0].confirmation.title).toBe(
+    "対象外になった限数入力を確認",
+  );
+  expect(
+    h.result.current.application.values.eventLists[EVENT][0],
+  ).toMatchObject({ purchaseStatus: "Purchased", remarks: "保持する正常入力" });
+  const accepted =
+    await h.result.current.application.coordinator.readExportSnapshot();
+  expect(accepted.eventLists[EVENT][0]).not.toHaveProperty(
+    "limitedPurchasedQuantity",
+  );
+  expect(accepted.eventLists[EVENT][0]).toMatchObject({
+    remarks: "保持する正常入力",
+  });
+  const token = h.result.current.application.confirmations[0].token;
+  await act(async () => {
+    h.result.current.application.confirm(token);
+    await h.result.current.application.flush();
+  });
+  await waitFor(() =>
+    expect(h.result.current.application.confirmations).toHaveLength(0),
+  );
+  const saved = (await db.readApplicationSnapshot()).snapshot;
+  expect(saved.eventLists[EVENT][0]).toMatchObject({
+    purchaseStatus: "Purchased",
+    remarks: "保持する正常入力",
+  });
+  expect(saved.eventLists[EVENT][0]).not.toHaveProperty(
+    "limitedPurchasedQuantity",
+  );
+  expect(saved.executeModeItems[EVENT][DAY]).toEqual(["2"]);
+});
+
+it("keeps the order of normal, guarded, then normal field edits in one accepted batch", async () => {
+  const { createItemContentGuard } =
+    await import("../../utils/itemContentGuard");
+  const h = await harness();
+  const baseline = h.result.current.application.values.eventLists[EVENT][0];
+  const guard = createItemContentGuard(
+    h.result.current.application.rawRef.current,
+    EVENT,
+    baseline,
+    "limited-single",
+    0,
+  );
+  act(() => {
+    h.result.current.application.updateItemFields({
+      eventName: EVENT,
+      itemId: baseline.id,
+      baseline,
+      changes: { quantity: 3 },
+    });
+    h.result.current.application.updateItemFields({
+      eventName: EVENT,
+      itemId: baseline.id,
+      baseline: { ...baseline, quantity: 3 },
+      guard,
+      changes: { quantity: 4 },
+    });
+    h.result.current.application.updateItemFields({
+      eventName: EVENT,
+      itemId: baseline.id,
+      baseline: { ...baseline, quantity: 4 },
+      changes: { quantity: 5 },
+    });
+  });
+  expect(
+    h.result.current.application.values.eventLists[EVENT][0].quantity,
+  ).toBe(5);
+  await act(async () => h.result.current.application.flush());
+  await waitFor(() =>
+    expect(h.result.current.application.pendingCount).toBe(0),
+  );
+  expect(
+    (
+      (await db.readApplicationSnapshot()).snapshot.eventLists[
+        EVENT
+      ][0] as import("../../types/item").ShoppingItem
+    ).quantity,
+  ).toBe(5);
+  expect(h.result.current.application.confirmations).toEqual([]);
+});

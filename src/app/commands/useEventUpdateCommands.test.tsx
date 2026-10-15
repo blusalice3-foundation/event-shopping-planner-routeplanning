@@ -155,14 +155,13 @@ const createHarness = (options: HarnessOptions = {}) => {
     },
     eventUpdatePreviewEpochRef: { current: 0 },
   };
-  const applyBulkAdd =
-    vi.fn<
-      (
-        eventName: string,
-        items: SameSourceEventAnalysis["incomingItems"],
-        metadata?: BulkAddMetadata,
-      ) => Promise<void>
-    >();
+  const applyBulkAdd = vi.fn<
+    (
+      eventName: string,
+      items: SameSourceEventAnalysis["incomingItems"],
+      metadata?: BulkAddMetadata,
+    ) => Promise<import("../../types/import").BulkImportResult>
+  >(async () => ({ status: "saved" }));
   const commitEventUpdateState = vi.fn(async (next: EventUpdateCommitState) => {
     stores.eventLists = next.eventLists;
     stores.eventMetadata = next.eventMetadata;
@@ -187,7 +186,7 @@ const createHarness = (options: HarnessOptions = {}) => {
     stores.pendingUpdateEventName = eventName;
     stores.showUrlUpdateDialog = true;
   });
-  const confirmEventOverlay = vi.fn(closeEventOverlay);
+  const confirmEventOverlay = vi.fn(() => closeEventOverlay());
   const notify = vi.fn();
   const reportError = vi.fn();
   const actions: EventUpdateActionPort = {
@@ -577,7 +576,7 @@ describe("useEventUpdateCommands", () => {
       result.current.handleCancelUpdate();
     });
 
-    expect(harness.refs.eventUpdatePreviewEpochRef.current).toBe(1);
+    expect(harness.refs.eventUpdatePreviewEpochRef.current).toBe(2);
     expect(harness.spies.closeEventOverlay).toHaveBeenCalledTimes(2);
   });
 });
@@ -696,3 +695,85 @@ it("uses accepted latest contents and freezes them before loading the CSV", asyn
   });
   expect(harness.spies.openEventUpdate).not.toHaveBeenCalled();
 });
+
+it("does not accept cancellation after the duplicate import has begun committing", async () => {
+  const incoming = [
+    {
+      circle: "A",
+      eventDate: DAY,
+      block: "A",
+      number: "1",
+      title: "本",
+      price: 500,
+      quantity: 1,
+      remarks: "",
+    },
+  ];
+  const complete = vi.fn();
+  const h = createHarness({
+    pendingDuplicateEvent: { analysis: duplicateAnalysis(incoming), complete },
+  });
+  const saving = deferred<import("../../types/import").BulkImportResult>();
+  h.ports.actions.applyBulkAdd = vi.fn(() => saving.promise);
+  const { result } = renderHook(() => useEventUpdateCommands(h.ports));
+  let pending!: Promise<void>;
+  act(() => {
+    pending = result.current.handleDuplicateEventResolution({
+      action: "create-alias",
+      originalEventName: EVENT,
+      eventName: "別名",
+      items: incoming,
+      source: null,
+    });
+  });
+  act(() => result.current.handleDuplicateEventCancel());
+  expect(complete).not.toHaveBeenCalled();
+  await act(async () => {
+    saving.resolve({ status: "saved" });
+    await pending;
+  });
+  expect(complete).toHaveBeenCalledExactlyOnceWith({ status: "saved" });
+});
+
+it("completes a duplicate request as cancelled before saving starts", () => {
+  const complete = vi.fn();
+  const h = createHarness({
+    pendingDuplicateEvent: { analysis: duplicateAnalysis([]), complete },
+  });
+  const { result } = renderHook(() => useEventUpdateCommands(h.ports));
+  act(() => result.current.handleDuplicateEventCancel());
+  expect(complete).toHaveBeenCalledExactlyOnceWith({ status: "cancelled" });
+  expect(h.spies.applyBulkAdd).not.toHaveBeenCalled();
+});
+
+it.each([
+  ["Error", "unknown"],
+  ["CommittedStateApplyError", "committed-ui-failed"],
+  ["QuotaExceededError", "failed"],
+] as const)(
+  "propagates a reviewed import's %s outcome without announcing success",
+  async (name, status) => {
+    const complete = vi.fn();
+    const base = [item("keep")];
+    const h = createHarness({
+      eventLists: { [EVENT]: base },
+      pendingEventUpdate: {
+        kind: "items-only",
+        eventName: EVENT,
+        diff: diff(),
+        onImportComplete: complete,
+      },
+      pendingBaseItems: base,
+    });
+    h.ports.actions.commitEventUpdateState = vi.fn(async () => {
+      throw Object.assign(new Error("save result"), { name });
+    });
+    const { result } = renderHook(() => useEventUpdateCommands(h.ports));
+    await act(() => result.current.handleConfirmUpdate({}));
+    expect(complete).toHaveBeenCalledExactlyOnceWith({ status });
+    expect(h.spies.confirmEventOverlay).not.toHaveBeenCalled();
+    expect(h.spies.notify).not.toHaveBeenCalledWith("アイテムを更新しました。");
+    if (status !== "failed")
+      expect(h.spies.closeEventOverlay).toHaveBeenCalled();
+  },
+);

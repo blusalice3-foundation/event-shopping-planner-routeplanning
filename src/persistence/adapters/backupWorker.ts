@@ -1,5 +1,6 @@
 import type {
   ApplicationBackupChange,
+  ItemContentEdit,
   ApplicationBackupFile,
   PersistenceSnapshot,
 } from "../../app/ports/PersistenceCommandPort";
@@ -10,6 +11,7 @@ import { createAppBackupFile } from "../../utils/appBackup";
 export function createBackupInWorker(
   changes: readonly ApplicationBackupChange[],
   fallback: () => PersistenceSnapshot,
+  guardedItemEdits: readonly ItemContentEdit[] = [],
 ): Promise<ApplicationBackupFile> {
   if (typeof Worker !== "function")
     return Promise.resolve(createAppBackupFile(fallback()));
@@ -58,7 +60,9 @@ export function createBackupInWorker(
           localStorage.key(index),
         ).some((key) => key?.startsWith(RUNTIME_FALLBACK_NAMESPACE));
       worker.postMessage(
-        hasRuntimeSource ? { changes: [], snapshot: fallback() } : { changes },
+        hasRuntimeSource
+          ? { changes: [], snapshot: fallback() }
+          : { changes, guardedItemEdits },
       );
     } catch (error) {
       fail(error);
