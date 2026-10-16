@@ -8,8 +8,9 @@ export interface SheetMatchChoice {
   candidates: ShoppingItem[];
 }
 export type SheetIdentityChoices = Readonly<Record<string, string>>;
+// URL is editable in item details, so it cannot establish sheet provenance.
 const signature = (item: SheetItem) =>
-  JSON.stringify([item.catalogPrice, item.sheetRemarks, item.url ?? ""]);
+  JSON.stringify([item.catalogPrice, item.sheetRemarks]);
 const inputSignature = (item: SheetItem) =>
   JSON.stringify([
     item.circle,

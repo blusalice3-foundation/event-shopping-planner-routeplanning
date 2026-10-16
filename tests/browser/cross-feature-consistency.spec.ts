@@ -4562,3 +4562,209 @@ test.describe("sheet source changes at the save boundary", () => {
     }
   }
 });
+
+test.describe("editable item URLs are not sheet identity", () => {
+  test.use({ serviceWorkers: "block" });
+  for (const kind of ["items-only", "same-source", "source-switch"] as const) {
+    test(`${kind} requires identity after URL edits and preserves quantities on save/reload @n1-url`, async ({
+      page,
+    }) => {
+      const urls = ["https://example.com/book-a", "https://example.com/book-b"];
+      const records = [2, 5].map((quantity, index) => ({
+        ...item(String(index + 1)),
+        circle: "同名サークル",
+        number: "01a",
+        title: "同名品目",
+        catalogPrice: 500,
+        sheetRemarks: "共通のシート備考",
+        quantity,
+        remarks: `ID ${index + 1} の記録`,
+        url: urls[index],
+        source: "spreadsheet",
+        protectionLevel: "none",
+      }));
+      const source = backup(records);
+      const sourceUrl = "https://docs.google.com/spreadsheets/d/source-a/edit";
+      const nextUrl =
+        kind === "source-switch"
+          ? "https://docs.google.com/spreadsheets/d/source-b/edit"
+          : sourceUrl;
+      Object.assign(source.data.eventMetadata, {
+        [eventName]: {
+          spreadsheetUrl: sourceUrl,
+          spreadsheetSheetName: "品目表",
+          lastImportDate: "2026-10-16",
+        },
+      });
+      const csvRows = records.map((record) => {
+        const cells = Array<string>(27).fill("");
+        cells[12] = record.circle;
+        cells[13] = record.eventDate;
+        cells[14] = record.block;
+        cells[15] = record.number;
+        cells[16] = record.title;
+        cells[17] = "500";
+        cells[22] = record.sheetRemarks;
+        cells[24] = record.url;
+        cells[26] = String(record.quantity);
+        return cells.join(",");
+      });
+      await page.route("**/api/google-sheets-csv", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "text/csv; charset=utf-8",
+          body: [Array<string>(27).fill("header").join(","), ...csvRows].join(
+            "\n",
+          ),
+        }),
+      );
+      await restore(page, source);
+      for (const [index, record] of records.entries()) {
+        const card = page
+          .locator(`[data-item-id="${record.id}"]`)
+          .first()
+          .locator(":scope > div.rounded-lg")
+          .first();
+        await card.dispatchEvent("pointerdown", {
+          button: 0,
+          isPrimary: true,
+          pointerType: "mouse",
+        });
+        const edit = page.getByRole("button", { name: "編集", exact: true });
+        await expect(edit).toBeVisible();
+        await card.dispatchEvent("pointerup", {
+          button: 0,
+          isPrimary: true,
+          pointerType: "mouse",
+        });
+        await edit.click();
+        const editor = page.getByRole("dialog", {
+          name: "アイテム編集",
+          exact: true,
+        });
+        await editor
+          .getByRole("textbox", { name: "URL", exact: true })
+          .fill(urls[1 - index]);
+        await editor.getByRole("button", { name: "保存", exact: true }).click();
+        await expect(editor).toBeHidden();
+      }
+      const edited = records.map((record, index) =>
+        expect.objectContaining({ ...record, url: urls[1 - index] }),
+      );
+      await expect
+        .poll(() => stored(page, "eventLists"))
+        .toMatchObject({ [eventName]: edited });
+      const beforeItems = await stored(page, "eventLists");
+      const beforeMetadata = await stored(page, "eventMetadata");
+      const beforeConsistency = await stored(page, "eventConsistency");
+      const beforeExecution = await stored(page, "executeModeItems");
+      const openReview = async () => {
+        const eventList = page.getByRole("button", {
+          name: "イベント一覧",
+          exact: true,
+        });
+        if (await eventList.isVisible()) await eventList.click();
+        if (kind === "items-only") {
+          await page
+            .getByRole("button", { name: "メニュー", exact: true })
+            .click();
+          await page
+            .getByRole("button", { name: "🔄 アイテム更新", exact: true })
+            .click();
+        } else {
+          await page
+            .getByRole("button", { name: "新規リスト作成", exact: true })
+            .click();
+          await page.getByLabel("即売会名", { exact: true }).fill(eventName);
+          await page
+            .getByLabel("スプレッドシートURLからインポート", { exact: true })
+            .fill(nextUrl);
+          await page
+            .getByRole("button", { name: "URLからインポート", exact: true })
+            .click();
+          const duplicate = page.getByRole("dialog", {
+            name: `「${eventName}」はすでにあります`,
+            exact: true,
+          });
+          await expect(duplicate).toBeVisible();
+          if (kind === "same-source")
+            await duplicate
+              .getByRole("button", { name: "アイテム更新へ", exact: true })
+              .click();
+          else {
+            await duplicate
+              .getByRole("radio", { name: "更新元を切り替える", exact: true })
+              .check();
+            await duplicate
+              .getByRole("button", { name: "差分確認へ", exact: true })
+              .click();
+          }
+        }
+      };
+      const heading = page.getByRole("heading", {
+        name: "アイテム更新の確認",
+        exact: true,
+      });
+      const confirm = page.getByRole("button", {
+        name:
+          kind === "source-switch" ? "更新元を切り替えて更新" : "更新を実行",
+        exact: true,
+      });
+      await openReview();
+      await expect(heading).toBeVisible();
+      await expect(
+        page.getByLabel("取込1行目の対応", { exact: true }),
+      ).toBeVisible();
+      await expect(confirm).toBeDisabled();
+      expect(await stored(page, "eventLists")).toEqual(beforeItems);
+      expect(await stored(page, "eventMetadata")).toEqual(beforeMetadata);
+      await page
+        .getByRole("button", { name: "キャンセル", exact: true })
+        .last()
+        .click();
+      await expect(heading).toBeHidden();
+      expect(await stored(page, "eventLists")).toEqual(beforeItems);
+      expect(await stored(page, "eventMetadata")).toEqual(beforeMetadata);
+      await openReview();
+      await expect(heading).toBeVisible();
+      await expect(
+        page.getByLabel("取込1行目の対応", { exact: true }),
+      ).toHaveValue("");
+      await page
+        .getByLabel("取込1行目の対応", { exact: true })
+        .selectOption("1");
+      await page
+        .getByLabel("取込2行目の対応", { exact: true })
+        .selectOption("1");
+      await expect(confirm).toBeDisabled();
+      await page
+        .getByLabel("取込2行目の対応", { exact: true })
+        .selectOption("2");
+      await expect(confirm).toBeEnabled();
+      await confirm.click();
+      await expect(heading).toBeHidden();
+      await expect
+        .poll(() => stored(page, "eventLists"))
+        .toMatchObject({
+          [eventName]: records.map((record) => expect.objectContaining(record)),
+        });
+      expect(await stored(page, "eventConsistency")).toEqual(beforeConsistency);
+      expect(await stored(page, "executeModeItems")).toEqual(beforeExecution);
+      await expect
+        .poll(() => stored(page, "eventMetadata"))
+        .toMatchObject({
+          [eventName]: {
+            spreadsheetUrl: nextUrl,
+            spreadsheetSheetName: "品目表",
+          },
+        });
+      const savedItems = await stored(page, "eventLists");
+      const savedMetadata = await stored(page, "eventMetadata");
+      await page.reload();
+      expect(await stored(page, "eventLists")).toEqual(savedItems);
+      expect(await stored(page, "eventMetadata")).toEqual(savedMetadata);
+      expect(await stored(page, "eventConsistency")).toEqual(beforeConsistency);
+      expect(await stored(page, "executeModeItems")).toEqual(beforeExecution);
+    });
+  }
+});
