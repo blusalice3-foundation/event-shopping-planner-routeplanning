@@ -4774,7 +4774,7 @@ test.describe("Excel identity provenance and decorated metadata", () => {
   for (const format of ["current", "legacy"] as const) {
     test(
       format +
-        " Excel keeps inferred prices out of identity and preserves quantities @n1-n13-xlsx",
+        " Excel keeps inferred prices out of identity and preserves quantities and layout @n1-n13-xlsx @n13-layout",
       async ({ page }, testInfo) => {
         page.on("dialog", (dialog) => dialog.accept());
         const records = [2, 5].map((quantity, index) => ({
@@ -4798,6 +4798,8 @@ test.describe("Excel identity provenance and decorated metadata", () => {
           },
         });
         await restore(page, source);
+        const expectedExecution = await stored(page, "executeModeItems");
+        const expectedDayModes = await stored(page, "dayModes");
         await page
           .getByRole("button", { name: "イベント一覧", exact: true })
           .click();
@@ -4826,12 +4828,25 @@ test.describe("Excel identity provenance and decorated metadata", () => {
               ],
             };
         });
+        book.getWorksheet("配置情報")!.eachRow((row, index) => {
+          if (index === 1) return;
+          const isMode = row.getCell(1).value === "dayModes";
+          for (const column of isMode ? [1, 2, 3] : [1, 2]) {
+            const text = row.getCell(column).value as string;
+            row.getCell(column).value = {
+              richText: [
+                { font: { bold: true }, text: text.slice(0, 2) },
+                { text: text.slice(2) },
+              ],
+            };
+          }
+        });
         if (format === "legacy") {
-          book.getWorksheet("アイテムデータ")!.spliceColumns(17, 3);
+          book.getWorksheet("アイテムデータ")!.spliceColumns(19, 1);
           book.removeWorksheet("関連設定");
           for (let row = meta.rowCount; row >= 2; row--) {
             const key = String(meta.getCell(row, 1).value);
-            if (key === "version") meta.getCell(row, 2).value = "2.1";
+            if (key === "version") meta.getCell(row, 2).value = "2.2";
             if (
               [
                 "contentManifest",
@@ -4886,6 +4901,8 @@ test.describe("Excel identity provenance and decorated metadata", () => {
           });
         const restoredItems = await stored(page, "eventLists");
         const originalExecution = await stored(page, "executeModeItems");
+        expect(originalExecution).toEqual(expectedExecution);
+        expect(await stored(page, "dayModes")).toEqual(expectedDayModes);
         const originalConsistency = await stored(page, "eventConsistency");
         const csv = records.map((record, index) => {
           const cells = Array<string>(27).fill("");
@@ -4973,6 +4990,7 @@ test.describe("Excel identity provenance and decorated metadata", () => {
           originalConsistency,
         );
         await page.reload();
+        expect(await stored(page, "dayModes")).toEqual(expectedDayModes);
         expect(await stored(page, "eventLists")).toEqual(saved);
         expect(await stored(page, "executeModeItems")).toEqual(
           originalExecution,

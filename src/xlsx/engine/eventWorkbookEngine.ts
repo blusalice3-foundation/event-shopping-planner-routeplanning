@@ -196,6 +196,24 @@ function parseTextCell(value: ExcelJS.CellValue): string | undefined {
   return undefined;
 }
 
+/** Read auxiliary text while keeping JSON payload cells scalar-only. */
+function readAuxiliaryTextCell(
+  cell: ExcelJS.Cell,
+  field: string,
+  scalarOnly = false,
+): string {
+  const rawValue = cell.value;
+  const text =
+    scalarOnly && rawValue !== null && typeof rawValue === "object"
+      ? undefined
+      : parseTextCell(scalarOnly ? rawValue || "" : rawValue);
+  if (text === undefined)
+    throw new Error(
+      `${cell.worksheet.name}${cell.row}行目「${field}」が非対応セル形式です。`,
+    );
+  return text;
+}
+
 /**
  * データをxlsxファイルにエクスポート
  */
@@ -946,9 +964,13 @@ export async function importFromXlsx(
 
       layoutSheet.eachRow((row, rowNumber) => {
         if (rowNumber === 1) return;
-        const type = String(row.getCell(1).value || "");
-        const eventDate = String(row.getCell(2).value || "");
-        const data = String(row.getCell(3).value || "");
+        const type = readAuxiliaryTextCell(row.getCell(1), "種別");
+        const eventDate = readAuxiliaryTextCell(row.getCell(2), "参加日");
+        const data = readAuxiliaryTextCell(
+          row.getCell(3),
+          "データ",
+          type !== "dayModes",
+        );
 
         try {
           if (type === "executeModeItems") {
@@ -976,8 +998,8 @@ export async function importFromXlsx(
 
       mapSheet.eachRow((row, rowNumber) => {
         if (rowNumber === 1) return;
-        const mapName = String(row.getCell(1).value || "");
-        const data = String(row.getCell(2).value || "");
+        const mapName = readAuxiliaryTextCell(row.getCell(1), "マップ名");
+        const data = readAuxiliaryTextCell(row.getCell(2), "データ", true);
 
         try {
           if (mapName && data) {
@@ -1002,9 +1024,9 @@ export async function importFromXlsx(
 
       routeSheet.eachRow((row, rowNumber) => {
         if (rowNumber === 1) return;
-        const type = String(row.getCell(1).value || "");
-        const mapName = String(row.getCell(2).value || "");
-        const data = String(row.getCell(3).value || "");
+        const type = readAuxiliaryTextCell(row.getCell(1), "種別");
+        const mapName = readAuxiliaryTextCell(row.getCell(2), "マップ名");
+        const data = readAuxiliaryTextCell(row.getCell(3), "データ", true);
 
         try {
           if (type === "routeSettings" && mapName && data) {
