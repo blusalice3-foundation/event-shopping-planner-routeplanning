@@ -66,6 +66,7 @@ async function restore(
   page: Page,
   data: unknown = backup(),
   reviewTitle?: string,
+  expectedEventName = eventName,
 ) {
   await page.goto("/");
   await page
@@ -91,7 +92,7 @@ async function restore(
   }
   await expect(dialog).toBeHidden();
   await expect(
-    page.getByRole("heading", { name: eventName, exact: true }),
+    page.getByRole("heading", { name: expectedEventName, exact: true }),
   ).toBeVisible();
 }
 function persistenceRealm(page: Page) {
@@ -101,9 +102,9 @@ function persistenceRealm(page: Page) {
   if (!worker) throw new Error("The persistence worker has not started.");
   return worker;
 }
-async function stored(page: Page, store: string, key = "data") {
-  return page.evaluate(
-    async ({ name, key }) => {
+async function stored(page: Page, store: string, key = "data", asJson = false) {
+  const value = await page.evaluate(
+    async ({ name, key, asJson }) => {
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open("EventShoppingPlannerDB");
         request.onsuccess = () => resolve(request.result);
@@ -121,7 +122,7 @@ async function stored(page: Page, store: string, key = "data") {
               key !== "data" ||
               head?.kind !== "event-shopping-planner-day-records"
             ) {
-              resolve(head);
+              resolve(asJson ? JSON.stringify(head) : head);
               return;
             }
             const prefix = "__esp_internal__:day-record:v1:";
@@ -157,7 +158,7 @@ async function stored(page: Page, store: string, key = "data") {
                   enumerable: true,
                 });
               }
-              resolve(data);
+              resolve(asJson ? JSON.stringify(data) : data);
             };
           };
           request.onerror = () => reject(request.error);
@@ -166,8 +167,9 @@ async function stored(page: Page, store: string, key = "data") {
         database.close();
       }
     },
-    { name: store, key },
+    { name: store, key, asJson },
   );
+  return asJson ? JSON.parse(value as string) : value;
 }
 async function storedMaps(page: Page) {
   return page.evaluate(async () => {
@@ -4342,3 +4344,221 @@ for (const format of ["legacy", "google"] as const) {
     expect(await stored(page, "eventLists")).toEqual(saved);
   });
 }
+
+for (const literalName of [
+  "constructor",
+  "toString",
+  "hasOwnProperty",
+  "__proto__",
+]) {
+  test(`legacy JSON restores and reloads the literal event name ${literalName} @n1-n17`, async ({
+    page,
+  }) => {
+    const source = backup([item("1")]);
+    const renamed = {
+      ...source,
+      data: Object.fromEntries(
+        Object.entries(source.data).map(([section, record]) => [
+          section,
+          Object.fromEntries(
+            Object.entries(record).map(([name, value]) => [
+              name === eventName ? literalName : name,
+              value,
+            ]),
+          ),
+        ]),
+      ),
+    };
+    await restore(page, renamed, undefined, literalName);
+    expect(await stored(page, "eventLists", "data", true)).toEqual({
+      [literalName]: [item("1")],
+    });
+    expect(await stored(page, "eventConsistency", "data", true)).toMatchObject({
+      [literalName]: { blockDetectionSettings: null },
+    });
+    await page.reload();
+    await page.getByText(literalName, { exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: literalName, exact: true }),
+    ).toBeVisible();
+    expect(await stored(page, "eventLists", "data", true)).toEqual({
+      [literalName]: [item("1")],
+    });
+  });
+}
+
+test.describe("sheet source changes at the save boundary", () => {
+  test.use({ serviceWorkers: "block" });
+  for (const kind of ["items-only", "source-switch"] as const) {
+    for (const field of ["spreadsheetUrl", "spreadsheetSheetName"] as const) {
+      test(`${kind} rejects reviewed sheet values after only ${field} changes @n1-n17`, async ({
+        page,
+      }) => {
+        const source = backup([item("1")]);
+        Object.assign(source.data.eventLists[eventName][0], {
+          source: "spreadsheet",
+        });
+        const metadata = {
+          spreadsheetUrl: "https://docs.google.com/spreadsheets/d/source-A",
+          spreadsheetSheetName: "一覧",
+          lastImportDate: "2026-10-16",
+        };
+        if (kind === "items-only")
+          Object.assign(source.data.eventMetadata, { [eventName]: metadata });
+        const cells = Array<string>(27).fill("");
+        [
+          cells[12],
+          cells[13],
+          cells[14],
+          cells[15],
+          cells[16],
+          cells[17],
+          cells[22],
+          cells[26],
+        ] = [
+          "サークル1",
+          "1日目",
+          "A",
+          "1",
+          "新刊1",
+          "800",
+          "Aから取得した備考",
+          "1",
+        ];
+        await page.route("**/api/google-sheets-csv", (route) =>
+          route.fulfill({
+            status: 200,
+            contentType: "text/csv; charset=utf-8",
+            body: `${Array<string>(27).fill("header").join(",")}\n${cells.join(",")}\n`,
+          }),
+        );
+        await restore(page, source);
+        await page.reload();
+        await page
+          .getByRole("button", { name: "メニュー", exact: true })
+          .click();
+        await page
+          .getByRole("button", { name: "🔄 アイテム更新", exact: true })
+          .click();
+        if (kind === "source-switch") {
+          await page
+            .getByRole("textbox", { name: "スプレッドシートURL", exact: true })
+            .fill(metadata.spreadsheetUrl);
+          await page
+            .getByRole("textbox", {
+              name: "シート名（オプション）",
+              exact: true,
+            })
+            .fill(metadata.spreadsheetSheetName);
+          await page.getByRole("button", { name: "更新", exact: true }).click();
+        }
+        const heading = page.getByRole("heading", {
+          name: "アイテム更新の確認",
+          exact: true,
+        });
+        await expect(heading).toBeVisible();
+        const beforeItems = await stored(page, "eventLists", "data", true);
+        const changed = {
+          [eventName]: {
+            ...metadata,
+            [field]:
+              field === "spreadsheetUrl"
+                ? "https://docs.google.com/spreadsheets/d/source-B"
+                : "変更後の一覧",
+          },
+        };
+        const metadataKey = createPersistenceMetadataKey(
+          "eventMetadata",
+          "data",
+        );
+        const checkpointKey = createPersistenceCheckpointKey(
+          "eventMetadata",
+          "data",
+        );
+        const previous = (await stored(
+          page,
+          "syncQueue",
+          metadataKey,
+        )) as StoredPersistenceMetadata;
+        const previousCheckpoint = (await stored(
+          page,
+          "syncQueue",
+          checkpointKey,
+        )) as PersistenceCheckpoint | null;
+        const nextMetadata = await prepareMetadataForPayload(
+          "eventMetadata",
+          "data",
+          changed,
+          previous.revision,
+        );
+        const checkpoint = createNextPersistenceCheckpoint(
+          "eventMetadata",
+          "data",
+          nextMetadata,
+          previousCheckpoint,
+        );
+        // Complete an earlier metadata write in this same browser context while review stays open.
+        await page.evaluate(
+          async ({
+            changed,
+            metadataKey,
+            checkpointKey,
+            nextMetadata,
+            checkpoint,
+          }) => {
+            const database = await new Promise<IDBDatabase>(
+              (resolve, reject) => {
+                const request = indexedDB.open("EventShoppingPlannerDB");
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+              },
+            );
+            try {
+              await new Promise<void>((resolve, reject) => {
+                const tx = database.transaction(
+                  ["eventMetadata", "syncQueue"],
+                  "readwrite",
+                );
+                tx.objectStore("eventMetadata").put(changed, "data");
+                tx.objectStore("syncQueue").put(nextMetadata, metadataKey);
+                tx.objectStore("syncQueue").put(checkpoint, checkpointKey);
+                tx.oncomplete = () => resolve();
+                tx.onabort = () => reject(tx.error);
+                tx.onerror = () => reject(tx.error);
+              });
+            } finally {
+              database.close();
+            }
+          },
+          { changed, metadataKey, checkpointKey, nextMetadata, checkpoint },
+        );
+        await page
+          .getByRole("button", {
+            name:
+              kind === "items-only" ? "更新を実行" : "更新元を切り替えて更新",
+            exact: true,
+          })
+          .click();
+        await expect(heading).toBeHidden();
+        await expect(
+          page
+            .getByRole("alert")
+            .filter({
+              hasText:
+                "確認中にイベントの品目または更新元が変更・削除されたため、更新元も品目も変更していません。もう一度更新してください。",
+            })
+            .first(),
+        ).toBeVisible();
+        expect(await stored(page, "eventLists", "data", true)).toEqual(
+          beforeItems,
+        );
+        expect(await stored(page, "eventMetadata")).toEqual(changed);
+        await page.reload();
+        expect(await stored(page, "eventLists", "data", true)).toEqual(
+          beforeItems,
+        );
+        expect(await stored(page, "eventMetadata")).toEqual(changed);
+      });
+    }
+  }
+});

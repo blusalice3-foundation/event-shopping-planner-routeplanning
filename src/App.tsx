@@ -41,6 +41,7 @@ import { extractEventDates } from "./utils/eventDates";
 import { getSpaceKey } from "./utils/spaceGrouping";
 import { normalizeExecutionVisitDay } from "./utils/visitProjection";
 import { type EventUpdateCommitState } from "./features/events/updateFlow";
+import type { ApplicationSnapshotGuard } from "./app/commands/ApplicationSnapshotCommitPort";
 import { getGlobalHallItemCount as computeGlobalHallItemCount } from "./features/map/domain/hallOperations";
 import { useMapSelectors } from "./features/map/hooks/useMapSelectors";
 import { useListInteractionState } from "./features/lists/hooks/useListInteractionState";
@@ -1145,12 +1146,20 @@ const App: React.FC = () => {
     setMapViewportSettings,
   });
   const commitEventUpdateState = useCallback(
-    async (nextState: EventUpdateCommitState): Promise<boolean> => {
-      await commitApplicationSnapshotPatch({
-        eventLists: nextState.eventLists,
-        eventMetadata: nextState.eventMetadata,
-        executeModeItems: nextState.executeModeItems,
-      });
+    async (
+      nextState: EventUpdateCommitState,
+      assertCurrent: ApplicationSnapshotGuard,
+    ): Promise<boolean> => {
+      await commitApplicationSnapshotPatch(
+        {
+          eventLists: nextState.eventLists,
+          eventMetadata: nextState.eventMetadata,
+          executeModeItems: nextState.executeModeItems,
+        },
+        undefined,
+        undefined,
+        assertCurrent,
+      );
 
       return true;
     },

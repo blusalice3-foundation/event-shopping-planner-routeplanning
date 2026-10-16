@@ -1,3 +1,4 @@
+import type { ApplicationSnapshotGuard } from "./ApplicationSnapshotCommitPort";
 import { bulkImportFailureStatus } from "../../utils/importOutcome";
 import { recordEntry } from "../../utils/ownRecord";
 import { useCallback, useRef } from "react";
@@ -16,6 +17,8 @@ import type { EventUpdateApplyOptions } from "../../features/events/updateApply"
 import {
   applyPendingEventUpdate,
   eventUpdateItemsMatch,
+  eventUpdateSourceMatches,
+  EventUpdateInvalidatedError,
   buildEventUpdateDiffFromSpreadsheet,
   resolveSpreadsheetSource,
   type EventUpdateCommitState,
@@ -57,7 +60,10 @@ export interface EventUpdateActionPort {
     items: ImportedShoppingItem[],
     metadata?: BulkAddMetadata,
   ): Promise<BulkImportResult>;
-  commitEventUpdateState(state: EventUpdateCommitState): Promise<boolean>;
+  commitEventUpdateState(
+    state: EventUpdateCommitState,
+    assertCurrent: ApplicationSnapshotGuard,
+  ): Promise<boolean>;
   openEventUpdate(pending: PendingEventUpdate): void;
   openUrlUpdate(eventName: string): void;
   closeEventOverlay(): void;
@@ -100,7 +106,6 @@ export const useEventUpdateCommands = ({
 }: EventUpdateCommandPorts): EventUpdateCommands => {
   const {
     getEventGeneration,
-    eventMetadata,
     pendingDuplicateEvent,
     pendingEventUpdate,
     pendingUpdateEventName,
@@ -153,9 +158,16 @@ export const useEventUpdateCommands = ({
       const currentItems = structuredClone(latestItems);
       const requestEpoch = eventUpdatePreviewEpochRef.current;
       const eventGeneration = getEventGeneration?.(eventName);
+      const baseSource = resolveSpreadsheetSource(
+        recordEntry(eventMetadataRef.current, eventName),
+      );
       const isCurrentRequest = () =>
         eventUpdatePreviewEpochRef.current === requestEpoch &&
         getEventGeneration?.(eventName) === eventGeneration &&
+        eventUpdateSourceMatches(
+          recordEntry(eventMetadataRef.current, eventName),
+          baseSource,
+        ) &&
         eventUpdateItemsMatch(
           recordEntry(eventListsRef.current, eventName),
           currentItems,
@@ -173,6 +185,7 @@ export const useEventUpdateCommands = ({
                   kind,
                   eventName,
                   diff: updateDiff,
+                  baseSource,
                   ...(eventGeneration === undefined ? {} : { eventGeneration }),
                   ...(importCompletion.current
                     ? { onImportComplete: importCompletion.current }
@@ -183,6 +196,7 @@ export const useEventUpdateCommands = ({
                   kind,
                   eventName,
                   diff: updateDiff,
+                  baseSource,
                   ...(eventGeneration === undefined ? {} : { eventGeneration }),
                   ...(importCompletion.current
                     ? { onImportComplete: importCompletion.current }
@@ -205,6 +219,7 @@ export const useEventUpdateCommands = ({
       finishImport,
       notify,
       eventListsRef,
+      eventMetadataRef,
       eventUpdatePreviewEpochRef,
       closeEventOverlay,
       openEventUpdate,
@@ -215,7 +230,7 @@ export const useEventUpdateCommands = ({
   const handleUpdateEvent = useCallback(
     async (eventName: string): Promise<void> => {
       const source = resolveSpreadsheetSource(
-        recordEntry(eventMetadata, eventName),
+        recordEntry(eventMetadataRef.current, eventName),
       );
       if (!source) {
         eventUpdatePreviewEpochRef.current += 1;
@@ -234,7 +249,7 @@ export const useEventUpdateCommands = ({
       });
     },
     [
-      eventMetadata,
+      eventMetadataRef,
       eventUpdatePreviewEpochRef,
       openUrlUpdate,
       previewEventUpdate,
@@ -262,6 +277,19 @@ export const useEventUpdateCommands = ({
         notify(
           "対象イベントが変更されたため取込みを終了しました。入力を確認して再試行してください。",
         );
+        return;
+      }
+      if (
+        (resolution.action === "open-update" ||
+          resolution.action === "switch-source") &&
+        !eventUpdateSourceMatches(
+          recordEntry(eventMetadataRef.current, pending.analysis.eventName),
+          pending.analysis.existingSource,
+        )
+      ) {
+        pending.complete?.({ status: "invalidated" });
+        closeEventOverlay();
+        notify(new EventUpdateInvalidatedError().message);
         return;
       }
       importCompletion.current = pending.complete;
@@ -360,6 +388,7 @@ export const useEventUpdateCommands = ({
       notify,
       openUrlUpdate,
       pendingDuplicateEvent,
+      eventMetadataRef,
       previewEventUpdate,
       reportError,
     ],
@@ -403,19 +432,36 @@ export const useEventUpdateCommands = ({
       if (!nextState) {
         finishImport({ status: "invalidated" });
         closeEventOverlay();
-        notify(
-          "確認中にイベントの品目が変更または削除されたため、更新元も品目も変更していません。もう一度更新してください。",
-        );
+        notify(new EventUpdateInvalidatedError().message);
         return;
       }
 
       savingImport.current = true;
       try {
-        if (!(await commitEventUpdateState(nextState))) {
+        if (
+          !(await commitEventUpdateState(nextState, (snapshot) => {
+            if (
+              !eventUpdateSourceMatches(
+                recordEntry(
+                  snapshot.eventMetadata,
+                  pendingEventUpdate.eventName,
+                ) as EventMetadata | undefined,
+                pendingEventUpdate.baseSource,
+              )
+            )
+              throw new EventUpdateInvalidatedError();
+          }))
+        ) {
           finishImport({ status: "failed" });
           return;
         }
       } catch (error) {
+        if (error instanceof EventUpdateInvalidatedError) {
+          finishImport({ status: "invalidated" });
+          closeEventOverlay();
+          notify(error.message);
+          return;
+        }
         const status = bulkImportFailureStatus(error);
         finishImport({ status });
         if (status === "unknown" || status === "committed-ui-failed") {
@@ -457,7 +503,7 @@ export const useEventUpdateCommands = ({
       if (!pendingUpdateEventName) return;
 
       const eventName = pendingUpdateEventName;
-      const currentMetadata = recordEntry(eventMetadata, eventName);
+      const currentMetadata = recordEntry(eventMetadataRef.current, eventName);
       const normalizedSheetName =
         sheetName || currentMetadata?.spreadsheetSheetName || "";
 
@@ -475,7 +521,7 @@ export const useEventUpdateCommands = ({
       });
     },
     [
-      eventMetadata,
+      eventMetadataRef,
       closeEventOverlay,
       openUrlUpdate,
       pendingUpdateEventName,

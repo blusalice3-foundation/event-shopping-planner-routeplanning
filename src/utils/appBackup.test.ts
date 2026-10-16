@@ -899,3 +899,58 @@ describe("appBackup", () => {
     expect(errors).toContain("会場ID「hall-1」が重複");
   });
 });
+
+it.each(["constructor", "toString", "hasOwnProperty", "__proto__"])(
+  "restores the literal legacy JSON event name %s with absent and own settings",
+  (eventName) => {
+    for (const settingMode of ["omitted", "empty", "own"] as const) {
+      const original = makeAppData();
+      const data = Object.fromEntries(
+        Object.entries(original).map(([section, record]) => [
+          section,
+          { ...record, [eventName]: structuredClone(record[EVENT_NAME]) },
+        ]),
+      ) as AppData;
+      const ownSettings = {
+        ...DEFAULT_BLOCK_DETECTION_SETTINGS,
+        numberCellMax: 321,
+      };
+      const eventSettings = {
+        blockDetectionSettings:
+          settingMode === "own" ? { [eventName]: ownSettings } : {},
+      };
+      const legacyBackup = createLegacyBackup(
+        data,
+        new Date("2026-10-16T00:00:00.000Z"),
+        eventSettings,
+      );
+      if (settingMode === "omitted")
+        delete (legacyBackup as { eventSettings?: unknown }).eventSettings;
+      const result = parseAppBackup(JSON.stringify(legacyBackup));
+      expect(result.errors).toEqual([]);
+      if (!result.ok) throw new Error(result.errors.join("\n"));
+      expect(
+        Object.prototype.hasOwnProperty.call(result.data.eventLists, eventName),
+      ).toBe(true);
+      expect(Object.getPrototypeOf(result.data.eventLists)).toBe(
+        Object.prototype,
+      );
+      expect(
+        result.data.eventConsistency[eventName].blockDetectionSettings,
+      ).toEqual(settingMode === "own" ? ownSettings : null);
+      expect(result.data.eventLists[EVENT_NAME]).toEqual(
+        result.data.eventLists[eventName],
+      );
+      const roundTrip = parseAppBackup(serializeAppBackup(result.backup));
+      expect(roundTrip.data).toEqual(result.data);
+      const created = createAppBackup(
+        data,
+        new Date("2026-10-16T00:00:00.000Z"),
+        eventSettings,
+      );
+      expect(parseAppBackup(serializeAppBackup(created)).data).toEqual(
+        result.data,
+      );
+    }
+  },
+);

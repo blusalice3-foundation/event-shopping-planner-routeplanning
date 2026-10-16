@@ -30,6 +30,7 @@ export type PendingEventUpdate =
       kind: "items-only";
       eventName: string;
       diff: EventUpdateDiff;
+      baseSource: SpreadsheetSource | null;
       eventGeneration?: number;
       onImportComplete?: (result: BulkImportResult) => void;
     }
@@ -37,6 +38,7 @@ export type PendingEventUpdate =
       kind: "source-switch";
       eventName: string;
       diff: EventUpdateDiff;
+      baseSource: SpreadsheetSource | null;
       eventGeneration?: number;
       onImportComplete?: (result: BulkImportResult) => void;
       nextSource: SpreadsheetSource;
@@ -47,6 +49,27 @@ export type EventUpdateCommitState = {
   eventMetadata: Record<string, EventMetadata>;
   executeModeItems: Record<string, ExecuteModeItems>;
 };
+
+export class EventUpdateInvalidatedError extends Error {
+  constructor() {
+    super(
+      "確認中にイベントの品目または更新元が変更・削除されたため、更新元も品目も変更していません。もう一度更新してください。",
+    );
+    this.name = "EventUpdateInvalidated";
+  }
+}
+
+/** Compare source values, not metadata identity or unrelated import timestamps. */
+export function eventUpdateSourceMatches(
+  metadata: EventMetadata | undefined,
+  baseSource: SpreadsheetSource | null,
+): boolean {
+  const current = resolveSpreadsheetSource(metadata);
+  return (
+    current?.url === baseSource?.url &&
+    current?.sheetName === baseSource?.sheetName
+  );
+}
 
 /** Projections may allocate new arrays and items without changing their values. */
 export function eventUpdateItemsMatch(
@@ -80,6 +103,13 @@ export function applyPendingEventUpdate({
   options: EventUpdateApplyOptions;
 }): EventUpdateCommitState | null {
   if (pending.diff.csvReview && !options.acceptCsvExclusions) return null;
+  if (
+    !eventUpdateSourceMatches(
+      recordEntry(state.eventMetadata, pending.eventName),
+      pending.baseSource,
+    )
+  )
+    return null;
   const currentItems = recordEntry(state.eventLists, pending.eventName);
   const diff = pending.diff.matching
     ? createEventUpdateDiff(

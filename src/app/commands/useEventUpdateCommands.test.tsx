@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { emptyApplicationSnapshot } from "../state/useApplicationSnapshot";
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
@@ -237,11 +238,11 @@ const deferred = <T,>() => {
   return { promise, resolve, reject };
 };
 
-describe("useEventUpdateCommands", () => {
-  beforeEach(() => {
-    updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockReset();
-  });
+beforeEach(() => {
+  updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockReset();
+});
 
+describe("useEventUpdateCommands", () => {
   it("commits only the newest preview from the current event-list identity", async () => {
     const first = deferred<EventUpdateDiff>();
     const second = deferred<EventUpdateDiff>();
@@ -272,7 +273,12 @@ describe("useEventUpdateCommands", () => {
       ([value]) => value,
     );
     expect(committed).toEqual([
-      { kind: "items-only", eventName: EVENT, diff: secondDiff },
+      {
+        kind: "items-only",
+        eventName: EVENT,
+        baseSource: SOURCE,
+        diff: secondDiff,
+      },
     ]);
     expect(harness.refs.pendingEventUpdateBaseItemsRef.current).toEqual(
       harness.ports.state.eventLists[EVENT],
@@ -465,6 +471,7 @@ describe("useEventUpdateCommands", () => {
     });
     expect(harness.spies.openEventUpdate).toHaveBeenLastCalledWith({
       kind: "source-switch",
+      baseSource: SOURCE,
       eventName: EVENT,
       diff: previewDiff,
       nextSource: {
@@ -481,6 +488,7 @@ describe("useEventUpdateCommands", () => {
     const baseItems = [item("keep"), item("delete")];
     const pendingEventUpdate: PendingEventUpdate = {
       kind: "source-switch",
+      baseSource: SOURCE,
       eventName: EVENT,
       diff: diff({ itemsToDelete: [baseItems[1]] }),
       nextSource: {
@@ -517,6 +525,7 @@ describe("useEventUpdateCommands", () => {
     const baseItems = [item("keep")];
     const pendingEventUpdate: PendingEventUpdate = {
       kind: "items-only",
+      baseSource: SOURCE,
       eventName: EVENT,
       diff: diff(),
     };
@@ -541,6 +550,7 @@ describe("useEventUpdateCommands", () => {
     const baseItems = [item("keep")];
     const pendingEventUpdate: PendingEventUpdate = {
       kind: "items-only",
+      baseSource: SOURCE,
       eventName: EVENT,
       diff: diff(),
     };
@@ -559,7 +569,7 @@ describe("useEventUpdateCommands", () => {
     expect(harness.spies.commitEventUpdateState).not.toHaveBeenCalled();
     expect(harness.spies.closeEventOverlay).toHaveBeenCalled();
     expect(harness.spies.notify).toHaveBeenCalledWith(
-      "確認中にイベントの品目が変更または削除されたため、更新元も品目も変更していません。もう一度更新してください。",
+      "確認中にイベントの品目または更新元が変更・削除されたため、更新元も品目も変更していません。もう一度更新してください。",
     );
   });
 
@@ -759,6 +769,7 @@ it.each([
       eventLists: { [EVENT]: base },
       pendingEventUpdate: {
         kind: "items-only",
+        baseSource: SOURCE,
         eventName: EVENT,
         diff: diff(),
         onImportComplete: complete,
@@ -775,5 +786,219 @@ it.each([
     expect(h.spies.notify).not.toHaveBeenCalledWith("アイテムを更新しました。");
     if (status !== "failed")
       expect(h.spies.closeEventOverlay).toHaveBeenCalled();
+  },
+);
+
+for (const flow of ["normal", "same-source", "source-switch"] as const) {
+  for (const phase of ["loading", "confirmation"] as const) {
+    it.each(["spreadsheetUrl", "spreadsheetSheetName", "removed"] as const)(
+      `invalidates ${flow} during ${phase} when only the source changes: %s`,
+      async (change) => {
+        const complete = vi.fn();
+        const harness = createHarness({
+          pendingDuplicateEvent: { analysis: duplicateAnalysis([]), complete },
+        });
+        const before = structuredClone(harness.stores.eventLists);
+        const preview = deferred<EventUpdateDiff>();
+        updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockReturnValueOnce(
+          preview.promise,
+        );
+        const { result, rerender } = renderHook(() =>
+          useEventUpdateCommands(harness.ports),
+        );
+        let loading!: Promise<void>;
+        act(() => {
+          loading =
+            flow === "normal"
+              ? result.current.handleUpdateEvent(EVENT)
+              : result.current.handleDuplicateEventResolution({
+                  action:
+                    flow === "same-source" ? "open-update" : "switch-source",
+                  eventName: EVENT,
+                  sourceIdentity: {
+                    documentId: "source",
+                    normalizedSheetName: SOURCE.sheetName,
+                  },
+                  nextStep: "review-update-diff",
+                  source:
+                    flow === "same-source"
+                      ? SOURCE
+                      : {
+                          url: "https://example.com/new-source",
+                          sheetName: "新シート",
+                        },
+                });
+        });
+        const changeSource = () => {
+          if (change === "removed")
+            delete harness.refs.eventMetadataRef.current[EVENT];
+          else
+            harness.refs.eventMetadataRef.current[EVENT][change] = "変更済み";
+        };
+        if (phase === "loading") changeSource();
+        await act(async () => {
+          preview.resolve(
+            diff({ itemsToDelete: [harness.stores.eventLists[EVENT][1]] }),
+          );
+          await loading;
+        });
+        if (phase === "confirmation") {
+          expect(harness.spies.openEventUpdate).toHaveBeenCalledOnce();
+          Object.assign(harness.ports.state, {
+            pendingEventUpdate: harness.stores.pendingEventUpdate,
+          });
+          changeSource();
+          rerender();
+          await act(() => result.current.handleConfirmUpdate({}));
+        } else expect(harness.spies.openEventUpdate).not.toHaveBeenCalled();
+        expect(harness.spies.commitEventUpdateState).not.toHaveBeenCalled();
+        expect(harness.stores.eventLists).toEqual(before);
+        expect(harness.spies.confirmEventOverlay).not.toHaveBeenCalled();
+        if (flow !== "normal")
+          expect(complete).toHaveBeenCalledExactlyOnceWith({
+            status: "invalidated",
+          });
+      },
+    );
+  }
+}
+
+it("starts a normal update from accepted source values rather than an older render", async () => {
+  const h = createHarness();
+  h.refs.eventMetadataRef.current = {
+    [EVENT]: {
+      ...h.stores.eventMetadata[EVENT],
+      spreadsheetUrl: "https://example.com/accepted",
+      spreadsheetSheetName: "受理済み",
+    },
+  };
+  updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockResolvedValueOnce(
+    diff(),
+  );
+  const { result } = renderHook(() => useEventUpdateCommands(h.ports));
+  await act(() => result.current.handleUpdateEvent(EVENT));
+  expect(
+    updateFlowMocks.buildEventUpdateDiffFromSpreadsheet,
+  ).toHaveBeenCalledWith(expect.any(Array), {
+    url: "https://example.com/accepted",
+    sheetName: "受理済み",
+  });
+  expect(h.stores.pendingEventUpdate).toMatchObject({
+    baseSource: { url: "https://example.com/accepted", sheetName: "受理済み" },
+  });
+});
+
+it("preserves unrelated metadata changes and equal source projections throughout an update", async () => {
+  const h = createHarness();
+  const preview = deferred<EventUpdateDiff>();
+  updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockReturnValueOnce(
+    preview.promise,
+  );
+  const { result, rerender } = renderHook(() =>
+    useEventUpdateCommands(h.ports),
+  );
+  let loading!: Promise<void>;
+  act(() => {
+    loading = result.current.handleUpdateEvent(EVENT);
+  });
+  h.refs.eventMetadataRef.current = structuredClone(h.stores.eventMetadata);
+  h.refs.eventMetadataRef.current[EVENT].lastImportDate =
+    "2026-10-16T00:00:00.000Z";
+  await act(async () => {
+    preview.resolve(diff());
+    await loading;
+  });
+  Object.assign(h.ports.state, {
+    pendingEventUpdate: h.stores.pendingEventUpdate,
+  });
+  rerender();
+  await act(() => result.current.handleConfirmUpdate({}));
+  expect(h.spies.commitEventUpdateState).toHaveBeenCalledOnce();
+  expect(h.stores.eventMetadata[EVENT].lastImportDate).toBe(
+    "2026-10-16T00:00:00.000Z",
+  );
+});
+
+it("reports invalidation when the queued save observes a different source", async () => {
+  const complete = vi.fn();
+  const h = createHarness({
+    pendingDuplicateEvent: { analysis: duplicateAnalysis([]), complete },
+  });
+  updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockResolvedValueOnce(
+    diff(),
+  );
+  const { result, rerender } = renderHook(() =>
+    useEventUpdateCommands(h.ports),
+  );
+  await act(() =>
+    result.current.handleDuplicateEventResolution({
+      action: "open-update",
+      eventName: EVENT,
+      source: SOURCE,
+      sourceIdentity: {
+        documentId: "source",
+        normalizedSheetName: SOURCE.sheetName,
+      },
+      nextStep: "review-update-diff",
+    }),
+  );
+  Object.assign(h.ports.state, {
+    pendingEventUpdate: h.stores.pendingEventUpdate,
+  });
+  h.ports.actions.commitEventUpdateState = vi.fn(
+    async (_next, assertCurrent) => {
+      assertCurrent({
+        ...emptyApplicationSnapshot(),
+        eventMetadata: {
+          [EVENT]: {
+            ...h.stores.eventMetadata[EVENT],
+            spreadsheetUrl: "https://example.com/queued",
+          },
+        },
+      });
+      return true;
+    },
+  );
+  rerender();
+  await act(() => result.current.handleConfirmUpdate({}));
+  expect(complete).toHaveBeenCalledExactlyOnceWith({ status: "invalidated" });
+  expect(h.spies.confirmEventOverlay).not.toHaveBeenCalled();
+  expect(h.spies.notify).toHaveBeenCalledWith(
+    expect.stringContaining("更新元"),
+  );
+  expect(h.spies.notify).not.toHaveBeenCalledWith("アイテムを更新しました。");
+});
+
+it.each(["open-update", "switch-source"] as const)(
+  "invalidates a duplicate %s choice if its source changed before preview starts",
+  async (action) => {
+    const complete = vi.fn();
+    const h = createHarness({
+      pendingDuplicateEvent: { analysis: duplicateAnalysis([]), complete },
+    });
+    h.refs.eventMetadataRef.current = {
+      [EVENT]: {
+        ...h.stores.eventMetadata[EVENT],
+        spreadsheetUrl: "https://example.com/already-changed",
+      },
+    };
+    const { result } = renderHook(() => useEventUpdateCommands(h.ports));
+    await act(() =>
+      result.current.handleDuplicateEventResolution({
+        action,
+        eventName: EVENT,
+        source: SOURCE,
+        sourceIdentity: {
+          documentId: "source",
+          normalizedSheetName: SOURCE.sheetName,
+        },
+        nextStep: "review-update-diff",
+      }),
+    );
+    expect(complete).toHaveBeenCalledExactlyOnceWith({ status: "invalidated" });
+    expect(
+      updateFlowMocks.buildEventUpdateDiffFromSpreadsheet,
+    ).not.toHaveBeenCalled();
+    expect(h.spies.commitEventUpdateState).not.toHaveBeenCalled();
   },
 );

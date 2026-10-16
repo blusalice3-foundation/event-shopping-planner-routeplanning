@@ -70,7 +70,9 @@ export function migrateLegacyConsistency(
       writable: true,
       configurable: true,
     });
-    event.blockDetectionSettings = structuredClone(settings[eventName] ?? null);
+    event.blockDetectionSettings = structuredClone(
+      recordEntry(settings, eventName) ?? null,
+    );
     const definitions = (recordEntry(data.hallDefinitions, eventName) ??
       setOwnValue(data.hallDefinitions, eventName, {})) as Record<
       string,

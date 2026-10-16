@@ -10,7 +10,10 @@ import {
   reuseEqualReferences,
   reuseEqualItemLists,
 } from "../../utils/semanticEquality";
-import type { ApplicationSnapshotCommitContext } from "../commands/ApplicationSnapshotCommitPort";
+import type {
+  ApplicationSnapshotCommitContext,
+  ApplicationSnapshotGuard,
+} from "../commands/ApplicationSnapshotCommitPort";
 import {
   useCallback,
   useEffect,
@@ -118,6 +121,7 @@ type Batch = {
   itemContentEdits?: readonly ItemContentEdit[];
   acceptedItemContentEdits?: readonly ItemContentEdit[];
   blockedItemOperations?: ReadonlySet<string>;
+  assertCurrent?: ApplicationSnapshotGuard;
   inputItemIds?: readonly string[];
 };
 function changedSnapshotStores(
@@ -156,6 +160,7 @@ function planBatch(
   latest: PersistenceSnapshot,
   choices: MutationChoices = {},
 ): MutationPlan {
+  batch.assertCurrent?.(latest);
   if (batch.itemContentEdits)
     return planItemContentMutation(latest, batch.itemContentEdits);
   const projected = projectConsistencySnapshot(
@@ -805,13 +810,16 @@ export function useApplicationSnapshot(
         id: batch.id,
         events,
         itemContentEdits: batch.itemContentEdits,
-        dayMutation: collectDayMutation(
-          batch.base,
-          batch.draft,
-          batch.context.eventName,
-          batch.context.day,
-          batch.context.routeDays,
-        ),
+        // Snapshot guards must run in the planner, including on CAS retries.
+        dayMutation: batch.assertCurrent
+          ? undefined
+          : collectDayMutation(
+              batch.base,
+              batch.draft,
+              batch.context.eventName,
+              batch.context.day,
+              batch.context.routeDays,
+            ),
         plan: (latest, choices) => {
           const plan = planBatch(batch, latest, choices);
           if (batch.itemContentEdits) {
@@ -1110,6 +1118,7 @@ export function useApplicationSnapshot(
       patch: Partial<PersistenceSnapshot>,
       settings?: { eventName: string; settings: BlockDetectionSettings | null },
       context?: ApplicationSnapshotCommitContext,
+      assertCurrent?: ApplicationSnapshotGuard,
     ) => {
       flushDraft();
       // The submitted patch was computed from this render, not the pending preview.
@@ -1134,6 +1143,7 @@ export function useApplicationSnapshot(
         base,
         draft: next,
         context: { eventName, day, ...structuredClone(context) },
+        assertCurrent,
       });
     },
     [day, eventName, flushDraft, submitBatch, values],

@@ -1,5 +1,9 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from "@testing-library/react";
+import {
+  eventUpdateSourceMatches,
+  EventUpdateInvalidatedError,
+} from "../../features/events/updateFlow";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "../../utils/indexedDB";
@@ -623,3 +627,122 @@ it("retains entered amounts through no-op acceptance, quantity review and a seco
   );
   expect(saved.executeModeItems).toEqual(h.seed.executeModeItems);
 });
+
+it.each(["queued", "cas-retry", "confirmation", "manual-retry"] as const)(
+  "rechecks a sheet-update source against the serialized snapshot after %s",
+  async (phase) => {
+    const commitOriginal = db.commitApplicationSnapshotAtomically.bind(db);
+    const h = await harness();
+    const source = {
+      spreadsheetUrl: "https://example.com/A",
+      spreadsheetSheetName: "一覧",
+      lastImportDate: "",
+    };
+    await act(() =>
+      h.result.current.application.commitPatch({
+        eventMetadata: { [EVENT]: source },
+      }),
+    );
+    const baseline = h.result.current.application.values;
+    const commitReviewed = h.result.current.application.commitPatch;
+    let expectedItems = baseline.eventLists;
+    const proposed = {
+      eventLists: {
+        [EVENT]: baseline.eventLists[EVENT].map((item) => ({
+          ...item,
+          sheetRemarks: "取得したAの値",
+        })),
+      },
+    };
+    const changedSource = {
+      [EVENT]: { ...source, spreadsheetUrl: "https://example.com/B" },
+    };
+    const guard = vi.fn(
+      (
+        latest: import("../ports/PersistenceCommandPort").PersistenceSnapshot,
+      ) => {
+        if (
+          !eventUpdateSourceMatches(
+            latest.eventMetadata[EVENT] as typeof source,
+            {
+              url: source.spreadsheetUrl,
+              sheetName: source.spreadsheetSheetName,
+            },
+          )
+        )
+          throw new EventUpdateInvalidatedError();
+      },
+    );
+    if (phase === "queued") {
+      act(() =>
+        h.result.current.application.setters.setEventMetadata(changedSource),
+      );
+    } else if (phase === "cas-retry") {
+      h.atomic.mockImplementationOnce(async () => {
+        const latest = await db.readApplicationSnapshot();
+        await commitOriginal(
+          { ...latest.snapshot, eventMetadata: changedSource },
+          { expectedRoots: latest.expectedRoots },
+        );
+        throw Object.assign(new Error("retry"), {
+          name: "PersistenceConflict",
+        });
+      });
+    } else if (phase === "manual-retry") {
+      for (let i = 0; i < 3; i++)
+        h.atomic.mockRejectedValueOnce(
+          Object.assign(new Error("retry"), { name: "PersistenceConflict" }),
+        );
+    } else {
+      expectedItems = {
+        [EVENT]: baseline.eventLists[EVENT].map((item) => ({
+          ...item,
+          sheetRemarks: "保存済みの別の変更",
+        })),
+      };
+      await act(() =>
+        h.result.current.application.commitPatch({ eventLists: expectedItems }),
+      );
+    }
+    let saving!: Promise<unknown>;
+    act(() => {
+      saving = commitReviewed(proposed, undefined, undefined, guard).catch(
+        (error: unknown) => error,
+      );
+    });
+    if (phase === "manual-retry") {
+      await waitFor(() =>
+        expect(h.result.current.application.retryableFailures).toHaveLength(1),
+      );
+      await act(() =>
+        h.result.current.application.commitPatch({
+          eventMetadata: changedSource,
+        }),
+      );
+      act(() => h.result.current.application.retryPending());
+    } else if (phase === "confirmation") {
+      await waitFor(() =>
+        expect(h.result.current.application.confirmations).toHaveLength(1),
+      );
+      const token = h.result.current.application.confirmations[0].token;
+      await act(() =>
+        h.result.current.application.commitPatch({
+          eventMetadata: changedSource,
+        }),
+      );
+      act(() => h.result.current.application.confirm(token));
+    }
+    let outcome: unknown;
+    await act(async () => {
+      outcome = await saving;
+    });
+    expect(outcome).toBeInstanceOf(EventUpdateInvalidatedError);
+    const saved = (await db.readApplicationSnapshot()).snapshot;
+    expect(saved.eventLists).toEqual(expectedItems);
+    expect(saved.eventMetadata).toEqual(changedSource);
+    expect(saved.executeModeItems).toEqual(baseline.executeModeItems);
+    expect(h.result.current.application.confirmations).toEqual([]);
+    expect(h.result.current.application.retryableFailures).toEqual([]);
+    if (phase !== "queued") expect(guard.mock.calls.length).toBeGreaterThan(1);
+  },
+);
