@@ -1,3 +1,4 @@
+import { recordEntry } from "../../../utils/ownRecord";
 import type {
   ExecuteModeItems,
   ItemSource,
@@ -105,11 +106,13 @@ export function computeDeleteItem(
   Object.keys(executeModeItems).forEach((eventDate) => {
     newExecuteItems[eventDate] = deletedItem
       ? removeExecutionVisitMemberPreservingBasePosition(
-          executeModeItems[eventDate],
+          recordEntry(executeModeItems, eventDate),
           deletedItem,
           items,
         )
-      : executeModeItems[eventDate].filter((id) => id !== deletedId);
+      : recordEntry(executeModeItems, eventDate).filter(
+          (id) => id !== deletedId,
+        );
   });
 
   return { items: newItems, executeModeItems: newExecuteItems };
@@ -157,7 +160,7 @@ export function computeAddItemFromFocusMode(
         newItem.eventDate,
       ) ?? normalizeExecutionVisitDay(newItem.eventDate);
     if (dayName) {
-      const dayItems = [...(executeModeItems[dayName] || [])];
+      const dayItems = [...(recordEntry(executeModeItems, dayName) || [])];
       const itemsById = new Map(
         items.map((existing) => [existing.id, existing]),
       );

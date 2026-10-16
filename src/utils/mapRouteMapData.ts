@@ -35,18 +35,6 @@ function isMergedCellFullyInHall(
   return true;
 }
 
-function resolveBounds(
-  mapData: DayMapData,
-  cells: Array<{ row: number; col: number }>,
-): Pick<DayMapData, "maxRow" | "maxCol"> {
-  if (cells.length === 0)
-    return { maxRow: mapData.maxRow, maxCol: mapData.maxCol };
-  return {
-    maxRow: Math.max(...cells.map((cell) => cell.row)),
-    maxCol: Math.max(...cells.map((cell) => cell.col)),
-  };
-}
-
 export function buildSelectedHallRouteMapData(
   mapData: DayMapData,
   hall: HallDefinition | undefined,
@@ -69,18 +57,23 @@ export function buildSelectedHallRouteMapData(
   const filteredMergedCells = mapData.mergedCells.filter((merge) =>
     isMergedCellFullyInHall(merge, hall),
   );
-  const mergedBounds = filteredMergedCells.flatMap((merge) => [
-    { row: merge.startRow, col: merge.startCol },
-    { row: merge.endRow, col: merge.endCol },
-  ]);
-  const filteredNumberCells = filteredBlocks.flatMap(
-    (block) => block.numberCells,
-  );
-  const bounds = resolveBounds(mapData, [
-    ...filteredCells,
-    ...filteredNumberCells,
-    ...mergedBounds,
-  ]);
+  let maxRow = -Infinity;
+  let maxCol = -Infinity;
+  const include = (row: number, col: number) => {
+    maxRow = Math.max(maxRow, row);
+    maxCol = Math.max(maxCol, col);
+  };
+  for (const cell of filteredCells) include(cell.row, cell.col);
+  for (const block of filteredBlocks)
+    for (const cell of block.numberCells) include(cell.row, cell.col);
+  for (const merge of filteredMergedCells) {
+    include(merge.startRow, merge.startCol);
+    include(merge.endRow, merge.endCol);
+  }
+  const bounds =
+    maxRow === -Infinity
+      ? { maxRow: mapData.maxRow, maxCol: mapData.maxCol }
+      : { maxRow, maxCol };
 
   const strictFilteredMapData: DayMapData = {
     ...mapData,

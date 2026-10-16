@@ -1,3 +1,5 @@
+import { existingDayKey } from "../../consistency/domain/context";
+import { recordEntry } from "../../../utils/ownRecord";
 import type {
   ExecuteModeItems,
   ShoppingItem,
@@ -55,7 +57,10 @@ export function computeMoveItem(params: {
 
   const isDragInEffectiveSelection = effectiveSelectedIds.has(dragId);
   const isAppendToEnd = hoverId === "__END_OF_LIST__";
-  const executeIdsSet = new Set(executeModeItems[dayName] || []);
+  const savedDayName = existingDayKey(executeModeItems, dayName) ?? dayName;
+  const executeIdsSet = new Set(
+    recordEntry(executeModeItems, savedDayName) || [],
+  );
   const normalizedDayName = normalizeExecutionVisitDay(dayName);
 
   // ---- editモード列間移動 ----
@@ -107,7 +112,7 @@ export function computeMoveItem(params: {
 
       if (itemsToMove.length === 0) return {};
 
-      const dayItems = [...(executeModeItems[dayName] || [])];
+      const dayItems = [...(recordEntry(executeModeItems, savedDayName) || [])];
       const itemsMap = new Map(allItems.map((item) => [item.id, item]));
       const positionedItemIds: string[] = [];
       const mergedIntoVisitItemIds: string[] = [];
@@ -165,7 +170,7 @@ export function computeMoveItem(params: {
             ? "merged-into-existing-visit"
             : "mixed";
       return {
-        executeModeItems: { ...executeModeItems, [dayName]: dayItems },
+        executeModeItems: { ...executeModeItems, [savedDayName]: dayItems },
         placement,
         ...(mergedIntoVisitItemIds.length > 0
           ? { mergedIntoVisitItemIds }
@@ -211,9 +216,9 @@ export function computeMoveItem(params: {
       const itemIdsToMove = itemsToMove.map((item) => item.id);
 
       // executeModeItemsからの除去
-      const newDayItems = (executeModeItems[dayName] || []).filter(
-        (id) => !itemIdsToMove.includes(id),
-      );
+      const newDayItems = (
+        recordEntry(executeModeItems, savedDayName) || []
+      ).filter((id) => !itemIdsToMove.includes(id));
 
       // candidate列のリオーダー
       let newCandidateList: ShoppingItem[];
@@ -257,7 +262,7 @@ export function computeMoveItem(params: {
 
       return {
         eventListItems: newItems,
-        executeModeItems: { ...executeModeItems, [dayName]: newDayItems },
+        executeModeItems: { ...executeModeItems, [savedDayName]: newDayItems },
       };
     }
   }
@@ -274,7 +279,7 @@ export function computeMoveItem(params: {
     }
     // 末尾追加時もチェック: ドラッグ元の末尾隣接アイテムと比較してスペース分断を防止
     if (areItemsInSameHall && isAppendToEnd) {
-      const dayItemsCurrent = executeModeItems[dayName] || [];
+      const dayItemsCurrent = recordEntry(executeModeItems, savedDayName) || [];
       if (dayItemsCurrent.length > 0) {
         const lastId = dayItemsCurrent[dayItemsCurrent.length - 1];
         if (lastId !== dragId && !areItemsInSameHall(dragId, lastId)) {
@@ -283,7 +288,7 @@ export function computeMoveItem(params: {
       }
     }
 
-    const dayItems = [...(executeModeItems[dayName] || [])];
+    const dayItems = [...(recordEntry(executeModeItems, savedDayName) || [])];
 
     // 同一スペース+同一優先度キー取得ヘルパー
     const getIdSpacePriorityKey = (id: string): string => {
@@ -311,7 +316,7 @@ export function computeMoveItem(params: {
       return {
         executeModeItems: {
           ...executeModeItems,
-          [dayName]: [...listWithoutSelection, ...selectedBlock],
+          [savedDayName]: [...listWithoutSelection, ...selectedBlock],
         },
       };
     }
@@ -328,7 +333,7 @@ export function computeMoveItem(params: {
     return {
       executeModeItems: {
         ...executeModeItems,
-        [dayName]: listWithoutSelection,
+        [savedDayName]: listWithoutSelection,
       },
     };
   }
@@ -464,11 +469,14 @@ export function computeMoveItemVertical(
   areItemsInSameHall: (id1: string, id2: string) => boolean,
 ): MoveItemResult {
   const isDragInEffectiveSelection = effectiveSelectedIds.has(itemId);
-  const executeIdsSet = new Set(executeModeItems[dayName] || []);
+  const savedDayName = existingDayKey(executeModeItems, dayName) ?? dayName;
+  const executeIdsSet = new Set(
+    recordEntry(executeModeItems, savedDayName) || [],
+  );
 
   // ---- editモード execute列 ----
   if (mode === "edit" && targetColumn === "execute") {
-    const dayItems = [...(executeModeItems[dayName] || [])];
+    const dayItems = [...(recordEntry(executeModeItems, savedDayName) || [])];
     const currentIndex = dayItems.findIndex((id) => id === itemId);
 
     if (direction === "up") {
@@ -494,7 +502,7 @@ export function computeMoveItemVertical(
           return {
             executeModeItems: {
               ...executeModeItems,
-              [dayName]: listWithoutSelection,
+              [savedDayName]: listWithoutSelection,
             },
           };
         }
@@ -505,7 +513,7 @@ export function computeMoveItemVertical(
           dayItems[currentIndex - 1],
         ];
         return {
-          executeModeItems: { ...executeModeItems, [dayName]: dayItems },
+          executeModeItems: { ...executeModeItems, [savedDayName]: dayItems },
         };
       }
     } else {
@@ -549,7 +557,7 @@ export function computeMoveItemVertical(
             return {
               executeModeItems: {
                 ...executeModeItems,
-                [dayName]: listWithoutSelection,
+                [savedDayName]: listWithoutSelection,
               },
             };
           }
@@ -561,7 +569,7 @@ export function computeMoveItemVertical(
           dayItems[currentIndex],
         ];
         return {
-          executeModeItems: { ...executeModeItems, [dayName]: dayItems },
+          executeModeItems: { ...executeModeItems, [savedDayName]: dayItems },
         };
       }
     }
@@ -570,20 +578,29 @@ export function computeMoveItemVertical(
   // ---- editモード candidate列 ----
   if (mode === "edit" && targetColumn === "candidate") {
     const candidateItems = allItems.filter(
-      (item) => item.eventDate.includes(dayName) && !executeIdsSet.has(item.id),
+      (item) =>
+        normalizeExecutionVisitDay(item.eventDate) ===
+          normalizeExecutionVisitDay(dayName) && !executeIdsSet.has(item.id),
     );
     const currentIndex = candidateItems.findIndex((item) => item.id === itemId);
 
     const rebuildItems = (newCandidateList: ShoppingItem[]): ShoppingItem[] => {
       const executeItems = allItems.filter(
         (item) =>
-          item.eventDate.includes(dayName) && executeIdsSet.has(item.id),
+          normalizeExecutionVisitDay(item.eventDate) ===
+            normalizeExecutionVisitDay(dayName) && executeIdsSet.has(item.id),
       );
       const execShift = [...executeItems];
       const candShift = [...newCandidateList];
 
       return allItems.map((item) => {
-        if (!item.eventDate.includes(dayName)) return item;
+        if (
+          !(
+            normalizeExecutionVisitDay(item.eventDate) ===
+            normalizeExecutionVisitDay(dayName)
+          )
+        )
+          return item;
         if (executeIdsSet.has(item.id)) {
           return execShift.shift() || item;
         } else {

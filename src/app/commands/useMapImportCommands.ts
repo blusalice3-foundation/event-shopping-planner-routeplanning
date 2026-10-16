@@ -1,3 +1,4 @@
+import { recordEntry } from "../../utils/ownRecord";
 import type { EventConsistencyStore } from "../../types/consistency";
 import type { ApplicationMutationPort } from "../ports/ApplicationMutationPort";
 import {
@@ -281,7 +282,7 @@ export const useMapImportCommands = ({
 
       try {
         const eventDates = extractEventDates(
-          eventLists[pendingEventName] || [],
+          recordEntry(eventLists, pendingEventName) || [],
         );
         const skippedDays = new Set<string>();
         const targets = Object.entries(parsedData).flatMap(
@@ -303,10 +304,10 @@ export const useMapImportCommands = ({
               return [];
             }
             const resolved = resolveDayMap(
-              mapData[pendingEventName],
+              recordEntry(mapData, pendingEventName),
               eventDate,
               getDayConsistency(
-                state.eventConsistency?.[pendingEventName],
+                recordEntry(state.eventConsistency, pendingEventName),
                 eventDate,
               )?.selectedMapKey,
             );

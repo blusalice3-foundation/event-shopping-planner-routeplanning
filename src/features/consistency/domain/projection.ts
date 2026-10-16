@@ -1,3 +1,4 @@
+import { recordEntry, setOwnValue } from "../../../utils/ownRecord";
 import {
   changedItemPositions,
   registerItemChanges,
@@ -85,41 +86,43 @@ export function projectConsistencySnapshot(
     routeSettings: {},
   };
   for (const [eventName, rawItems] of Object.entries(source.eventLists)) {
-    const event = source.eventConsistency[eventName];
+    const event = recordEntry(source.eventConsistency, eventName);
     const items = rawItems as ShoppingItem[];
-    const definitions = (source.hallDefinitions[eventName] ?? {}) as Record<
-      string,
-      HallDefinition[]
-    >;
-    const maps = (source.mapData[eventName] ?? {}) as Record<
+    const definitions = (recordEntry(source.hallDefinitions, eventName) ??
+      {}) as Record<string, HallDefinition[]>;
+    const maps = (recordEntry(source.mapData, eventName) ?? {}) as Record<
       string,
       DayMapData
     >;
-    result.hallDefinitions[eventName] = Object.fromEntries(
-      Object.entries(definitions).map(([key, halls]) => [
-        key,
-        halls.map((hall) => ({
-          ...hall,
-          id: encodeHallRef(
-            key.startsWith(`${MAPLESS_HALL_KEY}:`)
-              ? {
-                  kind: "simple",
-                  dayKey: key.slice(MAPLESS_HALL_KEY.length + 1),
-                  hallId: hall.id,
-                }
-              : { kind: "map", mapKey: key, hallId: hall.id },
-          ),
-        })),
-      ]),
+    setOwnValue(
+      result.hallDefinitions,
+      eventName,
+      Object.fromEntries(
+        Object.entries(definitions).map(([key, halls]) => [
+          key,
+          halls.map((hall) => ({
+            ...hall,
+            id: encodeHallRef(
+              key.startsWith(`${MAPLESS_HALL_KEY}:`)
+                ? {
+                    kind: "simple",
+                    dayKey: key.slice(MAPLESS_HALL_KEY.length + 1),
+                    hallId: hall.id,
+                  }
+                : { kind: "map", mapKey: key, hallId: hall.id },
+            ),
+          })),
+        ]),
+      ),
     );
     const simple = Object.fromEntries(
-      Object.entries(result.hallDefinitions[eventName])
+      Object.entries(recordEntry(result.hallDefinitions, eventName))
         .filter(([key]) => key.startsWith(`${MAPLESS_HALL_KEY}:`))
         .map(([key, value]) => [key.slice(MAPLESS_HALL_KEY.length + 1), value]),
     );
-    result.hallDefinitions[eventName] = {
+    setOwnValue(result.hallDefinitions, eventName, {
       ...Object.fromEntries(
-        Object.entries(result.hallDefinitions[eventName]).filter(
+        Object.entries(recordEntry(result.hallDefinitions, eventName)).filter(
           ([key]) => !key.startsWith(`${MAPLESS_HALL_KEY}:`),
         ),
       ),
@@ -129,49 +132,53 @@ export function projectConsistencySnapshot(
           value,
         ]),
       ),
-    };
+    });
     const resolvers = new Map<
       string,
       ReturnType<typeof createMembershipResolver>
     >();
-    result.eventLists[eventName] = items.map((item) => {
-      const day = getDayConsistency(event, item.eventDate);
-      const map = resolveDayMap(maps, item.eventDate, day?.selectedMapKey);
-      const context =
-        map.status === "resolved"
-          ? day?.maps[map.key]
-          : map.status === "none"
-            ? day?.mapless
-            : null;
-      const dayKey = normalizeExecutionVisitDay(item.eventDate);
-      let resolve = resolvers.get(dayKey);
-      if (!resolve) {
-        resolve = createMembershipResolver({
-          items,
-          day: item.eventDate,
-          map,
-          halls: getContextHalls(
-            definitions,
-            item.eventDate,
-            map.status === "resolved" ? map.key : null,
-          ),
-          context,
-        });
-        resolvers.set(dayKey, resolve);
-      }
-      const membership = resolve(item);
-      const projected = { ...item };
-      delete projected.manualHallId;
-      if (membership.hall)
-        projected.manualHallId = encodeHallRef(membership.hall);
-      membershipByItem.set(projected, membership);
-      return projected;
-    });
+    setOwnValue(
+      result.eventLists,
+      eventName,
+      items.map((item) => {
+        const day = getDayConsistency(event, item.eventDate);
+        const map = resolveDayMap(maps, item.eventDate, day?.selectedMapKey);
+        const context =
+          map.status === "resolved"
+            ? day?.maps[map.key]
+            : map.status === "none"
+              ? day?.mapless
+              : null;
+        const dayKey = normalizeExecutionVisitDay(item.eventDate);
+        let resolve = resolvers.get(dayKey);
+        if (!resolve) {
+          resolve = createMembershipResolver({
+            items,
+            day: item.eventDate,
+            map,
+            halls: getContextHalls(
+              definitions,
+              item.eventDate,
+              map.status === "resolved" ? map.key : null,
+            ),
+            context,
+          });
+          resolvers.set(dayKey, resolve);
+        }
+        const membership = resolve(item);
+        const projected = { ...item };
+        delete projected.manualHallId;
+        if (membership.hall)
+          projected.manualHallId = encodeHallRef(membership.hall);
+        membershipByItem.set(projected, membership);
+        return projected;
+      }),
+    );
     const displayDay =
       activeEvent === eventName ? activeDay : (items[0]?.eventDate ?? "");
     const day = getDayConsistency(event, displayDay);
-    result.hallRouteSettings[eventName] = {};
-    result.routeSettings[eventName] = {};
+    setOwnValue(result.hallRouteSettings, eventName, {});
+    setOwnValue(result.routeSettings, eventName, {});
     if (!day) continue;
     const projectContext = (
       key: string,
@@ -185,9 +192,10 @@ export function projectConsistencySnapshot(
         })),
       };
       fullOrderSettings.add(settings);
-      result.hallRouteSettings[eventName][key] = settings;
+      recordEntry(result.hallRouteSettings, eventName)[key] = settings;
       if (context.route)
-        result.routeSettings[eventName][key] = context.route as RouteSettings;
+        recordEntry(result.routeSettings, eventName)[key] =
+          context.route as RouteSettings;
     };
     for (const [key, context] of Object.entries(day.maps))
       projectContext(key, context);
@@ -253,9 +261,9 @@ export function createConsistencySnapshotProjector() {
           : ((rawItems as ShoppingItem[])[0]?.eventDate ?? "");
       const sameContext =
         cached &&
-        cached.maps === source.mapData[name] &&
-        cached.definitions === source.hallDefinitions[name] &&
-        cached.consistency === source.eventConsistency[name] &&
+        cached.maps === recordEntry(source.mapData, name) &&
+        cached.definitions === recordEntry(source.hallDefinitions, name) &&
+        cached.consistency === recordEntry(source.eventConsistency, name) &&
         cached.day === displayDay;
       let projection = sameContext ? cached.projection : undefined;
       if (projection && rawItems !== cached!.items) {
@@ -274,7 +282,10 @@ export function createConsistencySnapshotProjector() {
             );
           });
         if (sameMembership) {
-          const oldProjected = projection.eventLists[name] as ShoppingItem[];
+          const oldProjected = recordEntry(
+            projection.eventLists,
+            name,
+          ) as ShoppingItem[];
           const nextProjected = changedIndices!.length
             ? oldProjected.slice()
             : oldProjected;
@@ -298,9 +309,9 @@ export function createConsistencySnapshotProjector() {
         });
       nextEntries.set(name, {
         items: rawItems,
-        maps: source.mapData[name],
-        definitions: source.hallDefinitions[name],
-        consistency: source.eventConsistency[name],
+        maps: recordEntry(source.mapData, name),
+        definitions: recordEntry(source.hallDefinitions, name),
+        consistency: recordEntry(source.eventConsistency, name),
         day: displayDay,
         projection: projection!,
       });
@@ -332,14 +343,17 @@ export function createConsistencySnapshotProjector() {
     for (const [name, entry] of nextEntries) {
       if (!entry.projection)
         entry.projection = Object.fromEntries(
-          projectedKeys.map((key) => [key, { [name]: fresh[key][name] }]),
+          projectedKeys.map((key) => [
+            key,
+            { [name]: recordEntry(fresh[key], name) },
+          ]),
         ) as Entry["projection"];
     }
     for (const key of projectedKeys) {
       const values = Object.fromEntries(
         [...nextEntries].map(([name, entry]) => [
           name,
-          entry.projection[key][name],
+          recordEntry(entry.projection[key], name),
         ]),
       );
       const old = previousResult?.[key];

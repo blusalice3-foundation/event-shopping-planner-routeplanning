@@ -1,3 +1,5 @@
+import { setOwnValue } from "../../../utils/ownRecord";
+import { recordEntry } from "../../../utils/ownRecord";
 import type {
   ApplicationDayMutation,
   ApplicationDayScope,
@@ -52,7 +54,7 @@ export function scopeDaySnapshot(
     Object.keys(source).map((key) => [key, {}]),
   ) as unknown as PersistenceSnapshot;
   for (const store of Object.keys(source) as Array<keyof PersistenceSnapshot>) {
-    const event = source[store][eventName];
+    const event = recordEntry(source[store], eventName);
     if (event === undefined) continue;
     let value: unknown;
     if (store === "eventLists")
@@ -60,7 +62,7 @@ export function scopeDaySnapshot(
         matchesScopeDay(target, item.eventDate),
       );
     else if (store === "eventConsistency") {
-      const consistency = source.eventConsistency[eventName];
+      const consistency = recordEntry(source.eventConsistency, eventName);
       value = {
         ...consistency,
         days: Object.fromEntries(
@@ -81,7 +83,7 @@ export function scopeDaySnapshot(
           [day, ...additionalDays].some((value) => isDayKey(store, key, value)),
         ),
       );
-    Object.assign(result[store], { [eventName]: value });
+    setOwnValue(result[store] as Record<string, unknown>, eventName, value);
   }
   return result;
 }
@@ -98,8 +100,8 @@ export function mergeDaySnapshot(
   const target = { eventName, day, additionalDays };
   const next = { ...source };
   for (const store of Object.keys(source) as Array<keyof PersistenceSnapshot>) {
-    const old = before[store][eventName],
-      value = after[store][eventName];
+    const old = recordEntry(before[store], eventName),
+      value = recordEntry(after[store], eventName);
     if (semanticEqual(old, value)) continue;
     if (
       store === "eventLists" ||
@@ -110,11 +112,11 @@ export function mergeDaySnapshot(
         "A day command cannot modify items, geometry or event metadata.",
       );
     if (store === "eventConsistency") {
-      const original = source.eventConsistency[eventName];
-      const changed = after.eventConsistency[eventName];
+      const original = recordEntry(source.eventConsistency, eventName);
+      const changed = recordEntry(after.eventConsistency, eventName);
       const days = { ...original.days };
       for (const key of Object.keys(
-        before.eventConsistency[eventName]?.days ?? {},
+        recordEntry(before.eventConsistency, eventName)?.days ?? {},
       ))
         delete days[key];
       Object.assign(days, changed.days);
@@ -134,7 +136,7 @@ export function mergeDaySnapshot(
         },
       };
     } else {
-      const branch = { ...source[store][eventName] };
+      const branch = { ...recordEntry(source[store], eventName) };
       for (const key of Object.keys(old ?? {})) delete branch[key];
       Object.assign(branch, value);
       Object.assign(next, {
@@ -150,7 +152,8 @@ export function planDayMutation(
   command: ApplicationDayMutation,
 ): MutationPlan {
   const { eventName, day } = command;
-  if (!source.eventLists[eventName]) throw new MutationTargetMissingError();
+  if (!recordEntry(source.eventLists, eventName))
+    throw new MutationTargetMissingError();
   const target = dayMutationScope(command);
   const scoped = scopeDaySnapshot(
     source,
@@ -169,7 +172,7 @@ export function planDayMutation(
   } else if (command.kind === "visits") {
     plan = planVisitPanelMutation(scoped, command);
   } else if (command.kind === "map-viewport") {
-    if (!scoped.mapData[eventName]?.[command.mapKey])
+    if (!recordEntry(scoped.mapData, eventName)?.[command.mapKey])
       throw new MutationTargetMissingError();
     plan = {
       snapshot: {
@@ -177,7 +180,7 @@ export function planDayMutation(
         mapViewportSettings: {
           ...scoped.mapViewportSettings,
           [eventName]: {
-            ...scoped.mapViewportSettings[eventName],
+            ...recordEntry(scoped.mapViewportSettings, eventName),
             [command.mapKey]: structuredClone(command.viewport),
           },
         },
@@ -241,7 +244,7 @@ export function collectDayMutation(
   day: string,
   routeDays?: Record<string, Record<string, string[]>>,
 ): ApplicationDayMutation | undefined {
-  if (!eventName || !base.eventLists[eventName]) return;
+  if (!eventName || !recordEntry(base.eventLists, eventName)) return;
   const baseline: Partial<PersistenceSnapshot> = {},
     changes: Partial<PersistenceSnapshot> = {};
   for (const store of Object.keys(base) as Array<keyof PersistenceSnapshot>) {
@@ -251,10 +254,20 @@ export function collectDayMutation(
       ...Object.keys(base[store]),
       ...Object.keys(desired[store]),
     ])) {
-      if (semanticEqual(base[store][name], desired[store][name])) continue;
+      if (
+        semanticEqual(
+          recordEntry(base[store], name),
+          recordEntry(desired[store], name),
+        )
+      )
+        continue;
       if (name !== eventName) return;
-      const before = base[store][name] as Record<string, unknown> | undefined;
-      const after = desired[store][name] as Record<string, unknown> | undefined;
+      const before = recordEntry(base[store], name) as
+        | Record<string, unknown>
+        | undefined;
+      const after = recordEntry(desired[store], name) as
+        | Record<string, unknown>
+        | undefined;
       for (const key of new Set([
         ...Object.keys(before ?? {}),
         ...Object.keys(after ?? {}),
@@ -311,15 +324,15 @@ export function adoptScopedDaySnapshot(
   let result = retained;
   const { eventName, day, additionalDays = [] } = target;
   for (const store of Object.keys(scoped) as Array<keyof PersistenceSnapshot>) {
-    const latest = scoped[store][eventName];
-    const current = retained[store][eventName];
+    const latest = recordEntry(scoped[store], eventName);
+    const current = recordEntry(retained[store], eventName);
     let value: unknown;
     if (store === "eventLists" || store === "eventMetadata") value = latest;
     else if (store === "eventConsistency") {
       if (latest === undefined) value = undefined;
       else {
-        const old = retained.eventConsistency[eventName];
-        const next = scoped.eventConsistency[eventName];
+        const old = recordEntry(retained.eventConsistency, eventName);
+        const next = recordEntry(scoped.eventConsistency, eventName);
         const days = Object.fromEntries(
           Object.entries(old?.days ?? {}).filter(
             ([key]) => !matchesScopeDay(target, key),

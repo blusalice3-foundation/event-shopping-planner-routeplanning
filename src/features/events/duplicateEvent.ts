@@ -1,3 +1,4 @@
+import { recordEntry } from "../../utils/ownRecord";
 import type { EventMetadata, ShoppingItem } from "../../types/item";
 
 export type ImportedShoppingItem = Omit<ShoppingItem, "id" | "purchaseStatus">;
@@ -166,7 +167,7 @@ export function compareSpreadsheetSourceIdentities(
   };
 }
 
-function getExactImportItemKey(
+export function getExactImportItemKey(
   item: ShoppingItem | ImportedShoppingItem,
 ): string {
   const catalogPrice =
@@ -235,12 +236,12 @@ export function analyzeDuplicateEventImport({
     normalizedEventName,
   );
   const existingItems = eventExists
-    ? eventLists[normalizedEventName] || []
+    ? recordEntry(eventLists, normalizedEventName) || []
     : [];
   const deduplicatedImport = excludeExactDuplicateItems(incomingItems, []);
   const fixedAdd = excludeExactDuplicateItems(incomingItems, existingItems);
   const existingSource = eventExists
-    ? sourceFromMetadata(eventMetadata[normalizedEventName])
+    ? sourceFromMetadata(recordEntry(eventMetadata, normalizedEventName))
     : null;
   const incomingSourceIdentity = incomingSource
     ? extractGoogleSheetsSourceIdentity(incomingSource)

@@ -1,3 +1,8 @@
+import {
+  createEventUpdateDiff,
+  type EventUpdateDiff,
+} from "../features/events/updateDiff";
+import type { SheetIdentityChoices } from "../features/events/sheetMatching";
 import React, { useEffect, useState } from "react";
 import type {
   AppFieldSyncMode,
@@ -14,6 +19,10 @@ import type {
 import type { ShoppingItem } from "../types/item";
 
 interface UpdateConfirmationModalProps {
+  matching?: EventUpdateDiff["matching"];
+  csvReview?: EventUpdateDiff["csvReview"];
+  identitySelection?: React.ReactNode;
+  confirmDisabled?: boolean;
   itemsToDelete: ShoppingItem[];
   itemsToUpdate: ShoppingItem[];
   itemsToAdd: SpreadsheetItemToAdd[];
@@ -38,7 +47,9 @@ function formatRemarks(value: string): string {
   return value.trim() === "" ? "（空欄）" : `「${value}」`;
 }
 
-const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
+const ResolvedUpdateConfirmationModal: React.FC<
+  UpdateConfirmationModalProps
+> = ({
   itemsToDelete,
   itemsToUpdate,
   itemsToAdd,
@@ -49,6 +60,9 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
   limitedPurchaseQuantityConflicts = [],
   appFieldSyncCandidates = EMPTY_APP_FIELD_SYNC_CANDIDATES,
   nextSource,
+  csvReview,
+  identitySelection,
+  confirmDisabled,
   onConfirm,
   onCancel,
 }) => {
@@ -57,6 +71,8 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
   const [fillEmptyAppFields, setFillEmptyAppFields] = useState(true);
   const [overwritePrice, setOverwritePrice] = useState(false);
   const [overwriteRemarks, setOverwriteRemarks] = useState(false);
+  const [acceptCsvExclusions, setAcceptCsvExclusions] = useState(false);
+  useEffect(() => setAcceptCsvExclusions(false), [csvReview]);
   const hasProtectedItems = protectedFromDelete > 0 || protectedFromUpdate > 0;
   const priceSyncCandidates = appFieldSyncCandidates.filter(
     (candidate) => candidate.price !== undefined,
@@ -140,6 +156,28 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
               </div>
             )}
 
+            {csvReview && (
+              <section className="space-y-2">
+                <p>
+                  除外後の品目: {csvReview.itemCount}件、削除候補:{" "}
+                  {itemsToDelete.length}件
+                </p>
+                {csvReview.warnings.map((warning, index) => (
+                  <p key={index}>{warning}</p>
+                ))}
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={acceptCsvExclusions}
+                    onChange={(event) =>
+                      setAcceptCsvExclusions(event.target.checked)
+                    }
+                  />
+                  除外行と削除候補を確認しました
+                </label>
+              </section>
+            )}
+            {identitySelection}
             {itemsToDelete.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-red-600 dark:text-red-400 mb-2">
@@ -486,9 +524,13 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
               キャンセル
             </button>
             <button
+              disabled={
+                confirmDisabled || (!!csvReview && !acceptCsvExclusions)
+              }
               onClick={() =>
                 onConfirm({
                   applyPurchasedQuantityChanges,
+                  ...(csvReview ? { acceptCsvExclusions } : {}),
                   priceSyncMode,
                   remarksSyncMode,
                 })
@@ -501,6 +543,103 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
         </div>
       </div>
     </div>
+  );
+};
+
+const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = (
+  props,
+) => {
+  const [choices, setChoices] = useState<SheetIdentityChoices>({});
+  useEffect(() => setChoices({}), [props.matching]);
+  const resolved = React.useMemo(
+    () =>
+      props.matching
+        ? createEventUpdateDiff(
+            props.matching.currentItems,
+            props.matching.sheetItems,
+            choices,
+          )
+        : null,
+    [props.matching, choices],
+  );
+  const selection = props.matching && (
+    <section className="space-y-3">
+      <p>
+        記録を引き継ぐ品目を選択してください。新規として扱う場合、古い購入記録やメモは移しません。
+      </p>
+      {props.matching.proposals.map(({ row, incoming, candidates }) => (
+        <label key={row} className="block">
+          <span className="block whitespace-pre-wrap break-words">
+            取込{row + 1}行目: {incoming.circle} / {incoming.eventDate} /{" "}
+            {incoming.block}-{incoming.number} / 新: {incoming.title}
+          </span>
+          <span className="block whitespace-pre-wrap break-words">
+            カタログ価格:{" "}
+            {formatPrice(
+              incoming.catalogPrice === undefined
+                ? incoming.price
+                : incoming.catalogPrice,
+            )}{" "}
+            / シート備考:{" "}
+            {formatRemarks(incoming.sheetRemarks ?? incoming.remarks)} /
+            シート数量:{" "}
+            {incoming.rawQuantity === ""
+              ? "（空欄）"
+              : (incoming.rawQuantity ?? incoming.quantity)}
+            {incoming.url ? ` / URL: ${incoming.url}` : ""}
+          </span>
+          <select
+            className="mt-1 block w-full min-w-0 rounded border border-slate-300 bg-white p-2 text-sm dark:border-slate-600 dark:bg-slate-700"
+            aria-label={`取込${row + 1}行目の対応`}
+            value={choices[String(row)] ?? ""}
+            onChange={(event) =>
+              setChoices((current) => ({
+                ...current,
+                [String(row)]: event.target.value,
+              }))
+            }
+          >
+            <option value="">対応を選択</option>
+            <option value="new">新規品目として扱う</option>
+            {candidates.map((item) => (
+              <option key={item.id} value={item.id}>
+                旧: {item.title} / カタログ価格:{" "}
+                {formatPrice(
+                  item.catalogPrice === undefined
+                    ? item.price
+                    : item.catalogPrice,
+                )}{" "}
+                / シート備考: {formatRemarks(item.sheetRemarks ?? item.remarks)}
+                {item.sheetIdentityVerified !== true ||
+                item.catalogPrice === undefined ||
+                item.sheetRemarks === undefined
+                  ? "（出自未確認）"
+                  : ""}{" "}
+                / {item.purchaseStatus} / 数量: {item.quantity} / メモ:{" "}
+                {formatRemarks(item.remarks)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ))}
+      {!!resolved?.unresolvedMatches?.length && (
+        <p role="status">未選択または引継ぎ先が重複している品目があります。</p>
+      )}
+    </section>
+  );
+  return (
+    <ResolvedUpdateConfirmationModal
+      {...props}
+      {...resolved}
+      identitySelection={selection}
+      confirmDisabled={!!resolved?.unresolvedMatches?.length}
+      onConfirm={(options) =>
+        props.onConfirm({
+          ...options,
+          ...(props.matching ? { identityChoices: choices } : {}),
+        })
+      }
+    />
   );
 };
 

@@ -1,3 +1,4 @@
+import { minimum, maximum } from "../../utils/numericExtrema";
 import { CanvasGestureRaster } from "../../features/map/canvas/CanvasGestureRaster";
 import { createLocationResolver } from "../../features/consistency/domain/membership";
 import React, {
@@ -384,10 +385,10 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
 
       const rows = selectedHall.vertices.map((v) => v.row);
       const cols = selectedHall.vertices.map((v) => v.col);
-      const minRow = Math.max(1, Math.min(...rows) - SCROLL_MARGIN);
-      const maxRow = Math.max(...rows) + SCROLL_MARGIN;
-      const minCol = Math.max(1, Math.min(...cols) - SCROLL_MARGIN);
-      const maxCol = Math.max(...cols) + SCROLL_MARGIN;
+      const minRow = Math.max(1, minimum(rows) - SCROLL_MARGIN);
+      const maxRow = maximum(rows) + SCROLL_MARGIN;
+      const minCol = Math.max(1, minimum(cols) - SCROLL_MARGIN);
+      const maxCol = maximum(cols) + SCROLL_MARGIN;
 
       const hallLeft = (minCol - 1) * cellSize;
       const hallRight = maxCol * cellSize;
@@ -987,7 +988,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
         const rowSpacing = fontSize * 1.1;
         const requiredWidth = columns.length * columnSpacing;
         const requiredHeight =
-          Math.max(...columns.map((column) => Array.from(column).length)) *
+          maximum(columns.map((column) => Array.from(column).length)) *
           rowSpacing;
         return requiredWidth <= maxTextWidth && requiredHeight <= maxTextHeight;
       };
@@ -2107,10 +2108,10 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
         } else {
           const rows = clickedCells.map((c) => c.row);
           const cols = clickedCells.map((c) => c.col);
-          const minRow = Math.min(...rows);
-          const maxRow = Math.max(...rows);
-          const minCol = Math.min(...cols);
-          const maxCol = Math.max(...cols);
+          const minRow = minimum(rows);
+          const maxRow = maximum(rows);
+          const minCol = minimum(cols);
+          const maxCol = maximum(cols);
 
           let displayMaxRow = maxRow;
           let displayMaxCol = maxCol;
@@ -2543,10 +2544,10 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
       const rows = selectedHall.vertices.map((v) => v.row);
       const cols = selectedHall.vertices.map((v) => v.col);
       return {
-        minRow: Math.max(1, Math.min(...rows) - SCROLL_MARGIN),
-        maxRow: Math.max(...rows) + SCROLL_MARGIN,
-        minCol: Math.max(1, Math.min(...cols) - SCROLL_MARGIN),
-        maxCol: Math.max(...cols) + SCROLL_MARGIN,
+        minRow: Math.max(1, minimum(rows) - SCROLL_MARGIN),
+        maxRow: maximum(rows) + SCROLL_MARGIN,
+        minCol: Math.max(1, minimum(cols) - SCROLL_MARGIN),
+        maxCol: maximum(cols) + SCROLL_MARGIN,
       };
     }
     return null;

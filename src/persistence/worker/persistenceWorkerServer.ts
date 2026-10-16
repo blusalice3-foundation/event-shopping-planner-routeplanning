@@ -1,3 +1,5 @@
+import { recordEntry } from "../../utils/ownRecord";
+import { registerItemGuardGenerations } from "../../utils/itemContentGuard";
 import {
   dayMutationScope,
   matchesScopeDay,
@@ -117,12 +119,23 @@ export function createPersistenceWorkerServer(
         target.additionalDays,
       );
       // Items are event records; keep all dates for adoption into the UI mirror.
-      scoped.eventLists = read.snapshot.eventLists[target.eventName]
-        ? { [target.eventName]: read.snapshot.eventLists[target.eventName] }
+      scoped.eventLists = recordEntry(
+        read.snapshot.eventLists,
+        target.eventName,
+      )
+        ? {
+            [target.eventName]: recordEntry(
+              read.snapshot.eventLists,
+              target.eventName,
+            ),
+          }
         : {};
-      if (scoped.eventConsistency[target.eventName])
-        scoped.eventConsistency[target.eventName].legacyPending =
-          read.snapshot.eventConsistency[target.eventName].legacyPending;
+      if (recordEntry(scoped.eventConsistency, target.eventName))
+        recordEntry(scoped.eventConsistency, target.eventName).legacyPending =
+          recordEntry(
+            read.snapshot.eventConsistency,
+            target.eventName,
+          ).legacyPending;
       const result = publish({
         ...read,
         snapshot: scoped,
@@ -165,11 +178,11 @@ export function createPersistenceWorkerServer(
         target.additionalDays,
       );
       scoped.eventLists = {
-        [target.eventName]: next.eventLists[target.eventName],
+        [target.eventName]: recordEntry(next.eventLists, target.eventName),
       };
-      if (scoped.eventConsistency[target.eventName])
-        scoped.eventConsistency[target.eventName].legacyPending =
-          next.eventConsistency[target.eventName].legacyPending;
+      if (recordEntry(scoped.eventConsistency, target.eventName))
+        recordEntry(scoped.eventConsistency, target.eventName).legacyPending =
+          recordEntry(next.eventConsistency, target.eventName).legacyPending;
       return publish(
         {
           snapshot: scoped,
@@ -213,8 +226,8 @@ export function createPersistenceWorkerServer(
         const read = await (delegate.readDayCommandSnapshot?.(target) ??
           delegate.readApplicationSnapshot());
         if (
-          (read.eventGenerations?.[command.eventName] ?? 0) !==
-          (expectedGenerations[command.eventName] ?? 0)
+          (recordEntry(read.eventGenerations, command.eventName) ?? 0) !==
+          (recordEntry(expectedGenerations, command.eventName) ?? 0)
         )
           return { status: "review-required" as const };
         if (
@@ -224,8 +237,8 @@ export function createPersistenceWorkerServer(
         )
           return { status: "review-required" as const };
         if (
-          read.snapshot.eventConsistency[command.eventName]?.legacyPending
-            .length
+          recordEntry(read.snapshot.eventConsistency, command.eventName)
+            ?.legacyPending.length
         )
           return { status: "review-required" as const };
         let plan;
@@ -244,7 +257,9 @@ export function createPersistenceWorkerServer(
           target.additionalDays,
         );
         const maps = new WeakSet<object>(
-          Object.values(scoped.mapData[command.eventName] ?? {}).filter(
+          Object.values(
+            recordEntry(scoped.mapData, command.eventName) ?? {},
+          ).filter(
             (value): value is object => !!value && typeof value === "object",
           ),
         );
@@ -306,12 +321,14 @@ export function createPersistenceWorkerServer(
             ]),
           ].some(
             (event) =>
-              (generations[event] ?? 0) !== (expectedGenerations[event] ?? 0),
+              (recordEntry(generations, event) ?? 0) !==
+              (recordEntry(expectedGenerations, event) ?? 0),
           )
         )
           return { status: "review-required" as const };
         let plan;
         try {
+          registerItemGuardGenerations(read.snapshot, generations);
           plan = planItemContentMutation(read.snapshot, edits);
         } catch (error) {
           if (error instanceof MutationTargetMissingError)

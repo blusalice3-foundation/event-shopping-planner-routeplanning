@@ -1,5 +1,9 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from "@testing-library/react";
+import {
+  eventUpdateSourceMatches,
+  EventUpdateInvalidatedError,
+} from "../../features/events/updateFlow";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "../../utils/indexedDB";
@@ -403,5 +407,342 @@ it.each(
     expect(
       remounted.result.current.application.values.executeModeItems[EVENT][DAY],
     ).toEqual(expected);
+  },
+);
+
+it("excludes a moved limited target from accepted display and export, then saves the valid memo after review", async () => {
+  const { createItemContentGuard } =
+    await import("../../utils/itemContentGuard");
+  const h = await harness();
+  const baseline = h.result.current.application.values.eventLists[EVENT][0];
+  const guard = createItemContentGuard(
+    h.result.current.application.raw,
+    EVENT,
+    baseline,
+    "limited-focus",
+    0,
+  );
+  const remote = await db.readApplicationSnapshot();
+  remote.snapshot.executeModeItems[EVENT][DAY] = ["2"];
+  await db.commitApplicationSnapshotAtomically(remote.snapshot, {
+    expectedRoots: remote.expectedRoots,
+    changedStoresOnly: true,
+  });
+  act(() => {
+    h.result.current.application.updateItemFields([
+      {
+        eventName: EVENT,
+        itemId: "1",
+        baseline,
+        guard,
+        changes: {
+          purchaseStatus: "LimitedPurchase",
+          limitedPurchasedQuantity: 1,
+        },
+      },
+      {
+        eventName: EVENT,
+        itemId: "1",
+        baseline,
+        changes: { remarks: "保持する正常入力" },
+      },
+    ]);
+  });
+  await waitFor(() =>
+    expect(h.result.current.application.confirmations).toHaveLength(1),
+  );
+  expect(h.result.current.application.confirmations[0].confirmation.title).toBe(
+    "対象外になった限数入力を確認",
+  );
+  expect(
+    h.result.current.application.values.eventLists[EVENT][0],
+  ).toMatchObject({ purchaseStatus: "Purchased", remarks: "保持する正常入力" });
+  const accepted =
+    await h.result.current.application.coordinator.readExportSnapshot();
+  expect(accepted.eventLists[EVENT][0]).not.toHaveProperty(
+    "limitedPurchasedQuantity",
+  );
+  expect(accepted.eventLists[EVENT][0]).toMatchObject({
+    remarks: "保持する正常入力",
+  });
+  const token = h.result.current.application.confirmations[0].token;
+  await act(async () => {
+    h.result.current.application.confirm(token);
+    await h.result.current.application.flush();
+  });
+  await waitFor(() =>
+    expect(h.result.current.application.confirmations).toHaveLength(0),
+  );
+  const saved = (await db.readApplicationSnapshot()).snapshot;
+  expect(saved.eventLists[EVENT][0]).toMatchObject({
+    purchaseStatus: "Purchased",
+    remarks: "保持する正常入力",
+  });
+  expect(saved.eventLists[EVENT][0]).not.toHaveProperty(
+    "limitedPurchasedQuantity",
+  );
+  expect(saved.executeModeItems[EVENT][DAY]).toEqual(["2"]);
+});
+
+it("keeps the order of normal, guarded, then normal field edits in one accepted batch", async () => {
+  const { createItemContentGuard } =
+    await import("../../utils/itemContentGuard");
+  const h = await harness();
+  const baseline = h.result.current.application.values.eventLists[EVENT][0];
+  const guard = createItemContentGuard(
+    h.result.current.application.rawRef.current,
+    EVENT,
+    baseline,
+    "limited-single",
+    0,
+  );
+  act(() => {
+    h.result.current.application.updateItemFields({
+      eventName: EVENT,
+      itemId: baseline.id,
+      baseline,
+      changes: { quantity: 3 },
+    });
+    h.result.current.application.updateItemFields({
+      eventName: EVENT,
+      itemId: baseline.id,
+      baseline: { ...baseline, quantity: 3 },
+      guard,
+      changes: { quantity: 4 },
+    });
+    h.result.current.application.updateItemFields({
+      eventName: EVENT,
+      itemId: baseline.id,
+      baseline: { ...baseline, quantity: 4 },
+      changes: { quantity: 5 },
+    });
+  });
+  expect(
+    h.result.current.application.values.eventLists[EVENT][0].quantity,
+  ).toBe(5);
+  await act(async () => h.result.current.application.flush());
+  await waitFor(() =>
+    expect(h.result.current.application.pendingCount).toBe(0),
+  );
+  expect(
+    (
+      (await db.readApplicationSnapshot()).snapshot.eventLists[
+        EVENT
+      ][0] as import("../../types/item").ShoppingItem
+    ).quantity,
+  ).toBe(5);
+  expect(h.result.current.application.confirmations).toEqual([]);
+});
+
+it("retains entered amounts through no-op acceptance, quantity review and a second remote change", async () => {
+  const { createItemContentGuard } =
+    await import("../../utils/itemContentGuard");
+  const h = await harness();
+  const baseline = h.result.current.application.values.eventLists[EVENT][0];
+  const guard = createItemContentGuard(
+    h.result.current.application.raw,
+    EVENT,
+    baseline,
+    "limited-single",
+    0,
+  );
+  const remote = await db.readApplicationSnapshot();
+  Object.assign(remote.snapshot.eventLists[EVENT][0]!, {
+    quantity: 9,
+    remarks: "他タブのメモ",
+  });
+  await db.commitApplicationSnapshotAtomically(remote.snapshot, {
+    expectedRoots: remote.expectedRoots,
+    changedStoresOnly: true,
+  });
+  act(() =>
+    h.result.current.application.updateItemFields({
+      eventName: EVENT,
+      itemId: baseline.id,
+      baseline,
+      guard,
+      changes: {},
+      limitedPurchase: {
+        kind: "purchased",
+        actual: 2,
+        planned: 2,
+        plannedEdited: false,
+        observedPlanned: 2,
+      },
+    }),
+  );
+  await waitFor(() =>
+    expect(h.result.current.application.confirmations).toHaveLength(1),
+  );
+  expect(
+    h.result.current.application.confirmations[0].confirmation.details.join(
+      "\n",
+    ),
+  ).toContain("実購入数は2個");
+  const exported =
+    await h.result.current.application.coordinator.readExportSnapshot();
+  expect(exported.eventLists[EVENT][0]).toMatchObject({
+    quantity: 2,
+    purchaseStatus: "Purchased",
+  });
+  const oldToken = h.result.current.application.confirmations[0].token;
+  const newer = await db.readApplicationSnapshot();
+  Object.assign(newer.snapshot.eventLists[EVENT][0]!, { quantity: 7 });
+  await db.commitApplicationSnapshotAtomically(newer.snapshot, {
+    expectedRoots: newer.expectedRoots,
+    changedStoresOnly: true,
+  });
+  await act(async () => {
+    h.result.current.application.confirm(oldToken);
+    await expect(h.result.current.application.flush()).rejects.toThrow(
+      "保存前の確認を完了してください。",
+    );
+  });
+  await waitFor(() =>
+    expect(
+      h.result.current.application.confirmations[0]?.token.signature,
+    ).not.toBe(oldToken.signature),
+  );
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.eventLists[EVENT][0],
+  ).not.toHaveProperty("limitedPurchasedQuantity");
+  const token = h.result.current.application.confirmations[0].token;
+  await act(async () => {
+    h.result.current.application.confirm(token);
+    await h.result.current.application.flush();
+  });
+  await waitFor(() =>
+    expect(h.result.current.application.pendingCount).toBe(0),
+  );
+  const saved = (await db.readApplicationSnapshot()).snapshot;
+  expect(saved.eventLists[EVENT][0]).toMatchObject({
+    quantity: 7,
+    purchaseStatus: "LimitedPurchase",
+    limitedPurchasedQuantity: 2,
+    remarks: "他タブのメモ",
+  });
+  expect(saved.eventLists[EVENT][0]).not.toHaveProperty("limitedPurchase");
+  expect(saved.eventLists[EVENT].slice(1)).toEqual(
+    h.seed.eventLists[EVENT].slice(1),
+  );
+  expect(saved.executeModeItems).toEqual(h.seed.executeModeItems);
+});
+
+it.each(["queued", "cas-retry", "confirmation", "manual-retry"] as const)(
+  "rechecks a sheet-update source against the serialized snapshot after %s",
+  async (phase) => {
+    const commitOriginal = db.commitApplicationSnapshotAtomically.bind(db);
+    const h = await harness();
+    const source = {
+      spreadsheetUrl: "https://example.com/A",
+      spreadsheetSheetName: "一覧",
+      lastImportDate: "",
+    };
+    await act(() =>
+      h.result.current.application.commitPatch({
+        eventMetadata: { [EVENT]: source },
+      }),
+    );
+    const baseline = h.result.current.application.values;
+    const commitReviewed = h.result.current.application.commitPatch;
+    let expectedItems = baseline.eventLists;
+    const proposed = {
+      eventLists: {
+        [EVENT]: baseline.eventLists[EVENT].map((item) => ({
+          ...item,
+          sheetRemarks: "取得したAの値",
+        })),
+      },
+    };
+    const changedSource = {
+      [EVENT]: { ...source, spreadsheetUrl: "https://example.com/B" },
+    };
+    const guard = vi.fn(
+      (
+        latest: import("../ports/PersistenceCommandPort").PersistenceSnapshot,
+      ) => {
+        if (
+          !eventUpdateSourceMatches(
+            latest.eventMetadata[EVENT] as typeof source,
+            {
+              url: source.spreadsheetUrl,
+              sheetName: source.spreadsheetSheetName,
+            },
+          )
+        )
+          throw new EventUpdateInvalidatedError();
+      },
+    );
+    if (phase === "queued") {
+      act(() =>
+        h.result.current.application.setters.setEventMetadata(changedSource),
+      );
+    } else if (phase === "cas-retry") {
+      h.atomic.mockImplementationOnce(async () => {
+        const latest = await db.readApplicationSnapshot();
+        await commitOriginal(
+          { ...latest.snapshot, eventMetadata: changedSource },
+          { expectedRoots: latest.expectedRoots },
+        );
+        throw Object.assign(new Error("retry"), {
+          name: "PersistenceConflict",
+        });
+      });
+    } else if (phase === "manual-retry") {
+      for (let i = 0; i < 3; i++)
+        h.atomic.mockRejectedValueOnce(
+          Object.assign(new Error("retry"), { name: "PersistenceConflict" }),
+        );
+    } else {
+      expectedItems = {
+        [EVENT]: baseline.eventLists[EVENT].map((item) => ({
+          ...item,
+          sheetRemarks: "保存済みの別の変更",
+        })),
+      };
+      await act(() =>
+        h.result.current.application.commitPatch({ eventLists: expectedItems }),
+      );
+    }
+    let saving!: Promise<unknown>;
+    act(() => {
+      saving = commitReviewed(proposed, undefined, undefined, guard).catch(
+        (error: unknown) => error,
+      );
+    });
+    if (phase === "manual-retry") {
+      await waitFor(() =>
+        expect(h.result.current.application.retryableFailures).toHaveLength(1),
+      );
+      await act(() =>
+        h.result.current.application.commitPatch({
+          eventMetadata: changedSource,
+        }),
+      );
+      act(() => h.result.current.application.retryPending());
+    } else if (phase === "confirmation") {
+      await waitFor(() =>
+        expect(h.result.current.application.confirmations).toHaveLength(1),
+      );
+      const token = h.result.current.application.confirmations[0].token;
+      await act(() =>
+        h.result.current.application.commitPatch({
+          eventMetadata: changedSource,
+        }),
+      );
+      act(() => h.result.current.application.confirm(token));
+    }
+    let outcome: unknown;
+    await act(async () => {
+      outcome = await saving;
+    });
+    expect(outcome).toBeInstanceOf(EventUpdateInvalidatedError);
+    const saved = (await db.readApplicationSnapshot()).snapshot;
+    expect(saved.eventLists).toEqual(expectedItems);
+    expect(saved.eventMetadata).toEqual(changedSource);
+    expect(saved.executeModeItems).toEqual(baseline.executeModeItems);
+    expect(h.result.current.application.confirmations).toEqual([]);
+    expect(h.result.current.application.retryableFailures).toEqual([]);
+    if (phase !== "queued") expect(guard.mock.calls.length).toBeGreaterThan(1);
   },
 );

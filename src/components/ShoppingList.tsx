@@ -1,3 +1,14 @@
+import { ItemGuardContext } from "../features/shopping-list/renderers/ViewportRowState";
+import type { ItemContentGuard } from "../app/ports/PersistenceCommandPort";
+import {
+  rememberItemUpdateGuard,
+  sameItemGuardTarget,
+} from "../utils/itemContentGuard";
+import {
+  buildExecutionVisitProjectionKey as limitedVisitKey,
+  normalizeExecutionVisitDay as limitedDay,
+} from "../utils/visitProjection";
+import { buildLimitedPurchaseDialogUpdate } from "../utils/limitedPurchaseIntent";
 import {
   useStableCallback,
   useStableOptionalCallback,
@@ -48,8 +59,6 @@ import GripVerticalIcon from "./icons/GripVerticalIcon";
 import ChevronUpIcon from "./icons/ChevronUpIcon";
 import ChevronDownIcon from "./icons/ChevronDownIcon";
 import {
-  applyLimitedPurchase,
-  applyPurchasedFromLimitedInput,
   clearLimitedPurchase,
   getActualPurchasedQuantity,
   getLimitedBulkInputTargetDecision,
@@ -565,6 +574,30 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const dragSourceColumn = useRef<"execute" | "candidate" | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const latestItemsRef = useRef(items);
+  const captureItemGuard = useContext(ItemGuardContext);
+  const limitedTargetsRef = useRef(
+    new Map<string, { item: ShoppingItem; guard?: ItemContentGuard }>(),
+  );
+  const isCurrentLimitedTarget = useStableCallback((item: ShoppingItem) => {
+    const target = limitedTargetsRef.current.get(item.id);
+    if (
+      !target ||
+      limitedDay(target.item.eventDate) !== limitedDay(item.eventDate) ||
+      limitedVisitKey(target.item) !== limitedVisitKey(item)
+    )
+      return false;
+    if (
+      target.guard &&
+      captureItemGuard &&
+      !sameItemGuardTarget(
+        target.guard,
+        captureItemGuard(item, target.guard.kind),
+      )
+    )
+      return false;
+
+    return true;
+  });
   const readAcceptedItem = useContext(AcceptedItemContext);
   const commitItemCommands = useContext(ItemCommandContext);
   const latestCardCrudCallbacksRef = useRef({
@@ -891,7 +924,11 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       let skipped = 0;
       for (let index = startIndex; index < queueIds.length; index += 1) {
         const latestItem = getLatestItemById(queueIds[index]);
-        if (latestItem !== undefined && isLimitedBulkInputTarget(latestItem)) {
+        if (
+          latestItem !== undefined &&
+          isCurrentLimitedTarget(latestItem) &&
+          isLimitedBulkInputTarget(latestItem)
+        ) {
           setLimitedBulkDialogContext({
             itemSnapshot: latestItem,
             queueIds,
@@ -909,7 +946,12 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         preserveStartNotification,
       });
     },
-    [finishLimitedBulkFlow, getLatestItemById, isLimitedBulkInputTarget],
+    [
+      finishLimitedBulkFlow,
+      getLatestItemById,
+      isLimitedBulkInputTarget,
+      isCurrentLimitedTarget,
+    ],
   );
 
   const updateItemWithDeferredCleanup = useCallback(
@@ -984,40 +1026,34 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     setPostEventDistributionCheckContext(null);
   }, []);
 
-  const commitLimitedDialogResult = useCallback(
+  const commitLimitedDialogResult = useStableCallback(
     (baseItem: ShoppingItem, result: LimitedPurchaseDialogResult) => {
-      if (result.kind === "limited") {
-        updateItemWithDeferredCleanup(
-          applyLimitedPurchase(baseItem, {
-            actual: result.actual,
-            planned: result.planned,
-          }),
+      const updated = buildLimitedPurchaseDialogUpdate(baseItem, result);
+      if (!updated) {
+        showLimitedMessage(
+          "購入予定量が変わりました。入力を確認して保存してください。",
+          "warning",
         );
-        return;
+        return false;
       }
-      if (result.kind === "purchased") {
-        updateItemWithDeferredCleanup(
-          applyPurchasedFromLimitedInput(baseItem, result.planned),
-        );
-        return;
-      }
-      if (result.kind === "defer") {
+      if (result.kind === "defer")
         markLimitedPurchaseQuantityDeferred(baseItem);
-      }
-      updateItemWithDeferredCleanup(
-        applyLimitedPurchase(baseItem, { planned: result.planned }),
-      );
+      const guard = limitedTargetsRef.current.get(baseItem.id)?.guard;
+      if (guard) rememberItemUpdateGuard(updated, guard);
+      updateItemWithDeferredCleanup(updated);
+      return true;
     },
-    [markLimitedPurchaseQuantityDeferred, updateItemWithDeferredCleanup],
   );
 
   const handleLimitedBulkSubmit = useCallback(
     (result: LimitedPurchaseDialogResult) => {
       if (limitedBulkDialogContext === null) return;
 
-      const latestItem = getLatestItemById(
+      const candidate = getLatestItemById(
         limitedBulkDialogContext.itemSnapshot.id,
       );
+      const latestItem =
+        candidate && isCurrentLimitedTarget(candidate) ? candidate : undefined;
       const isActiveFlow = isActiveLimitedBulkFlow(
         limitedBulkDialogContext.flowToken,
       );
@@ -1057,7 +1093,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           return;
 
         case "commit":
-          commitLimitedDialogResult(submitDecision.baseItem, result);
+          if (!commitLimitedDialogResult(submitDecision.baseItem, result))
+            return;
           setLimitedBulkDialogContext(null);
           advanceLimitedBulkToNextTarget(
             limitedBulkDialogContext.queueIds,
@@ -1077,6 +1114,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     [
       advanceLimitedBulkToNextTarget,
       commitLimitedDialogResult,
+      isCurrentLimitedTarget,
       getLatestItemById,
       isActiveLimitedBulkFlow,
       limitedBulkDialogContext,
@@ -1119,6 +1157,12 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
   const startLimitedBulkFlow = useCallback(
     (groupItems: ShoppingItem[]) => {
+      limitedTargetsRef.current = new Map(
+        groupItems.map((item) => [
+          item.id,
+          { item, guard: captureItemGuard?.(item, "limited-list") },
+        ]),
+      );
       const allAlreadyLimited =
         groupItems.length > 0 &&
         groupItems.every((item) => item.purchaseStatus === "LimitedPurchase");
@@ -1189,6 +1233,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     },
     [
       advanceLimitedBulkToNextTarget,
+      captureItemGuard,
       clearLimitedBulkMessage,
       showLimitedBulkMessage,
       skipLimitedPurchaseForSingleQuantity,
@@ -2673,7 +2718,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         }
         initialPlanned={
           limitedBulkDialogItemSnapshot
-            ? getPlannedQuantity(limitedBulkDialogItemSnapshot)
+            ? getPlannedQuantity(
+                getLatestItemById(limitedBulkDialogItemSnapshot.id) ??
+                  limitedBulkDialogItemSnapshot,
+              )
             : 1
         }
         showDeferButton

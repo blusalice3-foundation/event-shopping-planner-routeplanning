@@ -1,5 +1,9 @@
 import type { PurchaseStatus, ShoppingItem } from "../../types/item";
-import { getItemKey, getItemKeyWithoutTitle } from "../../utils/itemComparison";
+import {
+  matchSheetItems,
+  type SheetMatchChoice,
+  type SheetIdentityChoices,
+} from "./sheetMatching";
 import {
   decideSheetQuantity,
   type QuantitySyncDecision,
@@ -17,7 +21,12 @@ export type SheetItem = Pick<
   | "quantity"
   | "remarks"
 > &
-  Partial<Pick<ShoppingItem, "catalogPrice" | "sheetRemarks" | "url">> & {
+  Partial<
+    Pick<
+      ShoppingItem,
+      "catalogPrice" | "sheetRemarks" | "sheetIdentityVerified" | "url"
+    >
+  > & {
     /**
      * CSV に記載された数量。空欄・不正値を差分作成時まで失わないために保持する。
      * 既存の呼び出し元は quantity だけを渡してもよい。
@@ -87,6 +96,13 @@ export type AppFieldSyncCandidate = {
 };
 
 export type EventUpdateDiff = {
+  csvReview?: { warnings: string[]; itemCount: number };
+  matching?: {
+    currentItems: ShoppingItem[];
+    sheetItems: SheetItem[];
+    proposals: SheetMatchChoice[];
+  };
+  unresolvedMatches?: SheetMatchChoice[];
   itemsToDelete: ShoppingItem[];
   itemsToUpdate: ShoppingItem[];
   itemsToAdd: SpreadsheetItemToAdd[];
@@ -213,6 +229,9 @@ function toItemToAdd(item: SheetItem, quantity: number): SpreadsheetItemToAdd {
     quantity,
     remarks: item.remarks,
     sheetRemarks: getSheetRemarks(item),
+    ...(item.sheetIdentityVerified === true
+      ? { sheetIdentityVerified: true }
+      : {}),
     ...(item.url ? { url: item.url } : {}),
   };
 }
@@ -225,6 +244,7 @@ function sourceManagedFieldsChanged(
     current.title !== next.title ||
     current.catalogPrice !== next.catalogPrice ||
     current.sheetRemarks !== next.sheetRemarks ||
+    current.sheetIdentityVerified !== next.sheetIdentityVerified ||
     current.url !== next.url
   );
 }
@@ -270,16 +290,9 @@ export function normalizeSheetItemsUrls(sheetItems: SheetItem[]): SheetItem[] {
 export function createEventUpdateDiff(
   currentItems: ShoppingItem[],
   sheetItems: SheetItem[],
+  identityChoices: SheetIdentityChoices = {},
 ): EventUpdateDiff {
-  const currentItemsMapWithAll = new Map(
-    currentItems.map((item) => [getItemKey(item), item]),
-  );
-  const sheetItemsMapWithoutTitle = new Map(
-    sheetItems.map((item) => [getItemKeyWithoutTitle(item), item]),
-  );
-  const currentItemsMapWithoutTitle = new Map(
-    currentItems.map((item) => [getItemKeyWithoutTitle(item), item]),
-  );
+  const matching = matchSheetItems(currentItems, sheetItems, identityChoices);
 
   const itemsToDelete: ShoppingItem[] = [];
   const itemsToUpdate: ShoppingItem[] = [];
@@ -293,8 +306,7 @@ export function createEventUpdateDiff(
   let protectedFromUpdate = 0;
 
   currentItems.forEach((item) => {
-    const keyWithoutTitle = getItemKeyWithoutTitle(item);
-    if (!sheetItemsMapWithoutTitle.has(keyWithoutTitle)) {
+    if (!matching.used.has(item.id)) {
       const protectionLevel = getEffectiveProtectionLevel(item);
       if (protectionLevel !== "full") {
         itemsToDelete.push(item);
@@ -304,12 +316,8 @@ export function createEventUpdateDiff(
     }
   });
 
-  sheetItems.forEach((sheetItem) => {
-    const keyWithAll = getItemKey(sheetItem);
-    const keyWithoutTitle = getItemKeyWithoutTitle(sheetItem);
-    const existing =
-      currentItemsMapWithAll.get(keyWithAll) ??
-      currentItemsMapWithoutTitle.get(keyWithoutTitle);
+  sheetItems.forEach((sheetItem, row) => {
+    const existing = matching.matches.get(row);
 
     if (!existing) {
       const quantityDecision = decideSheetQuantity(
@@ -348,6 +356,8 @@ export function createEventUpdateDiff(
       title: sheetItem.title,
       catalogPrice: getCatalogPrice(sheetItem),
       sheetRemarks: getSheetRemarks(sheetItem),
+      sheetIdentityVerified:
+        sheetItem.sheetIdentityVerified === true ? true : undefined,
       url: sheetItem.url,
     };
     const nextSheetQuantity =
@@ -421,6 +431,12 @@ export function createEventUpdateDiff(
   });
 
   return {
+    ...(matching.proposals.length
+      ? {
+          matching: { currentItems, sheetItems, proposals: matching.proposals },
+        }
+      : {}),
+    unresolvedMatches: matching.unresolved,
     itemsToDelete,
     itemsToUpdate,
     itemsToAdd,

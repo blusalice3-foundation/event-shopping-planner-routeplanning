@@ -1,3 +1,4 @@
+import { setOwnValue, recordEntry } from "../../utils/ownRecord";
 import type { PersistenceSnapshot } from "../../app/ports/PersistenceCommandPort";
 
 const EVENT_SCOPED_SNAPSHOT_KEYS = [
@@ -48,9 +49,9 @@ export const renameEventInApplicationSnapshot = (
   const next = structuredClone(snapshot);
   EVENT_SCOPED_SNAPSHOT_KEYS.forEach((key) => {
     if (!Object.prototype.hasOwnProperty.call(next[key], oldEventName)) return;
-    const value = next[key][oldEventName];
+    const value = recordEntry(next[key], oldEventName);
     delete next[key][oldEventName];
-    Object.assign(next[key], { [newEventName]: value });
+    setOwnValue(next[key] as Record<string, unknown>, newEventName, value);
   });
   return next;
 };

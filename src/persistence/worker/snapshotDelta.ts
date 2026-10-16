@@ -1,3 +1,4 @@
+import { recordEntry, setOwnValue, ownValue } from "../../utils/ownRecord";
 import type {
   ApplicationSnapshotRead,
   ApplicationDayScope,
@@ -51,8 +52,14 @@ export function snapshotDelta(
     let structural = false;
     const edits: ItemContentEdit[] = [];
     for (const name of names) {
-      const before = previous.eventLists[name] as Record<string, unknown>[];
-      const after = next.eventLists[name] as Record<string, unknown>[];
+      const before = recordEntry(previous.eventLists, name) as Record<
+        string,
+        unknown
+      >[];
+      const after = recordEntry(next.eventLists, name) as Record<
+        string,
+        unknown
+      >[];
       if (
         before.length !== after.length ||
         after.some((item, index) => item.id !== before[index]?.id)
@@ -101,12 +108,15 @@ export function applySnapshotBranches(
     const root = { ...next[store] } as Record<string, unknown>;
     let parent = root;
     for (const key of [eventName, ...path].slice(0, -1)) {
-      const child = { ...(parent[key] as object) } as Record<string, unknown>;
-      parent[key] = child;
+      const child = { ...(ownValue(parent, key) as object) } as Record<
+        string,
+        unknown
+      >;
+      setOwnValue(parent, key, child);
       parent = child;
     }
     const key = [eventName, ...path].at(-1)!;
-    if (present) parent[key] = value;
+    if (present) setOwnValue(parent, key, value);
     else delete parent[key];
     next = { ...next, [store]: root };
   }
@@ -155,12 +165,20 @@ export function daySnapshotDelta(
       [...names].some(
         (name) =>
           name !== eventName &&
-          !semanticEqual(previous[store][name], next[store][name]),
+          !semanticEqual(
+            recordEntry(previous[store], name),
+            recordEntry(next[store], name),
+          ),
       )
     ) {
       Object.assign(stores, { [store]: next[store] });
     } else
-      compare(store, previous[store][eventName], next[store][eventName], []);
+      compare(
+        store,
+        recordEntry(previous[store], eventName),
+        recordEntry(next[store], eventName),
+        [],
+      );
   }
   return { branches, stores };
 }

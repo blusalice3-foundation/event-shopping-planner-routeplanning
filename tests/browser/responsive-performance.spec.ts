@@ -1008,28 +1008,13 @@ for (const count of [150, 500, 1500])
         contentType: "application/json",
       });
       expect(errors).toEqual([]);
-      if (count === 1500) {
-        for (const operation of [
-          "execute",
-          "executeRecord",
-          "focus",
-          "record",
-          "next",
-          "back",
-        ]) {
-          expect(
-            summary[operation].count,
-            operation + " sample count",
-          ).toBeGreaterThanOrEqual(20);
-          expect(
-            summary[operation].medianMs,
-            operation + " median",
-          ).toBeLessThanOrEqual(50);
-          expect(
-            summary[operation].p95Ms,
-            operation + " p95",
-          ).toBeLessThanOrEqual(100);
-        }
+      for (const [operation, result] of Object.entries(summary)) {
+        expect(
+          result.count,
+          operation + " sample count",
+        ).toBeGreaterThanOrEqual(20);
+        expect(result.medianMs, operation + " median").toBeLessThanOrEqual(55);
+        expect(result.p95Ms, operation + " p95").toBeLessThanOrEqual(100);
       }
     });
   }

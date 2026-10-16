@@ -1,3 +1,5 @@
+import { setOwnValue } from "./ownRecord";
+import { recordEntry } from "../utils/ownRecord";
 import { normalizeExecutionVisitDay } from "./visitProjection";
 import {
   migrateLegacyConsistency,
@@ -584,6 +586,7 @@ const validateItem = (
     }
   }
   validateOptionalString(item, "sheetRemarks", path, errors);
+  validateOptionalBoolean(item, "sheetIdentityVerified", path, errors);
   validateOptionalString(item, "url", path, errors);
   validateOptionalEnum(item, "priorityLevel", path, errors, PRIORITY_LEVEL_SET);
   validateOptionalEnum(
@@ -1642,14 +1645,16 @@ const pruneOrphanedMapSettings = <T>(
   let normalized = settings;
 
   Object.entries(settings).forEach(([eventName, settingsByMap]) => {
-    const knownMapNames = new Set(Object.keys(mapData[eventName] ?? {}));
+    const knownMapNames = new Set(
+      Object.keys(recordEntry(mapData, eventName) ?? {}),
+    );
     const retainedEntries = Object.entries(settingsByMap).filter(([mapName]) =>
       knownMapNames.has(mapName),
     );
     if (retainedEntries.length === Object.keys(settingsByMap).length) return;
 
     if (normalized === settings) normalized = { ...settings };
-    normalized[eventName] = Object.fromEntries(retainedEntries);
+    setOwnValue(normalized, eventName, Object.fromEntries(retainedEntries));
   });
 
   return normalized;

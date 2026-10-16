@@ -1,12 +1,20 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps } from "react";
 import ImportScreen from "./ImportScreen";
 
 const renderImportScreen = (
-  onBulkAdd: ComponentProps<typeof ImportScreen>["onBulkAdd"] = vi.fn(),
+  onBulkAdd: ComponentProps<typeof ImportScreen>["onBulkAdd"] = vi.fn(
+    async () => ({ status: "saved" as const }),
+  ),
 ) =>
   render(
     <ImportScreen
@@ -87,7 +95,7 @@ describe("ImportScreenの7列貼り付け", () => {
   });
 
   it("同名確認へ進む場合は入力内容を消さない", () => {
-    const onBulkAdd = vi.fn(() => false);
+    const onBulkAdd = vi.fn(async () => ({ status: "cancelled" as const }));
     renderImportScreen(onBulkAdd);
     fireEvent.change(screen.getByLabelText("即売会名"), {
       target: { value: "既存イベント" },
@@ -102,6 +110,41 @@ describe("ImportScreenの7列貼り付け", () => {
     expect(getTextarea("W列 備考")).toHaveValue("取り置き希望");
   });
 
+  it("保存待ち中の新しい7列貼付けを古い要求の成功で消さず、再送できる", async () => {
+    let complete!: (result: { status: "saved" }) => void;
+    const onBulkAdd = vi
+      .fn<ComponentProps<typeof ImportScreen>["onBulkAdd"]>()
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            complete = resolve;
+          }),
+      )
+      .mockResolvedValue({ status: "saved" });
+    renderImportScreen(onBulkAdd);
+    fireEvent.change(screen.getByLabelText("即売会名"), {
+      target: { value: "イベント" },
+    });
+    pasteIntoCircle("サークルA\t1日目\t東A\t01a\t新刊\t1000\t最初の入力");
+    fireEvent.click(screen.getByRole("button", { name: "リストを作成" }));
+    const request = onBulkAdd.mock.calls[0][2]!.request!;
+    expect(request.isCurrent?.()).toBe(true);
+    pasteIntoCircle("サークルB\t2日目\t西B\t02b\t既刊\t500\t次の入力");
+    expect(request.isCurrent?.()).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "リストを作成" }));
+    expect(onBulkAdd).toHaveBeenCalledTimes(1);
+    await act(async () => complete({ status: "saved" }));
+    expect(getTextarea("M列 サークル名")).toHaveValue("サークルB");
+    expect(getTextarea("W列 備考")).toHaveValue("次の入力");
+    fireEvent.click(screen.getByRole("button", { name: "リストを作成" }));
+    await waitFor(() => expect(getTextarea("M列 サークル名")).toHaveValue(""));
+    expect(onBulkAdd.mock.calls[1][1][0]).toMatchObject({
+      circle: "サークルB",
+      eventDate: "2日目",
+      title: "既刊",
+      remarks: "次の入力",
+    });
+  });
   it("新規URL取込でも不正数量の行を丸めず除外する", async () => {
     const makeCsvRow = (number: string, quantity: string) => {
       const cells = Array.from({ length: 27 }, () => "");
@@ -131,7 +174,7 @@ describe("ImportScreenの7列貼り付け", () => {
     );
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     const onBulkAdd = vi.fn<ComponentProps<typeof ImportScreen>["onBulkAdd"]>(
-      () => true,
+      async () => ({ status: "saved" }) as const,
     );
     renderImportScreen(onBulkAdd);
     fireEvent.change(screen.getByLabelText("即売会名"), {

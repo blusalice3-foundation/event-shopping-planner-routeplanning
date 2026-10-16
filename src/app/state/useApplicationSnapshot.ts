@@ -1,10 +1,19 @@
+import { recordEntry, setOwnValue } from "../../utils/ownRecord";
+import {
+  registerItemGuardGenerations,
+  inheritItemGuardGenerations,
+  requiresItemContentGuard,
+} from "../../utils/itemContentGuard";
 import {
   semanticEqual,
   jsonEqual,
   reuseEqualReferences,
   reuseEqualItemLists,
 } from "../../utils/semanticEquality";
-import type { ApplicationSnapshotCommitContext } from "../commands/ApplicationSnapshotCommitPort";
+import type {
+  ApplicationSnapshotCommitContext,
+  ApplicationSnapshotGuard,
+} from "../commands/ApplicationSnapshotCommitPort";
 import {
   useCallback,
   useEffect,
@@ -110,6 +119,9 @@ type Batch = {
   acceptedBase?: PersistenceSnapshot;
   acceptedDraft?: PersistenceSnapshot;
   itemContentEdits?: readonly ItemContentEdit[];
+  acceptedItemContentEdits?: readonly ItemContentEdit[];
+  blockedItemOperations?: ReadonlySet<string>;
+  assertCurrent?: ApplicationSnapshotGuard;
   inputItemIds?: readonly string[];
 };
 function changedSnapshotStores(
@@ -148,6 +160,7 @@ function planBatch(
   latest: PersistenceSnapshot,
   choices: MutationChoices = {},
 ): MutationPlan {
+  batch.assertCurrent?.(latest);
   if (batch.itemContentEdits)
     return planItemContentMutation(latest, batch.itemContentEdits);
   const projected = projectConsistencySnapshot(
@@ -170,27 +183,34 @@ function planBatch(
         ...Object.keys(batch.base[key]),
         ...Object.keys(batch.draft[key]),
       ])) {
-        if (semanticEqual(batch.base[key][event], batch.draft[key][event]))
+        if (
+          semanticEqual(
+            recordEntry(batch.base[key], event),
+            recordEntry(batch.draft[key], event),
+          )
+        )
           continue;
         if (
-          batch.base.eventLists[event] !== undefined &&
-          batch.draft.eventLists[event] !== undefined &&
-          latest.eventLists[event] === undefined
+          recordEntry(batch.base.eventLists, event) !== undefined &&
+          recordEntry(batch.draft.eventLists, event) !== undefined &&
+          recordEntry(latest.eventLists, event) === undefined
         )
           throw new MutationTargetMissingError();
         if (mapStores.includes(key)) {
-          const old = batch.base[key][event] as
+          const old = recordEntry(batch.base[key], event) as
             | Record<string, unknown>
             | undefined;
-          const desired = batch.draft[key][event] as
+          const desired = recordEntry(batch.draft[key], event) as
             | Record<string, unknown>
             | undefined;
-          for (const mapKey of Object.keys(batch.base.mapData[event] ?? {}))
+          for (const mapKey of Object.keys(
+            recordEntry(batch.base.mapData, event) ?? {},
+          ))
             if (
               desired?.[mapKey] !== undefined &&
               semanticSignature(old?.[mapKey]) !==
                 semanticSignature(desired[mapKey]) &&
-              latest.mapData[event]?.[mapKey] === undefined
+              recordEntry(latest.mapData, event)?.[mapKey] === undefined
             )
               throw new MutationTargetMissingError();
         }
@@ -216,22 +236,39 @@ function planBatch(
     changedFieldConflicts(batch.base, batch.draft, projected),
   );
 }
+function acceptedBatchEdits(
+  batch: Batch,
+): readonly ItemContentEdit[] | undefined {
+  const edits = batch.acceptedItemContentEdits ?? batch.itemContentEdits;
+  return batch.blockedItemOperations?.size
+    ? edits?.filter(
+        (edit) =>
+          !edit.guard ||
+          !batch.blockedItemOperations!.has(edit.guard.operationId),
+      )
+    : edits;
+}
 function applyAcceptedBatches(
   source: PersistenceSnapshot,
   batches: Batch[],
   retainedIds: ReadonlySet<string>,
 ): PersistenceSnapshot {
   let snapshot = source;
-  for (const batch of batches)
-    if (retainedIds.has(batch.id))
-      snapshot = planBatch(
-        {
-          ...batch,
-          base: batch.acceptedBase ?? batch.base,
-          draft: batch.acceptedDraft ?? batch.draft,
-        },
-        snapshot,
-      ).snapshot;
+  for (const batch of batches) {
+    if (!retainedIds.has(batch.id)) continue;
+    const itemContentEdits = acceptedBatchEdits(batch);
+    const previous = snapshot;
+    snapshot = planBatch(
+      {
+        ...batch,
+        itemContentEdits,
+        base: batch.acceptedBase ?? batch.base,
+        draft: batch.acceptedDraft ?? batch.draft,
+      },
+      snapshot,
+    ).snapshot;
+    inheritItemGuardGenerations(previous, snapshot);
+  }
   return snapshot;
 }
 export class MutationCancelledError extends Error {
@@ -250,6 +287,9 @@ export function useApplicationSnapshot(
   const [raw, setRaw] = useState(emptyApplicationSnapshot);
   const projectForDisplay = useMemo(createConsistencySnapshotProjector, []);
   const rawRef = useRef(raw);
+  const readGuardGenerations = useRef<() => Readonly<Record<string, number>>>(
+    () => ({}),
+  );
   const contextRef = useRef<MutationContext>({ eventName, day });
   contextRef.current = { eventName, day };
   const handlers = useRef<{
@@ -302,10 +342,12 @@ export function useApplicationSnapshot(
   const itemContentOverlayCache = useRef<{
     source: PersistenceSnapshot;
     edits: readonly (readonly ItemContentEdit[])[];
+    generations: Readonly<Record<string, number>>;
     value: PersistenceSnapshot;
   }>();
   const overlayPendingItemContent = useCallback(
     (snapshot: PersistenceSnapshot) => {
+      registerItemGuardGenerations(snapshot, readGuardGenerations.current());
       const edits = [
         ...submitted.current,
         ...(draft.current ? [draft.current] : []),
@@ -315,17 +357,23 @@ export function useApplicationSnapshot(
             !retained.current.has(batch.id) && !suspended.current.has(batch.id),
         )
         .flatMap((batch) =>
-          batch.itemContentEdits?.length ? [batch.itemContentEdits] : [],
+          acceptedBatchEdits(batch)?.length ? [acceptedBatchEdits(batch)!] : [],
         );
       const cached = itemContentOverlayCache.current;
       if (
         cached?.source === snapshot &&
+        cached.generations === readGuardGenerations.current() &&
         cached.edits.length === edits.length &&
         edits.every((edit, index) => edit === cached.edits[index])
       )
         return cached.value;
       const value = applyItemContentEdits(snapshot, edits.flat());
-      itemContentOverlayCache.current = { source: snapshot, edits, value };
+      itemContentOverlayCache.current = {
+        source: snapshot,
+        edits,
+        value,
+        generations: readGuardGenerations.current(),
+      };
       return value;
     },
     [],
@@ -381,18 +429,31 @@ export function useApplicationSnapshot(
               .filter(
                 (eventName) =>
                   !semanticEqual(
-                    base[store][eventName],
-                    accepted[store][eventName],
+                    recordEntry(base[store], eventName),
+                    recordEntry(accepted[store], eventName),
                   ),
               )
               .map((eventName) => ({
                 store,
                 eventName,
-                baseline: base[store][eventName],
-                desired: accepted[store][eventName],
+                baseline: recordEntry(base[store], eventName),
+                desired: recordEntry(accepted[store], eventName),
               }));
           });
-          return persistence.createBackupFile(changes, () => accepted);
+          const guardedItemEdits = [
+            ...submitted.current,
+            ...(draft.current ? [draft.current] : []),
+          ]
+            .flatMap(
+              (batch) =>
+                batch.acceptedItemContentEdits ?? batch.itemContentEdits ?? [],
+            )
+            .filter(requiresItemContentGuard);
+          return persistence.createBackupFile(
+            changes,
+            () => (guardedItemEdits.length ? readAcceptedSnapshot() : accepted),
+            guardedItemEdits,
+          );
         },
         commit: async (snapshot, expectedRoots, base, invalidatedEvents) => {
           const errors = persistence.commitItemContentEdits
@@ -440,6 +501,10 @@ export function useApplicationSnapshot(
             rawRef.current,
             snapshot as unknown as PersistedStateValues,
           );
+          registerItemGuardGenerations(
+            rawRef.current,
+            readGuardGenerations.current(),
+          );
           persistence.adoptCommittedSnapshot?.(rawRef.current);
           setRaw(rawRef.current);
           handlers.current.applied(rawRef.current, events);
@@ -466,6 +531,8 @@ export function useApplicationSnapshot(
       }),
     [persistence, precedingBatches, readAcceptedSnapshot, releasePending],
   );
+  readGuardGenerations.current = coordinator.durableEventGenerations;
+  registerItemGuardGenerations(rawRef.current, readGuardGenerations.current());
   renderedGenerations.current = Object.fromEntries(
     [
       ...Object.keys(renderedGenerations.current),
@@ -499,14 +566,13 @@ export function useApplicationSnapshot(
       ]) {
         if (suspended.current.has(batch.id) && !retained.current.has(batch.id))
           continue;
-        next =
-          batch.itemContentEdits && !batch.acceptedDraft
-            ? applyItemContentEdits(next, batch.itemContentEdits)
-            : (applyChangedFields(
-                batch.acceptedBase ?? batch.base,
-                batch.acceptedDraft ?? batch.draft,
-                next,
-              ) as PersistenceSnapshot);
+        next = batch.itemContentEdits
+          ? applyItemContentEdits(next, acceptedBatchEdits(batch) ?? [])
+          : (applyChangedFields(
+              batch.acceptedBase ?? batch.base,
+              batch.acceptedDraft ?? batch.draft,
+              next,
+            ) as PersistenceSnapshot);
       }
       previewRef.current = next;
       previewInputs.current = { raw: rawRef.current, ...context };
@@ -536,6 +602,36 @@ export function useApplicationSnapshot(
           // unchanged so retry still compares it with the latest durable values.
           for (const earlier of submitted.current.slice(0, index)) {
             if (!retained.current.has(earlier.id)) continue;
+            if (earlier.itemContentEdits && committed.itemContentEdits) {
+              earlier.acceptedItemContentEdits = (
+                earlier.acceptedItemContentEdits ?? earlier.itemContentEdits
+              ).flatMap((edit) => {
+                const overwritten = new Set(
+                  committed
+                    .itemContentEdits!.filter(
+                      (next) =>
+                        next.eventName === edit.eventName &&
+                        next.itemId === edit.itemId,
+                    )
+                    .flatMap((next) => Object.keys(next.fields)),
+                );
+                const fields = Object.fromEntries(
+                  Object.entries(edit.fields).filter(
+                    ([key]) => !overwritten.has(key),
+                  ),
+                );
+                const limitedPurchase = [
+                  "quantity",
+                  "purchaseStatus",
+                  "limitedPurchasedQuantity",
+                ].some((key) => overwritten.has(key))
+                  ? undefined
+                  : edit.limitedPurchase;
+                return Object.keys(fields).length || limitedPurchase
+                  ? [{ ...edit, fields, limitedPurchase }]
+                  : [];
+              });
+            }
             earlier.acceptedBase = applyChangedFields(
               committed.base,
               committed.draft,
@@ -673,7 +769,7 @@ export function useApplicationSnapshot(
             Object.fromEntries(
               intent.events.map((name) => [
                 name,
-                renderedGenerations.current[name] ?? 0,
+                recordEntry(renderedGenerations.current, name) ?? 0,
               ]),
             ),
         })
@@ -704,22 +800,43 @@ export function useApplicationSnapshot(
           ].filter((name) =>
             keys.some(
               (key) =>
-                !jsonEqual(batch.base[key][name], batch.draft[key][name]),
+                !jsonEqual(
+                  recordEntry(batch.base[key], name),
+                  recordEntry(batch.draft[key], name),
+                ),
             ),
           );
       return request({
         id: batch.id,
         events,
         itemContentEdits: batch.itemContentEdits,
-        dayMutation: collectDayMutation(
-          batch.base,
-          batch.draft,
-          batch.context.eventName,
-          batch.context.day,
-          batch.context.routeDays,
-        ),
+        // Snapshot guards must run in the planner, including on CAS retries.
+        dayMutation: batch.assertCurrent
+          ? undefined
+          : collectDayMutation(
+              batch.base,
+              batch.draft,
+              batch.context.eventName,
+              batch.context.day,
+              batch.context.routeDays,
+            ),
         plan: (latest, choices) => {
           const plan = planBatch(batch, latest, choices);
+          if (batch.itemContentEdits) {
+            const blocked = new Set(
+              plan.invalidItemContentEdits?.flatMap((edit) =>
+                edit.guard ? [edit.guard.operationId] : [],
+              ),
+            );
+            if (
+              JSON.stringify([...(batch.blockedItemOperations ?? [])]) !==
+              JSON.stringify([...blocked])
+            ) {
+              batch.blockedItemOperations = blocked;
+              rebuildPreview();
+              setItemDraftRevision((revision) => revision + 1);
+            }
+          }
           // Reference repair can turn one setter into a multi-store operation.
           // Only standalone setter edits are accepted before a successful save.
           if (batch.retryOnFailure && !batch.itemContentEdits)
@@ -732,7 +849,7 @@ export function useApplicationSnapshot(
         },
       });
     },
-    [request],
+    [request, rebuildPreview],
   );
   const flushDraft = useCallback(() => {
     if (memoSaveTimer.current !== null) clearTimeout(memoSaveTimer.current);
@@ -828,6 +945,7 @@ export function useApplicationSnapshot(
         : [inputOrInputs as UpdateItemFieldsInput];
       if (draft.current && !draft.current.itemContentEdits) flushDraft();
       const source = previewRef.current;
+      registerItemGuardGenerations(source, readGuardGenerations.current());
       const proposedEdits: ItemContentEdit[] = inputs.flatMap((input) => {
         const fields = Object.fromEntries(
           Object.entries(input.changes).map(([key, value]) => [
@@ -835,13 +953,20 @@ export function useApplicationSnapshot(
             { present: value !== undefined, value },
           ]),
         );
-        return Object.keys(fields).length
+        return Object.keys(fields).length || input.limitedPurchase
           ? [
               {
                 eventName: input.eventName,
                 itemId: input.itemId,
                 fields,
+                limitedPurchase: input.limitedPurchase,
                 baseline: input.baseline as unknown as Record<string, unknown>,
+                ...(input.guard || input.limitedPurchase
+                  ? {
+                      guard: input.guard,
+                      operationKind: "limited-input" as const,
+                    }
+                  : {}),
               },
             ]
           : [];
@@ -853,7 +978,10 @@ export function useApplicationSnapshot(
       }
       const accepted = planItemContentMutation(source, proposedEdits);
       const next = accepted.snapshot;
-      if (next === source) {
+      if (
+        next === source &&
+        !proposedEdits.some((edit) => edit.limitedPurchase)
+      ) {
         if (inputs.some((input) => input.saveImmediately)) flushDraft();
         finishInput();
         return;
@@ -869,25 +997,38 @@ export function useApplicationSnapshot(
           inputItemIds: [],
         };
       }
-      const mergedEdits = new Map(
-        (draft.current.itemContentEdits ?? []).map((edit) => [
-          JSON.stringify([edit.eventName, edit.itemId]),
-          edit,
-        ]),
-      );
+      const mergedEdits = [...(draft.current.itemContentEdits ?? [])];
       for (const edit of accepted.itemContentEdits) {
-        const key = JSON.stringify([edit.eventName, edit.itemId]);
-        const previous = mergedEdits.get(key);
-        mergedEdits.set(
-          key,
-          previous
-            ? {
-                ...edit,
-                baseline: previous.baseline,
-                fields: { ...previous.fields, ...edit.fields },
-              }
-            : edit,
-        );
+        const previous = mergedEdits.at(-1);
+        // Merge only adjacent operations. Moving an earlier field edit across a
+        // guarded edit can reverse the user's final choice for the same item.
+        if (
+          previous &&
+          !previous.limitedPurchase &&
+          !edit.limitedPurchase &&
+          previous.eventName === edit.eventName &&
+          previous.itemId === edit.itemId &&
+          JSON.stringify(previous.guard ?? null) ===
+            JSON.stringify(edit.guard ?? null)
+        ) {
+          mergedEdits[mergedEdits.length - 1] = {
+            ...edit,
+            baseline: Object.fromEntries(
+              [
+                ...new Set([
+                  ...Object.keys(previous.fields),
+                  ...Object.keys(edit.fields),
+                ]),
+              ].map((field) => [
+                field,
+                Object.prototype.hasOwnProperty.call(previous.fields, field)
+                  ? previous.baseline?.[field]
+                  : edit.baseline?.[field],
+              ]),
+            ),
+            fields: { ...previous.fields, ...edit.fields },
+          };
+        } else mergedEdits.push(edit);
       }
       draft.current.inputItemIds = [
         ...new Set([
@@ -896,7 +1037,7 @@ export function useApplicationSnapshot(
         ]),
       ];
       draft.current.draft = next;
-      draft.current.itemContentEdits = [...mergedEdits.values()];
+      draft.current.itemContentEdits = mergedEdits;
       previewRef.current = next;
       if (inputs.some((input) => input.saveImmediately)) {
         setItemDraftRevision((revision) => revision + 1);
@@ -929,6 +1070,10 @@ export function useApplicationSnapshot(
                 ? (action as (value: typeof current) => typeof current)(current)
                 : action;
             rawRef.current = { ...rawRef.current, [key]: value };
+            registerItemGuardGenerations(
+              rawRef.current,
+              readGuardGenerations.current(),
+            );
             persistence.adoptCommittedSnapshot?.(rawRef.current);
             setRaw(rawRef.current);
             rebuildPreview();
@@ -973,6 +1118,7 @@ export function useApplicationSnapshot(
       patch: Partial<PersistenceSnapshot>,
       settings?: { eventName: string; settings: BlockDetectionSettings | null },
       context?: ApplicationSnapshotCommitContext,
+      assertCurrent?: ApplicationSnapshotGuard,
     ) => {
       flushDraft();
       // The submitted patch was computed from this render, not the pending preview.
@@ -981,15 +1127,23 @@ export function useApplicationSnapshot(
       const next = { ...base, ...patch };
       if (settings) {
         next.eventConsistency = structuredClone(next.eventConsistency);
-        next.eventConsistency[settings.eventName] ??= createEventConsistency();
-        next.eventConsistency[settings.eventName].blockDetectionSettings =
-          settings.settings;
+        if (!recordEntry(next.eventConsistency, settings.eventName))
+          setOwnValue(
+            next.eventConsistency,
+            settings.eventName,
+            createEventConsistency(),
+          );
+        recordEntry(
+          next.eventConsistency,
+          settings.eventName,
+        ).blockDetectionSettings = settings.settings;
       }
       await submitBatch({
         id: `application:${++sequence.current}`,
         base,
         draft: next,
         context: { eventName, day, ...structuredClone(context) },
+        assertCurrent,
       });
     },
     [day, eventName, flushDraft, submitBatch, values],
@@ -1002,11 +1156,18 @@ export function useApplicationSnapshot(
           await request({
             events: [name],
             plan: (snapshot) => {
-              if (!snapshot.eventLists[name])
+              if (!recordEntry(snapshot.eventLists, name))
                 throw new Error("イベントが見つかりません。");
-              snapshot.eventConsistency[name] ??= createEventConsistency();
-              snapshot.eventConsistency[name].blockDetectionSettings =
-                structuredClone(settings);
+              if (!recordEntry(snapshot.eventConsistency, name))
+                setOwnValue(
+                  snapshot.eventConsistency,
+                  name,
+                  createEventConsistency(),
+                );
+              recordEntry(
+                snapshot.eventConsistency,
+                name,
+              ).blockDetectionSettings = structuredClone(settings);
               return { snapshot };
             },
           });

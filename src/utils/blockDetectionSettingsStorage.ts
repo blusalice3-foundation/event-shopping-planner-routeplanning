@@ -1,3 +1,4 @@
+import { recordEntry, setOwnValue } from "./ownRecord";
 import type {
   BlockDetectionSettings,
   BlockDetectionSettingsStore,
@@ -53,7 +54,7 @@ const parseStoredSettings = (
     if (!isBlockDetectionSettings(settings)) {
       throw new Error(`イベント「${eventName}」のブロック検出設定が不正です。`);
     }
-    settingsStore[eventName] = cloneSettings(settings);
+    setOwnValue(settingsStore, eventName, cloneSettings(settings));
   }
   return settingsStore;
 };
@@ -66,7 +67,9 @@ export function loadBlockDetectionSettings(
       localStorage.getItem(BLOCK_DETECTION_SETTINGS_STORAGE_KEY),
       new Set([eventName]),
     );
-    return all[eventName] ? cloneSettings(all[eventName]) : null;
+    return recordEntry(all, eventName)
+      ? cloneSettings(recordEntry(all, eventName))
+      : null;
   } catch {
     console.warn(
       "Block detection settings load failed (settings-load-failed).",
@@ -88,7 +91,10 @@ export function loadBlockDetectionSettingsStore(
     return Object.fromEntries(
       names
         .filter((eventName) => hasOwn(all, eventName))
-        .map((eventName) => [eventName, cloneSettings(all[eventName])]),
+        .map((eventName) => [
+          eventName,
+          cloneSettings(recordEntry(all, eventName)),
+        ]),
     );
   } catch {
     console.warn(
@@ -115,7 +121,7 @@ export function saveBlockDetectionSettings(
     const all = parseStoredSettings(
       localStorage.getItem(BLOCK_DETECTION_SETTINGS_STORAGE_KEY),
     );
-    all[eventName] = cloneSettings(settings);
+    setOwnValue(all, eventName, cloneSettings(settings));
     localStorage.setItem(
       BLOCK_DETECTION_SETTINGS_STORAGE_KEY,
       JSON.stringify(all),
@@ -153,11 +159,11 @@ export function renameBlockDetectionSettingsForEvent(
     const all = parseStoredSettings(
       localStorage.getItem(BLOCK_DETECTION_SETTINGS_STORAGE_KEY),
     );
-    const oldSettings = all[oldEventName];
+    const oldSettings = recordEntry(all, oldEventName);
     delete all[oldEventName];
     delete all[newEventName];
     if (oldSettings) {
-      all[newEventName] = cloneSettings(oldSettings);
+      setOwnValue(all, newEventName, cloneSettings(oldSettings));
     }
     localStorage.setItem(
       BLOCK_DETECTION_SETTINGS_STORAGE_KEY,
@@ -182,7 +188,7 @@ export function replaceBlockDetectionSettingsForEvent(
   if (settings === null) {
     delete all[eventName];
   } else {
-    all[eventName] = cloneSettings(settings);
+    setOwnValue(all, eventName, cloneSettings(settings));
   }
 
   localStorage.setItem(

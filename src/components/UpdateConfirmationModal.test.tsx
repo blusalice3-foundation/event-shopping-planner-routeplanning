@@ -2,7 +2,12 @@
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { AppFieldSyncCandidate } from "../features/events/updateDiff";
+import {
+  createEventUpdateDiff,
+  type AppFieldSyncCandidate,
+  type SheetItem,
+} from "../features/events/updateDiff";
+import type { ShoppingItem } from "../types/item";
 import UpdateConfirmationModal from "./UpdateConfirmationModal";
 
 const commonProps = {
@@ -387,5 +392,103 @@ describe("UpdateConfirmationModal app field synchronization", () => {
         name: /購入金額をカタログ価格で上書きする/,
       }),
     ).not.toBeChecked();
+  });
+});
+
+describe("UpdateConfirmationModal identity details", () => {
+  it("distinguishes same-name incoming rows and submits correspondence only after all rows are resolved", () => {
+    const current: ShoppingItem[] = [2, 5].map((quantity, index) => ({
+      id: String(index + 1),
+      circle: "ユーザー登録",
+      eventDate: "1日目",
+      block: "A",
+      number: "01a",
+      title: "同名品目",
+      price: 900,
+      catalogPrice: 500,
+      quantity,
+      purchaseStatus: "None",
+      remarks: "ID " + (index + 1) + " の記録",
+      sheetRemarks: "旧シート備考",
+      sheetIdentityVerified: false,
+      source: "spreadsheet",
+    }));
+    const rows: SheetItem[] = current.map((item, index) => ({
+      ...item,
+      price: index === 0 ? 600 : 800,
+      catalogPrice: index === 0 ? 600 : 800,
+      sheetRemarks: index === 0 ? "新側の備考A\n続き" : "新側の備考B",
+      rawQuantity: String(item.quantity),
+      sheetIdentityVerified: true,
+    }));
+    const onConfirm = vi.fn();
+    render(
+      <UpdateConfirmationModal
+        {...commonProps}
+        {...createEventUpdateDiff(current, rows)}
+        onConfirm={onConfirm}
+      />,
+    );
+    const first = screen.getByRole("combobox", { name: "取込1行目の対応" });
+    const second = screen.getByRole("combobox", { name: "取込2行目の対応" });
+    expect(first.closest("label")).toHaveTextContent("600円");
+    expect(first.closest("label")).toHaveTextContent("新側の備考A");
+    expect(first.closest("label")).toHaveTextContent("シート数量: 2");
+    expect(second.closest("label")).toHaveTextContent("800円");
+    expect(second.closest("label")).toHaveTextContent("新側の備考B");
+    expect(second.closest("label")).toHaveTextContent("シート数量: 5");
+    expect(
+      within(first).getByRole("option", { name: /ID 1 の記録/ }),
+    ).toHaveTextContent("出自未確認");
+    const confirm = screen.getByRole("button", { name: "更新を実行" });
+    expect(confirm).toBeDisabled();
+    fireEvent.change(first, { target: { value: "1" } });
+    fireEvent.change(second, { target: { value: "1" } });
+    expect(confirm).toBeDisabled();
+    fireEvent.change(second, { target: { value: "2" } });
+    expect(confirm).toBeEnabled();
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ identityChoices: { "0": "1", "1": "2" } }),
+    );
+  });
+
+  it("shows a known empty sheet price/remarks rather than substituting user values", () => {
+    const current: ShoppingItem[] = [1, 2].map((quantity, index) => ({
+      id: String(index),
+      circle: "サークル",
+      eventDate: "1日目",
+      block: "A",
+      number: "01a",
+      title: "同名",
+      price: 900,
+      quantity,
+      purchaseStatus: "None",
+      remarks: "利用者メモ",
+      source: "spreadsheet",
+    }));
+    const rows = current.map((item) => ({
+      ...item,
+      catalogPrice: null,
+      sheetRemarks: "",
+      rawQuantity: String(item.quantity),
+      sheetIdentityVerified: true,
+    }));
+    render(
+      <UpdateConfirmationModal
+        {...commonProps}
+        {...createEventUpdateDiff(current, rows)}
+        onConfirm={vi.fn()}
+      />,
+    );
+    const label = screen
+      .getByRole("combobox", { name: "取込1行目の対応" })
+      .closest("label")!;
+    expect(label.querySelectorAll("span")[1]).toHaveTextContent(
+      "カタログ価格: 価格未定",
+    );
+    expect(label.querySelectorAll("span")[1]).toHaveTextContent(
+      "シート備考: （空欄）",
+    );
   });
 });

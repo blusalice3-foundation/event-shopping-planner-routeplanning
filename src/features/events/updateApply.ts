@@ -1,3 +1,5 @@
+import { recordEntry } from "../../utils/ownRecord";
+import type { SheetIdentityChoices } from "./sheetMatching";
 import type { ExecuteModeItems, ShoppingItem } from "../../types/item";
 import { insertItemSorted } from "../../utils/itemComparison";
 import type {
@@ -12,9 +14,16 @@ type EventUpdatePayload = Pick<
   EventUpdateDiff,
   "itemsToDelete" | "itemsToUpdate" | "itemsToAdd" | "appFieldSyncCandidates"
 > &
-  Partial<Pick<EventUpdateDiff, "pendingPurchasedQuantityChanges">>;
+  Partial<
+    Pick<
+      EventUpdateDiff,
+      "pendingPurchasedQuantityChanges" | "unresolvedMatches"
+    >
+  >;
 
 export type EventUpdateApplyOptions = {
+  acceptCsvExclusions?: boolean;
+  identityChoices?: SheetIdentityChoices;
   applyPurchasedQuantityChanges?: boolean;
   priceSyncMode?: AppFieldSyncMode;
   remarksSyncMode?: AppFieldSyncMode;
@@ -111,6 +120,9 @@ function createSpreadsheetItem(
     quantity: itemData.quantity ?? 1,
     remarks: itemData.remarks,
     sheetRemarks: itemData.sheetRemarks,
+    ...(itemData.sheetIdentityVerified === true
+      ? { sheetIdentityVerified: true }
+      : {}),
     purchaseStatus: "None",
     source: "spreadsheet",
     protectionLevel: "none",
@@ -123,6 +135,9 @@ export function applyEventUpdateToItems(
   updateData: EventUpdatePayload,
   options: EventUpdateApplyOptions = {},
 ): ShoppingItem[] {
+  if (updateData.unresolvedMatches?.length)
+    throw new Error("品目の対応関係をすべて確認してください。");
+
   const deleteIds = new Set(updateData.itemsToDelete.map((item) => item.id));
   const updateMap = new Map(
     updateData.itemsToUpdate.map((item) => [item.id, item]),
@@ -167,6 +182,7 @@ export function applyEventUpdateToItems(
         quantity: sourceUpdate.quantity,
         catalogPrice: sourceUpdate.catalogPrice,
         sheetRemarks: sourceUpdate.sheetRemarks,
+        sheetIdentityVerified: sourceUpdate.sheetIdentityVerified,
         url: sourceUpdate.url,
       };
     }
@@ -232,9 +248,10 @@ export function removeDeletedIdsFromExecuteModeItems(
   const updatedEventItems: ExecuteModeItems = {};
 
   Object.keys(executeModeItems).forEach((eventDate) => {
-    updatedEventItems[eventDate] = executeModeItems[eventDate].filter(
-      (id) => !deleteIds.has(id),
-    );
+    updatedEventItems[eventDate] = recordEntry(
+      executeModeItems,
+      eventDate,
+    ).filter((id) => !deleteIds.has(id));
   });
 
   return updatedEventItems;

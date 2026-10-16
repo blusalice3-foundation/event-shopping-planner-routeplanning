@@ -1,3 +1,6 @@
+import { recordEntry } from "./utils/ownRecord";
+import { createItemContentGuard } from "./utils/itemContentGuard";
+import { parseFocusSessionKey } from "./utils/focusSessionKey";
 import { LegacyConsistencyReview } from "./components/LegacyConsistencyReview";
 import { planLegacyResolution } from "./features/consistency/domain/legacyResolution";
 import {
@@ -14,7 +17,10 @@ import {
   getDayConsistency,
   resolveDayMap,
 } from "./features/consistency/domain/context";
-import { AcceptedItemCommandsProvider } from "./features/shopping-list/renderers/ViewportRowState";
+import {
+  AcceptedItemCommandsProvider,
+  type CaptureItemGuard,
+} from "./features/shopping-list/renderers/ViewportRowState";
 import { useSearchScrollRequest } from "./app/state/useSearchScrollRequest";
 import React, {
   useEffect,
@@ -35,6 +41,7 @@ import { extractEventDates } from "./utils/eventDates";
 import { getSpaceKey } from "./utils/spaceGrouping";
 import { normalizeExecutionVisitDay } from "./utils/visitProjection";
 import { type EventUpdateCommitState } from "./features/events/updateFlow";
+import type { ApplicationSnapshotGuard } from "./app/commands/ApplicationSnapshotCommitPort";
 import { getGlobalHallItemCount as computeGlobalHallItemCount } from "./features/map/domain/hallOperations";
 import { useMapSelectors } from "./features/map/hooks/useMapSelectors";
 import { useListInteractionState } from "./features/lists/hooks/useListInteractionState";
@@ -169,10 +176,24 @@ const App: React.FC = () => {
     }),
     [application.previewRef],
   );
+  const captureItemGuard = useCallback<CaptureItemGuard>(
+    (item, kind) =>
+      createItemContentGuard(
+        application.rawRef.current,
+        activeEventName ?? "",
+        item,
+        kind,
+        application.coordinator.durableGeneration(activeEventName ?? ""),
+      ),
+    [activeEventName, application.rawRef, application.coordinator],
+  );
   const readAcceptedItem = useCallback(
     (id: string) =>
       activeEventName
-        ? indexedItem(eventListsRef.current[activeEventName] ?? [], id)
+        ? indexedItem(
+            recordEntry(eventListsRef.current, activeEventName) ?? [],
+            id,
+          )
         : undefined,
     [activeEventName, eventListsRef],
   );
@@ -437,6 +458,18 @@ const App: React.FC = () => {
     applied: (snapshot, invalidatedEvents) => {
       acceptCommittedSnapshot(snapshot);
       if (
+        pendingDuplicateEvent &&
+        invalidatedEvents.includes(pendingDuplicateEvent.analysis.eventName)
+      ) {
+        pendingDuplicateEvent.complete?.({ status: "invalidated" });
+        overlayCommands.event.close();
+      }
+      if (
+        pendingEventUpdate &&
+        invalidatedEvents.includes(pendingEventUpdate.eventName)
+      )
+        pendingEventUpdate.onImportComplete?.({ status: "invalidated" });
+      if (
         (pendingEventUpdate &&
           invalidatedEvents.includes(pendingEventUpdate.eventName)) ||
         (pendingUpdateEventName &&
@@ -450,6 +483,17 @@ const App: React.FC = () => {
         overlayCommands.mapImport.closeDialog();
         overlayCommands.mapImport.cancelReimport();
       }
+      if (invalidatedEvents.length)
+        setFocusModeSessions((current) =>
+          Object.fromEntries(
+            Object.entries(current).filter(
+              ([key]) =>
+                !invalidatedEvents.includes(
+                  parseFocusSessionKey(key)?.[0] ?? "",
+                ),
+            ),
+          ),
+        );
       if (activeEventName && invalidatedEvents.includes(activeEventName)) {
         overlayCommands.visitList.endSession();
         setItemToEdit(null);
@@ -458,14 +502,6 @@ const App: React.FC = () => {
         clearSearchScrollRequest();
         setHighlightedItemId(null);
         pendingEventUpdateBaseItemsRef.current = null;
-        setFocusModeSessions((current) =>
-          Object.fromEntries(
-            Object.entries(current).filter(
-              ([key]) =>
-                !invalidatedEvents.some((name) => key.startsWith(`${name}::`)),
-            ),
-          ),
-        );
       }
     },
   };
@@ -484,7 +520,8 @@ const App: React.FC = () => {
   );
 
   const items = useMemo(
-    () => (activeEventName ? eventLists[activeEventName] || [] : []),
+    () =>
+      activeEventName ? recordEntry(eventLists, activeEventName) || [] : [],
     [activeEventName, eventLists],
   );
   const firstItemById = indexedItems(items);
@@ -755,6 +792,7 @@ const App: React.FC = () => {
     toggleCandidateNumberSort: handleCandidateNumberSort,
   } = useShoppingItemMutationCommands({
     state: {
+      getEventGeneration: application.coordinator.generation,
       activeEventName,
       activeEventDate,
       eventLists,
@@ -1022,7 +1060,8 @@ const App: React.FC = () => {
         if (!activeEventName) return;
         const currentEventDate = activeEventDate;
         const executeIds =
-          executeModeItems[activeEventName]?.[currentEventDate] || [];
+          recordEntry(executeModeItems, activeEventName)?.[currentEventDate] ||
+          [];
         const itemsMap = new Map(items.map((item) => [item.id, item]));
         const allGroupKeys = new Set<string>();
         executeIds.forEach((id) => {
@@ -1107,17 +1146,20 @@ const App: React.FC = () => {
     setMapViewportSettings,
   });
   const commitEventUpdateState = useCallback(
-    async (nextState: EventUpdateCommitState): Promise<boolean> => {
-      try {
-        await commitApplicationSnapshotPatch({
+    async (
+      nextState: EventUpdateCommitState,
+      assertCurrent: ApplicationSnapshotGuard,
+    ): Promise<boolean> => {
+      await commitApplicationSnapshotPatch(
+        {
           eventLists: nextState.eventLists,
           eventMetadata: nextState.eventMetadata,
           executeModeItems: nextState.executeModeItems,
-        });
-      } catch {
-        alert("イベントを保存できませんでした。表示内容は変更されていません。");
-        return false;
-      }
+        },
+        undefined,
+        undefined,
+        assertCurrent,
+      );
 
       return true;
     },
@@ -1283,7 +1325,7 @@ const App: React.FC = () => {
 
     const dayName = activeEventDate;
 
-    return executeModeItems[activeEventName]?.[dayName] || [];
+    return recordEntry(executeModeItems, activeEventName)?.[dayName] || [];
   }, [activeEventName, activeEventDate, isMapTab, executeModeItems]);
 
   const currentTabItems = useMemo(() => {
@@ -1393,9 +1435,11 @@ const App: React.FC = () => {
     if (!visitListPanelMapTab || !activeEventName) return [];
 
     const halls =
-      hallDefinitions[activeEventName]?.[visitListPanelMapTab] || [];
-    const routeSettings =
-      hallRouteSettings[activeEventName]?.[visitListPanelMapTab];
+      recordEntry(hallDefinitions, activeEventName)?.[visitListPanelMapTab] ||
+      [];
+    const routeSettings = recordEntry(hallRouteSettings, activeEventName)?.[
+      visitListPanelMapTab
+    ];
 
     if (routeSettings?.hallOrder && routeSettings.hallOrder.length > 0) {
       return routeSettings.hallOrder;
@@ -1416,7 +1460,8 @@ const App: React.FC = () => {
 
   const hasUndefinedPriorityItems = useMemo((): boolean => {
     if (!activeEventName || !activeEventDate) return false;
-    const ids = executeModeItems[activeEventName]?.[activeEventDate] || [];
+    const ids =
+      recordEntry(executeModeItems, activeEventName)?.[activeEventDate] || [];
     return ids.some((id) => {
       const it = firstItemById.get(id);
       if (!it) return false;
@@ -1429,11 +1474,13 @@ const App: React.FC = () => {
     if (!activeEventName) return [];
     const hasMap = !!globalHallOrderMapTabName;
     const mapHalls = hasMap
-      ? hallDefinitions[activeEventName]?.[globalHallOrderMapTabName] || []
+      ? recordEntry(hallDefinitions, activeEventName)?.[
+          globalHallOrderMapTabName
+        ] || []
       : [];
     const maplessKey = activeEventDate ? getMaplessKey(activeEventDate) : null;
     const maplessHalls = maplessKey
-      ? hallDefinitions[activeEventName]?.[maplessKey] || []
+      ? recordEntry(hallDefinitions, activeEventName)?.[maplessKey] || []
       : [];
     return [...mapHalls, ...maplessHalls];
   }, [
@@ -1447,7 +1494,7 @@ const App: React.FC = () => {
     (groupId: string): number => {
       if (!activeEventName || !activeEventDate) return 0;
       const executeIds =
-        executeModeItems[activeEventName]?.[activeEventDate] || [];
+        recordEntry(executeModeItems, activeEventName)?.[activeEventDate] || [];
       return computeGlobalHallItemCount({
         groupId,
         executeIds,
@@ -1826,10 +1873,12 @@ const App: React.FC = () => {
   const selectedMap =
     activeEventName && activeEventDate
       ? resolveDayMap(
-          mapData[activeEventName],
+          recordEntry(mapData, activeEventName),
           activeEventDate,
-          getDayConsistency(eventConsistency[activeEventName], activeEventDate)
-            ?.selectedMapKey,
+          getDayConsistency(
+            recordEntry(eventConsistency, activeEventName),
+            activeEventDate,
+          )?.selectedMapKey,
         )
       : null;
 
@@ -2017,17 +2066,24 @@ const App: React.FC = () => {
                       events: [activeEventName],
                       plan: (snapshot) => {
                         const day = ensureDayConsistency(
-                          snapshot.eventConsistency[activeEventName],
+                          recordEntry(
+                            snapshot.eventConsistency,
+                            activeEventName,
+                          ),
                           activeEventDate,
                           [
-                            snapshot.executeModeItems[activeEventName],
-                            snapshot.dayModes[activeEventName],
+                            recordEntry(
+                              snapshot.executeModeItems,
+                              activeEventName,
+                            ),
+                            recordEntry(snapshot.dayModes, activeEventName),
                           ],
                         );
                         const found = resolveDayMap(
-                          snapshot.mapData[
-                            activeEventName
-                          ] as MapDataStore[string],
+                          recordEntry(
+                            snapshot.mapData,
+                            activeEventName,
+                          ) as MapDataStore[string],
                           activeEventDate,
                           key,
                         );
@@ -2266,6 +2322,7 @@ const App: React.FC = () => {
         )}
 
       <AcceptedItemCommandsProvider
+        captureGuard={captureItemGuard}
         read={readAcceptedItem}
         commit={handleUpdateItems}
       >

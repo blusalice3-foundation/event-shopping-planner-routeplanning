@@ -1,3 +1,10 @@
+import type { ShoppingItem } from "../../types/item";
+import { resolveLimitedPurchaseIntent } from "../../utils/limitedPurchaseIntent";
+import { recordEntry } from "../../utils/ownRecord";
+import {
+  itemContentGuardFailure,
+  inheritItemGuardGenerations,
+} from "../../utils/itemContentGuard";
 import type {
   ItemContentEdit,
   PersistenceSnapshot,
@@ -31,8 +38,8 @@ export function collectItemContentEdits(
   if (events.length !== Object.keys(next.eventLists).length) return undefined;
   const edits: ItemContentEdit[] = [];
   for (const eventName of events) {
-    const previous = base.eventLists[eventName];
-    const current = next.eventLists[eventName];
+    const previous = recordEntry(base.eventLists, eventName);
+    const current = recordEntry(next.eventLists, eventName);
     if (!current || previous.length !== current.length) return undefined;
     for (let index = 0; index < previous.length; index++) {
       const before = previous[index];
@@ -80,34 +87,60 @@ export function applyItemContentEdits(
   source: PersistenceSnapshot,
   edits: readonly ItemContentEdit[],
 ): PersistenceSnapshot {
-  const byEvent = new Map<string, Map<string, ItemContentEdit["fields"]>>();
+  const byEvent = new Map<string, Map<string, ItemContentEdit[]>>();
   for (const edit of edits) {
+    if (itemContentGuardFailure(source, edit)) continue;
     let items = byEvent.get(edit.eventName);
     if (!items) byEvent.set(edit.eventName, (items = new Map()));
-    items.set(edit.itemId, { ...items.get(edit.itemId), ...edit.fields });
+    const operations = items.get(edit.itemId) ?? [];
+    operations.push(edit);
+    items.set(edit.itemId, operations);
   }
   let lists = source.eventLists;
   for (const [eventName, changes] of byEvent) {
-    const items = source.eventLists[eventName];
+    const items = recordEntry(source.eventLists, eventName);
     if (!items) continue;
     let next = items;
     const changedIndices: number[] = [];
     const index = itemPositions(items);
-    for (const [id, fields] of changes) {
+    for (const [id, operations] of changes) {
       const position = index.get(id);
       if (position === undefined) continue;
       const item = items[position];
       if (!isRecord(item)) continue;
       let value = item;
-      for (const [key, field] of Object.entries(fields)) {
-        if (
-          Object.prototype.hasOwnProperty.call(item, key) === field.present &&
-          Object.is(item[key], field.value)
-        )
-          continue;
-        if (value === item) value = { ...item };
-        if (field.present) value[key] = field.value;
-        else delete value[key];
+      for (const edit of operations) {
+        let fields = edit.fields;
+        if (edit.limitedPurchase) {
+          const resolved = resolveLimitedPurchaseIntent(
+            value as unknown as ShoppingItem,
+            edit.limitedPurchase,
+          );
+          if (!resolved) continue;
+          fields = {
+            ...fields,
+            quantity: { present: true, value: resolved.updated.quantity },
+            purchaseStatus: {
+              present: true,
+              value: resolved.updated.purchaseStatus,
+            },
+            limitedPurchasedQuantity: {
+              present: resolved.updated.limitedPurchasedQuantity !== undefined,
+              value: resolved.updated.limitedPurchasedQuantity,
+            },
+          };
+        }
+        for (const [key, field] of Object.entries(fields)) {
+          if (
+            Object.prototype.hasOwnProperty.call(value, key) ===
+              field.present &&
+            Object.is(value[key], field.value)
+          )
+            continue;
+          if (value === item) value = { ...item };
+          if (field.present) value[key] = field.value;
+          else delete value[key];
+        }
       }
       if (value !== item) {
         if (next === items) next = items.slice();
@@ -123,5 +156,5 @@ export function applyItemContentEdits(
   }
   return lists === source.eventLists
     ? source
-    : { ...source, eventLists: lists };
+    : inheritItemGuardGenerations(source, { ...source, eventLists: lists });
 }

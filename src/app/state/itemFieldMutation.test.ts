@@ -5,7 +5,12 @@ import type {
   PersistenceSnapshot,
 } from "../ports/PersistenceCommandPort";
 import type { ShoppingItem } from "../../types/item";
+import { applyItemContentEdits } from "./itemContentEdits";
 import { planItemContentMutation } from "./itemFieldMutation";
+import {
+  createItemContentGuard,
+  registerItemGuardGenerations,
+} from "../../utils/itemContentGuard";
 const item: ShoppingItem = {
   id: "1",
   circle: "ユーザー登録",
@@ -89,4 +94,80 @@ describe("targeted item fields", () => {
       limitedPurchasedQuantity: 1,
     });
   });
+});
+
+describe("limited purchase quantities changed before persistence", () => {
+  it.each([
+    [5, 5, "purchased", 9, "LimitedPurchase", 5, true],
+    [5, 3, "limited", 2, "Purchased", undefined, true],
+    [5, 5, "purchased", 3, "Purchased", undefined, true],
+    [5, 1, "limited", 9, "LimitedPurchase", 1, false],
+  ] as const)(
+    "revalidates planned %i / actual %i (%s) against %i",
+    (planned, actual, kind, latest, status, savedActual, review) => {
+      const baseline = { ...item, quantity: planned };
+      const base = snapshot();
+      base.eventLists.event[0] = {
+        ...baseline,
+        quantity: latest,
+        remarks: "他タブのメモ",
+      };
+      registerItemGuardGenerations(base, { event: 0 });
+      const intent: ItemContentEdit = {
+        guard: createItemContentGuard(
+          base,
+          "event",
+          baseline,
+          "limited-single",
+          0,
+        ),
+        ...edit(
+          "purchaseStatus",
+          kind === "purchased" ? "Purchased" : "LimitedPurchase",
+        ),
+        baseline,
+        limitedPurchase: {
+          kind,
+          actual,
+          planned,
+          plannedEdited: false,
+          observedPlanned: planned,
+        },
+        fields: {
+          purchaseStatus: {
+            present: true,
+            value: kind === "purchased" ? "Purchased" : "LimitedPurchase",
+          },
+          ...(kind === "limited"
+            ? { limitedPurchasedQuantity: { present: true, value: actual } }
+            : {}),
+        },
+      };
+      const displayed = applyItemContentEdits(base, [intent]);
+      expect(displayed.eventLists.event[0]).toMatchObject({
+        quantity: latest,
+        purchaseStatus: status,
+      });
+      expect(
+        (displayed.eventLists.event[0] as ShoppingItem)
+          .limitedPurchasedQuantity,
+      ).toBe(savedActual);
+      const plan = planItemContentMutation(base, [intent]);
+      expect(Boolean(plan.confirmation)).toBe(review);
+      expect(plan.snapshot.eventLists.event[0]).toMatchObject({
+        quantity: latest,
+        purchaseStatus: status,
+        remarks: "他タブのメモ",
+      });
+      expect(
+        (plan.snapshot.eventLists.event[0] as ShoppingItem)
+          .limitedPurchasedQuantity,
+      ).toBe(savedActual);
+      expect(plan.itemContentEdits[0].limitedPurchase).toMatchObject({
+        actual,
+      });
+      if (review)
+        expect(plan.confirmation?.details.join("\n")).toContain(`${actual}個`);
+    },
+  );
 });

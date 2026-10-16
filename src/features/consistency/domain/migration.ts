@@ -1,3 +1,4 @@
+import { recordEntry, setOwnValue } from "../../../utils/ownRecord";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
 import type { ShoppingItem } from "../../../types/item";
 import type {
@@ -69,12 +70,18 @@ export function migrateLegacyConsistency(
       writable: true,
       configurable: true,
     });
-    event.blockDetectionSettings = structuredClone(settings[eventName] ?? null);
-    const definitions = (data.hallDefinitions[eventName] ??= {}) as Record<
+    event.blockDetectionSettings = structuredClone(
+      recordEntry(settings, eventName) ?? null,
+    );
+    const definitions = (recordEntry(data.hallDefinitions, eventName) ??
+      setOwnValue(data.hallDefinitions, eventName, {})) as Record<
       string,
       HallDefinition[]
     >;
-    const maps = (data.mapData[eventName] ?? {}) as Record<string, DayMapData>;
+    const maps = (recordEntry(data.mapData, eventName) ?? {}) as Record<
+      string,
+      DayMapData
+    >;
     const simpleDayKeys = Object.fromEntries(
       Object.keys(definitions)
         .filter((key) => key.startsWith(`${MAPLESS_HALL_KEY}:`))
@@ -82,8 +89,8 @@ export function migrateLegacyConsistency(
     );
     const days = collectEventDays(
       items,
-      data.executeModeItems[eventName],
-      data.dayModes[eventName],
+      recordEntry(data.executeModeItems, eventName),
+      recordEntry(data.dayModes, eventName),
       simpleDayKeys,
     );
     const addPending = (entry: LegacyPendingV1) => {
@@ -94,8 +101,8 @@ export function migrateLegacyConsistency(
       });
     };
     const records = [
-      data.executeModeItems[eventName],
-      data.dayModes[eventName],
+      recordEntry(data.executeModeItems, eventName),
+      recordEntry(data.dayModes, eventName),
       simpleDayKeys,
     ];
     const ambiguousDays = new Set(
@@ -249,7 +256,7 @@ export function migrateLegacyConsistency(
               (day) => normalizeMapDay(day) === normalizeMapDay(sourceKey),
             );
     for (const [sourceKey, raw] of Object.entries(
-      data.hallRouteSettings[eventName] ?? {},
+      recordEntry(data.hallRouteSettings, eventName) ?? {},
     )) {
       const settings = raw as HallRouteSettings;
       for (const [index, list] of settings.hallVisitLists.entries()) {
@@ -377,7 +384,7 @@ export function migrateLegacyConsistency(
         });
     }
     for (const [sourceKey, raw] of Object.entries(
-      data.routeSettings[eventName] ?? {},
+      recordEntry(data.routeSettings, eventName) ?? {},
     )) {
       const route = raw as RouteSettings;
       for (const [index, point] of route.visitOrder.entries()) {

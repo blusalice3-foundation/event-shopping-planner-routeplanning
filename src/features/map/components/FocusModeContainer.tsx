@@ -1,3 +1,4 @@
+import { recordEntry } from "../../../utils/ownRecord";
 import {
   resolveDayKey,
   resolveDayMap,
@@ -111,7 +112,7 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
   // 実行列に含まれるアイテムID
   const executeModeItemIds = useMemo(() => {
     if (!activeEventName) return [];
-    const record = executeModeItems[activeEventName];
+    const record = recordEntry(executeModeItems, activeEventName);
     const day = resolveDayKey(record, currentDay);
     return day.status === "resolved" ? record[day.key] : [];
   }, [executeModeItems, activeEventName, currentDay]);
@@ -175,7 +176,7 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
   const mapTabName = useMemo(() => {
     if (resolvedMapKey !== undefined) return resolvedMapKey;
     const result = resolveDayMap(
-      activeEventName ? mapData[activeEventName] : undefined,
+      activeEventName ? recordEntry(mapData, activeEventName) : undefined,
       currentDay,
     );
     return result.status === "resolved" ? result.key : null;
@@ -184,12 +185,12 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
   // 当該マップが存在するか
   const hasMapTab = useMemo(() => {
     if (!activeEventName || !mapTabName) return false;
-    return !!mapData[activeEventName]?.[mapTabName];
+    return !!recordEntry(mapData, activeEventName)?.[mapTabName];
   }, [activeEventName, mapTabName, mapData]);
 
   const activeEventMapData = useMemo(() => {
     if (!activeEventName) return undefined;
-    return mapData[activeEventName] || undefined;
+    return recordEntry(mapData, activeEventName) || undefined;
   }, [activeEventName, mapData]);
 
   const activeDayMapData = useMemo(() => {
@@ -237,7 +238,9 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
 
   const maplessKey = useMemo(() => {
     const result = resolveSimpleKey(
-      activeEventName ? hallDefinitions[activeEventName] : undefined,
+      activeEventName
+        ? recordEntry(hallDefinitions, activeEventName)
+        : undefined,
       currentDay,
     );
     return result.status === "resolved"
@@ -257,11 +260,12 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
     const activeMapTabName = hasMapTab ? mapTabName : null;
     const activeMapHalls: HallDefinition[] =
       activeEventName && activeMapTabName
-        ? hallDefinitions[activeEventName]?.[activeMapTabName] || []
+        ? recordEntry(hallDefinitions, activeEventName)?.[activeMapTabName] ||
+          []
         : [];
     const activeMaplessHalls: HallDefinition[] =
       activeEventName && maplessKey
-        ? hallDefinitions[activeEventName]?.[maplessKey] || []
+        ? recordEntry(hallDefinitions, activeEventName)?.[maplessKey] || []
         : [];
 
     const signature = buildHallDefinitionsStoreRoutingSignature({
@@ -297,11 +301,11 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
     const activeMapTabName = hasMapTab ? mapTabName : null;
     const activeMapSettings: HallRouteSettings | undefined =
       activeEventName && activeMapTabName
-        ? hallRouteSettings[activeEventName]?.[activeMapTabName]
+        ? recordEntry(hallRouteSettings, activeEventName)?.[activeMapTabName]
         : undefined;
     const activeMaplessSettings: HallRouteSettings | undefined =
       activeEventName && maplessKey
-        ? hallRouteSettings[activeEventName]?.[maplessKey]
+        ? recordEntry(hallRouteSettings, activeEventName)?.[maplessKey]
         : undefined;
 
     const signature = buildHallRouteSettingsStoreRoutingSignature({
@@ -333,10 +337,10 @@ const FocusModeContainer: React.FC<FocusModeContainerProps> = ({
 
     const activeMapTabName = hasMapTab ? mapTabName : null;
     const activeMapHalls = activeMapTabName
-      ? hallDefinitions[activeEventName]?.[activeMapTabName] || []
+      ? recordEntry(hallDefinitions, activeEventName)?.[activeMapTabName] || []
       : [];
     const activeMaplessHalls = maplessKey
-      ? hallDefinitions[activeEventName]?.[maplessKey] || []
+      ? recordEntry(hallDefinitions, activeEventName)?.[maplessKey] || []
       : [];
 
     return [...activeMapHalls, ...activeMaplessHalls];

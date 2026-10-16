@@ -1,3 +1,4 @@
+import { recordEntry, setOwnValue } from "../../../utils/ownRecord";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
 import type {
   MutationPlan,
@@ -37,14 +38,14 @@ export function duplicateEventDays(
   name: string,
 ): string[] {
   const definitions = Object.fromEntries(
-    Object.keys(snapshot.hallDefinitions[name] ?? {})
+    Object.keys(recordEntry(snapshot.hallDefinitions, name) ?? {})
       .filter((key) => key.startsWith(`${MAPLESS_HALL_KEY}:`))
       .map((key) => [key.slice(MAPLESS_HALL_KEY.length + 1), true]),
   );
   const records = [
-    snapshot.executeModeItems[name],
-    snapshot.dayModes[name],
-    snapshot.eventConsistency[name]?.days,
+    recordEntry(snapshot.executeModeItems, name),
+    recordEntry(snapshot.dayModes, name),
+    recordEntry(snapshot.eventConsistency, name)?.days,
     definitions,
   ];
   return [
@@ -96,10 +97,13 @@ export function planDayMerge(
   };
   const sourceKeys = [
     ...new Set([
-      ...sortedKeys(snapshot.executeModeItems[name], requestedDay),
-      ...sortedKeys(snapshot.dayModes[name], requestedDay),
-      ...sortedKeys(snapshot.eventConsistency[name]?.days, requestedDay),
-      ...Object.keys(snapshot.hallDefinitions[name] ?? {})
+      ...sortedKeys(recordEntry(snapshot.executeModeItems, name), requestedDay),
+      ...sortedKeys(recordEntry(snapshot.dayModes, name), requestedDay),
+      ...sortedKeys(
+        recordEntry(snapshot.eventConsistency, name)?.days,
+        requestedDay,
+      ),
+      ...Object.keys(recordEntry(snapshot.hallDefinitions, name) ?? {})
         .filter((key) => key.startsWith(`${MAPLESS_HALL_KEY}:`))
         .map((key) => key.slice(MAPLESS_HALL_KEY.length + 1))
         .filter((key) => sameDay(key, requestedDay)),
@@ -117,10 +121,9 @@ export function planDayMerge(
     ...keys.filter((key) => key !== first),
   ];
   const itemsById = new Map(
-    ((snapshot.eventLists[name] ?? []) as ShoppingItem[]).map((item) => [
-      item.id,
-      item,
-    ]),
+    ((recordEntry(snapshot.eventLists, name) ?? []) as ShoppingItem[]).map(
+      (item) => [item.id, item],
+    ),
   );
   const describeItems = (ids: string[]) =>
     ids
@@ -132,9 +135,10 @@ export function planDayMerge(
       })
       .join(" → ");
   const details: string[] = [];
-  const event = next.eventConsistency[name];
+  const event = recordEntry(next.eventConsistency, name);
   if (!event) throw new Error("イベントの関連設定がありません。");
-  const simpleDefinitions = (next.hallDefinitions[name] ??= {}) as Record<
+  const simpleDefinitions = (recordEntry(next.hallDefinitions, name) ??
+    setOwnValue(next.hallDefinitions, name, {})) as Record<
     string,
     HallDefinition[]
   >;
@@ -209,7 +213,7 @@ export function planDayMerge(
       };
     });
   }
-  const execute = next.executeModeItems[name] ?? {};
+  const execute = recordEntry(next.executeModeItems, name) ?? {};
   const executeKeys = sortedKeys(execute, preferredKey);
   if (executeKeys.length) {
     const first = choose(
@@ -229,7 +233,7 @@ export function planDayMerge(
     for (const key of executeKeys) delete execute[key];
     execute[preferredKey] = order;
   }
-  const modes = next.dayModes[name] ?? {};
+  const modes = recordEntry(next.dayModes, name) ?? {};
   const modeKeys = sortedKeys(modes, preferredKey);
   if (modeKeys.length || selections.mode !== undefined) {
     const mode = choose(
@@ -251,7 +255,7 @@ export function planDayMerge(
     );
     for (const key of modeKeys) delete modes[key];
     modes[preferredKey] = mode;
-    next.dayModes[name] = modes;
+    setOwnValue(next.dayModes, name, modes);
   }
   const keys = sortedKeys(event.days, preferredKey);
   const merged = createDayConsistency();
@@ -347,7 +351,7 @@ export function planDayMerge(
       hall?.kind === "simple" ? getMaplessKey(hall.dayKey) : hall?.mapKey;
     const definition = sourceKey
       ? (
-          next.hallDefinitions[name]?.[sourceKey] as
+          recordEntry(next.hallDefinitions, name)?.[sourceKey] as
             | HallDefinition[]
             | undefined
         )?.find((entry) => entry.id === hall?.hallId)
@@ -438,28 +442,28 @@ export function planDayMerge(
       pending.sourceDayKey = preferredKey;
   const affected = (value: PersistenceSnapshot) => ({
     execute: Object.fromEntries(
-      Object.entries(value.executeModeItems[name] ?? {}).filter(([key]) =>
-        sameDay(key, requestedDay),
+      Object.entries(recordEntry(value.executeModeItems, name) ?? {}).filter(
+        ([key]) => sameDay(key, requestedDay),
       ),
     ),
     modes: Object.fromEntries(
-      Object.entries(value.dayModes[name] ?? {}).filter(([key]) =>
+      Object.entries(recordEntry(value.dayModes, name) ?? {}).filter(([key]) =>
         sameDay(key, requestedDay),
       ),
     ),
     days: Object.fromEntries(
-      Object.entries(value.eventConsistency[name]?.days ?? {}).filter(([key]) =>
-        sameDay(key, requestedDay),
-      ),
+      Object.entries(
+        recordEntry(value.eventConsistency, name)?.days ?? {},
+      ).filter(([key]) => sameDay(key, requestedDay)),
     ),
     definitions: Object.fromEntries(
-      Object.entries(value.hallDefinitions[name] ?? {}).filter(
+      Object.entries(recordEntry(value.hallDefinitions, name) ?? {}).filter(
         ([key]) =>
           key.startsWith(`${MAPLESS_HALL_KEY}:`) &&
           sameDay(key.slice(MAPLESS_HALL_KEY.length + 1), requestedDay),
       ),
     ),
-    pending: value.eventConsistency[name]?.legacyPending,
+    pending: recordEntry(value.eventConsistency, name)?.legacyPending,
   });
   return {
     snapshot: next,

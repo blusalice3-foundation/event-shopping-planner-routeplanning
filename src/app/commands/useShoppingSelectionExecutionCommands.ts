@@ -1,3 +1,4 @@
+import { recordEntry } from "../../utils/ownRecord";
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import type {
   BlockSortDirection,
@@ -214,11 +215,11 @@ export const useShoppingSelectionExecutionCommands = ({
     (targetDay = activeEventDate) => {
       if (!activeEventName || !targetDay) return;
       setDayModes((current) => {
-        const mode = current[activeEventName]?.[targetDay];
+        const mode = recordEntry(current, activeEventName)?.[targetDay];
         return {
           ...current,
           [activeEventName]: {
-            ...current[activeEventName],
+            ...recordEntry(current, activeEventName),
             [targetDay]: mode === "execute" ? "edit" : "execute",
           },
         };
@@ -240,7 +241,7 @@ export const useShoppingSelectionExecutionCommands = ({
       setDayModes((current) => ({
         ...current,
         [activeEventName]: {
-          ...(current[activeEventName] || {}),
+          ...(recordEntry(current, activeEventName) || {}),
           [activeEventDate]: mode,
         },
       }));
@@ -326,19 +327,21 @@ export const useShoppingSelectionExecutionCommands = ({
       } else {
         setEventLists((current) => ({
           ...current,
-          [activeEventName]: (current[activeEventName] || []).map((item) => {
-            if (!groupItemIds.has(item.id)) return item;
-            if (
-              targetStatus === "LimitedPurchase" ||
-              item.purchaseStatus === "LimitedPurchase"
-            ) {
-              return item;
-            }
-            return clearLimitedPurchase({
-              ...item,
-              purchaseStatus: nextStatus,
-            });
-          }),
+          [activeEventName]: (recordEntry(current, activeEventName) || []).map(
+            (item) => {
+              if (!groupItemIds.has(item.id)) return item;
+              if (
+                targetStatus === "LimitedPurchase" ||
+                item.purchaseStatus === "LimitedPurchase"
+              ) {
+                return item;
+              }
+              return clearLimitedPurchase({
+                ...item,
+                purchaseStatus: nextStatus,
+              });
+            },
+          ),
         }));
       }
       for (const item of groupItems) {
@@ -456,10 +459,12 @@ export const useShoppingSelectionExecutionCommands = ({
       setSortState("Manual");
       setBlockSortDirection(null);
 
-      const mode = dayModes[activeEventName]?.[activeEventDate];
+      const mode = recordEntry(dayModes, activeEventName)?.[activeEventDate];
       if (mode === "edit") {
         const executeIds = new Set(
-          executeModeItemsRef.current[activeEventName]?.[activeEventDate] || [],
+          recordEntry(executeModeItemsRef.current, activeEventName)?.[
+            activeEventDate
+          ] || [],
         );
         const selectedItems = items.filter((item) =>
           selectedItemIds.has(item.id),
@@ -473,7 +478,7 @@ export const useShoppingSelectionExecutionCommands = ({
 
         if (isInExecuteColumn && !isInCandidateColumn) {
           updateExecuteModeItems((current) => {
-            const eventItems = current[activeEventName] || {};
+            const eventItems = recordEntry(current, activeEventName) || {};
             const dayItems = [...(eventItems[activeEventDate] || [])];
             const itemsMap = new Map(items.map((item) => [item.id, item]));
             const selectedVisitKeys = new Set(
@@ -540,7 +545,7 @@ export const useShoppingSelectionExecutionCommands = ({
 
         if (isInCandidateColumn && !isInExecuteColumn) {
           setEventLists((current) => {
-            const allItems = [...(current[activeEventName] || [])];
+            const allItems = [...(recordEntry(current, activeEventName) || [])];
             const candidateItems = allItems.filter(
               (item) =>
                 isSameExecutionVisitDay(item.eventDate, activeEventDate) &&
@@ -590,7 +595,7 @@ export const useShoppingSelectionExecutionCommands = ({
       }
 
       setEventLists((current) => {
-        const currentItems = [...(current[activeEventName] || [])];
+        const currentItems = [...(recordEntry(current, activeEventName) || [])];
         const selectedItems = currentItems
           .filter((item) => selectedItemIds.has(item.id))
           .sort((first, second) => {

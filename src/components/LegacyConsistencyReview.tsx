@@ -1,3 +1,4 @@
+import { recordEntry } from "../utils/ownRecord";
 import { normalizeExecutionVisitDay } from "../utils/visitProjection";
 import { useState } from "react";
 import type { PersistenceSnapshot } from "../app/ports/PersistenceCommandPort";
@@ -30,7 +31,8 @@ export function LegacyConsistencyReview({
   eventName,
   resolve,
 }: Props) {
-  const pending = snapshot.eventConsistency[eventName]?.legacyPending ?? [];
+  const pending =
+    recordEntry(snapshot.eventConsistency, eventName)?.legacyPending ?? [];
   const [selected, setSelected] = useState<string | null>(null);
   const entry = pending.find(
     (value) => legacyPendingIdentity(value) === selected,
@@ -77,11 +79,11 @@ function LegacyEntryEditor({
   select(value: string): void;
   close(): void;
 }) {
-  const event = snapshot.eventConsistency[eventName];
+  const event = recordEntry(snapshot.eventConsistency, eventName);
   const days = collectEventDays(
-    snapshot.eventLists[eventName] as ShoppingItem[],
-    snapshot.executeModeItems[eventName],
-    snapshot.dayModes[eventName],
+    recordEntry(snapshot.eventLists, eventName) as ShoppingItem[],
+    recordEntry(snapshot.executeModeItems, eventName),
+    recordEntry(snapshot.dayModes, eventName),
     event.days,
   );
   const [day, setDay] = useState(
@@ -94,11 +96,14 @@ function LegacyEntryEditor({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const maps = resolveDayMap(
-    snapshot.mapData[eventName] as Record<string, DayMapData>,
+    recordEntry(snapshot.mapData, eventName) as Record<string, DayMapData>,
     day,
   ).candidates;
   const halls = getContextHalls(
-    snapshot.hallDefinitions[eventName] as Record<string, HallDefinition[]>,
+    recordEntry(snapshot.hallDefinitions, eventName) as Record<
+      string,
+      HallDefinition[]
+    >,
     day,
     mapKey,
   );

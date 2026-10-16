@@ -17,6 +17,7 @@ const currentItem = (overrides: Partial<ShoppingItem> = {}): ShoppingItem => ({
   sheetRemarks: "旧シート備考",
   url: "https://old.example",
   source: "spreadsheet",
+  sheetIdentityVerified: true,
   protectionLevel: "none",
   assignedTo: "担当者",
   orderIndex: 7,
@@ -24,6 +25,7 @@ const currentItem = (overrides: Partial<ShoppingItem> = {}): ShoppingItem => ({
 });
 
 const sheetItem = (overrides: Partial<SheetItem> = {}): SheetItem => ({
+  sheetIdentityVerified: true,
   circle: "サークルA",
   eventDate: "1日目",
   block: "東A",

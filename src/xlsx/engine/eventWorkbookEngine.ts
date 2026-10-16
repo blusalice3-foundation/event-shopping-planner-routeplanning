@@ -1,3 +1,4 @@
+import { recordEntry, setOwnValue } from "../../utils/ownRecord";
 import {
   createWorkbookSource,
   selectWorkbookContent,
@@ -69,6 +70,13 @@ export interface ExportData {
 
 const EXPORT_VERSION = "3.0";
 const WORKBOOK_CREATOR = "Event Shopping Planner";
+const TEXT_METADATA_KEYS = new Set([
+  "eventName",
+  "exportDate",
+  "spreadsheetUrl",
+  "spreadsheetSheetName",
+  "lastImportDate",
+]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -166,6 +174,46 @@ const parseFiniteNumberCell = (
   return { kind: "invalid", raw: "非対応セル形式" };
 };
 
+/** Preserve text without coercing structured Excel values into object strings. */
+function parseTextCell(value: ExcelJS.CellValue): string | undefined {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string" || typeof value === "boolean")
+    return String(value);
+  if (typeof value === "number")
+    return Number.isFinite(value) ? String(value) : undefined;
+  if (value instanceof Date) return String(value);
+  if (typeof value === "object" && "richText" in value)
+    return value.richText.every((part) => typeof part.text === "string")
+      ? value.richText.map((part) => part.text).join("")
+      : undefined;
+  if (isFormulaCellValue(value)) {
+    const result = value.result;
+    if (typeof result === "string" || typeof result === "boolean")
+      return String(result);
+    if (typeof result === "number" && Number.isFinite(result))
+      return String(result);
+  }
+  return undefined;
+}
+
+/** Read auxiliary text while keeping JSON payload cells scalar-only. */
+function readAuxiliaryTextCell(
+  cell: ExcelJS.Cell,
+  field: string,
+  scalarOnly = false,
+): string {
+  const rawValue = cell.value;
+  const text =
+    scalarOnly && rawValue !== null && typeof rawValue === "object"
+      ? undefined
+      : parseTextCell(scalarOnly ? rawValue || "" : rawValue);
+  if (text === undefined)
+    throw new Error(
+      `${cell.worksheet.name}${cell.row}行目「${field}」が非対応セル形式です。`,
+    );
+  return text;
+}
+
 /**
  * データをxlsxファイルにエクスポート
  */
@@ -180,10 +228,16 @@ export async function exportToXlsx(
     eventName,
     options,
   );
-  items = selected.snapshot.eventLists[eventName] as ShoppingItem[];
+  items = recordEntry(
+    selected.snapshot.eventLists,
+    eventName,
+  ) as ShoppingItem[];
   additionalData = {
     ...selected.snapshot,
-    metadata: selected.snapshot.eventMetadata[eventName] as EventMetadata,
+    metadata: recordEntry(
+      selected.snapshot.eventMetadata,
+      eventName,
+    ) as EventMetadata,
   } as EventWorkbookAdditionalData;
   const workbook = new ExcelJS.Workbook();
   workbook.creator = WORKBOOK_CREATOR;
@@ -212,6 +266,7 @@ export async function exportToXlsx(
     { header: "限数実購入数", key: "limitedPurchasedQuantity", width: 14 },
     { header: "カタログ価格", key: "catalogPrice", width: 14 },
     { header: "シート備考", key: "sheetRemarks", width: 30 },
+    { header: "シート照合根拠", key: "sheetIdentityEvidence", width: 18 },
   ];
 
   // データ
@@ -236,6 +291,13 @@ export async function exportToXlsx(
         item.purchaseStatus === "LimitedPurchase"
           ? (item.limitedPurchasedQuantity ?? "")
           : "",
+      // Keep legacy fallback values, but never turn them into identity evidence.
+      sheetIdentityEvidence:
+        item.sheetIdentityVerified === true &&
+        item.catalogPrice !== undefined &&
+        item.sheetRemarks !== undefined
+          ? "verified"
+          : "unverified",
       catalogPrice:
         item.catalogPrice !== undefined
           ? (item.catalogPrice ?? "")
@@ -299,11 +361,11 @@ export async function exportToXlsx(
       const eventSettings = [
         [
           "mapRotationSettings",
-          additionalData.mapRotationSettings?.[eventName],
+          recordEntry(additionalData.mapRotationSettings, eventName),
         ],
         [
           "mapViewportSettings",
-          additionalData.mapViewportSettings?.[eventName],
+          recordEntry(additionalData.mapViewportSettings, eventName),
         ],
       ] as const;
 
@@ -327,7 +389,7 @@ export async function exportToXlsx(
 
     // 実行モードアイテム
     const eventExecuteItems =
-      additionalData.executeModeItems?.[eventName] || {};
+      recordEntry(additionalData.executeModeItems, eventName) || {};
     Object.entries(eventExecuteItems).forEach(([eventDate, itemIds]) => {
       layoutSheet.addRow({
         type: "executeModeItems",
@@ -337,7 +399,7 @@ export async function exportToXlsx(
     });
 
     // 日モード
-    const eventDayModes = additionalData.dayModes?.[eventName] || {};
+    const eventDayModes = recordEntry(additionalData.dayModes, eventName) || {};
     Object.entries(eventDayModes).forEach(([eventDate, mode]) => {
       layoutSheet.addRow({
         type: "dayModes",
@@ -351,7 +413,7 @@ export async function exportToXlsx(
 
   // 4. マップデータシート
   if (options.includeMapData && options.format === "full") {
-    const eventMapData = additionalData.mapData?.[eventName] ?? {};
+    const eventMapData = recordEntry(additionalData.mapData, eventName) ?? {};
     {
       const mapSheet = workbook.addWorksheet("マップデータ");
       mapSheet.columns = [
@@ -380,7 +442,10 @@ export async function exportToXlsx(
     ];
 
     // ホール定義
-    const eventHallDefinitions = additionalData.hallDefinitions?.[eventName];
+    const eventHallDefinitions = recordEntry(
+      additionalData.hallDefinitions,
+      eventName,
+    );
     if (eventHallDefinitions) {
       Object.entries(eventHallDefinitions).forEach(([mapName, data]) => {
         routeSheet.addRow({
@@ -407,7 +472,7 @@ export async function exportToXlsx(
       "JSON本文",
     ].map((header) => ({ header, width: header === "JSON本文" ? 100 : 22 }));
     for (const row of encodeConsistencyRows(
-      selected.snapshot.eventConsistency[eventName],
+      recordEntry(selected.snapshot.eventConsistency, eventName),
     ).rows)
       sheet.addRow([
         row.kind,
@@ -452,8 +517,24 @@ export async function importFromXlsx(
     if (metaSheet) {
       metaSheet.eachRow((row, rowNumber) => {
         if (rowNumber === 1) return;
-        const key = String(row.getCell(1).value || "");
-        const value = String(row.getCell(2).value || "");
+        const key = parseTextCell(row.getCell(1).value);
+        if (key === undefined)
+          throw new Error(
+            `メタデータ${rowNumber}行目のキーが非対応セル形式です。`,
+          );
+        const rawValue = row.getCell(2).value;
+        // Structured JSON/manifest values must still be scalar cells.
+        const value = TEXT_METADATA_KEYS.has(key)
+          ? parseTextCell(rawValue)
+          : rawValue === null ||
+              rawValue === undefined ||
+              ["string", "number", "boolean"].includes(typeof rawValue)
+            ? String(rawValue ?? "")
+            : undefined;
+        if (value === undefined)
+          throw new Error(
+            `メタデータ${rowNumber}行目「${key}」が非対応セル形式です。`,
+          );
         if (key && metaMap.has(key))
           throw new Error("メタデータのキーが重複しています。");
         if (key) metaMap.set(key, value);
@@ -513,13 +594,18 @@ export async function importFromXlsx(
 
     const itemHeaderColumns = new Map<string, number>();
     itemsSheet.getRow(1).eachCell({ includeEmpty: false }, (cell, column) => {
-      const header = String(cell.value ?? "").trim();
+      const header = parseTextCell(cell.value)?.trim();
+      if (header === undefined)
+        throw new Error(
+          `アイテムデータの${column}列目の見出しが非対応セル形式です。`,
+        );
       if (header && !itemHeaderColumns.has(header)) {
         itemHeaderColumns.set(header, column);
       }
     });
     const catalogPriceColumn = itemHeaderColumns.get("カタログ価格");
     const sheetRemarksColumn = itemHeaderColumns.get("シート備考");
+    const sheetIdentityColumn = itemHeaderColumns.get("シート照合根拠");
     const hasCatalogPriceColumn = catalogPriceColumn !== undefined;
     const hasSheetRemarksColumn = sheetRemarksColumn !== undefined;
     if (hasCatalogPriceColumn !== hasSheetRemarksColumn) {
@@ -551,34 +637,34 @@ export async function importFromXlsx(
       if (rowNumber === 1) return; // ヘッダーをスキップ
 
       const rowReasons: string[] = [];
+      const textCell = (column: number): string => {
+        const text = parseTextCell(row.getCell(column).value);
+        if (text !== undefined) return text;
+        rowReasons.push(
+          `${column}列目の非対応テキストセルを空欄で補完しました`,
+        );
+        return "";
+      };
 
-      const rawId = String(row.getCell(1).value ?? "").trim();
+      const rawId = textCell(1).trim();
       const itemId = rawId || crypto.randomUUID();
       if (!rawId) {
         rowReasons.push("IDが空のため自動採番しました");
       }
 
-      const circle = String(row.getCell(2).value ?? "");
-      const eventDate = String(row.getCell(3).value ?? "");
-      const block = String(row.getCell(4).value ?? "");
-      const number = String(row.getCell(5).value ?? "");
-      const title = String(row.getCell(6).value ?? "");
+      const circle = textCell(2);
+      const eventDate = textCell(3);
+      const block = textCell(4);
+      const number = textCell(5);
+      const title = textCell(6);
 
-      const rawPrice = row.getCell(7).value;
+      const parsedPrice = parseFiniteNumberCell(row.getCell(7).value);
       let price: number | null = null;
-      if (
-        rawPrice !== null &&
-        rawPrice !== undefined &&
-        String(rawPrice).trim() !== ""
-      ) {
-        const parsedPrice = Number(rawPrice);
-        if (Number.isFinite(parsedPrice)) {
-          price = parsedPrice;
-        } else {
-          rowReasons.push(
-            `価格「${String(rawPrice)}」は不正のため空値で補完しました`,
-          );
-        }
+      if (parsedPrice.kind === "value") price = parsedPrice.value;
+      else if (parsedPrice.kind === "invalid") {
+        rowReasons.push(
+          `価格「${parsedPrice.raw}」は不正のため空値で補完しました`,
+        );
       }
 
       const rawQuantity = row.getCell(8).value;
@@ -598,7 +684,7 @@ export async function importFromXlsx(
         quantity = Math.max(1, Math.floor(quantity));
       }
 
-      const rawPurchaseStatus = String(row.getCell(9).value ?? "").trim();
+      const rawPurchaseStatus = textCell(9).trim();
       const purchaseStatus: ShoppingItem["purchaseStatus"] =
         validPurchaseStatuses.has(rawPurchaseStatus)
           ? (rawPurchaseStatus as ShoppingItem["purchaseStatus"])
@@ -609,11 +695,11 @@ export async function importFromXlsx(
         );
       }
 
-      const remarks = String(row.getCell(10).value ?? "");
-      const url = String(row.getCell(11).value ?? "");
+      const remarks = textCell(10);
+      const url = textCell(11);
 
       // 優先度の値を取得（列12）
-      const priorityValue = String(row.getCell(12).value ?? "").trim();
+      const priorityValue = textCell(12).trim();
       let priorityLevel: "none" | "priority" | "highest" | undefined;
       if (priorityValue === "highest") {
         priorityLevel = "highest";
@@ -628,7 +714,7 @@ export async function importFromXlsx(
       }
 
       // 保護レベルの値を取得（列13）
-      const protectionValue = String(row.getCell(13).value ?? "").trim();
+      const protectionValue = textCell(13).trim();
       let protectionLevel: "full" | "deletable" | "none" | undefined;
       if (protectionValue === "full") {
         protectionLevel = "full";
@@ -646,7 +732,7 @@ export async function importFromXlsx(
       }
 
       // 追加元の値を取得（列14）
-      const sourceValue = String(row.getCell(14).value ?? "").trim();
+      const sourceValue = textCell(14).trim();
       let source: "spreadsheet" | "app" | undefined;
       if (sourceValue === "app") {
         source = "app";
@@ -664,6 +750,13 @@ export async function importFromXlsx(
       let catalogPrice: number | null | undefined;
       let sheetRemarks: string | undefined;
       let usedLegacySheetFieldFallback = false;
+      // Older exports could fill these columns from editable price/notes.
+      // Missing or unknown evidence must remain unverified across JSON/XLSX.
+      let sheetIdentityVerified =
+        source === "spreadsheet" &&
+        hasSheetDerivedColumns &&
+        sheetIdentityColumn !== undefined &&
+        row.getCell(sheetIdentityColumn).value === "verified";
       if (hasSheetDerivedColumns) {
         const parsedCatalogPrice = parseFiniteNumberCell(
           row.getCell(catalogPriceColumn!).value,
@@ -675,6 +768,7 @@ export async function importFromXlsx(
             catalogPrice = null;
           }
         } else {
+          sheetIdentityVerified = false;
           rowReasons.push(
             `カタログ価格「${parsedCatalogPrice.raw}」は不正のため空値で補完しました`,
           );
@@ -683,7 +777,9 @@ export async function importFromXlsx(
           }
         }
 
-        const parsedSheetRemarks = row.getCell(sheetRemarksColumn!).text;
+        if (parseTextCell(row.getCell(sheetRemarksColumn!).value) === undefined)
+          sheetIdentityVerified = false;
+        const parsedSheetRemarks = textCell(sheetRemarksColumn!);
         if (source === "spreadsheet" || parsedSheetRemarks !== "") {
           sheetRemarks = parsedSheetRemarks;
         }
@@ -694,7 +790,7 @@ export async function importFromXlsx(
       }
 
       // 手動ホールIDを取得（列15、後方互換: 古いファイルは空）
-      const manualHallValue = String(row.getCell(15).value ?? "").trim();
+      const manualHallValue = textCell(15).trim();
       const manualHallId = manualHallValue || undefined;
       const parsedLimitedPurchasedQuantity = parseStrictPositiveIntegerCell(
         row.getCell(16).value,
@@ -746,6 +842,7 @@ export async function importFromXlsx(
         purchaseStatus,
         remarks,
         ...(sheetRemarks !== undefined ? { sheetRemarks } : {}),
+        ...(sheetIdentityVerified ? { sheetIdentityVerified: true } : {}),
         url,
         ...(priorityLevel !== undefined ? { priorityLevel } : {}),
         ...(protectionLevel !== undefined ? { protectionLevel } : {}),
@@ -867,15 +964,19 @@ export async function importFromXlsx(
 
       layoutSheet.eachRow((row, rowNumber) => {
         if (rowNumber === 1) return;
-        const type = String(row.getCell(1).value || "");
-        const eventDate = String(row.getCell(2).value || "");
-        const data = String(row.getCell(3).value || "");
+        const type = readAuxiliaryTextCell(row.getCell(1), "種別");
+        const eventDate = readAuxiliaryTextCell(row.getCell(2), "参加日");
+        const data = readAuxiliaryTextCell(
+          row.getCell(3),
+          "データ",
+          type !== "dayModes",
+        );
 
         try {
           if (type === "executeModeItems") {
-            executeModeItems[eventDate] = JSON.parse(data);
+            setOwnValue(executeModeItems, eventDate, JSON.parse(data));
           } else if (type === "dayModes") {
-            dayModes[eventDate] = data;
+            setOwnValue(dayModes, eventDate, data);
           }
         } catch {
           result.errors.push("配置情報の解析エラー");
@@ -897,12 +998,12 @@ export async function importFromXlsx(
 
       mapSheet.eachRow((row, rowNumber) => {
         if (rowNumber === 1) return;
-        const mapName = String(row.getCell(1).value || "");
-        const data = String(row.getCell(2).value || "");
+        const mapName = readAuxiliaryTextCell(row.getCell(1), "マップ名");
+        const data = readAuxiliaryTextCell(row.getCell(2), "データ", true);
 
         try {
           if (mapName && data) {
-            mapData[mapName] = JSON.parse(data);
+            setOwnValue(mapData, mapName, JSON.parse(data));
           }
         } catch {
           result.errors.push("マップデータの解析エラー");
@@ -923,17 +1024,17 @@ export async function importFromXlsx(
 
       routeSheet.eachRow((row, rowNumber) => {
         if (rowNumber === 1) return;
-        const type = String(row.getCell(1).value || "");
-        const mapName = String(row.getCell(2).value || "");
-        const data = String(row.getCell(3).value || "");
+        const type = readAuxiliaryTextCell(row.getCell(1), "種別");
+        const mapName = readAuxiliaryTextCell(row.getCell(2), "マップ名");
+        const data = readAuxiliaryTextCell(row.getCell(3), "データ", true);
 
         try {
           if (type === "routeSettings" && mapName && data) {
-            routeSettings[mapName] = JSON.parse(data);
+            setOwnValue(routeSettings, mapName, JSON.parse(data));
           } else if (type === "hallDefinitions" && mapName && data) {
-            hallDefinitions[mapName] = JSON.parse(data);
+            setOwnValue(hallDefinitions, mapName, JSON.parse(data));
           } else if (type === "hallRouteSettings" && mapName && data) {
-            hallRouteSettings[mapName] = JSON.parse(data);
+            setOwnValue(hallRouteSettings, mapName, JSON.parse(data));
           }
         } catch {
           result.errors.push("ルート情報の解析エラー");

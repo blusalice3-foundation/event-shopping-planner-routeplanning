@@ -1,3 +1,4 @@
+import { recordEntry } from "../../../utils/ownRecord";
 import { isCompleteHallOrder } from "../../consistency/domain/projection";
 import type {
   DayMapData,
@@ -92,7 +93,7 @@ export const updateHallDefinitionsForHalls = ({
   const updated: HallDefinitionsStore = {
     ...previous,
     [eventName]: {
-      ...(previous[eventName] || {}),
+      ...(recordEntry(previous, eventName) || {}),
       [mapTabName]: polygonHalls,
     },
   };
@@ -117,7 +118,7 @@ export const updateHallRouteSettingsForHalls = ({
   polygonHalls: HallDefinition[];
   maplessHalls: HallDefinition[];
 }): HallRouteSettingsStore => {
-  const previousEvent = previous[eventName] || {};
+  const previousEvent = recordEntry(previous, eventName) || {};
   const previousMapTab = previousEvent[mapTabName] || emptyHallRouteSettings();
   const polygonIds = polygonHalls.map((hall) => hall.id);
   const maplessIds = maplessHalls.map((hall) => hall.id);
@@ -163,7 +164,7 @@ export const updateMaplessHallDefinitions = ({
 }): HallDefinitionsStore => ({
   ...previous,
   [eventName]: {
-    ...(previous[eventName] || {}),
+    ...(recordEntry(previous, eventName) || {}),
     [maplessKey]: halls,
   },
 });
@@ -179,7 +180,7 @@ export const updateMaplessHallRouteSettings = ({
   maplessKey: string;
   halls: HallDefinition[];
 }): HallRouteSettingsStore => {
-  const previousEvent = previous[eventName] || {};
+  const previousEvent = recordEntry(previous, eventName) || {};
   const previousSettings =
     previousEvent[maplessKey] || emptyHallRouteSettings();
   const hallIds = halls.map((hall) => hall.id);
@@ -405,9 +406,11 @@ export const getCombinedHallRouteSettingsForDate = ({
 }): HallRouteSettings => {
   const maplessKey = getMaplessKey(dayName);
   const mapSettings = mapTabName
-    ? hallRouteSettings[eventName]?.[mapTabName]
+    ? recordEntry(hallRouteSettings, eventName)?.[mapTabName]
     : undefined;
-  const maplessSettings = hallRouteSettings[eventName]?.[maplessKey];
+  const maplessSettings = recordEntry(hallRouteSettings, eventName)?.[
+    maplessKey
+  ];
   if (isCompleteHallOrder(mapSettings)) return mapSettings!;
   if (!mapTabName && isCompleteHallOrder(maplessSettings))
     return maplessSettings!;

@@ -1,3 +1,4 @@
+import type { BulkImportResult } from "../../../types/import";
 import React, { Suspense } from "react";
 import EventListScreen from "../../../components/EventListScreen";
 import ShoppingList from "../../../components/ShoppingList";
@@ -116,7 +117,7 @@ type AppMainContentFields = {
     eventName: string,
     items: Omit<ShoppingItem, "id" | "purchaseStatus">[],
     metadata?: BulkAddMetadata,
-  ) => boolean;
+  ) => Promise<BulkImportResult>;
   handleBulkStatusChange: NonNullable<ShoppingListProps["onBulkStatusChange"]>;
   handleCandidateNumberSort: () => void;
   handleClearBlockFilters: () => void;

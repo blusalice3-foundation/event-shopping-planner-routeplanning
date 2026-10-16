@@ -1,3 +1,5 @@
+import { createDayItemCountSelector } from "../../../utils/dayItemCounts";
+import { normalizeExecutionVisitDay } from "../../../utils/visitProjection";
 import React from "react";
 import BulkActionControls from "../../../components/BulkActionControls";
 import SortAscendingIcon from "../../../components/icons/SortAscendingIcon";
@@ -38,6 +40,8 @@ import type {
   LayoutMode,
   SmartInsertMode,
 } from "../types";
+
+const selectDayCounts = createDayItemCountSelector();
 
 const APP_ZOOM_OPTIONS = [15, 30, 50, 75, 100, 125, 150] as const;
 
@@ -1636,9 +1640,10 @@ const AppHeaderShell: React.FC<AppHeaderShellProps> = ({ model, actions }) => {
                 {activeEventName ? (
                   <>
                     {eventDates.map((eventDate) => {
-                      const count = items.filter(
-                        (item) => item.eventDate === eventDate,
-                      ).length;
+                      const count =
+                        selectDayCounts(items).get(
+                          normalizeExecutionVisitDay(eventDate),
+                        ) ?? 0;
                       return (
                         <React.Fragment key={eventDate}>
                           <TabButton

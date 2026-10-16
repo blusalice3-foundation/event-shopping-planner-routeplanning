@@ -107,3 +107,49 @@ describe("consistency fields at the Worker boundary", () => {
     ).toBeNull();
   });
 });
+
+describe("sheet identity provenance at the Worker boundary", () => {
+  it.each([undefined, true, false, "true", 1, null])(
+    "validates provenance in both directions: %j",
+    (flag) => {
+      const item = { sheetIdentityVerified: flag };
+      const request = {
+        type: "XLSX_EXPORT_REQUEST",
+        protocolVersion: 2,
+        requestId: REQUEST_ID,
+        kind: "export",
+        snapshot: {
+          schemaVersion: 2,
+          eventName: "イベント",
+          items: [item],
+          options: {
+            includeItems: true,
+            includeLayoutInfo: false,
+            includeMapData: false,
+            includeRouteInfo: false,
+            format: "simple",
+          },
+          additionalData: {},
+        },
+      };
+      const response = {
+        type: "XLSX_IMPORT_RESULT",
+        protocolVersion: 2,
+        requestId: REQUEST_ID,
+        kind: "event-import",
+        result: {
+          kind: "event-import",
+          value: {
+            success: true,
+            eventName: "イベント",
+            items: [item],
+            errors: [],
+          },
+        },
+      };
+      const valid = flag === undefined || typeof flag === "boolean";
+      expect(parseXlsxWorkerRequest(request) !== null).toBe(valid);
+      expect(parseXlsxWorkerResponse(response) !== null).toBe(valid);
+    },
+  );
+});

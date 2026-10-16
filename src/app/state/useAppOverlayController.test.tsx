@@ -24,6 +24,7 @@ const item = (id: string): ShoppingItem => ({
 const pendingUpdate: PendingEventUpdate = {
   kind: "items-only",
   eventName: "event-update",
+  baseSource: null,
   diff: {
     itemsToDelete: [],
     itemsToUpdate: [],

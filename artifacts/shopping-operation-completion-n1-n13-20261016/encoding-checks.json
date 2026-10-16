@@ -1,0 +1,209 @@
+[
+  {
+    "path": "AGENTS.md",
+    "utf8": true,
+    "bom": false,
+    "crlf": 64,
+    "replacement": 0,
+    "questionMarksBefore": 1,
+    "questionMarksAfter": 1
+  },
+  {
+    "path": "docs/cross-feature-additional-consistency-implementation.md",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 0,
+    "questionMarksAfter": 0
+  },
+  {
+    "path": "src/components/ShoppingItemCard.memo.test.tsx",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 6,
+    "questionMarksAfter": 6
+  },
+  {
+    "path": "src/components/UpdateConfirmationModal.test.tsx",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 0,
+    "questionMarksAfter": 3
+  },
+  {
+    "path": "src/components/UpdateConfirmationModal.tsx",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 35,
+    "questionMarksAfter": 44
+  },
+  {
+    "path": "src/components/itemSnapshot.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 0,
+    "questionMarksAfter": 0
+  },
+  {
+    "path": "src/features/events/additionalConsistency.test.tsx",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 10,
+    "questionMarksAfter": 10
+  },
+  {
+    "path": "src/features/events/bulkAdd.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 45,
+    "questionMarksAfter": 45
+  },
+  {
+    "path": "src/features/events/importConsistency.test.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 9,
+    "questionMarksAfter": 9
+  },
+  {
+    "path": "src/features/events/sheetImport.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 38,
+    "questionMarksAfter": 39
+  },
+  {
+    "path": "src/features/events/sheetMatching.test.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 9,
+    "questionMarksAfter": 12
+  },
+  {
+    "path": "src/features/events/sheetMatching.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 14,
+    "questionMarksAfter": 14
+  },
+  {
+    "path": "src/features/events/updateApply.test.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 0,
+    "questionMarksAfter": 0
+  },
+  {
+    "path": "src/features/events/updateApply.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 22,
+    "questionMarksAfter": 23
+  },
+  {
+    "path": "src/features/events/updateDiff.test.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 0,
+    "questionMarksAfter": 0
+  },
+  {
+    "path": "src/features/events/updateDiff.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 21,
+    "questionMarksAfter": 23
+  },
+  {
+    "path": "src/types/item.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 12,
+    "questionMarksAfter": 13
+  },
+  {
+    "path": "src/utils/appBackup.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 50,
+    "questionMarksAfter": 50
+  },
+  {
+    "path": "src/xlsx/engine/eventWorkbookEngine.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 65,
+    "questionMarksAfter": 70
+  },
+  {
+    "path": "src/xlsx/port/protocol.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 2,
+    "questionMarksAfter": 2
+  },
+  {
+    "path": "src/xlsx/port/protocol.worker.test.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 0,
+    "questionMarksAfter": 0
+  },
+  {
+    "path": "tests/browser/cross-feature-consistency.spec.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": 60,
+    "questionMarksAfter": 63
+  },
+  {
+    "path": "src/xlsx/worker/sheetIdentity.worker.test.ts",
+    "utf8": true,
+    "bom": false,
+    "crlf": 0,
+    "replacement": 0,
+    "questionMarksBefore": null,
+    "questionMarksAfter": 8
+  }
+]

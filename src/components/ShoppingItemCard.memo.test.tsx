@@ -24,6 +24,7 @@ const representativeShoppingItem = {
   limitedPurchasedQuantity: 1,
   remarks: "remarks",
   sheetRemarks: "sheet remarks",
+  sheetIdentityVerified: false,
   url: "https://example.com",
   priorityLevel: "priority",
   protectionLevel: "none",

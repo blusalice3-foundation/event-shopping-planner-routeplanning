@@ -1,3 +1,4 @@
+import type { BulkImportRequest } from "../../types/import";
 import type {
   DayModeState,
   EventMetadata,
@@ -10,12 +11,19 @@ import { resolveBulkAddTab } from "./uiOrchestration";
 
 export type BulkAddLayoutInfo = {
   itemKey: string;
+  sourceRowId?: string;
   eventDate: string;
   columnType: "execute" | "candidate";
   order: number;
 };
 
+export type BulkAddSourceRow = {
+  sourceRowId: string;
+  item: Omit<ShoppingItem, "id" | "purchaseStatus">;
+};
 export type BulkAddMetadata = {
+  sourceRows?: readonly BulkAddSourceRow[];
+  request?: BulkImportRequest;
   url?: string;
   sheetName?: string;
   layoutInfo?: BulkAddLayoutInfo[];
@@ -50,8 +58,17 @@ export function buildBulkAddItems(
     ...itemData,
     ...(itemSource === "spreadsheet"
       ? {
-          catalogPrice: itemData.catalogPrice ?? itemData.price,
+          catalogPrice:
+            itemData.catalogPrice === undefined
+              ? itemData.price
+              : itemData.catalogPrice,
           sheetRemarks: itemData.sheetRemarks ?? itemData.remarks,
+          sheetIdentityVerified:
+            itemData.sheetIdentityVerified === true &&
+            itemData.catalogPrice !== undefined &&
+            itemData.sheetRemarks !== undefined
+              ? true
+              : undefined,
         }
       : {}),
     quantity: itemData.quantity ?? 1,
@@ -64,65 +81,80 @@ export function buildBulkAddItems(
 export function buildLayoutAppliedEventItems(
   newItems: ShoppingItem[],
   layoutInfo: BulkAddLayoutInfo[],
+  sourceRowIds?: ReadonlyMap<string, string>,
 ): { sortedItems: ShoppingItem[]; executeModeItems: ExecuteModeItems } {
-  const itemsMap = new Map<string, ShoppingItem>();
-  newItems.forEach((item) => {
+  const itemsByKey = new Map<string, ShoppingItem[]>();
+  const itemsById = new Map(newItems.map((item) => [item.id, item]));
+  for (const item of newItems) {
     const key = getItemKey(item);
-    itemsMap.set(key, item);
+    const group = itemsByKey.get(key) ?? [];
+    group.push(item);
+    itemsByKey.set(key, group);
+  }
+  const used = new Set<string>();
+  const resolved: Array<{
+    item: ShoppingItem;
+    layout: BulkAddLayoutInfo;
+    index: number;
+  }> = [];
+  layoutInfo.forEach((layout, index) => {
+    const id = layout.sourceRowId
+      ? sourceRowIds?.get(layout.sourceRowId)
+      : undefined;
+    if (layout.sourceRowId && !id) return;
+    const candidates = id
+      ? [itemsById.get(id)!]
+      : (itemsByKey.get(layout.itemKey) ?? []);
+    if (candidates.length > 1)
+      throw new Error(
+        "配置と品目を一意に対応できません。元のCSVを再取込みして配置を確認してください。",
+      );
+    const item = candidates[0];
+    if (!item) return;
+    if (used.has(item.id))
+      throw new Error("同じ品目に複数の配置が指定されています。");
+    used.add(item.id);
+    resolved.push({ item, layout, index });
   });
-
-  const eventDatesForLayout = extractEventDates(newItems);
-  const executeModeItems: ExecuteModeItems = {};
-  const sortedItemsByDate: ShoppingItem[] = [];
-
-  const layoutItemKeys = new Set(layoutInfo.map((layout) => layout.itemKey));
-  const otherItems = newItems.filter(
-    (item) => !layoutItemKeys.has(getItemKey(item)),
+  const byDay = new Map<string, ShoppingItem[]>();
+  const execute = new Map<string, string[]>();
+  const append = (item: ShoppingItem) => {
+    const group = byDay.get(item.eventDate) ?? [];
+    group.push(item);
+    byDay.set(item.eventDate, group);
+  };
+  resolved.sort(
+    (a, b) =>
+      (a.layout.columnType === b.layout.columnType
+        ? 0
+        : a.layout.columnType === "execute"
+          ? -1
+          : 1) ||
+      a.layout.order - b.layout.order ||
+      a.index - b.index,
   );
-  const otherItemsByDate: Record<string, ShoppingItem[]> = {};
-
-  otherItems.forEach((item) => {
-    if (!otherItemsByDate[item.eventDate]) {
-      otherItemsByDate[item.eventDate] = [];
+  for (const { item, layout } of resolved) {
+    append(item);
+    if (layout.columnType === "execute") {
+      const ids = execute.get(item.eventDate) ?? [];
+      ids.push(item.id);
+      execute.set(item.eventDate, ids);
     }
-    otherItemsByDate[item.eventDate].push(item);
-  });
-
-  eventDatesForLayout.forEach((eventDate) => {
-    const executeItemsForDate = layoutInfo
-      .filter(
-        (layout) =>
-          layout.eventDate === eventDate && layout.columnType === "execute",
-      )
-      .sort((a, b) => a.order - b.order)
-      .map((layout) => itemsMap.get(layout.itemKey))
-      .filter(Boolean) as ShoppingItem[];
-
-    const candidateItemsForDate = layoutInfo
-      .filter(
-        (layout) =>
-          layout.eventDate === eventDate && layout.columnType === "candidate",
-      )
-      .sort((a, b) => a.order - b.order)
-      .map((layout) => itemsMap.get(layout.itemKey))
-      .filter(Boolean) as ShoppingItem[];
-
-    executeModeItems[eventDate] = executeItemsForDate.map((item) => item.id);
-    sortedItemsByDate.push(
-      ...executeItemsForDate,
-      ...candidateItemsForDate,
-      ...(otherItemsByDate[eventDate] || []),
-    );
-  });
-
-  const otherItemsWithoutDate = otherItems.filter(
-    (item) => !eventDatesForLayout.includes(item.eventDate),
-  );
-  sortedItemsByDate.push(...otherItemsWithoutDate);
-
+  }
+  for (const item of newItems) if (!used.has(item.id)) append(item);
+  const sortedItems: ShoppingItem[] = [];
+  for (const group of byDay.values())
+    for (const item of group) sortedItems.push(item);
+  if (
+    sortedItems.length !== newItems.length ||
+    new Set(sortedItems.map((item) => item.id)).size !== newItems.length
+  )
+    throw new Error("取込品目のIDまたは配置が重複しています。");
   return {
-    sortedItems: sortedItemsByDate,
-    executeModeItems,
+    sortedItems,
+    executeModeItems: Object.fromEntries(
+      [...byDay.keys()].map((day) => [day, execute.get(day) ?? []]),
+    ),
   };
 }
 

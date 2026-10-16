@@ -1,3 +1,4 @@
+import { registerItemGuardGenerations } from "../../utils/itemContentGuard";
 import { dayMutationScope } from "../../features/consistency/domain/dayScope";
 import { scopeDaySnapshot } from "../../features/consistency/domain/dayMutation";
 import type {
@@ -37,6 +38,8 @@ export interface MutationConfirmation {
   comparison: unknown;
 }
 export interface MutationPlan {
+  skipCommit?: boolean;
+  invalidItemContentEdits?: readonly ItemContentEdit[];
   snapshot: PersistenceSnapshot;
   confirmation?: MutationConfirmation;
   invalidatedEvents?: string[];
@@ -374,7 +377,9 @@ export function createApplicationMutationCoordinator(
             )
           : read.snapshot,
       );
+      registerItemGuardGenerations(current, durableGenerations);
       const planning = ports.readMutationCurrent?.(current, id) ?? current;
+      registerItemGuardGenerations(planning, durableGenerations);
       // A previous review remains mandatory even if its original cause clears.
       // Capture the input before planners can mutate it in place.
       const before = operation.confirmation
@@ -421,6 +426,10 @@ export function createApplicationMutationCoordinator(
             confirmation: review,
           };
         }
+      }
+      if (plan.skipCommit) {
+        pending.delete(id);
+        return { status: "expired" };
       }
       if (ports.hasPendingAcceptedChanges?.(id))
         throw new PendingAcceptedMutationError();
@@ -656,6 +665,10 @@ export function createApplicationMutationCoordinator(
     },
     invalidate,
     generation: (event: string): number => generations.get(event) ?? 0,
+    durableGeneration: (event: string): number =>
+      durableGeneration(durableGenerations, event),
+    durableEventGenerations: (): Readonly<Record<string, number>> =>
+      durableGenerations,
     createBackupFile: async (): Promise<ApplicationBackupFile> => {
       if (!ports.createBackupFile)
         throw new Error("Backup worker is unavailable.");

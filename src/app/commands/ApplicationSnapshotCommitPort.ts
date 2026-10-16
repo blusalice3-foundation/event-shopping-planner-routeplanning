@@ -2,6 +2,8 @@ import type { PersistenceSnapshot } from "../ports/PersistenceCommandPort";
 import type { BlockDetectionSettings } from "../../types/map";
 
 export type ApplicationSnapshotPatch = Partial<PersistenceSnapshot>;
+/** Rechecked against the latest serialized snapshot on planning and retries. */
+export type ApplicationSnapshotGuard = (snapshot: PersistenceSnapshot) => void;
 
 /** Explicit destination days for route patches spanning multiple dates. */
 export interface ApplicationSnapshotCommitContext {
@@ -20,5 +22,6 @@ export interface ApplicationSnapshotCommitPort {
       settings: BlockDetectionSettings | null;
     },
     context?: ApplicationSnapshotCommitContext,
+    assertCurrent?: ApplicationSnapshotGuard,
   ): Promise<void>;
 }

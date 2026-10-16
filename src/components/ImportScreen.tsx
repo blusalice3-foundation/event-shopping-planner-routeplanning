@@ -1,3 +1,5 @@
+import { getExactImportItemKey } from "../features/events/duplicateEvent";
+import type { BulkImportResult } from "../types/import";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { ShoppingItem } from "../types/item";
 import { getItemKey } from "../utils/itemComparison";
@@ -8,18 +10,22 @@ import type {
 import {
   SPREADSHEET_PASTE_COLUMN_GUIDE,
   SPREADSHEET_PASTE_COLUMN_LABELS,
-  normalizeImportedUrl,
   parseSpreadsheetPaste,
 } from "../features/events/pasteColumns";
 import { decideSheetQuantity } from "../features/events/quantitySync";
-import { fetchGoogleSheetCsv } from "../features/events/sheetImport";
+import {
+  fetchGoogleSheetCsv,
+  readEventCsv,
+  type EventCsvOptions,
+} from "../features/events/sheetImport";
+import { normalizeSheetItemsUrls } from "../features/events/updateDiff";
 
 interface ImportScreenProps {
   onBulkAdd: (
     eventName: string,
     items: Omit<ShoppingItem, "id" | "purchaseStatus">[],
     metadata?: BulkAddMetadata,
-  ) => boolean | void;
+  ) => Promise<BulkImportResult>;
   activeEventName: string | null;
   itemToEdit: ShoppingItem | null;
   onUpdateItem: (item: ShoppingItem) => void;
@@ -49,6 +55,65 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
   const [urls, setUrls] = useState("");
   const [spreadsheetUrl, setSpreadsheetUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importInFlight = useRef(false);
+  const [importPhase, setImportPhase] = useState<string | null>(null);
+  const [importRequiresReload, setImportRequiresReload] = useState(false);
+  const [fileFormat, setFileFormat] = useState("auto");
+  const [fileText, setFileText] = useState<string | null>(null);
+  const inputGeneration = useRef(0);
+  useEffect(() => {
+    const generation = inputGeneration;
+    generation.current++;
+    return () => {
+      generation.current++;
+    };
+  }, [activeEventName, itemToEdit?.id]);
+  const runImport = async (work: () => Promise<boolean>): Promise<boolean> => {
+    if (importInFlight.current || importRequiresReload) return false;
+    importInFlight.current = true;
+    setImportPhase(
+      "取込処理中です。保存が保留された場合は未保存データの再試行・取消を確認してください。",
+    );
+    try {
+      return await work();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "取込みに失敗しました。");
+      return false;
+    } finally {
+      importInFlight.current = false;
+      setImportPhase(null);
+    }
+  };
+  const submitImport = async (
+    name: string,
+    items: Omit<ShoppingItem, "id" | "purchaseStatus">[],
+    metadata?: BulkAddMetadata,
+  ) => {
+    const generation = inputGeneration.current;
+    const result = await onBulkAdd(name, items, {
+      ...metadata,
+      request: {
+        id: crypto.randomUUID(),
+        isCurrent: () => generation === inputGeneration.current,
+        progress: (phase) => {
+          if (generation !== inputGeneration.current) return;
+          setImportPhase(
+            phase === "review"
+              ? "取込内容の確認待ちです。"
+              : "保存処理中です。",
+          );
+        },
+      },
+    });
+    const saved = result.status === "saved";
+    if (result.status === "committed-ui-failed" || result.status === "unknown")
+      setImportRequiresReload(true);
+    if (result.status === "committed-ui-failed")
+      alert(
+        "データは保存済みですが画面に反映できませんでした。再取込みせず再読み込みしてください。",
+      );
+    return saved && generation === inputGeneration.current;
+  };
 
   // State for single item add/edit
   const [singleCircle, setSingleCircle] = useState("");
@@ -106,6 +171,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
       return;
     }
 
+    inputGeneration.current++;
     setCircles(result.columns.circles);
     setEventDates(result.columns.eventDates);
     setBlocks(result.columns.blocks);
@@ -115,229 +181,58 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
     setRemarks(result.columns.remarks);
   };
 
-  const parseCSVLine = (line: string): string[] => {
-    const cells: string[] = [];
-    let currentCell = "";
-    let insideQuotes = false;
-
-    for (let j = 0; j < line.length; j++) {
-      const char = line[j];
-
-      if (char === '"') {
-        if (insideQuotes && line[j + 1] === '"') {
-          currentCell += '"';
-          j++;
-        } else {
-          insideQuotes = !insideQuotes;
-        }
-      } else if (char === "," && !insideQuotes) {
-        cells.push(currentCell);
-        currentCell = "";
-      } else {
-        currentCell += char;
-      }
-    }
-    cells.push(currentCell);
-    return cells;
-  };
-
-  const processImportData = (
-    lines: string[],
-  ): {
-    items: Omit<ShoppingItem, "id" | "purchaseStatus">[];
-    spreadsheetUrl?: string;
-    layoutInfo?: BulkAddLayoutInfo[];
-    invalidQuantityRows: Array<{ lineNumber: number; value: string }>;
-  } => {
-    const newItems: Omit<ShoppingItem, "id" | "purchaseStatus">[] = [];
-    let spreadsheetUrl: string | undefined;
+  const processImportData = (text: string, options?: EventCsvOptions) => {
+    const parsed = readEventCsv(text, options);
+    const items: Omit<ShoppingItem, "id" | "purchaseStatus">[] = [];
+    const sourceRows: NonNullable<BulkAddMetadata["sourceRows"]>[number][] = [];
     const layoutInfo: BulkAddLayoutInfo[] = [];
-    const invalidQuantityRows: Array<{
-      lineNumber: number;
-      value: string;
-    }> = [];
-
-    // ヘッダー行とメタデータ行をスキップ
-    let startIndex = 0;
-
-    // 1行目がヘッダー行かチェック
-    if (lines.length > 0 && lines[0].includes("サークル名")) {
-      startIndex = 1;
-    }
-
-    // メタデータ行をチェック（ファイルの最後にある可能性がある）
-    for (let i = lines.length - 1; i >= 0; i--) {
-      if (lines[i].startsWith("#METADATA")) {
-        const metadataCells = parseCSVLine(lines[i]);
-        if (
-          metadataCells.length >= 3 &&
-          metadataCells[1] === "spreadsheetUrl"
-        ) {
-          spreadsheetUrl = metadataCells[2]?.trim();
-        }
-        // メタデータ行は処理対象から除外（既にstartIndex以降の行を処理するので問題ない）
-        break;
-      }
-    }
-
-    for (let i = startIndex; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim()) continue;
-
-      // メタデータ行をスキップ
-      if (line.startsWith("#METADATA")) {
-        continue;
-      }
-
-      // ヘッダー行をスキップ（念のため再チェック）
-      if (
-        line.includes("サークル名") &&
-        line.includes("参加日") &&
-        line.includes("ブロック")
-      ) {
-        continue;
-      }
-
-      const cells = parseCSVLine(line);
-
-      // エクスポートされたCSVファイル形式（A列から始まる）を優先的にチェック
-      let circle = cells[0]?.trim() || ""; // A列: サークル名
-      let eventDate = cells[1]?.trim() || ""; // B列: 参加日
-      let block = cells[2]?.trim() || ""; // C列: ブロック
-      let number = cells[3]?.trim() || ""; // D列: ナンバー
-      let title = cells[4]?.trim() || ""; // E列: タイトル
-      let priceStr = cells[5]?.trim() || ""; // F列: 頒布価格
-      let quantityStr = cells[6]?.trim() || ""; // G列: 数量
-      let remarks = cells[8]?.trim() || ""; // I列: 備考
-      let url = cells[11]?.trim() || ""; // L列: URL
-      let columnType: "execute" | "candidate" | null = null; // J列: 列の種類
-      let order = 0; // K列: 列内順番
-
-      // 配置情報がある場合（エクスポートされたCSV形式）
-      if (cells.length >= 11) {
-        const columnTypeStr = cells[9]?.trim() || "";
-        if (columnTypeStr === "実行列") {
-          columnType = "execute";
-        } else if (columnTypeStr === "候補リスト") {
-          columnType = "candidate";
-        }
-        order = parseInt(cells[10]?.trim() || "0", 10) || 0;
-      }
-
-      // A列からD列が全て入力されているかチェック
-      if (!circle || !eventDate || !block || !number) {
-        // スプレッドシート形式（M列から始まる）を試す
-        circle = cells[12]?.trim() || ""; // M列
-        eventDate = cells[13]?.trim() || ""; // N列
-        block = cells[14]?.trim() || ""; // O列
-        number = cells[15]?.trim() || ""; // P列
-        title = cells[16]?.trim() || ""; // Q列
-        priceStr = cells[17]?.trim() || ""; // R列
-        remarks = cells[22]?.trim() || ""; // W列
-        url = cells[24]?.trim() || ""; // Y列: URL
-        // AA列から数量を取得
-        quantityStr = cells[26]?.trim() || ""; // AA列 (0-indexed: 26)
-
-        // それでも必須項目が揃わない場合はスキップ
-        if (!circle || !eventDate || !block || !number) {
-          continue;
-        }
-      }
-
-      // 空欄の場合はnull、0と入力されている場合は0を設定
-      const price =
-        priceStr === ""
-          ? null
-          : parseInt(priceStr.replace(/[^0-9]/g, ""), 10) || 0;
-      const quantityDecision = decideSheetQuantity(quantityStr, "new");
-      if (quantityDecision.kind === "invalid") {
+    const invalidQuantityRows: Array<{ lineNumber: number; value: string }> =
+      [];
+    const normalized = normalizeSheetItemsUrls(
+      parsed.rows.map((row) => row.item),
+    );
+    parsed.rows.forEach((row, index) => {
+      const { rawQuantity, ...data } = normalized[index];
+      const decision = decideSheetQuantity(rawQuantity ?? data.quantity, "new");
+      if (decision.kind === "invalid") {
         invalidQuantityRows.push({
-          lineNumber: i + 1,
-          value: quantityStr,
+          lineNumber: row.lineNumber,
+          value: rawQuantity ?? "",
         });
-        continue;
+        return;
       }
-      const quantity =
-        quantityDecision.kind === "apply" ? quantityDecision.quantity : 1;
-      const normalizedUrl = normalizeImportedUrl(url);
-
-      const item: Omit<ShoppingItem, "id" | "purchaseStatus"> = {
-        circle,
-        eventDate,
-        block,
-        number,
-        title,
-        price,
-        quantity,
-        remarks,
-        ...(normalizedUrl ? { url: normalizedUrl } : {}),
+      const item = {
+        ...data,
+        quantity: decision.kind === "apply" ? decision.quantity : 1,
       };
-
-      newItems.push(item);
-
-      // 配置情報を記録
-      if (columnType && order > 0) {
-        const itemKey = getItemKey(item);
+      items.push(item);
+      sourceRows.push({ sourceRowId: row.sourceRowId, item });
+      if (row.layout)
         layoutInfo.push({
-          itemKey,
-          eventDate,
-          columnType,
-          order,
+          ...row.layout,
+          sourceRowId: row.sourceRowId,
+          itemKey: getItemKey(item),
+          eventDate: item.eventDate,
         });
-      }
-    }
-
-    // 各参加日タブ中でサークル名が重複するアイテムのURL転記処理
-    const eventDateGroups = new Map<
-      string,
-      Omit<ShoppingItem, "id" | "purchaseStatus">[]
-    >();
-    newItems.forEach((item) => {
-      if (!eventDateGroups.has(item.eventDate)) {
-        eventDateGroups.set(item.eventDate, []);
-      }
-      eventDateGroups.get(item.eventDate)!.push(item);
     });
-
-    eventDateGroups.forEach((items) => {
-      // サークル名でグループ化
-      const circleGroups = new Map<
-        string,
-        Omit<ShoppingItem, "id" | "purchaseStatus">[]
-      >();
-      items.forEach((item) => {
-        if (!circleGroups.has(item.circle)) {
-          circleGroups.set(item.circle, []);
-        }
-        circleGroups.get(item.circle)!.push(item);
-      });
-
-      // サークル名が重複するアイテムが2つ以上ある場合
-      circleGroups.forEach((circleItems) => {
-        if (circleItems.length >= 2) {
-          // URLが入力されているアイテムを探す
-          const itemWithUrl = circleItems.find(
-            (item) => item.url && item.url.trim() !== "",
-          );
-
-          if (itemWithUrl && itemWithUrl.url) {
-            // URLが入力されていないアイテムにURLを転記
-            circleItems.forEach((item) => {
-              if (!item.url || item.url.trim() === "") {
-                item.url = itemWithUrl.url;
-              }
-            });
-          }
-        }
-      });
+    const placements = new Map<string, string>();
+    const layoutsByRow = new Map(
+      layoutInfo.map((entry) => [entry.sourceRowId, entry]),
+    );
+    sourceRows.forEach((row) => {
+      const key = getExactImportItemKey(row.item);
+      const layout = layoutsByRow.get(row.sourceRowId);
+      const placement = JSON.stringify(
+        layout ? [layout.columnType, layout.order] : null,
+      );
+      const previous = placements.get(key);
+      if (previous !== undefined && previous !== placement)
+        parsed.warnings.push(
+          "完全重複の品目に異なる配置があります。重複行は除外し、先に現れた行の配置を使用します。",
+        );
+      placements.set(key, previous ?? placement);
     });
-
-    return {
-      items: newItems,
-      spreadsheetUrl,
-      layoutInfo: layoutInfo.length > 0 ? layoutInfo : undefined,
-      invalidQuantityRows,
-    };
+    return { ...parsed, items, sourceRows, layoutInfo, invalidQuantityRows };
   };
 
   const buildInvalidQuantityImportMessage = (
@@ -350,54 +245,54 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
           .map(({ lineNumber, value }) => `${lineNumber}行目「${value}」`)
           .join("、")}${invalidRows.length > 5 ? "、ほか" : ""}）。`;
 
+  const importFileText = (text: string) =>
+    runImport(async () => {
+      const options: EventCsvOptions | undefined =
+        fileFormat === "auto"
+          ? undefined
+          : {
+              format: fileFormat.startsWith("google") ? "google" : "legacy",
+              header: fileFormat.endsWith("-header"),
+            };
+      const result = processImportData(text, options);
+      if (
+        result.warnings.length &&
+        !window.confirm(
+          result.warnings.join("\n") + "\nこの内容で取込みますか？",
+        )
+      )
+        return false;
+      if (!result.items.length) {
+        alert(
+          "インポートできる品目がありません。" +
+            buildInvalidQuantityImportMessage(result.invalidQuantityRows),
+        );
+        return false;
+      }
+      const accepted = await submitImport(
+        eventName || "インポートリスト",
+        result.items,
+        {
+          url: result.spreadsheetUrl,
+          sourceRows: result.sourceRows,
+          layoutInfo: result.layoutInfo,
+        },
+      );
+      if (!accepted) return false;
+      setFileText(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (result.invalidQuantityRows.length)
+        alert(buildInvalidQuantityImportMessage(result.invalidQuantityRows));
+      return true;
+    });
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
+    if (!file || importInFlight.current) return;
+    const generation = inputGeneration.current;
     const text = await file.text();
-    const lines = text.split("\n").filter((line) => line.trim() !== "");
-    const importResult = processImportData(lines);
-
-    if (importResult.items.length > 0) {
-      const metadata: BulkAddMetadata = {};
-      if (importResult.spreadsheetUrl) {
-        metadata.url = importResult.spreadsheetUrl;
-      }
-      if (importResult.layoutInfo) {
-        metadata.layoutInfo = importResult.layoutInfo;
-      }
-
-      const accepted =
-        onBulkAdd(
-          eventName || "インポートリスト",
-          importResult.items,
-          Object.keys(metadata).length > 0 ? metadata : undefined,
-        ) !== false;
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-      if (!accepted) return;
-
-      const urlMessage = importResult.spreadsheetUrl
-        ? `スプレッドシートURLも保存されました。`
-        : "";
-      const layoutMessage =
-        importResult.layoutInfo && importResult.layoutInfo.length > 0
-          ? `配置情報も復元されました。`
-          : "";
-      const quantityMessage = buildInvalidQuantityImportMessage(
-        importResult.invalidQuantityRows,
-      );
-      alert(
-        `${importResult.items.length}件のアイテムをインポートしました。${urlMessage}${layoutMessage}${quantityMessage}`,
-      );
-    } else {
-      alert(
-        importResult.invalidQuantityRows.length > 0
-          ? `インポートできる品目がありませんでした。${buildInvalidQuantityImportMessage(importResult.invalidQuantityRows)}`
-          : "インポートできるデータが見つかりませんでした。A列からD列の値が全て入力されている行が必要です。",
-      );
-    }
+    if (generation !== inputGeneration.current) return;
+    setFileText(text);
+    await importFileText(text);
   };
 
   const handleUrlImport = async () => {
@@ -405,43 +300,44 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
       alert("スプレッドシートのURLを入力してください。");
       return;
     }
-
     if (!eventName.trim()) {
       alert("即売会名を入力してください。");
       return;
     }
-
-    try {
+    await runImport(async () => {
+      const generation = inputGeneration.current;
       const sheetName = "品目表";
       const text = await fetchGoogleSheetCsv(spreadsheetUrl, sheetName);
-      const lines = text.split("\n").filter((line) => line.trim() !== "");
-      const importResult = processImportData(lines);
-
-      if (importResult.items.length > 0) {
-        const accepted =
-          onBulkAdd(eventName.trim(), importResult.items, {
-            url: spreadsheetUrl,
-            sheetName,
-          }) !== false;
-        if (!accepted) return;
-
-        setSpreadsheetUrl("");
+      if (generation !== inputGeneration.current) return false;
+      const result = processImportData(text, {
+        format: "google",
+        header: true,
+      });
+      if (
+        result.warnings.length &&
+        !window.confirm(
+          result.warnings.join("\n") + "\nこの内容で取込みますか？",
+        )
+      )
+        return false;
+      if (!result.items.length) {
         alert(
-          `${importResult.items.length}件のアイテムをインポートしました。${buildInvalidQuantityImportMessage(importResult.invalidQuantityRows)}`,
+          "インポートできる品目がありません。" +
+            buildInvalidQuantityImportMessage(result.invalidQuantityRows),
         );
-      } else {
-        alert(
-          importResult.invalidQuantityRows.length > 0
-            ? `インポートできる品目がありませんでした。${buildInvalidQuantityImportMessage(importResult.invalidQuantityRows)}`
-            : "インポートできるデータが見つかりませんでした。A列からD列の値が全て入力されている行が必要です。",
-        );
+        return false;
       }
-    } catch {
-      console.error("Spreadsheet import failed (spreadsheet-import-failed).");
-      alert(
-        "スプレッドシートのインポートに失敗しました。URLが正しいか確認してください。",
-      );
-    }
+      const accepted = await submitImport(eventName.trim(), result.items, {
+        url: spreadsheetUrl,
+        sheetName,
+        sourceRows: result.sourceRows,
+      });
+      if (!accepted) return false;
+      setSpreadsheetUrl("");
+      if (result.invalidQuantityRows.length)
+        alert(buildInvalidQuantityImportMessage(result.invalidQuantityRows));
+      return true;
+    });
   };
 
   const resetSingleForm = () => {
@@ -487,7 +383,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isEditing) {
@@ -631,7 +527,9 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
       });
 
       if (newItems.length > 0) {
-        const accepted = onBulkAdd(finalEventName, newItems) !== false;
+        const accepted = await runImport(() =>
+          submitImport(finalEventName, newItems),
+        );
         if (!accepted) return;
 
         setEventName("");
@@ -675,8 +573,9 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
         remarks: singleRemarks.trim(),
         url: singleUrl.trim() || undefined,
       };
-      const accepted =
-        onBulkAdd(activeEventName, [newItem], { source: "app" }) !== false;
+      const accepted = await runImport(() =>
+        submitImport(activeEventName, [newItem], { source: "app" }),
+      );
       if (accepted) resetSingleForm();
     }
   };
@@ -725,7 +624,19 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
             : "追加するアイテムのデータを入力してください。"}
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {importRequiresReload && (
+        <p role="alert">
+          保存結果の確認が必要です。再取込みせず、画面を再読み込みして保存内容を確認してください。
+        </p>
+      )}
+      {importPhase && <p role="status">{importPhase}</p>}
+      <form
+        onSubmit={handleSubmit}
+        onChangeCapture={() => {
+          inputGeneration.current++;
+        }}
+        className="space-y-6"
+      >
         {isCreatingNew ? (
           <>
             <div>
@@ -776,6 +687,29 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
                 </p>
               </div>
 
+              <label className="block text-sm">
+                CSVの列形式
+                <select
+                  aria-label="CSVの列形式"
+                  value={fileFormat}
+                  onChange={(e) => setFileFormat(e.target.value)}
+                >
+                  <option value="auto">見出しから自動判定</option>
+                  <option value="legacy-header">A列開始・見出しあり</option>
+                  <option value="legacy-data">A列開始・見出しなし</option>
+                  <option value="google-header">M列開始・見出しあり</option>
+                  <option value="google-data">M列開始・見出しなし</option>
+                </select>
+              </label>
+              {fileText !== null && (
+                <button
+                  type="button"
+                  disabled={importPhase !== null}
+                  onClick={() => void importFileText(fileText)}
+                >
+                  選択したCSVを再試行
+                </button>
+              )}
               {/* CSVファイルインポート */}
               <div className="mb-4">
                 <label htmlFor="csvFile" className={labelClass}>
@@ -786,11 +720,12 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
                   id="csvFile"
                   ref={fileInputRef}
                   accept=".csv"
+                  disabled={importPhase !== null}
                   onChange={handleFileImport}
                   className={formInputClass}
                 />
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  A列からD列の値が全て入力されている行のみをインポートします
+                  見出しから形式を判定します。見出しがない場合は列形式を指定してください。
                 </p>
               </div>
 

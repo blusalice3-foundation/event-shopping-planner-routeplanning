@@ -1,3 +1,4 @@
+import { minimum, maximum } from "../utils/numericExtrema";
 import { recordShoppingRender } from "../utils/shoppingPerformance";
 import { CanvasGestureRaster } from "../features/map/canvas/CanvasGestureRaster";
 import { normalizeExecutionVisitDay } from "../utils/visitProjection";
@@ -621,10 +622,10 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     if (selectedHall && selectedHall.vertices.length >= 4) {
       const rows = selectedHall.vertices.map((v) => v.row);
       const cols = selectedHall.vertices.map((v) => v.col);
-      const minRow = Math.max(1, Math.min(...rows) - SCROLL_MARGIN);
-      const maxRow = Math.max(...rows) + SCROLL_MARGIN;
-      const minCol = Math.max(1, Math.min(...cols) - SCROLL_MARGIN);
-      const maxCol = Math.max(...cols) + SCROLL_MARGIN;
+      const minRow = Math.max(1, minimum(rows) - SCROLL_MARGIN);
+      const maxRow = maximum(rows) + SCROLL_MARGIN;
+      const minCol = Math.max(1, minimum(cols) - SCROLL_MARGIN);
+      const maxCol = maximum(cols) + SCROLL_MARGIN;
       const centerCol = (minCol + maxCol) / 2;
       const centerRow = (minRow + maxRow) / 2;
       const centerX = (centerCol - 0.5) * cellSize;
@@ -1203,7 +1204,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
         const rowSpacing = fontSize * 1.1;
         const requiredWidth = columns.length * columnSpacing;
         const requiredHeight =
-          Math.max(...columns.map((column) => Array.from(column).length)) *
+          maximum(columns.map((column) => Array.from(column).length)) *
           rowSpacing;
         return requiredWidth <= maxTextWidth && requiredHeight <= maxTextHeight;
       };
@@ -2089,10 +2090,10 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       const rows = selectedHall.vertices.map((v) => v.row);
       const cols = selectedHall.vertices.map((v) => v.col);
       return {
-        minRow: Math.max(1, Math.min(...rows) - SCROLL_MARGIN),
-        maxRow: Math.max(...rows) + SCROLL_MARGIN,
-        minCol: Math.max(1, Math.min(...cols) - SCROLL_MARGIN),
-        maxCol: Math.max(...cols) + SCROLL_MARGIN,
+        minRow: Math.max(1, minimum(rows) - SCROLL_MARGIN),
+        maxRow: maximum(rows) + SCROLL_MARGIN,
+        minCol: Math.max(1, minimum(cols) - SCROLL_MARGIN),
+        maxCol: maximum(cols) + SCROLL_MARGIN,
       };
     }
 

@@ -1,3 +1,4 @@
+import { recordEntry } from "../../../utils/ownRecord";
 import type {
   MutationPlan,
   MutationChoices,
@@ -88,8 +89,8 @@ function planSessionTransition(
     const modeDay = value.modeDay;
     const selectedModes = (source: PersistenceSnapshot) =>
       Object.fromEntries(
-        Object.entries(source.dayModes[value.event] ?? {}).filter(([day]) =>
-          sameDay(day, modeDay),
+        Object.entries(recordEntry(source.dayModes, value.event) ?? {}).filter(
+          ([day]) => sameDay(day, modeDay),
         ),
       );
     const before = selectedModes(snapshot);
@@ -136,13 +137,16 @@ export function planVisitPanelMutation(
   let rebase: VisitPanelRebase | undefined;
   const review = mergePlan.confirmation;
   const dayKey = existingDayKey(
-    snapshot.executeModeItems[value.event],
+    recordEntry(snapshot.executeModeItems, value.event),
     value.day,
   );
   if (!dayKey) return { snapshot, confirmation: review };
-  const items = snapshot.eventLists[value.event] as ShoppingItem[];
-  const day = getDayConsistency(snapshot.eventConsistency[value.event], dayKey);
-  const maps = snapshot.mapData[value.event] as
+  const items = recordEntry(snapshot.eventLists, value.event) as ShoppingItem[];
+  const day = getDayConsistency(
+    recordEntry(snapshot.eventConsistency, value.event),
+    dayKey,
+  );
+  const maps = recordEntry(snapshot.mapData, value.event) as
     | Record<string, DayMapData>
     | undefined;
   const mapKey = day?.selectedMapKey ?? command.mapKey;
@@ -152,10 +156,15 @@ export function planVisitPanelMutation(
     rebase = {
       day: dayKey,
       map: mapKey,
-      baseline: [...snapshot.executeModeItems[value.event][dayKey]],
+      baseline: [
+        ...recordEntry(snapshot.executeModeItems, value.event)[dayKey],
+      ],
     };
   const halls = getContextHalls(
-    snapshot.hallDefinitions[value.event] as Record<string, HallDefinition[]>,
+    recordEntry(snapshot.hallDefinitions, value.event) as Record<
+      string,
+      HallDefinition[]
+    >,
     dayKey,
     mapKey,
   );
@@ -167,7 +176,7 @@ export function planVisitPanelMutation(
     halls,
   });
   const order = applyVisitHistory(
-    snapshot.executeModeItems[value.event][dayKey],
+    recordEntry(snapshot.executeModeItems, value.event)[dayKey],
     command.order,
     items,
     (item) =>
@@ -182,7 +191,7 @@ export function planVisitPanelMutation(
       executeModeItems: {
         ...snapshot.executeModeItems,
         [value.event]: {
-          ...snapshot.executeModeItems[value.event],
+          ...recordEntry(snapshot.executeModeItems, value.event),
           [dayKey]: order,
         },
       },
@@ -190,8 +199,13 @@ export function planVisitPanelMutation(
     { eventName: value.event, day: dayKey, mapKey, confirm: false },
   );
   if (!review) return { ...orderPlan, rebase };
-  const beforeOrder = snapshot.executeModeItems[value.event][dayKey];
-  const afterOrder = orderPlan.snapshot.executeModeItems[value.event][dayKey];
+  const beforeOrder = recordEntry(snapshot.executeModeItems, value.event)[
+    dayKey
+  ];
+  const afterOrder = recordEntry(
+    orderPlan.snapshot.executeModeItems,
+    value.event,
+  )[dayKey];
   return {
     ...orderPlan,
     rebase,

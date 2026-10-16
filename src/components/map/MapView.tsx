@@ -40,7 +40,10 @@ import {
 import { useRouteCalculation } from "../../features/map/routing/useRouteCalculation";
 import { buildSelectedHallRouteMapData } from "../../utils/mapRouteMapData";
 import { createRouteInsertMapSnapshots } from "./mapViewRouteCalculations";
-import { validateMapSmartInsert } from "../../utils/mapSmartInsert";
+import {
+  validateMapSmartInsert,
+  createNearbyVisitSelector,
+} from "../../utils/mapSmartInsert";
 import type { MapRouteHitResult } from "../../utils/mapRouteHitTest";
 import {
   expandSameSpacePriorityItemIds,
@@ -648,6 +651,11 @@ const MapView: React.FC<MapViewProps> = ({
       : selectedHallRoutePathConstraint;
   const includeDisplayRoute =
     isRouteVisible && (halls.length === 0 || selectedHallId !== "all");
+  const selectNearbyVisits = useMemo(
+    () => createNearbyVisitSelector(mapData),
+    [mapData],
+  );
+
   const includeMapInsertRoute = smartInsertEnabled && smartInsertMode === "map";
   const routeCalculation = useRouteCalculation({
     kind: "pair",
@@ -1076,19 +1084,6 @@ const MapView: React.FC<MapViewProps> = ({
         }
       }
 
-      const itemNum = extractNumberFromItemNumber(item.number);
-      if (!itemNum) {
-        const insertedIds = normalizeInsertedItemIds(
-          onAddToExecuteList(itemId),
-          [itemId],
-        );
-        if (insertedIds) batchAddToHallVisitList(insertedIds);
-        return;
-      }
-
-      const numValue = parseInt(itemNum, 10);
-      const itemBlock = item.block?.trim().toLowerCase() || "";
-
       if (smartInsertEnabled && smartInsertMode === "map") {
         const pendingIds = expandUninsertedMapSiblingIds([itemId]);
         const started =
@@ -1103,19 +1098,11 @@ const MapView: React.FC<MapViewProps> = ({
         return;
       }
 
-      const nearbyVisitItems: { item: ShoppingItem; visitIndex: number }[] = [];
-      executeModeItemIds.forEach((eid, idx) => {
-        const existingItem = itemsById.get(eid);
-        if (!existingItem) return;
-        const existingBlock = existingItem.block?.trim().toLowerCase() || "";
-        if (existingBlock !== itemBlock) return;
-        const existingNum = extractNumberFromItemNumber(existingItem.number);
-        if (!existingNum) return;
-        const existingNumValue = parseInt(existingNum, 10);
-        if (Math.abs(existingNumValue - numValue) <= 3) {
-          nearbyVisitItems.push({ item: existingItem, visitIndex: idx });
-        }
-      });
+      const nearbyVisitItems = selectNearbyVisits(
+        item,
+        executeModeItemIds,
+        itemsById,
+      );
 
       if (
         smartInsertMode !== "preview" ||
@@ -1135,6 +1122,7 @@ const MapView: React.FC<MapViewProps> = ({
     [
       onAddToExecuteList,
       onAddToExecuteListAtPosition,
+      selectNearbyVisits,
       itemsById,
       executeModeItemIds,
       batchAddToHallVisitList,
@@ -1365,31 +1353,15 @@ const MapView: React.FC<MapViewProps> = ({
   );
 
   const insertDialogNearbyItems = useMemo(() => {
-    const item = insertDialogState.item;
-    if (!item) return [];
-
-    const itemNum = extractNumberFromItemNumber(item.number);
-    if (!itemNum) return [];
-
-    const numValue = parseInt(itemNum, 10);
-    const itemBlock = item.block?.trim().toLowerCase() || "";
-
-    const result: { item: ShoppingItem; visitIndex: number }[] = [];
-    executeModeItemIds.forEach((eid, idx) => {
-      const existingItem = itemsById.get(eid);
-      if (!existingItem) return;
-      const existingBlock = existingItem.block?.trim().toLowerCase() || "";
-      if (existingBlock !== itemBlock) return;
-      const existingNum = extractNumberFromItemNumber(existingItem.number);
-      if (!existingNum) return;
-      const existingNumValue = parseInt(existingNum, 10);
-      if (Math.abs(existingNumValue - numValue) <= 3) {
-        result.push({ item: existingItem, visitIndex: idx });
-      }
-    });
-
-    return result;
-  }, [insertDialogState.item, itemsById, executeModeItemIds]);
+    const item =
+      insertDialogState.item && itemsById.get(insertDialogState.item.id);
+    return item ? selectNearbyVisits(item, executeModeItemIds, itemsById) : [];
+  }, [
+    insertDialogState.item,
+    itemsById,
+    executeModeItemIds,
+    selectNearbyVisits,
+  ]);
 
   const insertDialogHasHall = useMemo(() => {
     const item = insertDialogState.item;
@@ -1460,7 +1432,6 @@ const MapView: React.FC<MapViewProps> = ({
       if (!firstItem) return;
 
       const newVisitKey = buildExecutionVisitProjectionKey(firstItem);
-      const itemBlock = firstItem.block?.trim() || "";
 
       if (onBatchAddToExecuteListAtPosition) {
         const existingVisitItemId =
@@ -1515,24 +1486,12 @@ const MapView: React.FC<MapViewProps> = ({
         return;
       }
 
-      const itemNum = extractNumberFromItemNumber(firstItem.number);
-      if (itemNum && smartInsertEnabled && smartInsertMode === "preview") {
-        const numValue = parseInt(itemNum, 10);
-        const itemBlockLower = itemBlock.toLowerCase();
-        const nearbyVisitItems: { item: ShoppingItem; visitIndex: number }[] =
-          [];
-        executeModeItemIds.forEach((eid, idx) => {
-          const existingItem = itemsById.get(eid);
-          if (!existingItem) return;
-          const existingBlock = existingItem.block?.trim().toLowerCase() || "";
-          if (existingBlock !== itemBlockLower) return;
-          const existingNum = extractNumberFromItemNumber(existingItem.number);
-          if (!existingNum) return;
-          const existingNumValue = parseInt(existingNum, 10);
-          if (Math.abs(existingNumValue - numValue) <= 3) {
-            nearbyVisitItems.push({ item: existingItem, visitIndex: idx });
-          }
-        });
+      if (smartInsertEnabled && smartInsertMode === "preview") {
+        const nearbyVisitItems = selectNearbyVisits(
+          firstItem,
+          executeModeItemIds,
+          itemsById,
+        );
 
         if (nearbyVisitItems.length > 0) {
           setBatchInsertPendingIds(sortedIds);
@@ -1560,6 +1519,7 @@ const MapView: React.FC<MapViewProps> = ({
     },
     [
       itemsById,
+      selectNearbyVisits,
       executeModeItemIds,
       onAddToExecuteList,
       onBatchAddToExecuteList,

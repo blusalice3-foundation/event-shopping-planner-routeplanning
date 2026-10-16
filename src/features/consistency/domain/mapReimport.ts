@@ -1,3 +1,4 @@
+import { recordEntry, setOwnValue } from "../../../utils/ownRecord";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
 import type { MutationPlan } from "../../../app/commands/applicationMutationCoordinator";
 import type {
@@ -31,21 +32,29 @@ export function planMapReimport(
   options: MapReimportOptions,
   settings: BlockDetectionSettings,
 ): MutationPlan {
-  if (!source.eventLists[eventName])
+  if (!recordEntry(source.eventLists, eventName))
     throw new Error("取り込み先のイベントが見つかりません。");
   const next = structuredClone(source);
-  const event = (next.eventConsistency[eventName] ??= createEventConsistency());
-  const maps = (next.mapData[eventName] ??= {}) as Record<string, DayMapData>;
-  const definitions = (next.hallDefinitions[eventName] ??= {}) as Record<
+  const event =
+    recordEntry(next.eventConsistency, eventName) ??
+    setOwnValue(next.eventConsistency, eventName, createEventConsistency());
+  const maps = (recordEntry(next.mapData, eventName) ??
+    setOwnValue(next.mapData, eventName, {})) as Record<string, DayMapData>;
+  const definitions = (recordEntry(next.hallDefinitions, eventName) ??
+    setOwnValue(next.hallDefinitions, eventName, {})) as Record<
     string,
     HallDefinition[]
   >;
-  const rotations = (next.mapRotationSettings[eventName] ??= {});
-  const viewports = (next.mapViewportSettings[eventName] ??= {});
+  const rotations =
+    recordEntry(next.mapRotationSettings, eventName) ??
+    setOwnValue(next.mapRotationSettings, eventName, {});
+  const viewports =
+    recordEntry(next.mapViewportSettings, eventName) ??
+    setOwnValue(next.mapViewportSettings, eventName, {});
   const days = collectEventDays(
-    source.eventLists[eventName] as ShoppingItem[],
-    source.executeModeItems[eventName],
-    source.dayModes[eventName],
+    recordEntry(source.eventLists, eventName) as ShoppingItem[],
+    recordEntry(source.executeModeItems, eventName),
+    recordEntry(source.dayModes, eventName),
     event.days,
   );
   const affectedDays = new Set<string>(),
@@ -57,7 +66,7 @@ export function planMapReimport(
       options.targetMapKeys?.[target.eventDate] ??
       getDayConsistency(event, target.eventDate)?.selectedMapKey;
     const resolved = resolveDayMap(
-      source.mapData[eventName] as Record<string, DayMapData>,
+      recordEntry(source.mapData, eventName) as Record<string, DayMapData>,
       target.eventDate,
       choice,
     );
@@ -75,8 +84,8 @@ export function planMapReimport(
     const dependentDays = days.filter(
       (day) =>
         dayMapDependencies(
-          source.mapData[eventName] as Record<string, DayMapData>,
-          source.eventConsistency[eventName],
+          recordEntry(source.mapData, eventName) as Record<string, DayMapData>,
+          recordEntry(source.eventConsistency, eventName),
           day,
         ).includes(key) || sameDay(day, target.eventDate),
     );
@@ -85,8 +94,8 @@ export function planMapReimport(
       `更新する実在マップ: ${key} / 依存する日付: ${dependentDays.join("、")}`,
     );
     ensureDayConsistency(event, target.eventDate, [
-      next.executeModeItems[eventName],
-      next.dayModes[eventName],
+      recordEntry(next.executeModeItems, eventName),
+      recordEntry(next.dayModes, eventName),
     ]).selectedMapKey = key;
     // Worker DTOs retain optional undefined fields; persistence omits them.
     maps[key] = JSON.parse(JSON.stringify(target.mapData)) as DayMapData;
@@ -131,7 +140,7 @@ export function planMapReimport(
   );
   // Reimport discards positions defined on the previous drawing, preserving visibility.
   for (const { mapKey, context } of mapContextEntries(
-    plan.snapshot.eventConsistency[eventName],
+    recordEntry(plan.snapshot.eventConsistency, eventName),
   ))
     if (mapKey !== null && changedMaps.has(mapKey) && context.route)
       context.route.visitOrder = [];
@@ -141,34 +150,37 @@ export function planMapReimport(
     maps: Object.fromEntries(
       [...changedMaps].map((key) => [
         key,
-        snapshot.mapData[eventName]?.[key] ?? null,
+        recordEntry(snapshot.mapData, eventName)?.[key] ?? null,
       ]),
     ),
     definitions: Object.fromEntries(
       [...changedMaps, ...deletedSimpleKeys].map((key) => [
         key,
-        snapshot.hallDefinitions[eventName]?.[key] ?? null,
+        recordEntry(snapshot.hallDefinitions, eventName)?.[key] ?? null,
       ]),
     ),
     rotations: Object.fromEntries(
       [...changedMaps].map((key) => [
         key,
-        snapshot.mapRotationSettings[eventName]?.[key] ?? null,
+        recordEntry(snapshot.mapRotationSettings, eventName)?.[key] ?? null,
       ]),
     ),
     viewports: Object.fromEntries(
       [...changedMaps].map((key) => [
         key,
-        snapshot.mapViewportSettings[eventName]?.[key] ?? null,
+        recordEntry(snapshot.mapViewportSettings, eventName)?.[key] ?? null,
       ]),
     ),
-    detection: snapshot.eventConsistency[eventName].blockDetectionSettings,
+    detection: recordEntry(snapshot.eventConsistency, eventName)
+      .blockDetectionSettings,
     contexts: Object.fromEntries(
-      Object.entries(snapshot.eventConsistency[eventName].days).filter(
-        ([day]) => [...affectedDays].some((value) => sameDay(value, day)),
+      Object.entries(
+        recordEntry(snapshot.eventConsistency, eventName).days,
+      ).filter(([day]) =>
+        [...affectedDays].some((value) => sameDay(value, day)),
       ),
     ),
-    placements: (snapshot.eventLists[eventName] as ShoppingItem[])
+    placements: (recordEntry(snapshot.eventLists, eventName) as ShoppingItem[])
       .filter((item) =>
         [...affectedDays].some((day) => sameDay(day, item.eventDate)),
       )

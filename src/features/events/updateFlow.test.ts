@@ -66,6 +66,7 @@ describe("applyPendingEventUpdate", () => {
     const pending: PendingEventUpdate = {
       kind: "source-switch",
       eventName: EVENT_NAME,
+      baseSource: { url: "https://example.com/old", sheetName: "旧シート" },
       diff: diff({ itemsToDelete: [deletedItem] }),
       nextSource: {
         url: "https://example.com/new",
@@ -100,6 +101,7 @@ describe("applyPendingEventUpdate", () => {
     const pending: PendingEventUpdate = {
       kind: "items-only",
       eventName: EVENT_NAME,
+      baseSource: { url: "https://example.com/old", sheetName: "旧シート" },
       diff: diff({
         itemsToUpdate: [{ ...baseItems[0], title: "更新後" }],
       }),
@@ -128,6 +130,7 @@ describe("applyPendingEventUpdate", () => {
     const pending: PendingEventUpdate = {
       kind: "items-only",
       eventName: EVENT_NAME,
+      baseSource: { url: "https://example.com/old", sheetName: "旧シート" },
       diff: diff({ itemsToDelete: [firstVisitMember] }),
     };
 
@@ -149,6 +152,7 @@ describe("applyPendingEventUpdate", () => {
       const pending: PendingEventUpdate = {
         kind: "source-switch",
         eventName: EVENT_NAME,
+        baseSource: { url: "https://example.com/old", sheetName: "旧シート" },
         diff: diff(),
         nextSource: {
           url: "https://example.com/new",
@@ -180,4 +184,74 @@ describe("applyPendingEventUpdate", () => {
       expect(currentState.executeModeItems).toBe(state.executeModeItems);
     },
   );
+});
+
+it.each(["items-only", "source-switch"] as const)(
+  "validates source values before applying %s choices",
+  (kind) => {
+    const baseItems = [item("keep", "確認時")];
+    const state = createState(baseItems);
+    const source = { url: "https://example.com/old", sheetName: "旧シート" };
+    const pending: PendingEventUpdate = {
+      kind,
+      eventName: EVENT_NAME,
+      baseSource: source,
+      diff: diff({
+        itemsToUpdate: [{ ...baseItems[0], title: "旧シートからの更新" }],
+      }),
+      nextSource: { url: "https://example.com/new", sheetName: "新シート" },
+    };
+    for (const metadata of [
+      undefined,
+      {
+        ...state.eventMetadata[EVENT_NAME],
+        spreadsheetUrl: "https://example.com/changed",
+      },
+      { ...state.eventMetadata[EVENT_NAME], spreadsheetSheetName: "別シート" },
+    ]) {
+      const current: EventUpdateCommitState = {
+        ...state,
+        eventMetadata: metadata ? { [EVENT_NAME]: metadata } : {},
+      };
+      expect(
+        applyPendingEventUpdate({
+          state: current,
+          pending,
+          baseItems,
+          options: {},
+        }),
+      ).toBeNull();
+      expect(current.eventLists).toBe(state.eventLists);
+      expect(current.executeModeItems).toBe(state.executeModeItems);
+    }
+  },
+);
+
+it("permits the first source assignment only while the event still has no source", () => {
+  const baseItems = [item("keep", "確認時")];
+  const state = { ...createState(baseItems), eventMetadata: {} };
+  const pending: PendingEventUpdate = {
+    kind: "source-switch",
+    eventName: EVENT_NAME,
+    baseSource: null,
+    diff: diff(),
+    nextSource: { url: "https://example.com/first", sheetName: "" },
+  };
+  const result = applyPendingEventUpdate({
+    state,
+    pending,
+    baseItems,
+    options: {},
+  });
+  expect(result?.eventMetadata[EVENT_NAME].spreadsheetUrl).toBe(
+    pending.nextSource.url,
+  );
+  expect(
+    applyPendingEventUpdate({
+      state: createState(baseItems),
+      pending,
+      baseItems,
+      options: {},
+    }),
+  ).toBeNull();
 });

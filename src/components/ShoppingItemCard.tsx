@@ -1,3 +1,11 @@
+import { useStableCallback } from "../hooks/useStableCallback";
+import { ItemGuardContext } from "../features/shopping-list/renderers/ViewportRowState";
+import type { ItemContentGuard } from "../app/ports/PersistenceCommandPort";
+import {
+  rememberItemUpdateGuard,
+  sameItemGuardTarget,
+} from "../utils/itemContentGuard";
+import { buildLimitedPurchaseDialogUpdate } from "../utils/limitedPurchaseIntent";
 import { rememberItemUpdateBaseline } from "../utils/itemUpdateBaseline";
 import { recordShoppingRender } from "../utils/shoppingPerformance";
 import React, {
@@ -45,7 +53,6 @@ import {
 import { observeBatchedElementMeasurements } from "./batchedElementMeasurements";
 import type { LimitedPurchaseDialogResult } from "../types/limitedPurchase";
 import {
-  applyLimitedPurchase,
   applyPurchasedFromLimitedInput,
   clearLimitedPurchase,
   formatDisplayQuantity,
@@ -480,6 +487,8 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
 }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   recordShoppingRender("card");
+  const captureItemGuard = useContext(ItemGuardContext);
+  const limitedGuardRef = useRef<ItemContentGuard>();
   const readAcceptedItem = useContext(AcceptedItemContext);
   const [optimisticItem, setOptimisticItem] = useState(
     () => readAcceptedItem?.(sourceItem.id) ?? sourceItem,
@@ -614,39 +623,48 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
     commitItemUpdate(updatedItem);
   };
 
+  useEffect(() => {
+    if (limitedDialogOpen) {
+      const target = limitedDialogItem ?? optimisticItemRef.current;
+      if (
+        !limitedGuardRef.current ||
+        limitedGuardRef.current.itemId !== target.id
+      )
+        limitedGuardRef.current = captureItemGuard?.(target, "limited-single");
+    } else limitedGuardRef.current = undefined;
+  }, [limitedDialogOpen, limitedDialogItem, captureItemGuard]);
   const resolveLatestDialogItem = useCallback((): ShoppingItem | undefined => {
     const targetItem = limitedDialogItem ?? item;
     return getLatestItemById ? getLatestItemById(targetItem.id) : targetItem;
   }, [getLatestItemById, item, limitedDialogItem]);
 
-  const commitLimitedDialogResult = useCallback(
+  const commitLimitedDialogResult = useStableCallback(
     (baseItem: ShoppingItem, result: LimitedPurchaseDialogResult) => {
-      if (readOnly) return;
-      if (result.kind === "limited") {
-        commitItemUpdate(
-          applyLimitedPurchase(baseItem, {
-            actual: result.actual,
-            planned: result.planned,
-          }),
+      if (readOnly) return false;
+      const updated = buildLimitedPurchaseDialogUpdate(baseItem, result);
+      if (!updated) {
+        onNotify?.(
+          "購入予定量が変わりました。入力を確認して保存してください。",
         );
-        return;
+        return false;
       }
-
-      if (result.kind === "purchased") {
-        commitItemUpdate(
-          applyPurchasedFromLimitedInput(baseItem, result.planned),
-        );
-        return;
+      if (result.kind === "defer") onLimitedPurchaseDefer?.(baseItem);
+      const guard = limitedGuardRef.current;
+      if (
+        guard &&
+        captureItemGuard &&
+        !sameItemGuardTarget(
+          guard,
+          captureItemGuard(baseItem, "limited-single"),
+        )
+      ) {
+        onNotify?.("対象のイベントまたは参加日が変更されました。");
+        return false;
       }
-
-      if (result.kind === "defer") {
-        onLimitedPurchaseDefer?.(baseItem);
-      }
-      commitItemUpdate(
-        applyLimitedPurchase(baseItem, { planned: result.planned }),
-      );
+      if (guard) rememberItemUpdateGuard(updated, guard);
+      commitItemUpdate(updated);
+      return true;
     },
-    [commitItemUpdate, onLimitedPurchaseDefer, readOnly],
   );
 
   const restorePurchaseStatusButtonFocus = useCallback(() => {
@@ -708,7 +726,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
         }
       }
 
-      commitLimitedDialogResult(latestItem, result);
+      if (!commitLimitedDialogResult(latestItem, result)) return;
       closeLimitedDialog();
     },
     [
@@ -1154,7 +1172,9 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
           limitedDialogSourceItem.title || limitedDialogSourceItem.circle
         }
         initialActual={getActualPurchasedQuantity(limitedDialogSourceItem)}
-        initialPlanned={getPlannedQuantity(limitedDialogSourceItem)}
+        initialPlanned={getPlannedQuantity(
+          resolveLatestDialogItem() ?? limitedDialogSourceItem,
+        )}
         showDeferButton
         onSubmit={handleLimitedDialogSubmit}
         onCancel={closeLimitedDialog}
