@@ -218,6 +218,7 @@ export function readEventCsv(csvText: string, options?: EventCsvOptions) {
       rawQuantity: cell(format === "google" ? 26 : 6),
       remarks,
       sheetRemarks: remarks,
+      ...(format === "google" ? { sheetIdentityVerified: true } : {}),
       ...(url ? { url } : {}),
     };
     const columnType =

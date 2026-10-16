@@ -569,9 +569,27 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = (
       </p>
       {props.matching.proposals.map(({ row, incoming, candidates }) => (
         <label key={row} className="block">
-          {incoming.circle} / {incoming.eventDate} / {incoming.block}-
-          {incoming.number} / 新: {incoming.title}
+          <span className="block whitespace-pre-wrap break-words">
+            取込{row + 1}行目: {incoming.circle} / {incoming.eventDate} /{" "}
+            {incoming.block}-{incoming.number} / 新: {incoming.title}
+          </span>
+          <span className="block whitespace-pre-wrap break-words">
+            カタログ価格:{" "}
+            {formatPrice(
+              incoming.catalogPrice === undefined
+                ? incoming.price
+                : incoming.catalogPrice,
+            )}{" "}
+            / シート備考:{" "}
+            {formatRemarks(incoming.sheetRemarks ?? incoming.remarks)} /
+            シート数量:{" "}
+            {incoming.rawQuantity === ""
+              ? "（空欄）"
+              : (incoming.rawQuantity ?? incoming.quantity)}
+            {incoming.url ? ` / URL: ${incoming.url}` : ""}
+          </span>
           <select
+            className="mt-1 block w-full min-w-0 rounded border border-slate-300 bg-white p-2 text-sm dark:border-slate-600 dark:bg-slate-700"
             aria-label={`取込${row + 1}行目の対応`}
             value={choices[String(row)] ?? ""}
             onChange={(event) =>
@@ -585,9 +603,20 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = (
             <option value="new">新規品目として扱う</option>
             {candidates.map((item) => (
               <option key={item.id} value={item.id}>
-                旧: {item.title} / 価格: {item.catalogPrice ?? "未定"} /{" "}
-                {item.purchaseStatus} / 数量: {item.quantity} / メモ:{" "}
-                {item.remarks}
+                旧: {item.title} / カタログ価格:{" "}
+                {formatPrice(
+                  item.catalogPrice === undefined
+                    ? item.price
+                    : item.catalogPrice,
+                )}{" "}
+                / シート備考: {formatRemarks(item.sheetRemarks ?? item.remarks)}
+                {item.sheetIdentityVerified !== true ||
+                item.catalogPrice === undefined ||
+                item.sheetRemarks === undefined
+                  ? "（出自未確認）"
+                  : ""}{" "}
+                / {item.purchaseStatus} / 数量: {item.quantity} / メモ:{" "}
+                {formatRemarks(item.remarks)}
               </option>
             ))}
           </select>

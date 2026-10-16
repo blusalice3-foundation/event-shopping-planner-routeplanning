@@ -120,6 +120,9 @@ function createSpreadsheetItem(
     quantity: itemData.quantity ?? 1,
     remarks: itemData.remarks,
     sheetRemarks: itemData.sheetRemarks,
+    ...(itemData.sheetIdentityVerified === true
+      ? { sheetIdentityVerified: true }
+      : {}),
     purchaseStatus: "None",
     source: "spreadsheet",
     protectionLevel: "none",
@@ -179,6 +182,7 @@ export function applyEventUpdateToItems(
         quantity: sourceUpdate.quantity,
         catalogPrice: sourceUpdate.catalogPrice,
         sheetRemarks: sourceUpdate.sheetRemarks,
+        sheetIdentityVerified: sourceUpdate.sheetIdentityVerified,
         url: sourceUpdate.url,
       };
     }

@@ -23,6 +23,7 @@ const item = (overrides: Partial<ShoppingItem> = {}): ShoppingItem => ({
   sheetRemarks: "旧シート備考",
   url: "https://old.example",
   source: "spreadsheet",
+  sheetIdentityVerified: true,
   protectionLevel: "deletable",
   assignedTo: "担当者",
   lastSyncedAt: "2026-01-01",
@@ -413,6 +414,7 @@ describe("applyEventUpdateToItems allowlist", () => {
       quantity: 2,
       remarks: "シート備考",
       sheetRemarks: "シート備考",
+      sheetIdentityVerified: true,
     };
 
     const result = applyEventUpdateToItems(
@@ -428,6 +430,7 @@ describe("applyEventUpdateToItems allowlist", () => {
       sheetRemarks: "シート備考",
       purchaseStatus: "None",
       source: "spreadsheet",
+      sheetIdentityVerified: true,
       protectionLevel: "none",
     });
   });

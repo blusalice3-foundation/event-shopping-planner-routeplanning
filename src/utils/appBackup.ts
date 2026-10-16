@@ -586,6 +586,7 @@ const validateItem = (
     }
   }
   validateOptionalString(item, "sheetRemarks", path, errors);
+  validateOptionalBoolean(item, "sheetIdentityVerified", path, errors);
   validateOptionalString(item, "url", path, errors);
   validateOptionalEnum(item, "priorityLevel", path, errors, PRIORITY_LEVEL_SET);
   validateOptionalEnum(

@@ -21,7 +21,12 @@ export type SheetItem = Pick<
   | "quantity"
   | "remarks"
 > &
-  Partial<Pick<ShoppingItem, "catalogPrice" | "sheetRemarks" | "url">> & {
+  Partial<
+    Pick<
+      ShoppingItem,
+      "catalogPrice" | "sheetRemarks" | "sheetIdentityVerified" | "url"
+    >
+  > & {
     /**
      * CSV に記載された数量。空欄・不正値を差分作成時まで失わないために保持する。
      * 既存の呼び出し元は quantity だけを渡してもよい。
@@ -224,6 +229,9 @@ function toItemToAdd(item: SheetItem, quantity: number): SpreadsheetItemToAdd {
     quantity,
     remarks: item.remarks,
     sheetRemarks: getSheetRemarks(item),
+    ...(item.sheetIdentityVerified === true
+      ? { sheetIdentityVerified: true }
+      : {}),
     ...(item.url ? { url: item.url } : {}),
   };
 }
@@ -236,6 +244,7 @@ function sourceManagedFieldsChanged(
     current.title !== next.title ||
     current.catalogPrice !== next.catalogPrice ||
     current.sheetRemarks !== next.sheetRemarks ||
+    current.sheetIdentityVerified !== next.sheetIdentityVerified ||
     current.url !== next.url
   );
 }
@@ -347,6 +356,8 @@ export function createEventUpdateDiff(
       title: sheetItem.title,
       catalogPrice: getCatalogPrice(sheetItem),
       sheetRemarks: getSheetRemarks(sheetItem),
+      sheetIdentityVerified:
+        sheetItem.sheetIdentityVerified === true ? true : undefined,
       url: sheetItem.url,
     };
     const nextSheetQuantity =

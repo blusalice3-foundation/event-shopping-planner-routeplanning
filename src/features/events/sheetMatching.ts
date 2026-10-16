@@ -22,6 +22,7 @@ const inputSignature = (item: SheetItem) =>
     item.catalogPrice,
     item.remarks,
     item.sheetRemarks,
+    item.sheetIdentityVerified === true,
     item.url ?? "",
     item.rawQuantity ?? item.quantity,
   ]);
@@ -51,21 +52,33 @@ export function matchSheetItems(
       match(value.rows[0], value.current[0]);
       continue;
     }
+    // An unknown row could share any known signature; partial evidence cannot
+    // establish uniqueness for the group.
+    const verifiedGroup =
+      value.current.every(
+        (item) =>
+          item.source === "spreadsheet" &&
+          item.sheetIdentityVerified === true &&
+          item.catalogPrice !== undefined &&
+          item.sheetRemarks !== undefined,
+      ) &&
+      value.rows.every(
+        (row) =>
+          incoming[row].sheetIdentityVerified === true &&
+          incoming[row].catalogPrice !== undefined &&
+          incoming[row].sheetRemarks !== undefined,
+      );
     const oldSignatures = new Map<string, ShoppingItem[]>();
     const newSignatures = new Map<string, number[]>();
     for (const item of value.current) {
-      if (
-        item.source !== "spreadsheet" ||
-        item.catalogPrice === undefined ||
-        item.sheetRemarks === undefined
-      )
-        continue;
+      if (!verifiedGroup) continue;
       const key = signature(item),
         entries = oldSignatures.get(key) ?? [];
       entries.push(item);
       oldSignatures.set(key, entries);
     }
     for (const row of value.rows) {
+      if (!verifiedGroup) continue;
       const key = signature(incoming[row]),
         entries = newSignatures.get(key) ?? [];
       entries.push(row);

@@ -4768,3 +4768,219 @@ test.describe("editable item URLs are not sheet identity", () => {
     });
   }
 });
+
+test.describe("Excel identity provenance and decorated metadata", () => {
+  test.use({ serviceWorkers: "block" });
+  for (const format of ["current", "legacy"] as const) {
+    test(
+      format +
+        " Excel keeps inferred prices out of identity and preserves quantities @n1-n13-xlsx",
+      async ({ page }, testInfo) => {
+        page.on("dialog", (dialog) => dialog.accept());
+        const records = [2, 5].map((quantity, index) => ({
+          ...item(String(index + 1)),
+          circle: "同名サークル",
+          number: "01a",
+          title: "同名品目",
+          price: index === 0 ? 800 : 600,
+          quantity,
+          remarks: "シート備考",
+          source: "spreadsheet",
+          protectionLevel: "none",
+        }));
+        const source = backup(records);
+        Object.assign(source.data.eventMetadata, {
+          [eventName]: {
+            spreadsheetUrl:
+              "https://docs.google.com/spreadsheets/d/source-a/edit",
+            spreadsheetSheetName: "品目表",
+            lastImportDate: "2026-10-16",
+          },
+        });
+        await restore(page, source);
+        await page
+          .getByRole("button", { name: "イベント一覧", exact: true })
+          .click();
+        await page
+          .getByRole("button", { name: "メニュー", exact: true })
+          .click();
+        await page.getByRole("button", { name: /Excel形式で出力/ }).click();
+        const downloadPromise = page.waitForEvent("download");
+        await page
+          .getByRole("button", { name: "エクスポート", exact: true })
+          .click();
+        const stream = await (await downloadPromise).createReadStream();
+        if (!stream) throw new Error("Excel download stream is missing");
+        const chunks: Buffer[] = [];
+        for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+        const book = new ExcelJS.Workbook();
+        await book.xlsx.load(Buffer.concat(chunks));
+        const meta = book.getWorksheet("メタデータ")!;
+        // Exercise metadata parsing in the real XLSX Worker as part of each restore.
+        meta.eachRow((row) => {
+          if (row.getCell(1).value === "eventName")
+            row.getCell(2).value = {
+              richText: [
+                { font: { bold: true }, text: "整合性" },
+                { text: "検証" },
+              ],
+            };
+        });
+        if (format === "legacy") {
+          book.getWorksheet("アイテムデータ")!.spliceColumns(17, 3);
+          book.removeWorksheet("関連設定");
+          for (let row = meta.rowCount; row >= 2; row--) {
+            const key = String(meta.getCell(row, 1).value);
+            if (key === "version") meta.getCell(row, 2).value = "2.1";
+            if (
+              [
+                "contentManifest",
+                "consistencySchemaVersion",
+                "eventMetadata",
+              ].includes(key)
+            )
+              meta.spliceRows(row, 1);
+          }
+        } else {
+          expect(
+            book.getWorksheet("アイテムデータ")!.getCell(2, 19).value,
+          ).toBe("unverified");
+        }
+        await page
+          .locator('input[aria-label="Excelファイルを選択"]')
+          .setInputFiles({
+            name: format + ".xlsx",
+            mimeType:
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            buffer: Buffer.from(await book.xlsx.writeBuffer()),
+          });
+        const restoreDialog = page.getByRole("dialog", {
+          name: "バックアップからイベントを復元",
+        });
+        await expect(restoreDialog).toBeVisible();
+        await restoreDialog.getByRole("radio", { name: /同名で置換/ }).check();
+        await restoreDialog
+          .getByRole("button", { name: "置換して復元", exact: true })
+          .click();
+        const review = page.getByRole("dialog", {
+          name: "「" + eventName + "」の復元内容を確認",
+          exact: true,
+        });
+        await expect
+          .poll(
+            async () =>
+              !(await restoreDialog.isVisible()) || (await review.isVisible()),
+          )
+          .toBe(true);
+        if (await review.isVisible())
+          await review
+            .getByRole("button", { name: "確認して保存", exact: true })
+            .click();
+        await expect(restoreDialog).toBeHidden();
+        await expect
+          .poll(() => stored(page, "eventLists"))
+          .toMatchObject({
+            [eventName]: records.map((record) => ({
+              ...record,
+            })),
+          });
+        const restoredItems = await stored(page, "eventLists");
+        const originalExecution = await stored(page, "executeModeItems");
+        const originalConsistency = await stored(page, "eventConsistency");
+        const csv = records.map((record, index) => {
+          const cells = Array<string>(27).fill("");
+          cells[12] = record.circle;
+          cells[13] = record.eventDate;
+          cells[14] = record.block;
+          cells[15] = record.number;
+          cells[16] = record.title;
+          cells[17] = index === 0 ? "600" : "800";
+          cells[22] = "シート備考";
+          cells[26] = String(record.quantity);
+          return cells.join(",");
+        });
+        await page.route("**/api/google-sheets-csv", (route) =>
+          route.fulfill({
+            status: 200,
+            contentType: "text/csv; charset=utf-8",
+            body: [Array<string>(27).fill("header").join(","), ...csv].join(
+              "\n",
+            ),
+          }),
+        );
+        const openReview = async () => {
+          const eventList = page.getByRole("button", {
+            name: "イベント一覧",
+            exact: true,
+          });
+          if (await eventList.isVisible()) await eventList.click();
+          await page
+            .getByRole("button", { name: "メニュー", exact: true })
+            .click();
+          await page
+            .getByRole("button", { name: "🔄 アイテム更新", exact: true })
+            .click();
+        };
+        await openReview();
+        const first = page.getByLabel("取込1行目の対応", { exact: true });
+        const second = page.getByLabel("取込2行目の対応", { exact: true });
+        const confirm = page.getByRole("button", {
+          name: "更新を実行",
+          exact: true,
+        });
+        await expect(first).toBeVisible();
+        await expect(confirm).toBeDisabled();
+        await expect(first.locator("..")).toContainText("600円");
+        await expect(second.locator("..")).toContainText("800円");
+        await expect(first.locator("..")).toContainText("シート数量: 2");
+        await expect(second.locator("..")).toContainText("シート数量: 5");
+        expect(await stored(page, "eventLists")).toEqual(restoredItems);
+        await page
+          .getByRole("button", { name: "キャンセル", exact: true })
+          .last()
+          .click();
+        expect(await stored(page, "eventLists")).toEqual(restoredItems);
+        await openReview();
+        await first.selectOption("1");
+        await second.selectOption("1");
+        await expect(confirm).toBeDisabled();
+        await second.selectOption("2");
+        await expect(confirm).toBeEnabled();
+        await page.setViewportSize({ width: 390, height: 844 });
+        await first.scrollIntoViewIfNeeded();
+        const bounds = await first.boundingBox();
+        expect(bounds).not.toBeNull();
+        expect(bounds!.x).toBeGreaterThanOrEqual(0);
+        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+        await testInfo.attach("identity-details-mobile", {
+          body: await page.screenshot(),
+          contentType: "image/png",
+        });
+        await confirm.click();
+        await expect(confirm).toBeHidden();
+        await expect
+          .poll(() => stored(page, "eventLists"))
+          .toMatchObject({ [eventName]: records });
+        const saved = await stored(page, "eventLists");
+        for (const record of (
+          saved as Record<string, Array<{ sheetIdentityVerified?: boolean }>>
+        )[eventName])
+          expect(record.sheetIdentityVerified).toBe(true);
+        expect(await stored(page, "executeModeItems")).toEqual(
+          originalExecution,
+        );
+        expect(await stored(page, "eventConsistency")).toEqual(
+          originalConsistency,
+        );
+        await page.reload();
+        expect(await stored(page, "eventLists")).toEqual(saved);
+        expect(await stored(page, "executeModeItems")).toEqual(
+          originalExecution,
+        );
+        expect(await stored(page, "eventConsistency")).toEqual(
+          originalConsistency,
+        );
+      },
+    );
+  }
+});

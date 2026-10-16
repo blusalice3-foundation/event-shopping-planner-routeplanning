@@ -14,6 +14,7 @@ export const SHOPPING_ITEM_SNAPSHOT_KEYS = [
   "limitedPurchasedQuantity",
   "remarks",
   "sheetRemarks",
+  "sheetIdentityVerified",
   "url",
   "priorityLevel",
   "protectionLevel",
@@ -42,6 +43,7 @@ export const areSameItemSnapshot = (
   a.limitedPurchasedQuantity === b.limitedPurchasedQuantity &&
   a.remarks === b.remarks &&
   a.sheetRemarks === b.sheetRemarks &&
+  a.sheetIdentityVerified === b.sheetIdentityVerified &&
   a.url === b.url &&
   a.priorityLevel === b.priorityLevel &&
   a.protectionLevel === b.protectionLevel &&

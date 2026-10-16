@@ -34,6 +34,8 @@ export interface ShoppingItem {
   limitedPurchasedQuantity?: number;
   remarks: string;
   sheetRemarks?: string;
+  /** True only for values read from a sheet or an explicitly confirmed update. */
+  sheetIdentityVerified?: boolean;
   url?: string;
   priorityLevel?: "none" | "priority" | "highest";
   protectionLevel?: ProtectionLevel;

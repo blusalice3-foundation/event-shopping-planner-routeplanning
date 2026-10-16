@@ -70,6 +70,13 @@ export interface ExportData {
 
 const EXPORT_VERSION = "3.0";
 const WORKBOOK_CREATOR = "Event Shopping Planner";
+const TEXT_METADATA_KEYS = new Set([
+  "eventName",
+  "exportDate",
+  "spreadsheetUrl",
+  "spreadsheetSheetName",
+  "lastImportDate",
+]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -241,6 +248,7 @@ export async function exportToXlsx(
     { header: "限数実購入数", key: "limitedPurchasedQuantity", width: 14 },
     { header: "カタログ価格", key: "catalogPrice", width: 14 },
     { header: "シート備考", key: "sheetRemarks", width: 30 },
+    { header: "シート照合根拠", key: "sheetIdentityEvidence", width: 18 },
   ];
 
   // データ
@@ -265,6 +273,13 @@ export async function exportToXlsx(
         item.purchaseStatus === "LimitedPurchase"
           ? (item.limitedPurchasedQuantity ?? "")
           : "",
+      // Keep legacy fallback values, but never turn them into identity evidence.
+      sheetIdentityEvidence:
+        item.sheetIdentityVerified === true &&
+        item.catalogPrice !== undefined &&
+        item.sheetRemarks !== undefined
+          ? "verified"
+          : "unverified",
       catalogPrice:
         item.catalogPrice !== undefined
           ? (item.catalogPrice ?? "")
@@ -484,8 +499,24 @@ export async function importFromXlsx(
     if (metaSheet) {
       metaSheet.eachRow((row, rowNumber) => {
         if (rowNumber === 1) return;
-        const key = String(row.getCell(1).value || "");
-        const value = String(row.getCell(2).value || "");
+        const key = parseTextCell(row.getCell(1).value);
+        if (key === undefined)
+          throw new Error(
+            `メタデータ${rowNumber}行目のキーが非対応セル形式です。`,
+          );
+        const rawValue = row.getCell(2).value;
+        // Structured JSON/manifest values must still be scalar cells.
+        const value = TEXT_METADATA_KEYS.has(key)
+          ? parseTextCell(rawValue)
+          : rawValue === null ||
+              rawValue === undefined ||
+              ["string", "number", "boolean"].includes(typeof rawValue)
+            ? String(rawValue ?? "")
+            : undefined;
+        if (value === undefined)
+          throw new Error(
+            `メタデータ${rowNumber}行目「${key}」が非対応セル形式です。`,
+          );
         if (key && metaMap.has(key))
           throw new Error("メタデータのキーが重複しています。");
         if (key) metaMap.set(key, value);
@@ -545,13 +576,18 @@ export async function importFromXlsx(
 
     const itemHeaderColumns = new Map<string, number>();
     itemsSheet.getRow(1).eachCell({ includeEmpty: false }, (cell, column) => {
-      const header = String(cell.value ?? "").trim();
+      const header = parseTextCell(cell.value)?.trim();
+      if (header === undefined)
+        throw new Error(
+          `アイテムデータの${column}列目の見出しが非対応セル形式です。`,
+        );
       if (header && !itemHeaderColumns.has(header)) {
         itemHeaderColumns.set(header, column);
       }
     });
     const catalogPriceColumn = itemHeaderColumns.get("カタログ価格");
     const sheetRemarksColumn = itemHeaderColumns.get("シート備考");
+    const sheetIdentityColumn = itemHeaderColumns.get("シート照合根拠");
     const hasCatalogPriceColumn = catalogPriceColumn !== undefined;
     const hasSheetRemarksColumn = sheetRemarksColumn !== undefined;
     if (hasCatalogPriceColumn !== hasSheetRemarksColumn) {
@@ -696,6 +732,13 @@ export async function importFromXlsx(
       let catalogPrice: number | null | undefined;
       let sheetRemarks: string | undefined;
       let usedLegacySheetFieldFallback = false;
+      // Older exports could fill these columns from editable price/notes.
+      // Missing or unknown evidence must remain unverified across JSON/XLSX.
+      let sheetIdentityVerified =
+        source === "spreadsheet" &&
+        hasSheetDerivedColumns &&
+        sheetIdentityColumn !== undefined &&
+        row.getCell(sheetIdentityColumn).value === "verified";
       if (hasSheetDerivedColumns) {
         const parsedCatalogPrice = parseFiniteNumberCell(
           row.getCell(catalogPriceColumn!).value,
@@ -707,6 +750,7 @@ export async function importFromXlsx(
             catalogPrice = null;
           }
         } else {
+          sheetIdentityVerified = false;
           rowReasons.push(
             `カタログ価格「${parsedCatalogPrice.raw}」は不正のため空値で補完しました`,
           );
@@ -715,6 +759,8 @@ export async function importFromXlsx(
           }
         }
 
+        if (parseTextCell(row.getCell(sheetRemarksColumn!).value) === undefined)
+          sheetIdentityVerified = false;
         const parsedSheetRemarks = textCell(sheetRemarksColumn!);
         if (source === "spreadsheet" || parsedSheetRemarks !== "") {
           sheetRemarks = parsedSheetRemarks;
@@ -778,6 +824,7 @@ export async function importFromXlsx(
         purchaseStatus,
         remarks,
         ...(sheetRemarks !== undefined ? { sheetRemarks } : {}),
+        ...(sheetIdentityVerified ? { sheetIdentityVerified: true } : {}),
         url,
         ...(priorityLevel !== undefined ? { priorityLevel } : {}),
         ...(protectionLevel !== undefined ? { protectionLevel } : {}),

@@ -27,6 +27,7 @@ const item = (
   quantity: 5,
   purchaseStatus: "None",
   source: "spreadsheet",
+  sheetIdentityVerified: true,
   protectionLevel: "none",
   ...fields,
 });

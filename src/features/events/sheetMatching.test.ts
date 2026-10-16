@@ -21,6 +21,7 @@ const items = (): ShoppingItem[] =>
     url: urls[index],
     purchaseStatus: "None",
     source: "spreadsheet",
+    sheetIdentityVerified: true,
     protectionLevel: "none",
   }));
 const rows = (): SheetItem[] =>
@@ -196,6 +197,29 @@ describe("sheet identity excludes editable URLs", () => {
       expect(after?.eventLists.event).toEqual(items());
       expect(after?.eventMetadata.event.spreadsheetUrl).toBe(nextSource.url);
       expect(after?.executeModeItems).toEqual(state.executeModeItems);
+    },
+  );
+});
+
+describe("partial sheet provenance cannot prove group uniqueness", () => {
+  it.each(["current", "incoming"] as const)(
+    "keeps the whole duplicate group unresolved when one %s row has unknown provenance",
+    (side) => {
+      const current = items().map((item, index) => ({
+        ...item,
+        catalogPrice: index === 0 ? 500 : 700,
+      }));
+      const incoming = rows().map((item, index) => ({
+        ...item,
+        catalogPrice: index === 0 ? 500 : 700,
+        price: index === 0 ? 500 : 700,
+      }));
+      if (side === "current") current[1].sheetIdentityVerified = undefined;
+      else incoming[1].sheetIdentityVerified = undefined;
+      const diff = createEventUpdateDiff(current, incoming);
+      expect(diff.unresolvedMatches).toHaveLength(2);
+      expect(diff.itemsToUpdate).toEqual([]);
+      expect(() => applyEventUpdateToItems(current, diff)).toThrow(/対応関係/u);
     },
   );
 });

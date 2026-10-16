@@ -58,8 +58,17 @@ export function buildBulkAddItems(
     ...itemData,
     ...(itemSource === "spreadsheet"
       ? {
-          catalogPrice: itemData.catalogPrice ?? itemData.price,
+          catalogPrice:
+            itemData.catalogPrice === undefined
+              ? itemData.price
+              : itemData.catalogPrice,
           sheetRemarks: itemData.sheetRemarks ?? itemData.remarks,
+          sheetIdentityVerified:
+            itemData.sheetIdentityVerified === true &&
+            itemData.catalogPrice !== undefined &&
+            itemData.sheetRemarks !== undefined
+              ? true
+              : undefined,
         }
       : {}),
     quantity: itemData.quantity ?? 1,

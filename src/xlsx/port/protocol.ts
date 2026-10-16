@@ -136,6 +136,15 @@ const allowedKeys = (
 const isRecordArray = (value: unknown): value is Record<string, unknown>[] =>
   Array.isArray(value) && value.every(isRecord);
 
+const isWorkbookItems = (value: unknown): boolean =>
+  Array.isArray(value) &&
+  value.every(
+    (item) =>
+      isRecord(item) &&
+      (item.sheetIdentityVerified === undefined ||
+        typeof item.sheetIdentityVerified === "boolean"),
+  );
+
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((entry) => typeof entry === "string");
 
@@ -223,7 +232,7 @@ const isEventImportValue = (value: unknown): boolean =>
   (value.contentManifest === undefined ||
     value.eventConsistency !== undefined) &&
   typeof value.eventName === "string" &&
-  isRecordArray(value.items) &&
+  isWorkbookItems(value.items) &&
   isStringArray(value.errors) &&
   (value.itemFallbackWarnings === undefined ||
     isRecordArray(value.itemFallbackWarnings)) &&
@@ -328,7 +337,7 @@ export const parseXlsxWorkerRequest = (
     value.snapshot.schemaVersion === 2 &&
     typeof value.snapshot.eventName === "string" &&
     value.snapshot.eventName.length > 0 &&
-    isRecordArray(value.snapshot.items) &&
+    isWorkbookItems(value.snapshot.items) &&
     isExportOptions(value.snapshot.options) &&
     isExportAdditionalData(value.snapshot.additionalData)
   ) {

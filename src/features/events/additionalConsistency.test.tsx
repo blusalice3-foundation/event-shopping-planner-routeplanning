@@ -41,10 +41,12 @@ const item = (
   sheetRemarks: "",
   purchaseStatus: "None",
   source: "spreadsheet",
+  sheetIdentityVerified: true,
   protectionLevel: "none",
   ...fields,
 });
 const sheet = (fields: Partial<SheetItem> = {}): SheetItem => ({
+  sheetIdentityVerified: true,
   circle: "サークルA",
   eventDate: "1日目",
   block: "A",
