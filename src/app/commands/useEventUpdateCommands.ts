@@ -1,4 +1,7 @@
-import type { ApplicationSnapshotGuard } from "./ApplicationSnapshotCommitPort";
+import type {
+  ApplicationSnapshotCommitContext,
+  ApplicationSnapshotGuard,
+} from "./ApplicationSnapshotCommitPort";
 import { bulkImportFailureStatus } from "../../utils/importOutcome";
 import { recordEntry } from "../../utils/ownRecord";
 import { useCallback, useRef } from "react";
@@ -63,6 +66,7 @@ export interface EventUpdateActionPort {
   commitEventUpdateState(
     state: EventUpdateCommitState,
     assertCurrent: ApplicationSnapshotGuard,
+    context: ApplicationSnapshotCommitContext,
   ): Promise<boolean>;
   openEventUpdate(pending: PendingEventUpdate): void;
   openUrlUpdate(eventName: string): void;
@@ -439,18 +443,22 @@ export const useEventUpdateCommands = ({
       savingImport.current = true;
       try {
         if (
-          !(await commitEventUpdateState(nextState, (snapshot) => {
-            if (
-              !eventUpdateSourceMatches(
-                recordEntry(
-                  snapshot.eventMetadata,
-                  pendingEventUpdate.eventName,
-                ) as EventMetadata | undefined,
-                pendingEventUpdate.baseSource,
+          !(await commitEventUpdateState(
+            nextState,
+            (snapshot) => {
+              if (
+                !eventUpdateSourceMatches(
+                  recordEntry(
+                    snapshot.eventMetadata,
+                    pendingEventUpdate.eventName,
+                  ) as EventMetadata | undefined,
+                  pendingEventUpdate.baseSource,
+                )
               )
-            )
-              throw new EventUpdateInvalidatedError();
-          }))
+                throw new EventUpdateInvalidatedError();
+            },
+            { confirm: false },
+          ))
         ) {
           finishImport({ status: "failed" });
           return;

@@ -3,6 +3,7 @@ import type { ShoppingItem } from "../../types/item";
 import { createEventUpdateDiff, type SheetItem } from "./updateDiff";
 import { applyEventUpdateToItems } from "./updateApply";
 import { applyPendingEventUpdate } from "./updateFlow";
+import { matchSheetItems } from "./sheetMatching";
 
 const urls = ["https://example.com/book-a", "https://example.com/book-b"];
 const items = (): ShoppingItem[] =>
@@ -43,35 +44,34 @@ const urlChanges = [
   { name: "partially removed", values: [undefined, urls[0]] },
 ];
 
-describe("sheet identity excludes editable URLs", () => {
+describe("automatic sheet identity excludes editable URLs", () => {
   for (const reverse of [false, true]) {
     it.each(urlChanges)(
-      `requires explicit identity with $name URLs, reversed=${reverse}`,
+      `pairs duplicate rows in order with $name URLs, reversed=${reverse}`,
       ({ values }) => {
         const before = items().map((item, index) => ({
           ...item,
           url: values[index],
         }));
         const incoming = reverse ? rows().reverse() : rows();
-        const pending = createEventUpdateDiff(before, incoming);
-        expect(pending.unresolvedMatches).toHaveLength(2);
-        expect(() => applyEventUpdateToItems(before, pending)).toThrow(
-          /対応関係/u,
+        const diff = createEventUpdateDiff(before, incoming);
+        expect(diff.unresolvedMatches).toEqual([]);
+        expect(diff.matching).toBeUndefined();
+        expect(diff.itemsToDelete).toEqual([]);
+        expect(diff.itemsToAdd).toEqual([]);
+        expect(applyEventUpdateToItems(before, diff)).toEqual(
+          items().map((item, index) => ({
+            ...item,
+            quantity: incoming[index].quantity,
+            url: incoming[index].url,
+          })),
         );
-        const choices = reverse
-          ? { "0": "2", "1": "1" }
-          : { "0": "1", "1": "2" };
-        const resolved = createEventUpdateDiff(before, incoming, choices);
-        expect(resolved.unresolvedMatches).toEqual([]);
-        expect(resolved.itemsToDelete).toEqual([]);
-        expect(resolved.itemsToAdd).toEqual([]);
-        expect(applyEventUpdateToItems(before, resolved)).toEqual(items());
       },
     );
   }
 
   it.each(["catalogPrice", "sheetRemarks"] as const)(
-    "still matches unique sheet-owned %s after manual URL swaps",
+    "prefers unique verified %s over row order after manual URL swaps",
     (field) => {
       const original = items();
       original[1] = {
@@ -92,7 +92,7 @@ describe("sheet identity excludes editable URLs", () => {
     },
   );
 
-  it("keeps each ID without a choice when all incoming effects, including URL, are identical", () => {
+  it("keeps each ID when all incoming effects are identical", () => {
     const before = items();
     const incoming = [rows()[0], rows()[0]];
     const diff = createEventUpdateDiff(before, incoming);
@@ -105,27 +105,24 @@ describe("sheet identity excludes editable URLs", () => {
     ]);
   });
 
-  it("requires a choice when only the incoming URLs differ", () => {
+  it("does not require a choice when only the incoming URLs differ", () => {
     const before = items().map((item) => ({ ...item, quantity: 2 }));
     const incoming = rows().map((item) => ({
       ...item,
       quantity: 2,
       rawQuantity: "2",
     }));
-    expect(
-      createEventUpdateDiff(before, incoming).unresolvedMatches,
-    ).toHaveLength(2);
+    const diff = createEventUpdateDiff(before, incoming);
+    expect(diff.unresolvedMatches).toEqual([]);
+    expect(applyEventUpdateToItems(before, diff)).toEqual(before);
   });
 
-  it("keeps purchased-quantity confirmation and per-ID records after explicit identity selection", () => {
+  it("keeps purchased-quantity consent and per-ID records after automatic matching", () => {
     const before = items();
     before[0] = { ...before[0], purchaseStatus: "Purchased", url: urls[1] };
     const incoming = rows();
     incoming[0] = { ...incoming[0], quantity: 6, rawQuantity: "6" };
-    const diff = createEventUpdateDiff(before, incoming, {
-      "0": "1",
-      "1": "2",
-    });
+    const diff = createEventUpdateDiff(before, incoming);
     expect(diff.pendingPurchasedQuantityChanges).toMatchObject([
       { itemId: "1", currentQuantity: 2, nextQuantity: 6 },
     ]);
@@ -141,7 +138,7 @@ describe("sheet identity excludes editable URLs", () => {
   });
 
   it.each(["items-only", "same-source", "source-switch"] as const)(
-    "blocks unresolved %s updates and applies the selected IDs through the shared flow",
+    "applies %s updates without per-row choices through the shared flow",
     (kind) => {
       const before = items().map((item, index) => ({
         ...item,
@@ -179,31 +176,156 @@ describe("sheet identity excludes editable URLs", () => {
         baseSource,
         nextSource,
       };
-      expect(
-        applyPendingEventUpdate({
-          state,
-          pending,
-          baseItems: before,
-          options: {},
-        }),
-      ).toBeNull();
-      expect(state.eventLists.event).toEqual(before);
       const after = applyPendingEventUpdate({
         state,
         pending,
         baseItems: before,
-        options: { identityChoices: { "0": "1", "1": "2" } },
+        options: {},
       });
       expect(after?.eventLists.event).toEqual(items());
       expect(after?.eventMetadata.event.spreadsheetUrl).toBe(nextSource.url);
       expect(after?.executeModeItems).toEqual(state.executeModeItems);
+      expect(state.eventLists.event).toEqual(before);
     },
   );
 });
 
-describe("partial sheet provenance cannot prove group uniqueness", () => {
+describe("automatic matching prioritizes identity and never reuses an old ID", () => {
+  it("matches a single changed title without a choice and preserves purchase records", () => {
+    const before = [items()[0]];
+    const incoming = [{ ...rows()[0], title: "改題後" }];
+    const diff = createEventUpdateDiff(before, incoming);
+    expect(diff.itemsToDelete).toEqual([]);
+    expect(diff.itemsToAdd).toEqual([]);
+    expect(diff.unresolvedMatches).toEqual([]);
+    expect(applyEventUpdateToItems(before, diff)).toEqual([
+      { ...before[0], title: "改題後" },
+    ]);
+  });
+
+  it("reserves unchanged titles before matching changed titles, regardless of incoming order", () => {
+    const before = items().map((item, index) => ({
+      ...item,
+      title: index === 0 ? "改題前" : "既存タイトル",
+    }));
+    const incoming = [
+      { ...rows()[0], title: "改題後" },
+      { ...rows()[1], title: "既存タイトル" },
+    ];
+    const matched = matchSheetItems(before, incoming);
+    expect(matched.matches.get(0)?.id).toBe("1");
+    expect(matched.matches.get(1)?.id).toBe("2");
+    expect(matched.proposals).toEqual([]);
+    expect(matched.unresolved).toEqual([]);
+  });
+
+  it("prefers unique verified signatures when several titles change and rows reverse", () => {
+    const before = items().map((item, index) => ({
+      ...item,
+      title: `旧${index}`,
+      catalogPrice: 500 + index * 200,
+    }));
+    const incoming = before
+      .map((item, index) => ({
+        ...item,
+        title: `新${index}`,
+        rawQuantity: String(item.quantity),
+      }))
+      .reverse();
+    const matched = matchSheetItems(before, incoming);
+    expect(matched.matches.get(0)?.id).toBe("2");
+    expect(matched.matches.get(1)?.id).toBe("1");
+    const after = applyEventUpdateToItems(
+      before,
+      createEventUpdateDiff(before, incoming),
+    );
+    expect(
+      after.map(({ id, title, price, remarks }) => ({
+        id,
+        title,
+        price,
+        remarks,
+      })),
+    ).toEqual(
+      before.map(({ id, price, remarks }, index) => ({
+        id,
+        title: `新${index}`,
+        price,
+        remarks,
+      })),
+    );
+  });
+
+  it("pairs ambiguous title changes in old-item and incoming order, without reusing IDs", () => {
+    const before = items().map((item, index) => ({
+      ...item,
+      title: `旧${index}`,
+    }));
+    const incoming = rows().map((item, index) => ({
+      ...item,
+      title: `新${index}`,
+    }));
+    const matched = matchSheetItems(before, incoming, { "0": "2", "1": "2" });
+    expect([...matched.matches.values()].map(({ id }) => id)).toEqual([
+      "1",
+      "2",
+    ]);
+    expect(matched.used.size).toBe(2);
+    const diff = createEventUpdateDiff(before, incoming);
+    expect(diff.itemsToUpdate.map(({ id }) => id)).toEqual(["1", "2"]);
+    expect(diff.itemsToAdd).toEqual([]);
+    expect(diff.itemsToDelete).toEqual([]);
+  });
+
+  it("keeps extra incoming rows as new items after existing IDs are consumed", () => {
+    const before = items().map((item, index) => ({
+      ...item,
+      title: `旧${index}`,
+    }));
+    const incoming = [...rows(), rows()[0]].map((item, index) => ({
+      ...item,
+      title: `新${index}`,
+    }));
+    const diff = createEventUpdateDiff(before, incoming);
+    expect(diff.itemsToUpdate.map(({ id }) => id)).toEqual(["1", "2"]);
+    expect(diff.itemsToAdd).toMatchObject([{ title: "新2" }]);
+    const after = applyEventUpdateToItems(before, diff);
+    expect(after).toHaveLength(3);
+    expect(new Set(after.map(({ id }) => id)).size).toBe(3);
+  });
+
+  it("reserves all unchanged-title duplicates before using the next old title", () => {
+    const before = [
+      ...items(),
+      { ...items()[0], id: "3", title: "別タイトル" },
+    ];
+    const incoming = [{ ...rows()[0], title: "改題後" }, ...rows()];
+    const matched = matchSheetItems(before, incoming);
+    expect([0, 1, 2].map((row) => matched.matches.get(row)?.id)).toEqual([
+      "3",
+      "1",
+      "2",
+    ]);
+  });
+
+  it("retains full protection and only deletes unmatched deletable items", () => {
+    const before = [
+      { ...items()[0], title: "旧タイトル" },
+      { ...items()[1], protectionLevel: "full" as const },
+      { ...items()[0], id: "3", protectionLevel: "deletable" as const },
+    ];
+    const incoming = [{ ...rows()[0], title: "新タイトル" }];
+    const diff = createEventUpdateDiff(before, incoming);
+    expect(diff.itemsToDelete.map(({ id }) => id)).toEqual(["3"]);
+    expect(diff.protectedFromDelete).toBe(1);
+    expect(applyEventUpdateToItems(before, diff)).toEqual([
+      { ...before[0], title: "新タイトル" },
+      before[1],
+    ]);
+  });
+
   it.each(["current", "incoming"] as const)(
-    "keeps the whole duplicate group unresolved when one %s row has unknown provenance",
+    "falls back to row order when one %s row has unknown provenance",
     (side) => {
       const current = items().map((item, index) => ({
         ...item,
@@ -216,10 +338,21 @@ describe("partial sheet provenance cannot prove group uniqueness", () => {
       }));
       if (side === "current") current[1].sheetIdentityVerified = undefined;
       else incoming[1].sheetIdentityVerified = undefined;
+      const matched = matchSheetItems(current, incoming.reverse());
+      expect([0, 1].map((row) => matched.matches.get(row)?.id)).toEqual([
+        "1",
+        "2",
+      ]);
       const diff = createEventUpdateDiff(current, incoming);
-      expect(diff.unresolvedMatches).toHaveLength(2);
-      expect(diff.itemsToUpdate).toEqual([]);
-      expect(() => applyEventUpdateToItems(current, diff)).toThrow(/対応関係/u);
+      expect(diff.unresolvedMatches).toEqual([]);
+      expect(diff.itemsToDelete).toEqual([]);
+      expect(diff.itemsToAdd).toEqual([]);
+      const after = applyEventUpdateToItems(current, diff);
+      expect(
+        after.map(({ id, remarks, price }) => ({ id, remarks, price })),
+      ).toEqual(
+        current.map(({ id, remarks, price }) => ({ id, remarks, price })),
+      );
     },
   );
 });

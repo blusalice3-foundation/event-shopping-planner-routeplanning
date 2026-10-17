@@ -163,7 +163,9 @@ const createHarness = (options: HarnessOptions = {}) => {
       metadata?: BulkAddMetadata,
     ) => Promise<import("../../types/import").BulkImportResult>
   >(async () => ({ status: "saved" }));
-  const commitEventUpdateState = vi.fn(async (next: EventUpdateCommitState) => {
+  const commitEventUpdateState = vi.fn<
+    EventUpdateActionPort["commitEventUpdateState"]
+  >(async (next: EventUpdateCommitState) => {
     stores.eventLists = next.eventLists;
     stores.eventMetadata = next.eventMetadata;
     stores.executeModeItems = next.executeModeItems;
@@ -507,6 +509,11 @@ describe("useEventUpdateCommands", () => {
     await act(() => result.current.handleConfirmUpdate({}));
 
     expect(harness.spies.commitEventUpdateState).toHaveBeenCalledTimes(1);
+    expect(harness.spies.commitEventUpdateState).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(Function),
+      { confirm: false },
+    );
     const committed = harness.spies.commitEventUpdateState.mock.calls[0][0];
     expect(committed.eventLists[EVENT].map(({ id }) => id)).toEqual(["keep"]);
     expect(committed.executeModeItems[EVENT][DAY]).toEqual(["keep"]);

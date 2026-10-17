@@ -4566,7 +4566,7 @@ test.describe("sheet source changes at the save boundary", () => {
 test.describe("editable item URLs are not sheet identity", () => {
   test.use({ serviceWorkers: "block" });
   for (const kind of ["items-only", "same-source", "source-switch"] as const) {
-    test(`${kind} requires identity after URL edits and preserves quantities on save/reload @n1-url`, async ({
+    test(`${kind} automatically matches URL edits and preserves quantities on save/reload @n1-url`, async ({
       page,
     }) => {
       const urls = ["https://example.com/book-a", "https://example.com/book-b"];
@@ -4712,10 +4712,8 @@ test.describe("editable item URLs are not sheet identity", () => {
       });
       await openReview();
       await expect(heading).toBeVisible();
-      await expect(
-        page.getByLabel("取込1行目の対応", { exact: true }),
-      ).toBeVisible();
-      await expect(confirm).toBeDisabled();
+      await expect(page.getByLabel(/取込\d+行目の対応/)).toHaveCount(0);
+      await expect(confirm).toBeEnabled();
       expect(await stored(page, "eventLists")).toEqual(beforeItems);
       expect(await stored(page, "eventMetadata")).toEqual(beforeMetadata);
       await page
@@ -4727,19 +4725,7 @@ test.describe("editable item URLs are not sheet identity", () => {
       expect(await stored(page, "eventMetadata")).toEqual(beforeMetadata);
       await openReview();
       await expect(heading).toBeVisible();
-      await expect(
-        page.getByLabel("取込1行目の対応", { exact: true }),
-      ).toHaveValue("");
-      await page
-        .getByLabel("取込1行目の対応", { exact: true })
-        .selectOption("1");
-      await page
-        .getByLabel("取込2行目の対応", { exact: true })
-        .selectOption("1");
-      await expect(confirm).toBeDisabled();
-      await page
-        .getByLabel("取込2行目の対応", { exact: true })
-        .selectOption("2");
+      await expect(page.getByLabel(/取込\d+行目の対応/)).toHaveCount(0);
       await expect(confirm).toBeEnabled();
       await confirm.click();
       await expect(heading).toBeHidden();
@@ -4774,7 +4760,7 @@ test.describe("Excel identity provenance and decorated metadata", () => {
   for (const format of ["current", "legacy"] as const) {
     test(
       format +
-        " Excel keeps inferred prices out of identity and preserves quantities and layout @n1-n13-xlsx @n13-layout",
+        " Excel automatically matches inferred prices and preserves quantities and layout @n1-n13-xlsx @n13-layout",
       async ({ page }, testInfo) => {
         page.on("dialog", (dialog) => dialog.accept());
         const records = [2, 5].map((quantity, index) => ({
@@ -4939,18 +4925,16 @@ test.describe("Excel identity provenance and decorated metadata", () => {
             .click();
         };
         await openReview();
-        const first = page.getByLabel("取込1行目の対応", { exact: true });
-        const second = page.getByLabel("取込2行目の対応", { exact: true });
+
         const confirm = page.getByRole("button", {
           name: "更新を実行",
           exact: true,
         });
-        await expect(first).toBeVisible();
-        await expect(confirm).toBeDisabled();
-        await expect(first.locator("..")).toContainText("600円");
-        await expect(second.locator("..")).toContainText("800円");
-        await expect(first.locator("..")).toContainText("シート数量: 2");
-        await expect(second.locator("..")).toContainText("シート数量: 5");
+        await expect(page.getByLabel(/取込\d+行目の対応/)).toHaveCount(0);
+        await expect(confirm).toBeEnabled();
+        await expect(
+          page.getByText("更新: 2件", { exact: true }),
+        ).toBeVisible();
         expect(await stored(page, "eventLists")).toEqual(restoredItems);
         await page
           .getByRole("button", { name: "キャンセル", exact: true })
@@ -4958,18 +4942,15 @@ test.describe("Excel identity provenance and decorated metadata", () => {
           .click();
         expect(await stored(page, "eventLists")).toEqual(restoredItems);
         await openReview();
-        await first.selectOption("1");
-        await second.selectOption("1");
-        await expect(confirm).toBeDisabled();
-        await second.selectOption("2");
+        await expect(page.getByLabel(/取込\d+行目の対応/)).toHaveCount(0);
         await expect(confirm).toBeEnabled();
         await page.setViewportSize({ width: 390, height: 844 });
-        await first.scrollIntoViewIfNeeded();
-        const bounds = await first.boundingBox();
+        await confirm.scrollIntoViewIfNeeded();
+        const bounds = await confirm.boundingBox();
         expect(bounds).not.toBeNull();
         expect(bounds!.x).toBeGreaterThanOrEqual(0);
         expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
-        await testInfo.attach("identity-details-mobile", {
+        await testInfo.attach("update-review-mobile", {
           body: await page.screenshot(),
           contentType: "image/png",
         });

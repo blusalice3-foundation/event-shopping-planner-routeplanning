@@ -90,6 +90,7 @@ describe("UpdateConfirmationModal quantity confirmation", () => {
     fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
     expect(onConfirm).toHaveBeenLastCalledWith({
       applyPurchasedQuantityChanges: false,
+      acceptCsvExclusions: true,
       priceSyncMode: "preserve",
       remarksSyncMode: "preserve",
     });
@@ -102,6 +103,7 @@ describe("UpdateConfirmationModal quantity confirmation", () => {
     fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
     expect(onConfirm).toHaveBeenLastCalledWith({
       applyPurchasedQuantityChanges: true,
+      acceptCsvExclusions: true,
       priceSyncMode: "preserve",
       remarksSyncMode: "preserve",
     });
@@ -259,6 +261,23 @@ describe("UpdateConfirmationModal quantity confirmation", () => {
   });
 });
 
+const makeItem = (index: number): ShoppingItem => ({
+  id: `item-${index}`,
+  circle: `ユーザー登録${index}`,
+  eventDate: "1日目",
+  block: "A",
+  number: String(index + 1),
+  title: `旧刊${index}`,
+  price: 900,
+  catalogPrice: 500,
+  quantity: 2,
+  purchaseStatus: "None",
+  remarks: "利用者の記録",
+  sheetRemarks: "旧シート備考",
+  sheetIdentityVerified: true,
+  source: "spreadsheet",
+});
+
 const fillEmptyCandidate: AppFieldSyncCandidate = {
   itemId: "item-fill",
   circle: "サークル補完",
@@ -282,12 +301,8 @@ const fillEmptyCandidate: AppFieldSyncCandidate = {
 };
 
 const purchasedOverwriteCandidate: AppFieldSyncCandidate = {
+  ...fillEmptyCandidate,
   itemId: "item-purchased",
-  circle: "サークル購入済",
-  eventDate: "1日目",
-  block: "東A",
-  number: "02b",
-  title: "既刊",
   purchaseStatus: "Purchased",
   price: {
     currentValue: 900,
@@ -303,369 +318,188 @@ const purchasedOverwriteCandidate: AppFieldSyncCandidate = {
   },
 };
 
-const purchasedFillEmptyCandidate: AppFieldSyncCandidate = {
-  ...fillEmptyCandidate,
-  itemId: "item-purchased-fill",
-  circle: "サークル購入済補完",
-  purchaseStatus: "Purchased",
-};
-
-describe("UpdateConfirmationModal app field synchronization", () => {
-  it("空欄補完を既定で選択し、対象件数と変更前後を表示する", () => {
-    const onConfirm = vi.fn();
-    render(
-      <UpdateConfirmationModal
-        {...commonProps}
-        appFieldSyncCandidates={[fillEmptyCandidate]}
-        onConfirm={onConfirm}
-      />,
-    );
-
-    const fillEmptyCheckbox = screen.getByRole("checkbox", {
-      name: /今回新しく設定されたシート値を空欄へ補完する/,
-    });
-    expect(fillEmptyCheckbox).toBeChecked();
-    expect(
-      screen.getByText(/購入金額 1件、\s*利用者メモ 1件/),
-    ).toBeInTheDocument();
-
-    const priceList = screen.getByRole("list", {
-      name: "空欄を補完する購入金額の候補",
-    });
-    expect(
-      within(priceList).getByText(/価格未定 → 1,200円/),
-    ).toBeInTheDocument();
-    const remarksList = screen.getByRole("list", {
-      name: "空欄を補完する利用者メモの候補",
-    });
-    expect(
-      within(remarksList).getByText(/（空欄） → 「会場限定特典付き」/),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole("checkbox", {
-        name: /購入金額をカタログ価格で上書きする/,
-      }),
-    ).not.toBeChecked();
-    expect(
-      screen.getByRole("checkbox", {
-        name: /利用者メモをシート備考で上書きする/,
-      }),
-    ).not.toBeChecked();
-
-    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
-    expect(onConfirm).toHaveBeenCalledWith({
-      applyPurchasedQuantityChanges: false,
-      priceSyncMode: "fill-empty",
-      remarksSyncMode: "fill-empty",
-    });
-  });
-
-  it("明示した上書きを優先し、シートの空欄も反映することを警告する", () => {
-    const onConfirm = vi.fn();
-    render(
-      <UpdateConfirmationModal
-        {...commonProps}
-        appFieldSyncCandidates={[purchasedOverwriteCandidate]}
-        onConfirm={onConfirm}
-      />,
-    );
-
-    expect(
-      screen.queryByRole("checkbox", {
-        name: /今回新しく設定されたシート値を空欄へ補完する/,
-      }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/シート側が空欄の場合も購入金額は「価格未定」/),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/保護された品目は対象外/)).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole("checkbox", {
-        name: /購入金額をカタログ価格で上書きする/,
-      }),
-    );
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "購入済み・限数品目の実購入金額が変更されます：1件",
-    );
-
-    fireEvent.click(
-      screen.getByRole("checkbox", {
-        name: /利用者メモをシート備考で上書きする/,
-      }),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
-
-    expect(onConfirm).toHaveBeenCalledWith({
-      applyPurchasedQuantityChanges: false,
-      priceSyncMode: "overwrite",
-      remarksSyncMode: "overwrite",
-    });
-  });
-
-  it("既定の空欄補完でも購入済み品目の購入金額変更を警告する", () => {
-    render(
-      <UpdateConfirmationModal
-        {...commonProps}
-        appFieldSyncCandidates={[purchasedFillEmptyCandidate]}
-        onConfirm={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "購入済み・限数品目の実購入金額が変更されます：1件",
-    );
-
-    fireEvent.click(
-      screen.getByRole("checkbox", {
-        name: /今回新しく設定されたシート値を空欄へ補完する/,
-      }),
-    );
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  });
-
-  it("上書きしていない欄だけ空欄補完の選択を適用する", () => {
-    const onConfirm = vi.fn();
-    render(
-      <UpdateConfirmationModal
-        {...commonProps}
-        appFieldSyncCandidates={[fillEmptyCandidate]}
-        onConfirm={onConfirm}
-      />,
-    );
-
-    fireEvent.click(
-      screen.getByRole("checkbox", {
-        name: /利用者メモをシート備考で上書きする/,
-      }),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
-
-    expect(onConfirm).toHaveBeenCalledWith({
-      applyPurchasedQuantityChanges: false,
-      priceSyncMode: "fill-empty",
-      remarksSyncMode: "overwrite",
-    });
-  });
-
-  it("候補配列が変わると補完と上書きの選択を既定値へ戻す", () => {
-    const { rerender } = render(
-      <UpdateConfirmationModal
-        {...commonProps}
-        appFieldSyncCandidates={[fillEmptyCandidate]}
-        onConfirm={vi.fn()}
-      />,
-    );
-
-    const fillEmptyCheckbox = screen.getByRole("checkbox", {
-      name: /今回新しく設定されたシート値を空欄へ補完する/,
-    });
-    const overwritePriceCheckbox = screen.getByRole("checkbox", {
-      name: /購入金額をカタログ価格で上書きする/,
-    });
-    fireEvent.click(fillEmptyCheckbox);
-    fireEvent.click(overwritePriceCheckbox);
-    expect(fillEmptyCheckbox).not.toBeChecked();
-    expect(overwritePriceCheckbox).toBeChecked();
-
-    rerender(
-      <UpdateConfirmationModal
-        {...commonProps}
-        appFieldSyncCandidates={[
-          { ...fillEmptyCandidate, itemId: "item-fill-next" },
-        ]}
-        onConfirm={vi.fn()}
-      />,
-    );
-
-    expect(
-      screen.getByRole("checkbox", {
-        name: /今回新しく設定されたシート値を空欄へ補完する/,
-      }),
-    ).toBeChecked();
-    expect(
-      screen.getByRole("checkbox", {
-        name: /購入金額をカタログ価格で上書きする/,
-      }),
-    ).not.toBeChecked();
-  });
-});
-
-describe("UpdateConfirmationModal identity details", () => {
-  it("distinguishes same-name incoming rows and submits correspondence only after all rows are resolved", () => {
-    const current: ShoppingItem[] = [2, 5].map((quantity, index) => ({
-      id: String(index + 1),
-      circle: "ユーザー登録",
-      eventDate: "1日目",
-      block: "A",
-      number: "01a",
-      title: "同名品目",
-      price: 900,
-      catalogPrice: 500,
-      quantity,
-      purchaseStatus: "None",
-      remarks: "ID " + (index + 1) + " の記録",
-      sheetRemarks: "旧シート備考",
-      sheetIdentityVerified: false,
-      source: "spreadsheet",
-    }));
-    const rows: SheetItem[] = current.map((item, index) => ({
+describe("UpdateConfirmationModal automatic update review", () => {
+  it("500件のタイトル変更でも個別選択なしで1回の更新操作を受け付ける", () => {
+    const current = Array.from({ length: 500 }, (_, index) => makeItem(index));
+    const incoming: SheetItem[] = current.map((item, index) => ({
       ...item,
-      price: index === 0 ? 600 : 800,
-      catalogPrice: index === 0 ? 600 : 800,
-      sheetRemarks: index === 0 ? "新側の備考A\n続き" : "新側の備考B",
+      title: `新刊${index}`,
       rawQuantity: String(item.quantity),
-      sheetIdentityVerified: true,
     }));
     const onConfirm = vi.fn();
     render(
       <UpdateConfirmationModal
         {...commonProps}
-        {...createEventUpdateDiff(current, rows)}
+        {...createEventUpdateDiff(current, incoming)}
         onConfirm={onConfirm}
       />,
     );
-    const first = screen.getByRole("combobox", { name: "取込1行目の対応" });
-    const second = screen.getByRole("combobox", { name: "取込2行目の対応" });
-    expect(first.closest("label")).toHaveTextContent("600円");
-    expect(first.closest("label")).toHaveTextContent("新側の備考A");
-    expect(first.closest("label")).toHaveTextContent("シート数量: 2");
-    expect(second.closest("label")).toHaveTextContent("800円");
-    expect(second.closest("label")).toHaveTextContent("新側の備考B");
-    expect(second.closest("label")).toHaveTextContent("シート数量: 5");
-    expect(
-      within(first).getByRole("option", { name: /ID 1 の記録/ }),
-    ).toHaveTextContent("出自未確認");
+
+    expect(screen.getByText("更新: 500件")).toBeInTheDocument();
+    expect(screen.getByText("...他 495件")).toBeInTheDocument();
+    expect(screen.queryAllByRole("combobox")).toHaveLength(0);
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    expect(screen.getAllByRole("listitem")).toHaveLength(6);
     const confirm = screen.getByRole("button", { name: "更新を実行" });
-    expect(confirm).toBeDisabled();
-    fireEvent.change(first, { target: { value: "1" } });
-    fireEvent.change(second, { target: { value: "1" } });
-    expect(confirm).toBeDisabled();
-    fireEvent.change(second, { target: { value: "2" } });
     expect(confirm).toBeEnabled();
     fireEvent.click(confirm);
-    expect(onConfirm).toHaveBeenCalledWith(
-      expect.objectContaining({ identityChoices: { "0": "1", "1": "2" } }),
-    );
+    expect(onConfirm).toHaveBeenCalledOnce();
+    expect(onConfirm).toHaveBeenCalledWith({
+      applyPurchasedQuantityChanges: false,
+      acceptCsvExclusions: true,
+      priceSyncMode: "preserve",
+      remarksSyncMode: "preserve",
+    });
   });
 
-  it("対応先をAからBへ変えて戻しても購入済み数量変更の確認を引き継がない", () => {
-    const current: ShoppingItem[] = ["A", "B"].map((id) => ({
-      id,
-      circle: "ユーザー登録",
-      eventDate: "1日目",
-      block: "A",
-      number: "01a",
-      title: `旧品目${id}`,
-      price: 900,
-      quantity: 2,
-      purchaseStatus: "Purchased",
-      remarks: `${id}の購入記録`,
-      source: "spreadsheet",
-    }));
-    const rows: SheetItem[] = [
-      {
-        ...current[0],
-        title: "新しい品目",
-        rawQuantity: "4",
-      },
-    ];
+  it("追加・更新・削除は各5件の例と総件数を表示し、保護件数も維持する", () => {
+    const current = Array.from({ length: 8 }, (_, index) => makeItem(index));
+    render(
+      <UpdateConfirmationModal
+        {...commonProps}
+        itemsToDelete={current}
+        itemsToUpdate={current}
+        itemsToAdd={current}
+        protectedFromDelete={2}
+        protectedFromUpdate={3}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    for (const action of ["削除", "更新", "追加"]) {
+      const section = screen.getByText(`${action}: 8件`).parentElement!;
+      expect(within(section).getAllByRole("listitem")).toHaveLength(6);
+      expect(within(section).getByText("...他 3件")).toBeInTheDocument();
+      expect(within(section).queryByText(/旧刊5/)).not.toBeInTheDocument();
+    }
+    expect(screen.getByText("削除から保護: 2件")).toBeInTheDocument();
+    expect(screen.getByText("更新から保護: 3件")).toBeInTheDocument();
+  });
+
+  it.each([
+    ["空欄補完候補", fillEmptyCandidate],
+    ["購入済みの上書き候補", purchasedOverwriteCandidate],
+  ] as const)(
+    "%sがあっても価格・利用者メモの選択を出さず維持を送る",
+    (_, candidate) => {
+      const onConfirm = vi.fn();
+      render(
+        <UpdateConfirmationModal
+          {...commonProps}
+          appFieldSyncCandidates={[candidate]}
+          onConfirm={onConfirm}
+        />,
+      );
+
+      expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+      expect(
+        screen.queryByText("利用者欄へのシート値反映"),
+      ).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
+      expect(onConfirm).toHaveBeenCalledWith({
+        applyPurchasedQuantityChanges: false,
+        acceptCsvExclusions: true,
+        priceSyncMode: "preserve",
+        remarksSyncMode: "preserve",
+      });
+    },
+  );
+
+  it("CSVの除外結果と警告を表示し、追加チェックなしで更新できる", () => {
     const onConfirm = vi.fn();
     render(
       <UpdateConfirmationModal
         {...commonProps}
-        {...createEventUpdateDiff(current, rows)}
+        itemsToDelete={[makeItem(0)]}
+        csvReview={{
+          warnings: ["必須項目が不足した行は取り込みません。"],
+          itemCount: 4,
+        }}
+        sheetImport={{
+          acceptedCount: 4,
+          rowExclusions: {
+            excludedCount: 1,
+            missingFieldCounts: {
+              circle: 1,
+              eventDate: 0,
+              block: 0,
+              number: 0,
+            },
+            examples: [
+              {
+                sourceRowId: "row-3",
+                lineNumber: 3,
+                missingFields: ["circle"],
+              },
+            ],
+          },
+        }}
         onConfirm={onConfirm}
       />,
     );
-    const correspondence = screen.getByRole("combobox", {
-      name: "取込1行目の対応",
-    });
+
+    expect(
+      screen.getByRole("region", { name: "シート取込結果" }),
+    ).toHaveTextContent("取込対象: 4件、必須項目不足による除外: 1行");
+    expect(
+      screen.getByText("除外後の品目: 4件、削除候補: 1件"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("必須項目が不足した行は取り込みません。"),
+    ).toBeInTheDocument();
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
     const confirm = screen.getByRole("button", { name: "更新を実行" });
+    expect(confirm).toBeEnabled();
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenCalledOnce();
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ acceptCsvExclusions: true }),
+    );
+  });
+
+  it("数量確認内容を変更前に戻しても古い同意を復元しない", () => {
+    const pending: PendingPurchasedQuantityChange = {
+      itemId: "item-1",
+      circle: "ユーザー登録",
+      eventDate: "1日目",
+      block: "東A",
+      number: "01a",
+      title: "購入済み品目",
+      purchaseStatus: "Purchased",
+      currentQuantity: 2,
+      nextQuantity: 4,
+    };
+    const onConfirm = vi.fn();
+    const props = { ...commonProps, onConfirm };
+    const { rerender } = render(
+      <UpdateConfirmationModal
+        {...props}
+        pendingPurchasedQuantityChanges={[pending]}
+      />,
+    );
     const checkbox = () =>
       screen.getByRole("checkbox", {
         name: /スプレッドシートの予定数量へ変更する/,
       });
-
-    fireEvent.change(correspondence, { target: { value: "A" } });
     fireEvent.click(checkbox());
-    fireEvent.click(confirm);
-    expect(onConfirm).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        applyPurchasedQuantityChanges: true,
-        identityChoices: { "0": "A" },
-      }),
-    );
-
-    fireEvent.change(correspondence, { target: { value: "B" } });
-    expect(
-      screen.getByText("購入済み品目の予定数量変更: 1件"),
-    ).toBeInTheDocument();
-    expect(checkbox()).not.toBeChecked();
-    fireEvent.click(confirm);
-    expect(onConfirm).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        applyPurchasedQuantityChanges: false,
-        identityChoices: { "0": "B" },
-      }),
-    );
-
-    fireEvent.change(correspondence, { target: { value: "A" } });
-    expect(checkbox()).not.toBeChecked();
-    fireEvent.click(confirm);
-    expect(onConfirm).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        applyPurchasedQuantityChanges: false,
-        identityChoices: { "0": "A" },
-      }),
-    );
-    fireEvent.click(checkbox());
-    fireEvent.click(confirm);
-    expect(onConfirm).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        applyPurchasedQuantityChanges: true,
-        identityChoices: { "0": "A" },
-      }),
-    );
-  });
-
-  it("shows a known empty sheet price/remarks rather than substituting user values", () => {
-    const current: ShoppingItem[] = [1, 2].map((quantity, index) => ({
-      id: String(index),
-      circle: "サークル",
-      eventDate: "1日目",
-      block: "A",
-      number: "01a",
-      title: "同名",
-      price: 900,
-      quantity,
-      purchaseStatus: "None",
-      remarks: "利用者メモ",
-      source: "spreadsheet",
-    }));
-    const rows = current.map((item) => ({
-      ...item,
-      catalogPrice: null,
-      sheetRemarks: "",
-      rawQuantity: String(item.quantity),
-      sheetIdentityVerified: true,
-    }));
-    render(
+    expect(checkbox()).toBeChecked();
+    rerender(
       <UpdateConfirmationModal
-        {...commonProps}
-        {...createEventUpdateDiff(current, rows)}
-        onConfirm={vi.fn()}
+        {...props}
+        pendingPurchasedQuantityChanges={[{ ...pending, nextQuantity: 5 }]}
       />,
     );
-    const label = screen
-      .getByRole("combobox", { name: "取込1行目の対応" })
-      .closest("label")!;
-    expect(label.querySelectorAll("span")[1]).toHaveTextContent(
-      "カタログ価格: 価格未定",
+    expect(checkbox()).not.toBeChecked();
+    rerender(
+      <UpdateConfirmationModal
+        {...props}
+        pendingPurchasedQuantityChanges={[pending]}
+      />,
     );
-    expect(label.querySelectorAll("span")[1]).toHaveTextContent(
-      "シート備考: （空欄）",
+    expect(checkbox()).not.toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
+    expect(onConfirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({ applyPurchasedQuantityChanges: false }),
     );
   });
 });

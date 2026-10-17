@@ -41,7 +41,10 @@ import { extractEventDates } from "./utils/eventDates";
 import { getSpaceKey } from "./utils/spaceGrouping";
 import { normalizeExecutionVisitDay } from "./utils/visitProjection";
 import { type EventUpdateCommitState } from "./features/events/updateFlow";
-import type { ApplicationSnapshotGuard } from "./app/commands/ApplicationSnapshotCommitPort";
+import type {
+  ApplicationSnapshotCommitContext,
+  ApplicationSnapshotGuard,
+} from "./app/commands/ApplicationSnapshotCommitPort";
 import { getGlobalHallItemCount as computeGlobalHallItemCount } from "./features/map/domain/hallOperations";
 import { useMapSelectors } from "./features/map/hooks/useMapSelectors";
 import { useListInteractionState } from "./features/lists/hooks/useListInteractionState";
@@ -1149,6 +1152,7 @@ const App: React.FC = () => {
     async (
       nextState: EventUpdateCommitState,
       assertCurrent: ApplicationSnapshotGuard,
+      context: ApplicationSnapshotCommitContext,
     ): Promise<boolean> => {
       await commitApplicationSnapshotPatch(
         {
@@ -1157,7 +1161,7 @@ const App: React.FC = () => {
           executeModeItems: nextState.executeModeItems,
         },
         undefined,
-        undefined,
+        context,
         assertCurrent,
       );
 

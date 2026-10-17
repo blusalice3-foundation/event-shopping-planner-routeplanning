@@ -1729,3 +1729,107 @@ it("preserves historical day-store input references instead of cloning them for 
   await act(async () => h.result.current.coordinator.enqueue(() => undefined));
   h.unmount();
 });
+
+it("skips only the reviewed bulk update's placement review and still reviews the next ordinary edit", async () => {
+  const h = harness();
+  const imported = Array.from({ length: 500 }, (_, index) => ({
+    ...purchase,
+    id: `imported-${index}`,
+    number: String(index + 1),
+  }));
+  await act(async () => {
+    await h.result.current.commitPatch(
+      { eventLists: { event: imported } },
+      undefined,
+      { confirm: false },
+    );
+  });
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(h.result.current.confirmations).toEqual([]);
+  expect(h.durable().eventLists.event).toEqual(imported);
+  expect(
+    h.durable().eventConsistency.event.days["1日目"].mapless,
+  ).toBeDefined();
+
+  act(() => {
+    h.result.current.setters.setEventLists((current) => ({
+      ...current,
+      event: [...current.event, { ...purchase, id: "ordinary", number: "501" }],
+    }));
+  });
+  await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+  expect(h.result.current.confirmations[0].confirmation.title).toBe(
+    "所属・配置の変更を確認",
+  );
+  expect(h.commit).toHaveBeenCalledOnce();
+  await act(async () => {
+    h.result.current.confirm(h.result.current.confirmations[0].token);
+    await h.result.current.coordinator.enqueue(() => undefined);
+  });
+  await waitFor(() => expect(h.result.current.pendingCount).toBe(0));
+  expect(h.durable().eventLists.event).toHaveLength(501);
+}, 20_000);
+
+it("retains duplicate-day choices when a reviewed update skips ordinary placement review", async () => {
+  const h = harness();
+  const dayModes = {
+    event: { "1日目": "edit" as const, "1日目 ": "execute" as const },
+  };
+  h.durable().dayModes = dayModes;
+  act(() => {
+    h.result.current.hydrationSetters.setDayModes(structuredClone(dayModes));
+  });
+  let outcome!: Promise<unknown>;
+  act(() => {
+    outcome = h.result.current
+      .commitPatch({ eventLists: { event: [purchase] } }, undefined, {
+        confirm: false,
+      })
+      .catch((error: unknown) => error);
+  });
+  await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+  expect(h.result.current.confirmations[0].confirmation.title).toContain(
+    "保存先を統合",
+  );
+  expect(
+    h.result.current.confirmations[0].confirmation.choices?.length,
+  ).toBeGreaterThan(0);
+  expect(h.commit).not.toHaveBeenCalled();
+  await act(async () => {
+    h.result.current.cancel(h.result.current.confirmations[0].token);
+    expect(await outcome).toMatchObject({ name: "MutationCancelled" });
+  });
+  expect(h.durable().eventLists.event).toEqual([]);
+});
+
+it("retains same-field conflict review when a reviewed update skips ordinary placement review", async () => {
+  const h = harness();
+  const durableItems = [{ ...purchase }];
+  h.durable().eventLists = { event: durableItems };
+  act(() => {
+    h.result.current.hydrationSetters.setEventLists({
+      event: [{ ...purchase }],
+    });
+  });
+  durableItems[0].title = "保存待ちの変更";
+  let pending!: Promise<void>;
+  act(() => {
+    pending = h.result.current.commitPatch(
+      { eventLists: { event: [{ ...purchase, title: "今回の更新" }] } },
+      undefined,
+      { confirm: false },
+    );
+  });
+  await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+  expect(h.result.current.confirmations[0].confirmation.title).toBe(
+    "競合する更新を確認",
+  );
+  expect(h.commit).not.toHaveBeenCalled();
+  await act(async () => {
+    h.result.current.confirm(h.result.current.confirmations[0].token);
+    await pending;
+  });
+  expect(h.durable().eventLists.event[0]).toMatchObject({
+    title: "今回の更新",
+  });
+});
