@@ -1,0 +1,158 @@
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+
+ ❯ |unit| src/features/events/pasteColumns.test.ts (12 tests | 3 failed) 15ms
+     × 先頭と途中の空行を保持し、末尾の空行だけ除く（改行 "\n"） 7ms
+     × 先頭と途中の空行を保持し、末尾の空行だけ除く（改行 "\r\n"） 1ms
+     × 先頭と途中の空行を保持し、末尾の空行だけ除く（改行 "\r"） 1ms
+ ❯ |unit| src/components/ImportScreen.paste.test.tsx (9 tests | 5 failed) 372ms
+     × 空行を含む7列の再貼付けで'既存URLの対応を維持する' 26ms
+     × 空行を含む7列の再貼付けで'空行のURLを同じサークルへ補完しない' 19ms
+     × 空行を含む7列の再貼付けで'URLも空の行を診断件数に含めない' 16ms
+     × 空行後の必須項目不足を貼付け元と同じ3行目として診断する 102ms
+     × 保存待ち中の新しい7列貼付けを古い要求の成功で消さず、再送できる 48ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |unit| src/components/ImportScreen.paste.test.tsx > ImportScreenの7列貼り付け > 空行を含む7列の再貼付けで'既存URLの対応を維持する'
+ FAIL  |unit| src/components/ImportScreen.paste.test.tsx > ImportScreenの7列貼り付け > 空行を含む7列の再貼付けで'空行のURLを同じサークルへ補完しない'
+ FAIL  |unit| src/components/ImportScreen.paste.test.tsx > ImportScreenの7列貼り付け > 空行を含む7列の再貼付けで'URLも空の行を診断件数に含めない'
+Error: expect(element).toHaveValue(同一サークル
+
+同一サークル)
+
+Expected the element to have value:
+  同一サークル
+
+  同一サークル
+Received:
+  同一サークル
+  同一サークル
+ ❯ src/components/ImportScreen.paste.test.tsx:108:37
+    106|     );
+    107|
+    108|     expect(getTextarea("M列 サークル名")).toHaveValue(
+       |                                     ^
+    109|       "同一サークル\n\n同一サークル",
+    110|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  |unit| src/components/ImportScreen.paste.test.tsx > ImportScreenの7列貼り付け > 空行後の必須項目不足を貼付け元と同じ3行目として診断する
+Error: expect(element).toHaveTextContent()
+
+Expected element to have text content:
+  3行目
+Received:
+  取込対象: 1件、必須項目不足による除外: 1行不足項目: ブロック 1行除外行の例（先頭1行）2行目: ブロックが未入力
+ ❯ src/components/ImportScreen.paste.test.tsx:154:21
+    152|     const summary = screen.getByRole("region", { name: "シート取込結果" });
+    153|     expect(summary).toHaveTextContent("取込対象: 1件、必須項目不足による除外: 1行");
+    154|     expect(summary).toHaveTextContent("3行目");
+       |                     ^
+    155|     expect(summary).not.toHaveTextContent("2行目");
+    156|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  |unit| src/components/ImportScreen.paste.test.tsx > ImportScreenの7列貼り付け > 保存待ち中の新しい7列貼付けを古い要求の成功で消さず、再送できる
+Error: expect(element).toHaveValue(サークルB
+
+サークルC)
+
+Expected the element to have value:
+  サークルB
+
+  サークルC
+Received:
+  サークルB
+  サークルC
+ ❯ src/components/ImportScreen.paste.test.tsx:238:37
+    236|     expect(onBulkAdd).toHaveBeenCalledTimes(1);
+    237|     await act(async () => complete({ status: "saved" }));
+    238|     expect(getTextarea("M列 サークル名")).toHaveValue("サークルB\n\nサークルC");
+       |                                     ^
+    239|     expect(getTextarea("W列 備考")).toHaveValue("次の入力\n\n追加の入力");
+    240|     expect(getTextarea("URL（7列貼り付け対象外）")).toHaveValue(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  |unit| src/features/events/pasteColumns.test.ts > parseSpreadsheetPaste > 先頭と途中の空行を保持し、末尾の空行だけ除く（改行 "\n"）
+ FAIL  |unit| src/features/events/pasteColumns.test.ts > parseSpreadsheetPaste > 先頭と途中の空行を保持し、末尾の空行だけ除く（改行 "\r\n"）
+ FAIL  |unit| src/features/events/pasteColumns.test.ts > parseSpreadsheetPaste > 先頭と途中の空行を保持し、末尾の空行だけ除く（改行 "\r"）
+AssertionError: expected { ok: true, columns: { …(7) } } to deeply equal { ok: true, columns: { …(7) } }
+
+- Expected
++ Received
+
+  {
+    "columns": {
+-     "blocks": "
+- 東A
+-
+-
+-
++     "blocks": "東A
+  西B",
+-     "circles": "
+- サークルA
+-
+-
+-
++     "circles": "サークルA
+  サークルB",
+-     "eventDates": "
+- 1日目
+-
+-
+-
++     "eventDates": "1日目
+  2日目",
+-     "numbers": "
+- 01a
+-
+-
+-
++     "numbers": "01a
+  02b",
+-     "prices": "
+- 1000
+-
+-
+-
++     "prices": "1000
+  500",
+-     "remarks": "
+- 備考A
+-
+-
+-
++     "remarks": "備考A
+  備考B",
+-     "titles": "
+- 新刊
+-
+-
+-
++     "titles": "新刊
+  既刊",
+    },
+    "ok": true,
+  }
+
+ ❯ src/features/events/pasteColumns.test.ts:109:22
+    107|       );
+    108|
+    109|       expect(result).toEqual({
+       |                      ^
+    110|         ok: true,
+    111|         columns: {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  8 failed | 13 passed (21)
+   Start at  16:25:04
+   Duration  2.25s (transform 201ms, setup 563ms, import 392ms, tests 387ms, environment 1.06s)
+

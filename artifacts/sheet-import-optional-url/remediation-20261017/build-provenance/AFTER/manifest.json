@@ -1,0 +1,224 @@
+{
+  "label": "AFTER",
+  "sourceDist": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\dist",
+  "distExists": true,
+  "identity": {
+    "buildId": "b536f760acfcf38954d10140487d37e77ee33a15",
+    "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+    "outerAgentUrl": "/assets/outer-recovery-agent.js",
+    "pwaLifecycle": "prompt-close-all-v1",
+    "releaseRole": "standard",
+    "requiredDbCompatibilityFingerprint": "59cab323aedb35d8677e289545053591d34348970bfa268be3c4c437faf7c91f",
+    "roleEntrySha256": "4c0341c0821b66a5e06cdfd6adc89626f198916802cb42f9a8390c7430f3d02d",
+    "roleEntryUrl": "/assets/release-role.js",
+    "schemaVersion": 1,
+    "serviceWorkerSha256": "d7fa6241bb8eb75505284ee39b379967c6f0a40d4ca9147e4d3c0ef5d3f2d4e8",
+    "serviceWorkerUrl": "/sw.js",
+    "sourceSha": "b536f760acfcf38954d10140487d37e77ee33a15",
+    "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+  },
+  "copiedFiles": [
+    {
+      "name": "release-identity.json",
+      "status": "copied",
+      "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\dist\\release-identity.json",
+      "copy": "AFTER/release-identity.json",
+      "bytes": 751,
+      "sha256": "ce5bb6af84fabf1cc6a83383850274bf0876dcfae87a2231ae0e5a1ab83fb62f",
+      "copySha256": "ce5bb6af84fabf1cc6a83383850274bf0876dcfae87a2231ae0e5a1ab83fb62f",
+      "byteIdentical": true,
+      "encoding": "strict UTF-8",
+      "bom": false,
+      "crlf": 0,
+      "lf": 0,
+      "replacementCharacters": 0
+    },
+    {
+      "name": "release-role-graph.json",
+      "status": "copied",
+      "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\dist\\release-role-graph.json",
+      "copy": "AFTER/release-role-graph.json",
+      "bytes": 92492,
+      "sha256": "82120a937562acbcf5f389da1462e75849d1ce9305ced336d06c545555ac9805",
+      "copySha256": "82120a937562acbcf5f389da1462e75849d1ce9305ced336d06c545555ac9805",
+      "byteIdentical": true,
+      "encoding": "strict UTF-8",
+      "bom": false,
+      "crlf": 0,
+      "lf": 0,
+      "replacementCharacters": 0
+    },
+    {
+      "name": "outer-agent-graph.json",
+      "status": "copied",
+      "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\dist\\outer-agent-graph.json",
+      "copy": "AFTER/outer-agent-graph.json",
+      "bytes": 1725,
+      "sha256": "72e8e3c66408d95beed5adb86cbd5b4d967e93bf9570a7293f8c30cb9b227134",
+      "copySha256": "72e8e3c66408d95beed5adb86cbd5b4d967e93bf9570a7293f8c30cb9b227134",
+      "byteIdentical": true,
+      "encoding": "strict UTF-8",
+      "bom": false,
+      "crlf": 0,
+      "lf": 0,
+      "replacementCharacters": 0
+    },
+    {
+      "name": "index.html",
+      "status": "copied",
+      "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\dist\\index.html",
+      "copy": "AFTER/index.html",
+      "bytes": 1824,
+      "sha256": "ae7b5ce479bd174215511b8e88e6ce3f3efac737fe317097d71f62dcc0087d6e",
+      "copySha256": "ae7b5ce479bd174215511b8e88e6ce3f3efac737fe317097d71f62dcc0087d6e",
+      "byteIdentical": true,
+      "encoding": "strict UTF-8",
+      "bom": false,
+      "crlf": 0,
+      "lf": 39,
+      "replacementCharacters": 0
+    },
+    {
+      "name": "sw.js",
+      "status": "copied",
+      "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\dist\\sw.js",
+      "copy": "AFTER/sw.js",
+      "bytes": 6036,
+      "sha256": "d7fa6241bb8eb75505284ee39b379967c6f0a40d4ca9147e4d3c0ef5d3f2d4e8",
+      "copySha256": "d7fa6241bb8eb75505284ee39b379967c6f0a40d4ca9147e4d3c0ef5d3f2d4e8",
+      "byteIdentical": true,
+      "encoding": "strict UTF-8",
+      "bom": false,
+      "crlf": 0,
+      "lf": 0,
+      "replacementCharacters": 0
+    }
+  ],
+  "assetsDirectoryExists": true,
+  "assetJavascript": [
+    {
+      "file": "assets/backup.worker-CmLUrcml.js",
+      "bytes": 256079,
+      "sha256": "209e231e7229f8f3d0a7ecbcc32c8a143c10aaa5c9326ba37de23bec63fc5207"
+    },
+    {
+      "file": "assets/FocusModeContainer-CZ1MJtsO.js",
+      "bytes": 157593,
+      "sha256": "af23c640603be3200525861445b8af059e8c10bb65facd2ffcf95bc416dde902"
+    },
+    {
+      "file": "assets/ImportScreen-B_gRpn6j.js",
+      "bytes": 19896,
+      "sha256": "3cb1db5d85b19e37c42c7fa80057bb828cf4f0a1b9e650eb766bf3d79733e8fa"
+    },
+    {
+      "file": "assets/outer-recovery-agent.js",
+      "bytes": 19939,
+      "sha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e"
+    },
+    {
+      "file": "assets/persistence.worker-Dgzz1Tkn.js",
+      "bytes": 318449,
+      "sha256": "4d11925144e20aac5bbe9c019816826cc9f44e3ab756cf9bbd533f3969fc402f"
+    },
+    {
+      "file": "assets/release-role.js",
+      "bytes": 1319986,
+      "sha256": "4c0341c0821b66a5e06cdfd6adc89626f198916802cb42f9a8390c7430f3d02d"
+    },
+    {
+      "file": "assets/route.worker-vkpwhvUq.js",
+      "bytes": 19928,
+      "sha256": "71db28340a1f002f14a35a0ebbcdfc2683447040fb7678aac8cc06ea58452641"
+    },
+    {
+      "file": "assets/xlsx.worker-DA2gqYv7.js",
+      "bytes": 1589349,
+      "sha256": "ec40d5e4b9702feb472bd5413938f01f6a06a7f18fb360c59a9492b53e15b112"
+    }
+  ],
+  "identityAssetChecks": [
+    {
+      "kind": "roleEntry",
+      "file": "/assets/release-role.js",
+      "exists": true,
+      "expectedSha256": "4c0341c0821b66a5e06cdfd6adc89626f198916802cb42f9a8390c7430f3d02d",
+      "actualSha256": "4c0341c0821b66a5e06cdfd6adc89626f198916802cb42f9a8390c7430f3d02d",
+      "matches": true
+    },
+    {
+      "kind": "outerAgent",
+      "file": "/assets/outer-recovery-agent.js",
+      "exists": true,
+      "expectedSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+      "actualSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+      "matches": true
+    },
+    {
+      "kind": "serviceWorker",
+      "file": "/sw.js",
+      "exists": true,
+      "expectedSha256": "d7fa6241bb8eb75505284ee39b379967c6f0a40d4ca9147e4d3c0ef5d3f2d4e8",
+      "actualSha256": "d7fa6241bb8eb75505284ee39b379967c6f0a40d4ca9147e4d3c0ef5d3f2d4e8",
+      "matches": true
+    }
+  ],
+  "graphChecks": [
+    {
+      "file": "release-role-graph.json",
+      "sourceSha": "b536f760acfcf38954d10140487d37e77ee33a15",
+      "releaseRole": "standard",
+      "entryFile": "/assets/release-role.js",
+      "sourceMatchesIdentity": true,
+      "chunks": [
+        {
+          "file": "/assets/FocusModeContainer-CZ1MJtsO.js",
+          "exists": true,
+          "expectedBytes": 157593,
+          "actualBytes": 157593,
+          "expectedSha256": "af23c640603be3200525861445b8af059e8c10bb65facd2ffcf95bc416dde902",
+          "actualSha256": "af23c640603be3200525861445b8af059e8c10bb65facd2ffcf95bc416dde902",
+          "matches": true
+        },
+        {
+          "file": "/assets/ImportScreen-B_gRpn6j.js",
+          "exists": true,
+          "expectedBytes": 19896,
+          "actualBytes": 19896,
+          "expectedSha256": "3cb1db5d85b19e37c42c7fa80057bb828cf4f0a1b9e650eb766bf3d79733e8fa",
+          "actualSha256": "3cb1db5d85b19e37c42c7fa80057bb828cf4f0a1b9e650eb766bf3d79733e8fa",
+          "matches": true
+        },
+        {
+          "file": "/assets/release-role.js",
+          "exists": true,
+          "expectedBytes": 1319986,
+          "actualBytes": 1319986,
+          "expectedSha256": "4c0341c0821b66a5e06cdfd6adc89626f198916802cb42f9a8390c7430f3d02d",
+          "actualSha256": "4c0341c0821b66a5e06cdfd6adc89626f198916802cb42f9a8390c7430f3d02d",
+          "matches": true
+        }
+      ],
+      "allChunksMatch": true
+    },
+    {
+      "file": "outer-agent-graph.json",
+      "sourceSha": "b536f760acfcf38954d10140487d37e77ee33a15",
+      "releaseRole": null,
+      "entryFile": "/assets/outer-recovery-agent.js",
+      "sourceMatchesIdentity": true,
+      "chunks": [
+        {
+          "file": "/assets/outer-recovery-agent.js",
+          "exists": true,
+          "expectedBytes": 19939,
+          "actualBytes": 19939,
+          "expectedSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "actualSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "matches": true
+        }
+      ],
+      "allChunksMatch": true
+    }
+  ]
+}

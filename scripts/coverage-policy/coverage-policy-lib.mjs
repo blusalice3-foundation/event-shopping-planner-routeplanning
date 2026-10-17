@@ -1,4 +1,6 @@
+import { spawn } from "node:child_process";
 import path from "node:path";
+import { createInterface } from "node:readline";
 
 const normalizeSlashes = (value) => value.replaceAll("\\", "/");
 
@@ -180,32 +182,75 @@ export const summarizeCoverage = (records, scope) => {
   };
 };
 
-export const parseUnifiedDiff = (source) => {
+const createUnifiedDiffParser = (includeFile = () => true) => {
   const changedLines = new Map();
   let currentFile;
 
-  for (const line of source.split(/\r?\n/u)) {
-    if (line.startsWith("+++ ")) {
-      const candidate = normalizeSlashes(line.slice(4));
-      currentFile =
-        candidate === "/dev/null"
-          ? undefined
-          : candidate.replace(/^(?:a|b)\//u, "");
-      continue;
-    }
-    if (currentFile === undefined || !line.startsWith("@@")) continue;
-    const match = line.match(/\+(\d+)(?:,(\d+))?\s/u);
-    if (match === null) continue;
-    const start = Number(match[1]);
-    const count = match[2] === undefined ? 1 : Number(match[2]);
-    const lines = changedLines.get(currentFile) ?? new Set();
-    for (let offset = 0; offset < count; offset += 1) {
-      lines.add(start + offset);
-    }
-    changedLines.set(currentFile, lines);
-  }
+  return {
+    changedLines,
+    addLine(line) {
+      if (line.startsWith("+++ ")) {
+        const candidate = normalizeSlashes(line.slice(4));
+        const filePath =
+          candidate === "/dev/null"
+            ? undefined
+            : candidate.replace(/^(?:a|b)\//u, "");
+        currentFile =
+          filePath !== undefined && includeFile(filePath)
+            ? filePath
+            : undefined;
+        return;
+      }
+      if (currentFile === undefined || !line.startsWith("@@")) return;
+      const match = line.match(/\+(\d+)(?:,(\d+))?\s/u);
+      if (match === null) return;
+      const start = Number(match[1]);
+      const count = match[2] === undefined ? 1 : Number(match[2]);
+      const lines = changedLines.get(currentFile) ?? new Set();
+      for (let offset = 0; offset < count; offset += 1) {
+        lines.add(start + offset);
+      }
+      changedLines.set(currentFile, lines);
+    },
+  };
+};
 
-  return changedLines;
+export const parseUnifiedDiff = (source) => {
+  const parser = createUnifiedDiffParser();
+  for (const line of source.split(/\r?\n/u)) parser.addLine(line);
+  return parser.changedLines;
+};
+
+export const readGitDiff = async (args, { cwd, includeFile } = {}) => {
+  const git = spawn("git", ["-c", "core.quotepath=false", ...args], {
+    cwd,
+    stdio: ["ignore", "pipe", "pipe"],
+    windowsHide: true,
+  });
+  const completion = new Promise((resolve) => {
+    git.once("error", (error) => resolve({ error }));
+    git.once("close", (status) => resolve({ status }));
+  });
+  let stderr = "";
+  git.stderr.setEncoding("utf8");
+  git.stderr.on("data", (chunk) => {
+    stderr += chunk.slice(0, Math.max(0, 32 * 1024 - stderr.length));
+  });
+  const parser = createUnifiedDiffParser(includeFile);
+  const lines = createInterface({ input: git.stdout, crlfDelay: Infinity });
+  try {
+    for await (const line of lines) parser.addLine(line);
+  } catch (error) {
+    git.kill();
+    await completion;
+    throw error;
+  }
+  const result = await completion;
+  if (result.error !== undefined) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(stderr.trim() || `git ${args.join(" ")} failed`);
+  }
+  return parser.changedLines;
 };
 
 export const mergeChangedLines = (...changes) => {

@@ -1,0 +1,578 @@
+[
+  {
+    "build": "BEFORE",
+    "path": "#U512a#U5148.png",
+    "bytes": 132801,
+    "sha256": "747DFA88F7586F5F5834C43B46B51A341F07EA02783CF39318A6DD6FC305CE45"
+  },
+  {
+    "build": "BEFORE",
+    "path": "#U59d4#U8a17#U7121.png",
+    "bytes": 714459,
+    "sha256": "A2B6F0F8D6B906A2B1FE115EFE2773965FF3C180A68BEFCCDD190AF30A165F4D"
+  },
+  {
+    "build": "BEFORE",
+    "path": "#U8907#U6570#U7a2e.png",
+    "bytes": 193561,
+    "sha256": "D808F9CBF36BBB0819EAC70F69DA27E2146A9CEEE2CF3CAA7DC1C3841FE26002"
+  },
+  {
+    "build": "BEFORE",
+    "path": "index.html",
+    "bytes": 1824,
+    "sha256": "AE7B5CE479BD174215511B8E88E6CE3F3EFAC737FE317097D71F62DCC0087D6E"
+  },
+  {
+    "build": "BEFORE",
+    "path": "manifest.webmanifest",
+    "bytes": 584,
+    "sha256": "80FED57128799AD34DB0D75AD5E1016FC78E5694B379D4B78BF162EB527EABFA"
+  },
+  {
+    "build": "BEFORE",
+    "path": "outer-agent-graph.json",
+    "bytes": 1725,
+    "sha256": "72E8E3C66408D95BEED5ADB86CBD5B4D967E93BF9570A7293F8C30CB9B227134"
+  },
+  {
+    "build": "BEFORE",
+    "path": "release-capabilities.b536f760acfcf38954d10140487d37e77ee33a15.json",
+    "bytes": 290,
+    "sha256": "69A22810ECFCB5A2023F7BEF4D73393F50A25C12655FBECEA11DF2E7647502D0"
+  },
+  {
+    "build": "BEFORE",
+    "path": "release-capabilities.json",
+    "bytes": 290,
+    "sha256": "69A22810ECFCB5A2023F7BEF4D73393F50A25C12655FBECEA11DF2E7647502D0"
+  },
+  {
+    "build": "BEFORE",
+    "path": "release-identity.b536f760acfcf38954d10140487d37e77ee33a15.830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611.json",
+    "bytes": 751,
+    "sha256": "45D549F390A52E19D1A6CAA49899B4F1F29D44B226072DFCFBF5864FDC1AC9C9"
+  },
+  {
+    "build": "BEFORE",
+    "path": "release-identity.json",
+    "bytes": 751,
+    "sha256": "45D549F390A52E19D1A6CAA49899B4F1F29D44B226072DFCFBF5864FDC1AC9C9"
+  },
+  {
+    "build": "BEFORE",
+    "path": "release-role-graph.json",
+    "bytes": 92467,
+    "sha256": "289010FE32D2BFD80AF1FB0A6D992450B96AC9CC39D29F07DE54E65587B909E0"
+  },
+  {
+    "build": "BEFORE",
+    "path": "sw.js",
+    "bytes": 6036,
+    "sha256": "72B8836ABFB0370D66D7522E2906367C21F2E84FFAEC4E072E8AEDEE668F596C"
+  },
+  {
+    "build": "BEFORE",
+    "path": "theme-prepaint.js",
+    "bytes": 589,
+    "sha256": "E6B5E174474816944C860FA21FB80994B97DF31F2658A73CAF868960C02B6D0D"
+  },
+  {
+    "build": "BEFORE",
+    "path": "委託無.png",
+    "bytes": 714459,
+    "sha256": "A2B6F0F8D6B906A2B1FE115EFE2773965FF3C180A68BEFCCDD190AF30A165F4D"
+  },
+  {
+    "build": "BEFORE",
+    "path": "複数種.png",
+    "bytes": 193561,
+    "sha256": "D808F9CBF36BBB0819EAC70F69DA27E2146A9CEEE2CF3CAA7DC1C3841FE26002"
+  },
+  {
+    "build": "BEFORE",
+    "path": "優先.png",
+    "bytes": 132801,
+    "sha256": "747DFA88F7586F5F5834C43B46B51A341F07EA02783CF39318A6DD6FC305CE45"
+  },
+  {
+    "build": "BEFORE",
+    "path": "assets\\app-DZd7rnFB.css",
+    "bytes": 92221,
+    "sha256": "5982E626B0A5DC9E4E5EFF1E0D7EED4388A8855F618F93A71C33A2B64A7C9A5F"
+  },
+  {
+    "build": "BEFORE",
+    "path": "assets\\backup.worker-DhWIzPj9.js",
+    "bytes": 255487,
+    "sha256": "FB79EA3E4FFF102FF9FAAA517CB09E6EB5D3EEA1556FC57837803873EF252C2D"
+  },
+  {
+    "build": "BEFORE",
+    "path": "assets\\FocusModeContainer-CZ1MJtsO.js",
+    "bytes": 157593,
+    "sha256": "AF23C640603BE3200525861445B8AF059E8C10BB65FACD2FFCF95BC416DDE902"
+  },
+  {
+    "build": "BEFORE",
+    "path": "assets\\ImportScreen-BlvhBh6i.js",
+    "bytes": 19572,
+    "sha256": "A1737D0DE22FF854BBDF176B48DDED8567D6D6FDE541D84A2F0D0F3FCCE2C064"
+  },
+  {
+    "build": "BEFORE",
+    "path": "assets\\outer-recovery-agent.js",
+    "bytes": 19939,
+    "sha256": "24EBCB17C0E601DED6E6AB183B801263B6284F360FDD812AD81839977567900E"
+  },
+  {
+    "build": "BEFORE",
+    "path": "assets\\persistence.worker-Dgzz1Tkn.js",
+    "bytes": 318449,
+    "sha256": "4D11925144E20AAC5BBE9C019816826CC9F44E3AB756CF9BBD533F3969FC402F"
+  },
+  {
+    "build": "BEFORE",
+    "path": "assets\\release-role.js",
+    "bytes": 1319132,
+    "sha256": "5F62B8F88946871403C7153BE1A99564E18E371A9570619A3E92AEBF75307B5C"
+  },
+  {
+    "build": "BEFORE",
+    "path": "assets\\route.worker-vkpwhvUq.js",
+    "bytes": 19928,
+    "sha256": "71DB28340A1F002F14A35A0EBBCDFC2683447040FB7678AAC8CC06EA58452641"
+  },
+  {
+    "build": "BEFORE",
+    "path": "assets\\xlsx.worker-B4QDJ5Lz.js",
+    "bytes": 1588736,
+    "sha256": "A259FFF1EB3DA865D239F95FF6B63FAE41453BC6C10377D430314AD7FF4098A9"
+  },
+  {
+    "build": "BEFORE",
+    "path": "icons\\apple-touch-icon-180x180.png",
+    "bytes": 1496,
+    "sha256": "CCE748803B7ED866C46C1D75F81042FDB379D540CC4EEF73122C16D0A62D9C24"
+  },
+  {
+    "build": "BEFORE",
+    "path": "icons\\favicon.ico",
+    "bytes": 1071,
+    "sha256": "C7BAB7ACF34B113ECC45D154085E90BF348FA33BDCE84DEC7A39B614848D1F0D"
+  },
+  {
+    "build": "BEFORE",
+    "path": "icons\\icon.svg",
+    "bytes": 31578,
+    "sha256": "73DDEA158762E0EFA12D6D19DC2697A93664B5517F71FDF968F6C07EB7437A82"
+  },
+  {
+    "build": "BEFORE",
+    "path": "icons\\maskable-icon-512x512.png",
+    "bytes": 5041,
+    "sha256": "7507663827A8BD711DD3BB37F2677BD754DB110FCCC836D8648927C65D908AC5"
+  },
+  {
+    "build": "BEFORE",
+    "path": "icons\\pwa-192x192.png",
+    "bytes": 2246,
+    "sha256": "C3021E30B53E93FEDE7548E346EDE8E4BE249BB890D81F2F678AA8D60E1150A2"
+  },
+  {
+    "build": "BEFORE",
+    "path": "icons\\pwa-512x512.png",
+    "bytes": 7638,
+    "sha256": "87FCE4BC396A3EB1C1C0938240D738D09C32C4ADA677238B33C46B857631B89A"
+  },
+  {
+    "build": "BEFORE",
+    "path": "icons\\pwa-64x64.png",
+    "bytes": 880,
+    "sha256": "9ECE96CBE3D007B27B105129A8871143E3824EA00969F3D0877F14077B0285CB"
+  },
+  {
+    "build": "AFTER",
+    "path": "#U512a#U5148.png",
+    "bytes": 132801,
+    "sha256": "747DFA88F7586F5F5834C43B46B51A341F07EA02783CF39318A6DD6FC305CE45"
+  },
+  {
+    "build": "AFTER",
+    "path": "#U59d4#U8a17#U7121.png",
+    "bytes": 714459,
+    "sha256": "A2B6F0F8D6B906A2B1FE115EFE2773965FF3C180A68BEFCCDD190AF30A165F4D"
+  },
+  {
+    "build": "AFTER",
+    "path": "#U8907#U6570#U7a2e.png",
+    "bytes": 193561,
+    "sha256": "D808F9CBF36BBB0819EAC70F69DA27E2146A9CEEE2CF3CAA7DC1C3841FE26002"
+  },
+  {
+    "build": "AFTER",
+    "path": "index.html",
+    "bytes": 1824,
+    "sha256": "AE7B5CE479BD174215511B8E88E6CE3F3EFAC737FE317097D71F62DCC0087D6E"
+  },
+  {
+    "build": "AFTER",
+    "path": "manifest.webmanifest",
+    "bytes": 584,
+    "sha256": "80FED57128799AD34DB0D75AD5E1016FC78E5694B379D4B78BF162EB527EABFA"
+  },
+  {
+    "build": "AFTER",
+    "path": "outer-agent-graph.json",
+    "bytes": 1725,
+    "sha256": "72E8E3C66408D95BEED5ADB86CBD5B4D967E93BF9570A7293F8C30CB9B227134"
+  },
+  {
+    "build": "AFTER",
+    "path": "release-capabilities.b536f760acfcf38954d10140487d37e77ee33a15.json",
+    "bytes": 290,
+    "sha256": "69A22810ECFCB5A2023F7BEF4D73393F50A25C12655FBECEA11DF2E7647502D0"
+  },
+  {
+    "build": "AFTER",
+    "path": "release-capabilities.json",
+    "bytes": 290,
+    "sha256": "69A22810ECFCB5A2023F7BEF4D73393F50A25C12655FBECEA11DF2E7647502D0"
+  },
+  {
+    "build": "AFTER",
+    "path": "release-identity.b536f760acfcf38954d10140487d37e77ee33a15.830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611.json",
+    "bytes": 751,
+    "sha256": "CE5BB6AF84FABF1CC6A83383850274BF0876DCFAE87A2231AE0E5A1AB83FB62F"
+  },
+  {
+    "build": "AFTER",
+    "path": "release-identity.json",
+    "bytes": 751,
+    "sha256": "CE5BB6AF84FABF1CC6A83383850274BF0876DCFAE87A2231AE0E5A1AB83FB62F"
+  },
+  {
+    "build": "AFTER",
+    "path": "release-role-graph.json",
+    "bytes": 92492,
+    "sha256": "82120A937562ACBCF5F389DA1462E75849D1CE9305CED336D06C545555AC9805"
+  },
+  {
+    "build": "AFTER",
+    "path": "sw.js",
+    "bytes": 6036,
+    "sha256": "D7FA6241BB8EB75505284EE39B379967C6F0A40D4CA9147E4D3C0EF5D3F2D4E8"
+  },
+  {
+    "build": "AFTER",
+    "path": "theme-prepaint.js",
+    "bytes": 589,
+    "sha256": "E6B5E174474816944C860FA21FB80994B97DF31F2658A73CAF868960C02B6D0D"
+  },
+  {
+    "build": "AFTER",
+    "path": "委託無.png",
+    "bytes": 714459,
+    "sha256": "A2B6F0F8D6B906A2B1FE115EFE2773965FF3C180A68BEFCCDD190AF30A165F4D"
+  },
+  {
+    "build": "AFTER",
+    "path": "複数種.png",
+    "bytes": 193561,
+    "sha256": "D808F9CBF36BBB0819EAC70F69DA27E2146A9CEEE2CF3CAA7DC1C3841FE26002"
+  },
+  {
+    "build": "AFTER",
+    "path": "優先.png",
+    "bytes": 132801,
+    "sha256": "747DFA88F7586F5F5834C43B46B51A341F07EA02783CF39318A6DD6FC305CE45"
+  },
+  {
+    "build": "AFTER",
+    "path": "assets\\app-DZd7rnFB.css",
+    "bytes": 92221,
+    "sha256": "5982E626B0A5DC9E4E5EFF1E0D7EED4388A8855F618F93A71C33A2B64A7C9A5F"
+  },
+  {
+    "build": "AFTER",
+    "path": "assets\\backup.worker-CmLUrcml.js",
+    "bytes": 256079,
+    "sha256": "209E231E7229F8F3D0A7ECBCC32C8A143C10AAA5C9326BA37DE23BEC63FC5207"
+  },
+  {
+    "build": "AFTER",
+    "path": "assets\\FocusModeContainer-CZ1MJtsO.js",
+    "bytes": 157593,
+    "sha256": "AF23C640603BE3200525861445B8AF059E8C10BB65FACD2FFCF95BC416DDE902"
+  },
+  {
+    "build": "AFTER",
+    "path": "assets\\ImportScreen-B_gRpn6j.js",
+    "bytes": 19896,
+    "sha256": "3CB1DB5D85B19E37C42C7FA80057BB828CF4F0A1B9E650EB766BF3D79733E8FA"
+  },
+  {
+    "build": "AFTER",
+    "path": "assets\\outer-recovery-agent.js",
+    "bytes": 19939,
+    "sha256": "24EBCB17C0E601DED6E6AB183B801263B6284F360FDD812AD81839977567900E"
+  },
+  {
+    "build": "AFTER",
+    "path": "assets\\persistence.worker-Dgzz1Tkn.js",
+    "bytes": 318449,
+    "sha256": "4D11925144E20AAC5BBE9C019816826CC9F44E3AB756CF9BBD533F3969FC402F"
+  },
+  {
+    "build": "AFTER",
+    "path": "assets\\release-role.js",
+    "bytes": 1319986,
+    "sha256": "4C0341C0821B66A5E06CDFD6ADC89626F198916802CB42F9A8390C7430F3D02D"
+  },
+  {
+    "build": "AFTER",
+    "path": "assets\\route.worker-vkpwhvUq.js",
+    "bytes": 19928,
+    "sha256": "71DB28340A1F002F14A35A0EBBCDFC2683447040FB7678AAC8CC06EA58452641"
+  },
+  {
+    "build": "AFTER",
+    "path": "assets\\xlsx.worker-DA2gqYv7.js",
+    "bytes": 1589349,
+    "sha256": "EC40D5E4B9702FEB472BD5413938F01F6A06A7F18FB360C59A9492B53E15B112"
+  },
+  {
+    "build": "AFTER",
+    "path": "icons\\apple-touch-icon-180x180.png",
+    "bytes": 1496,
+    "sha256": "CCE748803B7ED866C46C1D75F81042FDB379D540CC4EEF73122C16D0A62D9C24"
+  },
+  {
+    "build": "AFTER",
+    "path": "icons\\favicon.ico",
+    "bytes": 1071,
+    "sha256": "C7BAB7ACF34B113ECC45D154085E90BF348FA33BDCE84DEC7A39B614848D1F0D"
+  },
+  {
+    "build": "AFTER",
+    "path": "icons\\icon.svg",
+    "bytes": 31578,
+    "sha256": "73DDEA158762E0EFA12D6D19DC2697A93664B5517F71FDF968F6C07EB7437A82"
+  },
+  {
+    "build": "AFTER",
+    "path": "icons\\maskable-icon-512x512.png",
+    "bytes": 5041,
+    "sha256": "7507663827A8BD711DD3BB37F2677BD754DB110FCCC836D8648927C65D908AC5"
+  },
+  {
+    "build": "AFTER",
+    "path": "icons\\pwa-192x192.png",
+    "bytes": 2246,
+    "sha256": "C3021E30B53E93FEDE7548E346EDE8E4BE249BB890D81F2F678AA8D60E1150A2"
+  },
+  {
+    "build": "AFTER",
+    "path": "icons\\pwa-512x512.png",
+    "bytes": 7638,
+    "sha256": "87FCE4BC396A3EB1C1C0938240D738D09C32C4ADA677238B33C46B857631B89A"
+  },
+  {
+    "build": "AFTER",
+    "path": "icons\\pwa-64x64.png",
+    "bytes": 880,
+    "sha256": "9ECE96CBE3D007B27B105129A8871143E3824EA00969F3D0877F14077B0285CB"
+  },
+  {
+    "build": "LEGACY",
+    "path": "#U512a#U5148.png",
+    "bytes": 132801,
+    "sha256": "747DFA88F7586F5F5834C43B46B51A341F07EA02783CF39318A6DD6FC305CE45"
+  },
+  {
+    "build": "LEGACY",
+    "path": "#U59d4#U8a17#U7121.png",
+    "bytes": 714459,
+    "sha256": "A2B6F0F8D6B906A2B1FE115EFE2773965FF3C180A68BEFCCDD190AF30A165F4D"
+  },
+  {
+    "build": "LEGACY",
+    "path": "#U8907#U6570#U7a2e.png",
+    "bytes": 193561,
+    "sha256": "D808F9CBF36BBB0819EAC70F69DA27E2146A9CEEE2CF3CAA7DC1C3841FE26002"
+  },
+  {
+    "build": "LEGACY",
+    "path": "index.html",
+    "bytes": 1824,
+    "sha256": "83BB2D8194EA1CCBDEE6A3461536EA0844BE1E9DE9737598DA73FC3E1D4746C8"
+  },
+  {
+    "build": "LEGACY",
+    "path": "manifest.webmanifest",
+    "bytes": 584,
+    "sha256": "80FED57128799AD34DB0D75AD5E1016FC78E5694B379D4B78BF162EB527EABFA"
+  },
+  {
+    "build": "LEGACY",
+    "path": "outer-agent-graph.json",
+    "bytes": 1725,
+    "sha256": "8E328546CA85AF02BD4A96BD9B711A5EDFD2E4934C714D06B586F3FCCF887ECC"
+  },
+  {
+    "build": "LEGACY",
+    "path": "release-capabilities.cc475cd1837404440e893694147fee17c46a04d2.json",
+    "bytes": 290,
+    "sha256": "E7AD674A355C0CB64167C133A8127B13CC1617B7B10C0F0DB70885F7A7187470"
+  },
+  {
+    "build": "LEGACY",
+    "path": "release-capabilities.json",
+    "bytes": 290,
+    "sha256": "E7AD674A355C0CB64167C133A8127B13CC1617B7B10C0F0DB70885F7A7187470"
+  },
+  {
+    "build": "LEGACY",
+    "path": "release-identity.cc475cd1837404440e893694147fee17c46a04d2.830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611.json",
+    "bytes": 751,
+    "sha256": "FA88E3EC2A2434F53199DB5C355192F74E0CBA6E209ED99A3998B1DC08303B8D"
+  },
+  {
+    "build": "LEGACY",
+    "path": "release-identity.json",
+    "bytes": 751,
+    "sha256": "FA88E3EC2A2434F53199DB5C355192F74E0CBA6E209ED99A3998B1DC08303B8D"
+  },
+  {
+    "build": "LEGACY",
+    "path": "release-role-graph.json",
+    "bytes": 91504,
+    "sha256": "601BD56EE64433A503DB9B9991F5F7862001258E38B1B26A0B82D0CBA7907575"
+  },
+  {
+    "build": "LEGACY",
+    "path": "sw.js",
+    "bytes": 6036,
+    "sha256": "4F85D9CF907EE2CD0C2AF9351CB745AD7581B4EEB4AFB5EFF9DBB7B2E72EF7C6"
+  },
+  {
+    "build": "LEGACY",
+    "path": "theme-prepaint.js",
+    "bytes": 589,
+    "sha256": "E6B5E174474816944C860FA21FB80994B97DF31F2658A73CAF868960C02B6D0D"
+  },
+  {
+    "build": "LEGACY",
+    "path": "委託無.png",
+    "bytes": 714459,
+    "sha256": "A2B6F0F8D6B906A2B1FE115EFE2773965FF3C180A68BEFCCDD190AF30A165F4D"
+  },
+  {
+    "build": "LEGACY",
+    "path": "複数種.png",
+    "bytes": 193561,
+    "sha256": "D808F9CBF36BBB0819EAC70F69DA27E2146A9CEEE2CF3CAA7DC1C3841FE26002"
+  },
+  {
+    "build": "LEGACY",
+    "path": "優先.png",
+    "bytes": 132801,
+    "sha256": "747DFA88F7586F5F5834C43B46B51A341F07EA02783CF39318A6DD6FC305CE45"
+  },
+  {
+    "build": "LEGACY",
+    "path": "assets\\app-B7508A5z.css",
+    "bytes": 92254,
+    "sha256": "4DE7B4277BB363E62E1308E7C7BCF414AA30691AF0E3284A69788927EB9CD05D"
+  },
+  {
+    "build": "LEGACY",
+    "path": "assets\\backup.worker-DxX1LJQI.js",
+    "bytes": 254163,
+    "sha256": "7AAA26E65376EC7BB3A6308A0B1F2FCBAF9029FB212040AD0984526B79DFBE51"
+  },
+  {
+    "build": "LEGACY",
+    "path": "assets\\FocusModeContainer-Dw4_WipJ.js",
+    "bytes": 157589,
+    "sha256": "29E02D32735AE10D392AA641D9049B7F83693669162E2928FB3A9CC796D7E6F3"
+  },
+  {
+    "build": "LEGACY",
+    "path": "assets\\ImportScreen-CsvyyIuA.js",
+    "bytes": 18632,
+    "sha256": "0775493AEE45118016541F1021CF4DC0548B6FFFDBD61C7F1B7712510FB158B6"
+  },
+  {
+    "build": "LEGACY",
+    "path": "assets\\outer-recovery-agent.js",
+    "bytes": 19939,
+    "sha256": "24EBCB17C0E601DED6E6AB183B801263B6284F360FDD812AD81839977567900E"
+  },
+  {
+    "build": "LEGACY",
+    "path": "assets\\persistence.worker-BlDWQYfg.js",
+    "bytes": 317914,
+    "sha256": "7D12537503CDA977705F39C07222646581F6B635CCBCA0E72DFC5C7BB8707DE7"
+  },
+  {
+    "build": "LEGACY",
+    "path": "assets\\release-role.js",
+    "bytes": 1316523,
+    "sha256": "858B0923F90E819E815402954D597D91D22C8A1713C20E031CC8E40772265E99"
+  },
+  {
+    "build": "LEGACY",
+    "path": "assets\\route.worker-vkpwhvUq.js",
+    "bytes": 19928,
+    "sha256": "71DB28340A1F002F14A35A0EBBCDFC2683447040FB7678AAC8CC06EA58452641"
+  },
+  {
+    "build": "LEGACY",
+    "path": "assets\\xlsx.worker-z7XFzpHI.js",
+    "bytes": 1587385,
+    "sha256": "D626C8CA68BCD94518B6F8836BE0B081B751B1E994D77AF27795AA91C15F130C"
+  },
+  {
+    "build": "LEGACY",
+    "path": "icons\\apple-touch-icon-180x180.png",
+    "bytes": 1496,
+    "sha256": "CCE748803B7ED866C46C1D75F81042FDB379D540CC4EEF73122C16D0A62D9C24"
+  },
+  {
+    "build": "LEGACY",
+    "path": "icons\\favicon.ico",
+    "bytes": 1071,
+    "sha256": "C7BAB7ACF34B113ECC45D154085E90BF348FA33BDCE84DEC7A39B614848D1F0D"
+  },
+  {
+    "build": "LEGACY",
+    "path": "icons\\icon.svg",
+    "bytes": 31578,
+    "sha256": "73DDEA158762E0EFA12D6D19DC2697A93664B5517F71FDF968F6C07EB7437A82"
+  },
+  {
+    "build": "LEGACY",
+    "path": "icons\\maskable-icon-512x512.png",
+    "bytes": 5041,
+    "sha256": "7507663827A8BD711DD3BB37F2677BD754DB110FCCC836D8648927C65D908AC5"
+  },
+  {
+    "build": "LEGACY",
+    "path": "icons\\pwa-192x192.png",
+    "bytes": 2246,
+    "sha256": "C3021E30B53E93FEDE7548E346EDE8E4BE249BB890D81F2F678AA8D60E1150A2"
+  },
+  {
+    "build": "LEGACY",
+    "path": "icons\\pwa-512x512.png",
+    "bytes": 7638,
+    "sha256": "87FCE4BC396A3EB1C1C0938240D738D09C32C4ADA677238B33C46B857631B89A"
+  },
+  {
+    "build": "LEGACY",
+    "path": "icons\\pwa-64x64.png",
+    "bytes": 880,
+    "sha256": "9ECE96CBE3D007B27B105129A8871143E3824EA00969F3D0877F14077B0285CB"
+  }
+]

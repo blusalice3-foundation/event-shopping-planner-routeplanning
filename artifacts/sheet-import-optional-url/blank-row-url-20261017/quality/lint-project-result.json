@@ -1,0 +1,5 @@
+{
+  "command": "node node_modules/eslint/bin/eslint.js . --max-warnings 0 --ignore-pattern '.tmp*'",
+  "exitCode": 0,
+  "ignoredOnlyUntrackedTemporaryPaths": true
+}

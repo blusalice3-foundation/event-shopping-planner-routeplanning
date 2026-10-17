@@ -401,7 +401,7 @@ export const useShoppingItemMutationCommands = ({
       }
 
       if (metadata?.request?.isCurrent?.() === false)
-        return { status: "saved" };
+        return { status: "saved", importedItemCount: newItems.length };
       try {
         const uiPlan = buildBulkAddUiPlan(
           eventName,
@@ -418,7 +418,7 @@ export const useShoppingItemMutationCommands = ({
         } else if (uiPlan.nextActiveEventName) {
           navigation.showImport(uiPlan.nextActiveEventName);
         }
-        return { status: "saved" };
+        return { status: "saved", importedItemCount: newItems.length };
       } catch {
         return { status: "committed-ui-failed" };
       }

@@ -1,0 +1,202 @@
+[
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 0,
+    "reviewMs": 584.0683000000001,
+    "saveMs": 237.34539999999993,
+    "durationMs": 821.4137000000001
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 1,
+    "reviewMs": 564.71,
+    "saveMs": 236.14760000000024,
+    "durationMs": 800.8576000000003
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 2,
+    "reviewMs": 541.5424999999996,
+    "saveMs": 252.76639999999952,
+    "durationMs": 794.3088999999991
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 3,
+    "reviewMs": 571.3653999999997,
+    "saveMs": 234.5034000000005,
+    "durationMs": 805.8688000000002
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 4,
+    "reviewMs": 582.3038999999999,
+    "saveMs": 230.14129999999932,
+    "durationMs": 812.4451999999992
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 5,
+    "reviewMs": 566.2478000000001,
+    "saveMs": 242.0048000000006,
+    "durationMs": 808.2526000000007
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 6,
+    "reviewMs": 589.5443000000014,
+    "saveMs": 265.41739999999845,
+    "durationMs": 854.9616999999998
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 7,
+    "reviewMs": 570.9714999999997,
+    "saveMs": 237.77130000000034,
+    "durationMs": 808.7428
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 8,
+    "reviewMs": 574.3971999999994,
+    "saveMs": 253.08979999999974,
+    "durationMs": 827.4869999999992
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 9,
+    "reviewMs": 579.961800000001,
+    "saveMs": 227.92020000000048,
+    "durationMs": 807.8820000000014
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 10,
+    "reviewMs": 585.7860000000001,
+    "saveMs": 263.04429999999957,
+    "durationMs": 848.8302999999996
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 11,
+    "reviewMs": 574.2790999999997,
+    "saveMs": 249.83450000000084,
+    "durationMs": 824.1136000000006
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 12,
+    "reviewMs": 579.6432000000023,
+    "saveMs": 243.7713999999978,
+    "durationMs": 823.4146000000001
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 13,
+    "reviewMs": 572.3762999999999,
+    "saveMs": 241.40090000000055,
+    "durationMs": 813.7772000000004
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 14,
+    "reviewMs": 578.1424000000006,
+    "saveMs": 240.45809999999983,
+    "durationMs": 818.6005000000005
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 15,
+    "reviewMs": 577.1574,
+    "saveMs": 229.81070000000182,
+    "durationMs": 806.9681000000019
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 16,
+    "reviewMs": 582.5959000000003,
+    "saveMs": 227.93339999999807,
+    "durationMs": 810.5292999999983
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 17,
+    "reviewMs": 573.1191999999974,
+    "saveMs": 247.05549999999857,
+    "durationMs": 820.1746999999959
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 18,
+    "reviewMs": 597.3822,
+    "saveMs": 238.22249999999985,
+    "durationMs": 835.6046999999999
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 19,
+    "reviewMs": 587.6571000000004,
+    "saveMs": 250.26209999999992,
+    "durationMs": 837.9192000000003
+  }
+]

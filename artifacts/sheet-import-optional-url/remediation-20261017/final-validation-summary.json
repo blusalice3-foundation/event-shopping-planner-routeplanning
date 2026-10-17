@@ -1,0 +1,97 @@
+{
+  "CompletedAt": "2026-10-17T15:12:01.1825363+09:00",
+  "PlanConditions": {
+    "Completed": 23,
+    "RequirementTextsUnchanged": true,
+    "Scope": "150/500 items; single PWA screen; 1500 and physical devices excluded as planned"
+  },
+  "ProductionFilesChanged": 6,
+  "FinalSourceFiles": 22,
+  "Quality": {
+    "VitestFiles": 241,
+    "VitestTests": 2773,
+    "DefaultOptInMeasurementSkipped": 88,
+    "DedicatedMeasurementCasesCompletedPerPhase": 88,
+    "ApiTests": 21,
+    "FunctionalBrowserTests": 20,
+    "ProbeContractTests": 6,
+    "PwaNodeTests": 12,
+    "ArtifactNodeTests": 47,
+    "CoverageSubsystems": 6,
+    "WaiversAdded": 0,
+    "Typecheck": "pass",
+    "ESLint": "pass",
+    "Prettier": "pass",
+    "ArchitectureProductionFiles": 341,
+    "ArchitectureEdges": 1630,
+    "TestMembership": 242,
+    "StrictEncodingFiles": 1075,
+    "ReplacementOrMojibakeOrSuspiciousQuestionMarks": 0,
+    "DiffCheck": "pass"
+  },
+  "Performance": {
+    "ShoppingGroups": 96,
+    "ShoppingConditions": 16,
+    "MinimumSamplesPerGroup": 20,
+    "MedianLimitMs": 55.0,
+    "P95LimitMs": 100.0,
+    "AllShoppingGroupsPassed": true,
+    "AfterMaxMedianMs": 35.1,
+    "AfterMaxP95Ms": 40.7,
+    "PrimarySamplesByFamily": [
+      {
+        "Family": "engine",
+        "BeforeGroups": 88,
+        "AfterGroups": 88,
+        "BeforeSamples": 1760.0,
+        "AfterSamples": 1760.0,
+        "BeforeMinimumSamplesPerGroup": 20.0,
+        "AfterMinimumSamplesPerGroup": 20.0
+      },
+      {
+        "Family": "shopping",
+        "BeforeGroups": 96,
+        "AfterGroups": 96,
+        "BeforeSamples": 2120.0,
+        "AfterSamples": 2120.0,
+        "BeforeMinimumSamplesPerGroup": 20.0,
+        "AfterMinimumSamplesPerGroup": 20.0
+      },
+      {
+        "Family": "routes",
+        "BeforeGroups": 48,
+        "AfterGroups": 48,
+        "BeforeSamples": 960.0,
+        "AfterSamples": 960.0,
+        "BeforeMinimumSamplesPerGroup": 20.0,
+        "AfterMinimumSamplesPerGroup": 20.0
+      }
+    ],
+    "EngineRecheckSamples": 480,
+    "BrowserRecheckSamples": 280,
+    "OrderReversedDiagnosticSamples": 120,
+    "HistoricalCorrectedB04AdditionalSamples": 80,
+    "ShoppingRecheckSelectedGroups": 24,
+    "AllRawAndInitialResultsPreserved": true,
+    "AggregationUnitCorrection": "unit-metadata-correction-verification.json",
+    "AuthoritativePrimarySummary": "independent-summary-units-corrected/summary.json"
+  },
+  "FinalBuild": {
+    "Command": "npm run build:app",
+    "IdentitySHA256": "ce5bb6af84fabf1cc6a83383850274bf0876dcfae87a2231ae0e5a1ab83fb62f",
+    "MeasuredAfterBuildByteIdenticalFiles": 32,
+    "Proof": "final-original-build-verification.json",
+    "WorkerBeforeAfterByteIdentical": true
+  },
+  "Preservation": {
+    "AGENTSUnchanged": true,
+    "AGENTSSHA256": "435ED4810A8B1C036BD9F19193177DE762E3D2A150B425ECC5CE9314B903A1EA",
+    "READMEUnchanged": true,
+    "OriginalArtifactPathsNotOverwritten": true,
+    "HistoricalReportTitleAndBodyUnchanged": true,
+    "AllChangedSourceUTF8WithoutBOMAndLF": true
+  },
+  "SourceManifest": "source-final-manifest.json",
+  "Report": "docs/sheet-import-and-optional-url-remediation-results.md",
+  "EvidenceCopyVerification": "final-evidence-copy-verification.json"
+}

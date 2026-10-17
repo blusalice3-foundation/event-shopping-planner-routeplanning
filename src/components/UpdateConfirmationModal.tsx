@@ -18,7 +18,10 @@ import type {
 } from "../features/events/updateDiff";
 import type { ShoppingItem } from "../types/item";
 
+import SheetImportSummary from "./SheetImportSummary";
+
 interface UpdateConfirmationModalProps {
+  sheetImport?: EventUpdateDiff["sheetImport"];
   matching?: EventUpdateDiff["matching"];
   csvReview?: EventUpdateDiff["csvReview"];
   identitySelection?: React.ReactNode;
@@ -48,7 +51,7 @@ function formatRemarks(value: string): string {
 }
 
 const ResolvedUpdateConfirmationModal: React.FC<
-  UpdateConfirmationModalProps
+  UpdateConfirmationModalProps & { identityChoices: SheetIdentityChoices }
 > = ({
   itemsToDelete,
   itemsToUpdate,
@@ -61,13 +64,33 @@ const ResolvedUpdateConfirmationModal: React.FC<
   appFieldSyncCandidates = EMPTY_APP_FIELD_SYNC_CANDIDATES,
   nextSource,
   csvReview,
+  sheetImport,
   identitySelection,
+  identityChoices,
   confirmDisabled,
   onConfirm,
   onCancel,
 }) => {
-  const [applyPurchasedQuantityChanges, setApplyPurchasedQuantityChanges] =
-    useState(false);
+  const purchasedQuantityConfirmationKey = JSON.stringify([
+    pendingPurchasedQuantityChanges.map((change) => [
+      change.itemId,
+      change.currentQuantity,
+      change.nextQuantity,
+      change.purchaseStatus,
+      change.circle,
+      change.eventDate,
+      change.block,
+      change.number,
+      change.title,
+    ]),
+    identityChoices,
+  ]);
+  const [confirmedPurchasedQuantityKey, setConfirmedPurchasedQuantityKey] =
+    useState<string | null>(null);
+  // Bind consent to the current content even before the reset effect runs.
+  const applyPurchasedQuantityChanges =
+    pendingPurchasedQuantityChanges.length > 0 &&
+    confirmedPurchasedQuantityKey === purchasedQuantityConfirmationKey;
   const [fillEmptyAppFields, setFillEmptyAppFields] = useState(true);
   const [overwritePrice, setOverwritePrice] = useState(false);
   const [overwriteRemarks, setOverwriteRemarks] = useState(false);
@@ -98,8 +121,9 @@ const ResolvedUpdateConfirmationModal: React.FC<
     fillEmptyRemarksCandidates.length > 0;
 
   useEffect(() => {
-    setApplyPurchasedQuantityChanges(false);
-  }, [pendingPurchasedQuantityChanges.length]);
+    // Returning to an earlier correspondence must not restore old consent.
+    setConfirmedPurchasedQuantityKey(null);
+  }, [purchasedQuantityConfirmationKey]);
 
   useEffect(() => {
     setFillEmptyAppFields(true);
@@ -156,6 +180,15 @@ const ResolvedUpdateConfirmationModal: React.FC<
               </div>
             )}
 
+            {sheetImport && (
+              <>
+                <SheetImportSummary diagnostics={sheetImport} />
+                <p>
+                  削除候補: {itemsToDelete.length}件、削除から保護:{" "}
+                  {protectedFromDelete}件
+                </p>
+              </>
+            )}
             {csvReview && (
               <section className="space-y-2">
                 <p>
@@ -507,7 +540,11 @@ const ResolvedUpdateConfirmationModal: React.FC<
                     className="mt-0.5"
                     checked={applyPurchasedQuantityChanges}
                     onChange={(event) =>
-                      setApplyPurchasedQuantityChanges(event.target.checked)
+                      setConfirmedPurchasedQuantityKey(
+                        event.target.checked
+                          ? purchasedQuantityConfirmationKey
+                          : null,
+                      )
                     }
                   />
                   内容を確認し、スプレッドシートの予定数量へ変更する
@@ -558,9 +595,10 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = (
             props.matching.currentItems,
             props.matching.sheetItems,
             choices,
+            props.sheetImport?.rowExclusions,
           )
         : null,
-    [props.matching, choices],
+    [props.matching, props.sheetImport, choices],
   );
   const selection = props.matching && (
     <section className="space-y-3">
@@ -632,6 +670,7 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = (
       {...props}
       {...resolved}
       identitySelection={selection}
+      identityChoices={choices}
       confirmDisabled={!!resolved?.unresolvedMatches?.length}
       onConfirm={(options) =>
         props.onConfirm({

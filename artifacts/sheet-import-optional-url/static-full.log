@@ -1,0 +1,30 @@
+
+> event-shopping-planner@1.0.0 typecheck
+> tsc --noEmit && tsc -p tsconfig.release-tools.json
+
+
+> event-shopping-planner@1.0.0 lint
+> eslint . --max-warnings 0
+
+
+D:\codex-worktrees\sheet-url-20261017\src\test\sheetImportOptionalUrl.measurement.integration.test.tsx
+  13:10  warning  'db' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (0 errors, 1 warning)
+
+ESLint found too many warnings (maximum: 0).
+
+> event-shopping-planner@1.0.0 verify:test-project-membership
+> node scripts/verify-test-project-membership.mjs
+
+PASS test project membership: 241 files; integration=42, unit=189, worker=10
+
+> event-shopping-planner@1.0.0 verify:architecture
+> node scripts/verify-architecture.mjs
+
+PASS architecture verification: 341 production files; 1629 import edges; 0 baseline exception(s); graph 5d9271bdd573f01ef82e4c01376a0974dede12bf4fc9db4e040853efe13ae7e3
+
+> event-shopping-planner@1.0.0 test:encoding
+> node scripts/verify-encoding.mjs
+
+PASS encoding verification: 1068 text files; UTF-8 without BOM; U+FFFD/mojibake/suspicious '?' absent; newlines: LF=1064, CRLF=3, none=1; question marks reviewed=14427; representative strings: ユーザー登録=127, エラーが発生しました=47

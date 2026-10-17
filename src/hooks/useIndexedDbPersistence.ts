@@ -1,3 +1,4 @@
+import { normalizeSnapshotItemOptionalFields } from "../utils/itemOptionalFields";
 import { jsonEqual } from "../utils/semanticEquality";
 import type { EventConsistencyStore } from "../types/consistency";
 
@@ -950,12 +951,17 @@ export function useIndexedDbPersistence({
       }
 
       // Read all application stores and revision roots in one transaction.
-      const observation = await persistenceCommands.readApplicationSnapshot();
-      let snapshot = observation.snapshot;
+      let observation = await persistenceCommands.readApplicationSnapshot();
+      const sourceSnapshot = observation.snapshot;
+      let snapshot = normalizeSnapshotItemOptionalFields(sourceSnapshot);
+      let migration: Parameters<
+        PersistenceCommandPort["commitApplicationSnapshotAtomically"]
+      >[1];
       if (observation.consistencyMissing) {
-        const legacy = { ...snapshot } as Partial<typeof snapshot>;
+        const legacy = { ...sourceSnapshot } as Partial<typeof snapshot>;
         delete legacy.eventConsistency;
-        const errors = validateSnapshotStructure(legacy, false);
+        const normalizedLegacy = normalizeSnapshotItemOptionalFields(legacy);
+        const errors = validateSnapshotStructure(normalizedLegacy, false);
         if (errors.length) throw new Error(errors.join("\n"));
         const raw = persistenceCommands.loadPreference(
           "blockDetectionSettings",
@@ -974,7 +980,7 @@ export function useIndexedDbPersistence({
             "旧ブロック検出設定が不正です。移行元を保全して確認してください。",
           );
         const migrated = createAppBackup(
-          legacy as typeof snapshot,
+          normalizedLegacy as typeof snapshot,
           new Date(),
           { blockDetectionSettings: settings },
         );
@@ -984,13 +990,9 @@ export function useIndexedDbPersistence({
           ...validateSnapshotReferences(snapshot),
         ];
         if (migrationErrors.length) throw new Error(migrationErrors.join("\n"));
-        await persistenceCommands.commitApplicationSnapshotAtomically(
-          snapshot,
-          {
-            expectedRoots: observation.expectedRoots,
-            migration: { source: legacy, blockDetectionSettingsRaw: raw },
-          },
-        );
+        migration = {
+          migration: { source: legacy, blockDetectionSettingsRaw: raw },
+        };
         if (isMountedRef.current)
           setMigrationNotices(
             migrated.notices?.map(
@@ -1003,6 +1005,30 @@ export function useIndexedDbPersistence({
         ...validateSnapshotReferences(snapshot),
       ];
       if (validationErrors.length) throw new Error(validationErrors.join("\n"));
+      if (snapshot !== sourceSnapshot) {
+        await persistenceCommands.commitApplicationSnapshotAtomically(
+          snapshot,
+          {
+            ...migration,
+            expectedRoots: observation.expectedRoots,
+          },
+        );
+        observation = await persistenceCommands.readApplicationSnapshot();
+        snapshot = observation.snapshot;
+        const savedErrors = [
+          ...validateSnapshotStructure(snapshot),
+          ...validateSnapshotReferences(snapshot),
+        ];
+        if (
+          observation.consistencyMissing ||
+          normalizeSnapshotItemOptionalFields(snapshot) !== snapshot ||
+          savedErrors.length
+        )
+          throw new Error(
+            savedErrors.join("\n") ||
+              "互換対応後の保存データを再確認できませんでした。",
+          );
+      }
       if (!isMountedRef.current) return;
       onHydratedSnapshot?.({ ...observation, snapshot });
       const hydratedValues = snapshot as unknown as PersistedStateValues;

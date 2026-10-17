@@ -1,0 +1,318 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-17T14:59:07.7594490+09:00",
+  "validatedRawFiles": 6,
+  "validatedSamples": 120,
+  "runtimeErrors": 0,
+  "missingUpdateClickEvents": 40,
+  "expectedUpdateClickEventSamples": 40,
+  "primaryEvidenceReplacement": false,
+  "nodeBrowserClockConversion": false,
+  "missingMarkerCause": "EventListScreen icon and title are separate adjacent spans. textContent is 🔄アイテム更新, while the diagnostic listener compares 🔄 アイテム更新 with a space; accessible-name token separation lets the Playwright locator match.",
+  "newMetric": "browser.preEvaluateToFetchUpperBoundMs: browser fetch-call epoch minus browser pre-action evaluate epoch, including transport/scheduling and handler work; not exact actionability or click-to-request time.",
+  "quantiles": "Median of even n uses the two middle values; p95 is nearest-rank. Independent quantiles are not additive.",
+  "inputs": [
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-after\\sheet-import-optional-url.-22c9f-direct-sheet-url-diagnostic-chromium\\sheet-url-diagnostic-timings.json",
+      "sha256": "C7C956F65D151B609C0B050DC75BD1CF5A5C6EF35DA817B61F854DFD903EAEDF"
+    },
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-after\\sheet-import-optional-url.-5df7f-direct-sheet-url-diagnostic-chromium\\sheet-url-diagnostic-timings.json",
+      "sha256": "EFE174C007B91FDE3584A646CCF2F97756FA2C5C37486D1302DBBDE50F1740EA"
+    },
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-after\\sheet-import-optional-url.-fa669-worker-sheet-url-diagnostic-chromium\\sheet-url-diagnostic-timings.json",
+      "sha256": "45220F0D73CECCA5A116D66A11AE5EDBDF67B3063CD8F8E6A2C0FAB43CC54CE1"
+    },
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-before\\sheet-import-optional-url.-22c9f-direct-sheet-url-diagnostic-chromium\\sheet-url-diagnostic-timings.json",
+      "sha256": "1CF589E9CA69726303D185E21F40A58FE4FD99F74F30ACAE2E64741338C2BE3D"
+    },
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-before\\sheet-import-optional-url.-5df7f-direct-sheet-url-diagnostic-chromium\\sheet-url-diagnostic-timings.json",
+      "sha256": "17AEC6544C22EA0DF2D4E1EDC9250E22622793247BD33F8FE3C54978A613952C"
+    },
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-before\\sheet-import-optional-url.-fa669-worker-sheet-url-diagnostic-chromium\\sheet-url-diagnostic-timings.json",
+      "sha256": "4BD12EDCFF622AB6E99CA9C8EF02852D61B50A5B8ABB5AD64475BC6F3C803B0F"
+    }
+  ],
+  "results": [
+    {
+      "case": "retry: 150 direct",
+      "metric": "allAbortCount",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 1.0,
+      "afterMedian": 1.0,
+      "medianDelta": 0.0,
+      "beforeP95": 1.0,
+      "afterP95": 1.0,
+      "p95Delta": 0.0
+    },
+    {
+      "case": "retry: 150 direct",
+      "metric": "atomicSuccessfulCount",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 1.0,
+      "afterMedian": 1.0,
+      "medianDelta": 0.0,
+      "beforeP95": 1.0,
+      "afterP95": 1.0,
+      "p95Delta": 0.0
+    },
+    {
+      "case": "retry: 150 direct",
+      "metric": "atomicSuccessfulWholeDurationMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 23.0,
+      "afterMedian": 13.949951171875,
+      "medianDelta": -9.050048828125,
+      "beforeP95": 25.599853515625,
+      "afterP95": 26.300048828125,
+      "p95Delta": 0.7001953125
+    },
+    {
+      "case": "retry: 150 direct",
+      "metric": "browser.retryClickToAlertDomMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 8.800048828125,
+      "afterMedian": 8.599853515625,
+      "medianDelta": -0.2001953125,
+      "beforeP95": 9.60009765625,
+      "afterP95": 9.300048828125,
+      "p95Delta": -0.300048828125
+    },
+    {
+      "case": "retry: 150 direct",
+      "metric": "browser.retryClickToEditorDomMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 75.8499755859375,
+      "afterMedian": 75.550048828125,
+      "medianDelta": -0.2999267578125,
+      "beforeP95": 80.60009765625,
+      "afterP95": 78.39990234375,
+      "p95Delta": -2.2001953125
+    },
+    {
+      "case": "retry: 150 direct",
+      "metric": "outer.durationMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 153.71619999999893,
+      "afterMedian": 149.60369999999966,
+      "medianDelta": -4.112499999999272,
+      "beforeP95": 162.76580000000104,
+      "afterP95": 165.8539000000019,
+      "p95Delta": 3.08810000000085
+    },
+    {
+      "case": "startup-B06: 150 direct",
+      "metric": "allAbortCount",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 1.0,
+      "afterMedian": 1.0,
+      "medianDelta": 0.0,
+      "beforeP95": 1.0,
+      "afterP95": 1.0,
+      "p95Delta": 0.0
+    },
+    {
+      "case": "startup-B06: 150 direct",
+      "metric": "atomicSuccessfulCount",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 1.0,
+      "afterMedian": 1.0,
+      "medianDelta": 0.0,
+      "beforeP95": 1.0,
+      "afterP95": 1.0,
+      "p95Delta": 0.0
+    },
+    {
+      "case": "startup-B06: 150 direct",
+      "metric": "atomicSuccessfulWholeDurationMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 7.4000244140625,
+      "afterMedian": 7.5,
+      "medianDelta": 0.0999755859375,
+      "beforeP95": 9.10009765625,
+      "afterP95": 8.800048828125,
+      "p95Delta": -0.300048828125
+    },
+    {
+      "case": "startup-B06: 150 direct",
+      "metric": "browser.retryClickToReadyDomMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 57.949951171875,
+      "afterMedian": 58.5,
+      "medianDelta": 0.550048828125,
+      "beforeP95": 61.400146484375,
+      "afterP95": 60.300048828125,
+      "p95Delta": -1.10009765625
+    },
+    {
+      "case": "startup-B06: 150 direct",
+      "metric": "outer.durationMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 296.7404000000006,
+      "afterMedian": 295.00674999999956,
+      "medianDelta": -1.7336500000010346,
+      "beforeP95": 391.8053,
+      "afterP95": 388.54089999999997,
+      "p95Delta": -3.2644000000000233
+    },
+    {
+      "case": "startup-B06: 150 direct",
+      "metric": "outer.failureMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 149.28269999999952,
+      "afterMedian": 148.6174000000001,
+      "medianDelta": -0.6652999999994336,
+      "beforeP95": 261.29669999999896,
+      "afterP95": 262.5183999999972,
+      "p95Delta": 1.2216999999982363
+    },
+    {
+      "case": "startup-B06: 150 direct",
+      "metric": "outer.retryMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 145.49924999999905,
+      "afterMedian": 138.91564999999946,
+      "medianDelta": -6.583599999999592,
+      "beforeP95": 152.66960000000108,
+      "afterP95": 156.61579999999958,
+      "p95Delta": 3.9461999999984982
+    },
+    {
+      "case": "update: 500 worker",
+      "metric": "allAbortCount",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 0.0,
+      "afterMedian": 0.0,
+      "medianDelta": 0.0,
+      "beforeP95": 0.0,
+      "afterP95": 0.0,
+      "p95Delta": 0.0
+    },
+    {
+      "case": "update: 500 worker",
+      "metric": "atomicSuccessfulCount",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 1.0,
+      "afterMedian": 1.0,
+      "medianDelta": 0.0,
+      "beforeP95": 1.0,
+      "afterP95": 1.0,
+      "p95Delta": 0.0
+    },
+    {
+      "case": "update: 500 worker",
+      "metric": "atomicSuccessfulWholeDurationMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 8.5,
+      "afterMedian": 8.5,
+      "medianDelta": 0.0,
+      "beforeP95": 8.800048828125,
+      "afterP95": 10.0,
+      "p95Delta": 1.199951171875
+    },
+    {
+      "case": "update: 500 worker",
+      "metric": "browser.confirmClickToReviewHiddenMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 72.8499755859375,
+      "afterMedian": 71.7501220703125,
+      "medianDelta": -1.099853515625,
+      "beforeP95": 76.199951171875,
+      "afterP95": 76.39990234375,
+      "p95Delta": 0.199951171875
+    },
+    {
+      "case": "update: 500 worker",
+      "metric": "browser.csvRequestToTextCompleteMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 14.2999267578125,
+      "afterMedian": 14.9500732421875,
+      "medianDelta": 0.650146484375,
+      "beforeP95": 15.300048828125,
+      "afterP95": 15.39990234375,
+      "p95Delta": 0.099853515625
+    },
+    {
+      "case": "update: 500 worker",
+      "metric": "browser.csvTextCompleteToReviewDomMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 11.849853515625,
+      "afterMedian": 10.7000732421875,
+      "medianDelta": -1.1497802734375,
+      "beforeP95": 12.5,
+      "afterP95": 11.7998046875,
+      "p95Delta": -0.7001953125
+    },
+    {
+      "case": "update: 500 worker",
+      "metric": "browser.preEvaluateToFetchUpperBoundMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 39.89990234375,
+      "afterMedian": 40.2000732421875,
+      "medianDelta": 0.3001708984375,
+      "beforeP95": 389.900146484375,
+      "afterP95": 41.39990234375,
+      "p95Delta": -348.500244140625
+    },
+    {
+      "case": "update: 500 worker",
+      "metric": "node.requestActionMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 45.16604999999254,
+      "afterMedian": 45.25860000000466,
+      "medianDelta": 0.09255000001212466,
+      "beforeP95": 395.1244999999908,
+      "afterP95": 46.921000000002095,
+      "p95Delta": -348.2034999999887
+    },
+    {
+      "case": "update: 500 worker",
+      "metric": "outer.reviewMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 92.93745000000854,
+      "afterMedian": 91.83399999999892,
+      "medianDelta": -1.103450000009616,
+      "beforeP95": 442.1953999999969,
+      "afterP95": 105.02840000001015,
+      "p95Delta": -337.16699999998673
+    },
+    {
+      "case": "update: 500 worker",
+      "metric": "outer.saveMs",
+      "beforeN": 20,
+      "afterN": 20,
+      "beforeMedian": 139.18345000001136,
+      "afterMedian": 138.967049999992,
+      "medianDelta": -0.21640000001934823,
+      "beforeP95": 152.37789999999222,
+      "afterP95": 142.25449999999546,
+      "p95Delta": -10.123399999996764
+    }
+  ]
+}

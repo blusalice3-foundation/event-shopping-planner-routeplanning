@@ -1,0 +1,23 @@
+ M AGENTS.md
+ M docs/sheet-import-and-optional-url-implementation-plan.md
+ M docs/sheet-import-and-optional-url-implementation-results.md
+ M src/app/commands/useEventUpdateCommands.test.tsx
+ M src/app/commands/useShoppingItemMutationCommands.test.tsx
+ M src/app/commands/useShoppingItemMutationCommands.ts
+ M src/components/ImportScreen.sheetImport.integration.test.tsx
+ M src/components/ImportScreen.tsx
+ M src/components/UpdateConfirmationModal.test.tsx
+ M src/components/UpdateConfirmationModal.tsx
+ M src/features/events/updateFlow.test.ts
+ M src/features/events/updateFlow.ts
+ M src/test/sheetImportOptionalUrl.measurement.integration.test.tsx
+ M src/test/sheetImportOptionalUrlPersistence.ts
+ M src/types/import.ts
+ M src/utils/itemOptionalFields.test.ts
+ M src/utils/itemOptionalFields.ts
+ M tests/browser/sheet-import-optional-url.measurement.spec.ts
+?? docs/sheet-import-and-optional-url-remediation-results.md
+?? scripts/sheet-url-stage-probe.mjs
+?? scripts/sheet-url-stage-probe.test.mjs
+?? src/app/commands/useEventUpdateCommands.modal.integration.test.tsx
+?? vitest.sheet-url-measurement.config.ts

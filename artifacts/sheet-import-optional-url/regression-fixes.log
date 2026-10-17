@@ -1,0 +1,26 @@
+
+ RUN  v4.1.10 D:/codex-worktrees/sheet-url-20261017
+
+·············x················································
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |integration| src/app/state/useApplicationSnapshot.optionalFields.integration.test.tsx > optional fields queued operations: worker > keeps purchase and quantity edits on the item-command path with no URL structural change
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/app/state/useApplicationSnapshot.optionalFields.integration.test.tsx:128:5
+    126|       h.unmount();
+    127|     });
+    128|     it("keeps purchase and quantity edits on the item-command path wit…
+       |     ^
+    129|       const h = await harness(mode);
+    130|       const atomic = vi.spyOn(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 5 passed (6)
+      Tests  1 failed | 61 passed (62)
+   Start at  09:38:34
+   Duration  26.01s (transform 2.25s, setup 1.73s, import 5.05s, tests 8.75s, environment 34.42s)
+

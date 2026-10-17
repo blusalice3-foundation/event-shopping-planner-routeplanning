@@ -1,0 +1,34 @@
+[
+  {
+    "Check": "api",
+    "Command": "npm run test:api",
+    "ExitCode": 0,
+    "StartedUtc": "2026-10-17T03:55:31.1794355Z",
+    "DurationSeconds": 0.6958788,
+    "Log": "02-api.log"
+  },
+  {
+    "Check": "encoding",
+    "Command": "npm run test:encoding",
+    "ExitCode": 0,
+    "StartedUtc": "2026-10-17T03:55:31.8857659Z",
+    "DurationSeconds": 0.8435811,
+    "Log": "03-encoding.log"
+  },
+  {
+    "Check": "architecture",
+    "Command": "npm run verify:architecture",
+    "ExitCode": 0,
+    "StartedUtc": "2026-10-17T03:55:32.7312465Z",
+    "DurationSeconds": 1.0751419,
+    "Log": "04-architecture.log"
+  },
+  {
+    "Check": "test-project-membership",
+    "Command": "npm run verify:test-project-membership",
+    "ExitCode": 0,
+    "StartedUtc": "2026-10-17T03:55:33.8077609Z",
+    "DurationSeconds": 0.4758389,
+    "Log": "05-test-project-membership.log"
+  }
+]

@@ -1,0 +1,388 @@
+[
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "startup-B01",
+    "iteration": 0,
+    "evidenceEligible": false,
+    "durationMs": 242.69450000000006,
+    "failureMs": 0,
+    "retryMs": 0,
+    "transactions": [
+      {
+        "realm": "main",
+        "startedAt": 1792209570729.2,
+        "mode": "readonly",
+        "stores": [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570729.5,
+        "durationMs": 0.300048828125,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570729.2,
+        "mode": "readonly",
+        "stores": [
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570729.5,
+        "durationMs": 0.300048828125,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570729.3,
+        "mode": "readonly",
+        "stores": [
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570730.2,
+        "durationMs": 0.89990234375,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570730.3,
+        "mode": "readonly",
+        "stores": [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570733.0999,
+        "durationMs": 2.7998046875,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570737.3,
+        "mode": "readonly",
+        "stores": [
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570737.7,
+        "durationMs": 0.39990234375,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570738.5,
+        "mode": "readonly",
+        "stores": [
+          "eventConsistency",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570746.0999,
+        "durationMs": 7.599853515625,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570738.5,
+        "mode": "readonly",
+        "stores": [
+          "eventLists",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570740,
+        "durationMs": 1.5,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570738.5,
+        "mode": "readonly",
+        "stores": [
+          "eventMetadata",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570742.5,
+        "durationMs": 4,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570738.7,
+        "mode": "readonly",
+        "stores": [
+          "executeModeItems",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570747.9,
+        "durationMs": 9.199951171875,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570738.8,
+        "mode": "readonly",
+        "stores": [
+          "dayModes",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570748.7,
+        "durationMs": 9.89990234375,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570738.9,
+        "mode": "readonly",
+        "stores": [
+          "mapData",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570743.4,
+        "durationMs": 4.5,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570738.9,
+        "mode": "readonly",
+        "stores": [
+          "mapRotationSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570743.7,
+        "durationMs": 4.800048828125,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570739.0999,
+        "mode": "readonly",
+        "stores": [
+          "routeSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570744.5,
+        "durationMs": 5.400146484375,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570739.0999,
+        "mode": "readonly",
+        "stores": [
+          "hallDefinitions",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570745,
+        "durationMs": 5.900146484375,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570739.0999,
+        "mode": "readonly",
+        "stores": [
+          "hallRouteSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570745.5,
+        "durationMs": 6.400146484375,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570739.2,
+        "mode": "readonly",
+        "stores": [
+          "mapViewportSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570746.7,
+        "durationMs": 7.5,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570749.3,
+        "mode": "readonly",
+        "stores": [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570753.3,
+        "durationMs": 4,
+        "outcome": "complete"
+      }
+    ],
+    "verifiedSnapshotReadSpans": [
+      {
+        "realm": "main",
+        "startedAt": 1792209570729.2,
+        "mode": "readonly",
+        "stores": [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570729.5,
+        "durationMs": 0.300048828125,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570730.3,
+        "mode": "readonly",
+        "stores": [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570733.0999,
+        "durationMs": 2.7998046875,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792209570749.3,
+        "mode": "readonly",
+        "stores": [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792209570753.3,
+        "durationMs": 4,
+        "outcome": "complete"
+      }
+    ],
+    "startupScreenDomMs": 135,
+    "marks": {
+      "startupScreenDomAt": 1792209570766.7
+    },
+    "csvTextToReviewDomMs": null,
+    "csvTextToReviewFrameMs": null,
+    "confirmationToScreenDomMs": null,
+    "confirmationToScreenFrameMs": null,
+    "startupPreparationPolicy": "prepare-on-save",
+    "preparationInCompatibilityCommit": false,
+    "preparationCommits": 0,
+    "compatibilityCommits": 0,
+    "preparationCommitMs": 0,
+    "compatibilityCommitMs": 0
+  }
+]

@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-17",
+  "timezone": "Asia/Tokyo",
+  "baseline": "b536f760acfcf38954d10140487d37e77ee33a15",
+  "originalWorkspace": "D:\\event-shopping-planner-routeplanning-1.9.6.7",
+  "os": {
+    "Caption": "Microsoft Windows 11 Pro",
+    "Version": "10.0.26200",
+    "OSArchitecture": "64 ビット"
+  },
+  "processor": "AMD Ryzen 9 3900X 12-Core Processor            ",
+  "node": "v24.19.0",
+  "npm": "11.19.0",
+  "playwright": "Version 1.62.1",
+  "viewport": {
+    "routes": "1280x720",
+    "shoppingPc": "1280x900",
+    "shoppingSmartphone": "390x844"
+  },
+  "browser": "bundled Chromium headless",
+  "measurementsAreNew": true,
+  "performancePolicy": {
+    "p95Ms": 100,
+    "conditions": 16,
+    "minSamples": 20,
+    "operations": 6,
+    "medianMs": 55
+  },
+  "baselineGraphSha256": "289010FE32D2BFD80AF1FB0A6D992450B96AC9CC39D29F07DE54E65587B909E0",
+  "afterGraphSha256": "82120A937562ACBCF5F389DA1462E75849D1CE9305CED336D06C545555AC9805"
+}

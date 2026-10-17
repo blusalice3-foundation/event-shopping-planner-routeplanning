@@ -1,0 +1,18 @@
+Listing tests:
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=false, mapVisible=false, layout=pc @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=false, mapVisible=false, layout=smartphone @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=false, mapVisible=true, layout=pc @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=false, mapVisible=true, layout=smartphone @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=true, mapVisible=false, layout=pc @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=true, mapVisible=false, layout=smartphone @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=true, mapVisible=true, layout=pc @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=true, mapVisible=true, layout=smartphone @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=false, mapVisible=false, layout=pc @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=false, mapVisible=false, layout=smartphone @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=false, mapVisible=true, layout=pc @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=false, mapVisible=true, layout=smartphone @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=true, mapVisible=false, layout=pc @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=true, mapVisible=false, layout=smartphone @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=true, mapVisible=true, layout=pc @shopping-performance
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=true, mapVisible=true, layout=smartphone @shopping-performance
+Total: 16 tests in 1 file

@@ -1,3 +1,4 @@
+import { normalizeItemsOptionalFields } from "../../utils/itemOptionalFields";
 import { recordEntry, setOwnValue } from "../../utils/ownRecord";
 import {
   createWorkbookSource,
@@ -1109,6 +1110,7 @@ export async function importFromXlsx(
         result.items.some((item) => item.manualHallId !== undefined)
       )
         throw new Error("新形式に旧巡回設定が重複しています。");
+      result.items = normalizeItemsOptionalFields(result.items);
       const name = result.eventName;
       const one = (value: unknown) =>
         value === undefined ? {} : { [name]: value };

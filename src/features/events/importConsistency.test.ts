@@ -76,13 +76,20 @@ describe("CSV format and record validation", () => {
       { cells: ["f", "g", "", ""], startLine: 3, endLine: 3 },
     ]);
   });
-  it.each([
-    "",
-    "<html>login</html>",
-    `${header}\n${row({ 15: "" })}`,
-    `${header}\n${row()}\n"broken`,
-  ])("never turns an invalid response into an empty update: %s", (text) => {
-    expect(() => parseEventItemsFromCsv(text)).toThrow();
+  it.each(["", "<html>login</html>", `${header}\n${row()}\n"broken`])(
+    "never turns an invalid response into an empty update: %s",
+    (text) => {
+      expect(() => parseEventItemsFromCsv(text)).toThrow();
+    },
+  );
+  it("treats incomplete item rows as ordinary exclusions rather than invalid responses", () => {
+    expect(parseEventItemsFromCsv(`${header}\n${row({ 15: "" })}`)).toEqual([]);
+    expect(
+      readEventCsv(`${header}\n${row({ 15: "" })}`, {
+        format: "google",
+        header: true,
+      }).rowExclusions.excludedCount,
+    ).toBe(1);
   });
   it("keeps data containing header/metadata words and optional missing columns", () => {
     const minimal = csv([
@@ -107,9 +114,16 @@ describe("CSV format and record validation", () => {
     );
     expect(parseEventItemsFromCsv(header)).toEqual([]);
     cells[12] = "サークル";
-    expect(() => parseEventItemsFromCsv(`${header}\n${csv(cells)}`)).toThrow(
-      /参加日.*ブロック.*番号/u,
-    );
+    expect(parseEventItemsFromCsv(`${header}\n${csv(cells)}`)).toEqual([]);
+    const parsed = readEventCsv(`${header}\n${csv(cells)}`, {
+      format: "google",
+      header: true,
+    });
+    expect(parsed.rowExclusions.examples[0].missingFields).toEqual([
+      "eventDate",
+      "block",
+      "number",
+    ]);
   });
   it("requires explicit headerless format and retains legacy metadata and the first data row", () => {
     const text =

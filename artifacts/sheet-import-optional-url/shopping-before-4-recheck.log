@@ -1,0 +1,15 @@
+
+[WebServer] (node:27052) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 1 worker
+
+(node:28512) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/4] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=true, mapVisible=false, layout=smartphone @shopping-performance
+[2/4] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=false, mapVisible=true, layout=smartphone @shopping-performance
+[3/4] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=true, mapVisible=false, layout=smartphone @shopping-performance
+[4/4] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=true, mapVisible=true, layout=smartphone @shopping-performance
+  4 passed (2.5m)

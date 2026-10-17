@@ -1,0 +1,482 @@
+
+ RUN  v4.1.10 D:/codex-worktrees/sheet-url-20261017
+
+stderr | src/utils/indexedDB.resilience.integration.test.ts > db open resilience > times out a blocked open with a dedicated recovery error and permits retry
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.mapData.integration.test.tsx > db.loadMapData > reports an error after both IndexedDB reads fail without a legacy fallback
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.mapData.integration.test.tsx > db.loadMapData > does not use the legacy localStorage key after both IndexedDB reads fail
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.mapData.integration.test.tsx > db.loadMapData > does not use the legacy localStorage key after both IndexedDB reads fail
+IndexedDB open failed.
+
+stderr | src/persistence/db/consistencyMigration.integration.test.ts > consistency migration transaction > rejects both reads and writes through the actual previous database opener
+IndexedDB open failed.
+
+stderr | src/persistence/db/consistencyMigration.integration.test.ts > consistency migration transaction > rejects both reads and writes through the actual previous database opener
+IndexedDB open failed.
+
+stderr | src/persistence/db/consistencyMigration.integration.test.ts > pre-upgrade boundary > closes an already-open old client on versionchange and refuses its reconnect
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > does not modify a current version database with a missing required store
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > does not modify a current version database with a missing required store
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > refuses an unknown newer database without modifying it
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > refuses an unknown newer database without modifying it
+IndexedDB open failed.
+
+stderr | src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > StrictModeのeffect再実行でも初期化をsingle-flightに保つ
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stderr | src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > 初期化中にunmountした場合は後続のstate反映と自動保存を行わない
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stderr | src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > keeps setters and autosave disabled until a migration recovery is retried successfully
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stderr | src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > allows normal startup and autosave while verified legacy cleanup is deferred
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stderr | src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > revalidates and adopts an explicitly selectable payload before restarting initialization
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stderr | src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > persists a purchase status changed immediately after initialization
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stderr | src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > flushPendingSave bypasses the debounce and persists the latest snapshot immediately
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stderr | src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > flushPendingSave waits for an active save and drains its newest snapshot
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stderr | src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > waits for an active save before restore and adopts the restored snapshot as the new baseline
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > related settings and manifest corruption > rejects a missing declared related-settings sheet instead of falling back to legacy
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > closed full-workbook declarations > rejects duplicate-metadata without falling back
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > closed full-workbook declarations > rejects future-workbook without falling back
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > closed full-workbook declarations > rejects future-schema without falling back
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/utils/exportImport.restoreSettings.test.ts > event XLSX restore settings > rejects malformed restore settings before any event can be replaced
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > rejects unsupported event names instead of creating object strings {"formula":"\"ユーザー登録\""}
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > rejects unsupported event names instead of creating object strings {"error":"#VALUE!"}
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > does not reinterpret structured contentManifest metadata as decorated JSON
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > does not reinterpret structured eventMetadata metadata as decorated JSON
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 B2 (参加日)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 C3 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in マップデータ A2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in マップデータ B2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in ルート情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in ルート情報 B2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in ルート情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 B2 (参加日)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 C3 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in マップデータ A2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in マップデータ B2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in ルート情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in ルート情報 B2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in ルート情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in 配置情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in マップデータ B2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in ルート情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in 配置情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in マップデータ B2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in ルート情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+···························································································································································································································································································································································································································----------------------------------------------------------------------------------------···························································································································································x··················x·····················································································································x··x·xx····xxxxxxxx·······························································································································································································································································································································································································································································································································································································································································································································································································································································································································································x···········································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································x···························································································
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 16 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |unit| src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > StrictModeのeffect再実行でも初期化をsingle-flightに保つ
+AssertionError: expected 'recovery-required' to be 'ready' // Object.is equality
+
+Expected: "ready"
+Received: "recovery-required"
+
+ ❯ src/hooks/useIndexedDbPersistence.test.tsx:304:48
+    302|     await act(flushMicrotasks);
+    303|
+    304|     expect(result.current.startupState.status).toBe("ready");
+       |                                                ^
+    305|     expect(
+    306|       persistenceCommandMock.migrateFromLocalStorage,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/16]⎯
+
+ FAIL  |unit| src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > keeps setters and autosave disabled until a migration recovery is retried successfully
+AssertionError: expected 'recovery-required' to be 'ready' // Object.is equality
+
+Expected: "ready"
+Received: "recovery-required"
+
+ ❯ src/hooks/useIndexedDbPersistence.test.tsx:469:48
+    467|     ).toHaveBeenCalledTimes(2);
+    468|     expect(dbMock.loadSyncQueue).toHaveBeenCalledTimes(2);
+    469|     expect(result.current.startupState.status).toBe("ready");
+       |                                                ^
+    470|     expect(result.current.isInitialized).toBe(true);
+    471|     Object.values(setters).forEach((setter) => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/16]⎯
+
+ FAIL  |unit| src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > allows normal startup and autosave while verified legacy cleanup is deferred
+AssertionError: expected 'recovery-required' to be 'ready' // Object.is equality
+
+Expected: "ready"
+Received: "recovery-required"
+
+ ❯ src/hooks/useIndexedDbPersistence.test.tsx:579:48
+    577|     await act(flushMicrotasks);
+    578|
+    579|     expect(result.current.startupState.status).toBe("ready");
+       |                                                ^
+    580|     expect(result.current.isInitialized).toBe(true);
+    581|     expect(result.current.legacyCleanupStatus).toBe("deferred");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/16]⎯
+
+ FAIL  |unit| src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > revalidates and adopts an explicitly selectable payload before restarting initialization
+AssertionError: expected 'recovery-required' to be 'ready' // Object.is equality
+
+Expected: "ready"
+Received: "recovery-required"
+
+ ❯ src/hooks/useIndexedDbPersistence.test.tsx:688:48
+    686|       persistenceCommandMock.migrateFromLocalStorage,
+    687|     ).toHaveBeenCalledTimes(2);
+    688|     expect(result.current.startupState.status).toBe("ready");
+       |                                                ^
+    689|     expect(result.current.isInitialized).toBe(true);
+    690|     expect(result.current.legacyCleanupStatus).toBe("deferred");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/16]⎯
+
+ FAIL  |unit| src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > persists a purchase status changed immediately after initialization
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/hooks/useIndexedDbPersistence.test.tsx:1007:42
+    1005|
+    1006|     await act(flushMicrotasks);
+    1007|     expect(result.current.isInitialized).toBe(true);
+       |                                          ^
+    1008|     expect(result.current.persistenceStatus).toBe("saved");
+    1009|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/16]⎯
+
+ FAIL  |unit| src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > flushPendingSave bypasses the debounce and persists the latest snapshot immediately
+AssertionError: expected 'saved' to be 'unsaved' // Object.is equality
+
+Expected: "unsaved"
+Received: "saved"
+
+ ❯ src/hooks/useIndexedDbPersistence.test.tsx:1062:46
+    1060|     });
+    1061|
+    1062|     expect(result.current.persistenceStatus).toBe("unsaved");
+       |                                              ^
+    1063|     expect(result.current.isUpdateBlocked()).toBe(true);
+    1064|     expect(persistenceCommandMock.saveEventLists).not.toHaveBeenCalled…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/16]⎯
+
+ FAIL  |unit| src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > flushPendingSave rejects and remains blocked when IndexedDB persistence fails
+AssertionError: expected [Function] to throw error including '保存を完了できませんでした。' but got '保存データの初期化が完了していません。'
+
+Expected: "保存を完了できませんでした。"
+Received: "保存データの初期化が完了していません。"
+
+ ❯ src/hooks/useIndexedDbPersistence.test.tsx:1100:54
+    1098|
+    1099|     await act(async () => {
+    1100|       await expect(result.current.flushPendingSave()).rejects.toThrow(
+       |                                                      ^
+    1101|         "保存を完了できませんでした。",
+    1102|       );
+ ❯ node_modules/@testing-library/react/dist/act-compat.js:47:24
+ ❯ act node_modules/react/cjs/react.development.js:2512:16
+ ❯ Proxy.<anonymous> node_modules/@testing-library/react/dist/act-compat.js:46:25
+ ❯ src/hooks/useIndexedDbPersistence.test.tsx:1099:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/16]⎯
+
+ FAIL  |unit| src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > reports a mapData failure and retrySave immediately persists its latest value
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/hooks/useIndexedDbPersistence.test.tsx:1137:42
+    1135|
+    1136|     await act(flushMicrotasks);
+    1137|     expect(result.current.isInitialized).toBe(true);
+       |                                          ^
+    1138|
+    1139|     await act(async () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/16]⎯
+
+ FAIL  |unit| src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > keeps quota details through a failed retry and a failed restore
+AssertionError: expected 'saved' to be 'failed' // Object.is equality
+
+Expected: "failed"
+Received: "saved"
+
+ ❯ src/hooks/useIndexedDbPersistence.test.tsx:1250:46
+    1248|     });
+    1249|
+    1250|     expect(result.current.persistenceStatus).toBe("failed");
+       |                                              ^
+    1251|     expect(result.current.failedStores).toEqual(["mapData"]);
+    1252|     expect(result.current.failureDetails).toEqual([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/16]⎯
+
+ FAIL  |unit| src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > warns before unload while unsaved, saving, or failed, then removes the warning after retry succeeds
+AssertionError: expected 'saved' to be 'unsaved' // Object.is equality
+
+Expected: "unsaved"
+Received: "saved"
+
+ ❯ src/hooks/useIndexedDbPersistence.test.tsx:1315:46
+    1313|     rerender({ values: changedValues });
+    1314|
+    1315|     expect(result.current.persistenceStatus).toBe("unsaved");
+       |                                              ^
+    1316|     expect(isBeforeUnloadPrevented()).toBe(true);
+    1317|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/16]⎯
+
+ FAIL  |unit| src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > flushPendingSave waits for an active save and drains its newest snapshot
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/hooks/useIndexedDbPersistence.test.tsx:1372:42
+    1370|
+    1371|     await act(flushMicrotasks);
+    1372|     expect(result.current.isInitialized).toBe(true);
+       |                                          ^
+    1373|     expect(result.current.persistenceStatus).toBe("saved");
+    1374|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/16]⎯
+
+ FAIL  |unit| src/hooks/useIndexedDbPersistence.test.tsx > useIndexedDbPersistence > waits for an active save before restore and adopts the restored snapshot as the new baseline
+AssertionError: expected "vi.fn()" to be called 1 times, but got 0 times
+ ❯ src/hooks/useIndexedDbPersistence.test.tsx:1491:51
+    1489|     });
+    1490|     await act(flushMicrotasks);
+    1491|     expect(persistenceCommandMock.saveEventLists).toHaveBeenCalledTime…
+       |                                                   ^
+    1492|
+    1493|     const restoredValues: PersistedValues = {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/16]⎯
+
+ FAIL  |unit| src/features/events/importConsistency.test.ts > CSV format and record validation > skips only structurally defined blank/summary rows and accepts a recognized empty sheet
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ src/features/events/importConsistency.test.ts:117:70
+    115|     expect(parseEventItemsFromCsv(header)).toEqual([]);
+    116|     cells[12] = "サークル";
+    117|     expect(() => parseEventItemsFromCsv(`${header}\n${csv(cells)}`)).t…
+       |                                                                      ^
+    118|       /参加日.*ブロック.*番号/u,
+    119|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/16]⎯
+
+ FAIL  |worker| src/xlsx/worker/workerExecutor.worker.test.ts > bound XLSX Worker engine > matches the committed semantic golden after Worker export and import preflight
+AssertionError: expected { success: true, …(5) } to deeply equal { success: true, …(5) }
+
+- Expected
++ Received
+
+@@ -34,11 +34,10 @@
+        "quantity": 1,
+        "remarks": "",
+        "sheetRemarks": "アプリ入力備考",
+        "source": "app",
+        "title": "通常新刊",
+-       "url": "",
+      },
+    ],
+    "layoutInfo": {
+      "dayModes": {
+        "1日目": "focus",
+
+ ❯ src/xlsx/worker/workerExecutor.worker.test.ts:291:22
+    289|     if (result.kind !== "event-import") throw new Error("wrong result …
+    290|     const { eventConsistency, contentManifest, ...retained } = result.…
+    291|     expect(retained).toEqual(expected.value);
+       |                      ^
+    292|     expect(eventConsistency).toEqual({
+    293|       schemaVersion: 1,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/16]⎯
+
+ FAIL  |integration| src/app/state/useApplicationSnapshot.optionalFields.integration.test.tsx > optional fields queued operations: direct > keeps purchase and quantity edits on the item-command path with no URL structural change
+Error: The property "commitItemContentEdits" is not defined on the object.
+ ❯ src/app/state/useApplicationSnapshot.optionalFields.integration.test.tsx:133:26
+    131|         "commitApplicationSnapshotAtomically",
+    132|       );
+    133|       const partial = vi.spyOn(h.commands, "commitItemContentEdits");
+       |                          ^
+    134|       act(() =>
+    135|         h.result.current.application.updateItemFields({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/16]⎯
+
+ FAIL  |integration| src/app/state/useApplicationSnapshot.optionalFields.integration.test.tsx > optional fields queued operations: worker > keeps purchase and quantity edits on the item-command path with no URL structural change
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/app/state/useApplicationSnapshot.optionalFields.integration.test.tsx:127:5
+    125|       h.unmount();
+    126|     });
+    127|     it("keeps purchase and quantity edits on the item-command path wit…
+       |     ^
+    128|       const h = await harness(mode);
+    129|       const atomic = vi.spyOn(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/16]⎯
+
+
+ Test Files  4 failed | 236 passed | 1 skipped (241)
+      Tests  16 failed | 2729 passed | 88 skipped (2833)
+   Start at  09:32:36
+   Duration  189.33s (transform 13.72s, setup 66.55s, import 53.87s, tests 91.65s, environment 116.98s)
+

@@ -29,11 +29,13 @@ describe("parseSpreadsheetPaste", () => {
     }
   });
 
-  it("6列または8列の行があれば部分結果を返さず原子的に拒否する", () => {
+  it("空行後の6列または8列の行を元の行番号で原子的に拒否する", () => {
     const result = parseSpreadsheetPaste(
       [
         "正常\t1日目\t東A\t01a\t新刊\t1000\t備考",
+        "",
         "不足\t1日目\t東A\t02a\t既刊\t500",
+        "\t　",
         "超過\t2日目\t西B\t03b\t新刊\t800\t備考\t余分",
       ].join("\n"),
     );
@@ -41,14 +43,14 @@ describe("parseSpreadsheetPaste", () => {
     expect(result).toMatchObject({
       ok: false,
       invalidRows: [
-        { lineNumber: 2, actualColumnCount: 6, problem: "不足" },
-        { lineNumber: 3, actualColumnCount: 8, problem: "超過" },
+        { lineNumber: 3, actualColumnCount: 6, problem: "不足" },
+        { lineNumber: 5, actualColumnCount: 8, problem: "超過" },
       ],
     });
     expect("columns" in result).toBe(false);
     if (!result.ok) {
-      expect(result.message).toContain("2行目（6列・不足）");
-      expect(result.message).toContain("3行目（8列・超過）");
+      expect(result.message).toContain("3行目（6列・不足）");
+      expect(result.message).toContain("5行目（8列・超過）");
       expect(result.message).toContain("7列");
     }
   });
@@ -87,6 +89,47 @@ describe("parseSpreadsheetPaste", () => {
       expect(result.columns.remarks).toBe("備考\n");
     }
   });
+
+  it.each(["\n", "\r\n", "\r"])(
+    "先頭と途中の空行を保持し、末尾の空行だけ除く（改行 %j）",
+    (newline) => {
+      const result = parseSpreadsheetPaste(
+        [
+          "　 ",
+          "サークルA\t1日目\t東A\t01a\t新刊\t1000\t備考A",
+          "",
+          "\t\t\t\t\t\t",
+          " \t　 ",
+          "サークルB\t2日目\t西B\t02b\t既刊\t500\t備考B",
+          "",
+          "　\t",
+        ].join(newline),
+      );
+
+      expect(result).toEqual({
+        ok: true,
+        columns: {
+          circles: "\nサークルA\n\n\n\nサークルB",
+          eventDates: "\n1日目\n\n\n\n2日目",
+          blocks: "\n東A\n\n\n\n西B",
+          numbers: "\n01a\n\n\n\n02b",
+          titles: "\n新刊\n\n\n\n既刊",
+          prices: "\n1000\n\n\n\n500",
+          remarks: "\n備考A\n\n\n\n備考B",
+        },
+      });
+    },
+  );
+
+  it.each(["", "\n\r\n\r", " \t　\r\n\t\t\t\t\t\t"])(
+    "空行しかなければ貼り付け対象なしとして拒否する（%j）",
+    (text) => {
+      const result = parseSpreadsheetPaste(text);
+
+      expect(result).toMatchObject({ ok: false, invalidRows: [] });
+      expect("columns" in result).toBe(false);
+    },
+  );
 
   it("画面用の列表示を解析と同じ定義から提供する", () => {
     expect(SPREADSHEET_PASTE_COLUMN_GUIDE).toBe(

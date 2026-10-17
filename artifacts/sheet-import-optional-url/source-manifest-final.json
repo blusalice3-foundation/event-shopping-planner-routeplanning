@@ -1,0 +1,550 @@
+{
+  "capturedAt": "2026-10-17T12:24:21.8120301+09:00",
+  "baselineHead": "cc475cd1837404440e893694147fee17c46a04d2",
+  "ownedFiles": [
+    {
+      "path": "README.md",
+      "sha256": "6CBDCDB0FE732724F51102CC5289E79CF1CC4DAD5C4B28392F26B65EED49FC47",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 687,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 1,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx",
+      "sha256": "991769EA6CC1849A23A302AEA0F9EDDBEE63FE6920EB4F9414C106FE124D3A83",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 216,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 4,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/app/state/useApplicationSnapshot.optionalFields.integration.test.tsx",
+      "sha256": "9396A0763B723E084B3A56F5E33AB428C82C149EFAB8F79D9C3C2186B849D026",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 174,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 3,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/app/state/useApplicationSnapshot.ts",
+      "sha256": "20FACE3545088E2C35434DC08B798FA2635B86A7E3F87E2A2F28B9C9FF882037",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 1313,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 122,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/components/ImportScreen.sheetImport.integration.test.tsx",
+      "sha256": "D8B742A3ABF9B5ED73ED7864DD166C80E192B3799E548793464F07837E9FE80F",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 148,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 3,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/components/ImportScreen.tsx",
+      "sha256": "35C98B5B381B26C41904CFA72BDA8A22902E65F3A5694BAB3326EE3658243B3C",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 1135,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 40,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/components/SheetImportSummary.tsx",
+      "sha256": "03DF943CF15AB4EF8696AEB03017F3A4DE0A3CD145281682A463D8C764CFDEA1",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 55,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 0,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/components/UpdateConfirmationModal.tsx",
+      "sha256": "6F2A855490C612E2C80B1B592847BF8143E30033A6D77A50C1F0B6FCF212AA82",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 660,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 46,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/features/app-shell/components/AppOverlayLayer.sheetImport.integration.test.tsx",
+      "sha256": "07AFFD71A0F32C2F401412C780D49716D53F0761AD4B8DB11259913DC9F011AA",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 203,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 2,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/features/app-shell/components/AppOverlayLayer.tsx",
+      "sha256": "725E8318F17E252814B65AB9771CCB007AF0D163FE128B87401653126C60B67E",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 897,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 27,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/features/events/bulkAdd.ts",
+      "sha256": "9CA1F30CBF59BA3A7D943FFFBC7287D017A63499DF45317FCEE560AD1C76DCC6",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 220,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 45,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/features/events/fileImport.ts",
+      "sha256": "B4AD638641FA610735C882A525192F7EBE4C2FB82FB67C82F6EEC75E5A14DDA1",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 147,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 20,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/features/events/importConsistency.test.ts",
+      "sha256": "FCAF43A045DB873F669411C1BCEBFB8241F723643936DFE04FBF97EFB9DB50AE",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 300,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 9,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/features/events/itemOps/crud.ts",
+      "sha256": "01113B9F47210AE284FD8B139A870E787F0383BFA9B64DC4EBC0586072A05356",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 212,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 16,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/features/events/itemOptionalFields.regression.test.ts",
+      "sha256": "CE5A5813746F87A89857F88734F22F7823DC7912CFC8455B3515D08DD9F4D9A1",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 118,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 0,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/features/events/sheetImport.ts",
+      "sha256": "A8D4DEE01645B13F6CB58F6A5E392AAB8D77EB7ED22C91DE947F36D182312E80",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 299,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 40,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/features/events/sheetRowExclusions.test.ts",
+      "sha256": "A8C34947293E4E0739912DB470C8685CF058C1AD096B4507C68AA145A36DA5BB",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 129,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 2,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/features/events/sheetRowSelection.ts",
+      "sha256": "12291D41D0914079EE4FAE494060B183DD8FF243EEB9D4A6D22E5F43C95F16C9",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 49,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 0,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/features/events/updateApply.ts",
+      "sha256": "FAA253BDA92F616CCB2CFCF563C3D526287614D127B0BC76A9AE549744AFEBD1",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 259,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 23,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/features/events/updateDiff.ts",
+      "sha256": "A1FD71BF18DD4B7F63C102A708AAFC45018D186567AD89F73A74B97D8DE767E7",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 469,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 25,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/features/events/updateFlow.ts",
+      "sha256": "7AEC2B49161218D4AE89FE497111C525289AA16482ED160CA7614AA51B305AE0",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 209,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 23,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx",
+      "sha256": "59CED753636AC3A39941B02207E5046C43762D96C050CC070B0FAF2064E34C09",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 295,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 3,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/hooks/useIndexedDbPersistence.test.tsx",
+      "sha256": "33FA71BE229EB594859536F62544556EF62C6D335AEE35FFB33340E12B87DB4C",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 1538,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 7,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/hooks/useIndexedDbPersistence.ts",
+      "sha256": "89487EFAD4A7F79841815E9E42A8410EFD9C693A2E7799A7062741B24C108B25",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 1288,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 37,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/test/sheetImportOptionalUrl.measurement.integration.test.tsx",
+      "sha256": "BE83E7677B51D9BD0CAF1B50BDE0055FA671110DFE975E73C41BDF8C1D5747C2",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 539,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 6,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/test/sheetImportOptionalUrlFixtures.ts",
+      "sha256": "4F58203EC065B511EC60216F8D103CD7DB72522A7E600E1325361F5CE0A841F2",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 81,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 4,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/test/sheetImportOptionalUrlPersistence.ts",
+      "sha256": "FAB30B059655F352936D9B1916E8D022A080B9E0047D5615A0CD766C8BB1C8D5",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 156,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 6,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/utils/appBackup.optionalFields.integration.test.tsx",
+      "sha256": "547135769B8404A2DCB0FDC641C90F88547F512954D8520E451720CFDF63C26F",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 168,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 0,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/utils/appBackup.ts",
+      "sha256": "E55D756712B0521A9BD8B68BF618308E9374E16E7341BFBA98B1823777F12B5C",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 1846,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 50,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/utils/itemOptionalFields.test.ts",
+      "sha256": "F96B418376C3758F09262A890F390B1E5F92A1C0FB762685E1111A61C72BEA32",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 129,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 0,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/utils/itemOptionalFields.ts",
+      "sha256": "4C7FD9771A2DEFCF475365358A3BDD08E6EB281C65F9000C2A0565753487BCBB",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 79,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 7,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/xlsx/engine/eventWorkbookEngine.ts",
+      "sha256": "142FE690A16370A61627803F75264A7C1549AC4715A677B22963B34050D501D1",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 1148,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 72,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "src/xlsx/worker/workerExecutor.worker.test.ts",
+      "sha256": "7E30E4C718335402C2C92B132EDA161B9F5FBD18FCED21D69F14145D45426CC6",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 389,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 0,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "tests/browser/responsive-performance.spec.ts",
+      "sha256": "4F5AC824A820BA3A58C325E316C9F3545E14404BB060D150374585D41E98F84F",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 1874,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 56,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "tests/browser/sheet-import-optional-url.measurement.spec.ts",
+      "sha256": "BA549FC10D19AC01D7C06B3276633BA6C8300191A00AF24CC8314DF67333684D",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 459,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 12,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "tests/browser/sheet-import-optional-url.spec.ts",
+      "sha256": "76AF633AC218A3F08FF0DB3583A49E50C82CA26AF87038C486EA373DEDA86079",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 422,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 4,
+      "matchesTestedCheckout": true
+    },
+    {
+      "path": "docs/sheet-import-and-optional-url-implementation-results.md",
+      "sha256": "5546E04C868FC70954CB5EAA14B499B06BEAE2D9F91143E45CEF1BCF133411F8",
+      "encoding": "UTF-8",
+      "BOM": false,
+      "LF": 188,
+      "CRLF": 0,
+      "replacementCharacters": 0,
+      "questionMarks": 0,
+      "matchesTestedCheckout": true
+    }
+  ],
+  "preservedUserFiles": {
+    "AGENTS.md": "435ED4810A8B1C036BD9F19193177DE762E3D2A150B425ECC5CE9314B903A1EA",
+    "docs/sheet-import-and-optional-url-implementation-plan.md": "8243CDF31C4B81F888CA3FE7DB56C705622FF0AD7F3A6114114270EB955F34CC"
+  },
+  "unrelatedTrackedFilesUnchanged": 1038,
+  "measurementSources": [
+    {
+      "path": "tests/browser/responsive-performance.spec.ts",
+      "sha256": "4F5AC824A820BA3A58C325E316C9F3545E14404BB060D150374585D41E98F84F",
+      "identicalBeforeAndAfter": true
+    },
+    {
+      "path": "tests/browser/sheet-import-optional-url.measurement.spec.ts",
+      "sha256": "BA549FC10D19AC01D7C06B3276633BA6C8300191A00AF24CC8314DF67333684D",
+      "identicalBeforeAndAfter": true
+    },
+    {
+      "path": "src/test/sheetImportOptionalUrl.measurement.integration.test.tsx",
+      "sha256": "BE83E7677B51D9BD0CAF1B50BDE0055FA671110DFE975E73C41BDF8C1D5747C2",
+      "identicalBeforeAndAfter": true
+    },
+    {
+      "path": "src/test/sheetImportOptionalUrlFixtures.ts",
+      "sha256": "4F58203EC065B511EC60216F8D103CD7DB72522A7E600E1325361F5CE0A841F2",
+      "identicalBeforeAndAfter": true
+    },
+    {
+      "path": "src/test/sheetImportOptionalUrlPersistence.ts",
+      "sha256": "FAB30B059655F352936D9B1916E8D022A080B9E0047D5615A0CD766C8BB1C8D5",
+      "identicalBeforeAndAfter": true
+    }
+  ],
+  "dependencyLockSHA256": "9B2B7EC709C74F80295265A33E9FAF6969D130C428E3D475D3DF7ACC19E42234",
+  "fixedInputs": [
+    {
+      "name": "restore-150-blank=false.xlsx",
+      "bytes": 22414,
+      "sha256": "39A4BC4F06053EB73869CDAB702724E8A29F539E06A593C3086C8752CC269C77"
+    },
+    {
+      "name": "restore-150-blank=true.xlsx",
+      "bytes": 22413,
+      "sha256": "01E7FAFFD5BC3A344A97F692ADBCD731BC4781320E85EF8FC83A43A9633DD8B0"
+    },
+    {
+      "name": "restore-150-direct-blank=false.xlsx",
+      "bytes": 22414,
+      "sha256": "C572D60767D8ED167B2CF4159480E5D5CD0E7FB7EEDC615A490D14A891D18DF0"
+    },
+    {
+      "name": "restore-150-direct-blank=true.xlsx",
+      "bytes": 22414,
+      "sha256": "E74F4046E270E5EAF3BD93E1795232475264CD9F061D618641733944D2054EDA"
+    },
+    {
+      "name": "restore-150-worker-blank=false.xlsx",
+      "bytes": 22414,
+      "sha256": "D3BA794DF4B63B1369E42E8CF48F10FB9E672B1362BF66EF67C8C00F42E31088"
+    },
+    {
+      "name": "restore-150-worker-blank=true.xlsx",
+      "bytes": 22414,
+      "sha256": "38BA5139A5119F8257E516BC8881453E22DA530E75CE235ED217A26A87A867C6"
+    },
+    {
+      "name": "restore-500-blank=false.xlsx",
+      "bytes": 47096,
+      "sha256": "5ABBB689265C50DC4BD50484DA81336B8E2F86FFA1ACBEC56A06F1F01EA6FE59"
+    },
+    {
+      "name": "restore-500-blank=true.xlsx",
+      "bytes": 47096,
+      "sha256": "13CDE2478D7AC379E5152AF50E9B123E9B9BAD72DD87CA340B28F3E33A23E1B7"
+    },
+    {
+      "name": "restore-500-direct-blank=false.xlsx",
+      "bytes": 47098,
+      "sha256": "EF4399D23B3213AD62465B39C2157F288547E280E793645EA68A1C4CAEB92C86"
+    },
+    {
+      "name": "restore-500-direct-blank=true.xlsx",
+      "bytes": 47098,
+      "sha256": "0850FF0A188469E5578A549AF876CBD9E0DB53735D64A9CDFFE3FAF14D7CFADF"
+    },
+    {
+      "name": "restore-500-worker-blank=false.xlsx",
+      "bytes": 47097,
+      "sha256": "9B728FB3346DCBD5D80B0EBB595BA46B69A9955A82750CA4A1AA9795549F8582"
+    },
+    {
+      "name": "restore-500-worker-blank=true.xlsx",
+      "bytes": 47097,
+      "sha256": "04C46C49BEA84236EF18B5896BBFF8C5E1779B24AF57E3A6635957C8EFF190BB"
+    }
+  ],
+  "builds": [
+    {
+      "phase": "before",
+      "indexSha256": "83BB2D8194EA1CCBDEE6A3461536EA0844BE1E9DE9737598DA73FC3E1D4746C8",
+      "releaseIdentitySha256": "FA88E3EC2A2434F53199DB5C355192F74E0CBA6E209ED99A3998B1DC08303B8D",
+      "identity": {
+        "buildId": "cc475cd1837404440e893694147fee17c46a04d2",
+        "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+        "outerAgentUrl": "/assets/outer-recovery-agent.js",
+        "pwaLifecycle": "prompt-close-all-v1",
+        "releaseRole": "standard",
+        "requiredDbCompatibilityFingerprint": "59cab323aedb35d8677e289545053591d34348970bfa268be3c4c437faf7c91f",
+        "roleEntrySha256": "858b0923f90e819e815402954d597d91d22c8a1713c20e031cc8e40772265e99",
+        "roleEntryUrl": "/assets/release-role.js",
+        "schemaVersion": 1,
+        "serviceWorkerSha256": "4f85d9cf907ee2cd0c2af9351cb745ad7581b4eeb4afb5eff9dbb7b2e72ef7c6",
+        "serviceWorkerUrl": "/sw.js",
+        "sourceSha": "cc475cd1837404440e893694147fee17c46a04d2",
+        "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+      }
+    },
+    {
+      "phase": "after",
+      "indexSha256": "A749ABDBD60371434C709F82AF8F25E66B682244CDA05566E2400A97C1B741A0",
+      "releaseIdentitySha256": "A0B7CCFB80BC2C28B0805C7850C2BCCFAB129C97941A1E13FBC64D5E3A1B3830",
+      "identity": {
+        "buildId": "cc475cd1837404440e893694147fee17c46a04d2",
+        "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+        "outerAgentUrl": "/assets/outer-recovery-agent.js",
+        "pwaLifecycle": "prompt-close-all-v1",
+        "releaseRole": "standard",
+        "requiredDbCompatibilityFingerprint": "59cab323aedb35d8677e289545053591d34348970bfa268be3c4c437faf7c91f",
+        "roleEntrySha256": "417e93f7124e95a0bd107853a0706a2ea09a55ed6315289a0155ad9715e550d2",
+        "roleEntryUrl": "/assets/release-role.js",
+        "schemaVersion": 1,
+        "serviceWorkerSha256": "f8ced057c44693096728a5a5f2b94f0b994b780fdca30578eb17235d97715eae",
+        "serviceWorkerUrl": "/sw.js",
+        "sourceSha": "cc475cd1837404440e893694147fee17c46a04d2",
+        "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+      }
+    }
+  ]
+}

@@ -1,0 +1,795 @@
+
+ RUN  v4.1.10 D:/codex-worktrees/sheet-url-20261017
+
+xxxx···········xxx···x·x··
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > normalizes legacy URL undefined with prepared=false, updates roots, and never repeats the migration
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > normalizes legacy URL  with prepared=false, updates roots, and never repeats the migration
+AssertionError: expected 1 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx:29:42
+     27|         expect(Object.prototype.hasOwnProperty.call(read.snapshot.even…
+     28|         expect(Object.prototype.hasOwnProperty.call(read.snapshot.even…
+     29|         expect(counter.result.successes).toBe(mode === "worker" && !pr…
+       |                                          ^
+     30|         expect(Object.prototype.hasOwnProperty.call(original.eventList…
+     31|         const saved = await db.readApplicationSnapshot();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > normalizes legacy URL 　  with prepared=false, updates roots, and never repeats the migration
+AssertionError: expected 1 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx:29:42
+     27|         expect(Object.prototype.hasOwnProperty.call(read.snapshot.even…
+     28|         expect(Object.prototype.hasOwnProperty.call(read.snapshot.even…
+     29|         expect(counter.result.successes).toBe(mode === "worker" && !pr…
+       |                                          ^
+     30|         expect(Object.prototype.hasOwnProperty.call(original.eventList…
+     31|         const saved = await db.readApplicationSnapshot();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > canonical data adds no URL migration save (prepared=false)
+AssertionError: expected +0 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx:52:40
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > B06: aborts a lower atomic transaction, retains source data, and retries both preparation and compatibility work
+AssertionError: expected 1 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx:74:40
+     72|       await act(async () => h.result.current.retryInitialization());
+     73|       await waitFor(() => expect(h.result.current.isInitialized).toBe(…
+     74|       expect(counter.result.successes).toBe(mode === "worker" ? 2 : 1);
+       |                                        ^
+     75|       expect((await db.readApplicationSnapshot()).snapshot).toEqual(ob…
+     76|       counter.stop();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+ FAIL  |integration| src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx > bulk import identity and persistence: direct > keeps exact source references, generated IDs, ordering and layout across normalization and retry=false
+ FAIL  |integration| src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx > bulk import identity and persistence: worker > keeps exact source references, generated IDs, ordering and layout across normalization and retry=false
+AssertionError: Target cannot be null or undefined.
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 sm:p-8 animate-fade-in"[39m
+      [36m>[39m
+        [36m<h2[39m
+          [33mclass[39m=[32m"text-xl sm:text-2xl font-bold mb-2 text-slate-900 dark:text-white text-center"[39m
+        [36m>[39m
+          [0m新規リスト作成[0m
+        [36m</h2>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"text-center text-slate-600 dark:text-slate-400 mb-6"[39m
+        [36m>[39m
+          [0mスプレッドシートのM列 サークル名 / N列 参加日 / O列 ブロック / P列 番号 / Q列 タイトル / R列 価格 / W列 備考をこの順番でコピーし、下の「M列 サークル名」欄に貼り付けてください。データが自動で振り分けられます。[0m
+        [36m</p>[39m
+        [36m<p[39m
+          [33mrole[39m=[32m"status"[39m
+        [36m>[39m
+          [0m保存処理中です。[0m
+        [36m</p>[39m
+        [36m<section[39m
+          [33maria-label[39m=[32m"シート取込結果"[39m
+          [33mclass[39m=[32m"rounded border border-slate-300 p-3 text-sm dark:border-slate-600"[39m
+        [36m>[39m
+          [36m<p>[39m
+            [0m取込対象: [0m
+            [0m2[0m
+            [0m件、必須項目不足による除外: [0m
+            [0m1[0m
+            [0m行[0m
+          [36m</p>[39m
+          [36m<p>[39m
+            [0m不足項目: [0m
+            [0mブロック 1行[0m
+          [36m</p>[39m
+          [36m<details>[39m
+            [36m<summary>[39m
+              [0m除外行の例（先頭[0m
+              [0m1[0m
+              [0m行）[0m
+            [36m</summary>[39m
+            [36m<ul>[39m
+              [36m<li>[39m
+                [0m2[0m
+                [0m行目: [0m
+                [0mブロック[0m
+                [0mが未入力[0m
+              [36m</li>[39m
+            [36m</ul>[39m
+          [36m</details>[39m
+        [36m</section>[39m
+        [36m<form[39m
+          [33mclass[39m=[32m"space-y-6"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+              [33mfor[39m=[32m"eventName"[39m
+            [36m>[39m
+              [0m即売会名[0m
+            [36m</label>[39m
+            [36m<input[39m
+              [33mclass[39m=[32m"mt-1 block w-full p-2 mt-1 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"[39m
+              [33mid[39m=[32m"eventName"[39m
+              [33mplaceholder[39m=[32m"例: C105"[39m
+              [33mrequired[39m=[32m""[39m
+              [33mtype[39m=[32m"text"[39m
+              [33mvalue[39m=[32m"新規配置"[39m
+            [36m/>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"border-t border-slate-200 dark:border-slate-700 pt-4"[39m
+          [36m>[39m
+            [36m<h3[39m
+              [33mclass[39m=[32m"text-lg font-semibold text-slate-900 dark:text-white mb-4"[39m
+            [36m>[39m
+              [0mインポート方法[0m
+            [36m</h3>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-4"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"spreadsheetUrl"[39m
+              [36m>[39m
+                [0mスプレッドシートURLからインポート[0m
+              [36m</label>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex gap-2"[39m
+              [36m>[39m
+                [36m<input[39m
+                  [33mclass[39m=[32m"block w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"[39m
+                  [33mid[39m=[32m"spreadsheetUrl"[39m
+                  [33mplaceholder[39m=[32m"https://docs.google.com/spreadsheets/d/..../edit"[39m
+                  [33mtype[39m=[32m"text"[39m
+                  [33mvalue[39m=[32m""[39m
+                [36m/>[39m
+                [36m<button[39m
+                  [33mclass[39m=[32m"px-4 py-2 bg-green-700 hover:bg-green-800 text-white rounded-md transition-colors whitespace-nowrap"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [0mURLからインポート[0m
+                [36m</button>[39m
+              [36m</div>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-xs text-slate-500 dark:text-slate-400 mt-1"[39m
+              [36m>[39m
+                [0mシート名「品目表」のM列からR列とW列をインポートします[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"block text-sm"[39m
+            [36m>[39m
+              [0mCSVの列形式[0m
+              [36m<select[39m
+                [33maria-label[39m=[32m"CSVの列形式"[39m
+              [36m>[39m
+                [36m<option[39m
+                  [33mvalue[39m=[32m"auto"[39m
+                [36m>[39m
+                  [0m見出しから自動判定[0m
+                [36m</option>[39m
+                [36m<option[39m
+                  [33mvalue[39m=[32m"legacy-header"[39m
+                [36m>[39m
+                  [0mA列開始・見出しあり[0m
+                [36m</option>[39m
+                [36m<option[39m
+                  [33mvalue[39m=[32m"legacy-data"[39m
+                [36m>[39m
+                  [0mA列開始・見出しなし[0m
+                [36m</option>[39m
+                [36m<option[39m
+                  [33mvalue[39m=[32m"google-header"[39m
+                [36m>[39m
+                  [0mM列開始・見出しあり[0m
+                [36m</option>[39m
+                [36m<option[39m
+                  [33mvalue[39m=[32m"google-data"[39m
+                [36m>[39m
+                  [0mM列開始・見出しなし[0m
+                [36m</option>[39m
+              [36m</select>[39m
+            [36m</label>[39m
+            [36m<button[39m
+              [33mdisabled[39m=[32m""[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [0m選択したCSVを再試行[0m
+            [36m</button>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-4"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"csvFile"[39m
+              [36m>[39m
+                [0mCSVファイルからインポート[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33maccept[39m=[32m".csv"[39m
+                [33mclass[39m=[32m"block w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"[39m
+                [33mdisabled[39m=[32m""[39m
+                [33mid[39m=[32m"csvFile"[39m
+                [33mtype[39m=[32m"file"[39m
+              [36m/>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-xs text-slate-500 dark:text-slate-400 mt-1"[39m
+              [36m>[39m
+                [0m見出しから形式を判定します。見出しがない場合は列形式を指定してください。[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-center text-slate-500 dark:text-slate-400 my-4"[39m
+            [36m>[39m
+              [0mまたは[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 md:grid-cols-6 gap-4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"md:col-span-1"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"circles"[39m
+              [36m>[39m
+                [0mM列 サークル名[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm"[39m
+                [33mid[39m=[32m"circles"[39m
+                [33mplaceholder[39m=[32m"サークルA
+サークルB"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"md:col-span-1"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"event-dates"[39m
+              [36m>[39m
+                [0mN列 参加日[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm"[39m
+                [33mid[39m=[32m"event-dates"[39m
+                [33mplaceholder[39m=[32m"1日目
+2日目"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"md:col-span-1"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"blocks"[39m
+              [36m>[39m
+                [0mO列 ブロック[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm"[39m
+                [33mid[39m=[32m"blocks"[39m
+                [33mplaceholder[39m=[32m"G
+カ"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"md:col-span-1"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"numbers"[39m
+              [36m>[39m
+                [0mP列 番号[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm"[39m
+                [33mid[39m=[32m"numbers"[39m
+                [33mplaceholder[39m=[32m"01a
+03b"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"md:col-span-1"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"titles"[39m
+              [36m>[39m
+                [0mQ列 タイトル[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm"[39m
+                [33mid[39m=[32m"titles"[39m
+                [33mplaceholder[39m=[32m"新刊セット
+既刊1"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"md:col-span-1"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"prices"[39m
+              [36m>[39m
+                [0mR列 価格[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm"[39m
+                [33mid[39m=[32m"prices"[39m
+                [33mplaceholder[39m=[32m"1000
+500"[39m
+              [36m/>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 md:grid-cols-2 gap-4"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"remarks"[39m
+              [36m>[39m
+                [0mW列 備考[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm h-16"[39m
+                [33mid[39m=[32m"remarks"[39m
+                [33mplaceholder[39m=[32m"スケブお願い
+挨拶に行く"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"urls"[39m
+              [36m>[39m
+                [0mURL（7列貼り付け対象外）[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm h-16"[39m
+                [33mid[39m=[32m"urls"[39m
+                [33mplaceholder[39m=[32m"https://example.com
+https://example2.com"[39m
+              [36m/>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"pt-4 flex flex-col sm:flex-row-reverse sm:justify-start sm:space-x-4 sm:space-x-reverse space-y-4 sm:space-y-0"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors duration-200"[39m
+              [33mtype[39m=[32m"submit"[39m
+            [36m>[39m
+              [0mリストを作成[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</form>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</body>[39m
+[36m</html>[39m
+ ❯ src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx:62:104
+     60|     }
+     61|     await waitFor(() => expect(screen.queryByRole("button", { name: "選…
+     62|     await waitFor(async () => expect((await db.readApplicationSnapshot…
+       |                                                                                                        ^
+     63|     expect(submissions).toHaveLength(1);
+     64|     const { items, metadata } = submissions[0];
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯
+
+ FAIL  |integration| src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx > bulk import identity and persistence: direct > keeps exact source references, generated IDs, ordering and layout across normalization and retry=true
+ FAIL  |integration| src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx > bulk import identity and persistence: worker > keeps exact source references, generated IDs, ordering and layout across normalization and retry=true
+AssertionError: expected [] to have a length of 1 but got +0
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 sm:p-8 animate-fade-in"[39m
+      [36m>[39m
+        [36m<h2[39m
+          [33mclass[39m=[32m"text-xl sm:text-2xl font-bold mb-2 text-slate-900 dark:text-white text-center"[39m
+        [36m>[39m
+          [0m新規リスト作成[0m
+        [36m</h2>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"text-center text-slate-600 dark:text-slate-400 mb-6"[39m
+        [36m>[39m
+          [0mスプレッドシートのM列 サークル名 / N列 参加日 / O列 ブロック / P列 番号 / Q列 タイトル / R列 価格 / W列 備考をこの順番でコピーし、下の「M列 サークル名」欄に貼り付けてください。データが自動で振り分けられます。[0m
+        [36m</p>[39m
+        [36m<p[39m
+          [33mrole[39m=[32m"status"[39m
+        [36m>[39m
+          [0m保存処理中です。[0m
+        [36m</p>[39m
+        [36m<section[39m
+          [33maria-label[39m=[32m"シート取込結果"[39m
+          [33mclass[39m=[32m"rounded border border-slate-300 p-3 text-sm dark:border-slate-600"[39m
+        [36m>[39m
+          [36m<p>[39m
+            [0m取込対象: [0m
+            [0m2[0m
+            [0m件、必須項目不足による除外: [0m
+            [0m1[0m
+            [0m行[0m
+          [36m</p>[39m
+          [36m<p>[39m
+            [0m不足項目: [0m
+            [0mブロック 1行[0m
+          [36m</p>[39m
+          [36m<details>[39m
+            [36m<summary>[39m
+              [0m除外行の例（先頭[0m
+              [0m1[0m
+              [0m行）[0m
+            [36m</summary>[39m
+            [36m<ul>[39m
+              [36m<li>[39m
+                [0m2[0m
+                [0m行目: [0m
+                [0mブロック[0m
+                [0mが未入力[0m
+              [36m</li>[39m
+            [36m</ul>[39m
+          [36m</details>[39m
+        [36m</section>[39m
+        [36m<form[39m
+          [33mclass[39m=[32m"space-y-6"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+              [33mfor[39m=[32m"eventName"[39m
+            [36m>[39m
+              [0m即売会名[0m
+            [36m</label>[39m
+            [36m<input[39m
+              [33mclass[39m=[32m"mt-1 block w-full p-2 mt-1 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"[39m
+              [33mid[39m=[32m"eventName"[39m
+              [33mplaceholder[39m=[32m"例: C105"[39m
+              [33mrequired[39m=[32m""[39m
+              [33mtype[39m=[32m"text"[39m
+              [33mvalue[39m=[32m"新規配置"[39m
+            [36m/>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"border-t border-slate-200 dark:border-slate-700 pt-4"[39m
+          [36m>[39m
+            [36m<h3[39m
+              [33mclass[39m=[32m"text-lg font-semibold text-slate-900 dark:text-white mb-4"[39m
+            [36m>[39m
+              [0mインポート方法[0m
+            [36m</h3>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-4"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"spreadsheetUrl"[39m
+              [36m>[39m
+                [0mスプレッドシートURLからインポート[0m
+              [36m</label>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex gap-2"[39m
+              [36m>[39m
+                [36m<input[39m
+                  [33mclass[39m=[32m"block w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"[39m
+                  [33mid[39m=[32m"spreadsheetUrl"[39m
+                  [33mplaceholder[39m=[32m"https://docs.google.com/spreadsheets/d/..../edit"[39m
+                  [33mtype[39m=[32m"text"[39m
+                  [33mvalue[39m=[32m""[39m
+                [36m/>[39m
+                [36m<button[39m
+                  [33mclass[39m=[32m"px-4 py-2 bg-green-700 hover:bg-green-800 text-white rounded-md transition-colors whitespace-nowrap"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [0mURLからインポート[0m
+                [36m</button>[39m
+              [36m</div>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-xs text-slate-500 dark:text-slate-400 mt-1"[39m
+              [36m>[39m
+                [0mシート名「品目表」のM列からR列とW列をインポートします[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"block text-sm"[39m
+            [36m>[39m
+              [0mCSVの列形式[0m
+              [36m<select[39m
+                [33maria-label[39m=[32m"CSVの列形式"[39m
+              [36m>[39m
+                [36m<option[39m
+                  [33mvalue[39m=[32m"auto"[39m
+                [36m>[39m
+                  [0m見出しから自動判定[0m
+                [36m</option>[39m
+                [36m<option[39m
+                  [33mvalue[39m=[32m"legacy-header"[39m
+                [36m>[39m
+                  [0mA列開始・見出しあり[0m
+                [36m</option>[39m
+                [36m<option[39m
+                  [33mvalue[39m=[32m"legacy-data"[39m
+                [36m>[39m
+                  [0mA列開始・見出しなし[0m
+                [36m</option>[39m
+                [36m<option[39m
+                  [33mvalue[39m=[32m"google-header"[39m
+                [36m>[39m
+                  [0mM列開始・見出しあり[0m
+                [36m</option>[39m
+                [36m<option[39m
+                  [33mvalue[39m=[32m"google-data"[39m
+                [36m>[39m
+                  [0mM列開始・見出しなし[0m
+                [36m</option>[39m
+              [36m</select>[39m
+            [36m</label>[39m
+            [36m<button[39m
+              [33mdisabled[39m=[32m""[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [0m選択したCSVを再試行[0m
+            [36m</button>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mb-4"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"csvFile"[39m
+              [36m>[39m
+                [0mCSVファイルからインポート[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33maccept[39m=[32m".csv"[39m
+                [33mclass[39m=[32m"block w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"[39m
+                [33mdisabled[39m=[32m""[39m
+                [33mid[39m=[32m"csvFile"[39m
+                [33mtype[39m=[32m"file"[39m
+              [36m/>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-xs text-slate-500 dark:text-slate-400 mt-1"[39m
+              [36m>[39m
+                [0m見出しから形式を判定します。見出しがない場合は列形式を指定してください。[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-center text-slate-500 dark:text-slate-400 my-4"[39m
+            [36m>[39m
+              [0mまたは[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 md:grid-cols-6 gap-4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"md:col-span-1"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"circles"[39m
+              [36m>[39m
+                [0mM列 サークル名[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm"[39m
+                [33mid[39m=[32m"circles"[39m
+                [33mplaceholder[39m=[32m"サークルA
+サークルB"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"md:col-span-1"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"event-dates"[39m
+              [36m>[39m
+                [0mN列 参加日[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm"[39m
+                [33mid[39m=[32m"event-dates"[39m
+                [33mplaceholder[39m=[32m"1日目
+2日目"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"md:col-span-1"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"blocks"[39m
+              [36m>[39m
+                [0mO列 ブロック[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm"[39m
+                [33mid[39m=[32m"blocks"[39m
+                [33mplaceholder[39m=[32m"G
+カ"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"md:col-span-1"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"numbers"[39m
+              [36m>[39m
+                [0mP列 番号[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm"[39m
+                [33mid[39m=[32m"numbers"[39m
+                [33mplaceholder[39m=[32m"01a
+03b"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"md:col-span-1"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"titles"[39m
+              [36m>[39m
+                [0mQ列 タイトル[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm"[39m
+                [33mid[39m=[32m"titles"[39m
+                [33mplaceholder[39m=[32m"新刊セット
+既刊1"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"md:col-span-1"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"prices"[39m
+              [36m>[39m
+                [0mR列 価格[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm"[39m
+                [33mid[39m=[32m"prices"[39m
+                [33mplaceholder[39m=[32m"1000
+500"[39m
+              [36m/>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 md:grid-cols-2 gap-4"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"remarks"[39m
+              [36m>[39m
+                [0mW列 備考[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm h-16"[39m
+                [33mid[39m=[32m"remarks"[39m
+                [33mplaceholder[39m=[32m"スケブお願い
+挨拶に行く"[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"[39m
+                [33mfor[39m=[32m"urls"[39m
+              [36m>[39m
+                [0mURL（7列貼り付け対象外）[0m
+                [0m [0m
+              [36m</label>[39m
+              [36m<textarea[39m
+                [33mclass[39m=[32m"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 h-32 resize-y font-mono text-sm h-16"[39m
+                [33mid[39m=[32m"urls"[39m
+                [33mplaceholder[39m=[32m"https://example.com
+https://example2.com"[39m
+              [36m/>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"pt-4 flex flex-col sm:flex-row-reverse sm:justify-start sm:space-x-4 sm:space-x-reverse space-y-4 sm:space-y-0"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors duration-200"[39m
+              [33mtype[39m=[32m"submit"[39m
+            [36m>[39m
+              [0mリストを作成[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</form>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</body>[39m
+[36m</html>[39m
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx:57:65
+     55|     fireEvent.change(screen.getByLabelText("CSVファイルからインポート"), { target…
+     56|     if (retry) {
+     57|       await waitFor(() => expect(application.retryableFailures).toHave…
+       |                                                                 ^
+     58|       expect((await db.readApplicationSnapshot()).snapshot.eventLists)…
+     59|       act(() => application.retryPending());
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  9 failed | 17 passed (26)
+   Start at  00:35:14
+   Duration  68.93s (transform 1.03s, setup 4.66s, import 2.58s, tests 41.45s, environment 19.30s)
+

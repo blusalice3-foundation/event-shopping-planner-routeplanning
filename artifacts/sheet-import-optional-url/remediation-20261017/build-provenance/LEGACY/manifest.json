@@ -1,0 +1,224 @@
+{
+  "label": "LEGACY",
+  "sourceDist": "D:\\codex-worktrees\\sheet-url-baseline-20261017\\dist",
+  "distExists": true,
+  "identity": {
+    "buildId": "cc475cd1837404440e893694147fee17c46a04d2",
+    "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+    "outerAgentUrl": "/assets/outer-recovery-agent.js",
+    "pwaLifecycle": "prompt-close-all-v1",
+    "releaseRole": "standard",
+    "requiredDbCompatibilityFingerprint": "59cab323aedb35d8677e289545053591d34348970bfa268be3c4c437faf7c91f",
+    "roleEntrySha256": "858b0923f90e819e815402954d597d91d22c8a1713c20e031cc8e40772265e99",
+    "roleEntryUrl": "/assets/release-role.js",
+    "schemaVersion": 1,
+    "serviceWorkerSha256": "4f85d9cf907ee2cd0c2af9351cb745ad7581b4eeb4afb5eff9dbb7b2e72ef7c6",
+    "serviceWorkerUrl": "/sw.js",
+    "sourceSha": "cc475cd1837404440e893694147fee17c46a04d2",
+    "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+  },
+  "copiedFiles": [
+    {
+      "name": "release-identity.json",
+      "status": "copied",
+      "source": "D:\\codex-worktrees\\sheet-url-baseline-20261017\\dist\\release-identity.json",
+      "copy": "LEGACY/release-identity.json",
+      "bytes": 751,
+      "sha256": "fa88e3ec2a2434f53199db5c355192f74e0cba6e209ed99a3998b1dc08303b8d",
+      "copySha256": "fa88e3ec2a2434f53199db5c355192f74e0cba6e209ed99a3998b1dc08303b8d",
+      "byteIdentical": true,
+      "encoding": "strict UTF-8",
+      "bom": false,
+      "crlf": 0,
+      "lf": 0,
+      "replacementCharacters": 0
+    },
+    {
+      "name": "release-role-graph.json",
+      "status": "copied",
+      "source": "D:\\codex-worktrees\\sheet-url-baseline-20261017\\dist\\release-role-graph.json",
+      "copy": "LEGACY/release-role-graph.json",
+      "bytes": 91504,
+      "sha256": "601bd56ee64433a503db9b9991f5f7862001258e38b1b26a0b82d0cba7907575",
+      "copySha256": "601bd56ee64433a503db9b9991f5f7862001258e38b1b26a0b82d0cba7907575",
+      "byteIdentical": true,
+      "encoding": "strict UTF-8",
+      "bom": false,
+      "crlf": 0,
+      "lf": 0,
+      "replacementCharacters": 0
+    },
+    {
+      "name": "outer-agent-graph.json",
+      "status": "copied",
+      "source": "D:\\codex-worktrees\\sheet-url-baseline-20261017\\dist\\outer-agent-graph.json",
+      "copy": "LEGACY/outer-agent-graph.json",
+      "bytes": 1725,
+      "sha256": "8e328546ca85af02bd4a96bd9b711a5edfd2e4934c714d06b586f3fccf887ecc",
+      "copySha256": "8e328546ca85af02bd4a96bd9b711a5edfd2e4934c714d06b586f3fccf887ecc",
+      "byteIdentical": true,
+      "encoding": "strict UTF-8",
+      "bom": false,
+      "crlf": 0,
+      "lf": 0,
+      "replacementCharacters": 0
+    },
+    {
+      "name": "index.html",
+      "status": "copied",
+      "source": "D:\\codex-worktrees\\sheet-url-baseline-20261017\\dist\\index.html",
+      "copy": "LEGACY/index.html",
+      "bytes": 1824,
+      "sha256": "83bb2d8194ea1ccbdee6a3461536ea0844be1e9de9737598da73fc3e1d4746c8",
+      "copySha256": "83bb2d8194ea1ccbdee6a3461536ea0844be1e9de9737598da73fc3e1d4746c8",
+      "byteIdentical": true,
+      "encoding": "strict UTF-8",
+      "bom": false,
+      "crlf": 0,
+      "lf": 39,
+      "replacementCharacters": 0
+    },
+    {
+      "name": "sw.js",
+      "status": "copied",
+      "source": "D:\\codex-worktrees\\sheet-url-baseline-20261017\\dist\\sw.js",
+      "copy": "LEGACY/sw.js",
+      "bytes": 6036,
+      "sha256": "4f85d9cf907ee2cd0c2af9351cb745ad7581b4eeb4afb5eff9dbb7b2e72ef7c6",
+      "copySha256": "4f85d9cf907ee2cd0c2af9351cb745ad7581b4eeb4afb5eff9dbb7b2e72ef7c6",
+      "byteIdentical": true,
+      "encoding": "strict UTF-8",
+      "bom": false,
+      "crlf": 0,
+      "lf": 0,
+      "replacementCharacters": 0
+    }
+  ],
+  "assetsDirectoryExists": true,
+  "assetJavascript": [
+    {
+      "file": "assets/backup.worker-DxX1LJQI.js",
+      "bytes": 254163,
+      "sha256": "7aaa26e65376ec7bb3a6308a0b1f2fcbaf9029fb212040ad0984526b79dfbe51"
+    },
+    {
+      "file": "assets/FocusModeContainer-Dw4_WipJ.js",
+      "bytes": 157589,
+      "sha256": "29e02d32735ae10d392aa641d9049b7f83693669162e2928fb3a9cc796d7e6f3"
+    },
+    {
+      "file": "assets/ImportScreen-CsvyyIuA.js",
+      "bytes": 18632,
+      "sha256": "0775493aee45118016541f1021cf4dc0548b6fffdbd61c7f1b7712510fb158b6"
+    },
+    {
+      "file": "assets/outer-recovery-agent.js",
+      "bytes": 19939,
+      "sha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e"
+    },
+    {
+      "file": "assets/persistence.worker-BlDWQYfg.js",
+      "bytes": 317914,
+      "sha256": "7d12537503cda977705f39c07222646581f6b635ccbca0e72dfc5c7bb8707de7"
+    },
+    {
+      "file": "assets/release-role.js",
+      "bytes": 1316523,
+      "sha256": "858b0923f90e819e815402954d597d91d22c8a1713c20e031cc8e40772265e99"
+    },
+    {
+      "file": "assets/route.worker-vkpwhvUq.js",
+      "bytes": 19928,
+      "sha256": "71db28340a1f002f14a35a0ebbcdfc2683447040fb7678aac8cc06ea58452641"
+    },
+    {
+      "file": "assets/xlsx.worker-z7XFzpHI.js",
+      "bytes": 1587385,
+      "sha256": "d626c8ca68bcd94518b6f8836be0b081b751b1e994d77af27795aa91c15f130c"
+    }
+  ],
+  "identityAssetChecks": [
+    {
+      "kind": "roleEntry",
+      "file": "/assets/release-role.js",
+      "exists": true,
+      "expectedSha256": "858b0923f90e819e815402954d597d91d22c8a1713c20e031cc8e40772265e99",
+      "actualSha256": "858b0923f90e819e815402954d597d91d22c8a1713c20e031cc8e40772265e99",
+      "matches": true
+    },
+    {
+      "kind": "outerAgent",
+      "file": "/assets/outer-recovery-agent.js",
+      "exists": true,
+      "expectedSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+      "actualSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+      "matches": true
+    },
+    {
+      "kind": "serviceWorker",
+      "file": "/sw.js",
+      "exists": true,
+      "expectedSha256": "4f85d9cf907ee2cd0c2af9351cb745ad7581b4eeb4afb5eff9dbb7b2e72ef7c6",
+      "actualSha256": "4f85d9cf907ee2cd0c2af9351cb745ad7581b4eeb4afb5eff9dbb7b2e72ef7c6",
+      "matches": true
+    }
+  ],
+  "graphChecks": [
+    {
+      "file": "release-role-graph.json",
+      "sourceSha": "cc475cd1837404440e893694147fee17c46a04d2",
+      "releaseRole": "standard",
+      "entryFile": "/assets/release-role.js",
+      "sourceMatchesIdentity": true,
+      "chunks": [
+        {
+          "file": "/assets/FocusModeContainer-Dw4_WipJ.js",
+          "exists": true,
+          "expectedBytes": 157589,
+          "actualBytes": 157589,
+          "expectedSha256": "29e02d32735ae10d392aa641d9049b7f83693669162e2928fb3a9cc796d7e6f3",
+          "actualSha256": "29e02d32735ae10d392aa641d9049b7f83693669162e2928fb3a9cc796d7e6f3",
+          "matches": true
+        },
+        {
+          "file": "/assets/ImportScreen-CsvyyIuA.js",
+          "exists": true,
+          "expectedBytes": 18632,
+          "actualBytes": 18632,
+          "expectedSha256": "0775493aee45118016541f1021cf4dc0548b6fffdbd61c7f1b7712510fb158b6",
+          "actualSha256": "0775493aee45118016541f1021cf4dc0548b6fffdbd61c7f1b7712510fb158b6",
+          "matches": true
+        },
+        {
+          "file": "/assets/release-role.js",
+          "exists": true,
+          "expectedBytes": 1316523,
+          "actualBytes": 1316523,
+          "expectedSha256": "858b0923f90e819e815402954d597d91d22c8a1713c20e031cc8e40772265e99",
+          "actualSha256": "858b0923f90e819e815402954d597d91d22c8a1713c20e031cc8e40772265e99",
+          "matches": true
+        }
+      ],
+      "allChunksMatch": true
+    },
+    {
+      "file": "outer-agent-graph.json",
+      "sourceSha": "cc475cd1837404440e893694147fee17c46a04d2",
+      "releaseRole": null,
+      "entryFile": "/assets/outer-recovery-agent.js",
+      "sourceMatchesIdentity": true,
+      "chunks": [
+        {
+          "file": "/assets/outer-recovery-agent.js",
+          "exists": true,
+          "expectedBytes": 19939,
+          "actualBytes": 19939,
+          "expectedSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "actualSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "matches": true
+        }
+      ],
+      "allChunksMatch": true
+    }
+  ]
+}

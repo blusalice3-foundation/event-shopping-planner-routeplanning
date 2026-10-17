@@ -1,0 +1,16 @@
+[
+  {
+    "Path": "scripts/sheet-url-stage-probe.mjs",
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 83,
+    "Replacement": false
+  },
+  {
+    "Path": "scripts/sheet-url-stage-probe.test.mjs",
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 201,
+    "Replacement": false
+  }
+]

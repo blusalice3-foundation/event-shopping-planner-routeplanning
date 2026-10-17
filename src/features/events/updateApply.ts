@@ -1,3 +1,4 @@
+import { normalizeItemOptionalFields } from "../../utils/itemOptionalFields";
 import { recordEntry } from "../../utils/ownRecord";
 import type { SheetIdentityChoices } from "./sheetMatching";
 import type { ExecuteModeItems, ShoppingItem } from "../../types/item";
@@ -108,7 +109,7 @@ function shouldApplyRemarksCandidate(
 function createSpreadsheetItem(
   itemData: EventUpdatePayload["itemsToAdd"][number],
 ): ShoppingItem {
-  return {
+  return normalizeItemOptionalFields({
     id: crypto.randomUUID(),
     circle: itemData.circle,
     eventDate: itemData.eventDate,
@@ -126,8 +127,8 @@ function createSpreadsheetItem(
     purchaseStatus: "None",
     source: "spreadsheet",
     protectionLevel: "none",
-    ...(itemData.url ? { url: itemData.url } : {}),
-  };
+    url: itemData.url,
+  });
 }
 
 export function applyEventUpdateToItems(
@@ -230,7 +231,7 @@ export function applyEventUpdateToItems(
       };
     }
 
-    return nextItem;
+    return nextItem === item ? item : normalizeItemOptionalFields(nextItem);
   });
 
   updateData.itemsToAdd.forEach((itemData) => {

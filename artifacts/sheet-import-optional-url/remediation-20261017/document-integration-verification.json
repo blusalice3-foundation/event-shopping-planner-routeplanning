@@ -1,0 +1,39 @@
+{
+  "CopiedAt": "2026-10-17T15:03:37.1677097+09:00",
+  "Plan23RequirementsUnchanged": true,
+  "HistoricalTitleUnchanged": true,
+  "HistoricalReportBodyUnchanged": true,
+  "CorrectionInsertedAfterTitle": true,
+  "Files": [
+    {
+      "path": "docs/sheet-import-and-optional-url-implementation-plan.md",
+      "beforeSHA256": "8243CDF31C4B81F888CA3FE7DB56C705622FF0AD7F3A6114114270EB955F34CC",
+      "afterSHA256": "7D28A720FBE15EB31E4C19364AF752A9243836BA5390059F548E28E074456BD3",
+      "UTF8Strict": true,
+      "BOM": false,
+      "CRLF": 0,
+      "LF": 738,
+      "Replacement": 0
+    },
+    {
+      "path": "docs/sheet-import-and-optional-url-implementation-results.md",
+      "beforeSHA256": "5546E04C868FC70954CB5EAA14B499B06BEAE2D9F91143E45CEF1BCF133411F8",
+      "afterSHA256": "5E29D16CA58276628F6645E88E0D0B1769BD8B6DDBC719F73AD87510BD930A2E",
+      "UTF8Strict": true,
+      "BOM": false,
+      "CRLF": 0,
+      "LF": 211,
+      "Replacement": 0
+    },
+    {
+      "path": "docs/sheet-import-and-optional-url-remediation-results.md",
+      "beforeSHA256": null,
+      "afterSHA256": "2AB8C1AE45E55770C7FA8DB0D0802ED9B25DAAF2A28C14F7C4D2487A0047C1C4",
+      "UTF8Strict": true,
+      "BOM": false,
+      "CRLF": 0,
+      "LF": 238,
+      "Replacement": 0
+    }
+  ]
+}

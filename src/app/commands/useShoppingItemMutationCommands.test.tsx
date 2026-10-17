@@ -471,7 +471,7 @@ describe("useShoppingItemMutationCommands", () => {
       await Promise.resolve();
     });
 
-    expect(accepted).toEqual({ status: "saved" });
+    expect(accepted).toEqual({ status: "saved", importedItemCount: 1 });
     expect(harness.stores.eventLists[EVENT]).toHaveLength(2);
     expect(harness.stores.eventLists[EVENT][1]).toMatchObject({
       source: "app",
@@ -1123,3 +1123,26 @@ it.each([false, true])(
     expect(updated).not.toHaveProperty("limitedPurchase");
   },
 );
+
+it("returns the actual saved count after deduplicating a new import", async () => {
+  const harness = createHarness({
+    activeEventName: null,
+    eventLists: {},
+    items: [],
+  });
+  const { result } = renderHook(() =>
+    useShoppingItemMutationCommands(harness.ports),
+  );
+  const first = bulkItem("ユーザー登録");
+  let saved;
+  await act(async () => {
+    saved = await result.current.handleBulkAdd("新規", [first, { ...first }], {
+      source: "spreadsheet",
+    });
+  });
+  expect(saved).toEqual({ status: "saved", importedItemCount: 1 });
+  expect(harness.stores.eventLists["新規"]).toHaveLength(1);
+  expect(harness.spies.notify).toHaveBeenCalledWith(
+    "1 items imported into a new event.",
+  );
+});

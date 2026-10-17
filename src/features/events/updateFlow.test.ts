@@ -3,6 +3,7 @@ import type { ShoppingItem } from "../../types/item";
 import type { EventUpdateDiff } from "./updateDiff";
 import {
   applyPendingEventUpdate,
+  eventUpdateItemsMatch,
   type EventUpdateCommitState,
   type PendingEventUpdate,
 } from "./updateFlow";
@@ -254,4 +255,86 @@ it("permits the first source assignment only while the event still has no source
       options: {},
     }),
   ).toBeNull();
+});
+
+describe("eventUpdateItemsMatch", () => {
+  it("compares cloned unknown JSON fields by value while retaining scalar guards", () => {
+    const current = [
+      {
+        ...item("keep", "ユーザー登録"),
+        futureOptionalField: {
+          preserved: true,
+          nested: [0, false, null, { message: "エラーが発生しました" }],
+        },
+      },
+    ];
+    const base = structuredClone(current);
+    expect(eventUpdateItemsMatch(current, base)).toBe(true);
+    base[0].futureOptionalField.nested[3] = { message: "変更" };
+    expect(eventUpdateItemsMatch(current, base)).toBe(false);
+    expect(
+      eventUpdateItemsMatch(current, [{ ...current[0], quantity: 2 }]),
+    ).toBe(false);
+    expect(
+      eventUpdateItemsMatch(current, [
+        { ...current[0], purchaseStatus: "Purchased" },
+      ]),
+    ).toBe(false);
+    const addedField = [
+      { ...current[0], anotherFutureField: { enabled: false } },
+    ];
+    expect(eventUpdateItemsMatch(addedField, current)).toBe(false);
+    expect(eventUpdateItemsMatch(current, addedField)).toBe(false);
+  });
+});
+
+it.each<unknown>([
+  null,
+  [],
+  {},
+  [0, false, null, { message: "ユーザー登録", optional: undefined }],
+  { b: [], a: { preserved: true, optional: undefined } },
+])(
+  "accepts an unchanged cloned unknown value (%j) alongside known optional fields",
+  (futureOptionalField) => {
+    const current = [
+      {
+        ...item("keep", "確認中"),
+        assignedTo: undefined,
+        postponed: false,
+        catalogPrice: null,
+        futureOptionalField,
+      },
+    ];
+    const base = structuredClone(current);
+    delete base[0].assignedTo;
+    expect(eventUpdateItemsMatch(current, base)).toBe(true);
+  },
+);
+
+it("ignores unknown object key order without ignoring nested own undefined values", () => {
+  const withFuture = (futureOptionalField: unknown): ShoppingItem =>
+    ({ ...item("keep", "確認中"), futureOptionalField }) as ShoppingItem;
+  expect(
+    eventUpdateItemsMatch(
+      [withFuture({ first: 1, second: { value: false } })],
+      [withFuture({ second: { value: false }, first: 1 })],
+    ),
+  ).toBe(true);
+  for (const [current, base] of [
+    [{ optional: undefined }, {}],
+    [{ nested: { optional: undefined } }, { nested: {} }],
+    [[undefined], [null]],
+    [new Array(1), [undefined]],
+    [[undefined], []],
+    [[], {}],
+    [null, {}],
+  ]) {
+    expect(
+      eventUpdateItemsMatch([withFuture(current)], [withFuture(base)]),
+    ).toBe(false);
+    expect(
+      eventUpdateItemsMatch([withFuture(base)], [withFuture(current)]),
+    ).toBe(false);
+  }
 });

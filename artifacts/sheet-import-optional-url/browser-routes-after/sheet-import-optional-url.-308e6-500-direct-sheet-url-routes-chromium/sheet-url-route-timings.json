@@ -1,0 +1,162 @@
+[
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 0,
+    "durationMs": 241.22629999998026
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 1,
+    "durationMs": 241.78019999992102
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 2,
+    "durationMs": 231.82549999991897
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 3,
+    "durationMs": 235.16440000000875
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 4,
+    "durationMs": 239.4360999999335
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 5,
+    "durationMs": 236.70880000002217
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 6,
+    "durationMs": 243.0844999999972
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 7,
+    "durationMs": 242.33380000002217
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 8,
+    "durationMs": 240.8982000000542
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 9,
+    "durationMs": 241.4549999999581
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 10,
+    "durationMs": 250.56340000010096
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 11,
+    "durationMs": 239.7215000001015
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 12,
+    "durationMs": 259.562900000019
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 13,
+    "durationMs": 231.38469999993686
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 14,
+    "durationMs": 241.05530000000726
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 15,
+    "durationMs": 235.14179999998305
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 16,
+    "durationMs": 229.93189999996684
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 17,
+    "durationMs": 233.11290000006557
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 18,
+    "durationMs": 241.64690000005066
+  },
+  {
+    "phase": "after",
+    "count": 500,
+    "mode": "direct",
+    "route": "startup-B04",
+    "iteration": 19,
+    "durationMs": 254.74529999995138
+  }
+]

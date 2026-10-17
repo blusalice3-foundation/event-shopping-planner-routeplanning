@@ -283,7 +283,10 @@ describe("bound XLSX Worker engine", () => {
     );
 
     const expected = structuredClone(semanticGolden.expectedImport);
-    for (const item of expected.value.items) delete item.manualHallId;
+    for (const item of expected.value.items) {
+      delete item.manualHallId;
+      if (item.url === "") delete item.url;
+    }
     // This export omits related information, so legacy manual choices are not exported.
     expect(result.kind).toBe("event-import");
     if (result.kind !== "event-import") throw new Error("wrong result kind");

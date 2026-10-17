@@ -1,0 +1,97 @@
+{
+  "StartedUtc": "2026-10-17T05:36:47.9774443Z",
+  "Phase": "before",
+  "BaseURL": "http://127.0.0.1:4275",
+  "ServerIdentity": {
+    "buildId": "b536f760acfcf38954d10140487d37e77ee33a15",
+    "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+    "outerAgentUrl": "/assets/outer-recovery-agent.js",
+    "pwaLifecycle": "prompt-close-all-v1",
+    "releaseRole": "standard",
+    "requiredDbCompatibilityFingerprint": "59cab323aedb35d8677e289545053591d34348970bfa268be3c4c437faf7c91f",
+    "roleEntrySha256": "5f62b8f88946871403c7153be1a99564e18e371a9570619a3e92aebf75307b5c",
+    "roleEntryUrl": "/assets/release-role.js",
+    "schemaVersion": 1,
+    "serviceWorkerSha256": "72b8836abfb0370d66d7522e2906367c21f2e84ffaec4e072e8aedee668f596c",
+    "serviceWorkerUrl": "/sw.js",
+    "sourceSha": "b536f760acfcf38954d10140487d37e77ee33a15",
+    "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+  },
+  "FrozenHarnessSHA256": "65B44F4B18FB4DEEFC80592A24856E4252CED0ADF511873E71BE405C9A2C05C0",
+  "Harness": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\tests\\browser\\sheet-import-optional-url.measurement.spec.ts",
+  "SelectedCases": [
+    "retry: 150 direct",
+    "startup-B05: 150 direct",
+    "startup-B06: 150 direct",
+    "switch: 500 direct",
+    "import: 500 worker",
+    "update: 500 worker",
+    "update: 500 direct"
+  ],
+  "Grep": "\\b(?:retry:\\ 150\\ direct|startup-B05:\\ 150\\ direct|startup-B06:\\ 150\\ direct|switch:\\ 500\\ direct|import:\\ 500\\ worker|update:\\ 500\\ worker|update:\\ 500\\ direct) @sheet-url-routes\\b",
+  "Workers": 1,
+  "Repetitions": 20,
+  "LegacyStartup": false,
+  "FixedInputs": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\fixed-inputs",
+  "FixedInputFiles": [
+    {
+      "Name": "restore-150-blank=false.xlsx",
+      "SHA256": "39A4BC4F06053EB73869CDAB702724E8A29F539E06A593C3086C8752CC269C77"
+    },
+    {
+      "Name": "restore-150-blank=true.xlsx",
+      "SHA256": "01E7FAFFD5BC3A344A97F692ADBCD731BC4781320E85EF8FC83A43A9633DD8B0"
+    },
+    {
+      "Name": "restore-150-direct-blank=false.xlsx",
+      "SHA256": "C572D60767D8ED167B2CF4159480E5D5CD0E7FB7EEDC615A490D14A891D18DF0"
+    },
+    {
+      "Name": "restore-150-direct-blank=true.xlsx",
+      "SHA256": "E74F4046E270E5EAF3BD93E1795232475264CD9F061D618641733944D2054EDA"
+    },
+    {
+      "Name": "restore-150-worker-blank=false.xlsx",
+      "SHA256": "D3BA794DF4B63B1369E42E8CF48F10FB9E672B1362BF66EF67C8C00F42E31088"
+    },
+    {
+      "Name": "restore-150-worker-blank=true.xlsx",
+      "SHA256": "38BA5139A5119F8257E516BC8881453E22DA530E75CE235ED217A26A87A867C6"
+    },
+    {
+      "Name": "restore-500-blank=false.xlsx",
+      "SHA256": "5ABBB689265C50DC4BD50484DA81336B8E2F86FFA1ACBEC56A06F1F01EA6FE59"
+    },
+    {
+      "Name": "restore-500-blank=true.xlsx",
+      "SHA256": "13CDE2478D7AC379E5152AF50E9B123E9B9BAD72DD87CA340B28F3E33A23E1B7"
+    },
+    {
+      "Name": "restore-500-direct-blank=false.xlsx",
+      "SHA256": "EF4399D23B3213AD62465B39C2157F288547E280E793645EA68A1C4CAEB92C86"
+    },
+    {
+      "Name": "restore-500-direct-blank=true.xlsx",
+      "SHA256": "0850FF0A188469E5578A549AF876CBD9E0DB53735D64A9CDFFE3FAF14D7CFADF"
+    },
+    {
+      "Name": "restore-500-worker-blank=false.xlsx",
+      "SHA256": "9B728FB3346DCBD5D80B0EBB595BA46B69A9955A82750CA4A1AA9795549F8582"
+    },
+    {
+      "Name": "restore-500-worker-blank=true.xlsx",
+      "SHA256": "04C46C49BEA84236EF18B5896BBFF8C5E1779B24AF57E3A6635957C8EFF190BB"
+    }
+  ],
+  "Arguments": [
+    "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\node_modules\\@playwright\\test\\cli.js",
+    "test",
+    "tests/browser/sheet-import-optional-url.measurement.spec.ts",
+    "--project=chromium",
+    "--grep",
+    "\\b(?:retry:\\ 150\\ direct|startup-B05:\\ 150\\ direct|startup-B06:\\ 150\\ direct|switch:\\ 500\\ direct|import:\\ 500\\ worker|update:\\ 500\\ worker|update:\\ 500\\ direct) @sheet-url-routes\\b",
+    "--workers=1",
+    "--retries=0"
+  ],
+  "Output": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\routes-recheck-before-1"
+}

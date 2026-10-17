@@ -1,0 +1,13 @@
+
+[WebServer] (node:30952) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+
+(node:25380) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/2] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › update: 150 direct @sheet-url-routes
+[2/2] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › switch: 150 direct @sheet-url-routes
+  2 passed (52.9s)

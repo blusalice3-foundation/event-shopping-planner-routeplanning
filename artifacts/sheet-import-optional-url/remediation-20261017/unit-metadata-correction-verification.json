@@ -1,0 +1,721 @@
+{
+  "CreatedUtc": "2026-10-17T06:08:38.7948644Z",
+  "Correction": "Count/putRequests take priority; only case-sensitive Ms suffix denotes milliseconds. Raw numerical values are unchanged.",
+  "AffectedOldOutputs": [
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "WrongUnitRows": 16,
+      "Metrics": [
+        "putRequests.executeModeItems"
+      ]
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "WrongUnitRows": 28,
+      "Metrics": [
+        "putRequests.executeModeItems"
+      ]
+    },
+    {
+      "Directory": "independent-summary-browser-recheck1",
+      "File": "comparisons.csv",
+      "WrongUnitRows": 6,
+      "Metrics": [
+        "putRequests.all.executeModeItems",
+        "putRequests.readwrite.executeModeItems"
+      ]
+    },
+    {
+      "Directory": "independent-summary-engine",
+      "File": "engine-comparisons.csv",
+      "WrongUnitRows": 16,
+      "Metrics": [
+        "putRequests.executeModeItems"
+      ]
+    },
+    {
+      "Directory": "independent-summary-legacy-B04",
+      "File": "comparisons.csv",
+      "WrongUnitRows": 8,
+      "Metrics": [
+        "putRequests.all.executeModeItems",
+        "putRequests.atomic.executeModeItems"
+      ]
+    }
+  ],
+  "CorrectedPairs": [
+    [
+      "independent-summary",
+      "independent-summary-units-corrected"
+    ],
+    [
+      "independent-summary-shopping-recheck1",
+      "independent-summary-shopping-recheck1-units-corrected"
+    ],
+    [
+      "independent-summary-browser-recheck1",
+      "independent-summary-browser-recheck1-units-corrected"
+    ],
+    [
+      "independent-summary-legacy-B04",
+      "independent-summary-legacy-B04-units-corrected"
+    ],
+    [
+      "independent-summary-browser-recheck-interval-audit",
+      "independent-summary-browser-recheck-interval-audit-units-corrected"
+    ]
+  ],
+  "CsvChecks": [
+    {
+      "OldDirectory": "independent-summary",
+      "NewDirectory": "independent-summary-units-corrected",
+      "File": "engine-comparisons.csv",
+      "Rows": 1832,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary",
+      "NewDirectory": "independent-summary-units-corrected",
+      "File": "routes-comparisons.csv",
+      "Rows": 918,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary",
+      "NewDirectory": "independent-summary-units-corrected",
+      "File": "shopping-acceptance.csv",
+      "Rows": 96,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary",
+      "NewDirectory": "independent-summary-units-corrected",
+      "File": "shopping-comparisons.csv",
+      "Rows": 96,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary",
+      "NewDirectory": "independent-summary-units-corrected",
+      "File": "shopping-save-comparisons.csv",
+      "Rows": 48,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary",
+      "NewDirectory": "independent-summary-units-corrected",
+      "File": "shopping-save-samples.csv",
+      "Rows": 3642,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-shopping-recheck1",
+      "NewDirectory": "independent-summary-shopping-recheck1-units-corrected",
+      "File": "shopping-acceptance.csv",
+      "Rows": 24,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-shopping-recheck1",
+      "NewDirectory": "independent-summary-shopping-recheck1-units-corrected",
+      "File": "shopping-comparisons.csv",
+      "Rows": 24,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-shopping-recheck1",
+      "NewDirectory": "independent-summary-shopping-recheck1-units-corrected",
+      "File": "shopping-save-comparisons.csv",
+      "Rows": 12,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-shopping-recheck1",
+      "NewDirectory": "independent-summary-shopping-recheck1-units-corrected",
+      "File": "shopping-save-samples.csv",
+      "Rows": 899,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-browser-recheck1",
+      "NewDirectory": "independent-summary-browser-recheck1-units-corrected",
+      "File": "comparisons.csv",
+      "Rows": 264,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-browser-recheck1",
+      "NewDirectory": "independent-summary-browser-recheck1-units-corrected",
+      "File": "expected-injected-console-errors.csv",
+      "Rows": 40,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-browser-recheck1",
+      "NewDirectory": "independent-summary-browser-recheck1-units-corrected",
+      "File": "raw-scalar-intervals.csv",
+      "Rows": 2560,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-browser-recheck1",
+      "NewDirectory": "independent-summary-browser-recheck1-units-corrected",
+      "File": "raw-store-put-requests.csv",
+      "Rows": 1240,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-browser-recheck1",
+      "NewDirectory": "independent-summary-browser-recheck1-units-corrected",
+      "File": "raw-transactions.csv",
+      "Rows": 2840,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-legacy-B04",
+      "NewDirectory": "independent-summary-legacy-B04-units-corrected",
+      "File": "comparisons.csv",
+      "Rows": 196,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-legacy-B04",
+      "NewDirectory": "independent-summary-legacy-B04-units-corrected",
+      "File": "raw-scalar-intervals.csv",
+      "Rows": 1600,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-legacy-B04",
+      "NewDirectory": "independent-summary-legacy-B04-units-corrected",
+      "File": "raw-store-put-requests.csv",
+      "Rows": 1040,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-legacy-B04",
+      "NewDirectory": "independent-summary-legacy-B04-units-corrected",
+      "File": "raw-transactions.csv",
+      "Rows": 3080,
+      "AllNonUnitValuesUnchanged": true
+    },
+    {
+      "OldDirectory": "independent-summary-browser-recheck-interval-audit",
+      "NewDirectory": "independent-summary-browser-recheck-interval-audit-units-corrected",
+      "File": "comparisons.csv",
+      "Rows": 39,
+      "AllNonUnitValuesUnchanged": true
+    }
+  ],
+  "ComparedNonUnitValues": 282212,
+  "UnitChanges": [
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 224,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 261,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 320,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 361,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 638,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 675,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 736,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 779,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 1140,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 1177,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 1236,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 1277,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 1554,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 1591,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 1652,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "engine-comparisons.csv",
+      "Row": 1695,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 6,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 25,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 93,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 119,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 159,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 219,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 239,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 259,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 280,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 328,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 356,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 398,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 425,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 445,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 465,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 484,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 552,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 578,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 618,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 678,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 698,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 718,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 739,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 787,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 815,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 857,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 884,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary",
+      "File": "routes-comparisons.csv",
+      "Row": 904,
+      "Metric": "putRequests.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-browser-recheck1",
+      "File": "comparisons.csv",
+      "Row": 77,
+      "Metric": "putRequests.all.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-browser-recheck1",
+      "File": "comparisons.csv",
+      "Row": 88,
+      "Metric": "putRequests.readwrite.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-browser-recheck1",
+      "File": "comparisons.csv",
+      "Row": 163,
+      "Metric": "putRequests.all.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-browser-recheck1",
+      "File": "comparisons.csv",
+      "Row": 169,
+      "Metric": "putRequests.readwrite.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-browser-recheck1",
+      "File": "comparisons.csv",
+      "Row": 202,
+      "Metric": "putRequests.all.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-browser-recheck1",
+      "File": "comparisons.csv",
+      "Row": 208,
+      "Metric": "putRequests.readwrite.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-legacy-B04",
+      "File": "comparisons.csv",
+      "Row": 17,
+      "Metric": "putRequests.all.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-legacy-B04",
+      "File": "comparisons.csv",
+      "Row": 28,
+      "Metric": "putRequests.atomic.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-legacy-B04",
+      "File": "comparisons.csv",
+      "Row": 66,
+      "Metric": "putRequests.all.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-legacy-B04",
+      "File": "comparisons.csv",
+      "Row": 77,
+      "Metric": "putRequests.atomic.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-legacy-B04",
+      "File": "comparisons.csv",
+      "Row": 115,
+      "Metric": "putRequests.all.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-legacy-B04",
+      "File": "comparisons.csv",
+      "Row": 126,
+      "Metric": "putRequests.atomic.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-legacy-B04",
+      "File": "comparisons.csv",
+      "Row": 164,
+      "Metric": "putRequests.all.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    },
+    {
+      "Directory": "independent-summary-legacy-B04",
+      "File": "comparisons.csv",
+      "Row": 175,
+      "Metric": "putRequests.atomic.executeModeItems",
+      "OldUnit": "ms",
+      "NewUnit": "count"
+    }
+  ],
+  "MsDeltaMetadata": "For misclassified count metrics only, MedianDeltaMs/P95DeltaMs are now null; generic delta and raw metric values remain identical.",
+  "MainValid": true,
+  "MainGroupsPerPhase": {
+    "shopping": 96,
+    "engine": 88,
+    "routes": 48
+  },
+  "MainShoppingAllAfterPass": true,
+  "MainViolations": [],
+  "MainRuntimeErrors": [],
+  "SelectedShoppingValid": true,
+  "SelectedShoppingScope": {
+    "FullMatrix": false,
+    "ExpectedConditions": 4,
+    "ExpectedOperationGroups": 24,
+    "CanonicalConditions": 16,
+    "CanonicalOperationGroups": 96,
+    "SelectedScope": [
+      "count=500|concentrated=false|mapVisible=true|layout=pc",
+      "count=500|concentrated=true|mapVisible=false|layout=pc",
+      "count=500|concentrated=true|mapVisible=true|layout=pc",
+      "count=500|concentrated=true|mapVisible=true|layout=smartphone"
+    ],
+    "NotEvaluatedConditions": [
+      "count=150|concentrated=false|mapVisible=false|layout=pc",
+      "count=150|concentrated=false|mapVisible=false|layout=smartphone",
+      "count=150|concentrated=false|mapVisible=true|layout=pc",
+      "count=150|concentrated=false|mapVisible=true|layout=smartphone",
+      "count=150|concentrated=true|mapVisible=false|layout=pc",
+      "count=150|concentrated=true|mapVisible=false|layout=smartphone",
+      "count=150|concentrated=true|mapVisible=true|layout=pc",
+      "count=150|concentrated=true|mapVisible=true|layout=smartphone",
+      "count=500|concentrated=false|mapVisible=false|layout=pc",
+      "count=500|concentrated=false|mapVisible=false|layout=smartphone",
+      "count=500|concentrated=false|mapVisible=true|layout=smartphone",
+      "count=500|concentrated=true|mapVisible=false|layout=smartphone"
+    ],
+    "BeforeDirectory": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\shopping-recheck-before-1",
+    "AfterDirectory": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\shopping-recheck-after-1",
+    "JudgmentAppliesOnlyToSelectedScope": true
+  },
+  "Diagnostic": "Independent reviewer checked 322 summary and 6440 paired rows: count72/ms250, zero incorrect units; scripts/output left unchanged."
+}

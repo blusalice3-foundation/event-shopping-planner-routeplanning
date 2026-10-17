@@ -1,0 +1,15 @@
+
+[WebServer] (node:3340) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 1 worker
+
+
+(node:27224) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/4] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:250:9 › sheet optional URL real-browser route measurements › import: 150 worker @sheet-url-routes
+[2/4] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:250:9 › sheet optional URL real-browser route measurements › restore-xlsx: 150 worker @sheet-url-routes
+[3/4] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:250:9 › sheet optional URL real-browser route measurements › startup-B04: 150 worker @sheet-url-routes
+[4/4] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:250:9 › sheet optional URL real-browser route measurements › retry: 150 worker @sheet-url-routes
+  4 passed (2.1m)

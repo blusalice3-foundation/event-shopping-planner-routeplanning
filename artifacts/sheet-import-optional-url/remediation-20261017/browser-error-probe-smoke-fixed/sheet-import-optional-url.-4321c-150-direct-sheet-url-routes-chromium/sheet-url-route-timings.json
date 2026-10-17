@@ -1,0 +1,165 @@
+[
+  {
+    "runtimeErrors": [],
+    "consoleErrors": [],
+    "consoleErrorContext": "normal",
+    "phase": "after",
+    "count": 150,
+    "mode": "direct",
+    "route": "import",
+    "iteration": 0,
+    "evidenceEligible": false,
+    "reviewMs": 600.154,
+    "saveMs": 241.6431,
+    "durationMs": 841.7971,
+    "transactions": [
+      {
+        "realm": "main",
+        "startedAt": 1792212465241.4,
+        "mode": "readonly",
+        "stores": [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792212465247.4,
+        "durationMs": 6,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792212465454.7,
+        "mode": "readonly",
+        "stores": [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792212465466.5,
+        "durationMs": 11.800048828125,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792212465564.3,
+        "mode": "readwrite",
+        "stores": [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ],
+        "putRequests": {
+          "eventLists": 2,
+          "syncQueue": 17,
+          "eventMetadata": 2,
+          "eventConsistency": 3,
+          "executeModeItems": 3,
+          "dayModes": 3
+        },
+        "eventListsDataPuts": 1,
+        "scopeReadyPuts": 2,
+        "finishedAt": 1792212465570.9,
+        "durationMs": 6.599853515625,
+        "outcome": "complete"
+      }
+    ],
+    "verifiedSnapshotReadSpans": [
+      {
+        "realm": "main",
+        "startedAt": 1792212465241.4,
+        "mode": "readonly",
+        "stores": [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792212465247.4,
+        "durationMs": 6,
+        "outcome": "complete"
+      },
+      {
+        "realm": "main",
+        "startedAt": 1792212465454.7,
+        "mode": "readonly",
+        "stores": [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ],
+        "putRequests": {},
+        "eventListsDataPuts": 0,
+        "scopeReadyPuts": 0,
+        "finishedAt": 1792212465466.5,
+        "durationMs": 11.800048828125,
+        "outcome": "complete"
+      }
+    ],
+    "startupScreenDomMs": null,
+    "marks": {
+      "csvTextReadyAt": 1792212465236.0999,
+      "reviewDomAt": 1792212465363.9,
+      "reviewFrameAt": 1792212465372.9,
+      "confirmationClickedAt": 1792212465452.9,
+      "screenDomAt": 1792212465645.3,
+      "screenFrameAt": 1792212465647.0999
+    },
+    "csvTextToReviewDomMs": 127.800048828125,
+    "csvTextToReviewFrameMs": 136.800048828125,
+    "confirmationToScreenDomMs": 192.400146484375,
+    "confirmationToScreenFrameMs": 194.199951171875
+  }
+]

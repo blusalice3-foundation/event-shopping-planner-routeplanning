@@ -1,0 +1,8 @@
+Independent stage-probe review (2026-10-17 JST)
+Production isolation: plugin registered only in dedicated Vitest configuration.
+AST wraps synchronous function bodies in try/finally, retaining return/throw behavior and observing intra-module calls.
+Stage durations are inclusive; nested function spans and read/transaction spans must not be summed as independent totals.
+hookScreenApplyMs observes onHydratedSnapshot through hook ready detection, including polling overhead; it is not a full rendered component paint metric.
+Restore parseMs starts with fixed bytes already in memory; file receive/read timing is supplied separately by the browser measurements.
+Recommended guard: assert nonempty expected stages in instrumented opt-in runs. Root confirmed this guard will be added.
+Full normal suite ended successfully; no measurement runs were performed by this reviewer.

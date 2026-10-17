@@ -1002,3 +1002,119 @@ it.each(["open-update", "switch-source"] as const)(
     expect(h.spies.commitEventUpdateState).not.toHaveBeenCalled();
   },
 );
+
+it.each(["normal", "source-switch"] as const)(
+  "previews and confirms %s with cloned unknown fields without changing their content",
+  async (flow) => {
+    const existing = {
+      ...item("keep"),
+      futureOptionalField: {
+        preserved: true,
+        nested: [0, false, null, "ユーザー登録"],
+      },
+    };
+    const harness = createHarness({
+      eventLists: { [EVENT]: [existing] },
+      pendingUpdateEventName: EVENT,
+    });
+    const preview = deferred<EventUpdateDiff>();
+    updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockReturnValueOnce(
+      preview.promise,
+    );
+    const { result, rerender } = renderHook(() =>
+      useEventUpdateCommands(harness.ports),
+    );
+    let loading!: Promise<void>;
+    act(() => {
+      loading =
+        flow === "normal"
+          ? result.current.handleUpdateEvent(EVENT)
+          : result.current.handleUrlUpdate(
+              "https://example.com/new-source",
+              "新シート",
+            );
+    });
+    harness.refs.eventListsRef.current = structuredClone(
+      harness.stores.eventLists,
+    );
+    await act(async () => {
+      preview.resolve(
+        diff({ itemsToUpdate: [{ ...existing, title: "更新後" }] }),
+      );
+      await loading;
+    });
+    expect(harness.spies.openEventUpdate).toHaveBeenCalledOnce();
+    expect(harness.refs.pendingEventUpdateBaseItemsRef.current?.[0]).not.toBe(
+      existing,
+    );
+    Object.assign(harness.ports.state, {
+      pendingEventUpdate: harness.stores.pendingEventUpdate,
+    });
+    harness.refs.eventListsRef.current = structuredClone(
+      harness.stores.eventLists,
+    );
+    rerender();
+    await act(() => result.current.handleConfirmUpdate({}));
+    expect(harness.spies.commitEventUpdateState).toHaveBeenCalledOnce();
+    expect(harness.stores.eventLists[EVENT][0]).toMatchObject({
+      title: "更新後",
+      futureOptionalField: existing.futureOptionalField,
+    });
+    expect(harness.stores.eventMetadata[EVENT].spreadsheetUrl).toBe(
+      flow === "normal" ? SOURCE.url : "https://example.com/new-source",
+    );
+  },
+);
+
+for (const flow of ["normal", "source-switch"] as const) {
+  it.each(["loading", "confirmation"] as const)(
+    `invalidates ${flow} when unknown nested content changes during %s`,
+    async (phase) => {
+      const existing = {
+        ...item("keep"),
+        futureOptionalField: { preserved: true },
+      };
+      const harness = createHarness({
+        eventLists: { [EVENT]: [existing] },
+        pendingUpdateEventName: EVENT,
+      });
+      const preview = deferred<EventUpdateDiff>();
+      updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockReturnValueOnce(
+        preview.promise,
+      );
+      const { result, rerender } = renderHook(() =>
+        useEventUpdateCommands(harness.ports),
+      );
+      let loading!: Promise<void>;
+      act(() => {
+        loading =
+          flow === "normal"
+            ? result.current.handleUpdateEvent(EVENT)
+            : result.current.handleUrlUpdate(
+                "https://example.com/new-source",
+                "新シート",
+              );
+      });
+      const changeNestedValue = () => {
+        // In-place edits must also invalidate the independent review snapshot.
+        existing.futureOptionalField.preserved = false;
+      };
+      if (phase === "loading") changeNestedValue();
+      await act(async () => {
+        preview.resolve(diff());
+        await loading;
+      });
+      if (phase === "confirmation") {
+        expect(harness.spies.openEventUpdate).toHaveBeenCalledOnce();
+        Object.assign(harness.ports.state, {
+          pendingEventUpdate: harness.stores.pendingEventUpdate,
+        });
+        changeNestedValue();
+        rerender();
+        await act(() => result.current.handleConfirmUpdate({}));
+      } else expect(harness.spies.openEventUpdate).not.toHaveBeenCalled();
+      expect(harness.spies.commitEventUpdateState).not.toHaveBeenCalled();
+      expect(harness.spies.confirmEventOverlay).not.toHaveBeenCalled();
+    },
+  );
+}

@@ -1,0 +1,135 @@
+
+ RUN  v4.1.10 D:/codex-worktrees/sheet-url-20261017
+
+stderr | src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using direct storage > normalizes legacy URL undefined with prepared=true, updates roots, and never repeats the migration
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'conflict',
+  errorCode: 'storage-conflict'
+}
+
+stderr | src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > normalizes legacy URL 　  with prepared=true, updates roots, and never repeats the migration
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stderr | src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > canonical data adds no URL migration save (prepared=false)
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stderr | src\persistence\db\openDatabase.ts:202:13
+IndexedDB open failed.
+
+stderr | src\hooks\useIndexedDbPersistence.ts:1044:15
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'database',
+  errorCode: 'indexeddb-operation-failed'
+}
+
+stderr | src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx
+IndexedDB open failed.
+
+stderr | src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx
+IndexedDB open failed.
+
+stderr | src\persistence\db\openDatabase.ts:202:13
+IndexedDB open failed.
+
+·xx·x·xxxx·xxxx··x·xx·····x·········································x·xxx
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 19 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |unit| src/features/events/itemOptionalFields.regression.test.ts > completed item optional fields > normalizes both sheet update candidates and applied items while keeping purchase records
+AssertionError: expected [] to have a length of 1 but got +0
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ src/features/events/itemOptionalFields.regression.test.ts:37:32
+     35|     const incoming = { ...sheetItem(), url: undefined, sheetIdentityVe…
+     36|     const diff = createEventUpdateDiff([original], [incoming]);
+     37|     expect(diff.itemsToUpdate).toHaveLength(1);
+       |                                ^
+     38|     for (const item of [diff.itemsToUpdate[0], applyEventUpdateToItems…
+     39|       expect(Object.hasOwn(item, "url")).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/19]⎯
+
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using direct storage > normalizes legacy URL  with prepared=false, updates roots, and never repeats the migration
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using direct storage > normalizes legacy URL 　  with prepared=false, updates roots, and never repeats the migration
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using direct storage > canonical data adds no URL migration save (prepared=false)
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using direct storage > B06: aborts a lower atomic transaction, retains source data, and retries both preparation and compatibility work
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using direct storage > keeps the original legacy migration archive while sharing one compatibility commit and hydrating fresh roots
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > normalizes legacy URL undefined with prepared=false, updates roots, and never repeats the migration
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > normalizes legacy URL  with prepared=false, updates roots, and never repeats the migration
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > normalizes legacy URL 　  with prepared=false, updates roots, and never repeats the migration
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > canonical data adds no URL migration save (prepared=false)
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > B06: aborts a lower atomic transaction, retains source data, and retries both preparation and compatibility work
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > keeps the original legacy migration archive while sharing one compatibility commit and hydrating fresh roots
+PersistenceConflict: eventLists:data changed after it was last observed.
+ ❯ assertCurrentSnapshotMatchesExpected src/persistence/internal/persistenceCore.ts:1249:11
+    1247|     )
+    1248|   ) {
+    1249|     throw new PersistenceConflictError(
+       |           ^
+    1250|       `${storeName}:${key} changed after it was last observed.`,
+    1251|     );
+ ❯ commitIfReady src/persistence/repositories/recordRepository.ts:210:11
+ ❯ FDBRequest.checkpointRequest.onsuccess src/persistence/repositories/recordRepository.ts:328:9
+ ❯ invoke node_modules/fake-indexeddb/build/esm/lib/FakeEventTarget.js:14:16
+ ❯ invokeEventListeners node_modules/fake-indexeddb/build/esm/lib/FakeEventTarget.js:51:7
+ ❯ FDBRequest.dispatchEvent node_modules/fake-indexeddb/build/esm/lib/FakeEventTarget.js:100:7
+ ❯ FDBTransaction._start node_modules/fake-indexeddb/build/esm/FDBTransaction.js:223:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/19]⎯
+
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using direct storage > normalizes legacy URL  with prepared=true, updates roots, and never repeats the migration
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using direct storage > canonical data adds no URL migration save (prepared=true)
+ FAIL  |integration| src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx > optional fields startup using worker storage > normalizes legacy URL undefined with prepared=true, updates roots, and never repeats the migration
+PersistenceConflict: 計算後に移行記録が変更されました。
+ ❯ commitIfReady src/persistence/db/atomicRestoreTransaction.ts:1100:17
+    1098|           !storedValuesEqual(currentArchive, observation.archive)
+    1099|         )
+    1100|           throw new PersistenceConflictError(
+       |                 ^
+    1101|             "計算後に移行記録が変更されました。",
+    1102|           );
+ ❯ FDBRequest.payloadRequest.onsuccess src/persistence/db/atomicRestoreTransaction.ts:1396:13
+ ❯ invoke node_modules/fake-indexeddb/build/esm/lib/FakeEventTarget.js:14:16
+ ❯ invokeEventListeners node_modules/fake-indexeddb/build/esm/lib/FakeEventTarget.js:51:7
+ ❯ FDBRequest.dispatchEvent node_modules/fake-indexeddb/build/esm/lib/FakeEventTarget.js:100:7
+ ❯ FDBTransaction._start node_modules/fake-indexeddb/build/esm/FDBTransaction.js:223:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/19]⎯
+
+ FAIL  |integration| src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx > bulk import identity and persistence: direct > keeps exact source references, generated IDs, ordering and layout across normalization and retry=false
+ FAIL  |integration| src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx > bulk import identity and persistence: direct > keeps exact source references, generated IDs, ordering and layout across normalization and retry=true
+ FAIL  |integration| src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx > bulk import identity and persistence: worker > keeps exact source references, generated IDs, ordering and layout across normalization and retry=false
+ FAIL  |integration| src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx > bulk import identity and persistence: worker > keeps exact source references, generated IDs, ordering and layout across normalization and retry=true
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx:17:25
+     15| afterEach(() => { resetDatabaseConnection(); vi.restoreAllMocks(); vi.…
+     16| for (const mode of ["direct", "worker"]) describe(`bulk import identit…
+     17|   it.each([false, true])("keeps exact source references, generated IDs…
+       |                         ^
+     18|     fresh();
+     19|     vi.spyOn(window, "alert").mockImplementation(() => {});
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/19]⎯
+
+
+ Test Files  3 failed | 5 passed (8)
+      Tests  19 failed | 54 passed (73)
+   Start at  00:32:58
+   Duration  23.33s (transform 2.27s, setup 2.31s, import 5.99s, tests 21.34s, environment 5.63s)
+

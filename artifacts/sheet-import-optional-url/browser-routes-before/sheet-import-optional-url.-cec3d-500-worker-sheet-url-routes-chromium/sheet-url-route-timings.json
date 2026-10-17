@@ -1,0 +1,182 @@
+[
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 0,
+    "reviewMs": 74.61679999995977,
+    "saveMs": 139.36899999994785
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 1,
+    "reviewMs": 75.80799999996088,
+    "saveMs": 138.5944999998901
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 2,
+    "reviewMs": 67.85230000002775,
+    "saveMs": 120.6138000000501
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 3,
+    "reviewMs": 68.4989999999525,
+    "saveMs": 125.2778999999864
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 4,
+    "reviewMs": 76.45390000008047,
+    "saveMs": 139.12140000006184
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 5,
+    "reviewMs": 75.21960000006948,
+    "saveMs": 140.8229000000283
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 6,
+    "reviewMs": 68.15659999998752,
+    "saveMs": 132.4490999999689
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 7,
+    "reviewMs": 399.93050000001676,
+    "saveMs": 123.68410000007134
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 8,
+    "reviewMs": 421.1884999999311,
+    "saveMs": 138.74829999997746
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 9,
+    "reviewMs": 73.95589999994263,
+    "saveMs": 140.54930000007153
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 10,
+    "reviewMs": 65.68979999993462,
+    "saveMs": 134.30610000004526
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 11,
+    "reviewMs": 77.51600000006147,
+    "saveMs": 139.576999999932
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 12,
+    "reviewMs": 66.96180000004824,
+    "saveMs": 123.74860000004992
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 13,
+    "reviewMs": 68.61230000003707,
+    "saveMs": 124.35009999992326
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 14,
+    "reviewMs": 100.58250000001863,
+    "saveMs": 138.24679999996442
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 15,
+    "reviewMs": 400.658400000073,
+    "saveMs": 122.01309999998193
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 16,
+    "reviewMs": 67.95510000002105,
+    "saveMs": 124.72879999992438
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 17,
+    "reviewMs": 73.74990000005346,
+    "saveMs": 137.52800000004936
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 18,
+    "reviewMs": 431.3111000000499,
+    "saveMs": 135.42920000001322
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "update",
+    "iteration": 19,
+    "reviewMs": 90.98609999998007,
+    "saveMs": 140.80729999998584
+  }
+]

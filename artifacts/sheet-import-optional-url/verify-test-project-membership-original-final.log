@@ -1,0 +1,5 @@
+
+> event-shopping-planner@1.0.0 verify:test-project-membership
+> node scripts/verify-test-project-membership.mjs
+
+PASS test project membership: 241 files; integration=42, unit=189, worker=10

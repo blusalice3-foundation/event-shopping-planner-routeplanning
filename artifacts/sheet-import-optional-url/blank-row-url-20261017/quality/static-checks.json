@@ -1,0 +1,26 @@
+[
+  {
+    "command": "npm run test:encoding",
+    "exitCode": 0
+  },
+  {
+    "command": "npm run format:check",
+    "exitCode": 0
+  },
+  {
+    "command": "npm run typecheck",
+    "exitCode": 0
+  },
+  {
+    "command": "npm run lint",
+    "exitCode": 1
+  },
+  {
+    "command": "npm run verify:test-project-membership",
+    "exitCode": 0
+  },
+  {
+    "command": "npm run verify:architecture",
+    "exitCode": 0
+  }
+]

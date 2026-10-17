@@ -20,6 +20,14 @@ import {
 } from "../features/events/sheetImport";
 import { normalizeSheetItemsUrls } from "../features/events/updateDiff";
 
+import SheetImportSummary from "./SheetImportSummary";
+import {
+  createSheetRowExclusionSummary,
+  missingRequiredSheetFields,
+  recordSheetRowExclusion,
+  type SheetImportDiagnostics,
+} from "../features/events/sheetRowSelection";
+
 interface ImportScreenProps {
   onBulkAdd: (
     eventName: string,
@@ -60,10 +68,13 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
   const [importRequiresReload, setImportRequiresReload] = useState(false);
   const [fileFormat, setFileFormat] = useState("auto");
   const [fileText, setFileText] = useState<string | null>(null);
+  const [sheetImportSummary, setSheetImportSummary] =
+    useState<SheetImportDiagnostics | null>(null);
   const inputGeneration = useRef(0);
   useEffect(() => {
     const generation = inputGeneration;
     generation.current++;
+    setSheetImportSummary(null);
     return () => {
       generation.current++;
     };
@@ -71,6 +82,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
   const runImport = async (work: () => Promise<boolean>): Promise<boolean> => {
     if (importInFlight.current || importRequiresReload) return false;
     importInFlight.current = true;
+    setSheetImportSummary(null);
     setImportPhase(
       "取込処理中です。保存が保留された場合は未保存データの再試行・取消を確認してください。",
     );
@@ -112,7 +124,14 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
       alert(
         "データは保存済みですが画面に反映できませんでした。再取込みせず再読み込みしてください。",
       );
-    return saved && generation === inputGeneration.current;
+    if (!saved || generation !== inputGeneration.current) return null;
+    if (result.importedItemCount !== undefined) {
+      const acceptedCount = result.importedItemCount;
+      setSheetImportSummary((current) =>
+        current ? { ...current, acceptedCount } : current,
+      );
+    }
+    return result;
   };
 
   // State for single item add/edit
@@ -165,6 +184,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
+    setSheetImportSummary(null);
     const result = parseSpreadsheetPaste(e.clipboardData.getData("text"));
     if (!result.ok) {
       window.alert(result.message);
@@ -255,6 +275,10 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
               header: fileFormat.endsWith("-header"),
             };
       const result = processImportData(text, options);
+      setSheetImportSummary({
+        acceptedCount: result.items.length,
+        rowExclusions: result.rowExclusions,
+      });
       if (
         result.warnings.length &&
         !window.confirm(
@@ -281,8 +305,20 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
       if (!accepted) return false;
       setFileText(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      if (result.invalidQuantityRows.length)
-        alert(buildInvalidQuantityImportMessage(result.invalidQuantityRows));
+      if (
+        result.invalidQuantityRows.length ||
+        result.rowExclusions.excludedCount
+      )
+        alert(
+          [
+            result.rowExclusions.excludedCount
+              ? `${accepted.importedItemCount === undefined ? "更新を反映し" : `${accepted.importedItemCount}件を取り込み`}、必須項目不足の${result.rowExclusions.excludedCount}行を除外しました。`
+              : "",
+            buildInvalidQuantityImportMessage(result.invalidQuantityRows),
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        );
       return true;
     });
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -313,6 +349,10 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
         format: "google",
         header: true,
       });
+      setSheetImportSummary({
+        acceptedCount: result.items.length,
+        rowExclusions: result.rowExclusions,
+      });
       if (
         result.warnings.length &&
         !window.confirm(
@@ -334,8 +374,20 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
       });
       if (!accepted) return false;
       setSpreadsheetUrl("");
-      if (result.invalidQuantityRows.length)
-        alert(buildInvalidQuantityImportMessage(result.invalidQuantityRows));
+      if (
+        result.invalidQuantityRows.length ||
+        result.rowExclusions.excludedCount
+      )
+        alert(
+          [
+            result.rowExclusions.excludedCount
+              ? `${accepted.importedItemCount === undefined ? "更新を反映し" : `${accepted.importedItemCount}件を取り込み`}、必須項目不足の${result.rowExclusions.excludedCount}行を除外しました。`
+              : "",
+            buildInvalidQuantityImportMessage(result.invalidQuantityRows),
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        );
       return true;
     });
   };
@@ -447,18 +499,55 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
         remarksArr.length,
         urlsArr.length,
       );
-      if (numItems === 0 || (circlesArr.length === 1 && circlesArr[0] === "")) {
+      if (
+        numItems === 0 ||
+        [
+          circlesArr,
+          eventDatesArr,
+          blocksArr,
+          numbersArr,
+          titlesArr,
+          pricesArr,
+          remarksArr,
+          urlsArr,
+        ].every((column) => column.every((value) => value === ""))
+      ) {
         alert("インポートするデータがありません。");
         return;
       }
       const newItems: Omit<ShoppingItem, "id" | "purchaseStatus">[] = [];
+      const rowExclusions = createSheetRowExclusionSummary();
       for (let i = 0; i < numItems; i++) {
         const circle = circlesArr[i] || "";
         const eventDate = eventDatesArr[i] || "";
         const block = blocksArr[i] || "";
         const number = numbersArr[i] || "";
-        // A列からD列（サークル、参加日、ブロック、ナンバー）の値が全て入力されている行のみをインポート
-        if (!circle || !eventDate || !block || !number) {
+        if (
+          [
+            circle,
+            eventDate,
+            block,
+            number,
+            titlesArr[i],
+            pricesArr[i],
+            remarksArr[i],
+            urlsArr[i],
+          ].every((value) => !value)
+        )
+          continue;
+        const missing = missingRequiredSheetFields({
+          circle,
+          eventDate,
+          block,
+          number,
+        });
+        if (missing.length) {
+          recordSheetRowExclusion(
+            rowExclusions,
+            `paste:${i + 1}`,
+            i + 1,
+            missing,
+          );
           continue;
         }
         // 空欄の場合はnull、0と入力されている場合は0を設定
@@ -527,9 +616,13 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
       });
 
       if (newItems.length > 0) {
-        const accepted = await runImport(() =>
-          submitImport(finalEventName, newItems),
-        );
+        const accepted = await runImport(async () => {
+          setSheetImportSummary({
+            acceptedCount: newItems.length,
+            rowExclusions,
+          });
+          return (await submitImport(finalEventName, newItems)) !== null;
+        });
         if (!accepted) return;
 
         setEventName("");
@@ -542,6 +635,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
         setRemarks("");
         setUrls("");
       } else {
+        setSheetImportSummary({ acceptedCount: 0, rowExclusions });
         alert(
           "有効なアイテムデータが見つかりませんでした。A列からD列の値が全て入力されている行が必要です。",
         );
@@ -573,8 +667,11 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
         remarks: singleRemarks.trim(),
         url: singleUrl.trim() || undefined,
       };
-      const accepted = await runImport(() =>
-        submitImport(activeEventName, [newItem], { source: "app" }),
+      const accepted = await runImport(
+        async () =>
+          (await submitImport(activeEventName, [newItem], {
+            source: "app",
+          })) !== null,
       );
       if (accepted) resetSingleForm();
     }
@@ -630,10 +727,14 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
         </p>
       )}
       {importPhase && <p role="status">{importPhase}</p>}
+      {sheetImportSummary && (
+        <SheetImportSummary diagnostics={sheetImportSummary} />
+      )}
       <form
         onSubmit={handleSubmit}
         onChangeCapture={() => {
           inputGeneration.current++;
+          setSheetImportSummary(null);
         }}
         className="space-y-6"
       >

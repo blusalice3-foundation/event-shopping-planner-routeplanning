@@ -1,0 +1,84 @@
+
+> event-shopping-planner@1.0.0 typecheck
+> tsc --noEmit && tsc -p tsconfig.release-tools.json
+
+src/features/events/itemOptionalFields.regression.test.ts(13,51): error TS2345: Argument of type '{ block: string; number: string; url: undefined; assignedTo: undefined; circle: string; eventDate: string; title: string; price: number | null; catalogPrice?: number | null | undefined; quantity: number; ... 10 more ...; manualHallId?: string | undefined; }' is not assignable to parameter of type 'Omit<ShoppingItem, "id"> & { purchaseStatus?: "None" | "Purchased" | "SoldOut" | "Absent" | "Postpone" | "Late" | "LimitedPurchase" | undefined; }'.
+  Property 'purchaseStatus' is missing in type '{ block: string; number: string; url: undefined; assignedTo: undefined; circle: string; eventDate: string; title: string; price: number | null; catalogPrice?: number | null | undefined; quantity: number; ... 10 more ...; manualHallId?: string | undefined; }' but required in type 'Omit<ShoppingItem, "id">'.
+src/features/events/itemOptionalFields.regression.test.ts(15,21): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/features/events/itemOptionalFields.regression.test.ts(16,21): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/features/events/itemOptionalFields.regression.test.ts(28,19): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/features/events/itemOptionalFields.regression.test.ts(39,21): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/features/events/itemOptionalFields.regression.test.ts(40,21): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/features/events/itemOptionalFields.regression.test.ts(47,19): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx(18,23): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(target: {}, source: { url: string | undefined; assignedTo: undefined; }): { url: string | undefined; assignedTo: undefined; }', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type '{}'.
+  Overload 2 of 4, '(target: object, ...sources: any[]): any', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'object'.
+src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx(26,23): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx(27,23): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx(29,23): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx(32,23): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx(57,21): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(target: {}, source: { url: string; }): { url: string; }', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type '{}'.
+  Overload 2 of 4, '(target: object, ...sources: any[]): any', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'object'.
+src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx(78,21): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(target: {}, source: { url: undefined; }): { url: undefined; }', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type '{}'.
+  Overload 2 of 4, '(target: object, ...sources: any[]): any', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'object'.
+src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx(93,21): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx(95,21): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx(104,21): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(target: {}, source: { url: string; }): { url: string; }', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type '{}'.
+  Overload 2 of 4, '(target: object, ...sources: any[]): any', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'object'.
+src/hooks/useIndexedDbPersistence.optionalFields.integration.test.tsx(110,9): error TS2571: Object is of type 'unknown'.
+src/test/sheetImportOptionalUrl.measurement.integration.test.tsx(90,139): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(target: {}, source: { url: string | undefined; }): { url: string | undefined; }', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type '{}'.
+  Overload 2 of 4, '(target: object, ...sources: any[]): any', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'object'.
+src/test/sheetImportOptionalUrl.measurement.integration.test.tsx(117,113): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/test/sheetImportOptionalUrl.measurement.integration.test.tsx(126,88): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(target: {}, source: { url: string; }): { url: string; }', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type '{}'.
+  Overload 2 of 4, '(target: object, ...sources: any[]): any', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'object'.
+src/test/sheetImportOptionalUrlFixtures.ts(45,68): error TS2550: Property 'replaceAll' does not exist on type 'string'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2021' or later.
+src/test/sheetImportOptionalUrlPersistence.ts(11,30): error TS2352: Conversion of type '{ [k: string]: Mock<Procedure>; }' to type 'PersistedStateSetters' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ [k: string]: Mock<Procedure>; }' is missing the following properties from type 'PersistedStateSetters': setEventConsistency, setEventLists, setEventMetadata, setExecuteModeItems, and 7 more.
+src/utils/appBackup.optionalFields.integration.test.tsx(16,19): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(target: {}, source: { block: string; number: string; source: string; protectionLevel: string; url: string | undefined; assignedTo: undefined; futureField: { note: string; }; }): { block: string; ... 5 more ...; futureField: { ...; }; }', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type '{}'.
+  Overload 2 of 4, '(target: object, ...sources: any[]): any', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'object'.
+src/utils/appBackup.optionalFields.integration.test.tsx(25,19): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/utils/appBackup.optionalFields.integration.test.tsx(26,19): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/utils/appBackup.optionalFields.integration.test.tsx(27,19): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/utils/appBackup.optionalFields.integration.test.tsx(33,19): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/utils/appBackup.optionalFields.integration.test.tsx(39,19): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(target: {}, source: { block: string; number: string; source: string; protectionLevel: string; url: string; }): { block: string; number: string; source: string; protectionLevel: string; url: string; }', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type '{}'.
+  Overload 2 of 4, '(target: object, ...sources: any[]): any', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'object'.
+src/utils/appBackup.optionalFields.integration.test.tsx(40,293): error TS2322: Type 'Record<string, Record<string, string>>' is not assignable to type 'Record<string, DayModeState>'.
+  'string' index signatures are incompatible.
+    Type 'Record<string, string>' is not assignable to type 'DayModeState'.
+      'string' index signatures are incompatible.
+        Type 'string' is not assignable to type 'ViewMode'.
+src/utils/appBackup.optionalFields.integration.test.tsx(50,66): error TS2571: Object is of type 'unknown'.
+src/utils/appBackup.optionalFields.integration.test.tsx(51,19): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/utils/appBackup.optionalFields.integration.test.tsx(56,17): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(target: {}, source: { url: {} | null; }): { url: {} | null; }', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type '{}'.
+  Overload 2 of 4, '(target: object, ...sources: any[]): any', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'object'.
+src/utils/itemOptionalFields.test.ts(10,19): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/utils/itemOptionalFields.test.ts(11,19): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/utils/itemOptionalFields.test.ts(25,19): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/utils/itemOptionalFields.test.ts(26,19): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+src/utils/itemOptionalFields.test.ts(27,170): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.

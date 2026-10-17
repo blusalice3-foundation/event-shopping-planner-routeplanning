@@ -1,0 +1,716 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-10-17T14:00:23.5286786+09:00",
+  "purpose": "Preserve the exact standard dist identities and graph evidence used for the remediation measurement before any later rebuild.",
+  "sourceFilesModified": false,
+  "copiedAssetJavascript": false,
+  "persistenceWorkerComparison": {
+    "expectedSha256": "4d11925144e20aac5bbe9c019816826cc9f44e3ab756cf9bbd533f3969fc402f",
+    "expectedBytes": 318449,
+    "checks": [
+      {
+        "label": "BEFORE",
+        "file": "assets/persistence.worker-Dgzz1Tkn.js",
+        "bytes": 318449,
+        "sha256": "4d11925144e20aac5bbe9c019816826cc9f44e3ab756cf9bbd533f3969fc402f",
+        "matchesExpected": true
+      },
+      {
+        "label": "AFTER",
+        "file": "assets/persistence.worker-Dgzz1Tkn.js",
+        "bytes": 318449,
+        "sha256": "4d11925144e20aac5bbe9c019816826cc9f44e3ab756cf9bbd533f3969fc402f",
+        "matchesExpected": true
+      }
+    ],
+    "beforeAfterIdentical": true
+  },
+  "legacyBaselineVerification": {
+    "referenceManifest": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\sheet-import-optional-url\\source-manifest-final.json",
+    "expectedIdentitySha256": "fa88e3ec2a2434f53199db5c355192f74e0cba6e209ed99a3998b1dc08303b8d",
+    "actualIdentitySha256": "fa88e3ec2a2434f53199db5c355192f74e0cba6e209ed99a3998b1dc08303b8d",
+    "identityMatchesReference": true,
+    "expectedSourceSha": "cc475cd1837404440e893694147fee17c46a04d2",
+    "actualSourceSha": "cc475cd1837404440e893694147fee17c46a04d2",
+    "sourceMatchesReference": true,
+    "expectedIndexSha256": "83bb2d8194ea1ccbdee6a3461536ea0844be1e9de9737598da73fc3e1d4746c8",
+    "actualIndexSha256": "83bb2d8194ea1ccbdee6a3461536ea0844be1e9de9737598da73fc3e1d4746c8",
+    "indexMatchesReference": true,
+    "allIdentityAssetsMatch": true,
+    "allGraphChunksMatch": true
+  },
+  "builds": [
+    {
+      "label": "BEFORE",
+      "sourceDist": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\dist",
+      "distExists": true,
+      "identity": {
+        "buildId": "b536f760acfcf38954d10140487d37e77ee33a15",
+        "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+        "outerAgentUrl": "/assets/outer-recovery-agent.js",
+        "pwaLifecycle": "prompt-close-all-v1",
+        "releaseRole": "standard",
+        "requiredDbCompatibilityFingerprint": "59cab323aedb35d8677e289545053591d34348970bfa268be3c4c437faf7c91f",
+        "roleEntrySha256": "5f62b8f88946871403c7153be1a99564e18e371a9570619a3e92aebf75307b5c",
+        "roleEntryUrl": "/assets/release-role.js",
+        "schemaVersion": 1,
+        "serviceWorkerSha256": "72b8836abfb0370d66d7522e2906367c21f2e84ffaec4e072e8aedee668f596c",
+        "serviceWorkerUrl": "/sw.js",
+        "sourceSha": "b536f760acfcf38954d10140487d37e77ee33a15",
+        "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+      },
+      "copiedFiles": [
+        {
+          "name": "release-identity.json",
+          "status": "copied",
+          "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\dist\\release-identity.json",
+          "copy": "BEFORE/release-identity.json",
+          "bytes": 751,
+          "sha256": "45d549f390a52e19d1a6caa49899b4f1f29d44b226072dfcfbf5864fdc1ac9c9",
+          "copySha256": "45d549f390a52e19d1a6caa49899b4f1f29d44b226072dfcfbf5864fdc1ac9c9",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 0,
+          "replacementCharacters": 0
+        },
+        {
+          "name": "release-role-graph.json",
+          "status": "copied",
+          "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\dist\\release-role-graph.json",
+          "copy": "BEFORE/release-role-graph.json",
+          "bytes": 92467,
+          "sha256": "289010fe32d2bfd80af1fb0a6d992450b96ac9cc39d29f07de54e65587b909e0",
+          "copySha256": "289010fe32d2bfd80af1fb0a6d992450b96ac9cc39d29f07de54e65587b909e0",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 0,
+          "replacementCharacters": 0
+        },
+        {
+          "name": "outer-agent-graph.json",
+          "status": "copied",
+          "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\dist\\outer-agent-graph.json",
+          "copy": "BEFORE/outer-agent-graph.json",
+          "bytes": 1725,
+          "sha256": "72e8e3c66408d95beed5adb86cbd5b4d967e93bf9570a7293f8c30cb9b227134",
+          "copySha256": "72e8e3c66408d95beed5adb86cbd5b4d967e93bf9570a7293f8c30cb9b227134",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 0,
+          "replacementCharacters": 0
+        },
+        {
+          "name": "index.html",
+          "status": "copied",
+          "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\dist\\index.html",
+          "copy": "BEFORE/index.html",
+          "bytes": 1824,
+          "sha256": "ae7b5ce479bd174215511b8e88e6ce3f3efac737fe317097d71f62dcc0087d6e",
+          "copySha256": "ae7b5ce479bd174215511b8e88e6ce3f3efac737fe317097d71f62dcc0087d6e",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 39,
+          "replacementCharacters": 0
+        },
+        {
+          "name": "sw.js",
+          "status": "copied",
+          "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\dist\\sw.js",
+          "copy": "BEFORE/sw.js",
+          "bytes": 6036,
+          "sha256": "72b8836abfb0370d66d7522e2906367c21f2e84ffaec4e072e8aedee668f596c",
+          "copySha256": "72b8836abfb0370d66d7522e2906367c21f2e84ffaec4e072e8aedee668f596c",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 0,
+          "replacementCharacters": 0
+        }
+      ],
+      "assetsDirectoryExists": true,
+      "assetJavascript": [
+        {
+          "file": "assets/backup.worker-DhWIzPj9.js",
+          "bytes": 255487,
+          "sha256": "fb79ea3e4fff102ff9faaa517cb09e6eb5d3eea1556fc57837803873ef252c2d"
+        },
+        {
+          "file": "assets/FocusModeContainer-CZ1MJtsO.js",
+          "bytes": 157593,
+          "sha256": "af23c640603be3200525861445b8af059e8c10bb65facd2ffcf95bc416dde902"
+        },
+        {
+          "file": "assets/ImportScreen-BlvhBh6i.js",
+          "bytes": 19572,
+          "sha256": "a1737d0de22ff854bbdf176b48dded8567d6d6fde541d84a2f0d0f3fcce2c064"
+        },
+        {
+          "file": "assets/outer-recovery-agent.js",
+          "bytes": 19939,
+          "sha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e"
+        },
+        {
+          "file": "assets/persistence.worker-Dgzz1Tkn.js",
+          "bytes": 318449,
+          "sha256": "4d11925144e20aac5bbe9c019816826cc9f44e3ab756cf9bbd533f3969fc402f"
+        },
+        {
+          "file": "assets/release-role.js",
+          "bytes": 1319132,
+          "sha256": "5f62b8f88946871403c7153be1a99564e18e371a9570619a3e92aebf75307b5c"
+        },
+        {
+          "file": "assets/route.worker-vkpwhvUq.js",
+          "bytes": 19928,
+          "sha256": "71db28340a1f002f14a35a0ebbcdfc2683447040fb7678aac8cc06ea58452641"
+        },
+        {
+          "file": "assets/xlsx.worker-B4QDJ5Lz.js",
+          "bytes": 1588736,
+          "sha256": "a259fff1eb3da865d239f95ff6b63fae41453bc6c10377d430314ad7ff4098a9"
+        }
+      ],
+      "identityAssetChecks": [
+        {
+          "kind": "roleEntry",
+          "file": "/assets/release-role.js",
+          "exists": true,
+          "expectedSha256": "5f62b8f88946871403c7153be1a99564e18e371a9570619a3e92aebf75307b5c",
+          "actualSha256": "5f62b8f88946871403c7153be1a99564e18e371a9570619a3e92aebf75307b5c",
+          "matches": true
+        },
+        {
+          "kind": "outerAgent",
+          "file": "/assets/outer-recovery-agent.js",
+          "exists": true,
+          "expectedSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "actualSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "matches": true
+        },
+        {
+          "kind": "serviceWorker",
+          "file": "/sw.js",
+          "exists": true,
+          "expectedSha256": "72b8836abfb0370d66d7522e2906367c21f2e84ffaec4e072e8aedee668f596c",
+          "actualSha256": "72b8836abfb0370d66d7522e2906367c21f2e84ffaec4e072e8aedee668f596c",
+          "matches": true
+        }
+      ],
+      "graphChecks": [
+        {
+          "file": "release-role-graph.json",
+          "sourceSha": "b536f760acfcf38954d10140487d37e77ee33a15",
+          "releaseRole": "standard",
+          "entryFile": "/assets/release-role.js",
+          "sourceMatchesIdentity": true,
+          "chunks": [
+            {
+              "file": "/assets/FocusModeContainer-CZ1MJtsO.js",
+              "exists": true,
+              "expectedBytes": 157593,
+              "actualBytes": 157593,
+              "expectedSha256": "af23c640603be3200525861445b8af059e8c10bb65facd2ffcf95bc416dde902",
+              "actualSha256": "af23c640603be3200525861445b8af059e8c10bb65facd2ffcf95bc416dde902",
+              "matches": true
+            },
+            {
+              "file": "/assets/ImportScreen-BlvhBh6i.js",
+              "exists": true,
+              "expectedBytes": 19572,
+              "actualBytes": 19572,
+              "expectedSha256": "a1737d0de22ff854bbdf176b48dded8567d6d6fde541d84a2f0d0f3fcce2c064",
+              "actualSha256": "a1737d0de22ff854bbdf176b48dded8567d6d6fde541d84a2f0d0f3fcce2c064",
+              "matches": true
+            },
+            {
+              "file": "/assets/release-role.js",
+              "exists": true,
+              "expectedBytes": 1319132,
+              "actualBytes": 1319132,
+              "expectedSha256": "5f62b8f88946871403c7153be1a99564e18e371a9570619a3e92aebf75307b5c",
+              "actualSha256": "5f62b8f88946871403c7153be1a99564e18e371a9570619a3e92aebf75307b5c",
+              "matches": true
+            }
+          ],
+          "allChunksMatch": true
+        },
+        {
+          "file": "outer-agent-graph.json",
+          "sourceSha": "b536f760acfcf38954d10140487d37e77ee33a15",
+          "releaseRole": null,
+          "entryFile": "/assets/outer-recovery-agent.js",
+          "sourceMatchesIdentity": true,
+          "chunks": [
+            {
+              "file": "/assets/outer-recovery-agent.js",
+              "exists": true,
+              "expectedBytes": 19939,
+              "actualBytes": 19939,
+              "expectedSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+              "actualSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+              "matches": true
+            }
+          ],
+          "allChunksMatch": true
+        }
+      ]
+    },
+    {
+      "label": "AFTER",
+      "sourceDist": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\dist",
+      "distExists": true,
+      "identity": {
+        "buildId": "b536f760acfcf38954d10140487d37e77ee33a15",
+        "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+        "outerAgentUrl": "/assets/outer-recovery-agent.js",
+        "pwaLifecycle": "prompt-close-all-v1",
+        "releaseRole": "standard",
+        "requiredDbCompatibilityFingerprint": "59cab323aedb35d8677e289545053591d34348970bfa268be3c4c437faf7c91f",
+        "roleEntrySha256": "4c0341c0821b66a5e06cdfd6adc89626f198916802cb42f9a8390c7430f3d02d",
+        "roleEntryUrl": "/assets/release-role.js",
+        "schemaVersion": 1,
+        "serviceWorkerSha256": "d7fa6241bb8eb75505284ee39b379967c6f0a40d4ca9147e4d3c0ef5d3f2d4e8",
+        "serviceWorkerUrl": "/sw.js",
+        "sourceSha": "b536f760acfcf38954d10140487d37e77ee33a15",
+        "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+      },
+      "copiedFiles": [
+        {
+          "name": "release-identity.json",
+          "status": "copied",
+          "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\dist\\release-identity.json",
+          "copy": "AFTER/release-identity.json",
+          "bytes": 751,
+          "sha256": "ce5bb6af84fabf1cc6a83383850274bf0876dcfae87a2231ae0e5a1ab83fb62f",
+          "copySha256": "ce5bb6af84fabf1cc6a83383850274bf0876dcfae87a2231ae0e5a1ab83fb62f",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 0,
+          "replacementCharacters": 0
+        },
+        {
+          "name": "release-role-graph.json",
+          "status": "copied",
+          "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\dist\\release-role-graph.json",
+          "copy": "AFTER/release-role-graph.json",
+          "bytes": 92492,
+          "sha256": "82120a937562acbcf5f389da1462e75849d1ce9305ced336d06c545555ac9805",
+          "copySha256": "82120a937562acbcf5f389da1462e75849d1ce9305ced336d06c545555ac9805",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 0,
+          "replacementCharacters": 0
+        },
+        {
+          "name": "outer-agent-graph.json",
+          "status": "copied",
+          "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\dist\\outer-agent-graph.json",
+          "copy": "AFTER/outer-agent-graph.json",
+          "bytes": 1725,
+          "sha256": "72e8e3c66408d95beed5adb86cbd5b4d967e93bf9570a7293f8c30cb9b227134",
+          "copySha256": "72e8e3c66408d95beed5adb86cbd5b4d967e93bf9570a7293f8c30cb9b227134",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 0,
+          "replacementCharacters": 0
+        },
+        {
+          "name": "index.html",
+          "status": "copied",
+          "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\dist\\index.html",
+          "copy": "AFTER/index.html",
+          "bytes": 1824,
+          "sha256": "ae7b5ce479bd174215511b8e88e6ce3f3efac737fe317097d71f62dcc0087d6e",
+          "copySha256": "ae7b5ce479bd174215511b8e88e6ce3f3efac737fe317097d71f62dcc0087d6e",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 39,
+          "replacementCharacters": 0
+        },
+        {
+          "name": "sw.js",
+          "status": "copied",
+          "source": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\dist\\sw.js",
+          "copy": "AFTER/sw.js",
+          "bytes": 6036,
+          "sha256": "d7fa6241bb8eb75505284ee39b379967c6f0a40d4ca9147e4d3c0ef5d3f2d4e8",
+          "copySha256": "d7fa6241bb8eb75505284ee39b379967c6f0a40d4ca9147e4d3c0ef5d3f2d4e8",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 0,
+          "replacementCharacters": 0
+        }
+      ],
+      "assetsDirectoryExists": true,
+      "assetJavascript": [
+        {
+          "file": "assets/backup.worker-CmLUrcml.js",
+          "bytes": 256079,
+          "sha256": "209e231e7229f8f3d0a7ecbcc32c8a143c10aaa5c9326ba37de23bec63fc5207"
+        },
+        {
+          "file": "assets/FocusModeContainer-CZ1MJtsO.js",
+          "bytes": 157593,
+          "sha256": "af23c640603be3200525861445b8af059e8c10bb65facd2ffcf95bc416dde902"
+        },
+        {
+          "file": "assets/ImportScreen-B_gRpn6j.js",
+          "bytes": 19896,
+          "sha256": "3cb1db5d85b19e37c42c7fa80057bb828cf4f0a1b9e650eb766bf3d79733e8fa"
+        },
+        {
+          "file": "assets/outer-recovery-agent.js",
+          "bytes": 19939,
+          "sha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e"
+        },
+        {
+          "file": "assets/persistence.worker-Dgzz1Tkn.js",
+          "bytes": 318449,
+          "sha256": "4d11925144e20aac5bbe9c019816826cc9f44e3ab756cf9bbd533f3969fc402f"
+        },
+        {
+          "file": "assets/release-role.js",
+          "bytes": 1319986,
+          "sha256": "4c0341c0821b66a5e06cdfd6adc89626f198916802cb42f9a8390c7430f3d02d"
+        },
+        {
+          "file": "assets/route.worker-vkpwhvUq.js",
+          "bytes": 19928,
+          "sha256": "71db28340a1f002f14a35a0ebbcdfc2683447040fb7678aac8cc06ea58452641"
+        },
+        {
+          "file": "assets/xlsx.worker-DA2gqYv7.js",
+          "bytes": 1589349,
+          "sha256": "ec40d5e4b9702feb472bd5413938f01f6a06a7f18fb360c59a9492b53e15b112"
+        }
+      ],
+      "identityAssetChecks": [
+        {
+          "kind": "roleEntry",
+          "file": "/assets/release-role.js",
+          "exists": true,
+          "expectedSha256": "4c0341c0821b66a5e06cdfd6adc89626f198916802cb42f9a8390c7430f3d02d",
+          "actualSha256": "4c0341c0821b66a5e06cdfd6adc89626f198916802cb42f9a8390c7430f3d02d",
+          "matches": true
+        },
+        {
+          "kind": "outerAgent",
+          "file": "/assets/outer-recovery-agent.js",
+          "exists": true,
+          "expectedSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "actualSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "matches": true
+        },
+        {
+          "kind": "serviceWorker",
+          "file": "/sw.js",
+          "exists": true,
+          "expectedSha256": "d7fa6241bb8eb75505284ee39b379967c6f0a40d4ca9147e4d3c0ef5d3f2d4e8",
+          "actualSha256": "d7fa6241bb8eb75505284ee39b379967c6f0a40d4ca9147e4d3c0ef5d3f2d4e8",
+          "matches": true
+        }
+      ],
+      "graphChecks": [
+        {
+          "file": "release-role-graph.json",
+          "sourceSha": "b536f760acfcf38954d10140487d37e77ee33a15",
+          "releaseRole": "standard",
+          "entryFile": "/assets/release-role.js",
+          "sourceMatchesIdentity": true,
+          "chunks": [
+            {
+              "file": "/assets/FocusModeContainer-CZ1MJtsO.js",
+              "exists": true,
+              "expectedBytes": 157593,
+              "actualBytes": 157593,
+              "expectedSha256": "af23c640603be3200525861445b8af059e8c10bb65facd2ffcf95bc416dde902",
+              "actualSha256": "af23c640603be3200525861445b8af059e8c10bb65facd2ffcf95bc416dde902",
+              "matches": true
+            },
+            {
+              "file": "/assets/ImportScreen-B_gRpn6j.js",
+              "exists": true,
+              "expectedBytes": 19896,
+              "actualBytes": 19896,
+              "expectedSha256": "3cb1db5d85b19e37c42c7fa80057bb828cf4f0a1b9e650eb766bf3d79733e8fa",
+              "actualSha256": "3cb1db5d85b19e37c42c7fa80057bb828cf4f0a1b9e650eb766bf3d79733e8fa",
+              "matches": true
+            },
+            {
+              "file": "/assets/release-role.js",
+              "exists": true,
+              "expectedBytes": 1319986,
+              "actualBytes": 1319986,
+              "expectedSha256": "4c0341c0821b66a5e06cdfd6adc89626f198916802cb42f9a8390c7430f3d02d",
+              "actualSha256": "4c0341c0821b66a5e06cdfd6adc89626f198916802cb42f9a8390c7430f3d02d",
+              "matches": true
+            }
+          ],
+          "allChunksMatch": true
+        },
+        {
+          "file": "outer-agent-graph.json",
+          "sourceSha": "b536f760acfcf38954d10140487d37e77ee33a15",
+          "releaseRole": null,
+          "entryFile": "/assets/outer-recovery-agent.js",
+          "sourceMatchesIdentity": true,
+          "chunks": [
+            {
+              "file": "/assets/outer-recovery-agent.js",
+              "exists": true,
+              "expectedBytes": 19939,
+              "actualBytes": 19939,
+              "expectedSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+              "actualSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+              "matches": true
+            }
+          ],
+          "allChunksMatch": true
+        }
+      ]
+    },
+    {
+      "label": "LEGACY",
+      "sourceDist": "D:\\codex-worktrees\\sheet-url-baseline-20261017\\dist",
+      "distExists": true,
+      "identity": {
+        "buildId": "cc475cd1837404440e893694147fee17c46a04d2",
+        "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+        "outerAgentUrl": "/assets/outer-recovery-agent.js",
+        "pwaLifecycle": "prompt-close-all-v1",
+        "releaseRole": "standard",
+        "requiredDbCompatibilityFingerprint": "59cab323aedb35d8677e289545053591d34348970bfa268be3c4c437faf7c91f",
+        "roleEntrySha256": "858b0923f90e819e815402954d597d91d22c8a1713c20e031cc8e40772265e99",
+        "roleEntryUrl": "/assets/release-role.js",
+        "schemaVersion": 1,
+        "serviceWorkerSha256": "4f85d9cf907ee2cd0c2af9351cb745ad7581b4eeb4afb5eff9dbb7b2e72ef7c6",
+        "serviceWorkerUrl": "/sw.js",
+        "sourceSha": "cc475cd1837404440e893694147fee17c46a04d2",
+        "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+      },
+      "copiedFiles": [
+        {
+          "name": "release-identity.json",
+          "status": "copied",
+          "source": "D:\\codex-worktrees\\sheet-url-baseline-20261017\\dist\\release-identity.json",
+          "copy": "LEGACY/release-identity.json",
+          "bytes": 751,
+          "sha256": "fa88e3ec2a2434f53199db5c355192f74e0cba6e209ed99a3998b1dc08303b8d",
+          "copySha256": "fa88e3ec2a2434f53199db5c355192f74e0cba6e209ed99a3998b1dc08303b8d",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 0,
+          "replacementCharacters": 0
+        },
+        {
+          "name": "release-role-graph.json",
+          "status": "copied",
+          "source": "D:\\codex-worktrees\\sheet-url-baseline-20261017\\dist\\release-role-graph.json",
+          "copy": "LEGACY/release-role-graph.json",
+          "bytes": 91504,
+          "sha256": "601bd56ee64433a503db9b9991f5f7862001258e38b1b26a0b82d0cba7907575",
+          "copySha256": "601bd56ee64433a503db9b9991f5f7862001258e38b1b26a0b82d0cba7907575",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 0,
+          "replacementCharacters": 0
+        },
+        {
+          "name": "outer-agent-graph.json",
+          "status": "copied",
+          "source": "D:\\codex-worktrees\\sheet-url-baseline-20261017\\dist\\outer-agent-graph.json",
+          "copy": "LEGACY/outer-agent-graph.json",
+          "bytes": 1725,
+          "sha256": "8e328546ca85af02bd4a96bd9b711a5edfd2e4934c714d06b586f3fccf887ecc",
+          "copySha256": "8e328546ca85af02bd4a96bd9b711a5edfd2e4934c714d06b586f3fccf887ecc",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 0,
+          "replacementCharacters": 0
+        },
+        {
+          "name": "index.html",
+          "status": "copied",
+          "source": "D:\\codex-worktrees\\sheet-url-baseline-20261017\\dist\\index.html",
+          "copy": "LEGACY/index.html",
+          "bytes": 1824,
+          "sha256": "83bb2d8194ea1ccbdee6a3461536ea0844be1e9de9737598da73fc3e1d4746c8",
+          "copySha256": "83bb2d8194ea1ccbdee6a3461536ea0844be1e9de9737598da73fc3e1d4746c8",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 39,
+          "replacementCharacters": 0
+        },
+        {
+          "name": "sw.js",
+          "status": "copied",
+          "source": "D:\\codex-worktrees\\sheet-url-baseline-20261017\\dist\\sw.js",
+          "copy": "LEGACY/sw.js",
+          "bytes": 6036,
+          "sha256": "4f85d9cf907ee2cd0c2af9351cb745ad7581b4eeb4afb5eff9dbb7b2e72ef7c6",
+          "copySha256": "4f85d9cf907ee2cd0c2af9351cb745ad7581b4eeb4afb5eff9dbb7b2e72ef7c6",
+          "byteIdentical": true,
+          "encoding": "strict UTF-8",
+          "bom": false,
+          "crlf": 0,
+          "lf": 0,
+          "replacementCharacters": 0
+        }
+      ],
+      "assetsDirectoryExists": true,
+      "assetJavascript": [
+        {
+          "file": "assets/backup.worker-DxX1LJQI.js",
+          "bytes": 254163,
+          "sha256": "7aaa26e65376ec7bb3a6308a0b1f2fcbaf9029fb212040ad0984526b79dfbe51"
+        },
+        {
+          "file": "assets/FocusModeContainer-Dw4_WipJ.js",
+          "bytes": 157589,
+          "sha256": "29e02d32735ae10d392aa641d9049b7f83693669162e2928fb3a9cc796d7e6f3"
+        },
+        {
+          "file": "assets/ImportScreen-CsvyyIuA.js",
+          "bytes": 18632,
+          "sha256": "0775493aee45118016541f1021cf4dc0548b6fffdbd61c7f1b7712510fb158b6"
+        },
+        {
+          "file": "assets/outer-recovery-agent.js",
+          "bytes": 19939,
+          "sha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e"
+        },
+        {
+          "file": "assets/persistence.worker-BlDWQYfg.js",
+          "bytes": 317914,
+          "sha256": "7d12537503cda977705f39c07222646581f6b635ccbca0e72dfc5c7bb8707de7"
+        },
+        {
+          "file": "assets/release-role.js",
+          "bytes": 1316523,
+          "sha256": "858b0923f90e819e815402954d597d91d22c8a1713c20e031cc8e40772265e99"
+        },
+        {
+          "file": "assets/route.worker-vkpwhvUq.js",
+          "bytes": 19928,
+          "sha256": "71db28340a1f002f14a35a0ebbcdfc2683447040fb7678aac8cc06ea58452641"
+        },
+        {
+          "file": "assets/xlsx.worker-z7XFzpHI.js",
+          "bytes": 1587385,
+          "sha256": "d626c8ca68bcd94518b6f8836be0b081b751b1e994d77af27795aa91c15f130c"
+        }
+      ],
+      "identityAssetChecks": [
+        {
+          "kind": "roleEntry",
+          "file": "/assets/release-role.js",
+          "exists": true,
+          "expectedSha256": "858b0923f90e819e815402954d597d91d22c8a1713c20e031cc8e40772265e99",
+          "actualSha256": "858b0923f90e819e815402954d597d91d22c8a1713c20e031cc8e40772265e99",
+          "matches": true
+        },
+        {
+          "kind": "outerAgent",
+          "file": "/assets/outer-recovery-agent.js",
+          "exists": true,
+          "expectedSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "actualSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+          "matches": true
+        },
+        {
+          "kind": "serviceWorker",
+          "file": "/sw.js",
+          "exists": true,
+          "expectedSha256": "4f85d9cf907ee2cd0c2af9351cb745ad7581b4eeb4afb5eff9dbb7b2e72ef7c6",
+          "actualSha256": "4f85d9cf907ee2cd0c2af9351cb745ad7581b4eeb4afb5eff9dbb7b2e72ef7c6",
+          "matches": true
+        }
+      ],
+      "graphChecks": [
+        {
+          "file": "release-role-graph.json",
+          "sourceSha": "cc475cd1837404440e893694147fee17c46a04d2",
+          "releaseRole": "standard",
+          "entryFile": "/assets/release-role.js",
+          "sourceMatchesIdentity": true,
+          "chunks": [
+            {
+              "file": "/assets/FocusModeContainer-Dw4_WipJ.js",
+              "exists": true,
+              "expectedBytes": 157589,
+              "actualBytes": 157589,
+              "expectedSha256": "29e02d32735ae10d392aa641d9049b7f83693669162e2928fb3a9cc796d7e6f3",
+              "actualSha256": "29e02d32735ae10d392aa641d9049b7f83693669162e2928fb3a9cc796d7e6f3",
+              "matches": true
+            },
+            {
+              "file": "/assets/ImportScreen-CsvyyIuA.js",
+              "exists": true,
+              "expectedBytes": 18632,
+              "actualBytes": 18632,
+              "expectedSha256": "0775493aee45118016541f1021cf4dc0548b6fffdbd61c7f1b7712510fb158b6",
+              "actualSha256": "0775493aee45118016541f1021cf4dc0548b6fffdbd61c7f1b7712510fb158b6",
+              "matches": true
+            },
+            {
+              "file": "/assets/release-role.js",
+              "exists": true,
+              "expectedBytes": 1316523,
+              "actualBytes": 1316523,
+              "expectedSha256": "858b0923f90e819e815402954d597d91d22c8a1713c20e031cc8e40772265e99",
+              "actualSha256": "858b0923f90e819e815402954d597d91d22c8a1713c20e031cc8e40772265e99",
+              "matches": true
+            }
+          ],
+          "allChunksMatch": true
+        },
+        {
+          "file": "outer-agent-graph.json",
+          "sourceSha": "cc475cd1837404440e893694147fee17c46a04d2",
+          "releaseRole": null,
+          "entryFile": "/assets/outer-recovery-agent.js",
+          "sourceMatchesIdentity": true,
+          "chunks": [
+            {
+              "file": "/assets/outer-recovery-agent.js",
+              "exists": true,
+              "expectedBytes": 19939,
+              "actualBytes": 19939,
+              "expectedSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+              "actualSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+              "matches": true
+            }
+          ],
+          "allChunksMatch": true
+        }
+      ]
+    }
+  ]
+}

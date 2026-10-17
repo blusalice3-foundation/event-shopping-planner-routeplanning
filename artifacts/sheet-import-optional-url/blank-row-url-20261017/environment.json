@@ -1,0 +1,207 @@
+{
+  "collectedAt": "2026-10-17T16:42:19.2265614+09:00",
+  "appliesTo": [
+    "before",
+    "after"
+  ],
+  "operatingSystem": {
+    "caption": "Microsoft Windows 11 Pro",
+    "version": "10.0.26200",
+    "build": "26200",
+    "architecture": "64 ビット"
+  },
+  "powerShell": {
+    "version": "7.6.3",
+    "edition": "Core"
+  },
+  "node": "v24.19.0",
+  "npm": "11.19.0",
+  "playwright": "Version 1.62.1",
+  "chromium": {
+    "version": "151.0.7922.34",
+    "executablePath": "C:\\Users\\blu\\AppData\\Local\\ms-playwright\\chromium-1234\\chrome-win64\\chrome.exe"
+  },
+  "headless": true,
+  "browserChannel": null,
+  "performanceHeadedEnvironment": null,
+  "ci": null,
+  "baseURL": "http://127.0.0.1:4173",
+  "workers": 1,
+  "testCommand": "npx playwright test tests/browser/responsive-performance.spec.ts --grep \"local shopping operations: (150|500) items.*@shopping-performance\" --workers=1 --output <stage>/playwright --reporter=list",
+  "responseGate": {
+    "minimumSamples": 20,
+    "medianMsAtMost": 55,
+    "p95MsAtMost": 100
+  },
+  "percentileMethod": "nearest rank: sorted values at ceil(n*p)-1",
+  "profiles": [
+    {
+      "itemCount": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "width": 1280,
+      "height": 900,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "width": 390,
+      "height": 844,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "width": 1280,
+      "height": 900,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "width": 390,
+      "height": 844,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "width": 1280,
+      "height": 900,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "width": 390,
+      "height": 844,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "width": 1280,
+      "height": 900,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "width": 390,
+      "height": 844,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "width": 1280,
+      "height": 900,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "width": 390,
+      "height": 844,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "width": 1280,
+      "height": 900,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "width": 390,
+      "height": 844,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "width": 1280,
+      "height": 900,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "width": 390,
+      "height": 844,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "width": 1280,
+      "height": 900,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    },
+    {
+      "itemCount": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "width": 390,
+      "height": 844,
+      "initialRestoreWidth": 1280,
+      "initialRestoreHeight": 900
+    }
+  ],
+  "harness": {
+    "path": "tests/browser/responsive-performance.spec.ts",
+    "sha256": "4f5ac824a820ba3a58c325e316c9f3545e14404bb060d150374585d41e98f84f"
+  },
+  "configuration": {
+    "path": "playwright.config.ts",
+    "sha256": "7e04b0fdb3ab7d32e44a26a21c374e24eef551350d69683d848d3a07805e08a9"
+  }
+}

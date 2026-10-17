@@ -1,0 +1,10 @@
+
+ RUN  v4.1.10 D:/codex-worktrees/sheet-url-20261017
+
+··························
+
+ Test Files  2 passed (2)
+      Tests  26 passed (26)
+   Start at  00:38:14
+   Duration  8.57s (transform 953ms, setup 579ms, import 1.98s, tests 3.47s, environment 2.11s)
+

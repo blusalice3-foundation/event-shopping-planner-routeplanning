@@ -1,3 +1,4 @@
+import { normalizeSnapshotItemOptionalFields } from "./itemOptionalFields";
 import { setOwnValue } from "./ownRecord";
 import { recordEntry } from "../utils/ownRecord";
 import { normalizeExecutionVisitDay } from "./visitProjection";
@@ -1711,7 +1712,9 @@ export function createAppBackup(
   eventSettings: AppBackupEventSettings = { blockDetectionSettings: {} },
 ): AppBackupV1 {
   // JSON omits optional undefined fields; validate exactly that representation.
-  const source = JSON.parse(JSON.stringify(data)) as AppData | LegacySnapshot;
+  const source = normalizeSnapshotItemOptionalFields(
+    JSON.parse(JSON.stringify(data)) as AppData | LegacySnapshot,
+  );
   const errors = validateSnapshotStructure(
     source,
     Object.prototype.hasOwnProperty.call(source, "eventConsistency"),
@@ -1741,7 +1744,7 @@ export function serializeAppBackup(backup: AppBackupV1): string {
       kind: backup.kind,
       version: backup.version,
       exportedAt: backup.exportedAt,
-      data: backup.data,
+      data: normalizeSnapshotItemOptionalFields(backup.data),
     },
     null,
     2,
@@ -1774,7 +1777,8 @@ export function parseAppBackup(source: unknown): AppBackupParseResult {
     addError(errors, "version", "未対応のバックアップバージョンです");
   if (!isCanonicalIsoDate(root.exportedAt))
     addError(errors, "exportedAt", "ISO形式の日時である必要があります");
-  const data = requireRecord(root.data, "data", errors);
+  const rawData = requireRecord(root.data, "data", errors);
+  const data = rawData && normalizeSnapshotItemOptionalFields(rawData);
   if (data) errors.push(...validateSnapshotStructure(data, root.version === 2));
   if (root.version === 1 && root.eventSettings !== undefined)
     validateEventSettings(

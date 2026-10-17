@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-17T14:56:10.1401031+09:00",
+  "runName": "diagnostic-1",
+  "cases": [
+    "retry: 150 direct",
+    "startup-B06: 150 direct",
+    "update: 500 worker"
+  ],
+  "phaseOrder": [
+    "after",
+    "before"
+  ],
+  "samplesPerCasePerPhase": 20,
+  "rawFiles": 6,
+  "validatedSamples": 120,
+  "diagnosticOnly": true,
+  "primaryEvidenceReplacement": false,
+  "nodeBrowserClockConversion": false,
+  "nearestRankP95": true,
+  "sampleMetrics": 6440,
+  "summaryMetrics": 322,
+  "mainFrozenSha256": "65b44f4b18fb4deefc80592a24856e4252ced0adf511873e71be405c9a2c05c0",
+  "diagnosticFrozenSha256": "bd6b66b999fe13587929d6414b500335117d8df4dfdac4ec36189003e882e68d",
+  "summarizerSha256": "C038F1D06A3AD30E9B183B88A2738748F977E3E8CA666C0185AA5102138FCCA0",
+  "sourceFiles": [
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-after-run.json",
+      "sha256": "AEA1E0CA73FB37CD99478B2F0782BB433FDF62676CC155F53D96C34635B99938"
+    },
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-after\\sheet-import-optional-url.-22c9f-direct-sheet-url-diagnostic-chromium\\sheet-url-diagnostic-timings.json",
+      "sha256": "C7C956F65D151B609C0B050DC75BD1CF5A5C6EF35DA817B61F854DFD903EAEDF"
+    },
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-after\\sheet-import-optional-url.-5df7f-direct-sheet-url-diagnostic-chromium\\sheet-url-diagnostic-timings.json",
+      "sha256": "EFE174C007B91FDE3584A646CCF2F97756FA2C5C37486D1302DBBDE50F1740EA"
+    },
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-after\\sheet-import-optional-url.-fa669-worker-sheet-url-diagnostic-chromium\\sheet-url-diagnostic-timings.json",
+      "sha256": "45220F0D73CECCA5A116D66A11AE5EDBDF67B3063CD8F8E6A2C0FAB43CC54CE1"
+    },
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-before-run.json",
+      "sha256": "E981DC1B699FA5A6C7F8D43B6985A73E65218D7FC2EBC969CFD3A39188FD1111"
+    },
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-before\\sheet-import-optional-url.-22c9f-direct-sheet-url-diagnostic-chromium\\sheet-url-diagnostic-timings.json",
+      "sha256": "1CF589E9CA69726303D185E21F40A58FE4FD99F74F30ACAE2E64741338C2BE3D"
+    },
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-before\\sheet-import-optional-url.-5df7f-direct-sheet-url-diagnostic-chromium\\sheet-url-diagnostic-timings.json",
+      "sha256": "17AEC6544C22EA0DF2D4E1EDC9250E22622793247BD33F8FE3C54978A613952C"
+    },
+    {
+      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\browser-diagnostic-3cases\\diagnostic-1-before\\sheet-import-optional-url.-fa669-worker-sheet-url-diagnostic-chromium\\sheet-url-diagnostic-timings.json",
+      "sha256": "4BD12EDCFF622AB6E99CA9C8EF02852D61B50A5B8ABB5AD64475BC6F3C803B0F"
+    }
+  ],
+  "limitations": [
+    "Diagnostic-only instrumentation changes outer elapsed times; these results do not replace the frozen 48-case primary evidence or relax its criteria.",
+    "Node monotonic spans and browser epoch events remain separate. No Node/browser timestamp subtraction or point clock-skew conversion is performed.",
+    "Browser pre-evaluate to click and DOM-to-post-expect boundary are upper bounds including transport and scheduling, not exact Playwright actionability/polling costs.",
+    "Transaction windows use browser evaluation boundary observations, not an exact conversion of Node outer start/end. Overlap is descriptive; sums of concurrent transactions are not critical-path time.",
+    "Retry failure-setup aborts occur before the timed retry. Update post-save validation reads occur after saveMs. Their separate windows and before/after classifications preserve that distinction.",
+    "B06 per-sample total-minus-failure-minus-retry is reported; independent medians/p95 values are not additive.",
+    "Missing optional events or unfinished transaction endpoints remain null and numeric coverage is reported. They are never converted to zero latency.",
+    "Iteration pairs identify shared case/fixture order only; phases used independent fresh browser contexts and are not simultaneous observations.",
+    "One-shot requestAnimationFrame markers are observations of the next frame callback, not proof of physical display presentation."
+  ]
+}
