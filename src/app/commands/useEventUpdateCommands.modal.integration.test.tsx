@@ -37,7 +37,7 @@ afterEach(() => {
 });
 
 it.each(["items-only", "source-switch"] as const)(
-  "%s: discards quantity consent after changing correspondence while a failed save is pending",
+  "%s: automatically matches items and preserves quantity choices through a failed pending save",
   async (kind) => {
     const items = ["A", "B"].map((id) => ({
       ...sheetItem(0),
@@ -176,13 +176,16 @@ it.each(["items-only", "source-switch"] as const)(
     }
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "確認を開始" }));
-    const correspondence = await screen.findByRole("combobox", {
-      name: "取込1行目の対応",
+    await screen.findByRole("button", {
+      name: kind === "items-only" ? "更新を実行" : "更新元を切り替えて更新",
     });
+    expect(
+      screen.queryByRole("combobox", { name: /行目の対応/ }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: "シート取込結果" }),
     ).toHaveTextContent("取込対象: 1件、必須項目不足による除外: 1行");
-    fireEvent.change(correspondence, { target: { value: "A" } });
+
     fireEvent.click(
       screen.getByRole("checkbox", {
         name: /スプレッドシートの予定数量へ変更する/,
@@ -198,7 +201,11 @@ it.each(["items-only", "source-switch"] as const)(
     ).toBe(4);
     expect(durable.current.eventLists[EVENT]).toBe(items);
 
-    fireEvent.change(correspondence, { target: { value: "B" } });
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: /スプレッドシートの予定数量へ変更する/,
+      }),
+    );
     expect(
       screen.getByRole("checkbox", {
         name: /スプレッドシートの予定数量へ変更する/,
@@ -222,11 +229,11 @@ it.each(["items-only", "source-switch"] as const)(
     fireEvent.click(screen.getByRole("button", { name: confirmName }));
     await waitFor(() => expect(commit).toHaveBeenCalledTimes(2));
     expect(
-      durable.current.eventLists[EVENT].find(({ id }) => id === "B"),
+      durable.current.eventLists[EVENT].find(({ id }) => id === "A"),
     ).toMatchObject({
       quantity: 2,
       title: "更新された品目",
-      remarks: "Bの購入記録",
+      remarks: "Aの購入記録",
       futureOptionalField: { preserved: true },
     });
     expect(durable.current.eventMetadata[EVENT].spreadsheetUrl).toBe(

@@ -93,6 +93,29 @@ function jsonRoundTrip(result: Awaited<ReturnType<typeof importBook>>) {
   return parsed.data.eventLists[result.eventName] as ShoppingItem[];
 }
 
+function expectAutomaticOrder(before: ShoppingItem[], rows: SheetItem[]) {
+  const diff = createEventUpdateDiff(before, rows);
+  expect(diff.unresolvedMatches).toEqual([]);
+  expect(diff.matching).toBeUndefined();
+  expect(diff.itemsToAdd).toEqual([]);
+  expect(diff.itemsToDelete).toEqual([]);
+  const after = applyEventUpdateToItems(before, diff);
+  expect(new Set(after.map((item) => item.id)).size).toBe(before.length);
+  const userRecords = (items: ShoppingItem[]) =>
+    items.map(({ id, price, remarks, purchaseStatus }) => ({
+      id,
+      price,
+      remarks,
+      purchaseStatus,
+    }));
+  expect(userRecords(after)).toEqual(userRecords(before));
+  expect(after.map((item) => item.quantity)).toEqual(
+    rows.map((item) => item.quantity),
+  );
+  expect(after.map((item) => item.catalogPrice)).toEqual(
+    rows.map((item) => item.catalogPrice),
+  );
+}
 describe("sheet identity provenance through production ZIP preflight and Worker engine", () => {
   it.each(["full", "simple"] as const)(
     "%s keeps inferred values unverified across repeated Excel and JSON round-trips",
@@ -115,11 +138,7 @@ describe("sheet identity provenance through production ZIP preflight and Worker 
         const restored =
           format === "simple" ? result.items : jsonRoundTrip(result);
         for (const rows of [incoming(), incoming().reverse()]) {
-          const diff = createEventUpdateDiff(restored, rows);
-          expect(diff.unresolvedMatches).toHaveLength(2);
-          expect(() => applyEventUpdateToItems(restored, diff)).toThrow(
-            /対応関係/u,
-          );
+          expectAutomaticOrder(restored, rows);
           expect(restored.map((item) => item.quantity)).toEqual([2, 5]);
         }
         result = await importBook(await exportBook(restored, format));
@@ -160,9 +179,7 @@ describe("sheet identity provenance through production ZIP preflight and Worker 
       ]);
       const restored = jsonRoundTrip(result);
       const next = await importBook(await exportBook(restored));
-      expect(
-        createEventUpdateDiff(next.items, incoming()).unresolvedMatches,
-      ).toHaveLength(2);
+      expectAutomaticOrder(next.items, incoming());
       expect(next.items.map((item) => item.quantity)).toEqual([2, 5]);
     },
   );
@@ -214,13 +231,13 @@ describe("sheet identity provenance through production ZIP preflight and Worker 
     ]);
   });
 
-  it("manual correspondence establishes new sheet values while preserving user records and purchased-quantity confirmation", async () => {
+  it("automatic correspondence establishes new sheet values while preserving user records and purchased-quantity confirmation", async () => {
     const result = await importBook(await exportBook(records()));
     const restored = jsonRoundTrip(result);
     restored[1].purchaseStatus = "Purchased";
     const rows = incoming();
     rows[1] = { ...rows[1], quantity: 3, rawQuantity: "3" };
-    const diff = createEventUpdateDiff(restored, rows, { "0": "1", "1": "2" });
+    const diff = createEventUpdateDiff(restored, rows);
     expect(diff.unresolvedMatches).toEqual([]);
     expect(diff.pendingPurchasedQuantityChanges).toMatchObject([
       { itemId: "2", currentQuantity: 5, nextQuantity: 3 },
@@ -244,16 +261,13 @@ describe("sheet identity provenance through production ZIP preflight and Worker 
     ).toEqual([]);
   });
 
-  it("clears unverified identity even when the confirmed sheet values are unchanged", async () => {
+  it("establishes provenance even when the automatically matched sheet values are unchanged", async () => {
     const before = records().map((item, index) => ({
       ...item,
       catalogPrice: index === 0 ? 600 : 800,
       sheetRemarks: "シート備考",
     }));
-    const diff = createEventUpdateDiff(before, incoming(), {
-      "0": "1",
-      "1": "2",
-    });
+    const diff = createEventUpdateDiff(before, incoming());
     expect(diff.itemsToUpdate).toHaveLength(2);
     expect(
       applyEventUpdateToItems(before, diff).every(
@@ -261,10 +275,7 @@ describe("sheet identity provenance through production ZIP preflight and Worker 
       ),
     ).toBe(true);
     before[1].protectionLevel = "full";
-    const protectedDiff = createEventUpdateDiff(before, incoming(), {
-      "0": "1",
-      "1": "2",
-    });
+    const protectedDiff = createEventUpdateDiff(before, incoming());
     expect(applyEventUpdateToItems(before, protectedDiff)[1]).toEqual(
       before[1],
     );
@@ -306,9 +317,7 @@ describe("sheet identity provenance through production ZIP preflight and Worker 
       expect(result.items.every((item) => !item.sheetIdentityVerified)).toBe(
         true,
       );
-      expect(
-        createEventUpdateDiff(result.items, incoming()).unresolvedMatches,
-      ).toHaveLength(2);
+      expectAutomaticOrder(result.items, incoming());
     },
   );
 });
@@ -394,16 +403,14 @@ describe("event metadata text through production ZIP preflight and Worker engine
   );
 });
 
-describe("only confirmed source values acquire identity provenance", () => {
+describe("only actual sheet values establish identity provenance", () => {
   it("keeps old JSON and legacy CSV values unverified before and after Excel export", async () => {
     const oldJson = records().map((item) => ({
       ...item,
       catalogPrice: item.price,
       sheetRemarks: "シート備考",
     }));
-    expect(
-      createEventUpdateDiff(oldJson, incoming()).unresolvedMatches,
-    ).toHaveLength(2);
+    expectAutomaticOrder(oldJson, incoming());
     const csv = records()
       .map((item) =>
         [
@@ -434,9 +441,7 @@ describe("only confirmed source values acquire identity provenance", () => {
       true,
     );
     const result = await importBook(await exportBook(added));
-    expect(
-      createEventUpdateDiff(result.items, incoming()).unresolvedMatches,
-    ).toHaveLength(2);
+    expectAutomaticOrder(result.items, incoming());
   });
 
   it("marks actual Google sheet values as verified when creating items", () => {

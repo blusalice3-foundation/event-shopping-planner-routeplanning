@@ -163,34 +163,30 @@ describe("one-to-one sheet identity", () => {
     const after = applyEventUpdateToItems(before, diff);
     expect(after).toEqual(before);
   });
-  it("requires a choice for a title change and never offers a candidate across the four-field group", () => {
+  it("automatically matches changed titles only within the same four-field group", () => {
     const before = [item("a"), item("b", { circle: "別", number: "02a" })];
     const rows = [
       incoming(item("new-a", { title: "改題" })),
       incoming(item("new-b", { circle: "別", number: "02a", title: "改題2" })),
     ];
-    const pending = createEventUpdateDiff(before, rows);
-    expect(
-      pending.matching?.proposals.map((value) =>
-        value.candidates.map((candidate) => candidate.id),
-      ),
-    ).toEqual([["a"], ["b"]]);
-    expect(() => applyEventUpdateToItems(before, pending)).toThrow();
-    const accepted = createEventUpdateDiff(before, rows, {
-      "0": "a",
-      "1": "new",
-    });
-    const after = applyEventUpdateToItems(before, accepted);
+    const diff = createEventUpdateDiff(before, rows);
+    expect(diff.matching).toBeUndefined();
+    expect(diff.unresolvedMatches).toEqual([]);
+    expect(diff.itemsToAdd).toEqual([]);
+    expect(diff.itemsToDelete).toEqual([]);
+    const after = applyEventUpdateToItems(before, diff);
     expect(after.find((value) => value.id === "a")?.title).toBe("改題");
-    expect(after.find((value) => value.title === "改題2")?.id).not.toBe("b");
-    expect(
-      createEventUpdateDiff(
-        [before[0]],
-        [incoming(item("new", { circle: "異なる", title: "改題" }))],
-      ).matching,
-    ).toBeUndefined();
+    expect(after.find((value) => value.id === "b")?.title).toBe("改題2");
+    const differentGroup = createEventUpdateDiff(
+      [before[0]],
+      [incoming(item("new", { circle: "異なる", title: "改題" }))],
+    );
+    expect(differentGroup.itemsToDelete).toEqual([before[0]]);
+    expect(differentGroup.itemsToAdd).toMatchObject([
+      { circle: "異なる", title: "改題" },
+    ]);
   });
-  it("does not use user price/memo as unknown legacy provenance, or reuse one protected ID", () => {
+  it("falls back to order without using user fields as provenance or reusing a protected ID", () => {
     const a = item("a", {
       title: "同名",
       catalogPrice: undefined,
@@ -199,6 +195,8 @@ describe("one-to-one sheet identity", () => {
     });
     const b = item("b", {
       title: "同名",
+      price: 0,
+      remarks: "Bの記録",
       catalogPrice: undefined,
       sheetRemarks: undefined,
     });
@@ -206,16 +204,22 @@ describe("one-to-one sheet identity", () => {
       incoming(item("new-a", { title: "同名", catalogPrice: 500 })),
       incoming(item("new-b", { title: "同名", catalogPrice: 700 })),
     ];
-    expect(createEventUpdateDiff([a, b], rows).unresolvedMatches).toHaveLength(
-      2,
-    );
-    expect(
-      createEventUpdateDiff([a, b], rows, { "0": "a", "1": "a" })
-        .unresolvedMatches,
-    ).toHaveLength(1);
-    const diff = createEventUpdateDiff([a, b], rows, { "0": "a", "1": "b" });
-    expect(new Set(diff.itemsToUpdate.map((value) => value.id)).size).toBe(
-      diff.itemsToUpdate.length,
+    const diff = createEventUpdateDiff([a, b], rows);
+    expect(diff.unresolvedMatches).toEqual([]);
+    expect(diff.itemsToUpdate.map((value) => value.id)).toEqual(["b"]);
+    expect(diff.protectedFromUpdate).toBe(1);
+    expect(diff.itemsToAdd).toEqual([]);
+    expect(diff.itemsToDelete).toEqual([]);
+    expect(applyEventUpdateToItems([a, b], diff)).toEqual([
+      a,
+      {
+        ...b,
+        catalogPrice: 700,
+        sheetRemarks: "",
+      },
+    ]);
+    expect(createEventUpdateDiff([a, b], rows, { "0": "a", "1": "a" })).toEqual(
+      diff,
     );
   });
   it("keeps identical duplicate rows without unnecessary identity choices and encodes separators safely", () => {

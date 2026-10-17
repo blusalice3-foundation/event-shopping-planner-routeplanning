@@ -111,7 +111,7 @@ describe("sheet diagnostics through the actual overlay and update modal", () => 
       expect(input.actions.item.handleCancelUpdate).toHaveBeenCalledOnce();
     });
   }
-  it("retains existing CSV review gating alongside ordinary exclusions", async () => {
+  it("confirms CSV warnings with the update button without a separate checkbox", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
@@ -123,23 +123,31 @@ describe("sheet diagnostics through the actual overlay and update modal", () => 
       url: "https://docs.google.com/spreadsheets/d/test/edit",
       sheetName: "品目表",
     });
-    render(
-      <AppOverlayLayer
-        {...props({
-          kind: "items-only",
-          eventName: SHEET_EVENT,
-          baseSource: null,
-          diff,
-        })}
-      />,
-    );
+    const input = props({
+      kind: "items-only",
+      eventName: SHEET_EVENT,
+      baseSource: null,
+      diff,
+    });
+    render(<AppOverlayLayer {...input} />);
     await screen.findByRole("region", { name: "シート取込結果" });
+    expect(diff.csvReview).toBeDefined();
+    expect(screen.getByText(diff.csvReview!.warnings[0])).toBeVisible();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     const button = screen.getByRole("button", { name: "更新を実行" });
-    expect(button).toBeDisabled();
-    fireEvent.click(screen.getByLabelText("除外行と削除候補を確認しました"));
     expect(button).toBeEnabled();
+    fireEvent.click(button);
+    expect(
+      input.actions.item.handleConfirmUpdate,
+    ).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        acceptCsvExclusions: true,
+        priceSyncMode: "preserve",
+        remarksSyncMode: "preserve",
+      }),
+    );
   });
-  it("keeps diagnostics across identity selections and replaces them with the next import", async () => {
+  it("shows diagnostics after automatic title matching and replaces them with the next import", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({ ok: true, text: async () => sheetCsv(4, "mixed") })),
@@ -166,8 +174,12 @@ describe("sheet diagnostics through the actual overlay and update modal", () => 
     const summary = await screen.findByRole("region", {
       name: "シート取込結果",
     });
-    const select = screen.getByRole("combobox", { name: /取込.*行目の対応/ });
-    fireEvent.change(select, { target: { value: previous.id } });
+    expect(
+      screen.queryByRole("combobox", { name: /取込.*行目の対応/ }),
+    ).not.toBeInTheDocument();
+    expect(diff.itemsToUpdate.some((item) => item.id === previous.id)).toBe(
+      true,
+    );
     expect(summary).toHaveTextContent("必須項目不足による除外: 1行");
     expect(screen.getByRole("button", { name: "更新を実行" })).toBeEnabled();
     const next = {

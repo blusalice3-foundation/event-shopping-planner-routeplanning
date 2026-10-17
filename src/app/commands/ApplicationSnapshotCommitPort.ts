@@ -7,6 +7,8 @@ export type ApplicationSnapshotGuard = (snapshot: PersistenceSnapshot) => void;
 
 /** Explicit destination days for route patches spanning multiple dates. */
 export interface ApplicationSnapshotCommitContext {
+  /** Skip the ordinary placement review after an event update was reviewed. */
+  confirm?: boolean;
   routeDays?: Record<string, Record<string, string[]>>;
 }
 
