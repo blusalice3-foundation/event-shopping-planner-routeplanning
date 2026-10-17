@@ -1,0 +1,3 @@
+Listing tests:
+  [chromium] › responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=true, mapVisible=true, layout=pc @shopping-performance
+Total: 1 test in 1 file

@@ -70,8 +70,10 @@ export const parseSpreadsheetPaste = (
 ): SpreadsheetPasteParseResult => {
   const rows = pasteData
     .split(/\r\n|\n|\r/)
-    .map((text, index) => ({ text, lineNumber: index + 1 }))
-    .filter(({ text }) => text.trim() !== "");
+    .map((text, index) => ({ text, lineNumber: index + 1 }));
+  while (rows.length > 0 && rows[rows.length - 1].text.trim() === "") {
+    rows.pop();
+  }
 
   if (rows.length === 0) {
     return {
@@ -82,7 +84,11 @@ export const parseSpreadsheetPaste = (
   }
 
   const parsedRows = rows.map(({ text, lineNumber }) => ({
-    cells: text.split("\t"),
+    // URL欄は貼付け対象外のため、先頭・途中の空行も同じ位置に保持する。
+    cells:
+      text.trim() === ""
+        ? SPREADSHEET_PASTE_COLUMNS.map(() => "")
+        : text.split("\t"),
     lineNumber,
   }));
   const invalidRows: SpreadsheetPasteInvalidRow[] = parsedRows

@@ -104,7 +104,7 @@ async function restore(
     page.getByRole("heading", { name: SHEET_EVENT, exact: true }),
   ).toBeVisible();
 }
-async function finishAddition(page: Page) {
+async function finishAddition(page: Page, expectedCount = 3) {
   const review = page.getByRole("dialog", {
     name: "所属・配置の変更を確認",
     exact: true,
@@ -117,7 +117,7 @@ async function finishAddition(page: Page) {
           (await stored(page, "eventLists"))[SHEET_EVENT] as
             | unknown[]
             | undefined
-        )?.length === 3,
+        )?.length === expectedCount,
     )
     .toBe(true);
   if (await review.isVisible())
@@ -126,7 +126,7 @@ async function finishAddition(page: Page) {
       .click();
   await expect
     .poll(async () => (await stored(page, "eventLists"))[SHEET_EVENT])
-    .toHaveLength(3);
+    .toHaveLength(expectedCount);
   await expect(
     page.getByRole("heading", { name: SHEET_EVENT, exact: true }),
   ).toBeVisible();
@@ -272,6 +272,62 @@ for (const storage of ["direct", "worker"])
       await expect(
         page.getByRole("heading", { name: SHEET_EVENT, exact: true }),
       ).toBeVisible();
+    });
+    test("seven-column repaste keeps blank-row URLs aligned through save and reload", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      await page
+        .getByRole("button", { name: "新規リスト作成", exact: true })
+        .click();
+      await page.getByLabel("即売会名", { exact: true }).fill(SHEET_EVENT);
+      const circles = page.getByLabel("M列 サークル名", { exact: true });
+      const paste = async (text: string) =>
+        circles.evaluate((element, text) => {
+          const clipboardData = new DataTransfer();
+          clipboardData.setData("text", text);
+          element.dispatchEvent(
+            new ClipboardEvent("paste", {
+              clipboardData,
+              bubbles: true,
+              cancelable: true,
+            }),
+          );
+        }, text);
+      const first = "サークルA\t1日目\t東A\t01a\t新刊A\t1000\t備考A";
+      const last = "サークルB\t1日目\t東A\t03a\t新刊B\t500\t備考B";
+      await paste([first, first, last].join("\n"));
+      const urls = page.getByLabel("URL（7列貼り付け対象外）", { exact: true });
+      const originalUrls = "https://a.test\nhttps://blank.test\nhttps://b.test";
+      await urls.fill(originalUrls);
+      await paste([first, "", last, ""].join("\r\n"));
+      await expect(circles).toHaveValue("サークルA\n\nサークルB");
+      await expect(urls).toHaveValue(originalUrls);
+      await page
+        .getByRole("button", { name: "リストを作成", exact: true })
+        .click();
+      await finishAddition(page, 2);
+      await page.reload();
+      await page.getByText(SHEET_EVENT, { exact: true }).click();
+      await expect(
+        page.getByRole("heading", { name: SHEET_EVENT, exact: true }),
+      ).toBeVisible();
+      const items = (await stored(page, "eventLists"))[SHEET_EVENT] as object[];
+      expect(items).toHaveLength(2);
+      expect(items).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            circle: "サークルA",
+            url: "https://a.test",
+            title: "新刊A",
+          }),
+          expect.objectContaining({
+            circle: "サークルB",
+            url: "https://b.test",
+            title: "新刊B",
+          }),
+        ]),
+      );
     });
     for (const mode of ["edit", "execute", "focus"] as const) {
       test(`${mode}: adds a no-URL item and persists it across reload`, async ({

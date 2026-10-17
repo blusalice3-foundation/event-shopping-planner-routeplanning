@@ -1,0 +1,8 @@
+{
+  "fullLintExitCode": 1,
+  "reportedFilePaths": 1023,
+  "nonTemporaryReportedPaths": [],
+  "trackedTemporaryPaths": [],
+  "errors": 24543,
+  "retainedFullLog": "lint.log"
+}

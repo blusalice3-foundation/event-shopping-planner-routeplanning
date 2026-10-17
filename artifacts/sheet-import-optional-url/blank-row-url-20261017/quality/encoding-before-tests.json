@@ -1,0 +1,57 @@
+[
+  {
+    "path": "README.md",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 689,
+    "replacement": 0,
+    "beforeQuestions": 1,
+    "afterQuestions": 1,
+    "sha256": "EFC51C8076C4A351F898DD9B8A893FA147F9BF76BA726445729A6569572FBF2F"
+  },
+  {
+    "path": "src/components/ImportScreen.paste.test.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 317,
+    "replacement": 0,
+    "beforeQuestions": 3,
+    "afterQuestions": 3,
+    "sha256": "F9E35272ADA03094AE3EE0BE43543BDAEC52995096D1950955863075B4D2B09B"
+  },
+  {
+    "path": "src/features/events/pasteColumns.test.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 152,
+    "replacement": 0,
+    "beforeQuestions": 2,
+    "afterQuestions": 2,
+    "sha256": "EEFEF694D52D880260C7BEC7A118C05D1E13F21E2332714109329CD006F6A119"
+  },
+  {
+    "path": "src/features/events/pasteColumns.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 133,
+    "replacement": 0,
+    "beforeQuestions": 2,
+    "afterQuestions": 3,
+    "sha256": "D26FBE99569F2D011B67BC521AB505629F33021A5C2FEF2EAC0F3B4785B3B26D"
+  },
+  {
+    "path": "tests/browser/sheet-import-optional-url.spec.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 462,
+    "replacement": 0,
+    "beforeQuestions": 4,
+    "afterQuestions": 4,
+    "sha256": "2738659713F067D272AA1D926E25E8AE3EEFA454F7D873460DD18B9CF75DD7C9"
+  }
+]

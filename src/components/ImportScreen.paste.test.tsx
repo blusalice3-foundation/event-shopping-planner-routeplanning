@@ -62,6 +62,100 @@ describe("ImportScreenの7列貼り付け", () => {
     expect(urlTextarea).toHaveValue("https://manual.example");
   });
 
+  it.each([
+    {
+      name: "既存URLの対応を維持する",
+      urls: "https://a.example\nhttps://blank.example\nhttps://b.example",
+      expectedUrls: ["https://a.example", "https://b.example"],
+      excludedCount: 1,
+    },
+    {
+      name: "空行のURLを同じサークルへ補完しない",
+      urls: "\nhttps://blank.example\n",
+      expectedUrls: [undefined, undefined],
+      excludedCount: 1,
+    },
+    {
+      name: "URLも空の行を診断件数に含めない",
+      urls: "",
+      expectedUrls: [undefined, undefined],
+      excludedCount: 0,
+    },
+  ])(
+    "空行を含む7列の再貼付けで$name",
+    async ({ urls, expectedUrls, excludedCount }) => {
+      const onBulkAdd = vi.fn<ComponentProps<typeof ImportScreen>["onBulkAdd"]>(
+        async () => ({ status: "cancelled" }),
+      );
+      renderImportScreen(onBulkAdd);
+      fireEvent.change(screen.getByLabelText("即売会名"), {
+        target: { value: "イベント" },
+      });
+      pasteIntoCircle("旧サークル\t2日目\t西B\t99a\t旧刊\t500\t旧備考");
+      const urlTextarea = getTextarea("URL（7列貼り付け対象外）");
+      fireEvent.change(urlTextarea, { target: { value: urls } });
+
+      pasteIntoCircle(
+        [
+          "同一サークル\t1日目\t東A\t01a\t品目A\t1000\t備考A",
+          "",
+          "同一サークル\t1日目\t東A\t02a\t品目B\t500\t備考B",
+        ].join("\r\n"),
+      );
+
+      expect(getTextarea("M列 サークル名")).toHaveValue(
+        "同一サークル\n\n同一サークル",
+      );
+      expect(getTextarea("Q列 タイトル")).toHaveValue("品目A\n\n品目B");
+      expect(urlTextarea).toHaveValue(urls);
+      fireEvent.click(screen.getByRole("button", { name: "リストを作成" }));
+
+      await waitFor(() => expect(onBulkAdd).toHaveBeenCalledTimes(1));
+      const items = onBulkAdd.mock.calls[0][1];
+      expect(items.map((item) => item.title)).toEqual(["品目A", "品目B"]);
+      expect(items.map((item) => item.url)).toEqual(expectedUrls);
+      if (expectedUrls.every((value) => value === undefined)) {
+        items.forEach((item) => expect(item).not.toHaveProperty("url"));
+      }
+      const summary = screen.getByRole("region", { name: "シート取込結果" });
+      expect(summary).toHaveTextContent(
+        `取込対象: 2件、必須項目不足による除外: ${excludedCount}行`,
+      );
+      if (excludedCount > 0) expect(summary).toHaveTextContent("2行目");
+      else expect(summary).not.toHaveTextContent("行目");
+    },
+  );
+
+  it("空行後の必須項目不足を貼付け元と同じ3行目として診断する", async () => {
+    const onBulkAdd = vi.fn<ComponentProps<typeof ImportScreen>["onBulkAdd"]>(
+      async () => ({ status: "cancelled" }),
+    );
+    renderImportScreen(onBulkAdd);
+    fireEvent.change(screen.getByLabelText("即売会名"), {
+      target: { value: "イベント" },
+    });
+    pasteIntoCircle(
+      [
+        "サークルA\t1日目\t東A\t01a\t品目A\t1000\t備考A",
+        "",
+        "サークルB\t1日目\t\t02a\t品目B\t500\t備考B",
+      ].join("\n"),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "リストを作成" }));
+
+    await waitFor(() => expect(onBulkAdd).toHaveBeenCalledTimes(1));
+    expect(onBulkAdd.mock.calls[0][1]).toEqual([
+      expect.objectContaining({ title: "品目A" }),
+    ]);
+    const summary = screen.getByRole("region", { name: "シート取込結果" });
+    expect(summary).toHaveTextContent(
+      "取込対象: 1件、必須項目不足による除外: 1行",
+    );
+    expect(summary).toHaveTextContent("3行目");
+    expect(summary).not.toHaveTextContent("2行目");
+  });
+
   it("列数が不正なら警告し、既存の全textareaを変更しない", () => {
     renderImportScreen();
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
@@ -129,21 +223,42 @@ describe("ImportScreenの7列貼り付け", () => {
     fireEvent.click(screen.getByRole("button", { name: "リストを作成" }));
     const request = onBulkAdd.mock.calls[0][2]!.request!;
     expect(request.isCurrent?.()).toBe(true);
-    pasteIntoCircle("サークルB\t2日目\t西B\t02b\t既刊\t500\t次の入力");
+    fireEvent.change(getTextarea("URL（7列貼り付け対象外）"), {
+      target: {
+        value: "https://b.example\nhttps://blank.example\nhttps://c.example",
+      },
+    });
+    pasteIntoCircle(
+      "サークルB\t2日目\t西B\t02b\t既刊\t500\t次の入力\n\n" +
+        "サークルC\t3日目\t南C\t03a\t新刊\t800\t追加の入力",
+    );
     expect(request.isCurrent?.()).toBe(false);
     fireEvent.click(screen.getByRole("button", { name: "リストを作成" }));
     expect(onBulkAdd).toHaveBeenCalledTimes(1);
     await act(async () => complete({ status: "saved" }));
-    expect(getTextarea("M列 サークル名")).toHaveValue("サークルB");
-    expect(getTextarea("W列 備考")).toHaveValue("次の入力");
+    expect(getTextarea("M列 サークル名")).toHaveValue("サークルB\n\nサークルC");
+    expect(getTextarea("W列 備考")).toHaveValue("次の入力\n\n追加の入力");
+    expect(getTextarea("URL（7列貼り付け対象外）")).toHaveValue(
+      "https://b.example\nhttps://blank.example\nhttps://c.example",
+    );
     fireEvent.click(screen.getByRole("button", { name: "リストを作成" }));
     await waitFor(() => expect(getTextarea("M列 サークル名")).toHaveValue(""));
-    expect(onBulkAdd.mock.calls[1][1][0]).toMatchObject({
-      circle: "サークルB",
-      eventDate: "2日目",
-      title: "既刊",
-      remarks: "次の入力",
-    });
+    expect(onBulkAdd.mock.calls[1][1]).toEqual([
+      expect.objectContaining({
+        circle: "サークルB",
+        eventDate: "2日目",
+        title: "既刊",
+        remarks: "次の入力",
+        url: "https://b.example",
+      }),
+      expect.objectContaining({
+        circle: "サークルC",
+        eventDate: "3日目",
+        title: "新刊",
+        remarks: "追加の入力",
+        url: "https://c.example",
+      }),
+    ]);
   });
   it("新規URL取込でも不正数量の行を丸めず除外する", async () => {
     const makeCsvRow = (number: string, quantity: string) => {

@@ -1,0 +1,22 @@
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+      Coverage enabled with v8
+
+
+ Test Files  2 passed (2)
+      Tests  21 passed (21)
+   Start at  16:25:09
+   Duration  2.58s (transform 207ms, setup 569ms, import 357ms, tests 660ms, environment 1.01s)
+
+ % Coverage report from v8
+-----------------|---------|----------|---------|---------|-------------------
+File             | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-----------------|---------|----------|---------|---------|-------------------
+-----------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 42/42 )
+Branches     : 100% ( 16/16 )
+Functions    : 100% ( 15/15 )
+Lines        : 100% ( 40/40 )
+================================================================================

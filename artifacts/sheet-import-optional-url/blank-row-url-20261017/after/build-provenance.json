@@ -1,0 +1,145 @@
+{
+  "timestamp": "2026-10-17T16:30:13.6346782+09:00",
+  "revision": "abbc4253e2fde157ab49e67a42b8b4075ab16e7b",
+  "node": "v24.19.0",
+  "npm": "11.19.0",
+  "changed": [
+    " M README.md",
+    " M src/components/ImportScreen.paste.test.tsx",
+    " M src/features/events/pasteColumns.test.ts",
+    " M src/features/events/pasteColumns.ts",
+    " M tests/browser/sheet-import-optional-url.spec.ts",
+    "?? artifacts/sheet-import-optional-url/blank-row-url-20261017/"
+  ],
+  "buildLog": "../quality/build.log",
+  "files": [
+    {
+      "path": "#U512a#U5148.png",
+      "sha256": "747dfa88f7586f5f5834c43b46b51a341f07ea02783cf39318a6dd6fc305ce45"
+    },
+    {
+      "path": "#U59d4#U8a17#U7121.png",
+      "sha256": "a2b6f0f8d6b906a2b1fe115efe2773965ff3c180a68befccdd190af30a165f4d"
+    },
+    {
+      "path": "#U8907#U6570#U7a2e.png",
+      "sha256": "d808f9cbf36bbb0819eac70f69da27e2146a9ceee2cf3caa7dc1c3841fe26002"
+    },
+    {
+      "path": "index.html",
+      "sha256": "49c37e817696055c20226ceeceb41ce2fd5ee1a9d4803e2975f985541ba7bb69"
+    },
+    {
+      "path": "manifest.webmanifest",
+      "sha256": "80fed57128799ad34db0d75ad5e1016fc78e5694b379d4b78bf162eb527eabfa"
+    },
+    {
+      "path": "outer-agent-graph.json",
+      "sha256": "4334e31be77a63529cbcff7b8ec12ebc939da23cbc725e7db5e1cfd98d167725"
+    },
+    {
+      "path": "release-capabilities.abbc4253e2fde157ab49e67a42b8b4075ab16e7b.json",
+      "sha256": "54c01088207681e7bb7baa7bf64a85e706bcb64a410974fff7657328e660591d"
+    },
+    {
+      "path": "release-capabilities.json",
+      "sha256": "54c01088207681e7bb7baa7bf64a85e706bcb64a410974fff7657328e660591d"
+    },
+    {
+      "path": "release-identity.abbc4253e2fde157ab49e67a42b8b4075ab16e7b.830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611.json",
+      "sha256": "a0a1964d01cb40f0de053ed57c1058d840ad8f5eb8425e2c8428ba23b0db166c"
+    },
+    {
+      "path": "release-identity.json",
+      "sha256": "a0a1964d01cb40f0de053ed57c1058d840ad8f5eb8425e2c8428ba23b0db166c"
+    },
+    {
+      "path": "release-role-graph.json",
+      "sha256": "851a6707adb108c2892dacd4539e0acd285898bf9c65ba16a63ca94e8347625d"
+    },
+    {
+      "path": "sw.js",
+      "sha256": "26d93643128ffbce698e1d60ecc12e8a2b1f0f04d585a852451ed1ba78913da5"
+    },
+    {
+      "path": "theme-prepaint.js",
+      "sha256": "e6b5e174474816944c860fa21fb80994b97df31f2658a73caf868960c02b6d0d"
+    },
+    {
+      "path": "委託無.png",
+      "sha256": "a2b6f0f8d6b906a2b1fe115efe2773965ff3c180a68befccdd190af30a165f4d"
+    },
+    {
+      "path": "複数種.png",
+      "sha256": "d808f9cbf36bbb0819eac70f69da27e2146a9ceee2cf3caa7dc1c3841fe26002"
+    },
+    {
+      "path": "優先.png",
+      "sha256": "747dfa88f7586f5f5834c43b46b51a341f07ea02783cf39318a6dd6fc305ce45"
+    },
+    {
+      "path": "assets/app-DZd7rnFB.css",
+      "sha256": "5982e626b0a5dc9e4e5eff1e0d7eed4388a8855f618f93a71c33a2b64a7c9a5f"
+    },
+    {
+      "path": "assets/backup.worker-CmLUrcml.js",
+      "sha256": "209e231e7229f8f3d0a7ecbcc32c8a143c10aaa5c9326ba37de23bec63fc5207"
+    },
+    {
+      "path": "assets/FocusModeContainer-CZ1MJtsO.js",
+      "sha256": "af23c640603be3200525861445b8af059e8c10bb65facd2ffcf95bc416dde902"
+    },
+    {
+      "path": "assets/ImportScreen-B_gRpn6j.js",
+      "sha256": "3cb1db5d85b19e37c42c7fa80057bb828cf4f0a1b9e650eb766bf3d79733e8fa"
+    },
+    {
+      "path": "assets/outer-recovery-agent.js",
+      "sha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e"
+    },
+    {
+      "path": "assets/persistence.worker-Dgzz1Tkn.js",
+      "sha256": "4d11925144e20aac5bbe9c019816826cc9f44e3ab756cf9bbd533f3969fc402f"
+    },
+    {
+      "path": "assets/release-role.js",
+      "sha256": "e31b0870f0d38a1ccf31e4667b4a055be2824a49177df6574efaca545afc5e55"
+    },
+    {
+      "path": "assets/route.worker-vkpwhvUq.js",
+      "sha256": "71db28340a1f002f14a35a0ebbcdfc2683447040fb7678aac8cc06ea58452641"
+    },
+    {
+      "path": "assets/xlsx.worker-DA2gqYv7.js",
+      "sha256": "ec40d5e4b9702feb472bd5413938f01f6a06a7f18fb360c59a9492b53e15b112"
+    },
+    {
+      "path": "icons/apple-touch-icon-180x180.png",
+      "sha256": "cce748803b7ed866c46c1d75f81042fdb379d540cc4eef73122c16d0a62d9c24"
+    },
+    {
+      "path": "icons/favicon.ico",
+      "sha256": "c7bab7acf34b113ecc45d154085e90bf348fa33bdce84dec7a39b614848d1f0d"
+    },
+    {
+      "path": "icons/icon.svg",
+      "sha256": "73ddea158762e0efa12d6d19dc2697a93664b5517f71fdf968f6c07eb7437a82"
+    },
+    {
+      "path": "icons/maskable-icon-512x512.png",
+      "sha256": "7507663827a8bd711dd3bb37f2677bd754db110fccc836d8648927c65d908ac5"
+    },
+    {
+      "path": "icons/pwa-192x192.png",
+      "sha256": "c3021e30b53e93fede7548e346ede8e4be249bb890d81f2f678aa8d60e1150a2"
+    },
+    {
+      "path": "icons/pwa-512x512.png",
+      "sha256": "87fce4bc396a3eb1c1c0938240d738d09c32c4ada677238b33c46b857631b89a"
+    },
+    {
+      "path": "icons/pwa-64x64.png",
+      "sha256": "9ece96cbe3d007b27b105129a8871143e3824ea00969f3d0877f14077b0285cb"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+
+> event-shopping-planner@1.0.0 format:check
+> prettier --check "**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,css,yml}"
+
+Checking formatting...
+All matched files use Prettier code style!

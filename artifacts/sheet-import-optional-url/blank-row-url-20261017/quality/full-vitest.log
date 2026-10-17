@@ -1,0 +1,9 @@
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+
+
+ Test Files  241 passed | 1 skipped (242)
+      Tests  2783 passed | 88 skipped (2871)
+   Start at  16:25:33
+   Duration  50.43s (transform 66.37s, setup 194.67s, import 137.54s, tests 208.09s, environment 320.64s)
+
