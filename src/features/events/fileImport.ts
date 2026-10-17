@@ -1,3 +1,4 @@
+import { normalizeItemsOptionalFields } from "../../utils/itemOptionalFields";
 import type { ConsistencyChange } from "../consistency/domain/migration";
 import type { EventConsistencyV1 } from "../../types/consistency";
 import { createAppBackup } from "../../utils/appBackup";
@@ -56,7 +57,7 @@ export function toImportedEventData(
   const hallDefinitions = hasEntries(result.hallDefinitions)
     ? (result.hallDefinitions as HallDefinitionsStore[string])
     : null;
-  const items = result.items;
+  const items = normalizeItemsOptionalFields(result.items);
 
   return {
     eventName: result.eventName,

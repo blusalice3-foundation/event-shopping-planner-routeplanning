@@ -1,0 +1,182 @@
+[
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 0,
+    "parseMs": 49.8412000000244,
+    "saveMs": 227.7447000000393
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 1,
+    "parseMs": 49.92440000001807,
+    "saveMs": 234.50490000005811
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 2,
+    "parseMs": 49.20339999999851,
+    "saveMs": 234.32010000001173
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 3,
+    "parseMs": 49.757600000011735,
+    "saveMs": 228.22450000001118
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 4,
+    "parseMs": 48.57709999999497,
+    "saveMs": 233.9812999999849
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 5,
+    "parseMs": 49.991999999969266,
+    "saveMs": 233.91380000009667
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 6,
+    "parseMs": 48.48450000002049,
+    "saveMs": 235.77580000006128
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 7,
+    "parseMs": 48.39480000000913,
+    "saveMs": 230.4081999999471
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 8,
+    "parseMs": 50.459900000016205,
+    "saveMs": 232.79259999992792
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 9,
+    "parseMs": 49.55139999999665,
+    "saveMs": 231.7764999999199
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 10,
+    "parseMs": 48.61459999997169,
+    "saveMs": 230.87239999999292
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 11,
+    "parseMs": 48.368699999991804,
+    "saveMs": 232.9238999999361
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 12,
+    "parseMs": 50.70479999994859,
+    "saveMs": 232.626200000057
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 13,
+    "parseMs": 48.96339999989141,
+    "saveMs": 234.25149999989662
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 14,
+    "parseMs": 49.620699999970384,
+    "saveMs": 231.36569999996573
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 15,
+    "parseMs": 51.37329999997746,
+    "saveMs": 246.19709999999031
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 16,
+    "parseMs": 49.12910000002012,
+    "saveMs": 229.81239999993704
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 17,
+    "parseMs": 54.10450000001583,
+    "saveMs": 230.15659999998752
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 18,
+    "parseMs": 49.60649999999441,
+    "saveMs": 234.54870000004303
+  },
+  {
+    "phase": "before",
+    "count": 500,
+    "mode": "worker",
+    "route": "restore-json",
+    "iteration": 19,
+    "parseMs": 50.740400000009686,
+    "saveMs": 236.5114000000758
+  }
+]

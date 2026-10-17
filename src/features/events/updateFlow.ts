@@ -10,10 +10,7 @@ import {
   applyEventUpdateToItems,
   type EventUpdateApplyOptions,
 } from "./updateApply";
-import {
-  fetchEventItemsFromSpreadsheet,
-  CsvReviewRequired,
-} from "./sheetImport";
+import { fetchEventImportFromSpreadsheet } from "./sheetImport";
 import {
   createEventUpdateDiff,
   normalizeSheetItemsUrls,
@@ -116,6 +113,7 @@ export function applyPendingEventUpdate({
         currentItems ?? [],
         pending.diff.matching.sheetItems,
         options.identityChoices,
+        pending.diff.sheetImport?.rowExclusions,
       )
     : pending.diff;
   if (diff.unresolvedMatches?.length) return null;
@@ -187,21 +185,25 @@ export async function buildEventUpdateDiffFromSpreadsheet(
   currentItems: ShoppingItem[],
   source: SpreadsheetSource,
 ): Promise<EventUpdateDiff> {
-  let sheetItems;
-  let csvReview;
-  try {
-    sheetItems = await fetchEventItemsFromSpreadsheet(
-      source.url,
-      source.sheetName,
-    );
-  } catch (error) {
-    if (!(error instanceof CsvReviewRequired)) throw error;
-    sheetItems = error.items;
-    csvReview = { warnings: error.warnings, itemCount: sheetItems.length };
-  }
-  const normalizedSheetItems = normalizeSheetItemsUrls(sheetItems);
+  const parsed = await fetchEventImportFromSpreadsheet(
+    source.url,
+    source.sheetName,
+  );
+  const normalizedSheetItems = normalizeSheetItemsUrls(parsed.items);
   return {
-    ...createEventUpdateDiff(currentItems, normalizedSheetItems),
-    ...(csvReview ? { csvReview } : {}),
+    ...createEventUpdateDiff(
+      currentItems,
+      normalizedSheetItems,
+      {},
+      parsed.rowExclusions,
+    ),
+    ...(parsed.warnings.length
+      ? {
+          csvReview: {
+            warnings: parsed.warnings,
+            itemCount: parsed.items.length,
+          },
+        }
+      : {}),
   };
 }

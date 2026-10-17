@@ -1,0 +1,6 @@
+npm warn ".tmp-*/**" is being parsed as a normal command line argument.
+npm warn Unknown cli config "--ignore-pattern". This will stop working in the next major version of npm.
+
+> event-shopping-planner@1.0.0 lint
+> eslint . --max-warnings 0 .tmp-*/**
+

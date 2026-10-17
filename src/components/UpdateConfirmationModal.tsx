@@ -18,7 +18,10 @@ import type {
 } from "../features/events/updateDiff";
 import type { ShoppingItem } from "../types/item";
 
+import SheetImportSummary from "./SheetImportSummary";
+
 interface UpdateConfirmationModalProps {
+  sheetImport?: EventUpdateDiff["sheetImport"];
   matching?: EventUpdateDiff["matching"];
   csvReview?: EventUpdateDiff["csvReview"];
   identitySelection?: React.ReactNode;
@@ -61,6 +64,7 @@ const ResolvedUpdateConfirmationModal: React.FC<
   appFieldSyncCandidates = EMPTY_APP_FIELD_SYNC_CANDIDATES,
   nextSource,
   csvReview,
+  sheetImport,
   identitySelection,
   confirmDisabled,
   onConfirm,
@@ -156,6 +160,15 @@ const ResolvedUpdateConfirmationModal: React.FC<
               </div>
             )}
 
+            {sheetImport && (
+              <>
+                <SheetImportSummary diagnostics={sheetImport} />
+                <p>
+                  削除候補: {itemsToDelete.length}件、削除から保護:{" "}
+                  {protectedFromDelete}件
+                </p>
+              </>
+            )}
             {csvReview && (
               <section className="space-y-2">
                 <p>
@@ -558,9 +571,10 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = (
             props.matching.currentItems,
             props.matching.sheetItems,
             choices,
+            props.sheetImport?.rowExclusions,
           )
         : null,
-    [props.matching, choices],
+    [props.matching, props.sheetImport, choices],
   );
   const selection = props.matching && (
     <section className="space-y-3">

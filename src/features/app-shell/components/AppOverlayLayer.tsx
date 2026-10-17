@@ -477,6 +477,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
         <UpdateConfirmationModal
           matching={pendingEventUpdate.diff.matching}
           csvReview={pendingEventUpdate.diff.csvReview}
+          sheetImport={pendingEventUpdate.diff.sheetImport}
           itemsToDelete={pendingEventUpdate.diff.itemsToDelete}
           itemsToUpdate={pendingEventUpdate.diff.itemsToUpdate}
           itemsToAdd={pendingEventUpdate.diff.itemsToAdd}

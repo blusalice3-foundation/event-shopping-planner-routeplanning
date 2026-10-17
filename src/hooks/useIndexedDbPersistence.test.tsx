@@ -237,8 +237,16 @@ describe("useIndexedDbPersistence", () => {
     dbMock.loadMapViewportSettings.mockResolvedValue(missing);
     dbMock.loadSyncQueue.mockResolvedValue(missing);
     persistenceCommandMock.loadPreference.mockReturnValue(null);
+    let committedSnapshot: PersistedValues | null = null;
+    let committedRevision = 0;
     persistenceCommandMock.readApplicationSnapshot.mockImplementation(
       async () => {
+        if (committedSnapshot)
+          return {
+            snapshot: structuredClone(committedSnapshot),
+            expectedRoots: { revision: committedRevision },
+            consistencyMissing: false,
+          };
         const snapshot = createValues();
         for (const key of Object.keys(snapshot).filter(
           (key) => key !== "eventConsistency",
@@ -252,8 +260,11 @@ describe("useIndexedDbPersistence", () => {
       },
     );
     persistenceCommandMock.saveEventConsistency.mockResolvedValue(undefined);
-    persistenceCommandMock.commitApplicationSnapshotAtomically.mockResolvedValue(
-      undefined,
+    persistenceCommandMock.commitApplicationSnapshotAtomically.mockImplementation(
+      async (snapshot) => {
+        committedSnapshot = structuredClone(snapshot) as PersistedValues;
+        committedRevision++;
+      },
     );
 
     persistenceCommandMock.saveEventLists.mockResolvedValue(undefined);

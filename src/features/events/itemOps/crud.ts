@@ -1,3 +1,4 @@
+import { normalizeItemOptionalFields } from "../../../utils/itemOptionalFields";
 import { recordEntry } from "../../../utils/ownRecord";
 import type {
   ExecuteModeItems,
@@ -35,7 +36,9 @@ export function computeUpdateItem(
   currentProtection: ProtectionLevel | undefined,
   itemSource: ItemSource | undefined,
 ): UpdateItemResult {
-  const normalizedUpdatedItem = normalizeLimitedPurchaseFields(updatedItem);
+  const normalizedUpdatedItem = normalizeItemOptionalFields(
+    normalizeLimitedPurchaseFields(updatedItem),
+  );
   const currentItem = items.find(
     (item) => item.id === normalizedUpdatedItem.id,
   );
@@ -140,13 +143,13 @@ export function computeAddItemFromFocusMode(
 ): AddItemFromFocusModeResult {
   const purchaseStatus = newItem.purchaseStatus || "None";
 
-  const item: ShoppingItem = {
+  const item: ShoppingItem = normalizeItemOptionalFields({
     ...newItem,
     id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     purchaseStatus,
     source: "app" as const,
     protectionLevel: "full" as const,
-  };
+  });
 
   const newItems = [...items, item];
   let newExecuteItems = executeModeItems;

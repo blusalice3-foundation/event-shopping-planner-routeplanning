@@ -2,6 +2,12 @@ import { CsvInputError, parseCsvRecords } from "../../utils/csvRecords";
 import type { SheetItem } from "./updateDiff";
 import { normalizeImportedUrl } from "./pasteColumns";
 
+import {
+  createSheetRowExclusionSummary,
+  missingRequiredSheetFields,
+  recordSheetRowExclusion,
+} from "./sheetRowSelection";
+
 const SPREADSHEET_PATH_REGEX = /^\/spreadsheets\/d\/([a-zA-Z0-9-_]+)(?:\/|$)/;
 const GID_REGEX = /^\d{1,10}$/;
 const MAX_GID = 2_147_483_647;
@@ -157,7 +163,7 @@ export function readEventCsv(csvText: string, options?: EventCsvOptions) {
   }
   const rows: EventCsvRow[] = [];
   const warnings: string[] = [];
-  const errors: Array<{ line: number; message: string }> = [];
+  const rowExclusions = createSheetRowExclusionSummary();
   let spreadsheetUrl: string | undefined;
   const blank = (cells: readonly string[]) =>
     cells.every((cell) => cell.trim() === "");
@@ -188,19 +194,19 @@ export function readEventCsv(csvText: string, options?: EventCsvOptions) {
       (cell(17) === "" || /^[\d,¥￥\s]+$/u.test(cell(17)))
     )
       continue;
-    const required = ["サークル名", "参加日", "ブロック", "番号"];
-    const missing = required.filter((_, index) => !cell(offset + index));
-    if (missing.length === 4) {
-      warnings.push(
-        `${record.startLine}行目: 品目か案内かを判定できないため除外候補です。${cells.join(" / ").slice(0, 500)}`,
-      );
-      continue;
-    }
+    const missing = missingRequiredSheetFields({
+      circle: cell(offset),
+      eventDate: cell(offset + 1),
+      block: cell(offset + 2),
+      number: cell(offset + 3),
+    });
     if (missing.length) {
-      errors.push({
-        line: record.startLine,
-        message: `${missing.join("・")}がありません。品目行か案内行かを確認してください。`,
-      });
+      recordSheetRowExclusion(
+        rowExclusions,
+        record.sourceRowId,
+        record.startLine,
+        missing,
+      );
       continue;
     }
     const remarks = cell(format === "google" ? 22 : 8);
@@ -239,8 +245,7 @@ export function readEventCsv(csvText: string, options?: EventCsvOptions) {
         : {}),
     });
   }
-  if (errors.length) throw new CsvInputError(errors);
-  return { rows, spreadsheetUrl, warnings, format };
+  return { rows, spreadsheetUrl, warnings, format, rowExclusions };
 }
 
 export function parseEventItemsFromCsv(csvText: string): SheetItem[] {
@@ -279,4 +284,16 @@ export async function fetchEventItemsFromSpreadsheet(
   return parseEventItemsFromCsv(
     await fetchGoogleSheetCsv(spreadsheetUrl, sheetName),
   );
+}
+
+/** Rich result for import/update UI; array-returning compatibility APIs remain available. */
+export async function fetchEventImportFromSpreadsheet(
+  spreadsheetUrl: string,
+  sheetName?: string,
+) {
+  const parsed = readEventCsv(
+    await fetchGoogleSheetCsv(spreadsheetUrl, sheetName),
+    { format: "google", header: true },
+  );
+  return { ...parsed, items: parsed.rows.map((row) => row.item) };
 }

@@ -1,0 +1,898 @@
+[
+  {
+    "route": "import",
+    "count": 150,
+    "mode": "direct",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 813.7772000000004,
+          "p95Ms": 848.8302999999996
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 815.5634000000009,
+          "p95Ms": 859.9362999999998
+        }
+      },
+      "reviewMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 577.1574,
+          "p95Ms": 589.5443000000014
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 573.8678999999993,
+          "p95Ms": 601.9271000000008
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 240.45809999999983,
+          "p95Ms": 263.04429999999957
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 243.97970000000169,
+          "p95Ms": 265.83420000000024
+        }
+      }
+    }
+  },
+  {
+    "route": "import",
+    "count": 150,
+    "mode": "worker",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 809.2692000000097,
+          "p95Ms": 838.0706000000064
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 805.8977000000014,
+          "p95Ms": 822.3074000000197
+        }
+      },
+      "reviewMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 570.6210000000137,
+          "p95Ms": 584.9222000000009
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 573.2739000000001,
+          "p95Ms": 583.496599999984
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 242.1685999999754,
+          "p95Ms": 259.483899999992
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 230.80180000001565,
+          "p95Ms": 244.58379999999306
+        }
+      }
+    }
+  },
+  {
+    "route": "import",
+    "count": 500,
+    "mode": "direct",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 2559.1570000000065,
+          "p95Ms": 2648.8948000000673
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 2536.2473999999347,
+          "p95Ms": 2572.28409999999
+        }
+      },
+      "reviewMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 1443.9474000000046,
+          "p95Ms": 1490.5814000000246
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 1436.8207999999868,
+          "p95Ms": 1457.2950999999885
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 1113.8583999999682,
+          "p95Ms": 1158.3134000000427
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 1102.0940999999875,
+          "p95Ms": 1132.36599999998
+        }
+      }
+    }
+  },
+  {
+    "route": "import",
+    "count": 500,
+    "mode": "worker",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 2567.3727000000654,
+          "p95Ms": 2600.6735000000335
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 2556.5104000001447,
+          "p95Ms": 2613.18200000003
+        }
+      },
+      "reviewMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 1441.810999999987,
+          "p95Ms": 1474.7284999999683
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 1450.6488000000827,
+          "p95Ms": 1485.2883000000147
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 1118.4564000000246,
+          "p95Ms": 1145.1047000000253
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 1111.3445000000065,
+          "p95Ms": 1135.5528000000631
+        }
+      }
+    }
+  },
+  {
+    "route": "restore-json",
+    "count": 150,
+    "mode": "direct",
+    "metrics": {
+      "parseMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 32.437999999994645,
+          "p95Ms": 33.2951999999932
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 32.3923000000068,
+          "p95Ms": 34.775500000003376
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 175.39019999999437,
+          "p95Ms": 186.4426000000094
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 173.19500000000698,
+          "p95Ms": 180.88990000000922
+        }
+      }
+    }
+  },
+  {
+    "route": "restore-json",
+    "count": 150,
+    "mode": "worker",
+    "metrics": {
+      "parseMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 32.265700000018114,
+          "p95Ms": 33.94649999999092
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 31.719799999991665,
+          "p95Ms": 32.78559999997378
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 170.30869999999413,
+          "p95Ms": 176.64220000000205
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 171.1982999999891,
+          "p95Ms": 175.88709999999264
+        }
+      }
+    }
+  },
+  {
+    "route": "restore-json",
+    "count": 500,
+    "mode": "direct",
+    "metrics": {
+      "parseMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 49.77990000002319,
+          "p95Ms": 55.90299999999115
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 49.818100000033155,
+          "p95Ms": 57.57480000000214
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 229.23550000000978,
+          "p95Ms": 236.9375
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 229.41249999997672,
+          "p95Ms": 236.53669999999693
+        }
+      }
+    }
+  },
+  {
+    "route": "restore-json",
+    "count": 500,
+    "mode": "worker",
+    "metrics": {
+      "parseMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 49.60649999999441,
+          "p95Ms": 51.37329999997746
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 50.12260000000242,
+          "p95Ms": 53.154299999936484
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 232.79259999992792,
+          "p95Ms": 236.5114000000758
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 233.6996999999974,
+          "p95Ms": 237.00189999991562
+        }
+      }
+    }
+  },
+  {
+    "route": "restore-xlsx",
+    "count": 150,
+    "mode": "direct",
+    "metrics": {
+      "parseMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 323.7740000000049,
+          "p95Ms": 327.22020000001066
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 324.2131000000081,
+          "p95Ms": 326.703199999989
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 171.59889999999723,
+          "p95Ms": 174.78839999999036
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 171.50729999999749,
+          "p95Ms": 174.2213000000047
+        }
+      }
+    }
+  },
+  {
+    "route": "restore-xlsx",
+    "count": 150,
+    "mode": "worker",
+    "metrics": {
+      "parseMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 324.8829999999725,
+          "p95Ms": 328.1161999999895
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 323.48459999996703,
+          "p95Ms": 327.5435999999754
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 170.67410000000382,
+          "p95Ms": 175.4140999999945
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 168.09799999999814,
+          "p95Ms": 172.92959999997402
+        }
+      }
+    }
+  },
+  {
+    "route": "restore-xlsx",
+    "count": 500,
+    "mode": "direct",
+    "metrics": {
+      "parseMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 851.1766000000061,
+          "p95Ms": 855.4219999999623
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 852.4528000000282,
+          "p95Ms": 855.2842999999993
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 224.41289999999572,
+          "p95Ms": 233.5166999999783
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 222.93479999998817,
+          "p95Ms": 234.22179999999935
+        }
+      }
+    }
+  },
+  {
+    "route": "restore-xlsx",
+    "count": 500,
+    "mode": "worker",
+    "metrics": {
+      "parseMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 848.4638000000268,
+          "p95Ms": 854.652599999914
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 852.8823000000557,
+          "p95Ms": 858.7532999999821
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 225.41289999999572,
+          "p95Ms": 242.58699999994133
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 224.48970000003465,
+          "p95Ms": 234.29720000003
+        }
+      }
+    }
+  },
+  {
+    "route": "retry",
+    "count": 150,
+    "mode": "direct",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 127.45709999999963,
+          "p95Ms": 179.46710000000894
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 122.10090000001946,
+          "p95Ms": 168.5564000000013
+        }
+      }
+    }
+  },
+  {
+    "route": "retry",
+    "count": 150,
+    "mode": "worker",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 132.60570000001462,
+          "p95Ms": 139.09740000002785
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 130.11430000001565,
+          "p95Ms": 138.04389999998966
+        }
+      }
+    }
+  },
+  {
+    "route": "retry",
+    "count": 500,
+    "mode": "direct",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 168.66049999999814,
+          "p95Ms": 197.64899999997579
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 188.04410000005737,
+          "p95Ms": 197.9985999999335
+        }
+      }
+    }
+  },
+  {
+    "route": "retry",
+    "count": 500,
+    "mode": "worker",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 174.98060000000987,
+          "p95Ms": 188.91330000001471
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 162.3301999999676,
+          "p95Ms": 176.1075000000419
+        }
+      }
+    }
+  },
+  {
+    "route": "startup-B01",
+    "count": 150,
+    "mode": "direct",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 123.92820000000938,
+          "p95Ms": 131.44090000000142
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 126.267399999997,
+          "p95Ms": 133.2488000000012
+        }
+      }
+    }
+  },
+  {
+    "route": "startup-B01",
+    "count": 150,
+    "mode": "worker",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 129.35540000000037,
+          "p95Ms": 136.31689999997616
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 129.00300000002608,
+          "p95Ms": 137.4538000000175
+        }
+      }
+    }
+  },
+  {
+    "route": "startup-B01",
+    "count": 500,
+    "mode": "direct",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 125.79409999999916,
+          "p95Ms": 132.26760000002105
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 125.68919999996433,
+          "p95Ms": 133.31199999997625
+        }
+      }
+    }
+  },
+  {
+    "route": "startup-B01",
+    "count": 500,
+    "mode": "worker",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 233.52980000001844,
+          "p95Ms": 244.67420000000857
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 233.73790000006557,
+          "p95Ms": 256.78690000006463
+        }
+      }
+    }
+  },
+  {
+    "route": "startup-B04",
+    "count": 150,
+    "mode": "direct",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 123.06700000001001,
+          "p95Ms": 134.3012000000017
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 124.28859999999986,
+          "p95Ms": 128.93429999999353
+        }
+      }
+    }
+  },
+  {
+    "route": "startup-B04",
+    "count": 150,
+    "mode": "worker",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 143.26819999999134,
+          "p95Ms": 243.0285000000149
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 234.9902000000002,
+          "p95Ms": 242.3469000000041
+        }
+      }
+    }
+  },
+  {
+    "route": "startup-B04",
+    "count": 500,
+    "mode": "direct",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 127.02370000001974,
+          "p95Ms": 131.07440000004135
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 240.8982000000542,
+          "p95Ms": 254.74529999995138
+        }
+      }
+    }
+  },
+  {
+    "route": "startup-B04",
+    "count": 500,
+    "mode": "worker",
+    "metrics": {
+      "durationMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 239.74660000007134,
+          "p95Ms": 247.04300000006333
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 236.0136000000639,
+          "p95Ms": 245.9444000000367
+        }
+      }
+    }
+  },
+  {
+    "route": "switch",
+    "count": 150,
+    "mode": "direct",
+    "metrics": {
+      "reviewMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 84.45919999999751,
+          "p95Ms": 93.59019999999146
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 82.43600000000151,
+          "p95Ms": 89.45369999999821
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 64.38059999999678,
+          "p95Ms": 123.57890000000043
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 64.82130000000325,
+          "p95Ms": 124.09540000000561
+        }
+      }
+    }
+  },
+  {
+    "route": "switch",
+    "count": 150,
+    "mode": "worker",
+    "metrics": {
+      "reviewMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 80.13719999999739,
+          "p95Ms": 91.81130000000121
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 83.02640000000247,
+          "p95Ms": 93.7725999999966
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 65.07459999999264,
+          "p95Ms": 121.76529999999912
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 63.11489999998594,
+          "p95Ms": 120.90559999999823
+        }
+      }
+    }
+  },
+  {
+    "route": "switch",
+    "count": 500,
+    "mode": "direct",
+    "metrics": {
+      "reviewMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 89.59760000003735,
+          "p95Ms": 104.55629999999655
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 89.37510000000475,
+          "p95Ms": 104.03899999998976
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 138.1761000000406,
+          "p95Ms": 154.55959999997867
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 138.39559999998892,
+          "p95Ms": 154.81890000001295
+        }
+      }
+    }
+  },
+  {
+    "route": "switch",
+    "count": 500,
+    "mode": "worker",
+    "metrics": {
+      "reviewMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 93.47560000000522,
+          "p95Ms": 107.24620000005234
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 90.04180000000633,
+          "p95Ms": 104.4071999998996
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 124.74119999993127,
+          "p95Ms": 139.57039999996778
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 124.12280000001192,
+          "p95Ms": 139.69290000002366
+        }
+      }
+    }
+  },
+  {
+    "route": "update",
+    "count": 150,
+    "mode": "direct",
+    "metrics": {
+      "reviewMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 399.2073999999993,
+          "p95Ms": 422.5491000000002
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 401.4676000000036,
+          "p95Ms": 421.17699999999604
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 81.80949999999939,
+          "p95Ms": 139.1073000000033
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 124.4426999999996,
+          "p95Ms": 140.4760000000024
+        }
+      }
+    }
+  },
+  {
+    "route": "update",
+    "count": 150,
+    "mode": "worker",
+    "metrics": {
+      "reviewMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 401.85349999999744,
+          "p95Ms": 432.7246000000159
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 401.9206000000122,
+          "p95Ms": 434.7396000000008
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 121.35549999997602,
+          "p95Ms": 139.35409999999683
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 79.8751999999804,
+          "p95Ms": 136.7858000000124
+        }
+      }
+    }
+  },
+  {
+    "route": "update",
+    "count": 500,
+    "mode": "direct",
+    "metrics": {
+      "reviewMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 73.86040000000503,
+          "p95Ms": 426.1418999999878
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 70.48560000001453,
+          "p95Ms": 90.16720000002533
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 150.44080000004033,
+          "p95Ms": 156.75309999997262
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 155.44660000002477,
+          "p95Ms": 169.2270000000135
+        }
+      }
+    }
+  },
+  {
+    "route": "update",
+    "count": 500,
+    "mode": "worker",
+    "metrics": {
+      "reviewMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 74.61679999995977,
+          "p95Ms": 421.1884999999311
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 74.71820000000298,
+          "p95Ms": 99.4047000000719
+        }
+      },
+      "saveMs": {
+        "before": {
+          "samples": 20,
+          "medianMs": 135.42920000001322,
+          "p95Ms": 140.80729999998584
+        },
+        "after": {
+          "samples": 20,
+          "medianMs": 137.74569999997038,
+          "p95Ms": 140.89960000000428
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,242 @@
+
+ RUN  v4.1.10 D:/codex-worktrees/sheet-url-baseline-20261017
+
+xxxxxxxxx·
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |unit| src/features/events/itemOptionalFields.regression.test.ts > completed item optional fields > saves manual and focus additions without a URL and leaves incomplete manual locations valid
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/features/events/itemOptionalFields.regression.test.ts:15:42
+     13|     const focus = computeAddItemFromFocusMode([], input, {});
+     14|     for (const item of [bulk[0], focus.items[0]]) {
+     15|       expect(Object.hasOwn(item, "url")).toBe(false);
+       |                                          ^
+     16|       expect(Object.hasOwn(item, "assignedTo")).toBe(false);
+     17|       const snapshot = sheetSnapshot(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  |unit| src/features/events/itemOptionalFields.regression.test.ts > completed item optional fields > clears an existing URL after applying the edit and preserves unrelated item references
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/features/events/itemOptionalFields.regression.test.ts:28:51
+     26|     const edit = { ...original, url: "　 " };
+     27|     const result = computeUpdateItem([original, other], edit, "edit", …
+     28|     expect(Object.hasOwn(result.items[0], "url")).toBe(false);
+       |                                                   ^
+     29|     expect(result.items[1]).toBe(other);
+     30|     expect(original.url).toBe("https://existing.test");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  |unit| src/features/events/itemOptionalFields.regression.test.ts > completed item optional fields > normalizes both sheet update candidates and applied items while keeping purchase records
+AssertionError: expected [] to have a length of 1 but got +0
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ src/features/events/itemOptionalFields.regression.test.ts:37:32
+     35|     const incoming = { ...sheetItem(), url: undefined, sheetIdentityVe…
+     36|     const diff = createEventUpdateDiff([original], [incoming]);
+     37|     expect(diff.itemsToUpdate).toHaveLength(1);
+       |                                ^
+     38|     for (const item of [diff.itemsToUpdate[0], applyEventUpdateToItems…
+     39|       expect(Object.hasOwn(item, "url")).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  |unit| src/features/events/sheetRowExclusions.test.ts > required sheet fields: google > selects only the complete row from all sixteen combinations and keeps physical identities
+ FAIL  |unit| src/features/events/sheetRowExclusions.test.ts > required sheet fields: legacy > selects only the complete row from all sixteen combinations and keeps physical identities
+CsvInputError: 3行目: 参加日・ブロック・番号がありません。品目行か案内行かを確認してください。
+5行目: サークル名・ブロック・番号がありません。品目行か案内行かを確認してください。
+7行目: ブロック・番号がありません。品目行か案内行かを確認してください。
+9行目: サークル名・参加日・番号がありません。品目行か案内行かを確認してください。
+11行目: 参加日・番号がありません。品目行か案内行かを確認してください。
+13行目: サークル名・番号がありません。品目行か案内行かを確認してください。
+15行目: 番号がありません。品目行か案内行かを確認してください。
+17行目: サークル名・参加日・ブロックがありません。品目行か案内行かを確認してください。
+19行目: 参加日・ブロックがありません。品目行か案内行かを確認してください。
+21行目: サークル名・ブロックがありません。品目行か案内行かを確認してください。
+23行目: ブロックがありません。品目行か案内行かを確認してください。
+25行目: サークル名・参加日がありません。品目行か案内行かを確認してください。
+27行目: 参加日がありません。品目行か案内行かを確認してください。
+29行目: サークル名がありません。品目行か案内行かを確認してください。
+ ❯ readEventCsv src/features/events/sheetImport.ts:242:28
+    240|     });
+    241|   }
+    242|   if (errors.length) throw new CsvInputError(errors);
+       |                            ^
+    243|   return { rows, spreadsheetUrl, warnings, format };
+    244| }
+ ❯ src/features/events/sheetRowExclusions.test.ts:20:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+ FAIL  |unit| src/features/events/sheetRowExclusions.test.ts > required sheet fields: google > bounds examples without capping counts or mixing existing review warnings
+ FAIL  |unit| src/features/events/sheetRowExclusions.test.ts > required sheet fields: legacy > bounds examples without capping counts or mixing existing review warnings
+CsvInputError: 3行目: ブロックがありません。品目行か案内行かを確認してください。
+4行目: ブロックがありません。品目行か案内行かを確認してください。
+5行目: ブロックがありません。品目行か案内行かを確認してください。
+6行目: ブロックがありません。品目行か案内行かを確認してください。
+7行目: ブロックがありません。品目行か案内行かを確認してください。
+8行目: ブロックがありません。品目行か案内行かを確認してください。
+9行目: ブロックがありません。品目行か案内行かを確認してください。
+10行目: ブロックがありません。品目行か案内行かを確認してください。
+11行目: ブロックがありません。品目行か案内行かを確認してください。
+12行目: ブロックがありません。品目行か案内行かを確認してください。
+13行目: ブロックがありません。品目行か案内行かを確認してください。
+14行目: ブロックがありません。品目行か案内行かを確認してください。
+15行目: ブロックがありません。品目行か案内行かを確認してください。
+16行目: ブロックがありません。品目行か案内行かを確認してください。
+17行目: ブロックがありません。品目行か案内行かを確認してください。
+18行目: ブロックがありません。品目行か案内行かを確認してください。
+19行目: ブロックがありません。品目行か案内行かを確認してください。
+20行目: ブロックがありません。品目行か案内行かを確認してください。
+21行目: ブロックがありません。品目行か案内行かを確認してください。
+22行目: ブロックがありません。品目行か案内行かを確認してください。
+23行目: ブロックがありません。品目行か案内行かを確認してください。
+24行目: ブロックがありません。品目行か案内行かを確認してください。
+25行目: ブロックがありません。品目行か案内行かを確認してください。
+26行目: ブロックがありません。品目行か案内行かを確認してください。
+27行目: ブロックがありません。品目行か案内行かを確認してください。
+28行目: ブロックがありません。品目行か案内行かを確認してください。
+29行目: ブロックがありません。品目行か案内行かを確認してください。
+30行目: ブロックがありません。品目行か案内行かを確認してください。
+31行目: ブロックがありません。品目行か案内行かを確認してください。
+32行目: ブロックがありません。品目行か案内行かを確認してください。
+33行目: ブロックがありません。品目行か案内行かを確認してください。
+34行目: ブロックがありません。品目行か案内行かを確認してください。
+35行目: ブロックがありません。品目行か案内行かを確認してください。
+36行目: ブロックがありません。品目行か案内行かを確認してください。
+37行目: ブロックがありません。品目行か案内行かを確認してください。
+38行目: ブロックがありません。品目行か案内行かを確認してください。
+39行目: ブロックがありません。品目行か案内行かを確認してください。
+40行目: ブロックがありません。品目行か案内行かを確認してください。
+41行目: ブロックがありません。品目行か案内行かを確認してください。
+42行目: ブロックがありません。品目行か案内行かを確認してください。
+43行目: ブロックがありません。品目行か案内行かを確認してください。
+44行目: ブロックがありません。品目行か案内行かを確認してください。
+45行目: ブロックがありません。品目行か案内行かを確認してください。
+46行目: ブロックがありません。品目行か案内行かを確認してください。
+47行目: ブロックがありません。品目行か案内行かを確認してください。
+48行目: ブロックがありません。品目行か案内行かを確認してください。
+49行目: ブロックがありません。品目行か案内行かを確認してください。
+50行目: ブロックがありません。品目行か案内行かを確認してください。
+51行目: ブロックがありません。品目行か案内行かを確認してください。
+52行目: ブロックがありません。品目行か案内行かを確認してください。
+53行目: ブロックがありません。品目行か案内行かを確認してください。
+54行目: ブロックがありません。品目行か案内行かを確認してください。
+55行目: ブロックがありません。品目行か案内行かを確認してください。
+56行目: ブロックがありません。品目行か案内行かを確認してください。
+57行目: ブロックがありません。品目行か案内行かを確認してください。
+58行目: ブロックがありません。品目行か案内行かを確認してください。
+59行目: ブロックがありません。品目行か案内行かを確認してください。
+60行目: ブロックがありません。品目行か案内行かを確認してください。
+61行目: ブロックがありません。品目行か案内行かを確認してください。
+62行目: ブロックがありません。品目行か案内行かを確認してください。
+63行目: ブロックがありません。品目行か案内行かを確認してください。
+64行目: ブロックがありません。品目行か案内行かを確認してください。
+65行目: ブロックがありません。品目行か案内行かを確認してください。
+66行目: ブロックがありません。品目行か案内行かを確認してください。
+67行目: ブロックがありません。品目行か案内行かを確認してください。
+68行目: ブロックがありません。品目行か案内行かを確認してください。
+69行目: ブロックがありません。品目行か案内行かを確認してください。
+70行目: ブロックがありません。品目行か案内行かを確認してください。
+71行目: ブロックがありません。品目行か案内行かを確認してください。
+72行目: ブロックがありません。品目行か案内行かを確認してください。
+73行目: ブロックがありません。品目行か案内行かを確認してください。
+74行目: ブロックがありません。品目行か案内行かを確認してください。
+75行目: ブロックがありません。品目行か案内行かを確認してください。
+76行目: ブロックがありません。品目行か案内行かを確認してください。
+77行目: ブロックがありません。品目行か案内行かを確認してください。
+78行目: ブロックがありません。品目行か案内行かを確認してください。
+79行目: ブロックがありません。品目行か案内行かを確認してください。
+80行目: ブロックがありません。品目行か案内行かを確認してください。
+81行目: ブロックがありません。品目行か案内行かを確認してください。
+82行目: ブロックがありません。品目行か案内行かを確認してください。
+83行目: ブロックがありません。品目行か案内行かを確認してください。
+84行目: ブロックがありません。品目行か案内行かを確認してください。
+85行目: ブロックがありません。品目行か案内行かを確認してください。
+86行目: ブロックがありません。品目行か案内行かを確認してください。
+87行目: ブロックがありません。品目行か案内行かを確認してください。
+88行目: ブロックがありません。品目行か案内行かを確認してください。
+89行目: ブロックがありません。品目行か案内行かを確認してください。
+90行目: ブロックがありません。品目行か案内行かを確認してください。
+91行目: ブロックがありません。品目行か案内行かを確認してください。
+92行目: ブロックがありません。品目行か案内行かを確認してください。
+93行目: ブロックがありません。品目行か案内行かを確認してください。
+94行目: ブロックがありません。品目行か案内行かを確認してください。
+95行目: ブロックがありません。品目行か案内行かを確認してください。
+96行目: ブロックがありません。品目行か案内行かを確認してください。
+97行目: ブロックがありません。品目行か案内行かを確認してください。
+98行目: ブロックがありません。品目行か案内行かを確認してください。
+99行目: ブロックがありません。品目行か案内行かを確認してください。
+100行目: ブロックがありません。品目行か案内行かを確認してください。
+101行目: ブロックがありません。品目行か案内行かを確認してください。
+102行目: ブロックがありません。品目行か案内行かを確認してください。
+ ❯ readEventCsv src/features/events/sheetImport.ts:242:28
+    240|     });
+    241|   }
+    242|   if (errors.length) throw new CsvInputError(errors);
+       |                            ^
+    243|   return { rows, spreadsheetUrl, warnings, format };
+    244| }
+ ❯ src/features/events/sheetRowExclusions.test.ts:31:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯
+
+ FAIL  |unit| src/features/events/sheetRowExclusions.test.ts > excludes only required-field failures before URL completion, then applies the existing quantity policy
+CsvInputError: 1行目: ブロックがありません。品目行か案内行かを確認してください。
+ ❯ readEventCsv src/features/events/sheetImport.ts:242:28
+    240|     });
+    241|   }
+    242|   if (errors.length) throw new CsvInputError(errors);
+       |                            ^
+    243|   return { rows, spreadsheetUrl, warnings, format };
+    244| }
+ ❯ src/features/events/sheetRowExclusions.test.ts:46:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯
+
+ FAIL  |unit| src/features/events/sheetRowExclusions.test.ts > all excluded rows produce deletion candidates with the existing protection policy and diagnostics
+CsvInputError: 2行目: ブロックがありません。品目行か案内行かを確認してください。
+3行目: ブロックがありません。品目行か案内行かを確認してください。
+4行目: ブロックがありません。品目行か案内行かを確認してください。
+5行目: ブロックがありません。品目行か案内行かを確認してください。
+ ❯ readEventCsv src/features/events/sheetImport.ts:242:28
+    240|     });
+    241|   }
+    242|   if (errors.length) throw new CsvInputError(errors);
+       |                            ^
+    243|   return { rows, spreadsheetUrl, warnings, format };
+    244| }
+ ❯ parseEventItemsFromCsv src/features/events/sheetImport.ts:247:18
+ ❯ fetchEventItemsFromSpreadsheet src/features/events/sheetImport.ts:279:10
+ ❯ buildEventUpdateDiffFromSpreadsheet src/features/events/updateFlow.ts:193:18
+ ❯ src/features/events/sheetRowExclusions.test.ts:62:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  9 failed | 1 passed (10)
+   Start at  00:30:04
+   Duration  6.19s (transform 520ms, setup 4.39s, import 834ms, tests 31ms, environment 0ms)
+

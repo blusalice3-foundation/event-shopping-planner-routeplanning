@@ -1,3 +1,4 @@
+import { writeFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 
 // Keep response timings free from video and trace capture on every attempt.
@@ -986,6 +987,27 @@ for (const count of [150, 500, 1500])
             },
           ];
         }),
+      );
+      await writeFile(
+        testInfo.outputPath("shopping-operation-timings.json"),
+        JSON.stringify(
+          {
+            count,
+            concentrated,
+            mapVisible,
+            layout,
+            visitedCount,
+            timings,
+            summary,
+            diagnostic,
+            executionDiagnostic,
+            executionRecordDiagnostic,
+            errors,
+          },
+          null,
+          2,
+        ),
+        "utf8",
       );
       await testInfo.attach("shopping-operation-timings", {
         body: JSON.stringify(

@@ -1,3 +1,8 @@
+import { normalizeItemOptionalFields } from "../../utils/itemOptionalFields";
+import type {
+  SheetImportDiagnostics,
+  SheetRowExclusionSummary,
+} from "./sheetRowSelection";
 import type { PurchaseStatus, ShoppingItem } from "../../types/item";
 import {
   matchSheetItems,
@@ -96,6 +101,7 @@ export type AppFieldSyncCandidate = {
 };
 
 export type EventUpdateDiff = {
+  sheetImport?: SheetImportDiagnostics;
   csvReview?: { warnings: string[]; itemCount: number };
   matching?: {
     currentItems: ShoppingItem[];
@@ -217,7 +223,7 @@ function toQuantityWarning(
 }
 
 function toItemToAdd(item: SheetItem, quantity: number): SpreadsheetItemToAdd {
-  return {
+  return normalizeItemOptionalFields({
     circle: item.circle,
     eventDate: item.eventDate,
     block: item.block,
@@ -232,8 +238,8 @@ function toItemToAdd(item: SheetItem, quantity: number): SpreadsheetItemToAdd {
     ...(item.sheetIdentityVerified === true
       ? { sheetIdentityVerified: true }
       : {}),
-    ...(item.url ? { url: item.url } : {}),
-  };
+    url: item.url,
+  });
 }
 
 function sourceManagedFieldsChanged(
@@ -284,13 +290,14 @@ export function normalizeSheetItemsUrls(sheetItems: SheetItem[]): SheetItem[] {
     });
   });
 
-  return normalized;
+  return normalized.map(normalizeItemOptionalFields);
 }
 
 export function createEventUpdateDiff(
   currentItems: ShoppingItem[],
   sheetItems: SheetItem[],
   identityChoices: SheetIdentityChoices = {},
+  rowExclusions?: SheetRowExclusionSummary,
 ): EventUpdateDiff {
   const matching = matchSheetItems(currentItems, sheetItems, identityChoices);
 
@@ -351,7 +358,7 @@ export function createEventUpdateDiff(
       );
     }
 
-    const nextItem: ShoppingItem = {
+    const nextItem: ShoppingItem = normalizeItemOptionalFields({
       ...existing,
       title: sheetItem.title,
       catalogPrice: getCatalogPrice(sheetItem),
@@ -359,7 +366,7 @@ export function createEventUpdateDiff(
       sheetIdentityVerified:
         sheetItem.sheetIdentityVerified === true ? true : undefined,
       url: sheetItem.url,
-    };
+    });
     const nextSheetQuantity =
       quantityDecision.kind === "apply" ? quantityDecision.quantity : undefined;
     const hasQuantityChange =
@@ -431,6 +438,18 @@ export function createEventUpdateDiff(
   });
 
   return {
+    ...(rowExclusions
+      ? {
+          sheetImport: {
+            acceptedCount:
+              sheetItems.length -
+              quantityWarnings.filter(
+                (warning) => warning.kind === "new-item-skipped",
+              ).length,
+            rowExclusions,
+          },
+        }
+      : {}),
     ...(matching.proposals.length
       ? {
           matching: { currentItems, sheetItems, proposals: matching.proposals },

@@ -1,0 +1,65 @@
+
+[WebServer] (node:11020) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+(node:21816) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/3] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › update: 150 direct @sheet-url-routes
+  1) [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › update: 150 direct @sheet-url-routes 
+
+    TypeError: parseCsvRecords(...).map is not a function
+
+      320 |                 await restore(page, count, route === "update", undefined, true);
+      321 |                 const csv = parseCsvRecords(sheetCsv(count))
+    > 322 |                   .map((record, index) => {
+          |                    ^
+      323 |                     const cells = [...record.cells];
+      324 |                     if (index > 0) cells[24] = "https://baseline.test";
+      325 |                     return cells
+        at D:\codex-worktrees\sheet-url-baseline-20261017\tests\browser\sheet-import-optional-url.measurement.spec.ts:322:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\event-shopping-planner-routeplanning-1.9.6.7\artifacts\sheet-import-optional-url\browser-common-input-trial\sheet-import-optional-url.-d7cdc-150-direct-sheet-url-routes-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\event-shopping-planner-routeplanning-1.9.6.7\artifacts\sheet-import-optional-url\browser-common-input-trial\sheet-import-optional-url.-d7cdc-150-direct-sheet-url-routes-chromium\error-context.md
+
+
+(node:17620) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[2/3] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › switch: 150 direct @sheet-url-routes
+  2) [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › switch: 150 direct @sheet-url-routes 
+
+    TypeError: parseCsvRecords(...).map is not a function
+
+      320 |                 await restore(page, count, route === "update", undefined, true);
+      321 |                 const csv = parseCsvRecords(sheetCsv(count))
+    > 322 |                   .map((record, index) => {
+          |                    ^
+      323 |                     const cells = [...record.cells];
+      324 |                     if (index > 0) cells[24] = "https://baseline.test";
+      325 |                     return cells
+        at D:\codex-worktrees\sheet-url-baseline-20261017\tests\browser\sheet-import-optional-url.measurement.spec.ts:322:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\event-shopping-planner-routeplanning-1.9.6.7\artifacts\sheet-import-optional-url\browser-common-input-trial\sheet-import-optional-url.-0cb8a-150-direct-sheet-url-routes-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\event-shopping-planner-routeplanning-1.9.6.7\artifacts\sheet-import-optional-url\browser-common-input-trial\sheet-import-optional-url.-0cb8a-150-direct-sheet-url-routes-chromium\error-context.md
+
+
+(node:28572) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[3/3] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › retry: 150 direct @sheet-url-routes
+  2 failed
+    [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › update: 150 direct @sheet-url-routes 
+    [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › switch: 150 direct @sheet-url-routes 
+  1 passed (36.0s)

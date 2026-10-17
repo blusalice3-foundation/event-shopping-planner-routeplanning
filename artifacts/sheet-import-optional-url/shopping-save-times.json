@@ -1,0 +1,1874 @@
+[
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 410.80000000447035,
+      "p95Ms": 566.7999999970198
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 19,
+      "medianMs": 443.3999999985099,
+      "p95Ms": 615.0999999940395
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 35,
+      "medianMs": 370.19999999552965,
+      "p95Ms": 550.3999999985099
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 411.5,
+      "p95Ms": 559.2000000029802
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 18,
+      "medianMs": 431.5,
+      "p95Ms": 608.7999999970198
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 32,
+      "medianMs": 373,
+      "p95Ms": 524.2000000029802
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 389.6000000014901,
+      "p95Ms": 539.3999999985099
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 422.69999999552965,
+      "p95Ms": 567.4000000059605
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 31,
+      "medianMs": 405.69999999552965,
+      "p95Ms": 521.1000000014901
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 399.5,
+      "p95Ms": 524
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 433,
+      "p95Ms": 577.7000000029802
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 29,
+      "medianMs": 469.6000000014901,
+      "p95Ms": 582.5999999940395
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 475.1000000014901,
+      "p95Ms": 669.7999999970198
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 515.2999999970198,
+      "p95Ms": 687.3999999985099
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 28,
+      "medianMs": 428,
+      "p95Ms": 625
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 382.80000000447035,
+      "p95Ms": 574.7999999970198
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 392.5,
+      "p95Ms": 520.6000000014901
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 33,
+      "medianMs": 364.8999999985099,
+      "p95Ms": 530.7000000029802
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 459.8999999985099,
+      "p95Ms": 637.6999999955297
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 18,
+      "medianMs": 475.19999999552965,
+      "p95Ms": 656.8999999985099
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 34,
+      "medianMs": 441.70000000298023,
+      "p95Ms": 628.7999999970198
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 457.3999999985099,
+      "p95Ms": 583.8000000044703
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 454,
+      "p95Ms": 611
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 36,
+      "medianMs": 369,
+      "p95Ms": 567.2000000029802
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 386.69999999552965,
+      "p95Ms": 558
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 19,
+      "medianMs": 434.29999999701977,
+      "p95Ms": 584.5999999940395
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 31,
+      "medianMs": 379.5,
+      "p95Ms": 563.2000000029802
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 431.6000000014901,
+      "p95Ms": 607
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 444.29999999701977,
+      "p95Ms": 610.2999999970198
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 32,
+      "medianMs": 395.8999999985099,
+      "p95Ms": 580.1000000014901
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 404.80000000447035,
+      "p95Ms": 535.8000000044703
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 18,
+      "medianMs": 413.70000000298023,
+      "p95Ms": 581.1000000014901
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 30,
+      "medianMs": 406.3999999985099,
+      "p95Ms": 556.8999999985099
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 429.79999999701977,
+      "p95Ms": 572.3999999985099
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 456.29999999701977,
+      "p95Ms": 579.3000000044703
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 36,
+      "medianMs": 381.6000000014901,
+      "p95Ms": 587.6000000014901
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 405.1000000014901,
+      "p95Ms": 558.5
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 399,
+      "p95Ms": 547.8999999985099
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 28,
+      "medianMs": 414.79999999701977,
+      "p95Ms": 550
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 379.5,
+      "p95Ms": 532
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 427.20000000298023,
+      "p95Ms": 560.8000000044703
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 36,
+      "medianMs": 382.8999999985099,
+      "p95Ms": 518.2000000029802
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 394,
+      "p95Ms": 566.3999999985099
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 18,
+      "medianMs": 402.29999999701977,
+      "p95Ms": 557
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 33,
+      "medianMs": 379.5,
+      "p95Ms": 567.5
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 408.5,
+      "p95Ms": 549
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 426.29999999701977,
+      "p95Ms": 568.3000000044703
+    }
+  },
+  {
+    "run": "before-2",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 35,
+      "medianMs": 412.19999999552965,
+      "p95Ms": 546.8000000044703
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 421.89999999990687,
+      "p95Ms": 553
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 427.29999999981374,
+      "p95Ms": 561.5999999996275
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 35,
+      "medianMs": 389.90000000037253,
+      "p95Ms": 559.1000000000931
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 388.5,
+      "p95Ms": 515.3999999999069
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 424.3000000002794,
+      "p95Ms": 591.7999999998137
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 35,
+      "medianMs": 338.09999999962747,
+      "p95Ms": 568.5
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 378.5,
+      "p95Ms": 529.6000000000931
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 579.7000000001863,
+      "p95Ms": 925
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 31,
+      "medianMs": 586.7000000001863,
+      "p95Ms": 954
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 409.10000000009313,
+      "p95Ms": 553.2999999998137
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 415.8000000002794,
+      "p95Ms": 550.3999999999069
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 31,
+      "medianMs": 392.89999999990687,
+      "p95Ms": 541.3999999999069
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 449.10000000009313,
+      "p95Ms": 571.1000000000931
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 434.20000000018626,
+      "p95Ms": 552
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 33,
+      "medianMs": 402.1999999997206,
+      "p95Ms": 530.7000000001863
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 395.70000000018626,
+      "p95Ms": 556.5
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 394.89999999990687,
+      "p95Ms": 523.3999999999069
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 33,
+      "medianMs": 377.5,
+      "p95Ms": 490.29999999981374
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 396.6999999997206,
+      "p95Ms": 545.2000000001863
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 422.6999999997206,
+      "p95Ms": 561.3000000002794
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 31,
+      "medianMs": 409.59999999962747,
+      "p95Ms": 546.8000000002794
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 382.79999999981374,
+      "p95Ms": 535.7999999998137
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 423.40000000037253,
+      "p95Ms": 546.6000000000931
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 37,
+      "medianMs": 414.89999999990687,
+      "p95Ms": 605.0999999996275
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 394.3000000002794,
+      "p95Ms": 525.3999999999069
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 19,
+      "medianMs": 445.1999999997206,
+      "p95Ms": 611.9000000003725
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 29,
+      "medianMs": 376.3000000002794,
+      "p95Ms": 578.7999999998137
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 391.5,
+      "p95Ms": 584.5
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 443.3000000002794,
+      "p95Ms": 603.2999999998137
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 35,
+      "medianMs": 363.60000000009313,
+      "p95Ms": 553.1000000000931
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 367.10000000009313,
+      "p95Ms": 528.5
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 417.20000000018626,
+      "p95Ms": 546.8999999999069
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 36,
+      "medianMs": 411.60000000009313,
+      "p95Ms": 547
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 454.60000000009313,
+      "p95Ms": 616
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 18,
+      "medianMs": 419.10000000009313,
+      "p95Ms": 571.6999999997206
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 37,
+      "medianMs": 357.79999999981374,
+      "p95Ms": 557.8000000002794
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 424,
+      "p95Ms": 564.1000000000931
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 413.1999999997206,
+      "p95Ms": 597.1000000000931
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 35,
+      "medianMs": 432.70000000018626,
+      "p95Ms": 575.2000000001863
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 385,
+      "p95Ms": 542.3000000002794
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 428.3000000002794,
+      "p95Ms": 520.5
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 31,
+      "medianMs": 413.60000000009313,
+      "p95Ms": 530.1000000000931
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 392.8000000002794,
+      "p95Ms": 567
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 18,
+      "medianMs": 396,
+      "p95Ms": 552.7000000001863
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 32,
+      "medianMs": 395.20000000018626,
+      "p95Ms": 578.3999999999069
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 415,
+      "p95Ms": 578.3999999999069
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 429.1999999997206,
+      "p95Ms": 551.6000000000931
+    }
+  },
+  {
+    "run": "before-3",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 35,
+      "medianMs": 405.3000000002794,
+      "p95Ms": 532.1999999997206
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 432.20000000018626,
+      "p95Ms": 587.7999999998137
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 439.20000000018626,
+      "p95Ms": 591.4000000003725
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 35,
+      "medianMs": 367.10000000009313,
+      "p95Ms": 557.4000000003725
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 365.1999999997206,
+      "p95Ms": 515
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 415.39999999990687,
+      "p95Ms": 521.1000000000931
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 35,
+      "medianMs": 335.20000000018626,
+      "p95Ms": 539.7999999998137
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 390.09999999962747,
+      "p95Ms": 531.3000000002794
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 412.60000000009313,
+      "p95Ms": 528
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 35,
+      "medianMs": 336.5,
+      "p95Ms": 519.3999999999069
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 403.6999999997206,
+      "p95Ms": 564.0999999996275
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 18,
+      "medianMs": 412.89999999990687,
+      "p95Ms": 577.5
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 33,
+      "medianMs": 350.1999999997206,
+      "p95Ms": 485.10000000009313
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 398.89999999990687,
+      "p95Ms": 565.5
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 419.60000000009313,
+      "p95Ms": 553.6000000000931
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 31,
+      "medianMs": 448.60000000009313,
+      "p95Ms": 584.2000000001863
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 378.29999999981374,
+      "p95Ms": 537.7999999998137
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 393,
+      "p95Ms": 515.7999999998137
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 33,
+      "medianMs": 371,
+      "p95Ms": 543.8999999999069
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 420.39999999990687,
+      "p95Ms": 567.7999999998137
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 417.20000000018626,
+      "p95Ms": 533.3999999999069
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 31,
+      "medianMs": 440,
+      "p95Ms": 565
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 417.09999999962747,
+      "p95Ms": 566.3999999999069
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 18,
+      "medianMs": 438,
+      "p95Ms": 612.3999999999069
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 33,
+      "medianMs": 362.89999999990687,
+      "p95Ms": 555.6000000000931
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 386.10000000009313,
+      "p95Ms": 515.8999999999069
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 18,
+      "medianMs": 400.5,
+      "p95Ms": 589.5
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 31,
+      "medianMs": 379.5,
+      "p95Ms": 558.2000000001863
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 415.39999999990687,
+      "p95Ms": 577.6000000000931
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 435.29999999981374,
+      "p95Ms": 591.1999999997206
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 31,
+      "medianMs": 378.79999999981374,
+      "p95Ms": 562.3000000002794
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 374.29999999981374,
+      "p95Ms": 514.5999999996275
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 409.5,
+      "p95Ms": 536.3999999999069
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 34,
+      "medianMs": 305.89999999990687,
+      "p95Ms": 542.3000000002794
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 444,
+      "p95Ms": 600.7000000001863
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 455.5,
+      "p95Ms": 588.6999999997206
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 36,
+      "medianMs": 354,
+      "p95Ms": 539.4000000003725
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 388,
+      "p95Ms": 536
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 420.29999999981374,
+      "p95Ms": 557.9000000003725
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 500,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 28,
+      "medianMs": 418.6999999997206,
+      "p95Ms": 591.1000000000931
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 373,
+      "p95Ms": 512.3999999999069
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 409.60000000009313,
+      "p95Ms": 544.2000000001863
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": true,
+    "layout": "pc",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 35,
+      "medianMs": 391.5,
+      "p95Ms": 523.3000000002794
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 61,
+      "medianMs": 384.20000000018626,
+      "p95Ms": 515.7999999998137
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 404.6999999997206,
+      "p95Ms": 519.1000000000931
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": false,
+    "mapVisible": true,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 32,
+      "medianMs": 375.60000000009313,
+      "p95Ms": 511
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "diagnostic",
+    "stats": {
+      "samples": 60,
+      "medianMs": 378,
+      "p95Ms": 515
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionDiagnostic",
+    "stats": {
+      "samples": 20,
+      "medianMs": 395.79999999981374,
+      "p95Ms": 530.7000000001863
+    }
+  },
+  {
+    "run": "after-1",
+    "count": 150,
+    "concentrated": true,
+    "mapVisible": false,
+    "layout": "smartphone",
+    "phase": "executionRecordDiagnostic",
+    "stats": {
+      "samples": 33,
+      "medianMs": 347.20000000018626,
+      "p95Ms": 463.29999999981374
+    }
+  }
+]

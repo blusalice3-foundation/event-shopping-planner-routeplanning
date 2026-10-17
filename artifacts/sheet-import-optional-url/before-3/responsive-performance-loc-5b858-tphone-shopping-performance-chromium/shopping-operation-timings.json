@@ -1,0 +1,4902 @@
+{
+  "count": 500,
+  "concentrated": true,
+  "mapVisible": true,
+  "layout": "smartphone",
+  "visitedCount": 500,
+  "timings": {
+    "execute": [
+      13.799999999813735,
+      14,
+      14,
+      14.5,
+      14.700000000186265,
+      14.800000000279397,
+      15,
+      15.699999999720603,
+      15.799999999813735,
+      16,
+      16.09999999962747,
+      16.299999999813735,
+      16.399999999906868,
+      16.40000000037253,
+      16.59999999962747,
+      16.699999999720603,
+      16.700000000186265,
+      17,
+      17,
+      18.699999999720603
+    ],
+    "executeRecord": [
+      12.799999999813735,
+      12.800000000279397,
+      13,
+      13.100000000093132,
+      13.299999999813735,
+      13.300000000279397,
+      13.5,
+      13.899999999906868,
+      14.100000000093132,
+      14.100000000093132,
+      14.200000000186265,
+      14.299999999813735,
+      14.599999999627471,
+      15,
+      15.100000000093132,
+      15.5,
+      15.599999999627471,
+      16,
+      16.200000000186265,
+      16.90000000037253
+    ],
+    "focus": [
+      12.200000000186265,
+      12.700000000186265,
+      12.799999999813735,
+      13.200000000186265,
+      13.200000000186265,
+      13.299999999813735,
+      13.300000000279397,
+      13.399999999906868,
+      13.5,
+      13.899999999906868,
+      14.199999999720603,
+      14.200000000186265,
+      14.399999999906868,
+      14.400000000372529,
+      14.5,
+      14.600000000093132,
+      14.699999999720603,
+      14.799999999813735,
+      14.799999999813735,
+      14.800000000279397,
+      17.59999999962747
+    ],
+    "record": [
+      10.600000000093132,
+      10.799999999813735,
+      10.899999999906868,
+      11,
+      11.099999999627471,
+      11.299999999813735,
+      11.400000000372529,
+      11.5,
+      11.599999999627471,
+      11.699999999720603,
+      11.700000000186265,
+      11.799999999813735,
+      11.800000000279397,
+      11.899999999906868,
+      12,
+      12,
+      12.199999999720603,
+      12.200000000186265,
+      12.399999999906868,
+      12.5
+    ],
+    "next": [
+      14.5,
+      17.899999999906868,
+      19.399999999906868,
+      19.399999999906868,
+      19.5,
+      19.700000000186265,
+      19.700000000186265,
+      20.200000000186265,
+      20.399999999906868,
+      20.399999999906868,
+      20.5,
+      21.09999999962747,
+      21.700000000186265,
+      21.800000000279397,
+      23.300000000279397,
+      23.899999999906868,
+      24.199999999720603,
+      24.399999999906868,
+      24.5,
+      24.90000000037253,
+      27.200000000186265
+    ],
+    "back": [
+      19.09999999962747,
+      19.699999999720603,
+      19.799999999813735,
+      20.600000000093132,
+      20.700000000186265,
+      21.399999999906868,
+      21.5,
+      21.600000000093132,
+      22.5,
+      23.600000000093132,
+      23.700000000186265,
+      24,
+      24.199999999720603,
+      24.40000000037253,
+      24.5,
+      24.699999999720603,
+      25.300000000279397,
+      25.399999999906868,
+      28,
+      38.39999999990687
+    ]
+  },
+  "summary": {
+    "execute": {
+      "count": 20,
+      "medianMs": 16,
+      "p95Ms": 17
+    },
+    "executeRecord": {
+      "count": 20,
+      "medianMs": 14.100000000093132,
+      "p95Ms": 16.200000000186265
+    },
+    "focus": {
+      "count": 21,
+      "medianMs": 14.199999999720603,
+      "p95Ms": 14.800000000279397
+    },
+    "record": {
+      "count": 20,
+      "medianMs": 11.699999999720603,
+      "p95Ms": 12.399999999906868
+    },
+    "next": {
+      "count": 21,
+      "medianMs": 20.5,
+      "p95Ms": 24.90000000037253
+    },
+    "back": {
+      "count": 20,
+      "medianMs": 23.600000000093132,
+      "p95Ms": 28
+    }
+  },
+  "diagnostic": {
+    "samples": [
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 217
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 17.299999999813735,
+        "sequence": 217
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 219
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12.599999999627471,
+        "sequence": 219
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 221
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.699999999720603,
+        "sequence": 221
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 223
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.899999999906868,
+        "sequence": 223
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 225
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.299999999813735,
+        "sequence": 225
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 359.90000000037253,
+        "sequence": 218
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 227
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.399999999906868,
+        "sequence": 227
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 229
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.5,
+        "sequence": 229
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 231
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.700000000186265,
+        "sequence": 231
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 549.1000000000931,
+        "sequence": 220
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 466.3000000002794,
+        "sequence": 222
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 380.10000000009313,
+        "sequence": 224
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 297,
+        "sequence": 226
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 233
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14,
+        "sequence": 233
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 235
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.300000000279397,
+        "sequence": 235
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 237
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12.5,
+        "sequence": 237
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 239
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13,
+        "sequence": 239
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 483.10000000009313,
+        "sequence": 228
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 400.20000000018626,
+        "sequence": 230
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 318.70000000018626,
+        "sequence": 232
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 241
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12.900000000372529,
+        "sequence": 241
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 243
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.200000000186265,
+        "sequence": 243
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 245
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13,
+        "sequence": 245
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 533,
+        "sequence": 234
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 449.20000000018626,
+        "sequence": 236
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 382.39999999990687,
+        "sequence": 238
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 299.70000000018626,
+        "sequence": 240
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 247
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.099999999627471,
+        "sequence": 247
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 249
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12,
+        "sequence": 249
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 251
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.600000000093132,
+        "sequence": 251
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 253
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 501.60000000009313,
+        "sequence": 242
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 420.6999999997206,
+        "sequence": 244
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 336.79999999981374,
+        "sequence": 246
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.199999999720603,
+        "sequence": 253
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 255
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.299999999813735,
+        "sequence": 255
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 257
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.5,
+        "sequence": 257
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 259
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.5,
+        "sequence": 259
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 261
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 262
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 263
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 264
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 265
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 266
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.699999999720603,
+        "sequence": 261
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.5,
+        "sequence": 262
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.5,
+        "sequence": 263
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.399999999906868,
+        "sequence": 264
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.299999999813735,
+        "sequence": 265
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.299999999813735,
+        "sequence": 266
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 522.2000000001863,
+        "sequence": 248
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 437.6999999997206,
+        "sequence": 250
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 356.29999999981374,
+        "sequence": 252
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 271.6999999997206,
+        "sequence": 254
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 268
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.899999999906868,
+        "sequence": 268
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 270
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 271
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 272
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 273
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 274
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 275
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2000000001862645,
+        "sequence": 270
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7,
+        "sequence": 271
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 6.900000000372529,
+        "sequence": 272
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 6.900000000372529,
+        "sequence": 273
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 6.800000000279397,
+        "sequence": 274
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 6.800000000279397,
+        "sequence": 275
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 277
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.5,
+        "sequence": 277
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 279
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 280
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 281
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 282
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 283
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 284
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.300000000279397,
+        "sequence": 279
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.100000000093132,
+        "sequence": 280
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.100000000093132,
+        "sequence": 281
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7,
+        "sequence": 282
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 6.899999999906868,
+        "sequence": 283
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 6.899999999906868,
+        "sequence": 284
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 286
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.200000000186265,
+        "sequence": 286
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 288
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 289
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 290
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 291
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 292
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 293
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.699999999720603,
+        "sequence": 288
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.5,
+        "sequence": 289
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.399999999906868,
+        "sequence": 290
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.399999999906868,
+        "sequence": 291
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.399999999906868,
+        "sequence": 292
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2999999998137355,
+        "sequence": 293
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.20000000018626451,
+        "sequence": 295
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 477.10000000009313,
+        "sequence": 256
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 423.8000000002794,
+        "sequence": 258
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 361.60000000009313,
+        "sequence": 260
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 332.39999999990687,
+        "sequence": 267
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12.299999999813735,
+        "sequence": 295
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 297
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 298
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 299
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 300
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 301
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 302
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.299999999813735,
+        "sequence": 297
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.200000000186265,
+        "sequence": 298
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.200000000186265,
+        "sequence": 299
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.100000000093132,
+        "sequence": 300
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8,
+        "sequence": 301
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8,
+        "sequence": 302
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 304
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.899999999906868,
+        "sequence": 304
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 306
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 307
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 308
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 309
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 310
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 311
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.899999999906868,
+        "sequence": 306
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7000000001862645,
+        "sequence": 307
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.600000000093132,
+        "sequence": 308
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.5,
+        "sequence": 309
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.5,
+        "sequence": 310
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.399999999906868,
+        "sequence": 311
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 313
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.600000000093132,
+        "sequence": 313
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 315
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 316
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 317
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 318
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 319
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 320
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.899999999906868,
+        "sequence": 315
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7000000001862645,
+        "sequence": 316
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7000000001862645,
+        "sequence": 317
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.600000000093132,
+        "sequence": 318
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.600000000093132,
+        "sequence": 319
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.600000000093132,
+        "sequence": 320
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 322
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.099999999627471,
+        "sequence": 322
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 324
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 325
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 326
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 327
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 328
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 329
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.699999999720603,
+        "sequence": 324
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.5,
+        "sequence": 325
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.5,
+        "sequence": 326
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.399999999906868,
+        "sequence": 327
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2999999998137355,
+        "sequence": 328
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2999999998137355,
+        "sequence": 329
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 545.2000000001863,
+        "sequence": 269
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 516.2999999998137,
+        "sequence": 276
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 462.1999999997206,
+        "sequence": 278
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 433.5,
+        "sequence": 285
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 379.5,
+        "sequence": 287
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 351.70000000018626,
+        "sequence": 294
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 294.79999999981374,
+        "sequence": 296
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 331
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12,
+        "sequence": 331
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 333
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 334
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 335
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 336
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 337
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 338
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.5,
+        "sequence": 333
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.400000000372529,
+        "sequence": 334
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2000000001862645,
+        "sequence": 335
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2000000001862645,
+        "sequence": 336
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2000000001862645,
+        "sequence": 337
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.100000000093132,
+        "sequence": 338
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 340
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.5,
+        "sequence": 340
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.20000000018626451,
+        "sequence": 342
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 343
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 344
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 345
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 346
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 347
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.800000000279397,
+        "sequence": 342
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.600000000093132,
+        "sequence": 343
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.600000000093132,
+        "sequence": 344
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.399999999906868,
+        "sequence": 345
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.399999999906868,
+        "sequence": 346
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.300000000279397,
+        "sequence": 347
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 349
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.700000000186265,
+        "sequence": 349
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 351
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 352
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 353
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 354
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 355
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 356
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.800000000279397,
+        "sequence": 351
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7000000001862645,
+        "sequence": 352
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.600000000093132,
+        "sequence": 353
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.600000000093132,
+        "sequence": 354
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.5,
+        "sequence": 355
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.5,
+        "sequence": 356
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 532.7999999998137,
+        "sequence": 303
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 480.29999999981374,
+        "sequence": 305
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 451,
+        "sequence": 312
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 396.6999999997206,
+        "sequence": 314
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 365.60000000009313,
+        "sequence": 321
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 313.20000000018626,
+        "sequence": 323
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 284.29999999981374,
+        "sequence": 330
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 358
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12,
+        "sequence": 358
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 360
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 361
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 362
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 363
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 364
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 365
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.600000000093132,
+        "sequence": 360
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.399999999906868,
+        "sequence": 361
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.299999999813735,
+        "sequence": 362
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.299999999813735,
+        "sequence": 363
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.199999999720603,
+        "sequence": 364
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.100000000093132,
+        "sequence": 365
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 367
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.399999999906868,
+        "sequence": 367
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 369
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 370
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 371
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 372
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 373
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 374
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 9.299999999813735,
+        "sequence": 369
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 9.100000000093132,
+        "sequence": 370
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 9,
+        "sequence": 371
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.899999999906868,
+        "sequence": 372
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.899999999906868,
+        "sequence": 373
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.799999999813735,
+        "sequence": 374
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 376
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12.400000000372529,
+        "sequence": 376
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 378
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 379
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 380
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 381
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 382
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 383
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.899999999906868,
+        "sequence": 378
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.800000000279397,
+        "sequence": 379
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.700000000186265,
+        "sequence": 380
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.600000000093132,
+        "sequence": 381
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.600000000093132,
+        "sequence": 382
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.600000000093132,
+        "sequence": 383
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 499.5,
+        "sequence": 332
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 469.60000000009313,
+        "sequence": 339
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 416.70000000018626,
+        "sequence": 341
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 388,
+        "sequence": 348
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 333.20000000018626,
+        "sequence": 350
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 303.60000000009313,
+        "sequence": 357
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 385
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.299999999813735,
+        "sequence": 385
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 387
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 388
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 389
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 390
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 391
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 392
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.399999999906868,
+        "sequence": 387
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2999999998137355,
+        "sequence": 388
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2000000001862645,
+        "sequence": 389
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2000000001862645,
+        "sequence": 390
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2000000001862645,
+        "sequence": 391
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.100000000093132,
+        "sequence": 392
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 394
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.599999999627471,
+        "sequence": 394
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 396
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 397
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 398
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 399
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 400
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 401
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 9,
+        "sequence": 396
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.800000000279397,
+        "sequence": 397
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.800000000279397,
+        "sequence": 398
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.700000000186265,
+        "sequence": 399
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.700000000186265,
+        "sequence": 400
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.600000000093132,
+        "sequence": 401
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 403
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.700000000186265,
+        "sequence": 403
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 405
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 406
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 407
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 408
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 409
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 410
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.899999999906868,
+        "sequence": 405
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7999999998137355,
+        "sequence": 406
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7999999998137355,
+        "sequence": 407
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7999999998137355,
+        "sequence": 408
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.699999999720603,
+        "sequence": 409
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.699999999720603,
+        "sequence": 410
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 412
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.5,
+        "sequence": 412
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 591.8000000002794,
+        "sequence": 359
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 559.7000000001863,
+        "sequence": 366
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 492.8000000002794,
+        "sequence": 368
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 461,
+        "sequence": 375
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 391.3000000002794,
+        "sequence": 377
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 360.70000000018626,
+        "sequence": 384
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 414
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 415
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 416
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 417
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 418
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 419
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2999999998137355,
+        "sequence": 414
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2000000001862645,
+        "sequence": 415
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.100000000093132,
+        "sequence": 416
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.100000000093132,
+        "sequence": 417
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7,
+        "sequence": 418
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 6.899999999906868,
+        "sequence": 419
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 421
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.699999999720603,
+        "sequence": 421
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 423
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 424
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 425
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 426
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 427
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 428
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.699999999720603,
+        "sequence": 423
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.599999999627471,
+        "sequence": 424
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.5,
+        "sequence": 425
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.399999999906868,
+        "sequence": 426
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.399999999906868,
+        "sequence": 427
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.2999999998137355,
+        "sequence": 428
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 430
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.900000000372529,
+        "sequence": 430
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.3000000002793968,
+        "sequence": 432
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 17.5,
+        "sequence": 432
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 501.59999999962747,
+        "sequence": 386
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 473.10000000009313,
+        "sequence": 393
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 419,
+        "sequence": 395
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 388.40000000037253,
+        "sequence": 402
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 317.8000000002794,
+        "sequence": 404
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 289.10000000009313,
+        "sequence": 411
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 235.5,
+        "sequence": 413
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.20000000018626451,
+        "sequence": 433
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 24.800000000279397,
+        "sequence": 433
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 434
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 20.199999999720603,
+        "sequence": 434
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 433.29999999981374,
+        "sequence": 420
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 380.6999999997206,
+        "sequence": 422
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 351.89999999990687,
+        "sequence": 429
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 298,
+        "sequence": 431
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.20000000018626451,
+        "sequence": 435
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 27.200000000186265,
+        "sequence": 435
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 436
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 24.100000000093132,
+        "sequence": 436
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.20000000018626451,
+        "sequence": 437
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 21,
+        "sequence": 437
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 438
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 14.400000000372529,
+        "sequence": 438
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.3000000002793968,
+        "sequence": 439
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 19.300000000279397,
+        "sequence": 439
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 440
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 21.5,
+        "sequence": 440
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 441
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 19.600000000093132,
+        "sequence": 441
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.20000000018626451,
+        "sequence": 442
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 24.299999999813735,
+        "sequence": 442
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 443
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 23.90000000037253,
+        "sequence": 443
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.20000000018626451,
+        "sequence": 444
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 19.300000000279397,
+        "sequence": 444
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 445
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 19.399999999906868,
+        "sequence": 445
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.19999999972060323,
+        "sequence": 446
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 23.799999999813735,
+        "sequence": 446
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 447
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 22.600000000093132,
+        "sequence": 447
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.19999999972060323,
+        "sequence": 448
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 20.399999999906868,
+        "sequence": 448
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 449
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 21.600000000093132,
+        "sequence": 449
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.20000000018626451,
+        "sequence": 450
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 20.300000000279397,
+        "sequence": 450
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 451
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 19.5,
+        "sequence": 451
+      },
+      {
+        "operation": "focus-next",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 452
+      },
+      {
+        "operation": "focus-next",
+        "phase": "paint",
+        "durationMs": 20,
+        "sequence": 452
+      }
+    ],
+    "renders": {
+      "card": 206,
+      "focus-map-paint": 93,
+      "focus-item": 122
+    },
+    "summary": {
+      "item-command:input": {
+        "count": 155,
+        "medianMs": 0,
+        "p95Ms": 0.10000000009313226
+      },
+      "item-command:paint": {
+        "count": 155,
+        "medianMs": 7.899999999906868,
+        "p95Ms": 14.200000000186265
+      },
+      "item-command:save": {
+        "count": 60,
+        "medianMs": 396.6999999997206,
+        "p95Ms": 545.2000000001863
+      },
+      "focus-next:input": {
+        "count": 21,
+        "medianMs": 0.10000000009313226,
+        "p95Ms": 0.3000000002793968
+      },
+      "focus-next:paint": {
+        "count": 21,
+        "medianMs": 20.399999999906868,
+        "p95Ms": 24.800000000279397
+      }
+    }
+  },
+  "executionDiagnostic": {
+    "samples": [
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.40000000037252903,
+        "sequence": 1
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 17.5,
+        "sequence": 1
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 3
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.399999999906868,
+        "sequence": 3
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.20000000018626451,
+        "sequence": 5
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 16.399999999906868,
+        "sequence": 5
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 7
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 16,
+        "sequence": 7
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 9
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 16.700000000186265,
+        "sequence": 9
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 306.3000000002794,
+        "sequence": 2
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 11
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 15.399999999906868,
+        "sequence": 11
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 13
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 16.200000000186265,
+        "sequence": 13
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 15
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 16.399999999906868,
+        "sequence": 15
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 17
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 550.2000000001863,
+        "sequence": 4
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 480.5,
+        "sequence": 6
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 414.90000000037253,
+        "sequence": 8
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 331.10000000009313,
+        "sequence": 10
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 15.600000000093132,
+        "sequence": 17
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 19
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.599999999627471,
+        "sequence": 19
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 21
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.800000000279397,
+        "sequence": 21
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 23
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 16.699999999720603,
+        "sequence": 23
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 25
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.600000000093132,
+        "sequence": 25
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 561.3000000002794,
+        "sequence": 12
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 476.79999999981374,
+        "sequence": 14
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 408.59999999962747,
+        "sequence": 16
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 330,
+        "sequence": 18
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 27
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.800000000279397,
+        "sequence": 27
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 29
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 16.100000000093132,
+        "sequence": 29
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 31
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 15.800000000279397,
+        "sequence": 31
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 551.5,
+        "sequence": 20
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 466.89999999990687,
+        "sequence": 22
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 382.10000000009313,
+        "sequence": 24
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 317.5,
+        "sequence": 26
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 33
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.799999999813735,
+        "sequence": 33
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 35
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 16.5,
+        "sequence": 35
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 37
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 15.899999999906868,
+        "sequence": 37
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 39
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 518.3000000002794,
+        "sequence": 28
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 432.5,
+        "sequence": 30
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 349.60000000009313,
+        "sequence": 32
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.300000000279397,
+        "sequence": 39
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 604.8000000002794,
+        "sequence": 34
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 505.1999999997206,
+        "sequence": 36
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 422.6999999997206,
+        "sequence": 38
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 340.39999999990687,
+        "sequence": 40
+      }
+    ],
+    "renders": {
+      "card": 70,
+      "execution-viewport": 20,
+      "execution-space": 20
+    },
+    "summary": {
+      "item-command:input": {
+        "count": 20,
+        "medianMs": 0.09999999962747097,
+        "p95Ms": 0.20000000018626451
+      },
+      "item-command:paint": {
+        "count": 20,
+        "medianMs": 15.800000000279397,
+        "p95Ms": 16.700000000186265
+      },
+      "item-command:save": {
+        "count": 20,
+        "medianMs": 422.6999999997206,
+        "p95Ms": 561.3000000002794
+      }
+    }
+  },
+  "executionRecordDiagnostic": {
+    "samples": [
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 41
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 20.300000000279397,
+        "sequence": 41
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 43
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.700000000186265,
+        "sequence": 43
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 45
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 46
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 47
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 48
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 49
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 50
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.699999999720603,
+        "sequence": 45
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.5,
+        "sequence": 46
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.399999999906868,
+        "sequence": 47
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.299999999813735,
+        "sequence": 48
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.199999999720603,
+        "sequence": 49
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.199999999720603,
+        "sequence": 50
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 52
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13,
+        "sequence": 52
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 54
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 55
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 56
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 57
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 58
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 59
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12.100000000093132,
+        "sequence": 54
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.899999999906868,
+        "sequence": 55
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.800000000279397,
+        "sequence": 56
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.800000000279397,
+        "sequence": 57
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.700000000186265,
+        "sequence": 58
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.5,
+        "sequence": 59
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 280.89999999990687,
+        "sequence": 42
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 61
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.299999999813735,
+        "sequence": 61
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 63
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 64
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 65
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 66
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 67
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 68
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.899999999906868,
+        "sequence": 63
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.799999999813735,
+        "sequence": 64
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.600000000093132,
+        "sequence": 65
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.600000000093132,
+        "sequence": 66
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.399999999906868,
+        "sequence": 67
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.399999999906868,
+        "sequence": 68
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 70
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.699999999720603,
+        "sequence": 70
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 72
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 73
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 74
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 75
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 76
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 77
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 9.200000000186265,
+        "sequence": 72
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 9.200000000186265,
+        "sequence": 73
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 9.100000000093132,
+        "sequence": 74
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 9,
+        "sequence": 75
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.899999999906868,
+        "sequence": 76
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.799999999813735,
+        "sequence": 77
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 79
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.199999999720603,
+        "sequence": 79
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 81
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 82
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 83
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 84
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 85
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 86
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.199999999720603,
+        "sequence": 81
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.100000000093132,
+        "sequence": 82
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11,
+        "sequence": 83
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11,
+        "sequence": 84
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.899999999906868,
+        "sequence": 85
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.899999999906868,
+        "sequence": 86
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 502.89999999990687,
+        "sequence": 44
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 467.20000000018626,
+        "sequence": 51
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 402.29999999981374,
+        "sequence": 53
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 368.70000000018626,
+        "sequence": 60
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.19999999972060323,
+        "sequence": 88
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.899999999906868,
+        "sequence": 88
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 90
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 91
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 92
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 93
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 94
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 95
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 6.800000000279397,
+        "sequence": 90
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 6.7000000001862645,
+        "sequence": 91
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 6.600000000093132,
+        "sequence": 92
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 6.5,
+        "sequence": 93
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 6.5,
+        "sequence": 94
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 6.5,
+        "sequence": 95
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 97
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12.700000000186265,
+        "sequence": 97
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 99
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 100
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 101
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 102
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 103
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 104
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.5,
+        "sequence": 99
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.400000000372529,
+        "sequence": 100
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.300000000279397,
+        "sequence": 101
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.200000000186265,
+        "sequence": 102
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.100000000093132,
+        "sequence": 103
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10,
+        "sequence": 104
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 106
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.899999999906868,
+        "sequence": 106
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 108
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 109
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 110
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 111
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 112
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 113
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8,
+        "sequence": 108
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.899999999906868,
+        "sequence": 109
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7999999998137355,
+        "sequence": 110
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7999999998137355,
+        "sequence": 111
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.600000000093132,
+        "sequence": 112
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.600000000093132,
+        "sequence": 113
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 581.1999999997206,
+        "sequence": 62
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 546.1000000000931,
+        "sequence": 69
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 480.29999999981374,
+        "sequence": 71
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 442.6999999997206,
+        "sequence": 78
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 381.79999999981374,
+        "sequence": 80
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 345.60000000009313,
+        "sequence": 87
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 115
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 15.399999999906868,
+        "sequence": 115
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 117
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 118
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 119
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 120
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 121
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 122
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.5,
+        "sequence": 117
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.299999999813735,
+        "sequence": 118
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.200000000186265,
+        "sequence": 119
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8,
+        "sequence": 120
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7000000001862645,
+        "sequence": 121
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.600000000093132,
+        "sequence": 122
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 124
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 15.299999999813735,
+        "sequence": 124
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 126
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 127
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 128
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 129
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 130
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 131
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.899999999906868,
+        "sequence": 126
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.699999999720603,
+        "sequence": 127
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.699999999720603,
+        "sequence": 128
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.599999999627471,
+        "sequence": 129
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.5,
+        "sequence": 130
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.5,
+        "sequence": 131
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 133
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.800000000279397,
+        "sequence": 133
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 546.8000000002794,
+        "sequence": 89
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 512.3000000002794,
+        "sequence": 96
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 449.29999999981374,
+        "sequence": 98
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 414,
+        "sequence": 105
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 348.59999999962747,
+        "sequence": 107
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 312.09999999962747,
+        "sequence": 114
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 135
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 136
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 137
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 138
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 139
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 140
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 9.300000000279397,
+        "sequence": 135
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 9.100000000093132,
+        "sequence": 136
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 9,
+        "sequence": 137
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 9,
+        "sequence": 138
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.900000000372529,
+        "sequence": 139
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.800000000279397,
+        "sequence": 140
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 142
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 15.900000000372529,
+        "sequence": 142
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 144
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 145
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 146
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 147
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 148
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 149
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.099999999627471,
+        "sequence": 144
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.899999999906868,
+        "sequence": 145
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.899999999906868,
+        "sequence": 146
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.899999999906868,
+        "sequence": 147
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7999999998137355,
+        "sequence": 148
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7999999998137355,
+        "sequence": 149
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.19999999972060323,
+        "sequence": 151
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.199999999720603,
+        "sequence": 151
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 153
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 154
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 155
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 156
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 157
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 158
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.800000000279397,
+        "sequence": 153
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.700000000186265,
+        "sequence": 154
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.5,
+        "sequence": 155
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.5,
+        "sequence": 156
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.399999999906868,
+        "sequence": 157
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.300000000279397,
+        "sequence": 158
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 526.7000000001863,
+        "sequence": 116
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 488.09999999962747,
+        "sequence": 123
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 409.59999999962747,
+        "sequence": 125
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 371.09999999962747,
+        "sequence": 132
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 293.89999999990687,
+        "sequence": 134
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 160
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 15.699999999720603,
+        "sequence": 160
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 162
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 163
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 164
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 165
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 166
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 167
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.799999999813735,
+        "sequence": 162
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.700000000186265,
+        "sequence": 163
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.600000000093132,
+        "sequence": 164
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.600000000093132,
+        "sequence": 165
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.600000000093132,
+        "sequence": 166
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8.5,
+        "sequence": 167
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 169
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 16.5,
+        "sequence": 169
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 171
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 172
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 173
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 174
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 175
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 176
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 8,
+        "sequence": 171
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.899999999906868,
+        "sequence": 172
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.800000000279397,
+        "sequence": 173
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7000000001862645,
+        "sequence": 174
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.7000000001862645,
+        "sequence": 175
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 7.600000000093132,
+        "sequence": 176
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 465.3000000002794,
+        "sequence": 141
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 386.60000000009313,
+        "sequence": 143
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 348.39999999990687,
+        "sequence": 150
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 269.60000000009313,
+        "sequence": 152
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 232.5,
+        "sequence": 159
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 178
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12.400000000372529,
+        "sequence": 178
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 180
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 181
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 182
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 183
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 184
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 185
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.399999999906868,
+        "sequence": 180
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.199999999720603,
+        "sequence": 181
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.199999999720603,
+        "sequence": 182
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14.100000000093132,
+        "sequence": 183
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14,
+        "sequence": 184
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 14,
+        "sequence": 185
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 187
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.599999999627471,
+        "sequence": 187
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 189
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 190
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 191
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 192
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 193
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 194
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.899999999906868,
+        "sequence": 189
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.700000000186265,
+        "sequence": 190
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.600000000093132,
+        "sequence": 191
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.600000000093132,
+        "sequence": 192
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.600000000093132,
+        "sequence": 193
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 10.600000000093132,
+        "sequence": 194
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 196
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12.600000000093132,
+        "sequence": 196
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 461.5,
+        "sequence": 161
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 422,
+        "sequence": 168
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 345.39999999990687,
+        "sequence": 170
+      },
+      {
+        "operation": "item-command",
+        "phase": "save",
+        "durationMs": 305.79999999981374,
+        "sequence": 177
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 198
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 199
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 200
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 201
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 202
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 203
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12,
+        "sequence": 198
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.899999999906868,
+        "sequence": 199
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.800000000279397,
+        "sequence": 200
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.700000000186265,
+        "sequence": 201
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.700000000186265,
+        "sequence": 202
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 11.600000000093132,
+        "sequence": 203
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 205
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.099999999627471,
+        "sequence": 205
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 207
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.10000000009313226,
+        "sequence": 208
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 209
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 210
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 211
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0,
+        "sequence": 212
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.599999999627471,
+        "sequence": 207
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.5,
+        "sequence": 208
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.399999999906868,
+        "sequence": 209
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.299999999813735,
+        "sequence": 210
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.199999999720603,
+        "sequence": 211
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 13.299999999813735,
+        "sequence": 212
+      },
+      {
+        "operation": "item-command",
+        "phase": "input",
+        "durationMs": 0.09999999962747097,
+        "sequence": 214
+      },
+      {
+        "operation": "item-command",
+        "phase": "paint",
+        "durationMs": 12.799999999813735,
+        "sequence": 214
+      }
+    ],
+    "renders": {
+      "execution-viewport": 22,
+      "execution-space": 22,
+      "card": 61
+    },
+    "summary": {
+      "item-command:input": {
+        "count": 135,
+        "medianMs": 0,
+        "p95Ms": 0.10000000009313226
+      },
+      "item-command:paint": {
+        "count": 135,
+        "medianMs": 10.399999999906868,
+        "p95Ms": 14.800000000279397
+      },
+      "item-command:save": {
+        "count": 31,
+        "medianMs": 409.59999999962747,
+        "p95Ms": 546.8000000002794
+      }
+    }
+  },
+  "errors": []
+}

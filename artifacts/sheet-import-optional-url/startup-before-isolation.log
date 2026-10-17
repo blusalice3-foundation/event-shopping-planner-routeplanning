@@ -1,0 +1,297 @@
+
+ RUN  v4.1.10 D:/codex-worktrees/sheet-url-baseline-20261017
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":0,"durationMs":37.67579999999725,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":1,"durationMs":25.700600000000122,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":2,"durationMs":15.636500000000524,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":3,"durationMs":19.289099999998143,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":4,"durationMs":18.46610000000146,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":5,"durationMs":18.506399999998393,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":6,"durationMs":17.53440000000046,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":7,"durationMs":17.71440000000075,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":8,"durationMs":18.28440000000046,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":9,"durationMs":16.757999999997992,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":10,"durationMs":16.900000000001455,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":11,"durationMs":18.80489999999918,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":12,"durationMs":13.795999999998457,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":13,"durationMs":21.81930000000284,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":14,"durationMs":10.148799999999028,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":15,"durationMs":25.964199999998527,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":16,"durationMs":19.05710000000181,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":17,"durationMs":19.00330000000031,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":18,"durationMs":16.664699999997538,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+stderr | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+IndexedDB persistence initialization failed. {
+  storeName: 'eventLists',
+  category: 'unknown',
+  errorCode: 'persistence-operation-failed'
+}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined
+SHEET_URL_SAMPLE {"phase":"before","key":"startup-undefined","count":150,"mode":"worker","iteration":19,"durationMs":12.341599999999744,"status":"recovery-required","failureMs":0,"attempts":0,"successes":0,"aborted":0,"physicalCommitMs":0,"puts":{}}
+
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > import 150 google normal
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > import 150 google mixed
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > import 150 google excluded
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > import 150 legacy normal
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > import 150 legacy mixed
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > import 150 legacy excluded
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 direct B01
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 direct B02
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 direct B03
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 direct B04
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 direct B05
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 direct B06
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 direct undefined
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 150 direct json blank=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 150 direct json blank=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 150 direct xlsx blank=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 150 direct xlsx blank=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > retry 150 direct following=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > retry 150 direct following=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker B01
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker B02
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker B03
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker B04
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker B05
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker B06
+ ✓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 150 worker undefined 673ms
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 150 worker json blank=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 150 worker json blank=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 150 worker xlsx blank=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 150 worker xlsx blank=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > retry 150 worker following=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > retry 150 worker following=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > import 500 google normal
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > import 500 google mixed
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > import 500 google excluded
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > import 500 legacy normal
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > import 500 legacy mixed
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > import 500 legacy excluded
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 direct B01
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 direct B02
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 direct B03
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 direct B04
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 direct B05
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 direct B06
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 direct undefined
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 500 direct json blank=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 500 direct json blank=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 500 direct xlsx blank=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 500 direct xlsx blank=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > retry 500 direct following=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > retry 500 direct following=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 worker B01
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 worker B02
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 worker B03
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 worker B04
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 worker B05
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 worker B06
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > startup 500 worker undefined
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 500 worker json blank=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 500 worker json blank=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 500 worker xlsx blank=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > restore 500 worker xlsx blank=true
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > retry 500 worker following=false
+ ↓ |integration| src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > retry 500 worker following=true
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 87 skipped (88)
+   Start at  09:56:09
+   Duration  21.95s (transform 1.60s, setup 3.92s, import 9.88s, tests 675ms, environment 7.23s)
+

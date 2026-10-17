@@ -1,3 +1,4 @@
+import { normalizeSnapshotItemOptionalFields } from "../../utils/itemOptionalFields";
 import { recordEntry, setOwnValue } from "../../utils/ownRecord";
 import {
   registerItemGuardGenerations,
@@ -224,6 +225,12 @@ function planBatch(
         ),
       });
     }
+  const normalized = normalizeSnapshotItemOptionalFields(
+    { ...projected, ...changed },
+    projected,
+  );
+  if (normalized.eventLists !== projected.eventLists)
+    changed.eventLists = normalized.eventLists;
   return confirmChangedFieldConflicts(
     planProjectedMutation(
       latest,

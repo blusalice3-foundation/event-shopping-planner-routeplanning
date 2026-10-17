@@ -1,0 +1,1450 @@
+
+ RUN  v4.1.10 D:/codex-worktrees/sheet-url-20261017
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":0,"durationMs":27.589099999999235,"reviewMs":5.894999999999527,"saveMs":21.60900000000038,"status":"ok"}
+
+------stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":1,"durationMs":11.39049999999952,"reviewMs":2.3185999999996056,"saveMs":9.065800000000309,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":2,"durationMs":14.09479999999985,"reviewMs":2.7346999999999753,"saveMs":11.35149999999976,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":3,"durationMs":9.659300000000258,"reviewMs":1.535200000000259,"saveMs":8.115099999999984,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":4,"durationMs":11.815300000000207,"reviewMs":1.3091999999996915,"saveMs":10.498999999999796,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":5,"durationMs":9.514299999999821,"reviewMs":1.1221999999997934,"saveMs":8.38550000000032,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":6,"durationMs":12.034699999999248,"reviewMs":1.2291999999997643,"saveMs":10.798299999999472,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":7,"durationMs":9.08219999999983,"reviewMs":1.0313000000005559,"saveMs":8.044700000000375,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":8,"durationMs":8.680100000000493,"reviewMs":1.0021999999999025,"saveMs":7.670599999999467,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":9,"durationMs":9.326900000000023,"reviewMs":0.9347999999999956,"saveMs":8.371100000000297,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":10,"durationMs":8.165099999999256,"reviewMs":0.8283999999994194,"saveMs":7.331600000000435,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":11,"durationMs":11.822400000000016,"reviewMs":0.8249999999998181,"saveMs":10.994800000000396,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":12,"durationMs":8.22320000000036,"reviewMs":0.860700000000179,"saveMs":7.360200000000077,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":13,"durationMs":8.12960000000021,"reviewMs":0.8024000000004889,"saveMs":7.324799999999414,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":14,"durationMs":8.017899999999827,"reviewMs":0.800600000000486,"saveMs":7.2150000000001455,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":15,"durationMs":8.068199999999706,"reviewMs":0.8427000000001499,"saveMs":7.222399999999652,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":16,"durationMs":8.105999999999767,"reviewMs":0.8226000000004206,"saveMs":7.281299999999646,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":17,"durationMs":8.004799999999705,"reviewMs":0.8472000000001572,"saveMs":7.155099999999948,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":18,"durationMs":13.069099999999708,"reviewMs":0.8374999999996362,"saveMs":12.228699999999662,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"direct","iteration":19,"durationMs":7.768900000000031,"reviewMs":0.7721000000001368,"saveMs":6.994200000000092,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":0,"durationMs":9.545199999999568,"reviewMs":0.7781999999997424,"saveMs":8.76050000000032,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":1,"durationMs":8.081899999999223,"reviewMs":0.8609999999998763,"saveMs":7.2182999999995445,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":2,"durationMs":10.684400000000096,"reviewMs":0.7687000000005355,"saveMs":9.912599999999657,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":3,"durationMs":8.22900000000027,"reviewMs":0.7887000000000626,"saveMs":7.4378999999999,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":4,"durationMs":10.153400000000147,"reviewMs":0.7916999999997643,"saveMs":9.358500000000276,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":5,"durationMs":13.216400000000249,"reviewMs":0.7910000000001673,"saveMs":12.421500000000378,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":6,"durationMs":9.850300000000061,"reviewMs":0.9958000000005995,"saveMs":8.850400000000263,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":7,"durationMs":10.881100000000515,"reviewMs":0.783900000000358,"saveMs":10.093799999999646,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":8,"durationMs":10.56710000000021,"reviewMs":0.9843000000000757,"saveMs":9.579899999999725,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":9,"durationMs":10.109099999999671,"reviewMs":0.9903000000003885,"saveMs":9.11580000000049,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":10,"durationMs":11.075400000000627,"reviewMs":0.9866000000001804,"saveMs":10.084700000000339,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":11,"durationMs":8.776200000000244,"reviewMs":0.8085000000000946,"saveMs":7.964600000000246,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":12,"durationMs":12.527799999999843,"reviewMs":0.7971999999999753,"saveMs":11.727700000000368,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":13,"durationMs":9.079899999999725,"reviewMs":0.9909999999999854,"saveMs":8.085900000000038,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":14,"durationMs":8.554799999999886,"reviewMs":0.808100000000195,"saveMs":7.738699999999881,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":15,"durationMs":9.56919999999991,"reviewMs":0.871900000000096,"saveMs":8.694000000000415,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":16,"durationMs":8.976700000000164,"reviewMs":0.8993999999993321,"saveMs":8.074299999999312,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":17,"durationMs":10.41610000000037,"reviewMs":1.268500000000131,"saveMs":9.144900000000234,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":18,"durationMs":9.410300000000461,"reviewMs":1.016099999999824,"saveMs":8.391099999999824,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"direct","iteration":19,"durationMs":12.177799999999479,"reviewMs":0.9706999999998516,"saveMs":11.204099999999926,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":0,"durationMs":14.531500000000051,"reviewMs":1.2802000000001499,"saveMs":13.245200000000295,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":1,"durationMs":15.26510000000053,"reviewMs":1.0906000000004497,"saveMs":14.171900000000278,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":2,"durationMs":17.32219999999961,"reviewMs":1.096599999999853,"saveMs":16.22270000000026,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":3,"durationMs":12.808500000000095,"reviewMs":0.9183000000002721,"saveMs":11.887099999999919,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":4,"durationMs":12.991500000000087,"reviewMs":0.8896000000004278,"saveMs":12.099299999999857,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":5,"durationMs":15.04070000000047,"reviewMs":0.8834999999999127,"saveMs":14.153400000000147,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":6,"durationMs":13.027500000000146,"reviewMs":0.9229999999997744,"saveMs":12.102200000000266,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":7,"durationMs":15.156199999999444,"reviewMs":0.8921000000000276,"saveMs":14.261599999999817,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":8,"durationMs":14.940999999999804,"reviewMs":0.7906999999995605,"saveMs":14.147600000000239,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":9,"durationMs":12.522300000000541,"reviewMs":0.755500000000211,"saveMs":11.763999999999214,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":10,"durationMs":12.634299999999712,"reviewMs":0.83429999999953,"saveMs":11.797099999999773,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":11,"durationMs":16.206599999999526,"reviewMs":0.7568999999994048,"saveMs":15.447199999999611,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":12,"durationMs":12.425599999999577,"reviewMs":0.7440999999998894,"saveMs":11.67870000000039,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":13,"durationMs":12.60950000000048,"reviewMs":0.841099999999642,"saveMs":11.765599999999722,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":14,"durationMs":15.717799999999443,"reviewMs":0.7379999999993743,"saveMs":14.977299999999559,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":15,"durationMs":12.65689999999995,"reviewMs":0.7545000000000073,"saveMs":11.90020000000004,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":16,"durationMs":12.683899999999994,"reviewMs":0.7771000000002459,"saveMs":11.903299999999945,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":17,"durationMs":16.771899999999732,"reviewMs":0.8314000000000306,"saveMs":15.937799999999697,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":18,"durationMs":12.466599999999744,"reviewMs":0.7880999999997584,"saveMs":11.675999999999476,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"direct","iteration":19,"durationMs":12.378999999999905,"reviewMs":0.7489999999997963,"saveMs":11.603900000000067,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":0,"durationMs":16.052200000000084,"reviewMs":0.7355999999999767,"saveMs":15.306499999999687,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":1,"durationMs":12.835000000000036,"reviewMs":0.7389000000002852,"saveMs":12.092900000000554,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":2,"durationMs":12.667599999999766,"reviewMs":0.7700999999997293,"saveMs":11.894599999999627,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":3,"durationMs":17.092799999999443,"reviewMs":0.7596999999996115,"saveMs":16.330699999999524,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":4,"durationMs":12.50709999999981,"reviewMs":0.7472999999999956,"saveMs":11.757100000000719,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":5,"durationMs":13.124300000000403,"reviewMs":0.7403000000003885,"saveMs":12.381199999999808,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":6,"durationMs":15.347499999999854,"reviewMs":0.7694000000001324,"saveMs":14.574900000000525,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":7,"durationMs":14.61279999999988,"reviewMs":0.8217999999997119,"saveMs":13.787100000000464,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":8,"durationMs":15.227399999999761,"reviewMs":0.8040999999993801,"saveMs":14.419699999999466,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":9,"durationMs":16.6262999999999,"reviewMs":0.7959000000000742,"saveMs":15.827000000000226,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":10,"durationMs":15.70679999999993,"reviewMs":0.811200000000099,"saveMs":14.891099999999824,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":11,"durationMs":12.522100000000137,"reviewMs":0.7434999999995853,"saveMs":11.776600000000144,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":12,"durationMs":15.381500000000415,"reviewMs":0.7970000000004802,"saveMs":14.582100000000537,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":13,"durationMs":14.329900000000634,"reviewMs":0.8234000000002197,"saveMs":13.504100000000108,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":14,"durationMs":12.82130000000052,"reviewMs":0.7831000000005588,"saveMs":12.035499999999956,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":15,"durationMs":15.252399999999398,"reviewMs":0.7451000000000931,"saveMs":14.504899999999907,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":16,"durationMs":12.50709999999981,"reviewMs":0.7385999999996784,"saveMs":11.765699999999924,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":17,"durationMs":13.016700000000128,"reviewMs":0.7399000000004889,"saveMs":12.273699999999735,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":18,"durationMs":15.04280000000017,"reviewMs":0.7642000000005282,"saveMs":14.275800000000345,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"direct","iteration":19,"durationMs":13.24579999999969,"reviewMs":0.7497999999995955,"saveMs":12.493200000000797,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":0,"durationMs":16.192000000000007,"reviewMs":0.7449999999998909,"saveMs":15.437200000000303,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":1,"durationMs":15.503500000000713,"reviewMs":0.7701000000006388,"saveMs":14.730800000000272,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":2,"durationMs":15.227499999999964,"reviewMs":0.6612000000004628,"saveMs":14.5632999999998,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":3,"durationMs":17.088999999999942,"reviewMs":0.6594000000004598,"saveMs":16.427099999999882,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":4,"durationMs":15.685500000000502,"reviewMs":0.6642000000001644,"saveMs":15.018599999999424,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":5,"durationMs":15.043099999999868,"reviewMs":0.6904999999997017,"saveMs":14.350100000000566,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":6,"durationMs":17.9391999999998,"reviewMs":0.5771999999997206,"saveMs":17.35950000000048,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":7,"durationMs":18.04620000000068,"reviewMs":0.7012000000004264,"saveMs":17.342200000000048,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":8,"durationMs":17.631600000000617,"reviewMs":0.6702000000004773,"saveMs":16.958800000000338,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":9,"durationMs":17.129500000000007,"reviewMs":0.6889999999993961,"saveMs":16.436999999999898,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":10,"durationMs":17.421699999999873,"reviewMs":0.6737999999995736,"saveMs":16.74499999999989,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":11,"durationMs":18.293400000000474,"reviewMs":0.6753000000007887,"saveMs":17.615600000000086,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":12,"durationMs":16.526499999999942,"reviewMs":0.5595999999995911,"saveMs":15.963699999999335,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":13,"durationMs":15.000500000000102,"reviewMs":0.5549000000000888,"saveMs":14.442699999999604,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":14,"durationMs":16.73530000000028,"reviewMs":0.589799999999741,"saveMs":16.142900000000736,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":15,"durationMs":15.243199999999888,"reviewMs":0.5670000000000073,"saveMs":14.673300000000381,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":16,"durationMs":15.471700000000055,"reviewMs":0.5664999999999054,"saveMs":14.902399999999943,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":17,"durationMs":15.054800000000796,"reviewMs":0.5575000000008004,"saveMs":14.494200000000092,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":18,"durationMs":15.212900000000445,"reviewMs":0.5716000000002168,"saveMs":14.638200000000325,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"direct","iteration":19,"durationMs":16.670600000000377,"reviewMs":0.5658000000003085,"saveMs":16.10230000000047,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":0,"durationMs":16.666199999999662,"reviewMs":0.6894000000002052,"saveMs":15.966499999999542,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":1,"durationMs":14.765999999999622,"reviewMs":0.5565999999998894,"saveMs":14.207400000000234,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":2,"durationMs":16.77980000000025,"reviewMs":0.5528000000003885,"saveMs":16.22479999999996,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":3,"durationMs":15.233000000000175,"reviewMs":0.5778000000000247,"saveMs":14.65270000000055,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":4,"durationMs":15.22609999999986,"reviewMs":0.5853000000006432,"saveMs":14.638599999999315,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":5,"durationMs":14.900400000000445,"reviewMs":0.5671000000002095,"saveMs":14.330299999999625,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":6,"durationMs":14.917999999999665,"reviewMs":0.563799999999901,"saveMs":14.351800000000367,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":7,"durationMs":16.643700000000536,"reviewMs":0.6039000000000669,"saveMs":16.03780000000006,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":8,"durationMs":14.92029999999977,"reviewMs":0.5672999999997046,"saveMs":14.35109999999986,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":9,"durationMs":16.603799999999865,"reviewMs":0.7426999999997861,"saveMs":15.858600000000479,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":10,"durationMs":16.763699999999517,"reviewMs":0.5797999999995227,"saveMs":16.18080000000009,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":11,"durationMs":16.032900000000154,"reviewMs":0.6184000000002925,"saveMs":15.411799999999857,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":12,"durationMs":17.89470000000074,"reviewMs":0.8291000000008353,"saveMs":17.062800000000607,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":13,"durationMs":15.068299999999908,"reviewMs":0.5613000000003012,"saveMs":14.504500000000007,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":14,"durationMs":15.039700000000266,"reviewMs":0.5630000000001019,"saveMs":14.47440000000006,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":15,"durationMs":18.448099999999613,"reviewMs":0.6804000000001906,"saveMs":17.765199999999822,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":16,"durationMs":16.47440000000006,"reviewMs":0.7056999999995242,"saveMs":15.766199999999117,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":17,"durationMs":15.601700000000164,"reviewMs":0.5684000000001106,"saveMs":15.030499999999847,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":18,"durationMs":18.248199999999997,"reviewMs":0.6911000000000058,"saveMs":17.553900000000795,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"direct","iteration":19,"durationMs":17.13640000000032,"reviewMs":0.6427999999996246,"saveMs":16.490999999999985,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":0,"durationMs":11.819800000000214,"reviewMs":1.0461000000004788,"saveMs":10.766499999999724,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":1,"durationMs":15.70969999999943,"reviewMs":1.073699999999917,"saveMs":14.632800000000316,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":2,"durationMs":11.065999999999804,"reviewMs":1.0073999999995067,"saveMs":10.05619999999999,"status":"ok"}
+
+·-------------stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":3,"durationMs":11.893600000000333,"reviewMs":0.9891000000006898,"saveMs":10.90099999999984,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":4,"durationMs":10.979499999999462,"reviewMs":0.9503999999997177,"saveMs":10.026200000000244,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":5,"durationMs":11.415500000000065,"reviewMs":0.7665999999999258,"saveMs":10.646300000000338,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":6,"durationMs":10.960000000000036,"reviewMs":0.9265999999997803,"saveMs":10.03060000000005,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":7,"durationMs":10.945399999999609,"reviewMs":0.7743999999993321,"saveMs":10.167999999999665,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":8,"durationMs":10.709599999999227,"reviewMs":0.8230999999996129,"saveMs":9.883200000000215,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":9,"durationMs":9.797999999999774,"reviewMs":0.7811999999994441,"saveMs":9.014400000000023,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":10,"durationMs":9.79780000000028,"reviewMs":0.8215000000000146,"saveMs":8.973899999999958,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":11,"durationMs":13.973500000000058,"reviewMs":0.7807000000002517,"saveMs":13.190200000000004,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":12,"durationMs":9.61489999999958,"reviewMs":0.7813999999998487,"saveMs":8.831299999999828,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":13,"durationMs":10.197000000000116,"reviewMs":0.9630999999999403,"saveMs":9.231999999999971,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":14,"durationMs":10.100600000000668,"reviewMs":0.8029000000005908,"saveMs":9.29529999999977,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":15,"durationMs":10.037999999999556,"reviewMs":0.855399999999463,"saveMs":9.179000000000087,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":16,"durationMs":10.106700000000274,"reviewMs":1.0241000000005442,"saveMs":9.080299999999625,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":17,"durationMs":10.01589999999942,"reviewMs":0.8921999999993204,"saveMs":9.121499999999287,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":18,"durationMs":10.479800000000068,"reviewMs":0.9432999999999083,"saveMs":9.533800000000156,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":150,"mode":"worker","iteration":19,"durationMs":9.76469999999972,"reviewMs":0.7973000000001775,"saveMs":8.965299999999843,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":0,"durationMs":10.30999999999949,"reviewMs":0.8702999999995882,"saveMs":9.432700000000295,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":1,"durationMs":13.17870000000039,"reviewMs":0.8074999999998909,"saveMs":12.368400000000292,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":2,"durationMs":10.221999999999753,"reviewMs":0.7725000000000364,"saveMs":9.446700000000419,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":3,"durationMs":9.873899999999594,"reviewMs":0.7811999999994441,"saveMs":9.090799999999945,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":4,"durationMs":13.059900000000198,"reviewMs":0.7736999999997352,"saveMs":12.28360000000066,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":5,"durationMs":9.96770000000015,"reviewMs":0.861800000000585,"saveMs":9.102100000000064,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":6,"durationMs":9.791699999999764,"reviewMs":0.7807999999995445,"saveMs":9.009200000000419,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":7,"durationMs":10.119899999999689,"reviewMs":0.7799999999997453,"saveMs":9.337499999999636,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":8,"durationMs":9.7496000000001,"reviewMs":0.7831000000005588,"saveMs":8.964100000000144,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":9,"durationMs":10.377600000000712,"reviewMs":0.779500000000553,"saveMs":9.595500000000357,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":10,"durationMs":9.919499999999971,"reviewMs":0.7880999999997584,"saveMs":9.129299999998693,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":11,"durationMs":12.562099999999191,"reviewMs":0.7875000000003638,"saveMs":11.771899999999732,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":12,"durationMs":9.893700000000536,"reviewMs":0.8266999999996187,"saveMs":9.064899999999398,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":13,"durationMs":9.893999999998414,"reviewMs":0.8303999999989173,"saveMs":9.061400000000503,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":14,"durationMs":12.716200000000754,"reviewMs":0.7744999999995343,"saveMs":11.939500000000407,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":15,"durationMs":9.84310000000005,"reviewMs":0.7883999999994558,"saveMs":9.052300000001196,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":16,"durationMs":9.733299999999872,"reviewMs":0.7920999999987544,"saveMs":8.938900000001013,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":17,"durationMs":9.650099999998929,"reviewMs":0.7672999999995227,"saveMs":8.88090000000011,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":18,"durationMs":9.509200000000419,"reviewMs":0.7775999999994383,"saveMs":8.729600000000573,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":150,"mode":"worker","iteration":19,"durationMs":9.567399999999907,"reviewMs":0.7607000000007247,"saveMs":8.80450000000019,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":0,"durationMs":13.854800000000978,"reviewMs":0.7590000000000146,"saveMs":13.089099999999235,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":1,"durationMs":13.623400000000402,"reviewMs":0.7204000000001543,"saveMs":12.900700000000143,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":2,"durationMs":14.022399999999834,"reviewMs":0.7162000000007538,"saveMs":13.303899999998976,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":3,"durationMs":16.110000000000582,"reviewMs":0.7329000000008818,"saveMs":15.374599999999191,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":4,"durationMs":14.006900000000314,"reviewMs":0.7301000000006752,"saveMs":13.273699999999735,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":5,"durationMs":14.100099999999657,"reviewMs":0.8567999999995664,"saveMs":13.240299999999479,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":6,"durationMs":17.431899999999587,"reviewMs":0.7418999999990774,"saveMs":16.686900000000605,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":7,"durationMs":14.338600000000952,"reviewMs":0.7208000000009633,"saveMs":13.614299999999275,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":8,"durationMs":13.802600000000893,"reviewMs":0.7165999999997439,"saveMs":13.083400000001348,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":9,"durationMs":16.45639999999912,"reviewMs":0.7876999999989494,"saveMs":15.665200000001278,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":10,"durationMs":15.875400000000809,"reviewMs":0.9996000000010099,"saveMs":14.872400000000198,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":11,"durationMs":15.560900000000402,"reviewMs":1.065099999999802,"saveMs":14.493599999999788,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":12,"durationMs":19.531199999999444,"reviewMs":1.0885999999991327,"saveMs":18.439400000001115,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":13,"durationMs":15.953899999998612,"reviewMs":0.8562999999994645,"saveMs":15.094699999999648,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":14,"durationMs":15.754899999999907,"reviewMs":0.9534999999996217,"saveMs":14.798500000000786,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":15,"durationMs":18.540899999999965,"reviewMs":0.90139999999883,"saveMs":17.637000000000626,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":16,"durationMs":16.280799999998635,"reviewMs":0.9069999999992433,"saveMs":15.370700000001307,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":17,"durationMs":14.684300000000803,"reviewMs":0.7569999999996071,"saveMs":13.923999999999069,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":18,"durationMs":17.524900000000343,"reviewMs":0.9431000000004133,"saveMs":16.578700000000026,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":150,"mode":"worker","iteration":19,"durationMs":14.804200000000492,"reviewMs":0.8297000000002299,"saveMs":13.971800000001167,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":0,"durationMs":14.653999999998632,"reviewMs":0.7489999999997963,"saveMs":13.89810000000034,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":1,"durationMs":14.34439999999995,"reviewMs":0.7754000000004453,"saveMs":13.566000000000713,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":2,"durationMs":14.972599999999147,"reviewMs":0.7271999999993568,"saveMs":14.243000000000393,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":3,"durationMs":14.805000000000291,"reviewMs":0.7500999999992928,"saveMs":14.052699999998367,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":4,"durationMs":15.554999999998472,"reviewMs":0.8341999999993277,"saveMs":14.71769999999924,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":5,"durationMs":14.538000000000466,"reviewMs":0.8055999999996857,"saveMs":13.73030000000108,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":6,"durationMs":16.96229999999923,"reviewMs":0.7629999999990105,"saveMs":16.196500000000015,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":7,"durationMs":17.80290000000059,"reviewMs":0.7175999999999476,"saveMs":17.081500000000233,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":8,"durationMs":14.416399999998248,"reviewMs":0.727099999998245,"saveMs":13.686799999999494,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":9,"durationMs":18.10030000000006,"reviewMs":0.8558000000011816,"saveMs":17.241100000001097,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":10,"durationMs":14.780299999998533,"reviewMs":0.7309999999997672,"saveMs":14.047299999998359,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":11,"durationMs":14.832300000000032,"reviewMs":0.7278999999998632,"saveMs":14.101999999998952,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":12,"durationMs":17.47979999999916,"reviewMs":0.7355999999999767,"saveMs":16.741799999999785,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":13,"durationMs":14.59820000000036,"reviewMs":0.8096000000005006,"saveMs":13.78610000000117,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":14,"durationMs":14.471800000001167,"reviewMs":0.7226000000009662,"saveMs":13.746499999999287,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":15,"durationMs":17.372400000000198,"reviewMs":0.7605999999996129,"saveMs":16.60950000000048,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":16,"durationMs":14.783199999999852,"reviewMs":0.8013000000009924,"saveMs":13.978399999999965,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":17,"durationMs":14.992500000000291,"reviewMs":0.7727999999988242,"saveMs":14.217099999999846,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":18,"durationMs":17.592599999999948,"reviewMs":0.7255000000004657,"saveMs":16.86410000000069,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":150,"mode":"worker","iteration":19,"durationMs":14.525499999999738,"reviewMs":0.8683000000000902,"saveMs":13.653800000000047,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":0,"durationMs":16.203299999999217,"reviewMs":0.5522000000000844,"saveMs":15.645800000000236,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":1,"durationMs":16.996900000000096,"reviewMs":0.5545000000001892,"saveMs":16.4395999999997,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":2,"durationMs":16.454499999999825,"reviewMs":0.5514000000002852,"saveMs":15.901099999999133,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":3,"durationMs":18.612600000000384,"reviewMs":0.5632000000005064,"saveMs":18.04689999999937,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":4,"durationMs":16.458599999999933,"reviewMs":0.5882000000001426,"saveMs":15.867899999999281,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":5,"durationMs":17.0687999999991,"reviewMs":0.5980999999992491,"saveMs":16.467800000000352,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":6,"durationMs":16.345099999998638,"reviewMs":0.5333999999984371,"saveMs":15.809699999999793,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":7,"durationMs":16.72739999999976,"reviewMs":0.5424000000002707,"saveMs":16.182600000000093,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":8,"durationMs":24.754899999999907,"reviewMs":0.5260999999991327,"saveMs":24.227200000001176,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":9,"durationMs":19.365900000000693,"reviewMs":1.1851000000006024,"saveMs":18.1783000000014,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":10,"durationMs":16.364799999999377,"reviewMs":0.5666000000001077,"saveMs":15.79609999999957,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":11,"durationMs":18.336300000000847,"reviewMs":0.7746999999999389,"saveMs":17.55869999999959,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":12,"durationMs":16.325000000000728,"reviewMs":0.6013000000002648,"saveMs":15.721600000000763,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":13,"durationMs":16.889500000001135,"reviewMs":0.6468000000004395,"saveMs":16.240499999999884,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":14,"durationMs":16.259000000000015,"reviewMs":0.5063000000009197,"saveMs":15.750599999999395,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":15,"durationMs":16.29069999999956,"reviewMs":0.5102999999999156,"saveMs":15.77770000000055,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":16,"durationMs":18.363100000000486,"reviewMs":0.5038999999997031,"saveMs":17.85620000000017,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":17,"durationMs":16.527000000000044,"reviewMs":0.516299999999319,"saveMs":16.008499999999913,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":18,"durationMs":16.225500000000466,"reviewMs":0.5030000000006112,"saveMs":15.720400000000154,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":150,"mode":"worker","iteration":19,"durationMs":16.038700000000972,"reviewMs":0.5073000000011234,"saveMs":15.529300000000148,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":0,"durationMs":15.932300000000396,"reviewMs":0.507500000001528,"saveMs":15.419899999998961,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":1,"durationMs":18.437200000000303,"reviewMs":0.5077000000001135,"saveMs":17.92749999999978,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":2,"durationMs":16.482299999999668,"reviewMs":0.504399999999805,"saveMs":15.975500000000466,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":3,"durationMs":16.493599999999788,"reviewMs":0.49730000000090513,"saveMs":15.994300000000294,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":4,"durationMs":16.751800000000003,"reviewMs":0.5308999999997468,"saveMs":16.21860000000015,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":5,"durationMs":16.82630000000063,"reviewMs":0.5033000000003085,"saveMs":16.320999999999913,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":6,"durationMs":18.09399999999914,"reviewMs":0.5033999999996013,"saveMs":17.588300000001254,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":7,"durationMs":16.619300000000294,"reviewMs":0.5043000000005122,"saveMs":16.113000000001193,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":8,"durationMs":16.677800000001298,"reviewMs":0.5017000000007101,"saveMs":16.173899999999776,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":9,"durationMs":16.127300000000105,"reviewMs":0.5107000000007247,"saveMs":15.614599999998973,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":10,"durationMs":16.526499999999942,"reviewMs":0.5113999999994121,"saveMs":16.012700000001132,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":11,"durationMs":18.09650000000147,"reviewMs":0.6262000000006083,"saveMs":17.46810000000005,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":12,"durationMs":17.00120000000061,"reviewMs":0.6356999999989057,"saveMs":16.363400000000183,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":13,"durationMs":16.254500000000917,"reviewMs":0.5023000000001048,"saveMs":15.75,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":14,"durationMs":16.225500000000466,"reviewMs":0.5086000000010245,"saveMs":15.714500000000044,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":15,"durationMs":16.909999999999854,"reviewMs":0.507900000000518,"saveMs":16.400100000000748,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":16,"durationMs":18.137800000000425,"reviewMs":0.5097999999998137,"saveMs":17.625199999998586,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":17,"durationMs":16.71060000000034,"reviewMs":0.49989999999888823,"saveMs":16.208599999999933,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":18,"durationMs":16.36449999999968,"reviewMs":0.5010000000002037,"saveMs":15.861800000000585,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 150 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":150,"mode":"worker","iteration":19,"durationMs":16.15140000000065,"reviewMs":0.5018999999992957,"saveMs":15.647899999999936,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":0,"durationMs":22.055200000000696,"reviewMs":2.6062000000001717,"saveMs":19.43790000000081,"status":"ok"}
+
+·-------------------stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":1,"durationMs":22.324100000001636,"reviewMs":2.8255000000008295,"saveMs":19.496099999998478,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":2,"durationMs":24.512899999999718,"reviewMs":2.303299999999581,"saveMs":22.20679999999993,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":3,"durationMs":22.70050000000083,"reviewMs":2.546599999999671,"saveMs":20.15020000000004,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":4,"durationMs":21.10820000000058,"reviewMs":2.3088000000007014,"saveMs":18.796800000000076,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":5,"durationMs":24.6937999999991,"reviewMs":2.29569999999876,"saveMs":22.39469999999892,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":6,"durationMs":22.10870000000068,"reviewMs":2.711199999999735,"saveMs":19.39379999999983,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":7,"durationMs":21.517899999998917,"reviewMs":2.3271999999997206,"saveMs":19.187799999999697,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":8,"durationMs":24.595400000000154,"reviewMs":2.35779999999977,"saveMs":22.233499999998457,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":9,"durationMs":22.098299999999654,"reviewMs":2.6833999999998923,"saveMs":19.411700000000565,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":10,"durationMs":20.685100000000602,"reviewMs":2.302400000000489,"saveMs":18.379500000000917,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":11,"durationMs":20.539499999998952,"reviewMs":2.312099999999191,"saveMs":18.224500000000262,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":12,"durationMs":21.57550000000083,"reviewMs":2.33179999999993,"saveMs":19.24040000000059,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":13,"durationMs":24.576999999999316,"reviewMs":2.7088999999996304,"saveMs":21.864800000001196,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":14,"durationMs":21.715299999999843,"reviewMs":2.3149000000012165,"saveMs":19.39730000000054,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":15,"durationMs":21.454899999998815,"reviewMs":2.3364999999994325,"saveMs":19.114800000001196,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":16,"durationMs":24.541199999999662,"reviewMs":2.7193000000006577,"saveMs":21.818700000001627,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":17,"durationMs":21.250700000000506,"reviewMs":2.3378000000011525,"saveMs":18.90990000000056,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":18,"durationMs":20.6825000000008,"reviewMs":2.2771000000011554,"saveMs":18.402600000001257,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"direct","iteration":19,"durationMs":24.205599999999322,"reviewMs":2.2747999999992317,"saveMs":21.928099999999176,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":0,"durationMs":21.582300000000032,"reviewMs":2.3145999999997002,"saveMs":19.25669999999991,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":1,"durationMs":21.02059999999983,"reviewMs":2.3038999999989755,"saveMs":18.71440000000075,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":2,"durationMs":24.509900000000926,"reviewMs":2.4261999999998807,"saveMs":22.08100000000013,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":3,"durationMs":20.6333999999988,"reviewMs":2.2709999999988213,"saveMs":18.35909999999967,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":4,"durationMs":21.040399999999863,"reviewMs":2.26890000000094,"saveMs":18.768699999998717,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":5,"durationMs":21.001500000000306,"reviewMs":2.2512000000006083,"saveMs":18.747199999999793,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":6,"durationMs":21.744200000001,"reviewMs":2.789600000000064,"saveMs":18.95089999999982,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":7,"durationMs":24.315099999999802,"reviewMs":2.2919999999994616,"saveMs":22.020400000001246,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":8,"durationMs":21.397399999999834,"reviewMs":2.306799999998475,"saveMs":19.08770000000004,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":9,"durationMs":20.82840000000033,"reviewMs":2.3161999999992986,"saveMs":18.50890000000072,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":10,"durationMs":25.412399999999252,"reviewMs":2.2687000000005355,"saveMs":23.14049999999952,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":11,"durationMs":20.832300000000032,"reviewMs":2.237600000000384,"saveMs":18.591199999998935,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":12,"durationMs":20.819499999999607,"reviewMs":2.2620000000006257,"saveMs":18.554799999999886,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":13,"durationMs":24.419699999998556,"reviewMs":2.264599999998609,"saveMs":22.151599999999235,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":14,"durationMs":20.91990000000078,"reviewMs":2.271099999999933,"saveMs":18.645300000000134,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":15,"durationMs":21.08050000000003,"reviewMs":2.27809999999954,"saveMs":18.799200000001292,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":16,"durationMs":20.656700000001365,"reviewMs":2.251400000001013,"saveMs":18.402799999999843,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":17,"durationMs":20.868399999999383,"reviewMs":2.2785000000003492,"saveMs":18.586999999999534,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":18,"durationMs":24.183499999999185,"reviewMs":2.2555999999985943,"saveMs":21.924300000000585,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"direct","iteration":19,"durationMs":20.996900000000096,"reviewMs":2.4320999999999913,"saveMs":18.561900000000605,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":0,"durationMs":72.74309999999969,"reviewMs":2.134700000000521,"saveMs":70.59710000000086,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":1,"durationMs":72.31540000000132,"reviewMs":2.1874000000007072,"saveMs":70.12510000000111,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":2,"durationMs":71.72500000000036,"reviewMs":2.10070000000087,"saveMs":69.62089999999989,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":3,"durationMs":71.85380000000077,"reviewMs":2.2049000000006345,"saveMs":69.64570000000094,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":4,"durationMs":68.81420000000071,"reviewMs":2.0318999999999505,"saveMs":66.77919999999904,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":5,"durationMs":69.41229999999996,"reviewMs":2.0187999999998283,"saveMs":67.39049999999952,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":6,"durationMs":71.98660000000018,"reviewMs":2.015900000000329,"saveMs":69.96759999999995,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":7,"durationMs":69.4400999999998,"reviewMs":2.051000000001295,"saveMs":67.38609999999971,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":8,"durationMs":70.51959999999963,"reviewMs":2.0709999999999127,"saveMs":68.44630000000143,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":9,"durationMs":81.09499999999935,"reviewMs":2.021199999999226,"saveMs":79.07129999999961,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":10,"durationMs":69.23160000000098,"reviewMs":2.0174000000006345,"saveMs":67.21140000000014,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":11,"durationMs":69.5573000000004,"reviewMs":2.029500000000553,"saveMs":67.52499999999964,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":12,"durationMs":69.54039999999986,"reviewMs":2.0271000000011554,"saveMs":67.51090000000113,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":13,"durationMs":69.08669999999984,"reviewMs":2.114799999999377,"saveMs":66.96899999999914,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":14,"durationMs":70.0593000000008,"reviewMs":2.0376000000014756,"saveMs":68.01870000000054,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":15,"durationMs":69.55349999999999,"reviewMs":2.1216000000003987,"saveMs":67.42789999999877,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":16,"durationMs":69.70769999999902,"reviewMs":2.079299999999421,"saveMs":67.62569999999869,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":17,"durationMs":72.41949999999997,"reviewMs":2.0300999999999476,"saveMs":70.38570000000072,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":18,"durationMs":75.44859999999971,"reviewMs":2.1838000000007014,"saveMs":73.26130000000012,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"direct","iteration":19,"durationMs":79.15830000000096,"reviewMs":3.33140000000094,"saveMs":75.82409999999982,"status":"ok"}
+
+··stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":0,"durationMs":80.16389999999956,"reviewMs":2.888299999998708,"saveMs":77.26059999999961,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":1,"durationMs":69.14240000000063,"reviewMs":2.04320000000007,"saveMs":67.09720000000016,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":2,"durationMs":69.95180000000073,"reviewMs":2.0318999999999505,"saveMs":67.91709999999875,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":3,"durationMs":69.59000000000015,"reviewMs":2.0205000000005384,"saveMs":67.5668999999998,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":4,"durationMs":69.75420000000122,"reviewMs":2.061100000000806,"saveMs":67.6905999999999,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":5,"durationMs":70.45859999999993,"reviewMs":2.0218999999997322,"saveMs":68.43419999999969,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":6,"durationMs":72.22659999999996,"reviewMs":2.0227000000013504,"saveMs":70.20079999999871,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":7,"durationMs":78.59330000000045,"reviewMs":2.2589000000007218,"saveMs":76.33179999999993,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":8,"durationMs":75.58950000000004,"reviewMs":2.3575000000000728,"saveMs":73.22929999999906,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":9,"durationMs":74.15669999999955,"reviewMs":2.096799999999348,"saveMs":72.0573000000004,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":10,"durationMs":74.71990000000005,"reviewMs":2.1600999999991473,"saveMs":72.55679999999847,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":11,"durationMs":74.59820000000036,"reviewMs":2.113900000000285,"saveMs":72.48140000000058,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":12,"durationMs":72.66480000000047,"reviewMs":2.139100000000326,"saveMs":70.52269999999953,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":13,"durationMs":73.64400000000023,"reviewMs":2.1173999999991793,"saveMs":71.52419999999984,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":14,"durationMs":73.03169999999955,"reviewMs":2.1110999999982596,"saveMs":70.91800000000148,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":15,"durationMs":85.43930000000182,"reviewMs":2.106900000002497,"saveMs":83.32860000000073,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":16,"durationMs":75.01060000000143,"reviewMs":2.5059000000001106,"saveMs":72.50160000000324,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":17,"durationMs":73.16059999999925,"reviewMs":2.313399999999092,"saveMs":70.84419999999955,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":18,"durationMs":74.5666999999994,"reviewMs":2.1612999999997555,"saveMs":72.40279999999984,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"direct","iteration":19,"durationMs":74.71889999999985,"reviewMs":2.20509999999922,"saveMs":72.5102999999981,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":0,"durationMs":130.9912000000004,"reviewMs":1.5403999999980442,"saveMs":129.4416999999994,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":1,"durationMs":123.63119999999981,"reviewMs":1.6445000000021537,"saveMs":121.98469999999725,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":2,"durationMs":125.52239999999802,"reviewMs":1.5619999999980791,"saveMs":123.95700000000215,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":3,"durationMs":125.13300000000163,"reviewMs":1.5574000000015076,"saveMs":123.5731999999989,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":4,"durationMs":124.97890000000189,"reviewMs":1.543600000000879,"saveMs":123.43249999999898,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":5,"durationMs":131.10090000000127,"reviewMs":1.5387999999984459,"saveMs":129.5593000000008,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":6,"durationMs":130.60809999999765,"reviewMs":1.5253999999986263,"saveMs":129.07949999999983,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":7,"durationMs":128.4764000000032,"reviewMs":1.5482000000010885,"saveMs":126.92149999999674,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":8,"durationMs":125.27289999999994,"reviewMs":1.5561999999990803,"saveMs":123.71410000000105,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":9,"durationMs":127.63220000000001,"reviewMs":1.5900000000001455,"saveMs":126.03960000000006,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":10,"durationMs":127.31710000000021,"reviewMs":1.551499999997759,"saveMs":125.76239999999962,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":11,"durationMs":129.98749999999927,"reviewMs":1.5293999999994412,"saveMs":128.45560000000114,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":12,"durationMs":126.8930999999975,"reviewMs":1.5377999999982421,"saveMs":125.35269999999946,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":13,"durationMs":127.1642000000029,"reviewMs":1.52900000000227,"saveMs":125.63229999999749,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":14,"durationMs":125.01989999999932,"reviewMs":1.532599999998638,"saveMs":123.48459999999977,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":15,"durationMs":124.75049999999828,"reviewMs":1.5245999999970081,"saveMs":123.22299999999814,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":16,"durationMs":125.31420000000071,"reviewMs":1.5388999999995576,"saveMs":123.77280000000246,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":17,"durationMs":126.85789999999906,"reviewMs":1.5381000000015774,"saveMs":125.31759999999849,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":18,"durationMs":125.69440000000031,"reviewMs":1.5974000000023807,"saveMs":124.09449999999924,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"direct","iteration":19,"durationMs":124.5692999999992,"reviewMs":1.53349999999773,"saveMs":123.03320000000167,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":0,"durationMs":126.071899999999,"reviewMs":1.6270000000004075,"saveMs":124.43480000000272,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":1,"durationMs":134.0550000000003,"reviewMs":1.4940000000024156,"saveMs":132.5580000000009,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":2,"durationMs":122.52400000000125,"reviewMs":1.453799999999319,"saveMs":121.06760000000213,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":3,"durationMs":125.77299999999741,"reviewMs":2.0247999999992317,"saveMs":123.74469999999928,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":4,"durationMs":135.55839999999807,"reviewMs":1.685299999997369,"saveMs":133.8701000000001,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":5,"durationMs":129.31210000000283,"reviewMs":1.5355000000017753,"saveMs":127.77429999999731,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":6,"durationMs":122.65600000000268,"reviewMs":1.5195999999996275,"saveMs":121.13379999999961,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":7,"durationMs":124.04279999999926,"reviewMs":1.5345000000015716,"saveMs":122.50530000000072,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":8,"durationMs":128.88430000000153,"reviewMs":1.5281000000031781,"saveMs":127.35350000000108,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":9,"durationMs":124.9272000000019,"reviewMs":1.5247000000017579,"saveMs":123.39960000000065,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":10,"durationMs":127.28789999999935,"reviewMs":1.5712000000021362,"saveMs":125.71439999999711,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":11,"durationMs":124.69340000000011,"reviewMs":1.5280999999995402,"saveMs":123.16279999999824,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":12,"durationMs":131.01859999999942,"reviewMs":1.5656999999991967,"saveMs":129.4503999999979,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":13,"durationMs":129.58339999999953,"reviewMs":1.5332999999991443,"saveMs":128.04750000000058,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":14,"durationMs":126.9262000000017,"reviewMs":1.959500000000844,"saveMs":124.96359999999913,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":15,"durationMs":122.69640000000072,"reviewMs":1.5280000000020664,"saveMs":121.16579999999885,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":16,"durationMs":130.7416000000012,"reviewMs":1.5662000000011176,"saveMs":129.17259999999806,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":17,"durationMs":127.9207000000024,"reviewMs":1.5187000000005355,"saveMs":126.39919999999984,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":18,"durationMs":126.31430000000182,"reviewMs":1.5201999999990221,"saveMs":124.79179999999906,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 direct excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"direct","iteration":19,"durationMs":125.47350000000006,"reviewMs":1.5554000000011001,"saveMs":123.91510000000198,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":0,"durationMs":25.05069999999978,"reviewMs":2.279500000000553,"saveMs":22.760700000002544,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":1,"durationMs":27.934399999998277,"reviewMs":2.261900000001333,"saveMs":25.66949999999997,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":2,"durationMs":24.798800000000483,"reviewMs":2.274700000001758,"saveMs":22.521199999999226,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":3,"durationMs":24.82010000000082,"reviewMs":2.3042999999997846,"saveMs":22.511899999997695,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":4,"durationMs":27.679000000000087,"reviewMs":2.2883999999976368,"saveMs":25.3875999999982,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":5,"durationMs":24.391199999998207,"reviewMs":2.260200000000623,"saveMs":22.12800000000061,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":6,"durationMs":25.135300000001735,"reviewMs":2.2895000000025902,"saveMs":22.843199999999342,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":7,"durationMs":29.199400000001333,"reviewMs":2.3768999999992957,"saveMs":26.819800000001123,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":8,"durationMs":25.017700000000332,"reviewMs":2.330600000001141,"saveMs":22.684399999998277,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":9,"durationMs":24.411700000000565,"reviewMs":2.336200000001554,"saveMs":22.072000000000116,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":10,"durationMs":28.785299999999552,"reviewMs":2.2672999999995227,"saveMs":26.514999999999418,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":11,"durationMs":24.69090000000142,"reviewMs":2.268400000000838,"saveMs":22.419300000001385,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":12,"durationMs":24.859199999998964,"reviewMs":2.3263000000006286,"saveMs":22.529599999998027,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":13,"durationMs":27.76270000000295,"reviewMs":2.2450000000026193,"saveMs":25.51429999999891,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":14,"durationMs":24.28820000000269,"reviewMs":2.1886000000013155,"saveMs":22.09639999999854,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":15,"durationMs":29.491299999997864,"reviewMs":2.3795999999965716,"saveMs":27.108899999999267,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":16,"durationMs":27.403000000002066,"reviewMs":2.2044000000023516,"saveMs":25.195700000000215,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":17,"durationMs":24.260499999996682,"reviewMs":2.2386999999980617,"saveMs":22.01850000000195,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":18,"durationMs":23.941600000001927,"reviewMs":2.424800000000687,"saveMs":21.513200000001234,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=false","count":500,"mode":"worker","iteration":19,"durationMs":30.88839999999982,"reviewMs":2.2072000000007392,"saveMs":28.67829999999958,"status":"ok"}
+
+·-------------stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":0,"durationMs":24.48400000000038,"reviewMs":2.1952999999994063,"saveMs":22.27690000000075,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":1,"durationMs":25.887199999997392,"reviewMs":2.2818999999981315,"saveMs":23.602599999998347,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":2,"durationMs":23.71509999999762,"reviewMs":2.1957000000002154,"saveMs":21.5170999999973,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":3,"durationMs":30.82259999999951,"reviewMs":2.184400000001915,"saveMs":28.63509999999951,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":4,"durationMs":27.149499999999534,"reviewMs":2.6394000000000233,"saveMs":24.507000000001426,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":5,"durationMs":23.914199999999255,"reviewMs":2.2278000000005704,"saveMs":21.683799999998882,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":6,"durationMs":28.469900000000052,"reviewMs":2.2330999999976484,"saveMs":26.23359999999957,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":7,"durationMs":25.164300000000367,"reviewMs":2.1939999999995052,"saveMs":22.968000000000757,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":8,"durationMs":23.507699999998295,"reviewMs":2.1741999999976542,"saveMs":21.330799999999726,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":9,"durationMs":27.359999999996944,"reviewMs":2.154899999997724,"saveMs":25.202900000000227,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":10,"durationMs":23.971799999999348,"reviewMs":2.2027000000016415,"saveMs":21.766799999997602,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":11,"durationMs":24.055899999999383,"reviewMs":2.2402000000001863,"saveMs":21.812799999999697,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":12,"durationMs":28.48029999999926,"reviewMs":2.1850999999987835,"saveMs":26.292600000000675,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":13,"durationMs":26.53559999999925,"reviewMs":2.2031999999999243,"saveMs":24.32940000000235,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":14,"durationMs":23.44380000000092,"reviewMs":2.180899999999383,"saveMs":21.26050000000032,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":15,"durationMs":31.855599999998958,"reviewMs":2.1784999999981665,"saveMs":29.67410000000018,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":16,"durationMs":27.43279999999868,"reviewMs":2.2440999999998894,"saveMs":25.18630000000121,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":17,"durationMs":26.926699999999983,"reviewMs":2.4604999999974098,"saveMs":24.46310000000085,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":18,"durationMs":30.38680000000022,"reviewMs":2.1824000000015076,"saveMs":28.2016999999978,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker normal switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-normal-switch=true","count":500,"mode":"worker","iteration":19,"durationMs":25.02850000000035,"reviewMs":2.3844000000026426,"saveMs":22.64140000000043,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":0,"durationMs":77.3804999999993,"reviewMs":2.186100000002625,"saveMs":75.18379999999888,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":1,"durationMs":74.66419999999925,"reviewMs":2.132399999998597,"saveMs":72.52909999999974,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":2,"durationMs":76.7536,"reviewMs":2.2044999999998254,"saveMs":74.54609999999957,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":3,"durationMs":88.9555999999975,"reviewMs":2.095900000000256,"saveMs":86.85659999999916,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":4,"durationMs":77.39809999999852,"reviewMs":2.4536000000007334,"saveMs":74.94040000000314,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":5,"durationMs":77.57500000000073,"reviewMs":2.3753000000033353,"saveMs":75.19599999999991,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":6,"durationMs":77.42789999999877,"reviewMs":2.1542000000008557,"saveMs":75.26890000000276,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":7,"durationMs":77.68069999999716,"reviewMs":2.161499999998341,"saveMs":75.51529999999912,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":8,"durationMs":78.30909999999858,"reviewMs":2.216099999997823,"saveMs":76.08950000000186,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":9,"durationMs":78.19219999999768,"reviewMs":2.1391999999977998,"saveMs":76.04999999999927,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":10,"durationMs":77.25350000000253,"reviewMs":2.155800000000454,"saveMs":75.09010000000126,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":11,"durationMs":78.16240000000107,"reviewMs":2.363100000002305,"saveMs":75.79609999999957,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":12,"durationMs":76.5196999999971,"reviewMs":2.1548000000002503,"saveMs":74.36149999999907,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":13,"durationMs":76.37779999999839,"reviewMs":2.1286999999974796,"saveMs":74.2461000000003,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":14,"durationMs":75.29260000000068,"reviewMs":2.1251000000011118,"saveMs":73.16280000000188,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":15,"durationMs":77.21259999999893,"reviewMs":2.1381000000001222,"saveMs":75.0708999999988,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":16,"durationMs":72.97519999999713,"reviewMs":2.1182999999982712,"saveMs":70.8543000000027,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":17,"durationMs":74.84490000000005,"reviewMs":2.1605000000017753,"saveMs":72.6811000000016,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":18,"durationMs":75.82400000000052,"reviewMs":2.1622999999999593,"saveMs":73.65850000000137,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=false","count":500,"mode":"worker","iteration":19,"durationMs":75.25079999999798,"reviewMs":2.133299999997689,"saveMs":73.11419999999998,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":0,"durationMs":77.96730000000025,"reviewMs":2.2318000000013853,"saveMs":75.72700000000259,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":1,"durationMs":77.6185000000005,"reviewMs":2.2115000000012515,"saveMs":75.40439999999944,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":2,"durationMs":77.60729999999967,"reviewMs":2.187400000002526,"saveMs":75.41719999999987,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":3,"durationMs":76.90610000000015,"reviewMs":2.162799999998242,"saveMs":74.74119999999675,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":4,"durationMs":78.57269999999698,"reviewMs":2.217899999999645,"saveMs":76.35210000000006,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":5,"durationMs":78.35739999999714,"reviewMs":2.2091999999975087,"saveMs":76.14450000000215,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":6,"durationMs":76.86059999999998,"reviewMs":2.2682999999997264,"saveMs":74.58910000000105,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":7,"durationMs":77.19650000000183,"reviewMs":2.138699999999517,"saveMs":75.05429999999978,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":8,"durationMs":73.12119999999777,"reviewMs":2.161599999999453,"saveMs":70.95650000000023,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":9,"durationMs":74.95590000000084,"reviewMs":2.1428000000014435,"saveMs":72.80999999999767,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":10,"durationMs":78.29040000000168,"reviewMs":2.1234000000004016,"saveMs":76.16419999999925,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":11,"durationMs":76.68380000000252,"reviewMs":2.10740000000078,"saveMs":74.5734999999986,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":12,"durationMs":76.48730000000069,"reviewMs":2.1525000000001455,"saveMs":74.33220000000074,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":13,"durationMs":77.05030000000261,"reviewMs":2.2340000000003783,"saveMs":74.81330000000162,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":14,"durationMs":76.27549999999974,"reviewMs":2.118900000001304,"saveMs":74.15409999999974,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":15,"durationMs":75.60490000000209,"reviewMs":2.098100000002887,"saveMs":73.5028999999995,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":16,"durationMs":75.8028000000013,"reviewMs":2.111000000000786,"saveMs":73.68899999999849,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":17,"durationMs":77.35139999999956,"reviewMs":2.2062000000005355,"saveMs":75.13940000000002,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":18,"durationMs":73.24499999999898,"reviewMs":2.119699999999284,"saveMs":71.1231000000007,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker mixed switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-mixed-switch=true","count":500,"mode":"worker","iteration":19,"durationMs":72.8833999999988,"reviewMs":2.057199999999284,"saveMs":70.82310000000143,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":0,"durationMs":122.96789999999964,"reviewMs":1.470099999998638,"saveMs":121.49080000000322,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":1,"durationMs":130.16110000000117,"reviewMs":2.1468000000022585,"saveMs":128.01160000000164,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":2,"durationMs":122.80850000000282,"reviewMs":1.4518000000025495,"saveMs":121.35329999999885,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":3,"durationMs":124.99079999999958,"reviewMs":1.47979999999734,"saveMs":123.50849999999991,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":4,"durationMs":133.25529999999708,"reviewMs":1.4969999999993888,"saveMs":131.75529999999708,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":5,"durationMs":122.91430000000037,"reviewMs":1.506600000000617,"saveMs":121.40509999999995,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":6,"durationMs":134.42250000000058,"reviewMs":1.4544999999998254,"saveMs":132.96529999999984,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":7,"durationMs":133.7315000000017,"reviewMs":1.5135000000009313,"saveMs":132.21549999999843,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":8,"durationMs":125.94010000000344,"reviewMs":1.52020000000266,"saveMs":124.4172000000035,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":9,"durationMs":133.27680000000328,"reviewMs":1.751299999999901,"saveMs":131.52319999999963,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":10,"durationMs":131.6936999999998,"reviewMs":1.515800000001036,"saveMs":130.17540000000008,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":11,"durationMs":128.87920000000304,"reviewMs":1.8537000000033004,"saveMs":127.02330000000075,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":12,"durationMs":132.79040000000168,"reviewMs":1.5126000000018394,"saveMs":131.27499999999782,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":13,"durationMs":126.1124000000018,"reviewMs":1.5413000000007742,"saveMs":124.56840000000011,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":14,"durationMs":123.84800000000178,"reviewMs":1.5365999999994528,"saveMs":122.3086000000003,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":15,"durationMs":125.7751999999964,"reviewMs":1.5063000000009197,"saveMs":124.26620000000185,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":16,"durationMs":127.27760000000126,"reviewMs":1.5090999999956694,"saveMs":125.76600000000326,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":17,"durationMs":123.54270000000542,"reviewMs":1.5159000000057858,"saveMs":122.02419999999984,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":18,"durationMs":123.53620000000228,"reviewMs":1.6184999999968568,"saveMs":121.91429999999673,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=false
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=false","count":500,"mode":"worker","iteration":19,"durationMs":123.09519999999611,"reviewMs":1.5009999999965657,"saveMs":121.59130000000005,"status":"ok"}
+
+·stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":0,"durationMs":122.43880000000354,"reviewMs":1.4835999999995693,"saveMs":120.943299999999,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":1,"durationMs":121.77100000000064,"reviewMs":1.4527999999991152,"saveMs":120.3153999999995,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":2,"durationMs":130.37429999999586,"reviewMs":1.5020999999978812,"saveMs":128.86899999999878,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":3,"durationMs":122.84850000000006,"reviewMs":1.4759000000049127,"saveMs":121.36999999999534,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":4,"durationMs":118.46210000000428,"reviewMs":1.4474000000045635,"saveMs":117.01229999999487,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":5,"durationMs":121.39600000000064,"reviewMs":1.4540000000051805,"saveMs":119.93909999999596,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":6,"durationMs":119.70150000000285,"reviewMs":1.4393000000054599,"saveMs":118.25950000000012,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":7,"durationMs":121.62359999999899,"reviewMs":1.4922999999980675,"saveMs":120.1278999999995,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":8,"durationMs":119.77400000000489,"reviewMs":1.47269999999844,"saveMs":118.29840000000695,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":9,"durationMs":129.76440000000002,"reviewMs":1.578300000001036,"saveMs":128.18360000000393,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":10,"durationMs":122.61069999999745,"reviewMs":1.4601999999940745,"saveMs":121.1475999999966,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":11,"durationMs":134.08959999999934,"reviewMs":1.6058000000048196,"saveMs":132.47989999999845,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":12,"durationMs":125.72320000000036,"reviewMs":1.5328000000008615,"saveMs":124.1880999999994,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":13,"durationMs":123.19750000000204,"reviewMs":1.5046000000002095,"saveMs":121.69000000000233,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":14,"durationMs":128.15939999999682,"reviewMs":1.7298999999984517,"saveMs":126.4262000000017,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":15,"durationMs":128.2777999999962,"reviewMs":1.4997999999977765,"saveMs":126.77509999999893,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":16,"durationMs":127.68679999999586,"reviewMs":1.8361999999979162,"saveMs":125.84700000000157,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":17,"durationMs":124.84509999999864,"reviewMs":1.5192000000024564,"saveMs":123.32259999999951,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":18,"durationMs":126.8998999999967,"reviewMs":1.5184000000008382,"saveMs":125.37879999999859,"status":"ok"}
+
+stdout | src/test/sheetImportOptionalUrl.measurement.integration.test.tsx > sheet import optional URL route measurements (opt in) > update 500 worker excluded switch=true
+SHEET_URL_SAMPLE {"phase":"after","key":"update-excluded-switch=true","count":500,"mode":"worker","iteration":19,"durationMs":123.65989999999874,"reviewMs":1.5086999999984982,"saveMs":122.14800000000105,"status":"ok"}
+
+·-------------
+
+ Test Files  1 passed (1)
+      Tests  24 passed | 64 skipped (88)
+   Start at  10:38:05
+   Duration  36.69s (transform 906ms, setup 304ms, import 2.67s, tests 32.51s, environment 1.01s)
+

@@ -1,3 +1,4 @@
+import { normalizeItemOptionalFields } from "../../utils/itemOptionalFields";
 import type { BulkImportRequest } from "../../types/import";
 import type {
   DayModeState,
@@ -53,29 +54,31 @@ export function buildBulkAddItems(
   const itemSource = resolveItemSource(metadata);
   const defaultProtectionLevel = itemSource === "app" ? "full" : "none";
 
-  return newItemsData.map((itemData) => ({
-    id: crypto.randomUUID(),
-    ...itemData,
-    ...(itemSource === "spreadsheet"
-      ? {
-          catalogPrice:
-            itemData.catalogPrice === undefined
-              ? itemData.price
-              : itemData.catalogPrice,
-          sheetRemarks: itemData.sheetRemarks ?? itemData.remarks,
-          sheetIdentityVerified:
-            itemData.sheetIdentityVerified === true &&
-            itemData.catalogPrice !== undefined &&
-            itemData.sheetRemarks !== undefined
-              ? true
-              : undefined,
-        }
-      : {}),
-    quantity: itemData.quantity ?? 1,
-    purchaseStatus: "None",
-    source: itemSource,
-    protectionLevel: defaultProtectionLevel,
-  }));
+  return newItemsData.map((itemData) =>
+    normalizeItemOptionalFields<ShoppingItem>({
+      id: crypto.randomUUID(),
+      ...itemData,
+      ...(itemSource === "spreadsheet"
+        ? {
+            catalogPrice:
+              itemData.catalogPrice === undefined
+                ? itemData.price
+                : itemData.catalogPrice,
+            sheetRemarks: itemData.sheetRemarks ?? itemData.remarks,
+            sheetIdentityVerified:
+              itemData.sheetIdentityVerified === true &&
+              itemData.catalogPrice !== undefined &&
+              itemData.sheetRemarks !== undefined
+                ? true
+                : undefined,
+          }
+        : {}),
+      quantity: itemData.quantity ?? 1,
+      purchaseStatus: "None",
+      source: itemSource,
+      protectionLevel: defaultProtectionLevel,
+    }),
+  );
 }
 
 export function buildLayoutAppliedEventItems(

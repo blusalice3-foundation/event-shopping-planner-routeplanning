@@ -1,0 +1,182 @@
+[
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 0,
+    "parseMs": 327.22020000001066,
+    "saveMs": 164.97990000000573
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 1,
+    "parseMs": 325.5807999999961,
+    "saveMs": 173.61530000000494
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 2,
+    "parseMs": 322.491399999999,
+    "saveMs": 173.98609999999462
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 3,
+    "parseMs": 323.6793000000034,
+    "saveMs": 169.75419999999576
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 4,
+    "parseMs": 324.6750000000029,
+    "saveMs": 169.14620000000286
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 5,
+    "parseMs": 324.4621000000043,
+    "saveMs": 174.78839999999036
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 6,
+    "parseMs": 323.7740000000049,
+    "saveMs": 171.15649999999732
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 7,
+    "parseMs": 324.44220000000496,
+    "saveMs": 169.8625999999931
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 8,
+    "parseMs": 325.05620000000636,
+    "saveMs": 167.5572000000102
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 9,
+    "parseMs": 323.8643000000011,
+    "saveMs": 168.9192000000039
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 10,
+    "parseMs": 324.65780000000086,
+    "saveMs": 172.77529999999388
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 11,
+    "parseMs": 322.5651000000071,
+    "saveMs": 172.03100000000268
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 12,
+    "parseMs": 322.96770000000834,
+    "saveMs": 169.55139999999665
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 13,
+    "parseMs": 322.8950999999943,
+    "saveMs": 175.71189999999478
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 14,
+    "parseMs": 324.13640000000305,
+    "saveMs": 172.54260000000068
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 15,
+    "parseMs": 320.35869999999704,
+    "saveMs": 172.95799999999872
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 16,
+    "parseMs": 322.19520000000193,
+    "saveMs": 174.21919999999227
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 17,
+    "parseMs": 323.69550000000163,
+    "saveMs": 174.6256999999896
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 18,
+    "parseMs": 320.33490000000165,
+    "saveMs": 167.79989999999816
+  },
+  {
+    "phase": "before",
+    "count": 150,
+    "mode": "direct",
+    "route": "restore-xlsx",
+    "iteration": 19,
+    "parseMs": 328.67230000000563,
+    "saveMs": 171.59889999999723
+  }
+]

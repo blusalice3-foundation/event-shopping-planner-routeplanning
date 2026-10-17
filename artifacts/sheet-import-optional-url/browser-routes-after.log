@@ -1,0 +1,45 @@
+[WebServer] (node:23644) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 32 tests using 1 worker
+
+
+(node:18084) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › import: 150 direct @sheet-url-routes
+[2/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › update: 150 direct @sheet-url-routes
+[3/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › switch: 150 direct @sheet-url-routes
+[4/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › restore-json: 150 direct @sheet-url-routes
+[5/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › restore-xlsx: 150 direct @sheet-url-routes
+[6/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › startup-B01: 150 direct @sheet-url-routes
+[7/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › startup-B04: 150 direct @sheet-url-routes
+[8/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › retry: 150 direct @sheet-url-routes
+[9/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › import: 150 worker @sheet-url-routes
+[10/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › update: 150 worker @sheet-url-routes
+[11/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › switch: 150 worker @sheet-url-routes
+[12/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › restore-json: 150 worker @sheet-url-routes
+[13/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › restore-xlsx: 150 worker @sheet-url-routes
+[14/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › startup-B01: 150 worker @sheet-url-routes
+[15/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › startup-B04: 150 worker @sheet-url-routes
+[16/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › retry: 150 worker @sheet-url-routes
+[17/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › import: 500 direct @sheet-url-routes
+[18/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › update: 500 direct @sheet-url-routes
+[19/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › switch: 500 direct @sheet-url-routes
+[20/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › restore-json: 500 direct @sheet-url-routes
+[21/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › restore-xlsx: 500 direct @sheet-url-routes
+[22/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › startup-B01: 500 direct @sheet-url-routes
+[23/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › startup-B04: 500 direct @sheet-url-routes
+[24/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › retry: 500 direct @sheet-url-routes
+[25/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › import: 500 worker @sheet-url-routes
+[26/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › update: 500 worker @sheet-url-routes
+[27/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › switch: 500 worker @sheet-url-routes
+[28/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › restore-json: 500 worker @sheet-url-routes
+[29/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › restore-xlsx: 500 worker @sheet-url-routes
+[30/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › startup-B01: 500 worker @sheet-url-routes
+[31/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › startup-B04: 500 worker @sheet-url-routes
+[32/32] [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts:253:9 › sheet optional URL real-browser route measurements › retry: 500 worker @sheet-url-routes
+  Slow test file: [chromium] › tests\browser\sheet-import-optional-url.measurement.spec.ts (13.8m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  32 passed (13.8m)
