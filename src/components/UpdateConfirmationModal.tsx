@@ -51,7 +51,7 @@ function formatRemarks(value: string): string {
 }
 
 const ResolvedUpdateConfirmationModal: React.FC<
-  UpdateConfirmationModalProps
+  UpdateConfirmationModalProps & { identityChoices: SheetIdentityChoices }
 > = ({
   itemsToDelete,
   itemsToUpdate,
@@ -66,12 +66,31 @@ const ResolvedUpdateConfirmationModal: React.FC<
   csvReview,
   sheetImport,
   identitySelection,
+  identityChoices,
   confirmDisabled,
   onConfirm,
   onCancel,
 }) => {
-  const [applyPurchasedQuantityChanges, setApplyPurchasedQuantityChanges] =
-    useState(false);
+  const purchasedQuantityConfirmationKey = JSON.stringify([
+    pendingPurchasedQuantityChanges.map((change) => [
+      change.itemId,
+      change.currentQuantity,
+      change.nextQuantity,
+      change.purchaseStatus,
+      change.circle,
+      change.eventDate,
+      change.block,
+      change.number,
+      change.title,
+    ]),
+    identityChoices,
+  ]);
+  const [confirmedPurchasedQuantityKey, setConfirmedPurchasedQuantityKey] =
+    useState<string | null>(null);
+  // Bind consent to the current content even before the reset effect runs.
+  const applyPurchasedQuantityChanges =
+    pendingPurchasedQuantityChanges.length > 0 &&
+    confirmedPurchasedQuantityKey === purchasedQuantityConfirmationKey;
   const [fillEmptyAppFields, setFillEmptyAppFields] = useState(true);
   const [overwritePrice, setOverwritePrice] = useState(false);
   const [overwriteRemarks, setOverwriteRemarks] = useState(false);
@@ -102,8 +121,9 @@ const ResolvedUpdateConfirmationModal: React.FC<
     fillEmptyRemarksCandidates.length > 0;
 
   useEffect(() => {
-    setApplyPurchasedQuantityChanges(false);
-  }, [pendingPurchasedQuantityChanges.length]);
+    // Returning to an earlier correspondence must not restore old consent.
+    setConfirmedPurchasedQuantityKey(null);
+  }, [purchasedQuantityConfirmationKey]);
 
   useEffect(() => {
     setFillEmptyAppFields(true);
@@ -520,7 +540,11 @@ const ResolvedUpdateConfirmationModal: React.FC<
                     className="mt-0.5"
                     checked={applyPurchasedQuantityChanges}
                     onChange={(event) =>
-                      setApplyPurchasedQuantityChanges(event.target.checked)
+                      setConfirmedPurchasedQuantityKey(
+                        event.target.checked
+                          ? purchasedQuantityConfirmationKey
+                          : null,
+                      )
                     }
                   />
                   内容を確認し、スプレッドシートの予定数量へ変更する
@@ -646,6 +670,7 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = (
       {...props}
       {...resolved}
       identitySelection={selection}
+      identityChoices={choices}
       confirmDisabled={!!resolved?.unresolvedMatches?.length}
       onConfirm={(options) =>
         props.onConfirm({

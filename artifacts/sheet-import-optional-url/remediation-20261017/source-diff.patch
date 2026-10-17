@@ -1,0 +1,1814 @@
+diff --git a/docs/sheet-import-and-optional-url-implementation-results.md b/docs/sheet-import-and-optional-url-implementation-results.md
+index a6f5a86..8d57d1a 100644
+--- a/docs/sheet-import-and-optional-url-implementation-results.md
++++ b/docs/sheet-import-and-optional-url-implementation-results.md
+@@ -1,5 +1,26 @@
+ # シート取込・任意URLの実装と検証結果
+ 
++## 2026-10-17 訂正・補修追記（追加検証は継続中）
++
++本書の当初の「完了」という記述は、後続レビューで判明した以下の不足を含むため、方策案全体の完了判定としては使用しません。過去の本文・表・生データは履歴として保持し、今回の実装補修と追加検証を区別します。追加測定の件数・集計・最終判定はまだ確定しておらず、別の補修結果報告へ記録します。
++
++### 過去の性能記録についての訂正
++
++- **実ブラウザーの旧B04は、計画のB04条件の証拠として不十分です。** 復元・保存済みの状態からURL等を書き換えるだけで、保存形式の準備情報を未準備へ戻す初期化がなく、「準備とURL互換対応が両方必要」という状態を保証していませんでした。「取込・起動・復元・再試行の比較」表の`startup-B04`全4行と最大`+113.87ms`は当時の観測値として残しますが、両方の準備に要する時間や、計画のB04完了を示す証拠には使えません。「追加コミットと保存版の再読込が必要な初回コスト」という当時の原因解釈も、この実ブラウザー値だけでは裏付けられません。初期状態を別に作る補助測定のB04と混同しません。
++- **「通常の再試行へ全件走査が入っていない」という説明は不正確でした。** 購入・数量変更の既存の高速経路とは別に、構造操作とその再計画・再試行では変更イベントの品目配列を処理します。当時は位置が変わった未変更品目にも任意13キーの検査が入り、正規化済み500品目の並べ替え1回で6,500回の検査が発生することが後続レビューで確認されました。配列処理の存在と、それによる実測上の鈍化は別の事実であり、この検査回数だけで鈍化を立証したとは扱いません。今回の補修では同一ID・同一参照の未変更品目の13キー検査を省きますが、構造操作に必要な配列処理自体は残ります。
++- **今回の詳細計測は、過去の記録を置換せず補います。** [今回の追加証跡](../artifacts/sheet-import-optional-url/remediation-20261017/)では、補修前`b536f76`と補修後を比較します。本書の従来の基準ソース`cc475cd1837404440e893694147fee17c46a04d2`との比較とは別の記録です。過去の50ms基準による記録・当初の合否を含め、既存の数値・判定は変更しません。今回の買い物操作の判定は、現行の中央値55.0ms以下・95%点100ms以下・各操作20サンプル以上に従い別記します。
++
++### 今回の補修内容
++
++1. 購入済み予定数量変更の承認を、対象ID・旧新数量・表示内容・購入状態・対応先選択に結び付け、同件数の変更や対応先の選び直しで失効させます。
++2. 更新開始時の品目比較で、未知のオブジェクト型項目も構造化複製の前後で内容を比較し、未操作なのに更新確認へ進めない不整合を解消します。
++3. 新規取込の成功通知を、重複除去後に実際に保存する品目数へ合わせます。
++4. 構造操作の正規化では既存のID位置索引を利用し、移動した同一参照の品目の任意キー検査を省きます。追加・変更品目は最新の値で正規化します。
++5. 実ブラウザーのB01〜B06の初期状態と下位保存の回数を検証します。B04は準備情報を未準備へ戻し、worker方式の準備保存と互換保存、直接方式の互換保存への準備併合、B05の追加保存0回を区別します。
++6. 正規化・検証・再読込・画面反映、取込の解析・差分生成・表示の処理別観測を追加し、実ブラウザーでも物理保存時間とCSV受信後・確認後のDOM反映／次フレームまでの区間を、Playwrightの総時間と分けて記録します。
++
++以下は当初の結果記録です。上記の訂正を適用したうえで参照してください。
++
+ 実施日: 2026-10-17（日本時間）。対象方策案: [sheet-import-and-optional-url-implementation-plan.md](sheet-import-and-optional-url-implementation-plan.md)。方策案原本と作業開始時のAGENTS.mdは保持しています。
+ 
+ 検証状況: 機能実装、回帰・ブラウザー機能検証、150・500品目の全16条件の性能検証、実装前後の経路別比較を完了しました。方策案の完了条件に対する結果を本書へ記録し、入力の方策案原本は変更していません。
+diff --git a/src/app/commands/useEventUpdateCommands.test.tsx b/src/app/commands/useEventUpdateCommands.test.tsx
+index 490c5ff..175546e 100644
+--- a/src/app/commands/useEventUpdateCommands.test.tsx
++++ b/src/app/commands/useEventUpdateCommands.test.tsx
+@@ -1002,3 +1002,119 @@ it.each(["open-update", "switch-source"] as const)(
+     expect(h.spies.commitEventUpdateState).not.toHaveBeenCalled();
+   },
+ );
++
++it.each(["normal", "source-switch"] as const)(
++  "previews and confirms %s with cloned unknown fields without changing their content",
++  async (flow) => {
++    const existing = {
++      ...item("keep"),
++      futureOptionalField: {
++        preserved: true,
++        nested: [0, false, null, "ユーザー登録"],
++      },
++    };
++    const harness = createHarness({
++      eventLists: { [EVENT]: [existing] },
++      pendingUpdateEventName: EVENT,
++    });
++    const preview = deferred<EventUpdateDiff>();
++    updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockReturnValueOnce(
++      preview.promise,
++    );
++    const { result, rerender } = renderHook(() =>
++      useEventUpdateCommands(harness.ports),
++    );
++    let loading!: Promise<void>;
++    act(() => {
++      loading =
++        flow === "normal"
++          ? result.current.handleUpdateEvent(EVENT)
++          : result.current.handleUrlUpdate(
++              "https://example.com/new-source",
++              "新シート",
++            );
++    });
++    harness.refs.eventListsRef.current = structuredClone(
++      harness.stores.eventLists,
++    );
++    await act(async () => {
++      preview.resolve(
++        diff({ itemsToUpdate: [{ ...existing, title: "更新後" }] }),
++      );
++      await loading;
++    });
++    expect(harness.spies.openEventUpdate).toHaveBeenCalledOnce();
++    expect(harness.refs.pendingEventUpdateBaseItemsRef.current?.[0]).not.toBe(
++      existing,
++    );
++    Object.assign(harness.ports.state, {
++      pendingEventUpdate: harness.stores.pendingEventUpdate,
++    });
++    harness.refs.eventListsRef.current = structuredClone(
++      harness.stores.eventLists,
++    );
++    rerender();
++    await act(() => result.current.handleConfirmUpdate({}));
++    expect(harness.spies.commitEventUpdateState).toHaveBeenCalledOnce();
++    expect(harness.stores.eventLists[EVENT][0]).toMatchObject({
++      title: "更新後",
++      futureOptionalField: existing.futureOptionalField,
++    });
++    expect(harness.stores.eventMetadata[EVENT].spreadsheetUrl).toBe(
++      flow === "normal" ? SOURCE.url : "https://example.com/new-source",
++    );
++  },
++);
++
++for (const flow of ["normal", "source-switch"] as const) {
++  it.each(["loading", "confirmation"] as const)(
++    `invalidates ${flow} when unknown nested content changes during %s`,
++    async (phase) => {
++      const existing = {
++        ...item("keep"),
++        futureOptionalField: { preserved: true },
++      };
++      const harness = createHarness({
++        eventLists: { [EVENT]: [existing] },
++        pendingUpdateEventName: EVENT,
++      });
++      const preview = deferred<EventUpdateDiff>();
++      updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockReturnValueOnce(
++        preview.promise,
++      );
++      const { result, rerender } = renderHook(() =>
++        useEventUpdateCommands(harness.ports),
++      );
++      let loading!: Promise<void>;
++      act(() => {
++        loading =
++          flow === "normal"
++            ? result.current.handleUpdateEvent(EVENT)
++            : result.current.handleUrlUpdate(
++                "https://example.com/new-source",
++                "新シート",
++              );
++      });
++      const changeNestedValue = () => {
++        // In-place edits must also invalidate the independent review snapshot.
++        existing.futureOptionalField.preserved = false;
++      };
++      if (phase === "loading") changeNestedValue();
++      await act(async () => {
++        preview.resolve(diff());
++        await loading;
++      });
++      if (phase === "confirmation") {
++        expect(harness.spies.openEventUpdate).toHaveBeenCalledOnce();
++        Object.assign(harness.ports.state, {
++          pendingEventUpdate: harness.stores.pendingEventUpdate,
++        });
++        changeNestedValue();
++        rerender();
++        await act(() => result.current.handleConfirmUpdate({}));
++      } else expect(harness.spies.openEventUpdate).not.toHaveBeenCalled();
++      expect(harness.spies.commitEventUpdateState).not.toHaveBeenCalled();
++      expect(harness.spies.confirmEventOverlay).not.toHaveBeenCalled();
++    },
++  );
++}
+diff --git a/src/app/commands/useShoppingItemMutationCommands.test.tsx b/src/app/commands/useShoppingItemMutationCommands.test.tsx
+index e9c330d..c495d28 100644
+--- a/src/app/commands/useShoppingItemMutationCommands.test.tsx
++++ b/src/app/commands/useShoppingItemMutationCommands.test.tsx
+@@ -471,7 +471,7 @@ describe("useShoppingItemMutationCommands", () => {
+       await Promise.resolve();
+     });
+ 
+-    expect(accepted).toEqual({ status: "saved" });
++    expect(accepted).toEqual({ status: "saved", importedItemCount: 1 });
+     expect(harness.stores.eventLists[EVENT]).toHaveLength(2);
+     expect(harness.stores.eventLists[EVENT][1]).toMatchObject({
+       source: "app",
+@@ -1123,3 +1123,26 @@ it.each([false, true])(
+     expect(updated).not.toHaveProperty("limitedPurchase");
+   },
+ );
++
++it("returns the actual saved count after deduplicating a new import", async () => {
++  const harness = createHarness({
++    activeEventName: null,
++    eventLists: {},
++    items: [],
++  });
++  const { result } = renderHook(() =>
++    useShoppingItemMutationCommands(harness.ports),
++  );
++  const first = bulkItem("ユーザー登録");
++  let saved;
++  await act(async () => {
++    saved = await result.current.handleBulkAdd("新規", [first, { ...first }], {
++      source: "spreadsheet",
++    });
++  });
++  expect(saved).toEqual({ status: "saved", importedItemCount: 1 });
++  expect(harness.stores.eventLists["新規"]).toHaveLength(1);
++  expect(harness.spies.notify).toHaveBeenCalledWith(
++    "1 items imported into a new event.",
++  );
++});
+diff --git a/src/app/commands/useShoppingItemMutationCommands.ts b/src/app/commands/useShoppingItemMutationCommands.ts
+index 439b117..6dfad2a 100644
+--- a/src/app/commands/useShoppingItemMutationCommands.ts
++++ b/src/app/commands/useShoppingItemMutationCommands.ts
+@@ -401,7 +401,7 @@ export const useShoppingItemMutationCommands = ({
+       }
+ 
+       if (metadata?.request?.isCurrent?.() === false)
+-        return { status: "saved" };
++        return { status: "saved", importedItemCount: newItems.length };
+       try {
+         const uiPlan = buildBulkAddUiPlan(
+           eventName,
+@@ -418,7 +418,7 @@ export const useShoppingItemMutationCommands = ({
+         } else if (uiPlan.nextActiveEventName) {
+           navigation.showImport(uiPlan.nextActiveEventName);
+         }
+-        return { status: "saved" };
++        return { status: "saved", importedItemCount: newItems.length };
+       } catch {
+         return { status: "committed-ui-failed" };
+       }
+diff --git a/src/components/ImportScreen.sheetImport.integration.test.tsx b/src/components/ImportScreen.sheetImport.integration.test.tsx
+index d303ea4..f8dd653 100644
+--- a/src/components/ImportScreen.sheetImport.integration.test.tsx
++++ b/src/components/ImportScreen.sheetImport.integration.test.tsx
+@@ -10,7 +10,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
+ import ImportScreen from "./ImportScreen";
+ import { sheetCsv } from "../test/sheetImportOptionalUrlFixtures";
+ const url = "https://docs.google.com/spreadsheets/d/test/edit";
+-function setup(csv: string, status: "saved" | "cancelled" = "saved") {
++function setup(
++  csv: string,
++  status: "saved" | "cancelled" = "saved",
++  importedItemCount?: number,
++) {
+   vi.stubGlobal(
+     "fetch",
+     vi.fn(async () => ({ ok: true, text: async () => csv })),
+@@ -18,7 +22,10 @@ function setup(csv: string, status: "saved" | "cancelled" = "saved") {
+   vi.spyOn(window, "alert").mockImplementation(() => {});
+   vi.spyOn(window, "confirm").mockReturnValue(true);
+   const add = vi.fn<ComponentProps<typeof ImportScreen>["onBulkAdd"]>(
+-    async () => ({ status }),
++    async (_name, items) => ({
++      status,
++      importedItemCount: importedItemCount ?? items.length,
++    }),
+   );
+   render(
+     <ImportScreen
+@@ -146,3 +153,33 @@ it("clears an earlier diagnostic when the input changes", async () => {
+     screen.queryByRole("region", { name: "シート取込結果" }),
+   ).not.toBeInTheDocument();
+ });
++
++it.each(["url", "file"] as const)(
++  "uses the actual committed count for %s import notifications and the result summary",
++  async (path) => {
++    const [header, excluded, accepted] = sheetCsv(2, "mixed").split("\n");
++    const csv = [header, accepted, accepted, excluded].join("\n");
++    const add = setup(csv, "saved", 1);
++    if (path === "url") {
++      fireEvent.click(
++        screen.getByRole("button", { name: "URLからインポート" }),
++      );
++    } else {
++      const file = new File([csv], "import.csv", { type: "text/csv" });
++      Object.defineProperty(file, "text", { value: async () => csv });
++      fireEvent.change(screen.getByLabelText("CSVファイルからインポート"), {
++        target: { files: [file] },
++      });
++    }
++    await waitFor(() => expect(add).toHaveBeenCalledOnce());
++    expect(add.mock.calls[0][1]).toHaveLength(2);
++    await waitFor(() =>
++      expect(window.alert).toHaveBeenCalledWith(
++        "1件を取り込み、必須項目不足の1行を除外しました。",
++      ),
++    );
++    expect(
++      screen.getByRole("region", { name: "シート取込結果" }),
++    ).toHaveTextContent("取込対象: 1件、必須項目不足による除外: 1行");
++  },
++);
+diff --git a/src/components/ImportScreen.tsx b/src/components/ImportScreen.tsx
+index b8a313d..a54f0c2 100644
+--- a/src/components/ImportScreen.tsx
++++ b/src/components/ImportScreen.tsx
+@@ -124,7 +124,14 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
+       alert(
+         "データは保存済みですが画面に反映できませんでした。再取込みせず再読み込みしてください。",
+       );
+-    return saved && generation === inputGeneration.current;
++    if (!saved || generation !== inputGeneration.current) return null;
++    if (result.importedItemCount !== undefined) {
++      const acceptedCount = result.importedItemCount;
++      setSheetImportSummary((current) =>
++        current ? { ...current, acceptedCount } : current,
++      );
++    }
++    return result;
+   };
+ 
+   // State for single item add/edit
+@@ -305,7 +312,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
+         alert(
+           [
+             result.rowExclusions.excludedCount
+-              ? `${result.items.length}件を取り込み、必須項目不足の${result.rowExclusions.excludedCount}行を除外しました。`
++              ? `${accepted.importedItemCount === undefined ? "更新を反映し" : `${accepted.importedItemCount}件を取り込み`}、必須項目不足の${result.rowExclusions.excludedCount}行を除外しました。`
+               : "",
+             buildInvalidQuantityImportMessage(result.invalidQuantityRows),
+           ]
+@@ -374,7 +381,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
+         alert(
+           [
+             result.rowExclusions.excludedCount
+-              ? `${result.items.length}件を取り込み、必須項目不足の${result.rowExclusions.excludedCount}行を除外しました。`
++              ? `${accepted.importedItemCount === undefined ? "更新を反映し" : `${accepted.importedItemCount}件を取り込み`}、必須項目不足の${result.rowExclusions.excludedCount}行を除外しました。`
+               : "",
+             buildInvalidQuantityImportMessage(result.invalidQuantityRows),
+           ]
+@@ -609,12 +616,12 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
+       });
+ 
+       if (newItems.length > 0) {
+-        const accepted = await runImport(() => {
++        const accepted = await runImport(async () => {
+           setSheetImportSummary({
+             acceptedCount: newItems.length,
+             rowExclusions,
+           });
+-          return submitImport(finalEventName, newItems);
++          return (await submitImport(finalEventName, newItems)) !== null;
+         });
+         if (!accepted) return;
+ 
+@@ -660,8 +667,11 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
+         remarks: singleRemarks.trim(),
+         url: singleUrl.trim() || undefined,
+       };
+-      const accepted = await runImport(() =>
+-        submitImport(activeEventName, [newItem], { source: "app" }),
++      const accepted = await runImport(
++        async () =>
++          (await submitImport(activeEventName, [newItem], {
++            source: "app",
++          })) !== null,
+       );
+       if (accepted) resetSingleForm();
+     }
+diff --git a/src/components/UpdateConfirmationModal.test.tsx b/src/components/UpdateConfirmationModal.test.tsx
+index 0b520b9..5733445 100644
+--- a/src/components/UpdateConfirmationModal.test.tsx
++++ b/src/components/UpdateConfirmationModal.test.tsx
+@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
+ import {
+   createEventUpdateDiff,
+   type AppFieldSyncCandidate,
++  type PendingPurchasedQuantityChange,
+   type SheetItem,
+ } from "../features/events/updateDiff";
+ import type { ShoppingItem } from "../types/item";
+@@ -106,6 +107,102 @@ describe("UpdateConfirmationModal quantity confirmation", () => {
+     });
+   });
+ 
++  it.each<[string, Partial<PendingPurchasedQuantityChange>]>([
++    ["対象ID", { itemId: "item-2" }],
++    ["現在の予定数量", { currentQuantity: 3 }],
++    ["変更後の予定数量", { nextQuantity: 5 }],
++    ["購入状態", { purchaseStatus: "Purchased" }],
++    ["表示する品目内容", { title: "別の新刊" }],
++  ])("%sが同件数のまま変わると数量変更の再確認を求める", (_, changes) => {
++    const pending: PendingPurchasedQuantityChange = {
++      itemId: "item-1",
++      circle: "ユーザー登録",
++      eventDate: "1日目",
++      block: "東A",
++      number: "01a",
++      title: "新刊",
++      purchaseStatus: "LimitedPurchase",
++      currentQuantity: 2,
++      nextQuantity: 4,
++    };
++    const onConfirm = vi.fn();
++    const { rerender } = render(
++      <UpdateConfirmationModal
++        {...commonProps}
++        pendingPurchasedQuantityChanges={[pending]}
++        onConfirm={onConfirm}
++      />,
++    );
++    const checkbox = () =>
++      screen.getByRole("checkbox", {
++        name: /スプレッドシートの予定数量へ変更する/,
++      });
++    fireEvent.click(checkbox());
++    expect(checkbox()).toBeChecked();
++
++    rerender(
++      <UpdateConfirmationModal
++        {...commonProps}
++        pendingPurchasedQuantityChanges={[{ ...pending, ...changes }]}
++        onConfirm={onConfirm}
++      />,
++    );
++    expect(checkbox()).not.toBeChecked();
++    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
++    expect(onConfirm).toHaveBeenLastCalledWith(
++      expect.objectContaining({ applyPurchasedQuantityChanges: false }),
++    );
++
++    fireEvent.click(checkbox());
++    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
++    expect(onConfirm).toHaveBeenLastCalledWith(
++      expect.objectContaining({ applyPurchasedQuantityChanges: true }),
++    );
++  });
++
++  it("同じ確認内容の配列を作り直しても数量変更の確認を保持する", () => {
++    const pending: PendingPurchasedQuantityChange = {
++      itemId: "item-1",
++      circle: "ユーザー登録",
++      eventDate: "1日目",
++      block: "東A",
++      number: "01a",
++      title: "新刊",
++      purchaseStatus: "Purchased",
++      currentQuantity: 2,
++      nextQuantity: 4,
++    };
++    const onConfirm = vi.fn();
++    const { rerender } = render(
++      <UpdateConfirmationModal
++        {...commonProps}
++        pendingPurchasedQuantityChanges={[pending]}
++        onConfirm={onConfirm}
++      />,
++    );
++    fireEvent.click(
++      screen.getByRole("checkbox", {
++        name: /スプレッドシートの予定数量へ変更する/,
++      }),
++    );
++    rerender(
++      <UpdateConfirmationModal
++        {...commonProps}
++        pendingPurchasedQuantityChanges={[{ ...pending }]}
++        onConfirm={onConfirm}
++      />,
++    );
++    expect(
++      screen.getByRole("checkbox", {
++        name: /スプレッドシートの予定数量へ変更する/,
++      }),
++    ).toBeChecked();
++    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
++    expect(onConfirm).toHaveBeenLastCalledWith(
++      expect.objectContaining({ applyPurchasedQuantityChanges: true }),
++    );
++  });
++
+   it("限数の実購入数以下になる予定数量を反映しない理由を表示する", () => {
+     render(
+       <UpdateConfirmationModal
+@@ -453,6 +550,86 @@ describe("UpdateConfirmationModal identity details", () => {
+     );
+   });
+ 
++  it("対応先をAからBへ変えて戻しても購入済み数量変更の確認を引き継がない", () => {
++    const current: ShoppingItem[] = ["A", "B"].map((id) => ({
++      id,
++      circle: "ユーザー登録",
++      eventDate: "1日目",
++      block: "A",
++      number: "01a",
++      title: `旧品目${id}`,
++      price: 900,
++      quantity: 2,
++      purchaseStatus: "Purchased",
++      remarks: `${id}の購入記録`,
++      source: "spreadsheet",
++    }));
++    const rows: SheetItem[] = [
++      {
++        ...current[0],
++        title: "新しい品目",
++        rawQuantity: "4",
++      },
++    ];
++    const onConfirm = vi.fn();
++    render(
++      <UpdateConfirmationModal
++        {...commonProps}
++        {...createEventUpdateDiff(current, rows)}
++        onConfirm={onConfirm}
++      />,
++    );
++    const correspondence = screen.getByRole("combobox", {
++      name: "取込1行目の対応",
++    });
++    const confirm = screen.getByRole("button", { name: "更新を実行" });
++    const checkbox = () =>
++      screen.getByRole("checkbox", {
++        name: /スプレッドシートの予定数量へ変更する/,
++      });
++
++    fireEvent.change(correspondence, { target: { value: "A" } });
++    fireEvent.click(checkbox());
++    fireEvent.click(confirm);
++    expect(onConfirm).toHaveBeenLastCalledWith(
++      expect.objectContaining({
++        applyPurchasedQuantityChanges: true,
++        identityChoices: { "0": "A" },
++      }),
++    );
++
++    fireEvent.change(correspondence, { target: { value: "B" } });
++    expect(
++      screen.getByText("購入済み品目の予定数量変更: 1件"),
++    ).toBeInTheDocument();
++    expect(checkbox()).not.toBeChecked();
++    fireEvent.click(confirm);
++    expect(onConfirm).toHaveBeenLastCalledWith(
++      expect.objectContaining({
++        applyPurchasedQuantityChanges: false,
++        identityChoices: { "0": "B" },
++      }),
++    );
++
++    fireEvent.change(correspondence, { target: { value: "A" } });
++    expect(checkbox()).not.toBeChecked();
++    fireEvent.click(confirm);
++    expect(onConfirm).toHaveBeenLastCalledWith(
++      expect.objectContaining({
++        applyPurchasedQuantityChanges: false,
++        identityChoices: { "0": "A" },
++      }),
++    );
++    fireEvent.click(checkbox());
++    fireEvent.click(confirm);
++    expect(onConfirm).toHaveBeenLastCalledWith(
++      expect.objectContaining({
++        applyPurchasedQuantityChanges: true,
++        identityChoices: { "0": "A" },
++      }),
++    );
++  });
++
+   it("shows a known empty sheet price/remarks rather than substituting user values", () => {
+     const current: ShoppingItem[] = [1, 2].map((quantity, index) => ({
+       id: String(index),
+diff --git a/src/components/UpdateConfirmationModal.tsx b/src/components/UpdateConfirmationModal.tsx
+index 2952b4a..7fc069f 100644
+--- a/src/components/UpdateConfirmationModal.tsx
++++ b/src/components/UpdateConfirmationModal.tsx
+@@ -51,7 +51,7 @@ function formatRemarks(value: string): string {
+ }
+ 
+ const ResolvedUpdateConfirmationModal: React.FC<
+-  UpdateConfirmationModalProps
++  UpdateConfirmationModalProps & { identityChoices: SheetIdentityChoices }
+ > = ({
+   itemsToDelete,
+   itemsToUpdate,
+@@ -66,12 +66,31 @@ const ResolvedUpdateConfirmationModal: React.FC<
+   csvReview,
+   sheetImport,
+   identitySelection,
++  identityChoices,
+   confirmDisabled,
+   onConfirm,
+   onCancel,
+ }) => {
+-  const [applyPurchasedQuantityChanges, setApplyPurchasedQuantityChanges] =
+-    useState(false);
++  const purchasedQuantityConfirmationKey = JSON.stringify([
++    pendingPurchasedQuantityChanges.map((change) => [
++      change.itemId,
++      change.currentQuantity,
++      change.nextQuantity,
++      change.purchaseStatus,
++      change.circle,
++      change.eventDate,
++      change.block,
++      change.number,
++      change.title,
++    ]),
++    identityChoices,
++  ]);
++  const [confirmedPurchasedQuantityKey, setConfirmedPurchasedQuantityKey] =
++    useState<string | null>(null);
++  // Bind consent to the current content even before the reset effect runs.
++  const applyPurchasedQuantityChanges =
++    pendingPurchasedQuantityChanges.length > 0 &&
++    confirmedPurchasedQuantityKey === purchasedQuantityConfirmationKey;
+   const [fillEmptyAppFields, setFillEmptyAppFields] = useState(true);
+   const [overwritePrice, setOverwritePrice] = useState(false);
+   const [overwriteRemarks, setOverwriteRemarks] = useState(false);
+@@ -102,8 +121,9 @@ const ResolvedUpdateConfirmationModal: React.FC<
+     fillEmptyRemarksCandidates.length > 0;
+ 
+   useEffect(() => {
+-    setApplyPurchasedQuantityChanges(false);
+-  }, [pendingPurchasedQuantityChanges.length]);
++    // Returning to an earlier correspondence must not restore old consent.
++    setConfirmedPurchasedQuantityKey(null);
++  }, [purchasedQuantityConfirmationKey]);
+ 
+   useEffect(() => {
+     setFillEmptyAppFields(true);
+@@ -520,7 +540,11 @@ const ResolvedUpdateConfirmationModal: React.FC<
+                     className="mt-0.5"
+                     checked={applyPurchasedQuantityChanges}
+                     onChange={(event) =>
+-                      setApplyPurchasedQuantityChanges(event.target.checked)
++                      setConfirmedPurchasedQuantityKey(
++                        event.target.checked
++                          ? purchasedQuantityConfirmationKey
++                          : null,
++                      )
+                     }
+                   />
+                   内容を確認し、スプレッドシートの予定数量へ変更する
+@@ -646,6 +670,7 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = (
+       {...props}
+       {...resolved}
+       identitySelection={selection}
++      identityChoices={choices}
+       confirmDisabled={!!resolved?.unresolvedMatches?.length}
+       onConfirm={(options) =>
+         props.onConfirm({
+diff --git a/src/features/events/updateFlow.test.ts b/src/features/events/updateFlow.test.ts
+index 7228eed..e8c4dfc 100644
+--- a/src/features/events/updateFlow.test.ts
++++ b/src/features/events/updateFlow.test.ts
+@@ -3,6 +3,7 @@ import type { ShoppingItem } from "../../types/item";
+ import type { EventUpdateDiff } from "./updateDiff";
+ import {
+   applyPendingEventUpdate,
++  eventUpdateItemsMatch,
+   type EventUpdateCommitState,
+   type PendingEventUpdate,
+ } from "./updateFlow";
+@@ -255,3 +256,85 @@ it("permits the first source assignment only while the event still has no source
+     }),
+   ).toBeNull();
+ });
++
++describe("eventUpdateItemsMatch", () => {
++  it("compares cloned unknown JSON fields by value while retaining scalar guards", () => {
++    const current = [
++      {
++        ...item("keep", "ユーザー登録"),
++        futureOptionalField: {
++          preserved: true,
++          nested: [0, false, null, { message: "エラーが発生しました" }],
++        },
++      },
++    ];
++    const base = structuredClone(current);
++    expect(eventUpdateItemsMatch(current, base)).toBe(true);
++    base[0].futureOptionalField.nested[3] = { message: "変更" };
++    expect(eventUpdateItemsMatch(current, base)).toBe(false);
++    expect(
++      eventUpdateItemsMatch(current, [{ ...current[0], quantity: 2 }]),
++    ).toBe(false);
++    expect(
++      eventUpdateItemsMatch(current, [
++        { ...current[0], purchaseStatus: "Purchased" },
++      ]),
++    ).toBe(false);
++    const addedField = [
++      { ...current[0], anotherFutureField: { enabled: false } },
++    ];
++    expect(eventUpdateItemsMatch(addedField, current)).toBe(false);
++    expect(eventUpdateItemsMatch(current, addedField)).toBe(false);
++  });
++});
++
++it.each<unknown>([
++  null,
++  [],
++  {},
++  [0, false, null, { message: "ユーザー登録", optional: undefined }],
++  { b: [], a: { preserved: true, optional: undefined } },
++])(
++  "accepts an unchanged cloned unknown value (%j) alongside known optional fields",
++  (futureOptionalField) => {
++    const current = [
++      {
++        ...item("keep", "確認中"),
++        assignedTo: undefined,
++        postponed: false,
++        catalogPrice: null,
++        futureOptionalField,
++      },
++    ];
++    const base = structuredClone(current);
++    delete base[0].assignedTo;
++    expect(eventUpdateItemsMatch(current, base)).toBe(true);
++  },
++);
++
++it("ignores unknown object key order without ignoring nested own undefined values", () => {
++  const withFuture = (futureOptionalField: unknown): ShoppingItem =>
++    ({ ...item("keep", "確認中"), futureOptionalField }) as ShoppingItem;
++  expect(
++    eventUpdateItemsMatch(
++      [withFuture({ first: 1, second: { value: false } })],
++      [withFuture({ second: { value: false }, first: 1 })],
++    ),
++  ).toBe(true);
++  for (const [current, base] of [
++    [{ optional: undefined }, {}],
++    [{ nested: { optional: undefined } }, { nested: {} }],
++    [[undefined], [null]],
++    [new Array(1), [undefined]],
++    [[undefined], []],
++    [[], {}],
++    [null, {}],
++  ]) {
++    expect(
++      eventUpdateItemsMatch([withFuture(current)], [withFuture(base)]),
++    ).toBe(false);
++    expect(
++      eventUpdateItemsMatch([withFuture(base)], [withFuture(current)]),
++    ).toBe(false);
++  }
++});
+diff --git a/src/features/events/updateFlow.ts b/src/features/events/updateFlow.ts
+index 82920d6..36c42e7 100644
+--- a/src/features/events/updateFlow.ts
++++ b/src/features/events/updateFlow.ts
+@@ -68,6 +68,41 @@ export function eventUpdateSourceMatches(
+   );
+ }
+ 
++/** Review snapshots preserve own undefined values, unlike JSON serialization. */
++function eventUpdateValueMatches(current: unknown, base: unknown): boolean {
++  if (current === base) return true;
++  if (
++    current === null ||
++    base === null ||
++    typeof current !== "object" ||
++    typeof base !== "object"
++  )
++    return false;
++  const currentIsArray = Array.isArray(current);
++  if (currentIsArray !== Array.isArray(base)) return false;
++  if (currentIsArray && current.length !== (base as unknown[]).length)
++    return false;
++  if (!currentIsArray) {
++    // Persisted future fields are plain JSON records; do not equate opaque objects.
++    for (const value of [current, base]) {
++      const prototype = Object.getPrototypeOf(value);
++      if (prototype !== Object.prototype && prototype !== null) return false;
++    }
++  }
++  const keys = Object.keys(current);
++  return (
++    keys.length === Object.keys(base).length &&
++    keys.every(
++      (key) =>
++        Object.prototype.hasOwnProperty.call(base, key) &&
++        eventUpdateValueMatches(
++          (current as Record<string, unknown>)[key],
++          (base as Record<string, unknown>)[key],
++        ),
++    )
++  );
++}
++
+ /** Projections may allocate new arrays and items without changing their values. */
+ export function eventUpdateItemsMatch(
+   current: ShoppingItem[] | undefined,
+@@ -83,7 +118,20 @@ export function eventUpdateItemsMatch(
+         ...Object.keys(item),
+         ...Object.keys(previous),
+       ]) as Set<keyof ShoppingItem>;
+-      return [...fields].every((field) => item[field] === previous[field]);
++      return [...fields].every((field) => {
++        const value = item[field];
++        const previousValue = previous[field];
++        // Unknown persisted fields may contain JSON objects cloned for review.
++        // Keep scalar comparisons strict and only walk distinct object values.
++        return (
++          value === previousValue ||
++          (value !== null &&
++            previousValue !== null &&
++            typeof value === "object" &&
++            typeof previousValue === "object" &&
++            eventUpdateValueMatches(value, previousValue))
++        );
++      });
+     })
+   );
+ }
+diff --git a/src/test/sheetImportOptionalUrl.measurement.integration.test.tsx b/src/test/sheetImportOptionalUrl.measurement.integration.test.tsx
+index 77a34f5..bb37e95 100644
+--- a/src/test/sheetImportOptionalUrl.measurement.integration.test.tsx
++++ b/src/test/sheetImportOptionalUrl.measurement.integration.test.tsx
+@@ -11,6 +11,7 @@ import {
+ import { useIndexedDbPersistence } from "../hooks/useIndexedDbPersistence";
+ import { resetDatabaseConnection } from "../persistence/db/openDatabase";
+ 
++import type { ApplicationSnapshotRead } from "../app/ports/PersistenceCommandPort";
+ import { parseAppBackup, validateSnapshotStructure } from "../utils/appBackup";
+ import { readEventCsv } from "../features/events/sheetImport";
+ import { normalizeSheetItemsUrls } from "../features/events/updateDiff";
+@@ -43,6 +44,48 @@ import {
+   commits,
+ } from "./sheetImportOptionalUrlPersistence";
+ 
++type StageEntry = { stage: string; startMs: number; endMs: number };
++const stages: StageEntry[] = [];
++function beginStages() {
++  stages.length = 0;
++  vi.stubGlobal(
++    "__sheetUrlStageObserver",
++    (stage: string, startMs: number, endMs: number) => {
++      stages.push({ stage, startMs, endMs });
++    },
++  );
++}
++function stageSummary() {
++  const result: Record<
++    string,
++    { calls: number; inclusiveMs: number; exclusiveMs: number }
++  > = {};
++  for (const entry of stages) {
++    const value = (result[entry.stage] ??= {
++      calls: 0,
++      inclusiveMs: 0,
++      exclusiveMs: 0,
++    });
++    value.calls++;
++    value.inclusiveMs += entry.endMs - entry.startMs;
++    let cursor = entry.startMs;
++    let childMs = 0;
++    const children = stages
++      .filter(
++        (child) =>
++          child !== entry &&
++          child.startMs >= entry.startMs &&
++          child.endMs <= entry.endMs,
++      )
++      .sort((a, b) => a.startMs - b.startMs);
++    for (const child of children) {
++      childMs += Math.max(0, child.endMs - Math.max(cursor, child.startMs));
++      cursor = Math.max(cursor, child.endMs);
++    }
++    value.exclusiveMs += entry.endMs - entry.startMs - childMs;
++  }
++  return result;
++}
+ const phase = process.env.SHEET_URL_MEASURE_PHASE;
+ const repetitions = 20;
+ const options = { interval: 1, timeout: 10000 };
+@@ -54,6 +97,12 @@ function sample(
+   start: number,
+   detail: object = {},
+ ) {
++  // Refuse timings from the ordinary, uninstrumented Vitest config.
++  if (process.env.SHEET_URL_REQUIRE_STAGES === "1" && !key.startsWith("retry"))
++    expect(
++      stages.length,
++      "Use vitest.sheet-url-measurement.config.ts",
++    ).toBeGreaterThan(0);
+   console.log(
+     "SHEET_URL_SAMPLE " +
+       JSON.stringify({
+@@ -63,6 +112,8 @@ function sample(
+         mode,
+         iteration,
+         durationMs: performance.now() - start,
++        stages: stageSummary(),
++        stageSpans: stages,
+         ...detail,
+       }),
+   );
+@@ -84,6 +135,7 @@ describe.skipIf(!phase)(
+             const csv = sheetCsv(count, kind, format);
+             for (let iteration = 0; iteration < repetitions; iteration++) {
+               fresh();
++              beginStages();
+               const start = performance.now();
+               try {
+                 const parsed = readEventCsv(csv);
+@@ -142,6 +194,7 @@ describe.skipIf(!phase)(
+                 await seed(original);
+                 const commands = port(mode);
+                 const read = await commands.readApplicationSnapshot();
++                beginStages();
+                 const start = performance.now();
+                 try {
+                   const diff = await buildEventUpdateDiffFromSpreadsheet(
+@@ -255,14 +308,27 @@ describe.skipIf(!phase)(
+                 pre.unmount();
+               }
+               const commands = port(mode);
+-              const observed = vi.fn();
++              let hydrationAt: number | null = null;
++              const observed = vi.fn((_read: ApplicationSnapshotRead) => {
++                hydrationAt = performance.now();
++              });
+               const targetSetters = setters();
+               const counter = commits();
+-              const snapshotRead = vi.spyOn(
+-                commands,
+-                "readApplicationSnapshot",
+-              );
++              const readSpans: Array<{ startMs: number; endMs: number }> = [];
++              const readSnapshot =
++                commands.readApplicationSnapshot.bind(commands);
++              const snapshotRead = vi
++                .spyOn(commands, "readApplicationSnapshot")
++                .mockImplementation(async (...args) => {
++                  const startMs = performance.now();
++                  try {
++                    return await readSnapshot(...args);
++                  } finally {
++                    readSpans.push({ startMs, endMs: performance.now() });
++                  }
++                });
+               if (state === "B06") counter.failNext();
++              beginStages();
+               const start = performance.now();
+               const h = renderHook(() =>
+                 useIndexedDbPersistence({
+@@ -300,6 +366,30 @@ describe.skipIf(!phase)(
+                 status,
+                 failureMs,
+                 readCalls: snapshotRead.mock.calls.length,
++                initialReadMs: readSpans[0].endMs - readSpans[0].startMs,
++                rereadMs: readSpans
++                  .slice(1)
++                  .reduce((sum, span) => sum + span.endMs - span.startMs, 0),
++                readSpans,
++                hookScreenApplyMs:
++                  hydrationAt === null ? null : performance.now() - hydrationAt,
++                preparationAttemptMs: counter.result.transactions
++                  .filter((tx) =>
++                    readSpans.some(
++                      (read) =>
++                        tx.startMs >= read.startMs && tx.endMs <= read.endMs,
++                    ),
++                  )
++                  .reduce((sum, tx) => sum + tx.endMs - tx.startMs, 0),
++                compatibilityAttemptMs: counter.result.transactions
++                  .filter(
++                    (tx) =>
++                      !readSpans.some(
++                        (read) =>
++                          tx.startMs >= read.startMs && tx.endMs <= read.endMs,
++                      ),
++                  )
++                  .reduce((sum, tx) => sum + tx.endMs - tx.startMs, 0),
+                 ...counter.result,
+               });
+               counter.stop();
+@@ -311,7 +401,7 @@ describe.skipIf(!phase)(
+                   observed.mock.calls[0][0].snapshot.eventLists[
+                     SHEET_EVENT
+                   ].every(
+-                    (item: object) =>
++                    (item: unknown) =>
+                       !Object.prototype.hasOwnProperty.call(item, "url"),
+                   ),
+                 ).toBe(true);
+@@ -357,7 +447,10 @@ describe.skipIf(!phase)(
+                 `restore-${count}-${mode}-blank=${blankUrl}.xlsx`,
+               );
+               if (format === "xlsx") {
+-                if (phase === "before") {
++                if (
++                  phase === "before" &&
++                  process.env.SHEET_URL_REUSE_FIXED_INPUTS !== "1"
++                ) {
+                   bytes =
+                     typeof file!.arrayBuffer === "function"
+                       ? await file!.arrayBuffer()
+@@ -388,15 +481,31 @@ describe.skipIf(!phase)(
+                 fresh();
+                 const commands = port(mode);
+                 const initial = await commands.readApplicationSnapshot();
++                const inputFile = new File(
++                  [bytes ?? json],
++                  `restore.${format}`,
++                );
++                beginStages();
+                 const start = performance.now();
++                const loaded = await new Promise<string | ArrayBuffer>(
++                  (resolve, reject) => {
++                    const reader = new FileReader();
++                    reader.onload = () =>
++                      resolve(reader.result as string | ArrayBuffer);
++                    reader.onerror = () => reject(reader.error);
++                    if (format === "json") reader.readAsText(inputFile);
++                    else reader.readAsArrayBuffer(inputFile);
++                  },
++                );
++                const fileReadMs = performance.now() - start;
+                 const restored =
+                   format === "json"
+-                    ? parseAppBackup(json)
++                    ? parseAppBackup(loaded)
+                     : buildXlsxEventRestoreSource(
+                         toImportedEventData(
+                           await importFromXlsx(
+-                            new File([], "restore.xlsx"),
+-                            bytes!,
++                            inputFile,
++                            loaded as ArrayBuffer,
+                           ),
+                         ),
+                       );
+@@ -413,7 +522,12 @@ describe.skipIf(!phase)(
+                   mode,
+                   iteration,
+                   start,
+-                  { parseMs, status: "ok" },
++                  {
++                    fileReadMs,
++                    parseMs: parseMs - fileReadMs,
++                    saveMs: performance.now() - start - parseMs,
++                    status: "ok",
++                  },
+                 );
+               }
+             });
+@@ -495,6 +609,7 @@ describe.skipIf(!phase)(
+                     baseline: sheetItem(0),
+                   }),
+                 );
++              beginStages();
+               const start = performance.now();
+               act(() => h.result.current.application.retryPending());
+               await waitFor(
+diff --git a/src/test/sheetImportOptionalUrlPersistence.ts b/src/test/sheetImportOptionalUrlPersistence.ts
+index 612b768..1575c98 100644
+--- a/src/test/sheetImportOptionalUrlPersistence.ts
++++ b/src/test/sheetImportOptionalUrlPersistence.ts
+@@ -101,6 +101,11 @@ export function commits() {
+     successes: 0,
+     aborted: 0,
+     physicalCommitMs: 0,
++    transactions: [] as Array<{
++      startMs: number;
++      endMs: number;
++      outcome: "complete" | "abort";
++    }>,
+     puts: {} as Record<string, number>,
+   };
+   let abortNext = false;
+@@ -125,10 +130,20 @@ export function commits() {
+         const start = performance.now();
+         tx.addEventListener("complete", () => {
+           result.successes++;
++          result.transactions.push({
++            startMs: start,
++            endMs: performance.now(),
++            outcome: "complete",
++          });
+           result.physicalCommitMs += performance.now() - start;
+         });
+         tx.addEventListener("abort", () => {
+           result.aborted++;
++          result.transactions.push({
++            startMs: start,
++            endMs: performance.now(),
++            outcome: "abort",
++          });
+           result.physicalCommitMs += performance.now() - start;
+         });
+       }
+diff --git a/src/types/import.ts b/src/types/import.ts
+index 95fabb2..a86e774 100644
+--- a/src/types/import.ts
++++ b/src/types/import.ts
+@@ -1,6 +1,10 @@
+ /** Ephemeral import outcome; opening a review is not a saved import. */
+ export type BulkImportResult =
+-  | { status: "saved" }
++  | {
++      status: "saved";
++      /** Number of newly imported items actually committed; omitted for updates. */
++      importedItemCount?: number;
++    }
+   | { status: "no-additions" | "cancelled" | "invalidated" | "failed" }
+   | { status: "committed-ui-failed" | "unknown" };
+ export interface BulkImportRequest {
+diff --git a/src/utils/itemOptionalFields.test.ts b/src/utils/itemOptionalFields.test.ts
+index 97fe3c1..6a6400f 100644
+--- a/src/utils/itemOptionalFields.test.ts
++++ b/src/utils/itemOptionalFields.test.ts
+@@ -117,6 +117,81 @@ describe("item optional field normalization", () => {
+       normalizeSnapshotItemOptionalFields(next, source).eventLists.history,
+     ).toBe(historical);
+   });
++  it("skips optional-key checks for 500 reordered or deleted unchanged items, including replay", () => {
++    let optionalKeyChecks = 0;
++    const optionalKeys = new Set([
++      "catalogPrice",
++      "limitedPurchasedQuantity",
++      "sheetRemarks",
++      "sheetIdentityVerified",
++      "url",
++      "priorityLevel",
++      "protectionLevel",
++      "source",
++      "assignedTo",
++      "lastSyncedAt",
++      "orderIndex",
++      "postponed",
++      "manualHallId",
++    ]);
++    const items = Array.from(
++      { length: 500 },
++      (_, index) =>
++        new Proxy(Object.freeze(sheetItem(index)), {
++          getOwnPropertyDescriptor(target, key) {
++            if (typeof key === "string" && optionalKeys.has(key))
++              optionalKeyChecks++;
++            return Reflect.getOwnPropertyDescriptor(target, key);
++          },
++        }),
++    );
++    const reordered = [...items].reverse();
++    for (let replay = 0; replay < 3; replay++) {
++      expect(normalizeItemsOptionalFields(reordered, items)).toBe(reordered);
++      const afterDeletion = reordered.slice(1);
++      expect(normalizeItemsOptionalFields(afterDeletion, items)).toBe(
++        afterDeletion,
++      );
++    }
++    expect(optionalKeyChecks).toBe(0);
++  });
++  it("checks only replacement and added items after a reorder and does not cache obsolete values", () => {
++    const reads: Record<string, number> = {};
++    const observed = (index: number, url: string) => {
++      const item = {
++        ...sheetItem(index),
++        url,
++        futureOptionalField: { preserved: true },
++      };
++      return new Proxy(item, {
++        get(target, key, receiver) {
++          if (key === "url") reads[target.id] = (reads[target.id] ?? 0) + 1;
++          return Reflect.get(target, key, receiver);
++        },
++      });
++    };
++    const items = Array.from({ length: 500 }, (_, index) =>
++      observed(index, "https://example.test"),
++    );
++    const replacement = observed(250, "  ");
++    const added = observed(500, "");
++    const next = [...items].reverse();
++    next[249] = replacement;
++    next.push(added);
++    const normalized = normalizeItemsOptionalFields(next, items);
++    expect(Object.keys(reads).sort()).toEqual(["item-250", "item-500"]);
++    expect(normalized[249]).not.toHaveProperty("url");
++    expect(normalized[500]).not.toHaveProperty("url");
++    expect(normalized[249].futureOptionalField).toBe(
++      replacement.futureOptionalField,
++    );
++    expect(normalized[0]).toBe(items[499]);
++    replacement.url = "https://example.test/changed";
++    const replayed = normalizeItemsOptionalFields(next, items);
++    expect(replayed[249]).toBe(replacement);
++    expect(replayed[249].url).toBe("https://example.test/changed");
++    expect(items[250].url).toBe("https://example.test");
++  });
+   it.each([
+     null,
+     [],
+diff --git a/src/utils/itemOptionalFields.ts b/src/utils/itemOptionalFields.ts
+index 60bd61d..17cb188 100644
+--- a/src/utils/itemOptionalFields.ts
++++ b/src/utils/itemOptionalFields.ts
+@@ -1,4 +1,5 @@
+ import { ownValue, setOwnValue } from "./ownRecord";
++import { itemPositions } from "./itemIndex";
+ 
+ const OPTIONAL_ITEM_KEYS = [
+   "catalogPrice",
+@@ -40,8 +41,18 @@ export function normalizeItemsOptionalFields<T>(
+   previous?: readonly T[],
+ ): T[] {
+   let result = items;
++  let previousPositions: ReadonlyMap<string, number> | undefined;
+   items.forEach((item, index) => {
+     if (!isRecord(item) || item === previous?.[index]) return;
++    // Structural edits retain unchanged item objects even when their positions move.
++    // Reuse the immutable list's ID index, never a cached normalization result:
++    // a replacement object with the same ID must still be checked on every replan.
++    if (previous && typeof item.id === "string") {
++      previousPositions ??= itemPositions(previous);
++      const previousPosition = previousPositions.get(item.id);
++      if (previousPosition !== undefined && item === previous[previousPosition])
++        return;
++    }
+     const normalized = normalizeItemOptionalFields(item);
+     if (normalized === item) return;
+     if (result === items) result = items.slice();
+diff --git a/tests/browser/sheet-import-optional-url.measurement.spec.ts b/tests/browser/sheet-import-optional-url.measurement.spec.ts
+index aa0671b..a73ea77 100644
+--- a/tests/browser/sheet-import-optional-url.measurement.spec.ts
++++ b/tests/browser/sheet-import-optional-url.measurement.spec.ts
+@@ -19,10 +19,237 @@ import {
+   type PersistenceCheckpoint,
+ } from "../../src/utils/persistenceResilience";
+ 
++import { scopeReadyKey } from "../../src/persistence/db/scopedDayStorage";
++import {
++  dayRecordStores,
++  dayRecordRootDigestKey,
++  partitionDayRecordStore,
++  sidecarRecordStores,
++} from "../../src/persistence/db/dayRecordStorage";
++
+ const phase = process.env.SHEET_URL_BROWSER_PHASE;
+ const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173";
+ const fixedInputs = process.env.SHEET_URL_FIXED_INPUT_DIR;
+-const repeats = 20;
++const repeats = Number(process.env.SHEET_URL_BROWSER_REPEATS ?? "20");
++if (!Number.isSafeInteger(repeats) || repeats < 1)
++  throw new Error("SHEET_URL_BROWSER_REPEATS must be a positive integer");
++
++type TransactionProbe = {
++  realm: "main" | "worker";
++  startedAt: number;
++  finishedAt?: number;
++  durationMs?: number;
++  mode: IDBTransactionMode;
++  stores: string[];
++  outcome?: "complete" | "abort";
++  putRequests: Record<string, number>;
++  eventListsDataPuts: number;
++  scopeReadyPuts: number;
++  injectedAbort?: boolean;
++};
++type BrowserProbe = {
++  transactions: TransactionProbe[];
++  marks: Record<string, number>;
++  abortNextAtomic: boolean;
++};
++
++// Installed in each real browser realm, including the production module worker.
++// The probe records IDB request counts without traversing item payloads.
++function installPersistenceProbe(config: {
++  abortFirstAtomic: boolean;
++  eventName: string;
++}) {
++  const state = globalThis as unknown as {
++    __sheetUrlProbe?: BrowserProbe;
++    document?: Document;
++  };
++  if (state.__sheetUrlProbe) return;
++  const probe: BrowserProbe = {
++    transactions: [],
++    marks: {},
++    abortNextAtomic: config.abortFirstAtomic,
++  };
++  state.__sheetUrlProbe = probe;
++  const now = () => performance.timeOrigin + performance.now();
++  const entries = new WeakMap<IDBTransaction, TransactionProbe>();
++  const originalTransaction = IDBDatabase.prototype.transaction;
++  IDBDatabase.prototype.transaction = function (...args) {
++    const tx = originalTransaction.apply(this, args);
++    if (this.name !== "EventShoppingPlannerDB") return tx;
++    const entry: TransactionProbe = {
++      realm: state.document ? "main" : "worker",
++      startedAt: now(),
++      mode: tx.mode,
++      stores: Array.from(tx.objectStoreNames),
++      putRequests: {},
++      eventListsDataPuts: 0,
++      scopeReadyPuts: 0,
++    };
++    entries.set(tx, entry);
++    probe.transactions.push(entry);
++    const finish = (outcome: "complete" | "abort") => {
++      entry.finishedAt = now();
++      entry.durationMs = entry.finishedAt - entry.startedAt;
++      entry.outcome = outcome;
++    };
++    tx.addEventListener("complete", () => finish("complete"), { once: true });
++    tx.addEventListener("abort", () => finish("abort"), { once: true });
++    return tx;
++  } as typeof originalTransaction;
++  const originalPut = IDBObjectStore.prototype.put;
++  IDBObjectStore.prototype.put = function (...args) {
++    const entry = entries.get(this.transaction);
++    if (entry) {
++      entry.putRequests[this.name] = (entry.putRequests[this.name] ?? 0) + 1;
++      if (this.name === "eventLists" && args[1] === "data")
++        entry.eventListsDataPuts++;
++      if (
++        this.name === "syncQueue" &&
++        typeof args[1] === "string" &&
++        args[1].startsWith("__esp_internal__:scope-ready:v1:")
++      )
++        entry.scopeReadyPuts++;
++      if (
++        probe.abortNextAtomic &&
++        this.transaction.mode === "readwrite" &&
++        this.transaction.objectStoreNames.contains("eventConsistency") &&
++        this.transaction.objectStoreNames.contains("eventLists")
++      ) {
++        probe.abortNextAtomic = false;
++        entry.injectedAbort = true;
++        this.transaction.abort();
++        throw new DOMException("measurement startup abort", "AbortError");
++      }
++    }
++    return originalPut.apply(this, args);
++  };
++  if (!state.document) return;
++  const originalText = Response.prototype.text;
++  Response.prototype.text = async function (...args) {
++    const text = await originalText.apply(this, args);
++    if (this.url.includes("/api/google-sheets-csv"))
++      probe.marks.csvTextReadyAt = now();
++    return text;
++  };
++  const document = state.document;
++  const reviewTitles = new Set([
++    "所属・配置の変更を確認",
++    "アイテム更新の確認",
++  ]);
++  const observeScreen = () => {
++    const headings = Array.from(document.querySelectorAll("h1,h2,h3"));
++    const review = headings.some((heading) =>
++      reviewTitles.has(heading.textContent?.trim() ?? ""),
++    );
++    if (review && !probe.marks.reviewDomAt) {
++      probe.marks.reviewDomAt = now();
++      requestAnimationFrame(() => {
++        probe.marks.reviewFrameAt = now();
++      });
++    }
++    if (
++      probe.marks.confirmationClickedAt &&
++      !review &&
++      !probe.marks.screenDomAt
++    ) {
++      probe.marks.screenDomAt = now();
++      requestAnimationFrame(() => {
++        probe.marks.screenFrameAt = now();
++      });
++    }
++    if (
++      !probe.marks.startupScreenDomAt &&
++      Array.from(document.querySelectorAll("li,[role=listitem]")).some((item) =>
++        item.textContent?.includes(config.eventName),
++      )
++    )
++      probe.marks.startupScreenDomAt = now();
++  };
++  document.addEventListener(
++    "click",
++    (event) => {
++      const button = (event.target as Element).closest?.("button");
++      if (
++        ["確認して保存", "更新を実行", "更新元を切り替えて更新"].includes(
++          button?.textContent?.trim() ?? "",
++        )
++      )
++        probe.marks.confirmationClickedAt = now();
++    },
++    true,
++  );
++  new MutationObserver(observeScreen).observe(document, {
++    childList: true,
++    subtree: true,
++  });
++}
++async function resetProbe(page: Page) {
++  const reset = () => {
++    const probe = (globalThis as unknown as { __sheetUrlProbe?: BrowserProbe })
++      .__sheetUrlProbe;
++    if (probe) {
++      probe.transactions = [];
++      probe.marks = {};
++      probe.abortNextAtomic = false;
++    }
++  };
++  await page.evaluate(reset);
++  for (const worker of page.workers())
++    if (worker.url().includes("persistence.worker"))
++      await worker.evaluate(reset);
++}
++async function collectProbe(page: Page) {
++  // Frame observation completes outside the Playwright wall-time intervals.
++  await page.evaluate(
++    () =>
++      new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
++  );
++  const navigationTimeOrigin = await page.evaluate(
++    () => performance.timeOrigin,
++  );
++  const read = () =>
++    (globalThis as unknown as { __sheetUrlProbe?: BrowserProbe })
++      .__sheetUrlProbe;
++  const main = await page.evaluate(read);
++  const workers = [];
++  for (const worker of page.workers())
++    if (worker.url().includes("persistence.worker"))
++      workers.push(await worker.evaluate(read));
++  const transactions = [main, ...workers].flatMap(
++    (entry) => entry?.transactions ?? [],
++  );
++  const marks = main?.marks ?? {};
++  return {
++    transactions,
++    verifiedSnapshotReadSpans: transactions.filter(
++      (entry) =>
++        entry.mode === "readonly" &&
++        entry.stores.includes("eventLists") &&
++        entry.stores.includes("eventConsistency") &&
++        entry.stores.includes("mapData"),
++    ),
++    startupScreenDomMs: marks.startupScreenDomAt
++      ? marks.startupScreenDomAt - navigationTimeOrigin
++      : null,
++    marks,
++    csvTextToReviewDomMs:
++      marks.csvTextReadyAt && marks.reviewDomAt
++        ? marks.reviewDomAt - marks.csvTextReadyAt
++        : null,
++    csvTextToReviewFrameMs:
++      marks.csvTextReadyAt && marks.reviewFrameAt
++        ? marks.reviewFrameAt - marks.csvTextReadyAt
++        : null,
++    confirmationToScreenDomMs:
++      marks.confirmationClickedAt && marks.screenDomAt
++        ? marks.screenDomAt - marks.confirmationClickedAt
++        : null,
++    confirmationToScreenFrameMs:
++      marks.confirmationClickedAt && marks.screenFrameAt
++        ? marks.screenFrameAt - marks.confirmationClickedAt
++        : null,
++  };
++}
+ async function stored(
+   page: Page,
+   name: string,
+@@ -133,12 +360,18 @@ async function restore(
+   ).toBeVisible();
+   return { parseMs, saveMs: performance.now() - commitStart };
+ }
+-async function legacyUrls(page: Page) {
++async function seedStartup(
++  page: Page,
++  unprepared: boolean,
++  legacyUrl: boolean,
++) {
+   const lists = (await stored(page, "eventLists")) as Record<string, object[]>;
+-  const next = {
+-    ...lists,
+-    [SHEET_EVENT]: lists[SHEET_EVENT].map((item) => ({ ...item, url: "" })),
+-  };
++  const next = legacyUrl
++    ? {
++        ...lists,
++        [SHEET_EVENT]: lists[SHEET_EVENT].map((item) => ({ ...item, url: "" })),
++      }
++    : lists;
+   const metadataKey = createPersistenceMetadataKey("eventLists", "data");
+   const checkpointKey = createPersistenceCheckpointKey("eventLists", "data");
+   const previous = (await stored(
+@@ -151,20 +384,35 @@ async function legacyUrls(page: Page) {
+     "syncQueue",
+     checkpointKey,
+   )) as PersistenceCheckpoint | null;
+-  const metadata = await prepareMetadataForPayload(
+-    "eventLists",
+-    "data",
+-    next,
+-    previous.revision,
+-  );
+-  const checkpoint = createNextPersistenceCheckpoint(
+-    "eventLists",
+-    "data",
+-    metadata,
+-    previousCheckpoint,
+-  );
++  const metadata = legacyUrl
++    ? await prepareMetadataForPayload(
++        "eventLists",
++        "data",
++        next,
++        previous.revision,
++      )
++    : previous;
++  const checkpoint = legacyUrl
++    ? createNextPersistenceCheckpoint(
++        "eventLists",
++        "data",
++        metadata,
++        previousCheckpoint,
++      )
++    : previousCheckpoint;
++  const sidecar = await partitionDayRecordStore("eventLists", next);
+   await page.evaluate(
+-    async ({ next, metadata, checkpoint, metadataKey, checkpointKey }) => {
++    async ({
++      next,
++      metadata,
++      checkpoint,
++      metadataKey,
++      checkpointKey,
++      readinessKeys,
++      preparedEventListKey,
++      sidecarEntries,
++      rootDigests,
++    }) => {
+       const database = await new Promise<IDBDatabase>((resolve, reject) => {
+         const request = indexedDB.open("EventShoppingPlannerDB");
+         request.onsuccess = () => resolve(request.result);
+@@ -176,9 +424,16 @@ async function legacyUrls(page: Page) {
+             ["eventLists", "syncQueue"],
+             "readwrite",
+           );
++          const control = tx.objectStore("syncQueue");
+           tx.objectStore("eventLists").put(next, "data");
+-          tx.objectStore("syncQueue").put(metadata, metadataKey);
+-          tx.objectStore("syncQueue").put(checkpoint, checkpointKey);
++          control.put(metadata, metadataKey);
++          control.put(checkpoint, checkpointKey);
++          for (const [key, entry] of sidecarEntries)
++            tx.objectStore("eventLists").put(entry, key);
++          for (const [key, digest] of rootDigests) control.put(digest, key);
++          if (!readinessKeys.length)
++            control.put(metadata.revision, preparedEventListKey);
++          for (const key of readinessKeys) control.delete(key);
+           tx.oncomplete = () => resolve();
+           tx.onabort = () => reject(tx.error);
+         });
+@@ -186,8 +441,106 @@ async function legacyUrls(page: Page) {
+         database.close();
+       }
+     },
+-    { next, metadata, checkpoint, metadataKey, checkpointKey },
++    {
++      next,
++      metadata,
++      checkpoint,
++      metadataKey,
++      checkpointKey,
++      readinessKeys: unprepared
++        ? [...sidecarRecordStores, "mapData" as const].map(scopeReadyKey)
++        : [],
++      preparedEventListKey: scopeReadyKey("eventLists"),
++      sidecarEntries: [...sidecar.puts],
++      rootDigests: [...sidecar.puts.values()]
++        .filter((entry) => !entry.path.length)
++        .map(
++          (entry) =>
++            [
++              dayRecordRootDigestKey("eventLists", entry.eventName),
++              entry.digest,
++            ] as const,
++        ),
++    },
+   );
++  for (const store of dayRecordStores)
++    expect(await stored(page, store)).toEqual(
++      expect.objectContaining({ authenticatedRoots: true }),
++    );
++  for (const store of [...sidecarRecordStores, "mapData" as const]) {
++    const ready = await stored(page, "syncQueue", scopeReadyKey(store));
++    const root = (await stored(
++      page,
++      "syncQueue",
++      createPersistenceMetadataKey(store, "data"),
++    )) as StoredPersistenceMetadata;
++    expect(ready).toBe(unprepared ? undefined : root.revision);
++  }
++}
++async function assertStartupWrites(page: Page, state: string, mode: string) {
++  const probe = await collectProbe(page);
++  const atomic = probe.transactions.filter(
++    (entry) =>
++      entry.mode === "readwrite" &&
++      entry.stores.includes("eventLists") &&
++      entry.stores.includes("eventConsistency"),
++  );
++  const successes = atomic.filter((entry) => entry.outcome === "complete");
++  const preparation = successes.filter(
++    (entry) => entry.eventListsDataPuts === 0,
++  );
++  const compatibility = successes.filter(
++    (entry) => entry.eventListsDataPuts > 0,
++  );
++  const unprepared = ["B02", "B04", "B06"].includes(state);
++  // Only the worker adapter prepares scoped commands on its initial read.
++  // Direct compatibility saves prepare their scope markers in the same commit.
++  const requiresPreparation = mode === "worker" && unprepared;
++  const requiresCompatibility = ["B03", "B04", "B06"].includes(state);
++  expect(preparation).toHaveLength(requiresPreparation ? 1 : 0);
++  expect(compatibility).toHaveLength(requiresCompatibility ? 1 : 0);
++  expect(successes).toHaveLength(
++    Number(requiresPreparation) + Number(requiresCompatibility),
++  );
++  expect(atomic.filter((entry) => entry.outcome === "abort")).toHaveLength(
++    state === "B06" ? 1 : 0,
++  );
++  if (state === "B06")
++    expect(atomic.filter((entry) => entry.injectedAbort)).toHaveLength(1);
++  for (const entry of atomic)
++    expect(entry.realm).toBe(mode === "worker" ? "worker" : "main");
++  const preparationInCompatibilityCommit =
++    mode === "direct" && unprepared && requiresCompatibility;
++  if (preparationInCompatibilityCommit)
++    expect(compatibility[0].scopeReadyPuts).toBe(
++      sidecarRecordStores.length + 1,
++    );
++  if (state !== "B02" || mode === "worker")
++    for (const store of [...sidecarRecordStores, "mapData" as const]) {
++      const ready = await stored(page, "syncQueue", scopeReadyKey(store));
++      const root = (await stored(
++        page,
++        "syncQueue",
++        createPersistenceMetadataKey(store, "data"),
++      )) as StoredPersistenceMetadata;
++      expect(ready).toBe(root.revision);
++    }
++  return {
++    ...probe,
++    startupPreparationPolicy:
++      mode === "worker" ? "prepare-on-read" : "prepare-on-save",
++    preparationInCompatibilityCommit,
++    preparationCommits: preparation.length,
++    compatibilityCommits: compatibility.length,
++    preparationCommitMs: preparation.reduce(
++      (sum, entry) => sum + entry.durationMs!,
++      0,
++    ),
++    compatibilityCommitMs: compatibility.reduce(
++      (sum, entry) => sum + entry.durationMs!,
++      0,
++    ),
++  };
+ }
+ async function openEditor(page: Page) {
+   const card = page
+@@ -247,7 +600,11 @@ test.describe("sheet optional URL real-browser route measurements", () => {
+         "restore-json",
+         "restore-xlsx",
+         "startup-B01",
++        "startup-B02",
++        "startup-B03",
+         "startup-B04",
++        "startup-B05",
++        "startup-B06",
+         "retry",
+       ] as const) {
+         test(`${route}: ${count} ${mode} @sheet-url-routes`, async ({
+@@ -269,10 +626,21 @@ test.describe("sheet optional URL real-browser route measurements", () => {
+                 state.__sheetOriginalWorker = state.Worker;
+                 state.Worker = undefined;
+               });
++            let abortStartup = false;
++            await context.route("**/*persistence.worker*.js", async (route) => {
++              const response = await route.fetch();
++              const source = await response.text();
++              const prefix = `(${installPersistenceProbe.toString()})(${JSON.stringify({ abortFirstAtomic: abortStartup, eventName: SHEET_EVENT })});\n`;
++              await route.fulfill({ response, body: prefix + source });
++            });
+             const page = await context.newPage();
+             page.on("dialog", (dialog) => dialog.accept());
+             try {
+               await enter(page);
++              await page.evaluate(installPersistenceProbe, {
++                abortFirstAtomic: false,
++                eventName: SHEET_EVENT,
++              });
+               let detail: Record<string, unknown>;
+               if (route === "import") {
+                 await page.route("**/api/google-sheets-csv", (request) =>
+@@ -293,6 +661,7 @@ test.describe("sheet optional URL real-browser route measurements", () => {
+                     exact: true,
+                   })
+                   .fill("https://docs.google.com/spreadsheets/d/test/edit");
++                await resetProbe(page);
+                 const start = performance.now();
+                 await page
+                   .getByRole("button", {
+@@ -341,6 +710,7 @@ test.describe("sheet optional URL real-browser route measurements", () => {
+                 await page
+                   .getByRole("button", { name: "メニュー", exact: true })
+                   .click();
++                await resetProbe(page);
+                 let start = performance.now();
+                 await page
+                   .getByRole("button", { name: "🔄 アイテム更新", exact: true })
+@@ -396,25 +766,62 @@ test.describe("sheet optional URL real-browser route measurements", () => {
+                 detail = await restore(page, count, false, bytes);
+               } else if (route.startsWith("startup")) {
+                 await restore(page, count, false);
+-                if (route === "startup-B04") await legacyUrls(page);
++                const state = route.slice("startup-".length);
++                await seedStartup(
++                  page,
++                  ["B02", "B04", "B05", "B06"].includes(state),
++                  ["B03", "B04", "B05", "B06"].includes(state),
++                );
++                await page.addInitScript(installPersistenceProbe, {
++                  abortFirstAtomic: state === "B06",
++                  eventName: SHEET_EVENT,
++                });
++                if (state === "B05") {
++                  await page.reload();
++                  await expect(
++                    page.getByRole("listitem").filter({ hasText: SHEET_EVENT }),
++                  ).toBeVisible();
++                  await assertStartupWrites(page, "B04", mode);
++                }
++                abortStartup = state === "B06";
+                 const start = performance.now();
+                 await page.reload();
+-                await expect(
+-                  page.getByRole("listitem").filter({ hasText: SHEET_EVENT }),
+-                ).toBeVisible();
+-                detail = { durationMs: performance.now() - start };
+-                if (phase === "after")
+-                  expect(
+-                    (
+-                      (await stored(page, "eventLists")) as Record<
+-                        string,
+-                        object[]
+-                      >
+-                    )[SHEET_EVENT].every(
+-                      (item) =>
+-                        !Object.prototype.hasOwnProperty.call(item, "url"),
+-                    ),
+-                  ).toBe(true);
++                let failureMs = 0;
++                let retryMs = 0;
++                if (state === "B06") {
++                  const retry = page.getByRole("button", {
++                    name: "読み込みを再試行",
++                    exact: true,
++                  });
++                  await expect(retry).toBeVisible();
++                  failureMs = performance.now() - start;
++                  const retryStart = performance.now();
++                  await retry.click();
++                  await expect(
++                    page.getByRole("listitem").filter({ hasText: SHEET_EVENT }),
++                  ).toBeVisible();
++                  retryMs = performance.now() - retryStart;
++                } else
++                  await expect(
++                    page.getByRole("listitem").filter({ hasText: SHEET_EVENT }),
++                  ).toBeVisible();
++                detail = {
++                  durationMs: performance.now() - start,
++                  failureMs,
++                  retryMs,
++                  ...(await assertStartupWrites(page, state, mode)),
++                };
++                expect(
++                  (
++                    (await stored(page, "eventLists")) as Record<
++                      string,
++                      object[]
++                    >
++                  )[SHEET_EVENT].every(
++                    (item) =>
++                      !Object.prototype.hasOwnProperty.call(item, "url"),
++                  ),
++                ).toBe(true);
+               } else {
+                 await restore(page, count, false, undefined, true);
+                 const editor = await openEditor(page);
+@@ -424,6 +831,7 @@ test.describe("sheet optional URL real-browser route measurements", () => {
+                 await editor
+                   .getByRole("textbox", { name: "利用者メモ", exact: true })
+                   .fill("再試行を確認");
++                await resetProbe(page);
+                 await abortOnce(page, mode);
+                 await editor
+                   .getByRole("button", { name: "保存", exact: true })
+@@ -443,7 +851,18 @@ test.describe("sheet optional URL real-browser route measurements", () => {
+                 await expect(editor).toBeHidden();
+                 detail = { durationMs: performance.now() - start };
+               }
+-              samples.push({ phase, count, mode, route, iteration, ...detail });
++              samples.push({
++                phase,
++                count,
++                mode,
++                route,
++                iteration,
++                evidenceEligible: repeats >= 20,
++                ...detail,
++                ...(route.startsWith("startup")
++                  ? {}
++                  : await collectProbe(page)),
++              });
+             } finally {
+               await context.close();
+             }
+@@ -453,7 +872,7 @@ test.describe("sheet optional URL real-browser route measurements", () => {
+             JSON.stringify(samples, null, 2),
+             "utf8",
+           );
+-          expect(samples).toHaveLength(20);
++          expect(samples).toHaveLength(repeats);
+         });
+       }
+ });

@@ -1,0 +1,173 @@
+[
+  {
+    "path": "src/app/commands/useEventUpdateCommands.test.tsx",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 1120,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/app/commands/useShoppingItemMutationCommands.test.tsx",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 1148,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/app/commands/useShoppingItemMutationCommands.ts",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 1163,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/components/ImportScreen.sheetImport.integration.test.tsx",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 185,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/components/ImportScreen.tsx",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 1145,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/components/UpdateConfirmationModal.test.tsx",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 671,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/components/UpdateConfirmationModal.tsx",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 685,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/features/events/updateFlow.test.ts",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 340,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/features/events/updateFlow.ts",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 257,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/test/sheetImportOptionalUrl.measurement.integration.test.tsx",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 678,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/test/sheetImportOptionalUrlPersistence.ts",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 214,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/types/import.ts",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 14,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/utils/itemOptionalFields.test.ts",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 204,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/utils/itemOptionalFields.ts",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 90,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "tests/browser/sheet-import-optional-url.measurement.spec.ts",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 916,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "scripts/sheet-url-stage-probe.mjs",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 86,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "scripts/sheet-url-stage-probe.test.mjs",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 201,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "src/app/commands/useEventUpdateCommands.modal.integration.test.tsx",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 241,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  },
+  {
+    "path": "vitest.sheet-url-measurement.config.ts",
+    "UTF8Strict": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 16,
+    "Replacement": 0,
+    "JapaneseEqual": true
+  }
+]

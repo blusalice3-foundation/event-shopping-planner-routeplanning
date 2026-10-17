@@ -124,7 +124,14 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
       alert(
         "データは保存済みですが画面に反映できませんでした。再取込みせず再読み込みしてください。",
       );
-    return saved && generation === inputGeneration.current;
+    if (!saved || generation !== inputGeneration.current) return null;
+    if (result.importedItemCount !== undefined) {
+      const acceptedCount = result.importedItemCount;
+      setSheetImportSummary((current) =>
+        current ? { ...current, acceptedCount } : current,
+      );
+    }
+    return result;
   };
 
   // State for single item add/edit
@@ -305,7 +312,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
         alert(
           [
             result.rowExclusions.excludedCount
-              ? `${result.items.length}件を取り込み、必須項目不足の${result.rowExclusions.excludedCount}行を除外しました。`
+              ? `${accepted.importedItemCount === undefined ? "更新を反映し" : `${accepted.importedItemCount}件を取り込み`}、必須項目不足の${result.rowExclusions.excludedCount}行を除外しました。`
               : "",
             buildInvalidQuantityImportMessage(result.invalidQuantityRows),
           ]
@@ -374,7 +381,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
         alert(
           [
             result.rowExclusions.excludedCount
-              ? `${result.items.length}件を取り込み、必須項目不足の${result.rowExclusions.excludedCount}行を除外しました。`
+              ? `${accepted.importedItemCount === undefined ? "更新を反映し" : `${accepted.importedItemCount}件を取り込み`}、必須項目不足の${result.rowExclusions.excludedCount}行を除外しました。`
               : "",
             buildInvalidQuantityImportMessage(result.invalidQuantityRows),
           ]
@@ -609,12 +616,12 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
       });
 
       if (newItems.length > 0) {
-        const accepted = await runImport(() => {
+        const accepted = await runImport(async () => {
           setSheetImportSummary({
             acceptedCount: newItems.length,
             rowExclusions,
           });
-          return submitImport(finalEventName, newItems);
+          return (await submitImport(finalEventName, newItems)) !== null;
         });
         if (!accepted) return;
 
@@ -660,8 +667,11 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
         remarks: singleRemarks.trim(),
         url: singleUrl.trim() || undefined,
       };
-      const accepted = await runImport(() =>
-        submitImport(activeEventName, [newItem], { source: "app" }),
+      const accepted = await runImport(
+        async () =>
+          (await submitImport(activeEventName, [newItem], {
+            source: "app",
+          })) !== null,
       );
       if (accepted) resetSingleForm();
     }

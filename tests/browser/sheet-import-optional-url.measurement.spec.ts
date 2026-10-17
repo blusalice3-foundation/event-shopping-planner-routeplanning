@@ -19,10 +19,238 @@ import {
   type PersistenceCheckpoint,
 } from "../../src/utils/persistenceResilience";
 
+import { scopeReadyKey } from "../../src/persistence/db/scopedDayStorage";
+import {
+  dayRecordStores,
+  dayRecordRootDigestKey,
+  partitionDayRecordStore,
+  sidecarRecordStores,
+} from "../../src/persistence/db/dayRecordStorage";
+
 const phase = process.env.SHEET_URL_BROWSER_PHASE;
+const legacyStartup = process.env.SHEET_URL_LEGACY_STARTUP === "1";
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173";
 const fixedInputs = process.env.SHEET_URL_FIXED_INPUT_DIR;
-const repeats = 20;
+const repeats = Number(process.env.SHEET_URL_BROWSER_REPEATS ?? "20");
+if (!Number.isSafeInteger(repeats) || repeats < 1)
+  throw new Error("SHEET_URL_BROWSER_REPEATS must be a positive integer");
+
+type TransactionProbe = {
+  realm: "main" | "worker";
+  startedAt: number;
+  finishedAt?: number;
+  durationMs?: number;
+  mode: IDBTransactionMode;
+  stores: string[];
+  outcome?: "complete" | "abort";
+  putRequests: Record<string, number>;
+  eventListsDataPuts: number;
+  scopeReadyPuts: number;
+  injectedAbort?: boolean;
+};
+type BrowserProbe = {
+  transactions: TransactionProbe[];
+  marks: Record<string, number>;
+  abortNextAtomic: boolean;
+};
+
+// Installed in each real browser realm, including the production module worker.
+// The probe records IDB request counts without traversing item payloads.
+function installPersistenceProbe(config: {
+  abortFirstAtomic: boolean;
+  eventName: string;
+}) {
+  const state = globalThis as unknown as {
+    __sheetUrlProbe?: BrowserProbe;
+    document?: Document;
+  };
+  if (state.__sheetUrlProbe) return;
+  const probe: BrowserProbe = {
+    transactions: [],
+    marks: {},
+    abortNextAtomic: config.abortFirstAtomic,
+  };
+  state.__sheetUrlProbe = probe;
+  const now = () => performance.timeOrigin + performance.now();
+  const entries = new WeakMap<IDBTransaction, TransactionProbe>();
+  const originalTransaction = IDBDatabase.prototype.transaction;
+  IDBDatabase.prototype.transaction = function (...args) {
+    const tx = originalTransaction.apply(this, args);
+    if (this.name !== "EventShoppingPlannerDB") return tx;
+    const entry: TransactionProbe = {
+      realm: state.document ? "main" : "worker",
+      startedAt: now(),
+      mode: tx.mode,
+      stores: Array.from(tx.objectStoreNames),
+      putRequests: {},
+      eventListsDataPuts: 0,
+      scopeReadyPuts: 0,
+    };
+    entries.set(tx, entry);
+    probe.transactions.push(entry);
+    const finish = (outcome: "complete" | "abort") => {
+      entry.finishedAt = now();
+      entry.durationMs = entry.finishedAt - entry.startedAt;
+      entry.outcome = outcome;
+    };
+    tx.addEventListener("complete", () => finish("complete"), { once: true });
+    tx.addEventListener("abort", () => finish("abort"), { once: true });
+    return tx;
+  } as typeof originalTransaction;
+  const originalPut = IDBObjectStore.prototype.put;
+  IDBObjectStore.prototype.put = function (...args) {
+    const entry = entries.get(this.transaction);
+    if (entry) {
+      entry.putRequests[this.name] = (entry.putRequests[this.name] ?? 0) + 1;
+      if (this.name === "eventLists" && args[1] === "data")
+        entry.eventListsDataPuts++;
+      if (
+        this.name === "syncQueue" &&
+        typeof args[1] === "string" &&
+        args[1].startsWith("__esp_internal__:scope-ready:v1:")
+      )
+        entry.scopeReadyPuts++;
+      if (
+        probe.abortNextAtomic &&
+        this.transaction.mode === "readwrite" &&
+        this.transaction.objectStoreNames.contains("eventConsistency") &&
+        this.transaction.objectStoreNames.contains("eventLists")
+      ) {
+        probe.abortNextAtomic = false;
+        entry.injectedAbort = true;
+        this.transaction.abort();
+        throw new DOMException("measurement startup abort", "AbortError");
+      }
+    }
+    return originalPut.apply(this, args);
+  };
+  if (!state.document) return;
+  const originalText = Response.prototype.text;
+  Response.prototype.text = async function (...args) {
+    const text = await originalText.apply(this, args);
+    if (this.url.includes("/api/google-sheets-csv"))
+      probe.marks.csvTextReadyAt = now();
+    return text;
+  };
+  const document = state.document;
+  const reviewTitles = new Set([
+    "所属・配置の変更を確認",
+    "アイテム更新の確認",
+  ]);
+  const observeScreen = () => {
+    const headings = Array.from(document.querySelectorAll("h1,h2,h3"));
+    const review = headings.some((heading) =>
+      reviewTitles.has(heading.textContent?.trim() ?? ""),
+    );
+    if (review && !probe.marks.reviewDomAt) {
+      probe.marks.reviewDomAt = now();
+      requestAnimationFrame(() => {
+        probe.marks.reviewFrameAt = now();
+      });
+    }
+    if (
+      probe.marks.confirmationClickedAt &&
+      !review &&
+      !probe.marks.screenDomAt
+    ) {
+      probe.marks.screenDomAt = now();
+      requestAnimationFrame(() => {
+        probe.marks.screenFrameAt = now();
+      });
+    }
+    if (
+      !probe.marks.startupScreenDomAt &&
+      Array.from(document.querySelectorAll("li,[role=listitem]")).some((item) =>
+        item.textContent?.includes(config.eventName),
+      )
+    )
+      probe.marks.startupScreenDomAt = now();
+  };
+  document.addEventListener(
+    "click",
+    (event) => {
+      const button = (event.target as Element).closest?.("button");
+      if (
+        ["確認して保存", "更新を実行", "更新元を切り替えて更新"].includes(
+          button?.textContent?.trim() ?? "",
+        )
+      )
+        probe.marks.confirmationClickedAt = now();
+    },
+    true,
+  );
+  new MutationObserver(observeScreen).observe(document, {
+    childList: true,
+    subtree: true,
+  });
+}
+async function resetProbe(page: Page) {
+  const reset = () => {
+    const probe = (globalThis as unknown as { __sheetUrlProbe?: BrowserProbe })
+      .__sheetUrlProbe;
+    if (probe) {
+      probe.transactions = [];
+      probe.marks = {};
+      probe.abortNextAtomic = false;
+    }
+  };
+  await page.evaluate(reset);
+  for (const worker of page.workers())
+    if (worker.url().includes("persistence.worker"))
+      await worker.evaluate(reset);
+}
+async function collectProbe(page: Page) {
+  // Frame observation completes outside the Playwright wall-time intervals.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+  );
+  const navigationTimeOrigin = await page.evaluate(
+    () => performance.timeOrigin,
+  );
+  const read = () =>
+    (globalThis as unknown as { __sheetUrlProbe?: BrowserProbe })
+      .__sheetUrlProbe;
+  const main = await page.evaluate(read);
+  const workers = [];
+  for (const worker of page.workers())
+    if (worker.url().includes("persistence.worker"))
+      workers.push(await worker.evaluate(read));
+  const transactions = [main, ...workers].flatMap(
+    (entry) => entry?.transactions ?? [],
+  );
+  const marks = main?.marks ?? {};
+  return {
+    transactions,
+    verifiedSnapshotReadSpans: transactions.filter(
+      (entry) =>
+        entry.mode === "readonly" &&
+        entry.stores.includes("eventLists") &&
+        entry.stores.includes("eventConsistency") &&
+        entry.stores.includes("mapData"),
+    ),
+    startupScreenDomMs: marks.startupScreenDomAt
+      ? marks.startupScreenDomAt - navigationTimeOrigin
+      : null,
+    marks,
+    csvTextToReviewDomMs:
+      marks.csvTextReadyAt && marks.reviewDomAt
+        ? marks.reviewDomAt - marks.csvTextReadyAt
+        : null,
+    csvTextToReviewFrameMs:
+      marks.csvTextReadyAt && marks.reviewFrameAt
+        ? marks.reviewFrameAt - marks.csvTextReadyAt
+        : null,
+    confirmationToScreenDomMs:
+      marks.confirmationClickedAt && marks.screenDomAt
+        ? marks.screenDomAt - marks.confirmationClickedAt
+        : null,
+    confirmationToScreenFrameMs:
+      marks.confirmationClickedAt && marks.screenFrameAt
+        ? marks.screenFrameAt - marks.confirmationClickedAt
+        : null,
+  };
+}
 async function stored(
   page: Page,
   name: string,
@@ -133,12 +361,18 @@ async function restore(
   ).toBeVisible();
   return { parseMs, saveMs: performance.now() - commitStart };
 }
-async function legacyUrls(page: Page) {
+async function seedStartup(
+  page: Page,
+  unprepared: boolean,
+  legacyUrl: boolean,
+) {
   const lists = (await stored(page, "eventLists")) as Record<string, object[]>;
-  const next = {
-    ...lists,
-    [SHEET_EVENT]: lists[SHEET_EVENT].map((item) => ({ ...item, url: "" })),
-  };
+  const next = legacyUrl
+    ? {
+        ...lists,
+        [SHEET_EVENT]: lists[SHEET_EVENT].map((item) => ({ ...item, url: "" })),
+      }
+    : lists;
   const metadataKey = createPersistenceMetadataKey("eventLists", "data");
   const checkpointKey = createPersistenceCheckpointKey("eventLists", "data");
   const previous = (await stored(
@@ -151,20 +385,35 @@ async function legacyUrls(page: Page) {
     "syncQueue",
     checkpointKey,
   )) as PersistenceCheckpoint | null;
-  const metadata = await prepareMetadataForPayload(
-    "eventLists",
-    "data",
-    next,
-    previous.revision,
-  );
-  const checkpoint = createNextPersistenceCheckpoint(
-    "eventLists",
-    "data",
-    metadata,
-    previousCheckpoint,
-  );
+  const metadata = legacyUrl
+    ? await prepareMetadataForPayload(
+        "eventLists",
+        "data",
+        next,
+        previous.revision,
+      )
+    : previous;
+  const checkpoint = legacyUrl
+    ? createNextPersistenceCheckpoint(
+        "eventLists",
+        "data",
+        metadata,
+        previousCheckpoint,
+      )
+    : previousCheckpoint;
+  const sidecar = await partitionDayRecordStore("eventLists", next);
   await page.evaluate(
-    async ({ next, metadata, checkpoint, metadataKey, checkpointKey }) => {
+    async ({
+      next,
+      metadata,
+      checkpoint,
+      metadataKey,
+      checkpointKey,
+      readinessKeys,
+      preparedEventListKey,
+      sidecarEntries,
+      rootDigests,
+    }) => {
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open("EventShoppingPlannerDB");
         request.onsuccess = () => resolve(request.result);
@@ -176,9 +425,16 @@ async function legacyUrls(page: Page) {
             ["eventLists", "syncQueue"],
             "readwrite",
           );
+          const control = tx.objectStore("syncQueue");
           tx.objectStore("eventLists").put(next, "data");
-          tx.objectStore("syncQueue").put(metadata, metadataKey);
-          tx.objectStore("syncQueue").put(checkpoint, checkpointKey);
+          control.put(metadata, metadataKey);
+          control.put(checkpoint, checkpointKey);
+          for (const [key, entry] of sidecarEntries)
+            tx.objectStore("eventLists").put(entry, key);
+          for (const [key, digest] of rootDigests) control.put(digest, key);
+          if (!readinessKeys.length)
+            control.put(metadata.revision, preparedEventListKey);
+          for (const key of readinessKeys) control.delete(key);
           tx.oncomplete = () => resolve();
           tx.onabort = () => reject(tx.error);
         });
@@ -186,8 +442,107 @@ async function legacyUrls(page: Page) {
         database.close();
       }
     },
-    { next, metadata, checkpoint, metadataKey, checkpointKey },
+    {
+      next,
+      metadata,
+      checkpoint,
+      metadataKey,
+      checkpointKey,
+      readinessKeys: unprepared
+        ? [...sidecarRecordStores, "mapData" as const].map(scopeReadyKey)
+        : [],
+      preparedEventListKey: scopeReadyKey("eventLists"),
+      sidecarEntries: [...sidecar.puts],
+      rootDigests: [...sidecar.puts.values()]
+        .filter((entry) => !entry.path.length)
+        .map(
+          (entry) =>
+            [
+              dayRecordRootDigestKey("eventLists", entry.eventName),
+              entry.digest,
+            ] as const,
+        ),
+    },
   );
+  for (const store of dayRecordStores)
+    expect(await stored(page, store)).toEqual(
+      expect.objectContaining({ authenticatedRoots: true }),
+    );
+  for (const store of [...sidecarRecordStores, "mapData" as const]) {
+    const ready = await stored(page, "syncQueue", scopeReadyKey(store));
+    const root = (await stored(
+      page,
+      "syncQueue",
+      createPersistenceMetadataKey(store, "data"),
+    )) as StoredPersistenceMetadata;
+    expect(ready).toBe(unprepared ? undefined : root.revision);
+  }
+}
+async function assertStartupWrites(page: Page, state: string, mode: string) {
+  const probe = await collectProbe(page);
+  const atomic = probe.transactions.filter(
+    (entry) =>
+      entry.mode === "readwrite" &&
+      entry.stores.includes("eventLists") &&
+      entry.stores.includes("eventConsistency"),
+  );
+  const successes = atomic.filter((entry) => entry.outcome === "complete");
+  const preparation = successes.filter(
+    (entry) => entry.eventListsDataPuts === 0,
+  );
+  const compatibility = successes.filter(
+    (entry) => entry.eventListsDataPuts > 0,
+  );
+  const unprepared = ["B02", "B04", "B06"].includes(state);
+  // Only the worker adapter prepares scoped commands on its initial read.
+  // Direct compatibility saves prepare their scope markers in the same commit.
+  const requiresPreparation = mode === "worker" && unprepared;
+  const requiresCompatibility =
+    !legacyStartup && ["B03", "B04", "B06"].includes(state);
+  expect(preparation).toHaveLength(requiresPreparation ? 1 : 0);
+  expect(compatibility).toHaveLength(requiresCompatibility ? 1 : 0);
+  expect(successes).toHaveLength(
+    Number(requiresPreparation) + Number(requiresCompatibility),
+  );
+  expect(atomic.filter((entry) => entry.outcome === "abort")).toHaveLength(
+    state === "B06" ? 1 : 0,
+  );
+  if (state === "B06")
+    expect(atomic.filter((entry) => entry.injectedAbort)).toHaveLength(1);
+  for (const entry of atomic)
+    expect(entry.realm).toBe(mode === "worker" ? "worker" : "main");
+  const preparationInCompatibilityCommit =
+    mode === "direct" && unprepared && requiresCompatibility;
+  if (preparationInCompatibilityCommit)
+    expect(compatibility[0].scopeReadyPuts).toBe(
+      sidecarRecordStores.length + 1,
+    );
+  if ((!legacyStartup && state !== "B02") || mode === "worker")
+    for (const store of [...sidecarRecordStores, "mapData" as const]) {
+      const ready = await stored(page, "syncQueue", scopeReadyKey(store));
+      const root = (await stored(
+        page,
+        "syncQueue",
+        createPersistenceMetadataKey(store, "data"),
+      )) as StoredPersistenceMetadata;
+      expect(ready).toBe(root.revision);
+    }
+  return {
+    ...probe,
+    startupPreparationPolicy:
+      mode === "worker" ? "prepare-on-read" : "prepare-on-save",
+    preparationInCompatibilityCommit,
+    preparationCommits: preparation.length,
+    compatibilityCommits: compatibility.length,
+    preparationCommitMs: preparation.reduce(
+      (sum, entry) => sum + entry.durationMs!,
+      0,
+    ),
+    compatibilityCommitMs: compatibility.reduce(
+      (sum, entry) => sum + entry.durationMs!,
+      0,
+    ),
+  };
 }
 async function openEditor(page: Page) {
   const card = page
@@ -247,9 +602,14 @@ test.describe("sheet optional URL real-browser route measurements", () => {
         "restore-json",
         "restore-xlsx",
         "startup-B01",
+        "startup-B02",
+        "startup-B03",
         "startup-B04",
+        "startup-B05",
+        "startup-B06",
         "retry",
       ] as const) {
+        if (legacyStartup && route !== "startup-B04") continue;
         test(`${route}: ${count} ${mode} @sheet-url-routes`, async ({
           browser,
         }, testInfo) => {
@@ -260,6 +620,12 @@ test.describe("sheet optional URL real-browser route measurements", () => {
               viewport: { width: 1280, height: 720 },
               serviceWorkers: "block",
             });
+            // Static preview has no API functions. Keep best-effort telemetry
+            // deterministic in both builds instead of generating unrelated 404s.
+            await context.route(
+              "**/api/persistence-release-a-metrics",
+              (request) => request.fulfill({ status: 204 }),
+            );
             if (mode === "direct")
               await context.addInitScript(() => {
                 const state = window as unknown as {
@@ -269,10 +635,35 @@ test.describe("sheet optional URL real-browser route measurements", () => {
                 state.__sheetOriginalWorker = state.Worker;
                 state.Worker = undefined;
               });
+            let abortStartup = false;
+            await context.route("**/*persistence.worker*.js", async (route) => {
+              const response = await route.fetch();
+              const source = await response.text();
+              const prefix = `(${installPersistenceProbe.toString()})(${JSON.stringify({ abortFirstAtomic: abortStartup, eventName: SHEET_EVENT })});\n`;
+              await route.fulfill({ response, body: prefix + source });
+            });
             const page = await context.newPage();
+            const runtimeErrors: string[] = [];
+            const consoleErrors: string[] = [];
+            page.on("pageerror", (error) =>
+              runtimeErrors.push(`${error.name}: ${error.message}`),
+            );
+            page.on("console", (message) => {
+              if (message.type() === "error")
+                consoleErrors.push(
+                  JSON.stringify({
+                    message: message.text(),
+                    location: message.location(),
+                  }),
+                );
+            });
             page.on("dialog", (dialog) => dialog.accept());
             try {
               await enter(page);
+              await page.evaluate(installPersistenceProbe, {
+                abortFirstAtomic: false,
+                eventName: SHEET_EVENT,
+              });
               let detail: Record<string, unknown>;
               if (route === "import") {
                 await page.route("**/api/google-sheets-csv", (request) =>
@@ -293,6 +684,7 @@ test.describe("sheet optional URL real-browser route measurements", () => {
                     exact: true,
                   })
                   .fill("https://docs.google.com/spreadsheets/d/test/edit");
+                await resetProbe(page);
                 const start = performance.now();
                 await page
                   .getByRole("button", {
@@ -341,6 +733,7 @@ test.describe("sheet optional URL real-browser route measurements", () => {
                 await page
                   .getByRole("button", { name: "メニュー", exact: true })
                   .click();
+                await resetProbe(page);
                 let start = performance.now();
                 await page
                   .getByRole("button", { name: "🔄 アイテム更新", exact: true })
@@ -396,25 +789,65 @@ test.describe("sheet optional URL real-browser route measurements", () => {
                 detail = await restore(page, count, false, bytes);
               } else if (route.startsWith("startup")) {
                 await restore(page, count, false);
-                if (route === "startup-B04") await legacyUrls(page);
+                const state = route.slice("startup-".length);
+                await seedStartup(
+                  page,
+                  ["B02", "B04", "B05", "B06"].includes(state),
+                  ["B03", "B04", "B05", "B06"].includes(state),
+                );
+                await page.addInitScript(installPersistenceProbe, {
+                  abortFirstAtomic: state === "B06",
+                  eventName: SHEET_EVENT,
+                });
+                if (state === "B05") {
+                  await page.reload();
+                  await expect(
+                    page.getByRole("listitem").filter({ hasText: SHEET_EVENT }),
+                  ).toBeVisible();
+                  await assertStartupWrites(page, "B04", mode);
+                }
+                abortStartup = state === "B06";
                 const start = performance.now();
                 await page.reload();
-                await expect(
-                  page.getByRole("listitem").filter({ hasText: SHEET_EVENT }),
-                ).toBeVisible();
-                detail = { durationMs: performance.now() - start };
-                if (phase === "after")
-                  expect(
-                    (
-                      (await stored(page, "eventLists")) as Record<
-                        string,
-                        object[]
-                      >
-                    )[SHEET_EVENT].every(
-                      (item) =>
-                        !Object.prototype.hasOwnProperty.call(item, "url"),
-                    ),
-                  ).toBe(true);
+                let failureMs = 0;
+                let retryMs = 0;
+                if (state === "B06") {
+                  const retry = page.getByRole("button", {
+                    name: "読み込みを再試行",
+                    exact: true,
+                  });
+                  await expect(retry).toBeVisible();
+                  failureMs = performance.now() - start;
+                  const retryStart = performance.now();
+                  await retry.click();
+                  await expect(
+                    page.getByRole("listitem").filter({ hasText: SHEET_EVENT }),
+                  ).toBeVisible();
+                  retryMs = performance.now() - retryStart;
+                } else
+                  await expect(
+                    page.getByRole("listitem").filter({ hasText: SHEET_EVENT }),
+                  ).toBeVisible();
+                detail = {
+                  durationMs: performance.now() - start,
+                  failureMs,
+                  retryMs,
+                  ...(await assertStartupWrites(page, state, mode)),
+                };
+                const savedItems = (
+                  (await stored(page, "eventLists")) as Record<
+                    string,
+                    Array<{ url?: unknown }>
+                  >
+                )[SHEET_EVENT];
+                expect(
+                  savedItems.every((item) =>
+                    legacyStartup
+                      ? Object.prototype.hasOwnProperty.call(item, "url") &&
+                        item.url === ""
+                      : !Object.prototype.hasOwnProperty.call(item, "url"),
+                  ),
+                ).toBe(true);
               } else {
                 await restore(page, count, false, undefined, true);
                 const editor = await openEditor(page);
@@ -424,6 +857,7 @@ test.describe("sheet optional URL real-browser route measurements", () => {
                 await editor
                   .getByRole("textbox", { name: "利用者メモ", exact: true })
                   .fill("再試行を確認");
+                await resetProbe(page);
                 await abortOnce(page, mode);
                 await editor
                   .getByRole("button", { name: "保存", exact: true })
@@ -443,7 +877,30 @@ test.describe("sheet optional URL real-browser route measurements", () => {
                 await expect(editor).toBeHidden();
                 detail = { durationMs: performance.now() - start };
               }
-              samples.push({ phase, count, mode, route, iteration, ...detail });
+              expect(runtimeErrors).toEqual([]);
+              const injectedFailure =
+                route === "retry" || route === "startup-B06";
+              if (!injectedFailure) expect(consoleErrors).toEqual([]);
+              samples.push({
+                runtimeErrors,
+                consoleErrors,
+                consoleErrorContext: injectedFailure
+                  ? "storage-failure-injected"
+                  : "normal",
+                phase,
+                count,
+                mode,
+                route,
+                iteration,
+                evidenceEligible: repeats >= 20,
+                ...(legacyStartup
+                  ? { sourceBaseline: "cc475cd", legacyStartup: true }
+                  : {}),
+                ...detail,
+                ...(route.startsWith("startup")
+                  ? {}
+                  : await collectProbe(page)),
+              });
             } finally {
               await context.close();
             }
@@ -453,7 +910,7 @@ test.describe("sheet optional URL real-browser route measurements", () => {
             JSON.stringify(samples, null, 2),
             "utf8",
           );
-          expect(samples).toHaveLength(20);
+          expect(samples).toHaveLength(repeats);
         });
       }
 });

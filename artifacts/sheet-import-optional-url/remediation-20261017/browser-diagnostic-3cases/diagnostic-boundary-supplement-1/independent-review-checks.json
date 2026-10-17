@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-10-17T15:00:00.8507259+09:00",
+  "independentlyReproducedSummaryMetrics": 16,
+  "toleranceMs": 1E-08,
+  "matchingNumericFieldsPerMetric": 6,
+  "newBrowserMeasurement": false,
+  "mainSummaryModified": false,
+  "mainSummarySHA256": "0773C75B5D8F3DA53E0EA56B66D93F37FB761D46513624F31CA9B954F7F0BFCF",
+  "frozenMainHarnessSHA256": "65B44F4B18FB4DEEFC80592A24856E4252CED0ADF511873E71BE405C9A2C05C0",
+  "frozenDiagnosticSHA256": "BD6B66B999FE13587929D6414B500335117D8DF4DFDAC4EC36189003E882E68D"
+}

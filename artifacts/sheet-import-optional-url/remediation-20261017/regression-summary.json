@@ -1,0 +1,98 @@
+{
+  "Command": "npx vitest run --project unit --project integration --project worker --maxWorkers 2",
+  "ExitCode": 0,
+  "PassedFiles": 240,
+  "SkippedFiles": 1,
+  "DiscoveredFiles": 241,
+  "PassedTests": 2765,
+  "SkippedMeasurementTests": 88,
+  "DurationSeconds": 195.86,
+  "Log": "01-full-vitest.log",
+  "Notes": [
+    "Opt-in measurement cases intentionally skipped.",
+    "The final existing coverage command reran every project and passed 2773 tests, including all focused follow-up changes and new modal integration cases."
+  ],
+  "AdditionalChecks": {
+    "EncodingDiffReview": "encoding-diff-review.json",
+    "ArchitectureEdges": 1631,
+    "ArchitectureProductionFiles": 341,
+    "EncodingFiles": 1071,
+    "ApiPassed": 21,
+    "MembershipFiles": 241
+  },
+  "FocusedFollowUp": {
+    "ReportedBy": "compatibility_and_counts",
+    "PassedUnitTests": 63,
+    "PassedNewModalIntegrationTests": 2,
+    "NewTestsSinceFullRun": 8,
+    "Validation": "Focused follow-up; not a second full-suite execution"
+  },
+  "StageProbeContractTests": {
+    "Log": "06-stage-probe-tests.log",
+    "Passed": 6
+  },
+  "LatestStaticChecks": {
+    "EslintFiles": 19,
+    "EslintExitCode": 0,
+    "Logs": [
+      "07-changed-files-eslint.log",
+      "08-changed-files-prettier.log",
+      "09-typecheck.log"
+    ],
+    "TypecheckExitCode": 0,
+    "PrettierFiles": 20,
+    "PrettierExitCode": 0
+  },
+  "FinalCoverageRun": {
+    "Command": "npm run test:coverage",
+    "ExitCode": 0,
+    "PassedFiles": 241,
+    "SkippedMeasurementFiles": 1,
+    "DiscoveredFiles": 242,
+    "PassedVitestTests": 2773,
+    "SkippedMeasurementTests": 88,
+    "VitestDurationSeconds": 57.01,
+    "Global": {
+      "lines": {
+        "total": 31687,
+        "covered": 23656,
+        "skipped": 0,
+        "pct": 74.65
+      },
+      "statements": {
+        "total": 34500,
+        "covered": 25185,
+        "skipped": 0,
+        "pct": 73
+      },
+      "functions": {
+        "total": 7031,
+        "covered": 5280,
+        "skipped": 0,
+        "pct": 75.09
+      },
+      "branches": {
+        "total": 25960,
+        "covered": 17659,
+        "skipped": 0,
+        "pct": 68.02
+      },
+      "branchesTrue": {
+        "total": 0,
+        "covered": 0,
+        "skipped": 0,
+        "pct": 100
+      }
+    },
+    "SubsystemsPassed": 6,
+    "PolicyWaivers": 0,
+    "PwaNodeTestsPassed": 12,
+    "ArtifactNodeTestsPassed": 47,
+    "Log": "10-coverage.log",
+    "CoveredFinalChanges": [
+      "Strict nested unknown-field equality",
+      "Two real-modal integration cases",
+      "All functional remediation source changes"
+    ]
+  }
+}

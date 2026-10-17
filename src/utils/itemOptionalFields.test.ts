@@ -117,6 +117,81 @@ describe("item optional field normalization", () => {
       normalizeSnapshotItemOptionalFields(next, source).eventLists.history,
     ).toBe(historical);
   });
+  it("skips optional-key checks for 500 reordered or deleted unchanged items, including replay", () => {
+    let optionalKeyChecks = 0;
+    const optionalKeys = new Set([
+      "catalogPrice",
+      "limitedPurchasedQuantity",
+      "sheetRemarks",
+      "sheetIdentityVerified",
+      "url",
+      "priorityLevel",
+      "protectionLevel",
+      "source",
+      "assignedTo",
+      "lastSyncedAt",
+      "orderIndex",
+      "postponed",
+      "manualHallId",
+    ]);
+    const items = Array.from(
+      { length: 500 },
+      (_, index) =>
+        new Proxy(Object.freeze(sheetItem(index)), {
+          getOwnPropertyDescriptor(target, key) {
+            if (typeof key === "string" && optionalKeys.has(key))
+              optionalKeyChecks++;
+            return Reflect.getOwnPropertyDescriptor(target, key);
+          },
+        }),
+    );
+    const reordered = [...items].reverse();
+    for (let replay = 0; replay < 3; replay++) {
+      expect(normalizeItemsOptionalFields(reordered, items)).toBe(reordered);
+      const afterDeletion = reordered.slice(1);
+      expect(normalizeItemsOptionalFields(afterDeletion, items)).toBe(
+        afterDeletion,
+      );
+    }
+    expect(optionalKeyChecks).toBe(0);
+  });
+  it("checks only replacement and added items after a reorder and does not cache obsolete values", () => {
+    const reads: Record<string, number> = {};
+    const observed = (index: number, url: string) => {
+      const item = {
+        ...sheetItem(index),
+        url,
+        futureOptionalField: { preserved: true },
+      };
+      return new Proxy(item, {
+        get(target, key, receiver) {
+          if (key === "url") reads[target.id] = (reads[target.id] ?? 0) + 1;
+          return Reflect.get(target, key, receiver);
+        },
+      });
+    };
+    const items = Array.from({ length: 500 }, (_, index) =>
+      observed(index, "https://example.test"),
+    );
+    const replacement = observed(250, "  ");
+    const added = observed(500, "");
+    const next = [...items].reverse();
+    next[249] = replacement;
+    next.push(added);
+    const normalized = normalizeItemsOptionalFields(next, items);
+    expect(Object.keys(reads).sort()).toEqual(["item-250", "item-500"]);
+    expect(normalized[249]).not.toHaveProperty("url");
+    expect(normalized[500]).not.toHaveProperty("url");
+    expect(normalized[249].futureOptionalField).toBe(
+      replacement.futureOptionalField,
+    );
+    expect(normalized[0]).toBe(items[499]);
+    replacement.url = "https://example.test/changed";
+    const replayed = normalizeItemsOptionalFields(next, items);
+    expect(replayed[249]).toBe(replacement);
+    expect(replayed[249].url).toBe("https://example.test/changed");
+    expect(items[250].url).toBe("https://example.test");
+  });
   it.each([
     null,
     [],

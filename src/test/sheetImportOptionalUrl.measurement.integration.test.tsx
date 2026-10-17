@@ -11,6 +11,7 @@ import {
 import { useIndexedDbPersistence } from "../hooks/useIndexedDbPersistence";
 import { resetDatabaseConnection } from "../persistence/db/openDatabase";
 
+import type { ApplicationSnapshotRead } from "../app/ports/PersistenceCommandPort";
 import { parseAppBackup, validateSnapshotStructure } from "../utils/appBackup";
 import { readEventCsv } from "../features/events/sheetImport";
 import { normalizeSheetItemsUrls } from "../features/events/updateDiff";
@@ -43,7 +44,50 @@ import {
   commits,
 } from "./sheetImportOptionalUrlPersistence";
 
+type StageEntry = { stage: string; startMs: number; endMs: number };
+const stages: StageEntry[] = [];
+function beginStages() {
+  stages.length = 0;
+  vi.stubGlobal(
+    "__sheetUrlStageObserver",
+    (stage: string, startMs: number, endMs: number) => {
+      stages.push({ stage, startMs, endMs });
+    },
+  );
+}
+function stageSummary() {
+  const result: Record<
+    string,
+    { calls: number; inclusiveMs: number; exclusiveMs: number }
+  > = {};
+  for (const entry of stages) {
+    const value = (result[entry.stage] ??= {
+      calls: 0,
+      inclusiveMs: 0,
+      exclusiveMs: 0,
+    });
+    value.calls++;
+    value.inclusiveMs += entry.endMs - entry.startMs;
+    let cursor = entry.startMs;
+    let childMs = 0;
+    const children = stages
+      .filter(
+        (child) =>
+          child !== entry &&
+          child.startMs >= entry.startMs &&
+          child.endMs <= entry.endMs,
+      )
+      .sort((a, b) => a.startMs - b.startMs);
+    for (const child of children) {
+      childMs += Math.max(0, child.endMs - Math.max(cursor, child.startMs));
+      cursor = Math.max(cursor, child.endMs);
+    }
+    value.exclusiveMs += entry.endMs - entry.startMs - childMs;
+  }
+  return result;
+}
 const phase = process.env.SHEET_URL_MEASURE_PHASE;
+const observeRouteCommits = process.env.SHEET_URL_OBSERVE_ROUTE_COMMITS === "1";
 const repetitions = 20;
 const options = { interval: 1, timeout: 10000 };
 function sample(
@@ -54,6 +98,12 @@ function sample(
   start: number,
   detail: object = {},
 ) {
+  // Refuse timings from the ordinary, uninstrumented Vitest config.
+  if (process.env.SHEET_URL_REQUIRE_STAGES === "1" && !key.startsWith("retry"))
+    expect(
+      stages.length,
+      "Use vitest.sheet-url-measurement.config.ts",
+    ).toBeGreaterThan(0);
   console.log(
     "SHEET_URL_SAMPLE " +
       JSON.stringify({
@@ -63,6 +113,8 @@ function sample(
         mode,
         iteration,
         durationMs: performance.now() - start,
+        stages: stageSummary(),
+        stageSpans: stages,
         ...detail,
       }),
   );
@@ -84,6 +136,8 @@ describe.skipIf(!phase)(
             const csv = sheetCsv(count, kind, format);
             for (let iteration = 0; iteration < repetitions; iteration++) {
               fresh();
+              beginStages();
+              const routeCounter = observeRouteCommits ? commits(true) : null;
               const start = performance.now();
               try {
                 const parsed = readEventCsv(csv);
@@ -108,6 +162,7 @@ describe.skipIf(!phase)(
                     parseMs: parsedAt - start,
                     accepted: items.length,
                     status: "ok",
+                    ...(routeCounter?.result ?? {}),
                   },
                 );
               } catch (error) {
@@ -120,9 +175,12 @@ describe.skipIf(!phase)(
                   {
                     status: "failed",
                     error: (error as Error).message.slice(0, 100),
+                    ...(routeCounter?.result ?? {}),
                   },
                 );
                 if (phase === "after") throw error;
+              } finally {
+                routeCounter?.stop();
               }
             }
           });
@@ -142,6 +200,8 @@ describe.skipIf(!phase)(
                 await seed(original);
                 const commands = port(mode);
                 const read = await commands.readApplicationSnapshot();
+                beginStages();
+                const routeCounter = observeRouteCommits ? commits(true) : null;
                 const start = performance.now();
                 try {
                   const diff = await buildEventUpdateDiffFromSpreadsheet(
@@ -193,6 +253,7 @@ describe.skipIf(!phase)(
                       reviewMs,
                       saveMs: performance.now() - confirmedAt,
                       status: "ok",
+                      ...(routeCounter?.result ?? {}),
                     },
                   );
                 } catch (error) {
@@ -205,9 +266,12 @@ describe.skipIf(!phase)(
                     {
                       status: "failed",
                       error: (error as Error).message.slice(0, 100),
+                      ...(routeCounter?.result ?? {}),
                     },
                   );
                   if (phase === "after") throw error;
+                } finally {
+                  routeCounter?.stop();
                 }
               }
             });
@@ -255,14 +319,27 @@ describe.skipIf(!phase)(
                 pre.unmount();
               }
               const commands = port(mode);
-              const observed = vi.fn();
+              let hydrationAt: number | null = null;
+              const observed = vi.fn((_read: ApplicationSnapshotRead) => {
+                hydrationAt = performance.now();
+              });
               const targetSetters = setters();
               const counter = commits();
-              const snapshotRead = vi.spyOn(
-                commands,
-                "readApplicationSnapshot",
-              );
+              const readSpans: Array<{ startMs: number; endMs: number }> = [];
+              const readSnapshot =
+                commands.readApplicationSnapshot.bind(commands);
+              const snapshotRead = vi
+                .spyOn(commands, "readApplicationSnapshot")
+                .mockImplementation(async (...args) => {
+                  const startMs = performance.now();
+                  try {
+                    return await readSnapshot(...args);
+                  } finally {
+                    readSpans.push({ startMs, endMs: performance.now() });
+                  }
+                });
               if (state === "B06") counter.failNext();
+              beginStages();
               const start = performance.now();
               const h = renderHook(() =>
                 useIndexedDbPersistence({
@@ -300,6 +377,30 @@ describe.skipIf(!phase)(
                 status,
                 failureMs,
                 readCalls: snapshotRead.mock.calls.length,
+                initialReadMs: readSpans[0].endMs - readSpans[0].startMs,
+                rereadMs: readSpans
+                  .slice(1)
+                  .reduce((sum, span) => sum + span.endMs - span.startMs, 0),
+                readSpans,
+                hookScreenApplyMs:
+                  hydrationAt === null ? null : performance.now() - hydrationAt,
+                preparationAttemptMs: counter.result.transactions
+                  .filter((tx) =>
+                    readSpans.some(
+                      (read) =>
+                        tx.startMs >= read.startMs && tx.endMs <= read.endMs,
+                    ),
+                  )
+                  .reduce((sum, tx) => sum + tx.endMs - tx.startMs, 0),
+                compatibilityAttemptMs: counter.result.transactions
+                  .filter(
+                    (tx) =>
+                      !readSpans.some(
+                        (read) =>
+                          tx.startMs >= read.startMs && tx.endMs <= read.endMs,
+                      ),
+                  )
+                  .reduce((sum, tx) => sum + tx.endMs - tx.startMs, 0),
                 ...counter.result,
               });
               counter.stop();
@@ -311,7 +412,7 @@ describe.skipIf(!phase)(
                   observed.mock.calls[0][0].snapshot.eventLists[
                     SHEET_EVENT
                   ].every(
-                    (item: object) =>
+                    (item: unknown) =>
                       !Object.prototype.hasOwnProperty.call(item, "url"),
                   ),
                 ).toBe(true);
@@ -357,7 +458,10 @@ describe.skipIf(!phase)(
                 `restore-${count}-${mode}-blank=${blankUrl}.xlsx`,
               );
               if (format === "xlsx") {
-                if (phase === "before") {
+                if (
+                  phase === "before" &&
+                  process.env.SHEET_URL_REUSE_FIXED_INPUTS !== "1"
+                ) {
                   bytes =
                     typeof file!.arrayBuffer === "function"
                       ? await file!.arrayBuffer()
@@ -388,33 +492,60 @@ describe.skipIf(!phase)(
                 fresh();
                 const commands = port(mode);
                 const initial = await commands.readApplicationSnapshot();
+                const inputFile = new File(
+                  [bytes ?? json],
+                  `restore.${format}`,
+                );
+                beginStages();
+                const routeCounter = observeRouteCommits ? commits(true) : null;
                 const start = performance.now();
-                const restored =
-                  format === "json"
-                    ? parseAppBackup(json)
-                    : buildXlsxEventRestoreSource(
-                        toImportedEventData(
-                          await importFromXlsx(
-                            new File([], "restore.xlsx"),
-                            bytes!,
+                try {
+                  const loaded = await new Promise<string | ArrayBuffer>(
+                    (resolve, reject) => {
+                      const reader = new FileReader();
+                      reader.onload = () =>
+                        resolve(reader.result as string | ArrayBuffer);
+                      reader.onerror = () => reject(reader.error);
+                      if (format === "json") reader.readAsText(inputFile);
+                      else reader.readAsArrayBuffer(inputFile);
+                    },
+                  );
+                  const fileReadMs = performance.now() - start;
+                  const restored =
+                    format === "json"
+                      ? parseAppBackup(loaded)
+                      : buildXlsxEventRestoreSource(
+                          toImportedEventData(
+                            await importFromXlsx(
+                              inputFile,
+                              loaded as ArrayBuffer,
+                            ),
                           ),
-                        ),
-                      );
-                if ("ok" in restored) expect(restored.ok).toBe(true);
-                if (!restored.data) throw new Error("Restore failed");
-                const parseMs = performance.now() - start;
-                await commands.commitApplicationSnapshotAtomically(
-                  restored.data,
-                  { expectedRoots: initial.expectedRoots },
-                );
-                sample(
-                  `restore-${format}-blank=${blankUrl}`,
-                  count,
-                  mode,
-                  iteration,
-                  start,
-                  { parseMs, status: "ok" },
-                );
+                        );
+                  if ("ok" in restored) expect(restored.ok).toBe(true);
+                  if (!restored.data) throw new Error("Restore failed");
+                  const parseMs = performance.now() - start;
+                  await commands.commitApplicationSnapshotAtomically(
+                    restored.data,
+                    { expectedRoots: initial.expectedRoots },
+                  );
+                  sample(
+                    `restore-${format}-blank=${blankUrl}`,
+                    count,
+                    mode,
+                    iteration,
+                    start,
+                    {
+                      fileReadMs,
+                      parseMs: parseMs - fileReadMs,
+                      saveMs: performance.now() - start - parseMs,
+                      status: "ok",
+                      ...(routeCounter?.result ?? {}),
+                    },
+                  );
+                } finally {
+                  routeCounter?.stop();
+                }
               }
             });
           }
@@ -495,39 +626,47 @@ describe.skipIf(!phase)(
                     baseline: sheetItem(0),
                   }),
                 );
+              beginStages();
+              const routeCounter = observeRouteCommits ? commits(true) : null;
               const start = performance.now();
-              act(() => h.result.current.application.retryPending());
-              await waitFor(
-                () =>
-                  expect(
-                    h.result.current.application.pendingCount === 0 ||
-                      h.result.current.application.confirmations.length > 0,
-                  ).toBe(true),
-                options,
-              );
-              const replanMs = performance.now() - start;
-              if (h.result.current.application.confirmations.length)
-                act(() =>
-                  h.result.current.application.confirm(
-                    h.result.current.application.confirmations[0].token,
-                  ),
+              try {
+                act(() => h.result.current.application.retryPending());
+                await waitFor(
+                  () =>
+                    expect(
+                      h.result.current.application.pendingCount === 0 ||
+                        h.result.current.application.confirmations.length > 0,
+                    ).toBe(true),
+                  options,
                 );
-              await waitFor(
-                () => expect(h.result.current.application.pendingCount).toBe(0),
-                options,
-              );
-              sample(
-                `retry-following=${following}`,
-                count,
-                mode,
-                iteration,
-                start,
-                {
-                  status: "ok",
-                  replanMs,
-                  saveMs: performance.now() - start - replanMs,
-                },
-              );
+                const replanMs = performance.now() - start;
+                if (h.result.current.application.confirmations.length)
+                  act(() =>
+                    h.result.current.application.confirm(
+                      h.result.current.application.confirmations[0].token,
+                    ),
+                  );
+                await waitFor(
+                  () =>
+                    expect(h.result.current.application.pendingCount).toBe(0),
+                  options,
+                );
+                sample(
+                  `retry-following=${following}`,
+                  count,
+                  mode,
+                  iteration,
+                  start,
+                  {
+                    status: "ok",
+                    ...(routeCounter?.result ?? {}),
+                    replanMs,
+                    saveMs: performance.now() - start - replanMs,
+                  },
+                );
+              } finally {
+                routeCounter?.stop();
+              }
               fail.mockRestore();
               h.unmount();
             }

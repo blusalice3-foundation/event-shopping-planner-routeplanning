@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "preparedAt": "2026-10-17T14:50:42.1434200+09:00",
+  "executed": false,
+  "mainHarness": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\tests\\browser\\sheet-import-optional-url.measurement.spec.ts",
+  "mainHarnessSha256": "65b44f4b18fb4deefc80592a24856e4252ced0adf511873e71be405c9a2c05c0",
+  "archiveSha256": "65b44f4b18fb4deefc80592a24856e4252ced0adf511873e71be405c9a2c05c0",
+  "mainHarnessModified": false,
+  "diagnosticOnly": true,
+  "primaryEvidenceReplacement": false,
+  "phaseOrder": [
+    "after",
+    "before"
+  ],
+  "cases": [
+    "retry: 150 direct",
+    "startup-B06: 150 direct",
+    "update: 500 worker"
+  ],
+  "samplesPerCasePerPhase": 20,
+  "workers": 1,
+  "productionBuilds": "Existing compiled BEFORE/AFTER build-provenance identities are required by runner",
+  "extraDomScan": false,
+  "extraObserver": false,
+  "clocksRemainSeparate": true,
+  "exactReplacementOperations": 34,
+  "frozenFiles": [
+    {
+      "path": "main-harness.spec.ts.archive",
+      "bytes": 33639,
+      "sha256": "65b44f4b18fb4deefc80592a24856e4252ced0adf511873e71be405c9a2c05c0"
+    },
+    {
+      "path": "sheet-import-optional-url.diagnostic.spec.ts",
+      "bytes": 41457,
+      "sha256": "bd6b66b999fe13587929d6414b500335117d8df4dfdac4ec36189003e882e68d"
+    },
+    {
+      "path": "playwright.diagnostic.config.ts",
+      "bytes": 450,
+      "sha256": "444995bcd9e2e342c647c4b71f0b19ab7a468b37e8c83fea3c5a4f781b7cfabe"
+    },
+    {
+      "path": "run-diagnostic.ps1",
+      "bytes": 7180,
+      "sha256": "c7244c6fcf78f751a02e8a94d5307e93fc12a32cda7a8ea4fa550a58b53575ac"
+    },
+    {
+      "path": "exact-replacements.json",
+      "bytes": 16247,
+      "sha256": "f391118d218c55c74083b87c7b386e070d23be70613e1990974bc0071717c0ae"
+    },
+    {
+      "path": "README.txt",
+      "bytes": 3234,
+      "sha256": "c3eaf19560f4f3edee9d8776dd97dc2f557a125980e62f6bc4379353239fe989"
+    },
+    {
+      "path": "../../../../playwright.config.ts",
+      "bytes": 1279,
+      "sha256": "7e04b0fdb3ab7d32e44a26a21c374e24eef551350d69683d848d3a07805e08a9"
+    },
+    {
+      "path": "../../../../src/utils/csvRecords.ts",
+      "bytes": 2510,
+      "sha256": "ef6ddd07ef9ba66268ffed06e46e402736dfc46b0210aaabcbf61294e1d8c538"
+    },
+    {
+      "path": "../../../../src/test/sheetImportOptionalUrlFixtures.ts",
+      "bytes": 2609,
+      "sha256": "4f58203ec065b511ec60216f8d103cd7db72522a7e600e1325361f5ce0a841f2"
+    },
+    {
+      "path": "../../../../src/persistence/internal/persistenceCore.ts",
+      "bytes": 40220,
+      "sha256": "9898197833bf01adc0022131184148aa1d8efe594bd2eefd875846ee1c776ace"
+    },
+    {
+      "path": "../../../../src/utils/persistenceResilience.ts",
+      "bytes": 41765,
+      "sha256": "e140544fa6973b4de4717bbc02d1b4faa107f782eff1f1af2636549a62ae8830"
+    },
+    {
+      "path": "../../../../src/persistence/db/scopedDayStorage.ts",
+      "bytes": 17061,
+      "sha256": "5faf4c44b9ac1d2dc8bef00b2c84c57f7d8e4e04069c4377396ce056ac842bcd"
+    },
+    {
+      "path": "../../../../src/persistence/db/dayRecordStorage.ts",
+      "bytes": 15293,
+      "sha256": "b41f2eac3b10fcd9336a5acf661281aee6e4aae414b8b47100d1f8b5e542b6cf"
+    }
+  ]
+}

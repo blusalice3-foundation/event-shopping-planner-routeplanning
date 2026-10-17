@@ -68,6 +68,41 @@ export function eventUpdateSourceMatches(
   );
 }
 
+/** Review snapshots preserve own undefined values, unlike JSON serialization. */
+function eventUpdateValueMatches(current: unknown, base: unknown): boolean {
+  if (current === base) return true;
+  if (
+    current === null ||
+    base === null ||
+    typeof current !== "object" ||
+    typeof base !== "object"
+  )
+    return false;
+  const currentIsArray = Array.isArray(current);
+  if (currentIsArray !== Array.isArray(base)) return false;
+  if (currentIsArray && current.length !== (base as unknown[]).length)
+    return false;
+  if (!currentIsArray) {
+    // Persisted future fields are plain JSON records; do not equate opaque objects.
+    for (const value of [current, base]) {
+      const prototype = Object.getPrototypeOf(value);
+      if (prototype !== Object.prototype && prototype !== null) return false;
+    }
+  }
+  const keys = Object.keys(current);
+  return (
+    keys.length === Object.keys(base).length &&
+    keys.every(
+      (key) =>
+        Object.prototype.hasOwnProperty.call(base, key) &&
+        eventUpdateValueMatches(
+          (current as Record<string, unknown>)[key],
+          (base as Record<string, unknown>)[key],
+        ),
+    )
+  );
+}
+
 /** Projections may allocate new arrays and items without changing their values. */
 export function eventUpdateItemsMatch(
   current: ShoppingItem[] | undefined,
@@ -83,7 +118,20 @@ export function eventUpdateItemsMatch(
         ...Object.keys(item),
         ...Object.keys(previous),
       ]) as Set<keyof ShoppingItem>;
-      return [...fields].every((field) => item[field] === previous[field]);
+      return [...fields].every((field) => {
+        const value = item[field];
+        const previousValue = previous[field];
+        // Unknown persisted fields may contain JSON objects cloned for review.
+        // Keep scalar comparisons strict and only walk distinct object values.
+        return (
+          value === previousValue ||
+          (value !== null &&
+            previousValue !== null &&
+            typeof value === "object" &&
+            typeof previousValue === "object" &&
+            eventUpdateValueMatches(value, previousValue))
+        );
+      });
     })
   );
 }

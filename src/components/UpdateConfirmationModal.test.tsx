@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createEventUpdateDiff,
   type AppFieldSyncCandidate,
+  type PendingPurchasedQuantityChange,
   type SheetItem,
 } from "../features/events/updateDiff";
 import type { ShoppingItem } from "../types/item";
@@ -104,6 +105,102 @@ describe("UpdateConfirmationModal quantity confirmation", () => {
       priceSyncMode: "preserve",
       remarksSyncMode: "preserve",
     });
+  });
+
+  it.each<[string, Partial<PendingPurchasedQuantityChange>]>([
+    ["対象ID", { itemId: "item-2" }],
+    ["現在の予定数量", { currentQuantity: 3 }],
+    ["変更後の予定数量", { nextQuantity: 5 }],
+    ["購入状態", { purchaseStatus: "Purchased" }],
+    ["表示する品目内容", { title: "別の新刊" }],
+  ])("%sが同件数のまま変わると数量変更の再確認を求める", (_, changes) => {
+    const pending: PendingPurchasedQuantityChange = {
+      itemId: "item-1",
+      circle: "ユーザー登録",
+      eventDate: "1日目",
+      block: "東A",
+      number: "01a",
+      title: "新刊",
+      purchaseStatus: "LimitedPurchase",
+      currentQuantity: 2,
+      nextQuantity: 4,
+    };
+    const onConfirm = vi.fn();
+    const { rerender } = render(
+      <UpdateConfirmationModal
+        {...commonProps}
+        pendingPurchasedQuantityChanges={[pending]}
+        onConfirm={onConfirm}
+      />,
+    );
+    const checkbox = () =>
+      screen.getByRole("checkbox", {
+        name: /スプレッドシートの予定数量へ変更する/,
+      });
+    fireEvent.click(checkbox());
+    expect(checkbox()).toBeChecked();
+
+    rerender(
+      <UpdateConfirmationModal
+        {...commonProps}
+        pendingPurchasedQuantityChanges={[{ ...pending, ...changes }]}
+        onConfirm={onConfirm}
+      />,
+    );
+    expect(checkbox()).not.toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
+    expect(onConfirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({ applyPurchasedQuantityChanges: false }),
+    );
+
+    fireEvent.click(checkbox());
+    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
+    expect(onConfirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({ applyPurchasedQuantityChanges: true }),
+    );
+  });
+
+  it("同じ確認内容の配列を作り直しても数量変更の確認を保持する", () => {
+    const pending: PendingPurchasedQuantityChange = {
+      itemId: "item-1",
+      circle: "ユーザー登録",
+      eventDate: "1日目",
+      block: "東A",
+      number: "01a",
+      title: "新刊",
+      purchaseStatus: "Purchased",
+      currentQuantity: 2,
+      nextQuantity: 4,
+    };
+    const onConfirm = vi.fn();
+    const { rerender } = render(
+      <UpdateConfirmationModal
+        {...commonProps}
+        pendingPurchasedQuantityChanges={[pending]}
+        onConfirm={onConfirm}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: /スプレッドシートの予定数量へ変更する/,
+      }),
+    );
+    rerender(
+      <UpdateConfirmationModal
+        {...commonProps}
+        pendingPurchasedQuantityChanges={[{ ...pending }]}
+        onConfirm={onConfirm}
+      />,
+    );
+    expect(
+      screen.getByRole("checkbox", {
+        name: /スプレッドシートの予定数量へ変更する/,
+      }),
+    ).toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
+    expect(onConfirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({ applyPurchasedQuantityChanges: true }),
+    );
   });
 
   it("限数の実購入数以下になる予定数量を反映しない理由を表示する", () => {
@@ -450,6 +547,86 @@ describe("UpdateConfirmationModal identity details", () => {
     fireEvent.click(confirm);
     expect(onConfirm).toHaveBeenCalledWith(
       expect.objectContaining({ identityChoices: { "0": "1", "1": "2" } }),
+    );
+  });
+
+  it("対応先をAからBへ変えて戻しても購入済み数量変更の確認を引き継がない", () => {
+    const current: ShoppingItem[] = ["A", "B"].map((id) => ({
+      id,
+      circle: "ユーザー登録",
+      eventDate: "1日目",
+      block: "A",
+      number: "01a",
+      title: `旧品目${id}`,
+      price: 900,
+      quantity: 2,
+      purchaseStatus: "Purchased",
+      remarks: `${id}の購入記録`,
+      source: "spreadsheet",
+    }));
+    const rows: SheetItem[] = [
+      {
+        ...current[0],
+        title: "新しい品目",
+        rawQuantity: "4",
+      },
+    ];
+    const onConfirm = vi.fn();
+    render(
+      <UpdateConfirmationModal
+        {...commonProps}
+        {...createEventUpdateDiff(current, rows)}
+        onConfirm={onConfirm}
+      />,
+    );
+    const correspondence = screen.getByRole("combobox", {
+      name: "取込1行目の対応",
+    });
+    const confirm = screen.getByRole("button", { name: "更新を実行" });
+    const checkbox = () =>
+      screen.getByRole("checkbox", {
+        name: /スプレッドシートの予定数量へ変更する/,
+      });
+
+    fireEvent.change(correspondence, { target: { value: "A" } });
+    fireEvent.click(checkbox());
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        applyPurchasedQuantityChanges: true,
+        identityChoices: { "0": "A" },
+      }),
+    );
+
+    fireEvent.change(correspondence, { target: { value: "B" } });
+    expect(
+      screen.getByText("購入済み品目の予定数量変更: 1件"),
+    ).toBeInTheDocument();
+    expect(checkbox()).not.toBeChecked();
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        applyPurchasedQuantityChanges: false,
+        identityChoices: { "0": "B" },
+      }),
+    );
+
+    fireEvent.change(correspondence, { target: { value: "A" } });
+    expect(checkbox()).not.toBeChecked();
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        applyPurchasedQuantityChanges: false,
+        identityChoices: { "0": "A" },
+      }),
+    );
+    fireEvent.click(checkbox());
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        applyPurchasedQuantityChanges: true,
+        identityChoices: { "0": "A" },
+      }),
     );
   });
 

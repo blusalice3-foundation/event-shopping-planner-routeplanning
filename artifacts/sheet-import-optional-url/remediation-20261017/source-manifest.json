@@ -1,0 +1,82 @@
+[
+  {
+    "path": "docs/sheet-import-and-optional-url-implementation-results.md",
+    "sha256": "6B4EC0E775D8CDAAB4B1AFBEA9B2F1333F6DC5278FDBFF633BFC8B2DBC7A5E56"
+  },
+  {
+    "path": "scripts/sheet-url-stage-probe.mjs",
+    "sha256": "3EE09CC28B0A0C2C232E4AF6848A86E0F4055A9569D4829563EFCB56346F76C8"
+  },
+  {
+    "path": "scripts/sheet-url-stage-probe.test.mjs",
+    "sha256": "E7AF219F040128216511026B8FF72C8FA0FD2C352C6724BA896686A7E6AE50FD"
+  },
+  {
+    "path": "src/app/commands/useEventUpdateCommands.modal.integration.test.tsx",
+    "sha256": "4DB13ED29771022A3ED203D48D9CC41BE81EFD531028E497A5BEE3DFC2787363"
+  },
+  {
+    "path": "src/app/commands/useEventUpdateCommands.test.tsx",
+    "sha256": "D04C00B8400E5E29F0A23979326417405C70B0E837F0DDAF6CBAE22EB0BDF238"
+  },
+  {
+    "path": "src/app/commands/useShoppingItemMutationCommands.test.tsx",
+    "sha256": "0E88193B2EA095E3CCEBBFFFA905E46A25047549CCE13F7B7A44952F7E96487D"
+  },
+  {
+    "path": "src/app/commands/useShoppingItemMutationCommands.ts",
+    "sha256": "370904E6CEADDC108A8A19CCB36514C831065B097B0C139056D1DAB057E469B6"
+  },
+  {
+    "path": "src/components/ImportScreen.sheetImport.integration.test.tsx",
+    "sha256": "0BAFB8E0E077CD2D86E56F192B656103439DFD89B0376962E23D4699BFD00FCA"
+  },
+  {
+    "path": "src/components/ImportScreen.tsx",
+    "sha256": "29ABCD9AE3EC3303E68E214B13D33E9AF3B3F040AE1A7F8E9FF1F5DE5BE205DB"
+  },
+  {
+    "path": "src/components/UpdateConfirmationModal.test.tsx",
+    "sha256": "2B61CBC3FC98D0C6730087DF12EC4B2274B81E6143E3C2FCC04F3336C4CB33BB"
+  },
+  {
+    "path": "src/components/UpdateConfirmationModal.tsx",
+    "sha256": "DC09432478B060C72ECB3DBDC9E425C495C0D9F8A6F0CDF22C812CBB3DD76C1B"
+  },
+  {
+    "path": "src/features/events/updateFlow.test.ts",
+    "sha256": "2DB7010CB0018652F72EDC7D6856C96188E405BC884C3BCCF2A5C1A9CD92822E"
+  },
+  {
+    "path": "src/features/events/updateFlow.ts",
+    "sha256": "F3B9B251D3AA8C3656FA65DE0CB195DBA7DA6689228CC62455F54D3D10A9E18C"
+  },
+  {
+    "path": "src/test/sheetImportOptionalUrl.measurement.integration.test.tsx",
+    "sha256": "9CF86FBB5D3727399BC79BC4973AD246F110EA3FEB4453EC51E239754BEE3593"
+  },
+  {
+    "path": "src/test/sheetImportOptionalUrlPersistence.ts",
+    "sha256": "F913A398C68F2972ED9712DEF94C7D30B5C74DB102499BB915D815834C02893B"
+  },
+  {
+    "path": "src/types/import.ts",
+    "sha256": "B48002A1929BDF619C6F749CBE56B72A5B96E9F187142A0445ABD28C676C2A46"
+  },
+  {
+    "path": "src/utils/itemOptionalFields.test.ts",
+    "sha256": "9284F439A40C1F68DB27D9A4370F12A52B00116832D87A1B9B667A57ED40199C"
+  },
+  {
+    "path": "src/utils/itemOptionalFields.ts",
+    "sha256": "272A6C1FDE53EB252D7F447333DF055ACC0F96C77F34029223A32B956DB8FB67"
+  },
+  {
+    "path": "tests/browser/sheet-import-optional-url.measurement.spec.ts",
+    "sha256": "98604C7D9BA894D484E69D847FE95C9B22D45B1E667D9E8A18DA53066B7191AC"
+  },
+  {
+    "path": "vitest.sheet-url-measurement.config.ts",
+    "sha256": "15A5D5E9F50D36036B5AED32B09D56DFFA5EED6627033FE63326BF5AD65D6F1D"
+  }
+]

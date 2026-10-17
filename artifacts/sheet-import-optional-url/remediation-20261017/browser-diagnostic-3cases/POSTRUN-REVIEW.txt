@@ -1,0 +1,41 @@
+Independent post-run review (no additional browser run)
+
+The six recorded diagnostic raw files contain 120 samples: three selected cases,
+two phases, 20 samples per case/phase. Their SHA256 values were rechecked against
+the diagnostic-summary-1 input manifest. Runtime errors are zero. An independent
+calculation reproduces the primary outer, Node action, browser DOM/CSV and physical
+atomic-write quantiles checked against diagnostic-summary-1.
+
+The missing update.request click marker is a diagnostic selector mismatch.
+src/components/EventListScreen.tsx places the icon and title in adjacent spans
+(lines 256-257). Their textContent concatenates to "🔄アイテム更新" without a space.
+The frozen diagnostic listener compares "🔄 アイテム更新" with a space, while the
+accessible name used by Playwright separates the two text tokens. Both phases
+therefore have zero captured matching click events, not zero click latency.
+The missing browser click-to-request/review values must remain null. This does
+not invalidate the observed Node action span, CSV events, review DOM or save click.
+
+An extra browser-only observation is available without another measurement:
+fetch-call epoch minus the update.request.click pre-evaluate browser epoch.
+Its median is 39.8999 -> 40.2001 ms; nearest-rank p95 is 389.9001 -> 41.3999 ms
+(before -> after, n=20/20, p95 delta -348.5002 ms). The independently recalculated
+Node request-action p95 delta is -348.2035 ms and CSV-text-to-review-DOM p95 delta
+is -0.7002 ms. This places the changing tail within the observation bound before
+CSV request dispatch, rather than within the measured CSV-text-to-DOM interval.
+This upper bound includes transport, Node/browser scheduling, input/action waiting
+and pre-fetch handler work. It is not an exact click timestamp or proof of one
+specific actionability cause. Node and browser clock values are never subtracted.
+
+The new figures and per-sample boundary records are in:
+diagnostic-boundary-supplement-1/independent-recalculation.json
+and diagnostic-boundary-supplement-1/update-browser-boundaries.csv.
+The original diagnostic-summary-1, raw samples, frozen harness, README and frozen
+manifest remain untouched. The executable independent calculation is preserved as
+make-boundary-supplement.ps1; it refuses to overwrite the supplement directory.
+
+No newly inconsistent behavior or necessary additional measurement was identified
+in this review. This does not erase unfavourable original samples, replace the
+48-case primary measurements, turn diagnostic wall time into application-only
+cost, or prove the absence of every possible performance regression. The existing
+limits on independent quantiles, failed-attempt aborts, post-save validation reads
+and one-shot rAF observations continue to apply.

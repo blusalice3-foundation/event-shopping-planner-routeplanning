@@ -10,7 +10,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import ImportScreen from "./ImportScreen";
 import { sheetCsv } from "../test/sheetImportOptionalUrlFixtures";
 const url = "https://docs.google.com/spreadsheets/d/test/edit";
-function setup(csv: string, status: "saved" | "cancelled" = "saved") {
+function setup(
+  csv: string,
+  status: "saved" | "cancelled" = "saved",
+  importedItemCount?: number,
+) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => ({ ok: true, text: async () => csv })),
@@ -18,7 +22,10 @@ function setup(csv: string, status: "saved" | "cancelled" = "saved") {
   vi.spyOn(window, "alert").mockImplementation(() => {});
   vi.spyOn(window, "confirm").mockReturnValue(true);
   const add = vi.fn<ComponentProps<typeof ImportScreen>["onBulkAdd"]>(
-    async () => ({ status }),
+    async (_name, items) => ({
+      status,
+      importedItemCount: importedItemCount ?? items.length,
+    }),
   );
   render(
     <ImportScreen
@@ -146,3 +153,33 @@ it("clears an earlier diagnostic when the input changes", async () => {
     screen.queryByRole("region", { name: "シート取込結果" }),
   ).not.toBeInTheDocument();
 });
+
+it.each(["url", "file"] as const)(
+  "uses the actual committed count for %s import notifications and the result summary",
+  async (path) => {
+    const [header, excluded, accepted] = sheetCsv(2, "mixed").split("\n");
+    const csv = [header, accepted, accepted, excluded].join("\n");
+    const add = setup(csv, "saved", 1);
+    if (path === "url") {
+      fireEvent.click(
+        screen.getByRole("button", { name: "URLからインポート" }),
+      );
+    } else {
+      const file = new File([csv], "import.csv", { type: "text/csv" });
+      Object.defineProperty(file, "text", { value: async () => csv });
+      fireEvent.change(screen.getByLabelText("CSVファイルからインポート"), {
+        target: { files: [file] },
+      });
+    }
+    await waitFor(() => expect(add).toHaveBeenCalledOnce());
+    expect(add.mock.calls[0][1]).toHaveLength(2);
+    await waitFor(() =>
+      expect(window.alert).toHaveBeenCalledWith(
+        "1件を取り込み、必須項目不足の1行を除外しました。",
+      ),
+    );
+    expect(
+      screen.getByRole("region", { name: "シート取込結果" }),
+    ).toHaveTextContent("取込対象: 1件、必須項目不足による除外: 1行");
+  },
+);

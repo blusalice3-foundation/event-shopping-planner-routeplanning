@@ -1,0 +1,13 @@
+{
+  "CopiedAt": "2026-10-17T15:10:34.7170881+09:00",
+  "Path": "docs/sheet-import-and-optional-url-remediation-results.md",
+  "BeforeSHA256": "2AB8C1AE45E55770C7FA8DB0D0802ED9B25DAAF2A28C14F7C4D2487A0047C1C4",
+  "AfterSHA256": "EACE4F66D9AD97AC337A793D9DA00F9528F83CC731DFCDCA8038ABB5352D00CE",
+  "OriginalAndArchiveMatch": true,
+  "UTF8Strict": true,
+  "BOM": false,
+  "CRLF": 0,
+  "Replacement": 0,
+  "RepresentativeJapaneseVerified": true,
+  "UnitCorrection": "unit-metadata-correction-verification.json"
+}

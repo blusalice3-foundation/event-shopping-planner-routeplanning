@@ -1,0 +1,172 @@
+[
+  {
+    "old": "../../src/",
+    "new": "../../../../src/",
+    "occurrences": 6
+  },
+  {
+    "old": "type BrowserContext }",
+    "new": "type BrowserContext, type Locator }",
+    "occurrences": 1
+  },
+  {
+    "old": "if (!Number.isSafeInteger(repeats) || repeats < 1)",
+    "new": "if (!Number.isSafeInteger(repeats) || repeats !== 20)",
+    "occurrences": 1
+  },
+  {
+    "old": "SHEET_URL_BROWSER_REPEATS must be a positive integer",
+    "new": "Diagnostic runs require exactly 20 samples per case",
+    "occurrences": 1
+  },
+  {
+    "old": "  abortNextAtomic: boolean;",
+    "new": "  abortNextAtomic: boolean;\n  diagnosticEvents: Array<Record<string, unknown>>;\n  diagnosticTimeOrigin: number;",
+    "occurrences": 1
+  },
+  {
+    "old": "    document?: Document;",
+    "new": "    document?: Document;\n    __sheetUrlDiagnosticTargets?: Array<{ label: string; element: Element; removed: boolean }>;",
+    "occurrences": 1
+  },
+  {
+    "old": "    abortNextAtomic: config.abortFirstAtomic,",
+    "new": "    abortNextAtomic: config.abortFirstAtomic,\n    diagnosticEvents: [],\n    diagnosticTimeOrigin: performance.timeOrigin,",
+    "occurrences": 1
+  },
+  {
+    "old": "  const originalText = Response.prototype.text;",
+    "new": "  const originalFetch = globalThis.fetch;\n  globalThis.fetch = function (...args) {\n    const input = args[0];\n    const url = typeof input === \"string\" ? input : input instanceof URL ? input.href : input.url;\n    if (!url.includes(\"/api/google-sheets-csv\")) return originalFetch.apply(this, args);\n    probe.diagnosticEvents.push({ kind: \"csv-request\", label: \"fetch-call\", at: now() });\n    return originalFetch.apply(this, args).then((response) => {\n      probe.diagnosticEvents.push({ kind: \"csv-request\", label: \"response-headers\", at: now(), status: response.status });\n      return response;\n    });\n  };\n  const originalText = Response.prototype.text;",
+    "occurrences": 1
+  },
+  {
+    "old": "    const text = await originalText.apply(this, args);\n    if (this.url.includes(\"/api/google-sheets-csv\"))\n      probe.marks.csvTextReadyAt = now();\n    return text;",
+    "new": "    const isCsv = this.url.includes(\"/api/google-sheets-csv\");\n    if (isCsv) probe.diagnosticEvents.push({ kind: \"csv-response-text\", label: \"start\", at: now() });\n    const text = await originalText.apply(this, args);\n    if (isCsv) {\n      const at = now();\n      probe.marks.csvTextReadyAt = at;\n      probe.diagnosticEvents.push({ kind: \"csv-response-text\", label: \"complete\", at });\n    }\n    return text;",
+    "occurrences": 1
+  },
+  {
+    "old": "  const observeScreen = () => {",
+    "new": "  const observeScreen = () => {\n    // Only the explicitly watched retained alert/editor/retry button references.\n    // No additional document scan or observer is introduced for diagnostics.\n    for (const target of state.__sheetUrlDiagnosticTargets ?? []) {\n      if (target.removed || target.element.isConnected) continue;\n      target.removed = true;\n      probe.diagnosticEvents.push({ kind: \"dom\", label: `${target.label}:removed`, at: now() });\n      requestAnimationFrame(() => probe.diagnosticEvents.push({ kind: \"raf\", label: `${target.label}:removed:next-frame`, at: now() }));\n    }",
+    "occurrences": 1
+  },
+  {
+    "old": "      probe.marks.reviewDomAt = now();",
+    "new": "      probe.marks.reviewDomAt = now();\n      probe.diagnosticEvents.push({ kind: \"dom\", label: \"review-visible\", at: probe.marks.reviewDomAt });",
+    "occurrences": 1
+  },
+  {
+    "old": "        probe.marks.reviewFrameAt = now();",
+    "new": "        probe.marks.reviewFrameAt = now();\n        probe.diagnosticEvents.push({ kind: \"raf\", label: \"review-visible:next-frame\", at: probe.marks.reviewFrameAt });",
+    "occurrences": 1
+  },
+  {
+    "old": "      probe.marks.screenDomAt = now();",
+    "new": "      probe.marks.screenDomAt = now();\n      probe.diagnosticEvents.push({ kind: \"dom\", label: \"review-hidden\", at: probe.marks.screenDomAt });",
+    "occurrences": 1
+  },
+  {
+    "old": "        probe.marks.screenFrameAt = now();",
+    "new": "        probe.marks.screenFrameAt = now();\n        probe.diagnosticEvents.push({ kind: \"raf\", label: \"review-hidden:next-frame\", at: probe.marks.screenFrameAt });",
+    "occurrences": 1
+  },
+  {
+    "old": "      probe.marks.startupScreenDomAt = now();",
+    "new": "      {\n        probe.marks.startupScreenDomAt = now();\n        probe.diagnosticEvents.push({ kind: \"dom\", label: \"startup-event-visible\", at: probe.marks.startupScreenDomAt });\n        requestAnimationFrame(() => probe.diagnosticEvents.push({ kind: \"raf\", label: \"startup-event-visible:next-frame\", at: now() }));\n      }",
+    "occurrences": 1
+  },
+  {
+    "old": "      const button = (event.target as Element).closest?.(\"button\");",
+    "new": "      const button = (event.target as Element).closest?.(\"button\");\n      const diagnosticLabel = button?.textContent?.trim() ?? \"\";\n      if ([\"🔄 アイテム更新\", \"更新を実行\", \"更新元を切り替えて更新\", \"保留中の保存を再試行\", \"読み込みを再試行\", \"保存\"].includes(diagnosticLabel)) {\n        probe.diagnosticEvents.push({ kind: \"click\", label: diagnosticLabel, at: now(), eventTimeStamp: event.timeStamp, trusted: event.isTrusted });\n        requestAnimationFrame(() => probe.diagnosticEvents.push({ kind: \"raf\", label: `${diagnosticLabel}:click:next-frame`, at: now() }));\n      }",
+    "occurrences": 1
+  },
+  {
+    "old": "async function resetProbe(page: Page) {",
+    "new": "const diagnosticNodeSpans = new WeakMap<Page, Array<Record<string, unknown>>>();\nasync function diagnosticBoundary(page: Page, label: string) {\n  const nodeSentAt = performance.now();\n  const browser = await page.evaluate((label) => {\n    const at = performance.timeOrigin + performance.now();\n    const probe = (globalThis as unknown as { __sheetUrlProbe?: BrowserProbe }).__sheetUrlProbe;\n    probe?.diagnosticEvents.push({ kind: \"node-boundary\", label, at });\n    return { epochAt: at, timeOrigin: performance.timeOrigin, monotonicAt: performance.now(), readyState: document.readyState, marks: { ...probe?.marks } };\n  }, label);\n  const nodeReceivedAt = performance.now();\n  return { label, nodeSentAt, nodeReceivedAt, roundTripMs: nodeReceivedAt - nodeSentAt, browser };\n}\nasync function diagnosticStep(page: Page, kind: \"action\" | \"expect\", label: string, work: () => Promise<unknown>) {\n  const beforeBoundary = await diagnosticBoundary(page, `${label}:before`);\n  const nodeStartedAt = performance.now();\n  let succeeded = false;\n  try {\n    await work();\n    succeeded = true;\n  } finally {\n    const nodeFinishedAt = performance.now();\n    const afterBoundary = await diagnosticBoundary(page, `${label}:after`);\n    const spans = diagnosticNodeSpans.get(page) ?? [];\n    spans.push({ kind, label, nodeStartedAt, nodeFinishedAt, durationMs: nodeFinishedAt - nodeStartedAt, succeeded, beforeBoundary, afterBoundary });\n    diagnosticNodeSpans.set(page, spans);\n  }\n}\nasync function diagnosticWatchDom(page: Page, label: string, locator: Locator) {\n  const nodeStartedAt = performance.now();\n  const element = await locator.elementHandle();\n  if (!element) throw new Error(`Missing diagnostic DOM target: ${label}`);\n  const browser = await page.evaluate(({ label, element }) => {\n    const state = globalThis as unknown as {\n      __sheetUrlDiagnosticTargets?: Array<{ label: string; element: Element; removed: boolean }>;\n      __sheetUrlProbe?: BrowserProbe;\n    };\n    (state.__sheetUrlDiagnosticTargets ??= []).push({ label, element, removed: false });\n    const at = performance.timeOrigin + performance.now();\n    state.__sheetUrlProbe?.diagnosticEvents.push({ kind: \"dom-watch\", label, at, connected: element.isConnected });\n    return { epochAt: at, timeOrigin: performance.timeOrigin };\n  }, { label, element });\n  const spans = diagnosticNodeSpans.get(page) ?? [];\n  spans.push({ kind: \"dom-watch-setup\", label, nodeStartedAt, nodeFinishedAt: performance.now(), browser });\n  diagnosticNodeSpans.set(page, spans);\n}\nasync function resetProbe(page: Page) {\n  diagnosticNodeSpans.set(page, []);",
+    "occurrences": 1
+  },
+  {
+    "old": "      probe.marks = {};",
+    "new": "      probe.marks = {};\n      probe.diagnosticEvents = [];",
+    "occurrences": 1
+  },
+  {
+    "old": "    transactions,",
+    "new": "    diagnostic: {\n      diagnosticOnly: true,\n      clockPolicy: \"Node monotonic spans and browser epoch events remain separate; each evaluate records its enclosing Node round trip. Do not convert Node action timestamps to browser epoch.\",\n      instrumentationAffectsOuterIntervals: true,\n      browserEvents: [main, ...workers].flatMap((entry) => entry?.diagnosticEvents ?? []),\n      browserClockOrigins: [main, ...workers].flatMap((entry) => entry ? [entry.diagnosticTimeOrigin] : []),\n      nodeSpans: diagnosticNodeSpans.get(page) ?? [],\n    },\n    transactions,",
+    "occurrences": 1
+  },
+  {
+    "old": "        if (legacyStartup && route !== \"startup-B04\") continue;",
+    "new": "        if (!new Set([\"retry:150:direct\", \"startup-B06:150:direct\", \"update:500:worker\"]).has(`${route}:${count}:${mode}`)) continue;\n        if (legacyStartup) throw new Error(\"Legacy mode is not part of the three diagnostic cases\");",
+    "occurrences": 1
+  },
+  {
+    "old": "@sheet-url-routes",
+    "new": "@sheet-url-diagnostic",
+    "occurrences": 1
+  },
+  {
+    "old": "                await page\n                  .getByRole(\"button\", { name: \"🔄 アイテム更新\", exact: true })\n                  .click();",
+    "new": "                await diagnosticStep(page, \"action\", \"update.request.click\", () => page\n                  .getByRole(\"button\", { name: \"🔄 アイテム更新\", exact: true })\n                  .click());",
+    "occurrences": 1
+  },
+  {
+    "old": "                await expect(heading).toBeVisible();",
+    "new": "                await diagnosticStep(page, \"expect\", \"update.review.visible\", () => expect(heading).toBeVisible());",
+    "occurrences": 1
+  },
+  {
+    "old": "                await page\n                  .getByRole(\"button\", {\n                    name:\n                      route === \"switch\"\n                        ? \"更新元を切り替えて更新\"\n                        : \"更新を実行\",\n                    exact: true,\n                  })\n                  .click();\n                await expect(heading).toBeHidden();",
+    "new": "                await diagnosticStep(page, \"action\", \"update.confirm.click\", () => page\n                  .getByRole(\"button\", {\n                    name:\n                      route === \"switch\"\n                        ? \"更新元を切り替えて更新\"\n                        : \"更新を実行\",\n                    exact: true,\n                  })\n                  .click());\n                await diagnosticStep(page, \"expect\", \"update.review.hidden\", () => expect(heading).toBeHidden());",
+    "occurrences": 1
+  },
+  {
+    "old": "                const start = performance.now();\n                await page.reload();\n                let failureMs = 0;",
+    "new": "                const start = performance.now();\n                await diagnosticStep(page, \"action\", \"startup.reload\", () => page.reload());\n                let failureMs = 0;",
+    "occurrences": 1
+  },
+  {
+    "old": "                  await expect(retry).toBeVisible();",
+    "new": "                  await diagnosticStep(page, \"expect\", \"startup.failure.visible\", () => expect(retry).toBeVisible());",
+    "occurrences": 1
+  },
+  {
+    "old": "                  failureMs = performance.now() - start;\n                  const retryStart = performance.now();\n                  await retry.click();\n                  await expect(\n                    page.getByRole(\"listitem\").filter({ hasText: SHEET_EVENT }),\n                  ).toBeVisible();",
+    "new": "                  failureMs = performance.now() - start;\n                  await diagnosticWatchDom(page, \"startup-retry-button\", retry);\n                  const retryStart = performance.now();\n                  await diagnosticStep(page, \"action\", \"startup.retry.click\", () => retry.click());\n                  await diagnosticStep(page, \"expect\", \"startup.ready.visible\", () => expect(\n                    page.getByRole(\"listitem\").filter({ hasText: SHEET_EVENT }),\n                  ).toBeVisible());",
+    "occurrences": 1
+  },
+  {
+    "old": "                await editor\n                  .getByRole(\"button\", { name: \"保存\", exact: true })\n                  .click();",
+    "new": "                await diagnosticStep(page, \"action\", \"retry.initial-save.click\", () => editor\n                  .getByRole(\"button\", { name: \"保存\", exact: true })\n                  .click());",
+    "occurrences": 1
+  },
+  {
+    "old": "                await expect(retained).toBeVisible();\n                const start = performance.now();\n                await retained\n                  .getByRole(\"button\", {\n                    name: \"保留中の保存を再試行\",\n                    exact: true,\n                  })\n                  .click();\n                await expect(retained).toBeHidden();\n                await expect(editor).toBeHidden();",
+    "new": "                await diagnosticStep(page, \"expect\", \"retry.retained.visible\", () => expect(retained).toBeVisible());\n                await diagnosticWatchDom(page, \"retained-save-alert\", retained);\n                await diagnosticWatchDom(page, \"item-editor\", editor);\n                const start = performance.now();\n                await diagnosticStep(page, \"action\", \"retry.retry.click\", () => retained\n                  .getByRole(\"button\", {\n                    name: \"保留中の保存を再試行\",\n                    exact: true,\n                  })\n                  .click());\n                await diagnosticStep(page, \"expect\", \"retry.retained.hidden\", () => expect(retained).toBeHidden());\n                await diagnosticStep(page, \"expect\", \"retry.editor.hidden\", () => expect(editor).toBeHidden());",
+    "occurrences": 1
+  },
+  {
+    "old": "                evidenceEligible: repeats >= 20,",
+    "new": "                evidenceEligible: repeats >= 20,\n                diagnosticOnly: true,\n                primaryEvidenceReplacement: false,",
+    "occurrences": 1
+  },
+  {
+    "old": "sheet-url-route-timings.json",
+    "new": "sheet-url-diagnostic-timings.json",
+    "occurrences": 1
+  },
+  {
+    "old": "                  await diagnosticWatchDom(page, \"startup-retry-button\", retry);",
+    "new": "",
+    "occurrences": 1
+  },
+  {
+    "old": "      const diagnosticLabel = button?.textContent?.trim() ?? \"\";",
+    "new": "      const diagnosticLabel = button?.textContent?.trim() ?? \"\";\n      if (button && diagnosticLabel === \"読み込みを再試行\")\n        (state.__sheetUrlDiagnosticTargets ??= []).push({ label: \"startup-retry-button\", element: button, removed: false });",
+    "occurrences": 1
+  },
+  {
+    "old": "                expect(\n                  (\n                    (await stored(page, \"eventLists\")) as Record<\n                      string,\n                      Array<{ catalogPrice: number }>\n                    >\n                  )[SHEET_EVENT][0].catalogPrice,\n                ).toBe(501);",
+    "new": "                // This main-realm validation read occurs after the measured saveMs.\n                await diagnosticStep(page, \"expect\", \"update.post-save.validation-read\", async () => {\n                  expect(\n                    (\n                      (await stored(page, \"eventLists\")) as Record<\n                        string,\n                        Array<{ catalogPrice: number }>\n                      >\n                    )[SHEET_EVENT][0].catalogPrice,\n                  ).toBe(501);\n                });",
+    "occurrences": 1
+  }
+]

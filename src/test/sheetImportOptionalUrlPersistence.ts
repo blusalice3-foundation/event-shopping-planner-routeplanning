@@ -95,14 +95,42 @@ export async function seed(snapshot: PersistenceSnapshot, prepared = true) {
     });
   }
 }
-export function commits() {
+export function commits(includeScoped = false) {
   const result = {
     attempts: 0,
     successes: 0,
     aborted: 0,
     physicalCommitMs: 0,
+    transactions: [] as Array<{
+      startMs: number;
+      endMs: number;
+      outcome: "complete" | "abort";
+      stores?: string[];
+      scope?: "application" | "item-domain";
+      putRequests?: Record<string, number>;
+    }>,
     puts: {} as Record<string, number>,
+    ...(includeScoped
+      ? {
+          observationScope: {
+            transactions: "readwrite: 12+ stores, or eventLists included",
+            application: "12+ stores",
+            itemDomain: "eventLists included with fewer than 12 stores",
+            putRequests:
+              "put calls in selected transactions, including aborted attempts",
+            duration: "transaction return to complete/abort event",
+          },
+        }
+      : {}),
   };
+  const observedTransactions = new WeakMap<
+    IDBTransaction,
+    {
+      stores: string[];
+      scope: "application" | "item-domain";
+      putRequests: Record<string, number>;
+    }
+  >();
   let abortNext = false;
   const transaction = IDBDatabase.prototype.transaction;
   const put = IDBObjectStore.prototype.put;
@@ -115,9 +143,20 @@ export function commits() {
       const tx = transaction.apply(this, args);
       if (
         args[1] === "readwrite" &&
-        Array.from(tx.objectStoreNames).length >= 12
+        (Array.from(tx.objectStoreNames).length >= 12 ||
+          (includeScoped && tx.objectStoreNames.contains("eventLists")))
       ) {
         result.attempts++;
+        const observation = includeScoped
+          ? {
+              stores: Array.from(tx.objectStoreNames),
+              scope: (tx.objectStoreNames.length >= 12
+                ? "application"
+                : "item-domain") as "application" | "item-domain",
+              putRequests: {} as Record<string, number>,
+            }
+          : null;
+        if (observation) observedTransactions.set(tx, observation);
         if (abortNext) {
           abortNext = false;
           queueMicrotask(() => tx.abort());
@@ -125,10 +164,22 @@ export function commits() {
         const start = performance.now();
         tx.addEventListener("complete", () => {
           result.successes++;
+          result.transactions.push({
+            startMs: start,
+            endMs: performance.now(),
+            outcome: "complete",
+            ...(observation ?? {}),
+          });
           result.physicalCommitMs += performance.now() - start;
         });
         tx.addEventListener("abort", () => {
           result.aborted++;
+          result.transactions.push({
+            startMs: start,
+            endMs: performance.now(),
+            outcome: "abort",
+            ...(observation ?? {}),
+          });
           result.physicalCommitMs += performance.now() - start;
         });
       }
@@ -140,7 +191,14 @@ export function commits() {
       this: IDBObjectStore,
       ...args: Parameters<typeof put>
     ) {
-      result.puts[this.name] = (result.puts[this.name] ?? 0) + 1;
+      const observation = includeScoped
+        ? observedTransactions.get(this.transaction)
+        : undefined;
+      if (!includeScoped || observation)
+        result.puts[this.name] = (result.puts[this.name] ?? 0) + 1;
+      if (observation)
+        observation.putRequests[this.name] =
+          (observation.putRequests[this.name] ?? 0) + 1;
       return put.apply(this, args);
     });
   return {

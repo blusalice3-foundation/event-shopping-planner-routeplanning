@@ -1,0 +1,10 @@
+{
+  "Reason": "Original run: 47 complete cases; one startup-B03:500:direct case failed in enter() before timed fixture with initial 5000ms ready timeout. Original failure and artifacts retained. Entire affected case retaken with same frozen harness, unchanged waits, 20 samples.",
+  "OriginalLog": "routes-before.log",
+  "RecoveryLog": "routes-before-B03-recovery.log",
+  "Source": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\routes-before-B03-recovery\\sheet-import-optional-url.-6bfed-500-direct-sheet-url-routes-chromium\\sheet-url-route-timings.json",
+  "CopiedForFull48GroupAggregation": "D:\\event-shopping-planner-routeplanning-1.9.6.7-remediation\\artifacts\\sheet-import-optional-url\\remediation-20261017\\routes-before\\completed-B03-recovery\\sheet-url-route-timings.json",
+  "SHA256": "A7FF2DD43477905FAF4297CD0EC50F9B1244430E972AB26363BE7BE5EDF606B3",
+  "Samples": 20,
+  "RecoveredAt": "2026-10-17T14:10:53.3149268+09:00"
+}

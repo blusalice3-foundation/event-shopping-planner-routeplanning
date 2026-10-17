@@ -1,4 +1,5 @@
 import { ownValue, setOwnValue } from "./ownRecord";
+import { itemPositions } from "./itemIndex";
 
 const OPTIONAL_ITEM_KEYS = [
   "catalogPrice",
@@ -40,8 +41,18 @@ export function normalizeItemsOptionalFields<T>(
   previous?: readonly T[],
 ): T[] {
   let result = items;
+  let previousPositions: ReadonlyMap<string, number> | undefined;
   items.forEach((item, index) => {
     if (!isRecord(item) || item === previous?.[index]) return;
+    // Structural edits retain unchanged item objects even when their positions move.
+    // Reuse the immutable list's ID index, never a cached normalization result:
+    // a replacement object with the same ID must still be checked on every replan.
+    if (previous && typeof item.id === "string") {
+      previousPositions ??= itemPositions(previous);
+      const previousPosition = previousPositions.get(item.id);
+      if (previousPosition !== undefined && item === previous[previousPosition])
+        return;
+    }
     const normalized = normalizeItemOptionalFields(item);
     if (normalized === item) return;
     if (result === items) result = items.slice();

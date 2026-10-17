@@ -1,0 +1,18 @@
+[
+  {
+    "path": "scripts/sheet-url-stage-probe.mjs",
+    "sha256": "3EE09CC28B0A0C2C232E4AF6848A86E0F4055A9569D4829563EFCB56346F76C8"
+  },
+  {
+    "path": "vitest.sheet-url-measurement.config.ts",
+    "sha256": "3577DB727B3773047FF137FEDD05338A118E5980083B0399391727CAD2AD0D2B"
+  },
+  {
+    "path": "src/test/sheetImportOptionalUrl.measurement.integration.test.tsx",
+    "sha256": "9CF86FBB5D3727399BC79BC4973AD246F110EA3FEB4453EC51E239754BEE3593"
+  },
+  {
+    "path": "src/test/sheetImportOptionalUrlPersistence.ts",
+    "sha256": "F913A398C68F2972ED9712DEF94C7D30B5C74DB102499BB915D815834C02893B"
+  }
+]
