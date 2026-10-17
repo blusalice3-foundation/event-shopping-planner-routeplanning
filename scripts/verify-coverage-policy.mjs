@@ -11,7 +11,7 @@ import {
   mergeChangedLines,
   mergeCoverageRecords,
   parseLcov,
-  parseUnifiedDiff,
+  readGitDiff,
   pathMatchesScope,
   summarizeChangedCoverage,
   summarizeCoverage,
@@ -267,21 +267,32 @@ const readChangedLines = async () => {
     requestedBase !== undefined &&
     requestedBase.length > 0 &&
     !/^0+$/u.test(requestedBase);
-  let diff;
+  const diffOptions = {
+    cwd: projectRoot,
+    includeFile: (filePath) =>
+      isCoverageSourcePath(filePath) &&
+      policy.subsystemThresholds.some((subsystem) =>
+        pathMatchesScope(filePath, subsystem.changedScope),
+      ),
+  };
+  let trackedChanges;
   let comparison;
 
   if (usableBase) {
     runGit(["rev-parse", "--verify", `${requestedBase}^{commit}`]);
     comparison = `${requestedBase}...HEAD`;
-    diff = runGit([
-      "diff",
-      "--no-prefix",
-      "--unified=0",
-      "--no-ext-diff",
-      "--diff-filter=ACMR",
-      comparison,
-      "--",
-    ]);
+    trackedChanges = await readGitDiff(
+      [
+        "diff",
+        "--no-prefix",
+        "--unified=0",
+        "--no-ext-diff",
+        "--diff-filter=ACMR",
+        comparison,
+        "--",
+      ],
+      diffOptions,
+    );
   } else {
     const localStatus = runGit([
       "status",
@@ -290,30 +301,35 @@ const readChangedLines = async () => {
     ]);
     if (localStatus.trim().length > 0) {
       comparison = "HEAD + working tree";
-      diff = runGit([
-        "diff",
-        "--no-prefix",
-        "--unified=0",
-        "--no-ext-diff",
-        "--diff-filter=ACMR",
-        "HEAD",
-        "--",
-      ]);
+      trackedChanges = await readGitDiff(
+        [
+          "diff",
+          "--no-prefix",
+          "--unified=0",
+          "--no-ext-diff",
+          "--diff-filter=ACMR",
+          "HEAD",
+          "--",
+        ],
+        diffOptions,
+      );
     } else {
       comparison = "HEAD^...HEAD";
-      diff = runGit([
-        "diff",
-        "--no-prefix",
-        "--unified=0",
-        "--no-ext-diff",
-        "--diff-filter=ACMR",
-        comparison,
-        "--",
-      ]);
+      trackedChanges = await readGitDiff(
+        [
+          "diff",
+          "--no-prefix",
+          "--unified=0",
+          "--no-ext-diff",
+          "--diff-filter=ACMR",
+          comparison,
+          "--",
+        ],
+        diffOptions,
+      );
     }
   }
 
-  const trackedChanges = parseUnifiedDiff(diff);
   const untrackedChanges = new Map();
   if (comparison === "HEAD + working tree") {
     const untracked = runGit(["ls-files", "--others", "--exclude-standard"])
