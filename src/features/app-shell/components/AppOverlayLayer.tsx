@@ -560,14 +560,14 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
         <EventRenameDialog
           currentName={eventToRename}
           onConfirm={handleConfirmRename}
-          onCancel={eventOverlayCommands.close}
+          onCancel={() => eventOverlayCommands.close()}
         />
       )}
 
       {showExportOptions && exportEventName && (
         <ExportOptionsDialog
           isOpen={showExportOptions}
-          onClose={eventOverlayCommands.close}
+          onClose={() => eventOverlayCommands.close()}
           onExport={handleConfirmExport}
           previewManifest={previewEventExport}
           hasMapData={
