@@ -1,0 +1,10 @@
+Shopping/source snapshot: cb2b22b974a50a0e3cbaae979bfad8789533493c
+Final validation/update snapshot: 1d840d6f3aa3c0949ca7eadf1b16b5e9cbc375b4
+src tree IDs:
+2fc35c8a56fbffa575b03d6a9dd3311c7b42175c
+2fc35c8a56fbffa575b03d6a9dd3311c7b42175c
+Changed paths:
+M	README.md
+M	tests/browser/item-update-confirmation.performance.spec.ts
+All paths except README.md and tests/browser/item-update-confirmation.performance.spec.ts: git diff --exit-code = 0
+No claim of byte-identical dist (embedded release source identity differs).

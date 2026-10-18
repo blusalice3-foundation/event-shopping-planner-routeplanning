@@ -356,3 +356,180 @@ describe("automatic matching prioritizes identity and never reuses an old ID", (
     },
   );
 });
+
+describe("update-only whitespace rescue preserves all raw correspondence first", () => {
+  const collision = () => {
+    const before = items().map((item, index) => ({
+      ...item,
+      id: index === 0 ? "A" : "B",
+      circle: index === 0 ? "X " : "X",
+      title: index === 0 ? "旧A" : "旧B",
+      catalogPrice: index === 0 ? 500 : 700,
+      purchaseStatus:
+        index === 0 ? ("Purchased" as const) : ("LimitedPurchase" as const),
+      ...(index === 0 ? {} : { limitedPurchasedQuantity: 2 }),
+    }));
+    const incoming: SheetItem[] = [
+      {
+        ...before[1],
+        circle: "X",
+        title: "旧A",
+        price: 700,
+        catalogPrice: 700,
+        rawQuantity: "",
+      },
+      {
+        ...before[0],
+        circle: "X",
+        title: "新A",
+        price: 500,
+        catalogPrice: 500,
+        rawQuantity: "",
+      },
+    ];
+    return { before, incoming };
+  };
+
+  it.each([false, true])(
+    "fixes raw base matches before trimmed titles, reverse=%s",
+    (reverse) => {
+      const { before, incoming } = collision();
+      if (reverse) incoming.reverse();
+      const result = matchSheetItems(before, incoming);
+      expect(
+        incoming.map((row, index) => [
+          row.title,
+          result.matches.get(index)?.id,
+        ]),
+      ).toEqual(
+        incoming.map((row) => [row.title, row.title === "旧A" ? "B" : "A"]),
+      );
+      expect(result.matches.size).toBe(2);
+      expect(result.used.size).toBe(2);
+      const diff = createEventUpdateDiff(before, incoming);
+      expect(diff.itemsToAdd).toEqual([]);
+      expect(diff.itemsToDelete).toEqual([]);
+      const after = applyEventUpdateToItems(before, diff);
+      expect(after).toEqual([
+        { ...before[0], title: "新A" },
+        { ...before[1], title: "旧A" },
+      ]);
+      const repeated = createEventUpdateDiff(after, incoming);
+      expect(repeated.itemsToAdd).toEqual([]);
+      expect(repeated.itemsToDelete).toEqual([]);
+      expect(applyEventUpdateToItems(after, repeated)).toEqual(after);
+    },
+  );
+
+  it.each(["items-only", "same-source", "source-switch"] as const)(
+    "%s retains each ID's purchases, user values, whitespace and execution references",
+    (entry) => {
+      const { before, incoming } = collision();
+      const baseSource = {
+        url: "https://docs.google.com/spreadsheets/d/base",
+        sheetName: "一覧",
+      };
+      const nextSource =
+        entry === "source-switch"
+          ? { ...baseSource, url: `${baseSource.url}-next` }
+          : baseSource;
+      const state = {
+        eventLists: { event: before },
+        eventMetadata: {
+          event: {
+            spreadsheetUrl: baseSource.url,
+            spreadsheetSheetName: baseSource.sheetName,
+            lastImportDate: "2026-10-18",
+          },
+        },
+        executeModeItems: { event: { "1日目": ["B", "A"] } },
+      };
+      const pending = {
+        kind:
+          entry === "items-only"
+            ? ("items-only" as const)
+            : ("source-switch" as const),
+        eventName: "event",
+        baseSource,
+        nextSource,
+        diff: createEventUpdateDiff(before, incoming),
+      };
+      const after = applyPendingEventUpdate({
+        state,
+        pending,
+        baseItems: before,
+        options: {},
+      });
+      expect(after?.eventLists.event).toEqual([
+        { ...before[0], title: "新A" },
+        { ...before[1], title: "旧A" },
+      ]);
+      expect(after?.executeModeItems).toEqual(state.executeModeItems);
+      expect(after?.eventMetadata.event.spreadsheetUrl).toBe(nextSource.url);
+    },
+  );
+
+  it("trims only comparison edges across identity fields and keeps persisted identifiers", () => {
+    const before = [
+      {
+        ...items()[0],
+        circle: " X Y ",
+        eventDate: " 1日目 ",
+        block: " A ",
+        number: " 01a ",
+        title: " 旧題 ",
+      },
+    ];
+    const incoming = [
+      {
+        ...rows()[0],
+        circle: "X Y",
+        eventDate: "1日目",
+        block: "A",
+        number: "01a",
+        title: "旧題",
+      },
+    ];
+    const diff = createEventUpdateDiff(before, incoming);
+    expect(diff.itemsToAdd).toEqual([]);
+    expect(diff.itemsToDelete).toEqual([]);
+    expect(applyEventUpdateToItems(before, diff)).toEqual([
+      { ...before[0], title: "旧題" },
+    ]);
+    expect(
+      matchSheetItems(before, [{ ...incoming[0], circle: "XY" }]).matches.size,
+    ).toBe(0);
+    expect(
+      matchSheetItems(before, [{ ...incoming[0], number: "1a" }]).matches.size,
+    ).toBe(0);
+  });
+
+  it("keeps raw group signature and fallback ordering when all rows already match", () => {
+    const before = items().map((item, index) => ({
+      ...item,
+      title: `旧${index}`,
+      circle: "X",
+      catalogPrice: 500 + index * 200,
+    }));
+    const incoming = before
+      .map((item, index) => ({ ...item, title: `新${index}` }))
+      .reverse();
+    expect(
+      [0, 1].map(
+        (row) => matchSheetItems(before, incoming).matches.get(row)?.id,
+      ),
+    ).toEqual(["2", "1"]);
+    before[0].sheetIdentityVerified = undefined;
+    expect(
+      [0, 1].map(
+        (row) => matchSheetItems(before, incoming).matches.get(row)?.id,
+      ),
+    ).toEqual(["1", "2"]);
+    const trimmedOnly = before.map((item) => ({ ...item, circle: " X " }));
+    expect(
+      [0, 1].map(
+        (row) => matchSheetItems(trimmedOnly, incoming).matches.get(row)?.id,
+      ),
+    ).toEqual(["1", "2"]);
+  });
+});

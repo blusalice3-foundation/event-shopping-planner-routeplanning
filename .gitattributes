@@ -3,3 +3,6 @@
 AGENTS.md text eol=crlf
 "docs/Event Shopping Planner — Scoped Reliability & Data Integrity Remediation Plan.txt" text eol=crlf
 "docs/Resilient Persistence & Safe Migration Plan.md" text eol=crlf
+
+# Preserve original bytes and CRLF/LF in item-update verification evidence.
+artifacts/item-update-confirmation/** -text whitespace=cr-at-eol

@@ -48,7 +48,6 @@ type DeleteConfirmationModalProps = React.ComponentProps<
 type UpdateConfirmationModalProps = React.ComponentProps<
   typeof UpdateConfirmationModal
 >;
-type UrlUpdateDialogProps = React.ComponentProps<typeof UrlUpdateDialog>;
 type EventRenameDialogProps = React.ComponentProps<typeof EventRenameDialog>;
 type ExportOptionsDialogProps = React.ComponentProps<
   typeof ExportOptionsDialog
@@ -68,6 +67,7 @@ type MapImportDialogProps = React.ComponentProps<typeof MapImportDialog>;
 
 type AppOverlayLayerFields = {
   items: ShoppingItem[];
+  isEventUpdateSaving?: boolean;
   saveItemEdit?: (
     baseline: ShoppingItem,
     edited: ShoppingItem,
@@ -87,9 +87,15 @@ type AppOverlayLayerFields = {
   ) => void;
   handleConfirmDelete: DeleteConfirmationModalProps["onConfirm"];
   handleConfirmUpdate: UpdateConfirmationModalProps["onConfirm"];
-  handleCancelUpdate: UpdateConfirmationModalProps["onCancel"];
+  handleCancelUpdate: (updateOperationId?: string) => void;
   eventMetadata: Record<string, EventMetadata>;
-  handleUrlUpdate: UrlUpdateDialogProps["onConfirm"];
+  updateOperationId?: string;
+  handleUrlUpdate: (
+    url: string,
+    sheetName: string,
+    updateOperationId?: string,
+  ) => void;
+  handleUrlUpdateCancel?: (updateOperationId?: string) => boolean | void;
   onShowEventList: () => void;
   handleConfirmRename: EventRenameDialogProps["onConfirm"];
   handleConfirmExport: ExportOptionsDialogProps["onExport"];
@@ -175,10 +181,14 @@ type AppOverlayLayerFields = {
 };
 
 export type AppOverlayLayerModel = {
-  readonly item: Pick<AppOverlayLayerFields, "items">;
+  readonly item: Pick<AppOverlayLayerFields, "items" | "isEventUpdateSaving">;
   readonly event: Pick<
     AppOverlayLayerFields,
-    "activeEventDate" | "activeEventName" | "eventDates" | "eventMetadata"
+    | "activeEventDate"
+    | "activeEventName"
+    | "eventDates"
+    | "eventMetadata"
+    | "updateOperationId"
   >;
   readonly mapEditor: Pick<
     AppOverlayLayerFields,
@@ -238,6 +248,7 @@ export type AppOverlayLayerActions = {
     | "previewEventExport"
     | "handleConfirmRename"
     | "handleUrlUpdate"
+    | "handleUrlUpdateCancel"
     | "onShowEventList"
   >;
   readonly mapEditor: Pick<
@@ -301,8 +312,14 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
   actions,
 }) => {
   const {
-    item: { items },
-    event: { activeEventDate, activeEventName, eventDates, eventMetadata },
+    item: { items, isEventUpdateSaving },
+    event: {
+      activeEventDate,
+      activeEventName,
+      eventDates,
+      eventMetadata,
+      updateOperationId,
+    },
     mapEditor: {
       allBlocksForHallDefinition,
       currentHalls,
@@ -351,6 +368,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       previewEventExport,
       handleConfirmRename,
       handleUrlUpdate,
+      handleUrlUpdateCancel,
       onShowEventList,
     },
     mapEditor: {
@@ -475,6 +493,12 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
 
       {pendingEventUpdate && (
         <UpdateConfirmationModal
+          key={
+            pendingEventUpdate.updateOperationId ?? pendingEventUpdate.eventName
+          }
+          eventName={pendingEventUpdate.eventName}
+          isSaving={isEventUpdateSaving}
+          duplicateItemCount={pendingEventUpdate.diff.duplicateItemCount}
           matching={pendingEventUpdate.diff.matching}
           csvReview={pendingEventUpdate.diff.csvReview}
           sheetImport={pendingEventUpdate.diff.sheetImport}
@@ -499,22 +523,35 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
               : undefined
           }
           onConfirm={handleConfirmUpdate}
-          onCancel={handleCancelUpdate}
+          onCancel={() =>
+            handleCancelUpdate(pendingEventUpdate.updateOperationId)
+          }
         />
       )}
 
       {showUrlUpdateDialog && (
         <UrlUpdateDialog
+          key={updateOperationId ?? pendingUpdateEventName ?? "url-update"}
           currentUrl={
             pendingUpdateEventName
               ? recordEntry(eventMetadata, pendingUpdateEventName)
                   ?.spreadsheetUrl || ""
               : ""
           }
-          onConfirm={handleUrlUpdate}
+          currentSheetName={
+            pendingUpdateEventName
+              ? recordEntry(eventMetadata, pendingUpdateEventName)
+                  ?.spreadsheetSheetName || ""
+              : ""
+          }
+          onConfirm={(url, sheetName) =>
+            handleUrlUpdate(url, sheetName, updateOperationId)
+          }
           onCancel={() => {
-            eventOverlayCommands.close();
-            onShowEventList();
+            const cancelled = handleUrlUpdateCancel
+              ? handleUrlUpdateCancel(updateOperationId)
+              : handleCancelUpdate(updateOperationId);
+            if (cancelled !== false) onShowEventList();
           }}
         />
       )}

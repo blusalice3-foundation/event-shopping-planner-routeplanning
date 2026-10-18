@@ -22,6 +22,7 @@ import {
   SHEET_EVENT,
 } from "../../../test/sheetImportOptionalUrlFixtures";
 import AppOverlayLayer from "./AppOverlayLayer";
+import { createEventUpdateDiff } from "../../events/updateDiff";
 
 function props(pending: PendingEventUpdate) {
   return {
@@ -211,5 +212,118 @@ describe("sheet diagnostics through the actual overlay and update modal", () => 
     expect(
       screen.getByRole("region", { name: "シート取込結果" }),
     ).toHaveTextContent("必須項目不足による除外: 0行");
+  });
+});
+
+describe("update operation state through AppOverlayLayer", () => {
+  it.each(["items-only", "source-switch"] as const)(
+    "%s shows the target and freezes confirmation while saving",
+    (kind) => {
+      const existing = {
+        ...sheetItem(),
+        purchaseStatus: "Purchased" as const,
+        quantity: 2,
+      };
+      const diff = createEventUpdateDiff(
+        [existing],
+        [{ ...existing, rawQuantity: "4" }],
+      );
+      const input = props({
+        kind,
+        eventName: SHEET_EVENT,
+        baseSource: null,
+        diff,
+        ...(kind === "source-switch"
+          ? {
+              nextSource: {
+                url: "https://docs.google.com/spreadsheets/d/new/edit",
+                sheetName: "品目表",
+              },
+            }
+          : {}),
+      } as PendingEventUpdate);
+      input.model.item.isEventUpdateSaving = true;
+      const view = render(<AppOverlayLayer {...input} />);
+      expect(screen.getByText(`対象イベント: ${SHEET_EVENT}`)).toBeVisible();
+      expect(screen.getByRole("checkbox")).toBeDisabled();
+      expect(screen.getByRole("button", { name: "キャンセル" })).toBeDisabled();
+      expect(
+        screen.getByRole("button", {
+          name:
+            kind === "source-switch" ? "更新元を切り替えて更新" : "更新を実行",
+        }),
+      ).toBeDisabled();
+      view.rerender(
+        <AppOverlayLayer
+          {...input}
+          model={{
+            ...input.model,
+            item: { ...input.model.item, isEventUpdateSaving: false },
+          }}
+        />,
+      );
+      expect(screen.getByRole("checkbox")).toBeEnabled();
+    },
+  );
+
+  it("URL cancel delegates to operation completion and restores the list; sheet name is visible and clearing stays blank", () => {
+    const input = props({
+      kind: "items-only",
+      eventName: SHEET_EVENT,
+      baseSource: null,
+      diff: createEventUpdateDiff([], []),
+    });
+    const overlay = selectAppOverlayReadModel(
+      reduceAppOverlayState(createInitialAppOverlayState(), {
+        type: "event/open-url-update",
+        requestId: "url-1",
+        eventName: SHEET_EVENT,
+      }),
+    );
+    input.model.event.eventMetadata = {
+      [SHEET_EVENT]: {
+        spreadsheetUrl:
+          "https://docs.google.com/spreadsheets/d/existing/edit#gid=2",
+        spreadsheetSheetName: "保存済みシート",
+        lastImportDate: "",
+      },
+    };
+    input.model.event.updateOperationId = "url-operation-1";
+    input.actions.event.handleUrlUpdate = vi.fn();
+    input.actions.event.handleUrlUpdateCancel = vi.fn();
+    input.actions.event.onShowEventList = vi.fn();
+    const view = render(<AppOverlayLayer {...input} overlay={overlay} />);
+    const sheet = screen.getByDisplayValue("保存済みシート");
+    fireEvent.change(sheet, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "更新" }));
+    expect(input.actions.event.handleUrlUpdate).toHaveBeenCalledWith(
+      "https://docs.google.com/spreadsheets/d/existing/edit#gid=2",
+      "",
+      "url-operation-1",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "キャンセル" }));
+    expect(input.actions.event.handleUrlUpdateCancel).toHaveBeenCalledOnce();
+    expect(input.actions.event.onShowEventList).toHaveBeenCalledOnce();
+    input.model.event.updateOperationId = "url-operation-2";
+    input.model.event.eventMetadata = {
+      [SHEET_EVENT]: {
+        spreadsheetUrl: "https://docs.google.com/spreadsheets/d/next/edit",
+        spreadsheetSheetName: "次のシート",
+        lastImportDate: "",
+      },
+    };
+    input.actions.event.handleUrlUpdateCancel = vi.fn(() => false);
+    view.rerender(<AppOverlayLayer {...input} overlay={overlay} />);
+    expect(screen.getByDisplayValue("次のシート")).toBeVisible();
+    expect(
+      screen.getByDisplayValue(
+        "https://docs.google.com/spreadsheets/d/next/edit",
+      ),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "キャンセル" }));
+    expect(input.actions.event.handleUrlUpdateCancel).toHaveBeenCalledWith(
+      "url-operation-2",
+    );
+    expect(input.actions.event.onShowEventList).toHaveBeenCalledOnce();
   });
 });

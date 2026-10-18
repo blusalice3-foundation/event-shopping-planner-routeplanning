@@ -2,17 +2,19 @@ import React, { useState } from "react";
 
 interface UrlUpdateDialogProps {
   currentUrl: string;
+  currentSheetName?: string;
   onConfirm: (url: string, sheetName: string) => void;
   onCancel: () => void;
 }
 
 const UrlUpdateDialog: React.FC<UrlUpdateDialogProps> = ({
   currentUrl,
+  currentSheetName = "",
   onConfirm,
   onCancel,
 }) => {
   const [url, setUrl] = useState(currentUrl);
-  const [sheetName, setSheetName] = useState("");
+  const [sheetName, setSheetName] = useState(currentSheetName);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +65,9 @@ const UrlUpdateDialog: React.FC<UrlUpdateDialogProps> = ({
                 className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="シート1"
               />
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                名前を指定すると名称を優先します。空欄の場合はURLのgid、gidもなければ先頭シートを使用します。
+              </p>
             </div>
 
             <div className="flex justify-end space-x-3 pt-4">

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, renderHook } from "@testing-library/react";
+import { StrictMode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { PendingEventUpdate } from "../../features/events/updateFlow";
 import type { PreparedMapImport } from "../../features/map/domain/mapImportFlow";
@@ -325,3 +326,204 @@ it.each([false, true])(
     expect(result.current.readModel.pendingTabChange).toBeNull();
   },
 );
+
+describe("event display request receipts", () => {
+  it.each(["update", "url-update"] as const)(
+    "delivers the committed %s receipt once under StrictMode",
+    (kind) => {
+      const onReceipt = vi.fn();
+      const { result } = renderHook(() => useAppOverlayController(), {
+        wrapper: ({ children }) => <StrictMode>{children}</StrictMode>,
+      });
+      let requestId = "";
+
+      act(() => {
+        requestId =
+          kind === "update"
+            ? result.current.commands.event.openUpdate(pendingUpdate, onReceipt)
+            : result.current.commands.event.openUrlUpdate("event", onReceipt);
+        expect(onReceipt).not.toHaveBeenCalled();
+      });
+
+      expect(result.current.state.event).toMatchObject({ kind, requestId });
+      expect(onReceipt).toHaveBeenCalledExactlyOnceWith({
+        requestId,
+        accepted: true,
+      });
+      act(() => result.current.commands.event.close(requestId));
+      expect(onReceipt).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("reports each busy rejection without disturbing the winning event", () => {
+    const createRequestId = createSequentialRequestIds();
+    const onUpdateReceipt = vi.fn();
+    const onUrlReceipt = vi.fn();
+    const { result } = renderHook(() =>
+      useAppOverlayController({ createRequestId }),
+    );
+    act(() => result.current.commands.event.openRename("winner"));
+
+    act(() => {
+      result.current.commands.event.openUpdate(pendingUpdate, onUpdateReceipt);
+      result.current.commands.event.openUrlUpdate("loser", onUrlReceipt);
+    });
+
+    expect(result.current.state.event).toEqual({
+      kind: "rename",
+      requestId: "request-1",
+      eventName: "winner",
+    });
+    expect(onUpdateReceipt).toHaveBeenCalledExactlyOnceWith({
+      requestId: "request-2",
+      accepted: false,
+    });
+    expect(onUrlReceipt).toHaveBeenCalledExactlyOnceWith({
+      requestId: "request-3",
+      accepted: false,
+    });
+    act(() => result.current.commands.event.close());
+    act(() => result.current.commands.event.openExport("next"));
+    expect(onUpdateReceipt).toHaveBeenCalledTimes(1);
+    expect(onUrlReceipt).toHaveBeenCalledTimes(1);
+  });
+
+  it("records both accepted opens during a same-batch owned close and open", () => {
+    const onUrlReceipt = vi.fn();
+    const onUpdateReceipt = vi.fn();
+    const { result } = renderHook(() => useAppOverlayController());
+    let firstId = "";
+    let secondId = "";
+
+    act(() => {
+      firstId = result.current.commands.event.openUrlUpdate(
+        "event",
+        onUrlReceipt,
+      );
+      result.current.commands.event.close(firstId);
+      secondId = result.current.commands.event.openUpdate(
+        pendingUpdate,
+        onUpdateReceipt,
+      );
+    });
+
+    expect(result.current.state.event).toMatchObject({
+      kind: "update",
+      requestId: secondId,
+    });
+    expect(onUrlReceipt).toHaveBeenCalledExactlyOnceWith({
+      requestId: firstId,
+      accepted: true,
+    });
+    expect(onUpdateReceipt).toHaveBeenCalledExactlyOnceWith({
+      requestId: secondId,
+      accepted: true,
+    });
+  });
+
+  it("keeps the receipt accepted when its owner closes before commit", () => {
+    const onReceipt = vi.fn();
+    const { result } = renderHook(() => useAppOverlayController());
+    let requestId = "";
+
+    act(() => {
+      requestId = result.current.commands.event.openUpdate(
+        pendingUpdate,
+        onReceipt,
+      );
+      result.current.commands.event.confirm(requestId);
+    });
+
+    expect(result.current.state.event.kind).toBe("inactive");
+    expect(onReceipt).toHaveBeenCalledExactlyOnceWith({
+      requestId,
+      accepted: true,
+    });
+  });
+
+  it("retains same-batch busy rejection even when the winning open later closes", () => {
+    const onReceipt = vi.fn();
+    const { result } = renderHook(() => useAppOverlayController());
+    let rejectedId = "";
+
+    act(() => {
+      const winnerId = result.current.commands.event.openUpdate(pendingUpdate);
+      rejectedId = result.current.commands.event.openUrlUpdate(
+        "event",
+        onReceipt,
+      );
+      result.current.commands.event.close(winnerId);
+    });
+
+    expect(result.current.state.event.kind).toBe("inactive");
+    expect(onReceipt).toHaveBeenCalledExactlyOnceWith({
+      requestId: rejectedId,
+      accepted: false,
+    });
+  });
+
+  it("rejects stale owned and retained callbacks without closing a replacement", () => {
+    const onReceipt = vi.fn();
+    const { result } = renderHook(() => useAppOverlayController());
+    let oldId = "";
+    let currentId = "";
+    act(() => {
+      oldId = result.current.commands.event.openUpdate(pendingUpdate);
+    });
+    const obsoleteCommands = result.current.commands.event;
+    act(() => obsoleteCommands.close());
+    act(() => {
+      currentId = result.current.commands.event.openUrlUpdate(
+        "replacement",
+        onReceipt,
+      );
+    });
+
+    act(() => {
+      obsoleteCommands.close();
+      obsoleteCommands.confirm();
+      result.current.commands.event.close(oldId);
+      result.current.commands.event.confirm(oldId);
+    });
+
+    expect(result.current.state.event).toMatchObject({
+      kind: "url-update",
+      requestId: currentId,
+    });
+    expect(onReceipt).toHaveBeenCalledExactlyOnceWith({
+      requestId: currentId,
+      accepted: true,
+    });
+    act(() => result.current.commands.event.confirm(currentId));
+    expect(result.current.state.event.kind).toBe("inactive");
+  });
+
+  it("consumes only delivered IDs when a receipt callback requests another overlay", () => {
+    const onSecondReceipt = vi.fn();
+    let secondId = "";
+    const { result } = renderHook(() => useAppOverlayController(), {
+      wrapper: ({ children }) => <StrictMode>{children}</StrictMode>,
+    });
+    const onFirstReceipt = vi.fn(({ requestId }: { requestId: string }) => {
+      result.current.commands.event.close(requestId);
+      secondId = result.current.commands.event.openUrlUpdate(
+        "replacement",
+        onSecondReceipt,
+      );
+    });
+
+    act(() => {
+      result.current.commands.event.openUpdate(pendingUpdate, onFirstReceipt);
+    });
+
+    expect(onFirstReceipt).toHaveBeenCalledTimes(1);
+    expect(onSecondReceipt).toHaveBeenCalledExactlyOnceWith({
+      requestId: secondId,
+      accepted: true,
+    });
+    expect(result.current.state.event).toMatchObject({
+      kind: "url-update",
+      requestId: secondId,
+    });
+  });
+});

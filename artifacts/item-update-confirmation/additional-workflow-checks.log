@@ -1,0 +1,203 @@
+
+> event-shopping-planner@1.0.0 test:release-a-evidence
+> node --test scripts/verify-release-a-evidence.test.mjs
+
+✔ accepts a complete UNKNOWN audit only with treat-as-deployed safety evidence (8.6215ms)
+✔ the distributed pending template is structurally parseable but cannot pass (8.8596ms)
+✔ rejects unknown and privacy-sensitive fields at every depth (1.8246ms)
+✔ rejects duplicate JSON object keys before schema validation (0.8916ms)
+✔ loadEvidenceFile rejects BOM and malformed UTF-8 (18.8482ms)
+✔ CLI fails closed for pending evidence and invalid invocation (164.9625ms)
+✔ rejects a canary shorter than 24 hours or incomplete bucket coverage (1.4778ms)
+✔ rejects hourly coverage gaps, duplicate hours, zero samples, and wrong SHAs (5.9869ms)
+✔ rejects an untrimmed 25-row rolling view with a partial endpoint hour (1.1152ms)
+✔ rejects any observed legacy physical delete (1.0796ms)
+✔ rejects a canary metric regression beyond baseline thresholds (1.4946ms)
+✔ binds canary, dashboard, bucket, and baseline observations to commit SHAs (1.057ms)
+✔ requires a prior non-overlapping baseline build and query window (0.8752ms)
+✔ pins every bucket to one approved global baseline aggregate (0.8998ms)
+✔ requires count-derived rates with adequate production-only samples (1.9985ms)
+✔ uses fixed zero-baseline absolute caps for conflict and save failure (1.8206ms)
+✔ computes startup p95 from telemetry buckets and permits no slower bucket (1.4579ms)
+✔ rejects future canary and approval timestamps beyond five-minute skew (2.2596ms)
+✔ rejects calendar-normalized impossible UTC dates (1.0933ms)
+✔ requires the exact automated encoding command (0.9904ms)
+✔ rejects missing actual installed-PWA target and build/SW SHA mismatch (1.1466ms)
+✔ does not allow UNKNOWN to masquerade as NOT_DEPLOYED (0.9322ms)
+✔ allows factual NOT_DEPLOYED only when every source is negative and complete (0.8767ms)
+✔ requires dedicated d2389a0 E2E PASS while allowing approval-role overlap (0.8592ms)
+✔ accepts one account across every human evidence and approval role (1.0835ms)
+✔ requires approvals after all gate evidence is complete (0.7805ms)
+✔ includes source-clean and cleanup-off checks in approval prerequisites (0.8692ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 341.0119
+
+> event-shopping-planner@1.0.0 verify:artifact
+> npm run test:artifact
+
+
+> event-shopping-planner@1.0.0 test:artifact
+> node --test scripts/deterministic-zip.test.mjs scripts/lib/artifact-build-runtime-authority.test.mjs scripts/release-artifact.test.mjs
+
+✔ creates byte-identical archives from different roots and mtimes (60.2186ms)
+✔ rejects traversal, absolute, Windows, and ambiguous paths (0.5631ms)
+✔ rejects archive policy drift before reading build output (0.4483ms)
+✔ CLI output is byte-identical across process timezones (267.6016ms)
+✔ accepts exact active production and proposed nonpromotable authorities (12.7746ms)
+✔ rejects source, policy, DB, dimension, and reviewed hash drift (8.7923ms)
+✔ rejects proposed production and promotable Policy QA identities (7.0187ms)
+▶ build input closure binds stylesheet configuration and committed bytes
+  ✔ committed postcss.config.cjs changes the artifact binding (1206.0253ms)
+  ✔ committed postcss.config.mjs changes the artifact binding (1179.9514ms)
+  ✔ committed tailwind.config.cjs changes the artifact binding (1509.2849ms)
+  ✔ committed tailwind.config.mjs changes the artifact binding (1156.1701ms)
+  ✔ committed tailwind-legacy-theme.json changes the artifact binding (1265.9531ms)
+✔ build input closure binds stylesheet configuration and committed bytes (8777.0686ms)
+✔ Vercel build launcher passes only closed build authority (1.0269ms)
+✔ requires byte-identical role-independent outer agents in a pair (17.4869ms)
+✔ verifies a deterministic source-hardened role pair (4683.7992ms)
+✔ verifies bootstrap raw dist byte-for-byte and fixed staging inputs (860.6723ms)
+✔ policy activation QA artifact purpose is explicit and production-rejected (359.6719ms)
+✔ artifact drill package is P0-only, closed, and production-rejected (967.4801ms)
+✔ rejects archive tampering independently of its manifest (519.7696ms)
+✔ accepts only the final remotely observed DB authority for production artifacts (4.5383ms)
+✔ artifact drill context binds static DB and policy hashes without production DB authority (12.5376ms)
+✔ current external policy explicitly blocks production artifact context (2.3449ms)
+✔ rejects Python build triggers and non-Node Vercel functions (129.2259ms)
+✔ normalizes Vercel CSP headers and report function from dimensions (208.0996ms)
+✔ requires mode-aware CSP/Sheets API functions and exact emitted headers (223.6705ms)
+✔ independent build proof rejects output manifest drift (0.6227ms)
+✔ artifact contract rejects malformed manifests and role entry graphs (11.087ms)
+✔ package index and content-addressed object guards reject ambiguity (45.2534ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 17230.7512
+
+> event-shopping-planner@1.0.0 test:provider
+> node --test scripts/provider/archiveRecovery.test.mjs scripts/provider/archiveRecoveryExecution.test.mjs scripts/provider/archiveRecoveryWorkflow.test.mjs scripts/provider/backup-restore-rehearsal.test.mjs scripts/provider/collect-vercel-observation.test.mjs scripts/provider/deploymentBindingProducer.test.mjs scripts/provider/policy-activation-qa.test.mjs scripts/provider/prebuiltDeployment.test.mjs scripts/provider/preparedPromotion.test.mjs scripts/provider/produce-deployment-binding.test.mjs scripts/provider/produce-production-assignment-validation.test.mjs scripts/provider/productionAssignmentValidation.test.mjs scripts/provider/providerConfiguration.test.mjs scripts/provider/startup-waf-observation.test.mjs
+
+✔ plans rollback and package redeploy only after live archive verification (5.4326ms)
+✔ plans containment activation and redeploy from a verified companion archive (1.8843ms)
+✔ plans redeploy of the currently accepted standard before it enters rollback inventory (0.6782ms)
+✔ planner fails closed for unavailable bytes, wrong source, and wrong binding (2.9495ms)
+✔ strict recovery CLI writes only a dry-run plan and closes the store (2.4481ms)
+✔ materializes an exact source-hardened package from durable archive objects (67.8475ms)
+✔ materialization fails closed for missing pair, tamper, and wrong URI kind (29.4198ms)
+✔ builds authoritative subjects for all four archive recovery actions (14.6975ms)
+✔ rejects a package redeploy that changes immutable archive identity (2.3841ms)
+✔ stores approvals and CAS-appends a recovery pending operation (18.5302ms)
+✔ protected recovery CLI parses strict action shapes and materializes state-derived bindings (12.5813ms)
+✔ separates archive recovery subject production from reviewed mutation (2.0239ms)
+✔ downloads the exact prior subject artifact and rejects same-run review (0.2951ms)
+✔ accepts only the official read/inspect/delete Supabase API contract (8.2337ms)
+✔ rejects non-integer backup IDs and invalid RFC 3339 timestamps (8.4127ms)
+✔ normalizes the official backup list and project response shapes (2.8817ms)
+✔ fails closed before DELETE for every unsafe restore-project identity (7.8087ms)
+✔ collects a new-project restore, compares DB authority, and confirms deletion (26.909ms)
+✔ rechecks the exact restore identity immediately before DELETE (3.0868ms)
+✔ pins sanitized TLS URLs to the inspected Management API database hosts (8.3074ms)
+✔ rejects an overlapping database endpoint or decoded password before provider access (1.7677ms)
+✔ polls cleanup and always deletes an authorized target after DB failure (6.3327ms)
+✔ waits for both database observers to settle before deleting the restore project (9.5641ms)
+✔ requires function-only readers with distinct roles and migration head (1.0846ms)
+✔ tracked migrations contain no password and use core PostgreSQL SHA-256 (3.7601ms)
+✔ collects canonical Vercel API evidence without token or secret values (52.742ms)
+✔ rejects stale provider Date headers (2.7608ms)
+✔ fails closed before fetching when provider binding is unconfigured (0.3402ms)
+✔ rejects a tampered canonical response receipt (7.7547ms)
+✔ collector CLI rejects unknown, duplicate, and missing-value arguments (0.5885ms)
+✔ collector CLI rejects identical policy and output paths (0.3351ms)
+✔ collector output is create-only (21.8863ms)
+✔ collector rejects absent, short, oversized, and control-character tokens (2.382ms)
+✔ collector does not propagate token-bearing fetch errors (1.072ms)
+✔ observation evidence rejects unknown top-level properties (6.8088ms)
+✔ reruns production verification, probes immutable routes, and stores a closed binding chain (75.6145ms)
+✔ production deployment binding rejects a policy QA package index (27.0477ms)
+✔ fails closed for receipt tampering, stale evidence, and role mismatch (98.2535ms)
+✔ fails closed for partial routes, response aliases, secrets, and environment receipt gaps (126.8779ms)
+✔ rejects stale provider observation before verifier, fetch, or store (36.4977ms)
+✔ parses only the closed Policy QA execute command (2.7382ms)
+✔ binds protected CLI flags to reviewed subject bytes before execution (3.9606ms)
+✔ rejects CLI identity drift and output overwrite before provider execution (0.981ms)
+✔ deploys only the verified prebuilt command and writes a canonical receipt (139.1233ms)
+✔ production prebuilt deployment rejects a policy QA package index (38.4595ms)
+✔ replays an exact idempotency receipt after fresh provider resolution without redeploying (88.7511ms)
+✔ rejects content-addressed archive tampering before command execution (31.9632ms)
+✔ rejects path traversal in a content-addressed ZIP (52.6697ms)
+✔ rejects selected role and manifest role mismatch (33.048ms)
+✔ rejects ambiguous CLI URL output (56.5817ms)
+✔ rejects authoritative provider project/team mismatch (51.5007ms)
+✔ rejects stale authoritative provider Date evidence (53.2811ms)
+✔ rejects a token leaked by command output without echoing it (48.9357ms)
+✔ rejects control-bearing provider token before command or fetch (29.7996ms)
+✔ authoritative resolver keeps token in headers and records raw response evidence (24.648ms)
+✔ CLI rejects unknown, duplicate, missing, unsafe values and path reuse (10.4936ms)
+✔ promotes one prepared standard target and writes canonical before/after evidence (86.5373ms)
+✔ treats an all-target observation as an idempotent replay (23.5193ms)
+✔ fails closed before mutation for partial or unknown assignments (23.6156ms)
+✔ rejects command output containing the provider token (15.4434ms)
+✔ refuses an existing receipt before provider observation or mutation (8.3972ms)
+✔ rejects full provider configuration drift before and after promotion (23.0858ms)
+✔ validates prepared event hash and the exact protected source/run (16.9614ms)
+✔ CLI rejects unknown/duplicate authority flags and path reuse (0.6813ms)
+✔ keeps adjacent unsafe Windows file identities distinct (1.7059ms)
+✔ rejects descriptor swaps and nanosecond snapshot drift (29.0641ms)
+✔ parses only the closed deployment binding flag set (2.083ms)
+✔ runs with verified real inputs and passes only fixed authority to the producer (19.3799ms)
+✔ writes a deployment binding exactly once without replacing it (44.9483ms)
+✔ rejects an output path swap after descriptor verification (14.8395ms)
+✔ rejects same-inode bytes changed by the final path metadata check (48.2592ms)
+✔ rejects hard-linked input aliases and output paths inside the package (17.206ms)
+✔ parses only the closed production assignment validation command (3.2611ms)
+✔ runs against real inputs, fixed configuration, and a bound closing store (25.0266ms)
+✔ writes the staged assignment authority create-only before route validation (46.5307ms)
+✔ rejects an assignment authority path swap after descriptor verification (14.8296ms)
+✔ rejects same-inode authority bytes changed by the final path metadata check (22.9592ms)
+✔ rejects same-inode pair bytes changed by a final path metadata check (32.4733ms)
+✔ writes both outputs create-only and never partially overwrites a pair (61.1421ms)
+✔ rejects hard links, path reuse, and realpath aliases (24.9443ms)
+✔ derives the CSP report assignment route from the artifact CSP mode (1.7225ms)
+✔ replays pending authority and produces closed domain-by-route validation evidence (64.6361ms)
+✔ integrates the real prepared-result validator, deployment evidence, and provider receipt chain (39.9991ms)
+✔ binds assignment authority to fresh raw provider bytes and preserves preflight evidence on failure (31.9945ms)
+✔ supports exact replay without renewing freshness and tolerates HTTP Date second precision (41.3725ms)
+✔ rejects receipt, replayed state, immutable route, and caller authority tampering before output (21.0951ms)
+✔ fails closed for partial, redirected, body, header, and stale production responses (105.536ms)
+✔ rejects a protected secret in a production body and state drift during probing (43.3244ms)
+✔ excludes only per-observation time and receipt evidence from configuration (3.7813ms)
+✔ binds every nonvolatile provider configuration field (0.6527ms)
+✔ rejects absent configuration input (0.662ms)
+✔ collects bootstrap recovery probes and reaggregates immutable authority (65.808ms)
+✔ resolves the initialized bootstrap binding after prior phase attestations (4.5621ms)
+✔ rejects a caller source and pending standard substitution (4.1181ms)
+✔ rejects bootstrap source substitution independently from the executor (3.6105ms)
+✔ rejects managed-production and bootstrap containment misuse (5.8054ms)
+✔ rejects fresh provider drift from the live binding (3.8062ms)
+✔ rejects startup contract profile drift (3.9676ms)
+✔ rejects an over-limit probe with no 429 (8.7575ms)
+✔ rejects a normal-profile 429 as a false positive (10.6555ms)
+✔ rejects immutable tamper and media substitution (15.9678ms)
+✔ rejects a forged immutable-store receipt (6.2081ms)
+✔ rejects OIDC receipts with an extra property (6.2618ms)
+✔ rejects authority and transcript extra properties before aggregation (14.5507ms)
+✔ CLI accepts only namespace/source/output and emits reference-only canonical output (1.1746ms)
+✔ create-only output uses an exact descriptor and refuses overwrite (29.4739ms)
+ℹ tests 106
+ℹ suites 0
+ℹ pass 106
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1042.1535

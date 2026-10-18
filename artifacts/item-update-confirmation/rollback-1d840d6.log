@@ -1,0 +1,153 @@
+
+> event-shopping-planner@1.0.0 test:release-a-rollback
+> pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/rehearse-release-a-rollback.ps1
+
+
+> event-shopping-planner@1.0.0 build:release-a
+> npm run build:app && node scripts/verify-release-a-build.mjs
+
+
+> event-shopping-planner@1.0.0 build:app
+> tsc --noEmit && node scripts/build-release-vite.mjs
+
+vite v8.2.0 building client environment for release-a...
+[2K
+transforming...✓ 322 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/release-capabilities.1d840d6f3aa3c0949ca7eadf1b16b5e9cbc375b4.json      0.29 kB │ gzip:   0.19 kB
+dist/release-capabilities.json                                               0.29 kB │ gzip:   0.19 kB
+dist/manifest.webmanifest                                                    0.58 kB
+dist/outer-agent-graph.json                                                  1.72 kB │ gzip:   0.44 kB
+dist/index.html                                                              1.82 kB │ gzip:   0.83 kB
+dist/assets/route.worker-vkpwhvUq.js                                        19.92 kB
+dist/assets/outer-recovery-agent.js                                         19.93 kB
+dist/release-role-graph.json                                                92.73 kB │ gzip:   8.58 kB
+dist/assets/backup.worker-CmLUrcml.js                                      256.07 kB
+dist/assets/persistence.worker-Dgzz1Tkn.js                                 318.44 kB
+dist/assets/xlsx.worker-DA2gqYv7.js                                      1,589.34 kB
+dist/assets/app-BWWXoYAW.css                                                91.83 kB │ gzip:  17.14 kB
+dist/assets/ImportScreen-BLazLck-.js                                        19.89 kB │ gzip:   6.40 kB
+dist/assets/FocusModeContainer-DNLqF-1r.js                                 157.59 kB │ gzip:  47.41 kB
+dist/assets/release-role.js                                              1,319.63 kB │ gzip: 380.99 kB
+
+✓ built in 2.54s
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+PWA v1.3.0
+Building src/sw.ts service worker ("es" format)...
+vite v8.2.0 building client environment for release-a...
+
+ WARN  inlineDynamicImports option is deprecated, please use codeSplitting: false instead.
+
+[2K
+transforming...✓ 3 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/sw.mjs  4.03 kB │ gzip: 1.69 kB
+
+✓ built in 20ms
+PWA v1.3.0
+mode      injectManifest
+format:   es
+precache  27 entries (4864.19 KiB)
+files generated
+  dist/sw.js
+Built production standard release 1d840d6f3aa3c0949ca7eadf1b16b5e9cbc375b4/830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611; identity 2cc7a39825742a40823431c221bdbaa5dd2120650e25849d8a164e4f6375d20e; source clean.
+Release A artifact 1d840d6f3aa3c0949ca7eadf1b16b5e9cbc375b4 verified: exact source; cleanup forced OFF; PWA artifacts and /sw.js headers present.
+Warning: you are leaving 3 commits behind, not connected to
+any of your branches:
+
+  1d840d6 Format final item update documentation
+  4dca4fc Validate final item update evidence and documentation
+  cb2b22b Implement item update confirmation fixes (final validation snapshot)
+
+If you want to keep them by creating a new branch, this may be a good time
+to do so with:
+
+ git branch <new-branch-name> 1d840d6
+
+HEAD is now at e5f26b7 chore: checkpoint release A persistence work
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated lodash.isequal@4.5.0: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
+npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+npm warn deprecated rimraf@2.7.1: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm warn deprecated whatwg-encoding@3.1.1: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+npm warn deprecated sourcemap-codec@1.4.8: Please use @jridgewell/sourcemap-codec instead
+npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
+npm warn deprecated source-map@0.8.0-beta.0: The work that was done in this beta branch won't be included in future versions
+npm warn deprecated fstream@1.0.12: This package is no longer supported.
+npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 789 packages, and audited 790 packages in 28s
+
+174 packages are looking for funding
+  run `npm fund` for details
+
+34 vulnerabilities (1 low, 9 moderate, 22 high, 2 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm warn install-scripts 2 packages have install scripts not yet covered by allowScripts:
+npm warn install-scripts   esbuild@0.21.5 (postinstall: node install.js)
+npm warn install-scripts   sharp@0.32.6 (install: (node install/libvips && node install/dll-copy && prebuild-install) || (node install/can-compile && node-gyp rebuild && node install/dll-copy))
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+
+> event-shopping-planner@1.0.0 build
+> tsc && vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 195 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/registerSW.js                            0.13 kB
+dist/manifest.webmanifest                     0.53 kB
+dist/index.html                               5.35 kB │ gzip:   2.18 kB
+dist/assets/ImportScreen-D0wnOA-S.js         16.74 kB │ gzip:   5.94 kB
+dist/assets/FocusModeContainer-C-eePZPf.js  138.13 kB │ gzip:  42.31 kB
+dist/assets/index-D6ezIIKR.js               870.06 kB │ gzip: 252.97 kB
+dist/assets/xlsx-parser-HSv9mCQj.js         972.45 kB │ gzip: 283.18 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.79s
+Browserslist: browsers data (caniuse-lite) is 10 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+PWA v0.20.5
+mode      generateSW
+precache  17 entries (3043.15 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-ec65da8e.js
+DB boundary rehearsal seed START.
+DB boundary rehearsal seed PASS (e5f26b76b1318d70b5d2373c8808cda20c7bb5c3).
+DB boundary rehearsal upgrade START.
+DB boundary rehearsal upgrade PASS (1d840d6f3aa3c0949ca7eadf1b16b5e9cbc375b4).
+DB boundary rehearsal blocked START.
+DB boundary rehearsal blocked PASS (e5f26b76b1318d70b5d2373c8808cda20c7bb5c3).
+DB boundary rehearsal isolated START.
+DB boundary rehearsal isolated PASS (e5f26b76b1318d70b5d2373c8808cda20c7bb5c3).
+DB boundary rehearsal forward START.
+DB boundary rehearsal forward PASS (1d840d6f3aa3c0949ca7eadf1b16b5e9cbc375b4).
+Release A isolated rollback recovery PASS: DB v11 rejects predecessor ceiling v7.
+Release A rollback rehearsal PASS: 1d840d6f3aa3c0949ca7eadf1b16b5e9cbc375b4 -> e5f26b76b1318d70b5d2373c8808cda20c7bb5c3 -> 1d840d6f3aa3c0949ca7eadf1b16b5e9cbc375b4

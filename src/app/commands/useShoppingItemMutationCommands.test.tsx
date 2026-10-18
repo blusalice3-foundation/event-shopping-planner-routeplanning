@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { emptyApplicationSnapshot as emptyApplicationSnapshotForImport } from "../state/useApplicationSnapshot";
 import { rememberItemUpdateBaseline } from "../../utils/itemUpdateBaseline";
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -11,6 +12,7 @@ import type {
 } from "../../types/item";
 import { getItemKey } from "../../utils/itemComparison";
 import type { PendingDuplicateEventImport } from "../state/appOverlayTypes";
+import { createEventUpdateOperationRegistry } from "./eventUpdateOperation";
 import {
   useShoppingItemMutationCommands,
   type BulkAddItemInput,
@@ -1145,4 +1147,172 @@ it("returns the actual saved count after deduplicating a new import", async () =
   expect(harness.spies.notify).toHaveBeenCalledWith(
     "1 items imported into a new event.",
   );
+});
+
+it("[ID 9] captures duplicate ownership and its displayed request before choosing a resolution", async () => {
+  const h = createHarness();
+  const registry = createEventUpdateOperationRegistry();
+  Object.assign(h.ports.state, {
+    eventUpdateOperationsRef: { current: registry },
+  });
+  let inputCurrent = true;
+  h.ports.actions.openDuplicateEvent = vi.fn((pending) => {
+    expect(registry.current?.id).toBe(pending.updateOperationId);
+    h.stores.pendingDuplicateEvent = pending;
+    return "duplicate-owned";
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  let completion!: Promise<import("../../types/import").BulkImportResult>;
+  act(() => {
+    completion = result.current.handleBulkAdd(EVENT, [bulkItem("incoming")], {
+      source: "spreadsheet",
+      request: { id: "input", isCurrent: () => inputCurrent },
+    });
+  });
+  const owner = registry.current!;
+  expect(owner.requestId).toBe("duplicate-owned");
+  inputCurrent = false;
+  expect(owner.isCurrentInput?.()).toBe(false);
+  act(() => registry.finish(owner.id, { status: "invalidated" }));
+  await expect(completion).resolves.toEqual({ status: "invalidated" });
+});
+
+it("[ID 8] rejects a new import while preserving the submitted update and completion", async () => {
+  const h = createHarness();
+  const registry = createEventUpdateOperationRegistry();
+  Object.assign(h.ports.state, {
+    eventUpdateOperationsRef: { current: registry },
+  });
+  const complete = vi.fn();
+  const owner = registry.start({ eventName: EVENT, complete })!;
+  registry.changePhase(owner, "saving");
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  let outcome: import("../../types/import").BulkImportResult | undefined;
+  await act(async () => {
+    outcome = await result.current.handleBulkAdd(
+      EVENT,
+      [bulkItem("incoming")],
+      { source: "spreadsheet" },
+    );
+  });
+  expect(outcome).toEqual({ status: "invalidated" });
+  expect(registry.current).toBe(owner);
+  expect(complete).not.toHaveBeenCalled();
+  expect(h.spies.openDuplicateEvent).not.toHaveBeenCalled();
+  expect(h.refs.eventUpdatePreviewEpochRef.current).toBe(0);
+});
+
+it("[ID 9] replacing a duplicate selection resolves only the earlier waiting import", async () => {
+  const h = createHarness();
+  const registry = createEventUpdateOperationRegistry();
+  Object.assign(h.ports.state, {
+    eventUpdateOperationsRef: { current: registry },
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  let first!: Promise<import("../../types/import").BulkImportResult>;
+  let second!: Promise<import("../../types/import").BulkImportResult>;
+  act(() => {
+    first = result.current.handleBulkAdd(EVENT, [bulkItem("first")], {
+      source: "spreadsheet",
+    });
+    second = result.current.handleBulkAdd(EVENT, [bulkItem("second")], {
+      source: "spreadsheet",
+    });
+  });
+  await expect(first).resolves.toEqual({ status: "invalidated" });
+  const owner = registry.current!;
+  expect(h.stores.pendingDuplicateEvent?.updateOperationId).toBe(owner.id);
+  act(() => registry.finish(owner.id, { status: "cancelled" }));
+  await expect(second).resolves.toEqual({ status: "cancelled" });
+});
+
+it("[ID 3] rechecks the captured import input in the queued save guard", async () => {
+  const h = createHarness();
+  let current = true;
+  let queued!: import("./ApplicationSnapshotCommitPort").ApplicationSnapshotGuard;
+  let continueSave!: () => void;
+  const proceed = new Promise<void>((resolve) => {
+    continueSave = resolve;
+  });
+  h.ports.persistence.commitApplicationSnapshotPatch = vi.fn(
+    async (_patch, _settings, _context, guard) => {
+      queued = guard!;
+      await proceed;
+      queued({
+        ...emptyApplicationSnapshotForImport(),
+        eventLists: h.stores.eventLists,
+      });
+    },
+  );
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  let saving!: Promise<import("../../types/import").BulkImportResult>;
+  act(() => {
+    saving = result.current.applyBulkAdd(EVENT, [bulkItem("incoming")], {
+      request: { id: "input", isCurrent: () => current },
+    });
+  });
+  expect(queued).toBeTypeOf("function");
+  current = false;
+  let outcome: import("../../types/import").BulkImportResult | undefined;
+  await act(async () => {
+    continueSave();
+    outcome = await saving;
+  });
+  expect(outcome).toEqual({ status: "invalidated" });
+  expect(h.stores.eventLists[EVENT]).toHaveLength(1);
+  expect(h.spies.notify).not.toHaveBeenCalled();
+});
+
+it("[ID 9] a reentrant later import keeps its ownership when an earlier import is replaced", async () => {
+  const h = createHarness();
+  const registry = createEventUpdateOperationRegistry();
+  Object.assign(h.ports.state, {
+    eventUpdateOperationsRef: { current: registry },
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  let later!: Promise<import("../../types/import").BulkImportResult>;
+  registry.start({
+    eventName: EVENT,
+    complete: () => {
+      later = result.current.handleBulkAdd(EVENT, [bulkItem("later")], {
+        source: "spreadsheet",
+      });
+    },
+  });
+  let outcome: import("../../types/import").BulkImportResult | undefined;
+  await act(async () => {
+    outcome = await result.current.handleBulkAdd(EVENT, [bulkItem("outer")], {
+      source: "spreadsheet",
+    });
+  });
+  expect(outcome).toEqual({ status: "invalidated" });
+  expect(h.stores.pendingDuplicateEvent?.analysis.incomingItems[0].circle).toBe(
+    "later",
+  );
+  const owner = registry.current!;
+  act(() => registry.finish(owner.id, { status: "cancelled" }));
+  await expect(later).resolves.toEqual({ status: "cancelled" });
+});
+
+it("[ID 9] a stale incoming import cannot invalidate a later selection owner", async () => {
+  const h = createHarness();
+  const registry = createEventUpdateOperationRegistry();
+  Object.assign(h.ports.state, {
+    eventUpdateOperationsRef: { current: registry },
+  });
+  const complete = vi.fn();
+  const owner = registry.start({ eventName: EVENT, complete })!;
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  let outcome: import("../../types/import").BulkImportResult | undefined;
+  await act(async () => {
+    outcome = await result.current.handleBulkAdd(EVENT, [bulkItem("stale")], {
+      source: "spreadsheet",
+      request: { id: "stale", isCurrent: () => false },
+    });
+  });
+  expect(outcome).toEqual({ status: "invalidated" });
+  expect(registry.current).toBe(owner);
+  expect(complete).not.toHaveBeenCalled();
+  expect(h.refs.eventUpdatePreviewEpochRef.current).toBe(0);
+  expect(h.spies.openDuplicateEvent).not.toHaveBeenCalled();
 });

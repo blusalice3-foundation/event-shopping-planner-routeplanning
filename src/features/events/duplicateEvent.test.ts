@@ -295,3 +295,80 @@ describe("exact duplicate filtering and resolutions", () => {
     ).toBe("既存（別名3）");
   });
 });
+
+describe("source identity follows sheet fetch precedence", () => {
+  it.each([
+    {
+      currentName: "",
+      nextName: "",
+      currentGid: "0002",
+      nextGid: "2",
+      same: true,
+    },
+    {
+      currentName: "",
+      nextName: "",
+      currentGid: "1",
+      nextGid: "2",
+      same: false,
+    },
+    { currentName: "", nextName: "", currentGid: "", nextGid: "", same: true },
+    {
+      currentName: "",
+      nextName: "",
+      currentGid: "",
+      nextGid: "0",
+      same: false,
+    },
+    {
+      currentName: "",
+      nextName: "",
+      currentGid: "0",
+      nextGid: "",
+      same: false,
+    },
+    {
+      currentName: "品目表",
+      nextName: "品目表",
+      currentGid: "1",
+      nextGid: "2",
+      same: true,
+    },
+    {
+      currentName: "品目表",
+      nextName: "",
+      currentGid: "1",
+      nextGid: "1",
+      same: false,
+    },
+    {
+      currentName: "",
+      nextName: "品目表",
+      currentGid: "1",
+      nextGid: "1",
+      same: false,
+    },
+  ])(
+    "compares $currentName/$currentGid with $nextName/$nextGid as same=$same",
+    ({ currentName, nextName, currentGid, nextGid, same }) => {
+      const url = "https://docs.google.com/spreadsheets/d/source/edit";
+      const result = analyzeDuplicateEventImport({
+        eventName: "イベントA",
+        incomingItems: [item()],
+        incomingSource: source(
+          `${url}${nextGid ? `#gid=${nextGid}` : ""}`,
+          nextName,
+        ),
+        eventLists: { イベントA: [storedItem()] },
+        eventMetadata: {
+          イベントA: metadata(
+            `${url}${currentGid ? `#gid=${currentGid}` : ""}`,
+            currentName,
+          ),
+        },
+      });
+      expect(result.kind).toBe(same ? "same-source" : "different-source");
+      expect(result.sourceComparison.isSameSource).toBe(same);
+    },
+  );
+});

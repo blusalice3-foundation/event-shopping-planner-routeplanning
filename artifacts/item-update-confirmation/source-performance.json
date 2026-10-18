@@ -1,0 +1,1131 @@
+{
+  "measuredAt": "2026-10-18T01:47:18.544Z",
+  "node": "v24.19.0",
+  "os": "win32 10.0.26200",
+  "baselineRoot": "D:\\ciub-1018",
+  "baselineCommit": "f15552dd999c6c1aab55a6b0ab9c2056bd0fa4ec",
+  "currentCommit": "cb2b22b974a50a0e3cbaae979bfad8789533493c",
+  "currentHasUncommittedChanges": false,
+  "samples": 100,
+  "warmup": 30,
+  "fetchMeasurement": "Synthetic zero-latency local Response using the real fetch request and text-reading path; excludes network wait.",
+  "scope": "Source pipeline only. Confirmation rendering, checkbox reaction and persistent save completion require browser measurements separately.",
+  "results": [
+    {
+      "size": 150,
+      "scenario": "normal",
+      "stage": "fetch-local-response",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.13239999999996144,
+        "p95Ms": 0.1751000000000431
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.13190000000008695,
+        "p95Ms": 0.18650000000002365
+      },
+      "medianDeltaMs": -0.0004999999998744897,
+      "p95DeltaMs": 0.011399999999980537,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "normal",
+      "stage": "parse-csv",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.46899999999993724,
+        "p95Ms": 0.5800000000000409
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.4739999999999327,
+        "p95Ms": 0.6123000000000047
+      },
+      "medianDeltaMs": 0.0049999999999954525,
+      "p95DeltaMs": 0.0322999999999638,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "normal",
+      "stage": "normalize-urls",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.051899999999932334,
+        "p95Ms": 0.07389999999998054
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.051700000000096225,
+        "p95Ms": 0.05930000000000746
+      },
+      "medianDeltaMs": -0.00019999999983610905,
+      "p95DeltaMs": -0.014599999999973079,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "normal",
+      "stage": "match-items",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.2765000000000555,
+        "p95Ms": 0.3854999999999791
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.35629999999991924,
+        "p95Ms": 0.48699999999996635
+      },
+      "medianDeltaMs": 0.07979999999986376,
+      "p95DeltaMs": 0.10149999999998727,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "normal",
+      "stage": "create-diff",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.32939999999996417,
+        "p95Ms": 0.4841999999999871
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.4298000000000002,
+        "p95Ms": 0.6457000000000335
+      },
+      "medianDeltaMs": 0.10040000000003602,
+      "p95DeltaMs": 0.16150000000004638,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "normal",
+      "stage": "apply-items",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.02369999999996253,
+        "p95Ms": 0.030700000000024374
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.021500000000060027,
+        "p95Ms": 0.034700000000043474
+      },
+      "medianDeltaMs": -0.002199999999902502,
+      "p95DeltaMs": 0.004000000000019099,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "collision-title",
+      "stage": "fetch-local-response",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.1328000000000884,
+        "p95Ms": 0.20450000000005275
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.13589999999999236,
+        "p95Ms": 0.20909999999992124
+      },
+      "medianDeltaMs": 0.0030999999999039574,
+      "p95DeltaMs": 0.004599999999868487,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 150,
+          "added": 75,
+          "deleted": 75,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "collision-title",
+      "stage": "parse-csv",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.43840000000000146,
+        "p95Ms": 0.582300000000032
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.44239999999990687,
+        "p95Ms": 0.5592999999998938
+      },
+      "medianDeltaMs": 0.0039999999999054126,
+      "p95DeltaMs": -0.023000000000138243,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 150,
+          "added": 75,
+          "deleted": 75,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "collision-title",
+      "stage": "normalize-urls",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.0523000000000593,
+        "p95Ms": 0.07950000000005275
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.05300000000011096,
+        "p95Ms": 0.07690000000002328
+      },
+      "medianDeltaMs": 0.0007000000000516593,
+      "p95DeltaMs": -0.0026000000000294676,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 150,
+          "added": 75,
+          "deleted": 75,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "collision-title",
+      "stage": "match-items",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.48230000000012296,
+        "p95Ms": 0.5484999999998763
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.7522999999998774,
+        "p95Ms": 0.8656999999998334
+      },
+      "medianDeltaMs": 0.26999999999975444,
+      "p95DeltaMs": 0.31719999999995707,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 150,
+          "added": 75,
+          "deleted": 75,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "collision-title",
+      "stage": "create-diff",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.571999999999889,
+        "p95Ms": 0.9876999999999043
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.9260999999999058,
+        "p95Ms": 1.4084000000000287
+      },
+      "medianDeltaMs": 0.35410000000001673,
+      "p95DeltaMs": 0.4207000000001244,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 150,
+          "added": 75,
+          "deleted": 75,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "collision-title",
+      "stage": "apply-items",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 2.445899999999938,
+        "p95Ms": 2.560699999999997
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.07379999999989195,
+        "p95Ms": 0.11069999999995161
+      },
+      "medianDeltaMs": -2.372100000000046,
+      "p95DeltaMs": -2.4500000000000455,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 150,
+          "added": 75,
+          "deleted": 75,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 150,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "duplicates",
+      "stage": "fetch-local-response",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.18360000000006949,
+        "p95Ms": 0.20830000000000837
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.18499999999994543,
+        "p95Ms": 0.21469999999999345
+      },
+      "medianDeltaMs": 0.001399999999875945,
+      "p95DeltaMs": 0.006399999999985084,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 300,
+          "added": 150,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 300,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 150
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "duplicates",
+      "stage": "parse-csv",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.840900000000147,
+        "p95Ms": 0.9032999999999447
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.8598999999999251,
+        "p95Ms": 0.9760999999998603
+      },
+      "medianDeltaMs": 0.018999999999778083,
+      "p95DeltaMs": 0.0727999999999156,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 300,
+          "added": 150,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 300,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 150
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "duplicates",
+      "stage": "normalize-urls",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.09660000000030777,
+        "p95Ms": 0.11639999999988504
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.09619999999995343,
+        "p95Ms": 0.11169999999992797
+      },
+      "medianDeltaMs": -0.00040000000035433914,
+      "p95DeltaMs": -0.004699999999957072,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 300,
+          "added": 150,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 300,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 150
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "duplicates",
+      "stage": "match-items",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.4438000000000102,
+        "p95Ms": 0.515400000000227
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.43620000000009895,
+        "p95Ms": 0.49530000000004293
+      },
+      "medianDeltaMs": -0.007599999999911233,
+      "p95DeltaMs": -0.02010000000018408,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 300,
+          "added": 150,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 300,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 150
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "duplicates",
+      "stage": "create-diff",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.5869999999999891,
+        "p95Ms": 0.6603999999997541
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.7055000000000291,
+        "p95Ms": 0.7492999999999483
+      },
+      "medianDeltaMs": 0.11850000000004002,
+      "p95DeltaMs": 0.08890000000019427,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 300,
+          "added": 150,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 300,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 150
+        }
+      }
+    },
+    {
+      "size": 150,
+      "scenario": "duplicates",
+      "stage": "apply-items",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 9.439800000000105,
+        "p95Ms": 11.60839999999962
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.021999999999934516,
+        "p95Ms": 0.03840000000036525
+      },
+      "medianDeltaMs": -9.41780000000017,
+      "p95DeltaMs": -11.569999999999254,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 300,
+          "added": 150,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 300,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 150
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "normal",
+      "stage": "fetch-local-response",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.328899999999976,
+        "p95Ms": 0.4472000000000662
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.3305000000000291,
+        "p95Ms": 0.4756000000002132
+      },
+      "medianDeltaMs": 0.0016000000000531145,
+      "p95DeltaMs": 0.028400000000146974,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "normal",
+      "stage": "parse-csv",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 1.5352999999995518,
+        "p95Ms": 2.425000000000182
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 1.5676999999996042,
+        "p95Ms": 6.036799999999857
+      },
+      "medianDeltaMs": 0.03240000000005239,
+      "p95DeltaMs": 3.6117999999996755,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "normal",
+      "stage": "normalize-urls",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.20830000000023574,
+        "p95Ms": 0.2822999999998501
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.16859999999996944,
+        "p95Ms": 0.2562000000007174
+      },
+      "medianDeltaMs": -0.0397000000002663,
+      "p95DeltaMs": -0.026099999999132706,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "normal",
+      "stage": "match-items",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.8845000000001164,
+        "p95Ms": 1.606699999999364
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.8078999999997905,
+        "p95Ms": 1.4393999999992957
+      },
+      "medianDeltaMs": -0.07660000000032596,
+      "p95DeltaMs": -0.1673000000000684,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "normal",
+      "stage": "create-diff",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 1.1235999999998967,
+        "p95Ms": 1.703599999999824
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 1.3824000000004162,
+        "p95Ms": 2.2911000000003696
+      },
+      "medianDeltaMs": 0.2588000000005195,
+      "p95DeltaMs": 0.5875000000005457,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "normal",
+      "stage": "apply-items",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.051499999999577994,
+        "p95Ms": 0.0852999999997337
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.05470000000059372,
+        "p95Ms": 0.09000000000014552
+      },
+      "medianDeltaMs": 0.0032000000010157237,
+      "p95DeltaMs": 0.004700000000411819,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "collision-title",
+      "stage": "fetch-local-response",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.31419999999980064,
+        "p95Ms": 0.41090000000076543
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.3100000000004002,
+        "p95Ms": 0.4268999999994776
+      },
+      "medianDeltaMs": -0.004199999999400461,
+      "p95DeltaMs": 0.015999999998712156,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 500,
+          "added": 250,
+          "deleted": 250,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "collision-title",
+      "stage": "parse-csv",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 1.4324999999998909,
+        "p95Ms": 1.7151000000003478
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 1.4557000000004336,
+        "p95Ms": 1.70220000000063
+      },
+      "medianDeltaMs": 0.023200000000542786,
+      "p95DeltaMs": -0.012899999999717693,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 500,
+          "added": 250,
+          "deleted": 250,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "collision-title",
+      "stage": "normalize-urls",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.1587999999992462,
+        "p95Ms": 0.1945000000005166
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.15800000000035652,
+        "p95Ms": 0.20280000000002474
+      },
+      "medianDeltaMs": -0.0007999999988896889,
+      "p95DeltaMs": 0.008299999999508145,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 500,
+          "added": 250,
+          "deleted": 250,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "collision-title",
+      "stage": "match-items",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 1.5829000000003361,
+        "p95Ms": 4.747299999999996
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 2.4976000000006024,
+        "p95Ms": 6.413700000000063
+      },
+      "medianDeltaMs": 0.9147000000002663,
+      "p95DeltaMs": 1.666400000000067,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 500,
+          "added": 250,
+          "deleted": 250,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "collision-title",
+      "stage": "create-diff",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 1.8336999999992258,
+        "p95Ms": 5.258100000000013
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 3.078700000000026,
+        "p95Ms": 6.944999999999709
+      },
+      "medianDeltaMs": 1.2450000000008004,
+      "p95DeltaMs": 1.6868999999996959,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 500,
+          "added": 250,
+          "deleted": 250,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "collision-title",
+      "stage": "apply-items",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 25.91489999999976,
+        "p95Ms": 32.517400000000634
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.25309999999990396,
+        "p95Ms": 0.3846000000012282
+      },
+      "medianDeltaMs": -25.661799999999857,
+      "p95DeltaMs": -32.132799999999406,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 500,
+          "added": 250,
+          "deleted": 250,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 500,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "duplicates",
+      "stage": "fetch-local-response",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.5805000000000291,
+        "p95Ms": 0.9900000000016007
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.5751000000000204,
+        "p95Ms": 1.0203999999994267
+      },
+      "medianDeltaMs": -0.005400000000008731,
+      "p95DeltaMs": 0.030399999997825944,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 1000,
+          "added": 500,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 1000,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 500
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "duplicates",
+      "stage": "parse-csv",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 3.0165999999990163,
+        "p95Ms": 7.262799999998606
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 3.083599999999933,
+        "p95Ms": 7.411000000000058
+      },
+      "medianDeltaMs": 0.06700000000091677,
+      "p95DeltaMs": 0.14820000000145228,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 1000,
+          "added": 500,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 1000,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 500
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "duplicates",
+      "stage": "normalize-urls",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 0.32259999999951106,
+        "p95Ms": 0.36260000000038417
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.32180000000153086,
+        "p95Ms": 0.35940000000118744
+      },
+      "medianDeltaMs": -0.0007999999979801942,
+      "p95DeltaMs": -0.0031999999991967343,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 1000,
+          "added": 500,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 1000,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 500
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "duplicates",
+      "stage": "match-items",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 1.569500000001426,
+        "p95Ms": 2.347799999999552
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 1.5509999999994761,
+        "p95Ms": 2.2892999999985477
+      },
+      "medianDeltaMs": -0.018500000001949957,
+      "p95DeltaMs": -0.05850000000100408,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 1000,
+          "added": 500,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 1000,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 500
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "duplicates",
+      "stage": "create-diff",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 2.080900000000838,
+        "p95Ms": 5.523000000001048
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 2.523699999999735,
+        "p95Ms": 3.9570000000003347
+      },
+      "medianDeltaMs": 0.44279999999889696,
+      "p95DeltaMs": -1.566000000000713,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 1000,
+          "added": 500,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 1000,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 500
+        }
+      }
+    },
+    {
+      "size": 500,
+      "scenario": "duplicates",
+      "stage": "apply-items",
+      "baseline": {
+        "sampleCount": 100,
+        "medianMs": 105.01970000000074,
+        "p95Ms": 111.9565999999977
+      },
+      "current": {
+        "sampleCount": 100,
+        "medianMs": 0.07739999999830616,
+        "p95Ms": 0.09479999999894062
+      },
+      "medianDeltaMs": -104.94230000000243,
+      "p95DeltaMs": -111.86179999999877,
+      "outcomes": {
+        "baseline": {
+          "inputRows": 1000,
+          "added": 500,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 0
+        },
+        "current": {
+          "inputRows": 1000,
+          "added": 0,
+          "deleted": 0,
+          "duplicateAdditionsSkipped": 500
+        }
+      }
+    }
+  ]
+}

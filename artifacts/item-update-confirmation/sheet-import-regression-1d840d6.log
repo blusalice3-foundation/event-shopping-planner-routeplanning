@@ -1,0 +1,33 @@
+
+[WebServer] (node:2956) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 22 tests using 1 worker
+
+(node:35164) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: direct › items-only 150: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[2/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: direct › source-switch 150: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[3/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: direct › items-only 500: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[4/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: direct › source-switch 500: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[5/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:229:5 › sheet import and optional URL: direct › new URL import excludes incomplete rows, saves no-URL items and keeps zero-result input
+[6/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:276:5 › sheet import and optional URL: direct › seven-column repaste keeps blank-row URLs aligned through save and reload
+[7/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:333:7 › sheet import and optional URL: direct › edit: adds a no-URL item and persists it across reload
+[8/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:333:7 › sheet import and optional URL: direct › execute: adds a no-URL item and persists it across reload
+[9/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:333:7 › sheet import and optional URL: direct › focus: adds a no-URL item and persists it across reload
+[10/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:388:5 › sheet import and optional URL: direct › map cell: adds a no-URL item with its selected location and persists it across reload
+[11/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:426:5 › sheet import and optional URL: direct › removes an existing URL through the guarded editor and persists its absence
+[12/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: worker › items-only 150: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[13/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: worker › source-switch 150: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[14/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: worker › items-only 500: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[15/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: worker › source-switch 500: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[16/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:229:5 › sheet import and optional URL: worker › new URL import excludes incomplete rows, saves no-URL items and keeps zero-result input
+[17/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:276:5 › sheet import and optional URL: worker › seven-column repaste keeps blank-row URLs aligned through save and reload
+[18/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:333:7 › sheet import and optional URL: worker › edit: adds a no-URL item and persists it across reload
+[19/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:333:7 › sheet import and optional URL: worker › execute: adds a no-URL item and persists it across reload
+[20/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:333:7 › sheet import and optional URL: worker › focus: adds a no-URL item and persists it across reload
+[21/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:388:5 › sheet import and optional URL: worker › map cell: adds a no-URL item with its selected location and persists it across reload
+[22/22] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:426:5 › sheet import and optional URL: worker › removes an existing URL through the guarded editor and persists its absence
+  22 passed (39.5s)

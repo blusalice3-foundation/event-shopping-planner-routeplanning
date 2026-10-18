@@ -503,3 +503,86 @@ describe("UpdateConfirmationModal automatic update review", () => {
     );
   });
 });
+
+describe("UpdateConfirmationModal operation state", () => {
+  const changes: PendingPurchasedQuantityChange[] = [
+    {
+      itemId: "purchased",
+      circle: "購入済み",
+      eventDate: "1日目",
+      block: "A",
+      number: "1",
+      title: "新刊",
+      purchaseStatus: "Purchased",
+      currentQuantity: 2,
+      nextQuantity: 4,
+    },
+    {
+      itemId: "limited",
+      circle: "限数",
+      eventDate: "1日目",
+      block: "A",
+      number: "2",
+      title: "既刊",
+      purchaseStatus: "LimitedPurchase",
+      currentQuantity: 3,
+      nextQuantity: 5,
+    },
+  ];
+
+  it("shows the target, duplicate additions excluded, and both quantity effects with one consent", () => {
+    render(
+      <UpdateConfirmationModal
+        {...commonProps}
+        eventName="対象イベント"
+        duplicateItemCount={2}
+        pendingPurchasedQuantityChanges={changes}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("対象イベント: 対象イベント")).toBeVisible();
+    expect(screen.getByText("完全重複による追加除外: 2行")).toBeVisible();
+    expect(
+      screen.getByText(
+        /購入済みの数量変更は、実際に購入した数量と支出集計にも反映/,
+      ),
+    ).toBeVisible();
+    expect(screen.getByText(/限数購入は予定数量だけを変更/)).toBeVisible();
+    expect(screen.getAllByRole("checkbox")).toHaveLength(1);
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+  });
+
+  it("keeps submitted consent fixed during saving and allows changes after a failed save", () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    const props = {
+      ...commonProps,
+      onConfirm,
+      onCancel,
+      pendingPurchasedQuantityChanges: changes,
+    };
+    const view = render(<UpdateConfirmationModal {...props} />);
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
+    expect(onConfirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({ applyPurchasedQuantityChanges: true }),
+    );
+    view.rerender(<UpdateConfirmationModal {...props} isSaving />);
+    expect(screen.getByRole("checkbox")).toBeDisabled();
+    expect(screen.getByRole("checkbox")).toBeChecked();
+    expect(screen.getByRole("button", { name: "キャンセル" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "更新を実行" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "キャンセル" }));
+    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(onConfirm).toHaveBeenCalledOnce();
+    view.rerender(<UpdateConfirmationModal {...props} isSaving={false} />);
+    expect(screen.getByRole("checkbox")).toBeEnabled();
+    expect(screen.getByRole("checkbox")).toBeChecked();
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
+    expect(onConfirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({ applyPurchasedQuantityChanges: false }),
+    );
+  });
+});

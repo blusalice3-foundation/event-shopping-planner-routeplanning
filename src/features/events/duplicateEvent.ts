@@ -162,8 +162,13 @@ export function compareSpreadsheetSourceIdentities(
   return {
     primaryMatch,
     gidComparison,
-    // gid は古い保存データや共有URLに含まれないことがあるため、主判定を覆さない。
-    isSameSource: primaryMatch,
+    // Named sheets take precedence during fetching. Without a name, a gid selects
+    // the sheet, so a missing/different gid cannot prove the same source.
+    isSameSource:
+      primaryMatch &&
+      (!!current?.normalizedSheetName ||
+        (current?.gid === undefined && incoming?.gid === undefined) ||
+        gidComparison === "same"),
   };
 }
 

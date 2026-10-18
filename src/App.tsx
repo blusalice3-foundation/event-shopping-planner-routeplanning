@@ -60,6 +60,8 @@ import { appRuntime } from "./app/composition/appRuntime";
 import { useEventLifecycleCommands } from "./app/commands/useEventLifecycleCommands";
 import { useEventTransferCommands } from "./app/commands/useEventTransferCommands";
 import { useEventUpdateCommands } from "./app/commands/useEventUpdateCommands";
+import { createEventUpdateOperationRegistry } from "./app/commands/eventUpdateOperation";
+import { createEventUpdateInvalidationBoundary } from "./app/commands/eventUpdateInvalidation";
 import { useShoppingItemMutationCommands } from "./app/commands/useShoppingItemMutationCommands";
 import { useShoppingSelectionExecutionCommands } from "./app/commands/useShoppingSelectionExecutionCommands";
 import { useMapImportCommands } from "./app/commands/useMapImportCommands";
@@ -374,6 +376,16 @@ const App: React.FC = () => {
 
   const pendingEventUpdateBaseItemsRef = useRef<ShoppingItem[] | null>(null);
   const eventUpdatePreviewEpochRef = useRef(0);
+  const [eventUpdateOperations] = useState(createEventUpdateOperationRegistry);
+  const eventUpdateOperationsRef = useRef(eventUpdateOperations);
+  const invalidateEventUpdateForEventRef = useRef<(eventName: string) => void>(
+    () => {},
+  );
+  const eventUpdateInvalidation = useMemo(
+    () =>
+      createEventUpdateInvalidationBoundary(invalidateEventUpdateForEventRef),
+    [],
+  );
 
   useEffect(
     () => () => {
@@ -460,25 +472,7 @@ const App: React.FC = () => {
     observeSnapshot,
     applied: (snapshot, invalidatedEvents) => {
       acceptCommittedSnapshot(snapshot);
-      if (
-        pendingDuplicateEvent &&
-        invalidatedEvents.includes(pendingDuplicateEvent.analysis.eventName)
-      ) {
-        pendingDuplicateEvent.complete?.({ status: "invalidated" });
-        overlayCommands.event.close();
-      }
-      if (
-        pendingEventUpdate &&
-        invalidatedEvents.includes(pendingEventUpdate.eventName)
-      )
-        pendingEventUpdate.onImportComplete?.({ status: "invalidated" });
-      if (
-        (pendingEventUpdate &&
-          invalidatedEvents.includes(pendingEventUpdate.eventName)) ||
-        (pendingUpdateEventName &&
-          invalidatedEvents.includes(pendingUpdateEventName))
-      )
-        overlayCommands.event.close();
+      eventUpdateInvalidation.applied(invalidatedEvents);
       if (
         mapImportPendingEventName &&
         invalidatedEvents.includes(mapImportPendingEventName)
@@ -808,6 +802,7 @@ const App: React.FC = () => {
       executeModeItemsRef,
       spaceGroupDragItemIdsRef,
       eventUpdatePreviewEpochRef,
+      eventUpdateOperationsRef,
       blockSortDirection,
       candidateNumberSortDirection,
       itemToDelete,
@@ -927,11 +922,7 @@ const App: React.FC = () => {
     notify: alert,
     clearSelection,
     setSelectedBlockFilters,
-    closeEventUpdateForEvent: (eventName) => {
-      if (pendingEventUpdate?.eventName === eventName) {
-        overlayCommands.event.close();
-      }
-    },
+    closeEventUpdateForEvent: eventUpdateInvalidation.closeEventUpdateForEvent,
     setEventLists,
     setEventMetadata,
     updateExecuteModeItems,
@@ -1176,6 +1167,10 @@ const App: React.FC = () => {
     handleCancelUpdate,
     handleConfirmUpdate,
     handleUrlUpdate,
+    handleUrlUpdateCancel,
+    invalidateEventUpdateForEvent,
+    isEventUpdateSaving,
+    currentUpdateOperationId,
   } = useEventUpdateCommands({
     state: {
       eventLists,
@@ -1189,6 +1184,7 @@ const App: React.FC = () => {
       executeModeItemsRef,
       pendingEventUpdateBaseItemsRef,
       eventUpdatePreviewEpochRef,
+      eventUpdateOperationsRef,
     },
     actions: {
       applyBulkAdd,
@@ -1203,6 +1199,8 @@ const App: React.FC = () => {
       reportError: (message) => console.error(message),
     },
   });
+
+  invalidateEventUpdateForEventRef.current = invalidateEventUpdateForEvent;
 
   const {
     requestFileSelection: handleImportMapData,
@@ -2498,12 +2496,14 @@ const App: React.FC = () => {
         model={{
           item: {
             items,
+            isEventUpdateSaving,
           },
           event: {
             activeEventDate,
             activeEventName,
             eventDates,
             eventMetadata,
+            updateOperationId: currentUpdateOperationId,
           },
           mapEditor: {
             allBlocksForHallDefinition,
@@ -2607,6 +2607,7 @@ const App: React.FC = () => {
             previewEventExport,
             handleConfirmRename,
             handleUrlUpdate,
+            handleUrlUpdateCancel,
             onShowEventList: handleShowEventList,
           },
           mapEditor: {
@@ -2713,7 +2714,9 @@ const App: React.FC = () => {
           onResolve={(resolution) => {
             void handleDuplicateEventResolution(resolution);
           }}
-          onCancel={handleDuplicateEventCancel}
+          onCancel={() =>
+            handleDuplicateEventCancel(pendingDuplicateEvent.updateOperationId)
+          }
         />
       )}
       <PersistenceStatusIndicator

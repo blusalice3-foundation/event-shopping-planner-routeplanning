@@ -1,0 +1,500 @@
+[
+  {
+    "path": "docs/item-update-confirmation-fix-plan.md",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 224,
+    "replacement": 0,
+    "prior": null
+  },
+  {
+    "path": "docs/item-update-confirmation-implementation.md",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 119,
+    "replacement": 0,
+    "prior": null
+  },
+  {
+    "path": "README.md",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 693,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 1,
+      "lf": 689,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "scripts/measure-item-update-performance.mjs",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 283,
+    "replacement": 0,
+    "prior": null
+  },
+  {
+    "path": "src/App.tsx",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 2745,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 94,
+      "lf": 2742,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/app/commands/eventUpdateInvalidation.integration.test.tsx",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 498,
+    "replacement": 0,
+    "prior": null
+  },
+  {
+    "path": "src/app/commands/eventUpdateInvalidation.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 13,
+    "replacement": 0,
+    "prior": null
+  },
+  {
+    "path": "src/app/commands/eventUpdateOperation.test.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 63,
+    "replacement": 0,
+    "prior": null
+  },
+  {
+    "path": "src/app/commands/eventUpdateOperation.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 114,
+    "replacement": 0,
+    "prior": null
+  },
+  {
+    "path": "src/app/commands/useEventUpdateCommands.modal.integration.test.tsx",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 266,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 6,
+      "lf": 248,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/app/commands/useEventUpdateCommands.test.tsx",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 1541,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 26,
+      "lf": 1127,
+      "bom": false,
+      "replacement": 0,
+      "registered": 1
+    }
+  },
+  {
+    "path": "src/app/commands/useEventUpdateCommands.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 728,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 31,
+      "lf": 549,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/app/commands/useShoppingItemMutationCommands.test.tsx",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 1318,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 48,
+      "lf": 1148,
+      "bom": false,
+      "replacement": 0,
+      "registered": 1
+    }
+  },
+  {
+    "path": "src/app/commands/useShoppingItemMutationCommands.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 1211,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 94,
+      "lf": 1163,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/app/state/appOverlayTypes.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 19,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 3,
+      "lf": 18,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/app/state/useAppOverlayController.test.tsx",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 529,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 6,
+      "lf": 327,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/app/state/useAppOverlayController.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 760,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 6,
+      "lf": 643,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/components/UpdateConfirmationModal.test.tsx",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 588,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 0,
+      "lf": 505,
+      "bom": false,
+      "replacement": 0,
+      "registered": 4
+    }
+  },
+  {
+    "path": "src/components/UpdateConfirmationModal.tsx",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 351,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 13,
+      "lf": 325,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/components/UrlUpdateDialog.test.tsx",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 49,
+    "replacement": 0,
+    "prior": null
+  },
+  {
+    "path": "src/components/UrlUpdateDialog.tsx",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 95,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 0,
+      "lf": 90,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/features/app-shell/components/AppOverlayLayer.sheetImport.integration.test.tsx",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 329,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 2,
+      "lf": 215,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/features/app-shell/components/AppOverlayLayer.tsx",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 934,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 27,
+      "lf": 897,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/features/events/duplicateEvent.test.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 374,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 2,
+      "lf": 297,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/features/events/duplicateEvent.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 389,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 21,
+      "lf": 384,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/features/events/sheetMatching.test.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 535,
+    "replacement": 0,
+    "prior": {
+      "error": 1,
+      "crlf": 0,
+      "question": 18,
+      "lf": 358,
+      "bom": false,
+      "replacement": 0,
+      "registered": 1
+    }
+  },
+  {
+    "path": "src/features/events/sheetMatching.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 127,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 6,
+      "lf": 104,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/features/events/updateApply.test.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 524,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 0,
+      "lf": 437,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/features/events/updateDiff.test.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 476,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 0,
+      "lf": 344,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/features/events/updateDiff.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 496,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 25,
+      "lf": 469,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "src/features/events/updateFlow.test.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 398,
+    "replacement": 0,
+    "prior": {
+      "error": 1,
+      "crlf": 0,
+      "question": 9,
+      "lf": 340,
+      "bom": false,
+      "replacement": 0,
+      "registered": 2
+    }
+  },
+  {
+    "path": "src/features/events/updateFlow.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 263,
+    "replacement": 0,
+    "prior": {
+      "error": 0,
+      "crlf": 0,
+      "question": 23,
+      "lf": 257,
+      "bom": false,
+      "replacement": 0,
+      "registered": 0
+    }
+  },
+  {
+    "path": "tests/browser/item-update-confirmation.performance.spec.ts",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 623,
+    "replacement": 0,
+    "prior": null
+  },
+  {
+    "path": ".gitattributes",
+    "utf8Valid": true,
+    "bom": false,
+    "crlf": 0,
+    "lf": 8,
+    "replacement": 0,
+    "prior": null
+  }
+]

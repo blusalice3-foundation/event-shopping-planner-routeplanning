@@ -1,0 +1,13 @@
+
+[WebServer] (node:29724) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+
+(node:31144) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/2] [chromium] › tests\browser\a11y-flows.spec.ts:626:1 › @a11y representative list, focus, map, and dialog flows have no moderate-or-higher violations
+[2/2] [chromium] › tests\browser\foundation.spec.ts:287:1 › @a11y has no moderate, serious, or critical automated accessibility violations
+  2 passed (18.6s)
