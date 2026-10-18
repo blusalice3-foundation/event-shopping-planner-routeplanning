@@ -1,0 +1,877 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\codex-worktrees\\u06-direct-edit-20261018\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/priority-cell-popup-edit.spec.ts",
+      "tests/browser/priority-dialog-interaction.spec.ts",
+      "tests/browser/priority-event-overlay.spec.ts",
+      "tests/browser/priority-preference-consistency.spec.ts",
+      "tests/browser/priority-manual-item-consistency.spec.ts",
+      "--workers=1",
+      "--reporter=list,json",
+      "--output=artifacts/u06-direct-edit-20261018/functional"
+    ],
+    "configFile": "D:\\codex-worktrees\\u06-direct-edit-20261018\\playwright.config.ts",
+    "rootDir": "D:/codex-worktrees/u06-direct-edit-20261018/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/codex-worktrees/u06-direct-edit-20261018/artifacts/u06-direct-edit-20261018/functional",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/codex-worktrees/u06-direct-edit-20261018/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": {
+      "command": "node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173",
+      "url": "http://127.0.0.1:4173",
+      "reuseExistingServer": false,
+      "timeout": 30000
+    }
+  },
+  "suites": [
+    {
+      "title": "priority-cell-popup-edit.spec.ts",
+      "file": "priority-cell-popup-edit.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "direct mouse click opens the real limited editor without changing or saving visits",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2128,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:51:46.420Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cell-popup-edit-before-reload",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                    },
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-0f75f2ba8a72bab8383b",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 238,
+          "column": 1
+        },
+        {
+          "title": "direct mouse click preserves an unregistered item without adding or saving visits",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2173,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:51:48.672Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cell-popup-edit-before-reload",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFtdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                    },
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFtdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-1de5d8ffaacb26b53eeb",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 248,
+          "column": 1
+        },
+        {
+          "title": "direct mouse entry saves the real detail edit once and retains limited quantities and visits on reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1434,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:51:50.854Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cell-popup-edit-before-reload",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Om44O844K244O855m76Yyy44Gu44Oh44Oi44KS6Kmz57Sw57eo6ZuG44GL44KJ5L+d5a2YIiwKICAgICAgInByaW9yaXR5TGV2ZWwiOiAibm9uZSIKICAgIH0KICB9LAogICJ3b3JrZXIiOiB7CiAgICAicGVuZGluZyI6IFtdLAogICAgIm11dGF0aW9ucyI6IFsKICAgICAgImNvbW1pdCIKICAgIF0KICB9Cn0="
+                    },
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Om44O844K244O855m76Yyy44Gu44Oh44Oi44KS6Kmz57Sw57eo6ZuG44GL44KJ5L+d5a2YIiwKICAgICAgInByaW9yaXR5TGV2ZWwiOiAibm9uZSIKICAgIH0KICB9LAogICJ3b3JrZXIiOiB7CiAgICAicGVuZGluZyI6IFtdLAogICAgIm11dGF0aW9ucyI6IFtdCiAgfQp9"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-41b09362fd36df3b1a70",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 258,
+          "column": 1
+        },
+        {
+          "title": "keyboard Enter opens the same limited editor without changing or saving visits",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2016,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:51:52.297Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cell-popup-edit-before-reload",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                    },
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-85bed2dd3009be513dcd",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 304,
+          "column": 1
+        },
+        {
+          "title": "holding the child edit button does not trigger the row long-press menu",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2674,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:51:54.321Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cell-popup-edit-before-reload",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                    },
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-1e1a07a9023d20f38412",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 317,
+          "column": 1
+        },
+        {
+          "title": "row long press still opens the legacy entry and then the real limited editor",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2709,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:51:57.004Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cell-popup-edit-before-reload",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                    },
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-5927ac847b9147af7655",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 327,
+          "column": 1
+        },
+        {
+          "title": "ordinary row mouse clicks still remove and add visits without changing the limited item",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 952,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:51:59.721Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogWwogICAgICAiZGF5IiwKICAgICAgImRheSIKICAgIF0KICB9Cn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-3303ded0018e4bcfd2bf",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 341,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "mobile touch",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 360,
+          "column": 6,
+          "specs": [
+            {
+              "title": "touch tap opens the real limited editor without changing or saving visits",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2045,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-18T10:52:00.682Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cell-popup-edit-before-reload",
+                          "contentType": "application/json",
+                          "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                        },
+                        {
+                          "name": "cell-popup-edit-observation",
+                          "contentType": "application/json",
+                          "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f78eca8db0768459c287-ed3dab3491003c5ff1d5",
+              "file": "priority-cell-popup-edit.spec.ts",
+              "line": 366,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "priority-dialog-interaction.spec.ts",
+      "file": "priority-dialog-interaction.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "bulk limited input contains touch and keyboard across confirmations and the next item: pc",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1121,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:52:02.743Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf55c0d36a89b0372caa-31448105e75ce362c48d",
+          "file": "priority-dialog-interaction.spec.ts",
+          "line": 113,
+          "column": 3
+        },
+        {
+          "title": "bulk limited input contains touch and keyboard across confirmations and the next item: smartphone",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1247,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:52:03.872Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf55c0d36a89b0372caa-ce3717f9b6630d314eea",
+          "file": "priority-dialog-interaction.spec.ts",
+          "line": 113,
+          "column": 3
+        },
+        {
+          "title": "keyboard day changes discard popup input while retaining the map canvas",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1013,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:52:05.128Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf55c0d36a89b0372caa-542efdc26b6d9efb91de",
+          "file": "priority-dialog-interaction.spec.ts",
+          "line": 180,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "priority-event-overlay.spec.ts",
+      "file": "priority-event-overlay.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "rename cancellation and unchanged-name submission close without changing the event, then normal rename persists",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2049,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:52:06.618Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "91cffb28b3c342a49669-70a2fdd6fd3765d982b4",
+          "file": "priority-event-overlay.spec.ts",
+          "line": 77,
+          "column": 1
+        },
+        {
+          "title": "export cancellation and close icon reopen without downloading, then the real Excel Worker exports and closes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2023,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:52:08.675Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "91cffb28b3c342a49669-110364ac7d62493859a0",
+          "file": "priority-event-overlay.spec.ts",
+          "line": 133,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "priority-manual-item-consistency.spec.ts",
+      "file": "priority-manual-item-consistency.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "reopens an empty event from empty-backup, preserves settings, adds a corrected manual item and reloads it",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2609,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:52:10.718Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dc2744ae61d2e79b9743-125b52a4e9de3cdf5020",
+          "file": "priority-manual-item-consistency.spec.ts",
+          "line": 209,
+          "column": 3
+        },
+        {
+          "title": "reopens an empty event from delete-last, preserves settings, adds a corrected manual item and reloads it",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4013,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:52:13.336Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dc2744ae61d2e79b9743-6cc57519a61245047cea",
+          "file": "priority-manual-item-consistency.spec.ts",
+          "line": 209,
+          "column": 3
+        },
+        {
+          "title": "reopens an empty event from settings-only, preserves settings, adds a corrected manual item and reloads it",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3066,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:52:17.358Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dc2744ae61d2e79b9743-a1ac6fa0d0921d00e406",
+          "file": "priority-manual-item-consistency.spec.ts",
+          "line": 209,
+          "column": 3
+        }
+      ]
+    },
+    {
+      "title": "priority-preference-consistency.spec.ts",
+      "file": "priority-preference-consistency.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "localStorage quota failures preserve the app, current settings, item persistence and JSON backup",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5211,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:52:20.453Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "906095c7eec5eb704de6-0feae04f4d53f086c195",
+          "file": "priority-preference-consistency.spec.ts",
+          "line": 78,
+          "column": 1
+        },
+        {
+          "title": "unavailable localStorage read retains a visible app and backup failure guidance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 757,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:52:25.673Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "storage-read-outcome",
+                      "contentType": "text/plain",
+                      "body": "RXhpc3Rpbmcgc3RhcnR1cCByZWNvdmVyeSBzY3JlZW4gcmVtYWluZWQgdmlzaWJsZTsgbm8gZGF0YSBjaGFuZ2VkLg=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "906095c7eec5eb704de6-4d71eba8e14d1721c87a",
+          "file": "priority-preference-consistency.spec.ts",
+          "line": 168,
+          "column": 3
+        },
+        {
+          "title": "unavailable localStorage getter retains a visible app and backup failure guidance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 803,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:52:26.438Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "storage-getter-outcome",
+                      "contentType": "text/plain",
+                      "body": "RXhpc3Rpbmcgc3RhcnR1cCByZWNvdmVyeSBzY3JlZW4gcmVtYWluZWQgdmlzaWJsZTsgbm8gZGF0YSBjaGFuZ2VkLg=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "906095c7eec5eb704de6-97a9236b4e226a958f89",
+          "file": "priority-preference-consistency.spec.ts",
+          "line": 168,
+          "column": 3
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-18T10:51:44.175Z",
+    "duration": 43535.664,
+    "expected": 19,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

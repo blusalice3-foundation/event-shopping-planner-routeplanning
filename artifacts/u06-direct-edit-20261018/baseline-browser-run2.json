@@ -1,0 +1,693 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\codex-worktrees\\u06-direct-edit-20261018\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/priority-cell-popup-edit.spec.ts",
+      "--workers=1",
+      "--reporter=list,json",
+      "--output=artifacts/u06-direct-edit-20261018/baseline-browser-run2"
+    ],
+    "configFile": "D:\\codex-worktrees\\u06-direct-edit-20261018\\playwright.config.ts",
+    "rootDir": "D:/codex-worktrees/u06-direct-edit-20261018/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/codex-worktrees/u06-direct-edit-20261018/artifacts/u06-direct-edit-20261018/baseline-browser-run2",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/codex-worktrees/u06-direct-edit-20261018/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": {
+      "command": "node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173",
+      "url": "http://127.0.0.1:4173",
+      "reuseExistingServer": false,
+      "timeout": 30000
+    }
+  },
+  "suites": [
+    {
+      "title": "priority-cell-popup-edit.spec.ts",
+      "file": "priority-cell-popup-edit.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "direct mouse click opens the real limited editor without changing or saving visits",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6266,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'アイテム編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'アイテム編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true })\u001b[22m\n\n    at assertDetailAndCancel (D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:177:24)\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:233:9",
+                    "location": {
+                      "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                      "column": 24,
+                      "line": 177
+                    },
+                    "snippet": "  175 | async function assertDetailAndCancel(page: Page, visits = [\"limited\"]) {\n  176 |   const editor = detail(page);\n> 177 |   await expect(editor).toBeVisible();\n      |                        ^\n  178 |   await expect(popup(page)).toBeHidden();\n  179 |   await expect(\n  180 |     editor.getByRole(\"textbox\", { name: \"実購入数\", exact: true }),"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                        "column": 24,
+                        "line": 177
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'アイテム編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true })\u001b[22m\n\n\n  175 | async function assertDetailAndCancel(page: Page, visits = [\"limited\"]) {\n  176 |   const editor = detail(page);\n> 177 |   await expect(editor).toBeVisible();\n      |                        ^\n  178 |   await expect(popup(page)).toBeHidden();\n  179 |   await expect(\n  180 |     editor.getByRole(\"textbox\", { name: \"実購入数\", exact: true }),\n    at assertDetailAndCancel (D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:177:24)\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:233:9"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:47:04.850Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-d-21a5d-t-changing-or-saving-visits-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFtdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogWwogICAgICAiZGF5IgogICAgXQogIH0KfQ=="
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-d-21a5d-t-changing-or-saving-visits-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-d-21a5d-t-changing-or-saving-visits-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                    "column": 24,
+                    "line": 177
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-0f75f2ba8a72bab8383b",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 226,
+          "column": 1
+        },
+        {
+          "title": "direct mouse click preserves an unregistered item without adding or saving visits",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6372,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'アイテム編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'アイテム編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true })\u001b[22m\n\n    at assertDetailAndCancel (D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:177:24)\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:243:9",
+                    "location": {
+                      "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                      "column": 24,
+                      "line": 177
+                    },
+                    "snippet": "  175 | async function assertDetailAndCancel(page: Page, visits = [\"limited\"]) {\n  176 |   const editor = detail(page);\n> 177 |   await expect(editor).toBeVisible();\n      |                        ^\n  178 |   await expect(popup(page)).toBeHidden();\n  179 |   await expect(\n  180 |     editor.getByRole(\"textbox\", { name: \"実購入数\", exact: true }),"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                        "column": 24,
+                        "line": 177
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'アイテム編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true })\u001b[22m\n\n\n  175 | async function assertDetailAndCancel(page: Page, visits = [\"limited\"]) {\n  176 |   const editor = detail(page);\n> 177 |   await expect(editor).toBeVisible();\n      |                        ^\n  178 |   await expect(popup(page)).toBeHidden();\n  179 |   await expect(\n  180 |     editor.getByRole(\"textbox\", { name: \"実購入数\", exact: true }),\n    at assertDetailAndCancel (D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:177:24)\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:243:9"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:47:11.797Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-d-3af85-out-adding-or-saving-visits-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogWwogICAgICAiZGF5IgogICAgXQogIH0KfQ=="
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-d-3af85-out-adding-or-saving-visits-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-d-3af85-out-adding-or-saving-visits-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                    "column": 24,
+                    "line": 177
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-1de5d8ffaacb26b53eeb",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 236,
+          "column": 1
+        },
+        {
+          "title": "direct mouse entry saves the real detail edit once and retains limited quantities and visits on reload",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6390,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\nExpected: \u001b[32m\"2\"\u001b[39m\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\nExpected: \u001b[32m\"2\"\u001b[39m\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\u001b[22m\n\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:256:5",
+                    "location": {
+                      "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                      "column": 5,
+                      "line": 256
+                    },
+                    "snippet": "  254 |   await expect(\n  255 |     editor.getByRole(\"textbox\", { name: \"実購入数\", exact: true }),\n> 256 |   ).toHaveValue(\"2\");\n      |     ^\n  257 |   await expect(\n  258 |     editor.getByRole(\"textbox\", { name: \"購入予定量\", exact: true }),\n  259 |   ).toHaveValue(\"5\");"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                        "column": 5,
+                        "line": 256
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\nExpected: \u001b[32m\"2\"\u001b[39m\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\u001b[22m\n\n\n  254 |   await expect(\n  255 |     editor.getByRole(\"textbox\", { name: \"実購入数\", exact: true }),\n> 256 |   ).toHaveValue(\"2\");\n      |     ^\n  257 |   await expect(\n  258 |     editor.getByRole(\"textbox\", { name: \"購入予定量\", exact: true }),\n  259 |   ).toHaveValue(\"5\");\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:256:5"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:47:18.972Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-d-fa119-tities-and-visits-on-reload-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFtdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogWwogICAgICAiZGF5IgogICAgXQogIH0KfQ=="
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-d-fa119-tities-and-visits-on-reload-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-d-fa119-tities-and-visits-on-reload-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                    "column": 5,
+                    "line": 256
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-41b09362fd36df3b1a70",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 246,
+          "column": 1
+        },
+        {
+          "title": "keyboard Enter opens the same limited editor without changing or saving visits",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 7011,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'セルからの限数編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'セルからの限数編集', exact: true })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'セルからの限数編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'セルからの限数編集', exact: true })\u001b[22m\n\n    at assertDetailAndCancel (D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:200:5)\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:290:3",
+                    "location": {
+                      "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                      "column": 5,
+                      "line": 200
+                    },
+                    "snippet": "  198 |   await expect(\n  199 |     page.getByRole(\"heading\", { name: eventName, exact: true }),\n> 200 |   ).toBeVisible();\n      |     ^\n  201 |   expect(await durableState(page)).toMatchObject({ visits, item: limitedItem });\n  202 | }\n  203 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                        "column": 5,
+                        "line": 200
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'セルからの限数編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'セルからの限数編集', exact: true })\u001b[22m\n\n\n  198 |   await expect(\n  199 |     page.getByRole(\"heading\", { name: eventName, exact: true }),\n> 200 |   ).toBeVisible();\n      |     ^\n  201 |   expect(await durableState(page)).toMatchObject({ visits, item: limitedItem });\n  202 | }\n  203 |\n    at assertDetailAndCancel (D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:200:5)\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:290:3"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:47:26.183Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-k-be519-t-changing-or-saving-visits-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-k-be519-t-changing-or-saving-visits-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-k-be519-t-changing-or-saving-visits-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                    "column": 5,
+                    "line": 200
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-85bed2dd3009be513dcd",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 280,
+          "column": 1
+        },
+        {
+          "title": "holding the child edit button does not trigger the row long-press menu",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 7095,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'アイテム編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'アイテム編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true })\u001b[22m\n\n    at assertDetailAndCancel (D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:177:24)\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:300:9",
+                    "location": {
+                      "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                      "column": 24,
+                      "line": 177
+                    },
+                    "snippet": "  175 | async function assertDetailAndCancel(page: Page, visits = [\"limited\"]) {\n  176 |   const editor = detail(page);\n> 177 |   await expect(editor).toBeVisible();\n      |                        ^\n  178 |   await expect(popup(page)).toBeHidden();\n  179 |   await expect(\n  180 |     editor.getByRole(\"textbox\", { name: \"実購入数\", exact: true }),"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                        "column": 24,
+                        "line": 177
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'アイテム編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true })\u001b[22m\n\n\n  175 | async function assertDetailAndCancel(page: Page, visits = [\"limited\"]) {\n  176 |   const editor = detail(page);\n> 177 |   await expect(editor).toBeVisible();\n      |                        ^\n  178 |   await expect(popup(page)).toBeHidden();\n  179 |   await expect(\n  180 |     editor.getByRole(\"textbox\", { name: \"実購入数\", exact: true }),\n    at assertDetailAndCancel (D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:177:24)\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:300:9"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:47:33.989Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-h-dbf0c-ger-the-row-long-press-menu-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-h-dbf0c-ger-the-row-long-press-menu-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-h-dbf0c-ger-the-row-long-press-menu-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                    "column": 24,
+                    "line": 177
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-1e1a07a9023d20f38412",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 293,
+          "column": 1
+        },
+        {
+          "title": "row long press still opens the legacy entry and then the real limited editor",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 7949,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'セルからの限数編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'セルからの限数編集', exact: true })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'セルからの限数編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'セルからの限数編集', exact: true })\u001b[22m\n\n    at assertDetailAndCancel (D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:200:5)\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:314:3",
+                    "location": {
+                      "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                      "column": 5,
+                      "line": 200
+                    },
+                    "snippet": "  198 |   await expect(\n  199 |     page.getByRole(\"heading\", { name: eventName, exact: true }),\n> 200 |   ).toBeVisible();\n      |     ^\n  201 |   expect(await durableState(page)).toMatchObject({ visits, item: limitedItem });\n  202 | }\n  203 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                        "column": 5,
+                        "line": 200
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'セルからの限数編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'セルからの限数編集', exact: true })\u001b[22m\n\n\n  198 |   await expect(\n  199 |     page.getByRole(\"heading\", { name: eventName, exact: true }),\n> 200 |   ).toBeVisible();\n      |     ^\n  201 |   expect(await durableState(page)).toMatchObject({ visits, item: limitedItem });\n  202 | }\n  203 |\n    at assertDetailAndCancel (D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:200:5)\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:314:3"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:47:41.801Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-r-3da6f-hen-the-real-limited-editor-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-r-3da6f-hen-the-real-limited-editor-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-r-3da6f-hen-the-real-limited-editor-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                    "column": 5,
+                    "line": 200
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-5927ac847b9147af7655",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 303,
+          "column": 1
+        },
+        {
+          "title": "ordinary row mouse clicks still remove and add visits without changing the limited item",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1088,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T10:47:50.457Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cell-popup-edit-observation",
+                      "contentType": "application/json",
+                      "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogWwogICAgICAiZGF5IiwKICAgICAgImRheSIKICAgIF0KICB9Cn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f78eca8db0768459c287-3303ded0018e4bcfd2bf",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 317,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "mobile touch",
+          "file": "priority-cell-popup-edit.spec.ts",
+          "line": 336,
+          "column": 6,
+          "specs": [
+            {
+              "title": "touch tap opens the real limited editor without changing or saving visits",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 6986,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'セルからの限数編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'セルからの限数編集', exact: true })\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'セルからの限数編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'セルからの限数編集', exact: true })\u001b[22m\n\n    at assertDetailAndCancel (D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:200:5)\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:349:5",
+                        "location": {
+                          "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                          "column": 5,
+                          "line": 200
+                        },
+                        "snippet": "  198 |   await expect(\n  199 |     page.getByRole(\"heading\", { name: eventName, exact: true }),\n> 200 |   ).toBeVisible();\n      |     ^\n  201 |   expect(await durableState(page)).toMatchObject({ visits, item: limitedItem });\n  202 | }\n  203 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                            "column": 5,
+                            "line": 200
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'セルからの限数編集', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'セルからの限数編集', exact: true })\u001b[22m\n\n\n  198 |   await expect(\n  199 |     page.getByRole(\"heading\", { name: eventName, exact: true }),\n> 200 |   ).toBeVisible();\n      |     ^\n  201 |   expect(await durableState(page)).toMatchObject({ visits, item: limitedItem });\n  202 | }\n  203 |\n    at assertDetailAndCancel (D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:200:5)\n    at D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts:349:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-18T10:47:51.674Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-m-09da0-t-changing-or-saving-visits-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "cell-popup-edit-observation",
+                          "contentType": "application/json",
+                          "body": "ewogICJkdXJhYmxlIjogewogICAgInZpc2l0cyI6IFsKICAgICAgImxpbWl0ZWQiCiAgICBdLAogICAgIml0ZW0iOiB7CiAgICAgICJpZCI6ICJsaW1pdGVkIiwKICAgICAgImNpcmNsZSI6ICLpmZDmlbDjgrXjg7zjgq/jg6siLAogICAgICAidGl0bGUiOiAi44Om44O844K244O855m76Yyy44Gu6ZmQ5pWw5ZOB55uuIiwKICAgICAgImV2ZW50RGF0ZSI6ICIx5pel55uuIiwKICAgICAgImJsb2NrIjogIkEiLAogICAgICAibnVtYmVyIjogIjEiLAogICAgICAicHJpY2UiOiA1MDAsCiAgICAgICJxdWFudGl0eSI6IDUsCiAgICAgICJwdXJjaGFzZVN0YXR1cyI6ICJMaW1pdGVkUHVyY2hhc2UiLAogICAgICAibGltaXRlZFB1cmNoYXNlZFF1YW50aXR5IjogMiwKICAgICAgInJlbWFya3MiOiAi44Ko44Op44O844GM55m655Sf44GX44G+44GX44Gf44CB44Go44GE44GG6Kqk5YuV5L2c44KS6Ziy44GQ5qSc6Ki8IgogICAgfQogIH0sCiAgIndvcmtlciI6IHsKICAgICJwZW5kaW5nIjogW10sCiAgICAibXV0YXRpb25zIjogW10KICB9Cn0="
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-m-09da0-t-changing-or-saving-visits-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\codex-worktrees\\u06-direct-edit-20261018\\artifacts\\u06-direct-edit-20261018\\baseline-browser-run2\\priority-cell-popup-edit-m-09da0-t-changing-or-saving-visits-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\codex-worktrees\\u06-direct-edit-20261018\\tests\\browser\\priority-cell-popup-edit.spec.ts",
+                        "column": 5,
+                        "line": 200
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "f78eca8db0768459c287-ed3dab3491003c5ff1d5",
+              "file": "priority-cell-popup-edit.spec.ts",
+              "line": 342,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-18T10:47:03.316Z",
+    "duration": 55759.873,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 7,
+    "flaky": 0
+  }
+}

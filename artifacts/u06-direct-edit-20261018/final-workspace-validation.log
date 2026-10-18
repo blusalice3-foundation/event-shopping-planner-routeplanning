@@ -1,0 +1,3 @@
+PASS encoding verification: 1091 text files; UTF-8 without BOM; U+FFFD/mojibake/suspicious '?' absent; newlines: LF=1086, CRLF=3, none=2; question marks reviewed=14723; representative strings: ユーザー登録=143, エラーが発生しました=54
+Checking formatting...
+All matched files use Prettier code style!

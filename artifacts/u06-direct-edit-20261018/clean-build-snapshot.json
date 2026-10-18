@@ -1,0 +1,9 @@
+{
+  "baselineCommit": "a3ca5cb33d4de7ed4f7f32e21addd29acb8f1e0d",
+  "buildSnapshotCommit": "6c80f95215947250f975fe3bcd5bdffada57ffc6",
+  "sourceStateBeforeBuild": "clean",
+  "command": "npm run build:release-a",
+  "exitCode": 0,
+  "productionFileSHA256": "C88B941A25C456A1CD38164098FD10FD138BD42E869B80FA29086F3B4664506C",
+  "note": "Temporary detached snapshot only; original user branch unchanged. Source and tests restored as uncommitted changes after build."
+}

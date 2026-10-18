@@ -1,0 +1,158 @@
+{
+  "dateJst": "2026-10-18",
+  "status": "完了：計画U01〜U07の受入条件、単一画面の通常運用、今回の検証環境に対する判定",
+  "plan": "docs/priority-user-operation-consistency-fix-plan-20261018.md",
+  "baselineCommit": "a3ca5cb33d4de7ed4f7f32e21addd29acb8f1e0d",
+  "cleanBuildSnapshotCommit": "6c80f95215947250f975fe3bcd5bdffada57ffc6",
+  "verdictCorrection": {
+    "supersedes": "artifacts/priority-user-operation-consistency-20261018/verification-summary.json のU06/T24および全項目完了判定",
+    "originalAssessment": "旧記録の「全受入条件を検証完了」は、PCの実pointerdown→pointerup→clickと実詳細編集への接続を検査しておらず不十分だった。",
+    "followupAssessment": "子ボタンを行のpointer capture・長押し開始から除外した。実MapView・詳細編集・persistence Worker・IndexedDBを接続した回帰試験と、修正後の全体試験・新規性能測定で是正を確認した。本追補をU06/T24および全項目完了判定の正本とする。",
+    "historicalEvidence": "旧計画・検証記録・生サンプル・当時の性能判定は変更せず保持する。今回の新規測定と旧記録の参考比較を区別する。"
+  },
+  "implementation": {
+    "productionFile": "src/components/map/CellItemsPopup.tsx",
+    "productionAddedLines": 4,
+    "productionDeletedLines": 0,
+    "change": "handleItemPointerDownの先頭でbuttonまたはその子要素を起点とする操作を除外し、行の捕捉・長押しタイマーを開始しない。",
+    "unchanged": "既存の行クリック・長押し、数量意図、scope/session・所有権・baseline、mutation coordinator・保存キュー・DB/バックアップ形式・Canvas/Worker・依存定義を維持。新しい走査・clone・保存・保存完了待ちは追加していない。",
+    "unitTest": "src/components/map/CellItemsPopup.limitedPurchase.test.tsx",
+    "browserTest": "tests/browser/priority-cell-popup-edit.spec.ts"
+  },
+  "baselineProof": {
+    "source": "baseline-source.json",
+    "unit": "baseline-unit.json：新規2件失敗、既存click-only試験1件成功",
+    "browser": "baseline-browser-confirmed.json：8件中4件失敗・4件成功",
+    "observedFailure": "登録済みの直接クリックは訪問先を解除、未登録は訪問先を追加し、それぞれWorkerのday保存が1回発生した。直接編集保存入口・子ボタン長押しも失敗。",
+    "excludedHarnessAttempts": [
+      "baseline-browser.json",
+      "baseline-browser-run2.json"
+    ],
+    "excludedHarnessReason": "最初の試験設定に、日付別IDBレコード形式と再読込後のイベント一覧復帰の扱いの誤りがあり、是正後のconfirmed記録だけを再現の判定根拠とした。"
+  },
+  "acceptance": {
+    "U01": "維持・回帰成功：5hookの設定例外保護、メモリ値保持、テーマ適用・監視解除、既存adapter契約。",
+    "U02": "維持・回帰成功：実controller・Overlay・Dialogのキャンセル、旧要求拒否、通常名称変更・出力。",
+    "U03": "維持・回帰成功：限数ダイアログと確認・選択内のタッチ遮断、ジェスチャー残留消去、閉鎖後の通常移動。",
+    "U04": "維持・回帰成功：フォーカス循環・確認失効・次品目・ラジアル引継ぎ・遅延処理・起点復帰。",
+    "U05": "維持・回帰成功：空参加日拒否、入力保持、任意ラベル維持、保存・再読込。",
+    "U06": "是正・回帰成功：実マウスの両編集入口、Enter・タッチ、登録有無、取消と保存、旧文脈拒否・baseline・受理済み保存継続。",
+    "U07": "維持・回帰成功：空バックアップ・最終品目削除・設定のみのイベントから追加・保存・再読込。",
+    "commonConditions": "C01〜C10の局所差分レビューを実施。既存の正本・保存・数量・文脈・通常操作の経路に追加負荷を導入していない。",
+    "testMatrix": "T01〜T25の既存試験所属を照合し全Vitestと対象ブラウザを再実行。T24の旧不足を新規ブラウザ8件で補完した。",
+    "remainingInScopeIssues": []
+  },
+  "validation": {
+    "vitest": {
+      "scope": "unit/integration/worker全251ファイル",
+      "report": "vitest.json",
+      "skipped": 88,
+      "passed": 2938,
+      "failed": 0
+    },
+    "browser": {
+      "passed": 19,
+      "failed": 0,
+      "existingTests": 11,
+      "newTests": 8,
+      "report": "functional.json",
+      "touch": "Chromiumのモバイル・タッチエミュレーション"
+    },
+    "editBehavior": "開く・取消はWorker保存0回、実編集保存は1回。訪問先登録有無を維持し、予定数量5・実購入数2を保存・再読込でも維持した。通常行クリックは解除・追加の各1回保存。",
+    "api": {
+      "log": "contracts.log",
+      "passed": 21,
+      "failed": 0
+    },
+    "typecheck": {
+      "log": "typecheck.log",
+      "status": "passed"
+    },
+    "lint": {
+      "scope": "クリーンな検証ツリーで通常npm run lint成功。最終ブラウザ試験も対象lint成功。",
+      "log": "lint.log",
+      "status": "passed"
+    },
+    "structure": {
+      "testProjectMembership": "passed",
+      "log": "contracts.log",
+      "architecture": "passed"
+    },
+    "formatting": "変更した既存2ファイル・新規ブラウザ試験のPrettier checkおよびgit diff --check成功。",
+    "productionBuild": {
+      "snapshot": "clean-build-snapshot.json",
+      "log": "clean-release-build.log",
+      "initialDirtyGate": "build-dirty-source-rejected.log は未コミットソースを拒否した記録。クリーンな独立スナップショットで成功を確認した。",
+      "command": "npm run build:release-a",
+      "status": "passed"
+    }
+  },
+  "performance": {
+    "status": "全組通過：新規測定を単独実行し、生サンプルから再集計",
+    "criteria": {
+      "minimumSamples": 20,
+      "p95Ms": 100,
+      "medianMs": 55
+    },
+    "shopping": {
+      "maximumHarnessMedianMs": 54.3,
+      "groups": 144,
+      "minimumSamples": 20,
+      "allPass": true,
+      "maximumP95Ms": 71.2,
+      "itemCounts": [
+        150,
+        500,
+        1500
+      ],
+      "maximumConventionalMedianMs": 54.75,
+      "conditions": 24
+    },
+    "additional": {
+      "maximumMedianMs": 17.7,
+      "conditions": 14,
+      "maximumP95Ms": 19.1,
+      "firstSample": "別記して判定から分離",
+      "warmSamples": 20,
+      "groups": 66,
+      "allPass": true
+    },
+    "summary": "performance-comparison.json",
+    "conventionalMedian": "shopping-conventional-median-check.json",
+    "raw": [
+      "shopping-samples.json",
+      "diagnostics-samples.json",
+      "shopping.json",
+      "diagnostics.json"
+    ],
+    "saveCompletion": "保存完了・Worker計算時間は操作反応から分離。旧測定との比較は参考値であり、新しい修正前ベースラインの扱いにしていない。"
+  },
+  "sourceAndEncoding": {
+    "measurementBoundary": "測定前後の643ファイル・製品363ファイルの同一性を確認：source-stability-final.json",
+    "postprocessing": "測定後に集計補助のnull再帰だけを修正。製品・テスト・設定のハッシュは不変：postprocessing-change.json、summary-helper-correction.json",
+    "encoding": "既存の変更対象TSX2ファイルはUTF-8・BOMなし・LFを維持。新規試験も同形式。U+FFFDなし、不自然な疑問符増加なし、改行だけの大量差分なし。",
+    "representativeStrings": [
+      "ユーザー登録",
+      "エラーが発生しました"
+    ],
+    "encodingVerification": "contracts.logの1090ファイル検査に加え、元の作業先への反映後も文字コード検査・変更3ファイルのlint/Prettier・git diff --checkが成功：final-workspace-validation.log。",
+    "manifest": [
+      "encoding-and-source-manifest.json",
+      "encoding-and-source-manifest-final.json",
+      "candidate-source-identity.json",
+      "candidate-source-identity-final.json"
+    ]
+  },
+  "retainedScopeLimits": [
+    "通常運用はPWAの単一画面。別タブだけの同時編集は対象外。",
+    "物理スマートフォンと実ソフトキーボードは未確認。",
+    "390×320・長いタイトルでの既存の画面制限、および計画で除外したマップ位置・選択ホール等の課題は今回の完了判定とは別。"
+  ],
+  "finalHandoff": {
+    "status": "元の作業先へ反映・検証完了",
+    "reference": "handoff-verification.json",
+    "priorReviewOutputPreserved": true,
+    "historicalRecordsPreserved": true,
+    "originalUserBranchUnchanged": true
+  }
+}

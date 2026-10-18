@@ -1,0 +1,48 @@
+{
+  "recordedAtJst": "2026-10-18T19:52:16.0568983+09:00",
+  "repositoryCommit": "a3ca5cb33d4de7ed4f7f32e21addd29acb8f1e0d",
+  "sourceState": "local candidate; release approval is outside this record",
+  "gitStatus": [
+    " M src/components/map/CellItemsPopup.limitedPurchase.test.tsx",
+    " M src/components/map/CellItemsPopup.tsx",
+    "?? artifacts/u06-direct-edit-20261018/",
+    "?? tests/browser/priority-cell-popup-edit.spec.ts"
+  ],
+  "trackedDiff": "tracked-source-diff.patch",
+  "trackedDiffSha256": "DFBDF74E5A73ED21942DDA5E05B7499AC8924B97E7CA39833546DBB335DF3441",
+  "trackedDiffNormalization": "git text output joined with LF and one trailing LF",
+  "sourceManifest": "encoding-and-source-manifest.json",
+  "sourceManifestSha256": "41DE588F5B31D3DF9F2A4A172E22770AB162F7E5B8D59436F281E26A1DEC6EFD",
+  "sourceFiles": 643,
+  "productionFiles": 363,
+  "historicalManifest": "artifacts/priority-user-operation-consistency-20261018/encoding-and-source-manifest-final.json",
+  "historicalFiles": 36,
+  "historicalHashMatches": 35,
+  "sourceScope": "all git tracked src/tests plus new src/tests, inherited manifest, project build/test configuration, and this helper",
+  "indexSha256": "CC5AA0790CC183C3D921AC997920ED6CE6FC3A437F51CDBD403F351EC893A298",
+  "releaseIdentitySha256": "28920A0B62CDF4334DFA2E373A6FA6833C33780D0445C35E6BCC61A98944DECB",
+  "releaseIdentity": {
+    "buildId": "6c80f95215947250f975fe3bcd5bdffada57ffc6",
+    "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+    "outerAgentUrl": "/assets/outer-recovery-agent.js",
+    "pwaLifecycle": "prompt-close-all-v1",
+    "releaseRole": "standard",
+    "requiredDbCompatibilityFingerprint": "59cab323aedb35d8677e289545053591d34348970bfa268be3c4c437faf7c91f",
+    "roleEntrySha256": "0619c808b32778158d554534ffef10a9b7a992ad873a2421aecbfd1f4c9a774d",
+    "roleEntryUrl": "/assets/release-role.js",
+    "schemaVersion": 1,
+    "serviceWorkerSha256": "3c5dedc03aac4e7841c24b8e627ea17bb250a587e54e5c7583b1b0cdc01e1f37",
+    "serviceWorkerUrl": "/sw.js",
+    "sourceSha": "6c80f95215947250f975fe3bcd5bdffada57ffc6",
+    "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+  },
+  "node": "v24.19.0",
+  "npm": "11.19.0",
+  "environment": {
+    "PLAYWRIGHT_BASE_URL": null,
+    "PERFORMANCE_HEADED": null,
+    "CI": null,
+    "PERFORMANCE_BROWSER_CHANNEL": null,
+    "ESP_PRIORITY_PHASE": null
+  }
+}

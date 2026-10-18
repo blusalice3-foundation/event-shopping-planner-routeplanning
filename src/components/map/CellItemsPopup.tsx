@@ -373,6 +373,10 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
     e: React.PointerEvent<HTMLDivElement>,
     item: ShoppingItem,
   ) => {
+    // 子ボタンは行の捕捉・長押しから除外し、クリック先を維持する。
+    if (e.target instanceof Element && e.target.closest("button")) {
+      return;
+    }
     isLongPress.current = false;
     suppressNextClick.current = false;
     try {

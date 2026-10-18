@@ -1,0 +1,94 @@
+diff --git a/src/components/map/CellItemsPopup.limitedPurchase.test.tsx b/src/components/map/CellItemsPopup.limitedPurchase.test.tsx
+index 652ce20..5f198ff 100644
+--- a/src/components/map/CellItemsPopup.limitedPurchase.test.tsx
++++ b/src/components/map/CellItemsPopup.limitedPurchase.test.tsx
+@@ -1,8 +1,8 @@
+ // @vitest-environment jsdom
+ 
+-import { fireEvent, render, screen } from "@testing-library/react";
++import { act, fireEvent, render, screen } from "@testing-library/react";
+ import type { ComponentProps } from "react";
+-import { describe, expect, it, vi } from "vitest";
++import { afterEach, describe, expect, it, vi } from "vitest";
+ import type { ShoppingItem } from "../../types/item";
+ import CellItemsPopup from "./CellItemsPopup";
+ 
+@@ -26,6 +26,7 @@ const renderPopup = (
+   const onClose = vi.fn();
+   const onEditRequest = vi.fn();
+   const onAddToVisitList = vi.fn();
++  const onRemoveFromVisitList = vi.fn();
+ 
+   render(
+     <CellItemsPopup
+@@ -36,16 +37,53 @@ const renderPopup = (
+       items={[limitedItem]}
+       executeModeItemIds={new Set()}
+       onAddToVisitList={onAddToVisitList}
+-      onRemoveFromVisitList={vi.fn()}
++      onRemoveFromVisitList={onRemoveFromVisitList}
+       onEditRequest={onEditRequest}
+       {...props}
+     />,
+   );
+ 
+-  return { onAddToVisitList, onClose, onEditRequest };
++  return { onAddToVisitList, onRemoveFromVisitList, onClose, onEditRequest };
+ };
+ 
+ describe("CellItemsPopup limited purchase actions", () => {
++  afterEach(() => {
++    vi.useRealTimers();
++  });
++
++  it.each([false, true])(
++    "does not capture or start a row long press for the edit button (visited=%s)",
++    (visited) => {
++      vi.useFakeTimers();
++      const {
++        onAddToVisitList,
++        onRemoveFromVisitList,
++        onClose,
++        onEditRequest,
++      } = renderPopup({
++        executeModeItemIds: new Set(visited ? [limitedItem.id] : []),
++      });
++      const edit = screen.getByRole("button", { name: "限数を編集" });
++      const row = edit.closest<HTMLElement>(".cursor-pointer")!;
++      const capture = vi.fn();
++      Object.defineProperty(row, "setPointerCapture", { value: capture });
++
++      fireEvent.pointerDown(edit, { pointerId: 1, pointerType: "mouse" });
++      expect(capture).not.toHaveBeenCalled();
++      act(() => vi.advanceTimersByTime(650));
++      expect(
++        screen.queryByRole("button", { name: "✏️ 編集" }),
++      ).not.toBeInTheDocument();
++      fireEvent.pointerUp(edit, { pointerId: 1, pointerType: "mouse" });
++      fireEvent.click(edit, { detail: 1 });
++
++      expect(onAddToVisitList).not.toHaveBeenCalled();
++      expect(onRemoveFromVisitList).not.toHaveBeenCalled();
++      expect(onEditRequest).toHaveBeenCalledExactlyOnceWith(limitedItem);
++      expect(onClose).toHaveBeenCalledTimes(1);
++    },
++  );
++
+   it("shows a direct edit button for limited purchase items without requiring long press", () => {
+     const { onAddToVisitList, onClose, onEditRequest } = renderPopup();
+ 
+diff --git a/src/components/map/CellItemsPopup.tsx b/src/components/map/CellItemsPopup.tsx
+index 05a8822..5b20c61 100644
+--- a/src/components/map/CellItemsPopup.tsx
++++ b/src/components/map/CellItemsPopup.tsx
+@@ -373,6 +373,10 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
+     e: React.PointerEvent<HTMLDivElement>,
+     item: ShoppingItem,
+   ) => {
++    // 子ボタンは行の捕捉・長押しから除外し、クリック先を維持する。
++    if (e.target instanceof Element && e.target.closest("button")) {
++      return;
++    }
+     isLongPress.current = false;
+     suppressNextClick.current = false;
+     try {
