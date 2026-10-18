@@ -1,0 +1,105 @@
+[WebServer] (node:11628) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+(node:31468) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:210:3 › reopens an empty event from empty-backup, preserves settings, adds a corrected manual item and reloads it (31.1s)
+(node:9720) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  2 [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:210:3 › reopens an empty event from delete-last, preserves settings, adds a corrected manual item and reloads it (31.6s)
+(node:32296) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  3 [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:210:3 › reopens an empty event from settings-only, preserves settings, adds a corrected manual item and reloads it (1.3s)
+
+
+  1) [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:210:3 › reopens an empty event from empty-backup, preserves settings, adds a corrected manual item and reloads it 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '確認して保存', exact: true })
+        - locator resolved to <button disabled class="bg-blue-600 text-white rounded px-4 py-2">確認して保存</button>
+      - attempting click action
+        - waiting for element to be visible, enabled and stable
+      - element was detached from the DOM, retrying
+
+
+      199 |       .toBe(true);
+      200 |     if (await savedItem.isVisible()) return;
+    > 201 |     await confirm.click();
+          |                   ^
+      202 |   }
+      203 |   await expect(savedItem).toBeVisible();
+      204 | }
+        at acceptExistingSaveReview (D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-manual-item-consistency.spec.ts:201:19)
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-manual-item-consistency.spec.ts:329:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\after-manual\priority-manual-item-consi-2acd6--manual-item-and-reloads-it-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\after-manual\priority-manual-item-consi-2acd6--manual-item-and-reloads-it-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\after-manual\priority-manual-item-consi-2acd6--manual-item-and-reloads-it-chromium\error-context.md
+
+  2) [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:210:3 › reopens an empty event from delete-last, preserves settings, adds a corrected manual item and reloads it 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '確認して保存', exact: true })
+
+
+      199 |       .toBe(true);
+      200 |     if (await savedItem.isVisible()) return;
+    > 201 |     await confirm.click();
+          |                   ^
+      202 |   }
+      203 |   await expect(savedItem).toBeVisible();
+      204 | }
+        at acceptExistingSaveReview (D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-manual-item-consistency.spec.ts:201:19)
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-manual-item-consistency.spec.ts:329:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\after-manual\priority-manual-item-consi-d3a3c--manual-item-and-reloads-it-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\after-manual\priority-manual-item-consi-d3a3c--manual-item-and-reloads-it-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\after-manual\priority-manual-item-consi-d3a3c--manual-item-and-reloads-it-chromium\error-context.md
+
+  3) [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:210:3 › reopens an empty event from settings-only, preserves settings, adds a corrected manual item and reloads it 
+
+    TypeError: Cannot read properties of undefined (reading '2日目マップ')
+
+      270 |       );
+      271 |       expect(
+    > 272 |         before.routeSettings[eventName][retainedMapName].isRouteVisible,
+          |                                        ^
+      273 |       ).toBe(true);
+      274 |       expect(before.dayModes[eventName]["2日目"]).toBe("edit");
+      275 |     }
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-manual-item-consistency.spec.ts:272:40
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\after-manual\priority-manual-item-consi-4545e--manual-item-and-reloads-it-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\after-manual\priority-manual-item-consi-4545e--manual-item-and-reloads-it-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\after-manual\priority-manual-item-consi-4545e--manual-item-and-reloads-it-chromium\error-context.md
+
+  3 failed
+    [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:210:3 › reopens an empty event from empty-backup, preserves settings, adds a corrected manual item and reloads it 
+    [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:210:3 › reopens an empty event from delete-last, preserves settings, adds a corrected manual item and reloads it 
+    [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:210:3 › reopens an empty event from settings-only, preserves settings, adds a corrected manual item and reloads it 

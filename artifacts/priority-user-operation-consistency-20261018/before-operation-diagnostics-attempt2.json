@@ -1,0 +1,242 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\event-shopping-planner-routeplanning-1.9.6.7\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/priority-operation-diagnostics.spec.ts",
+      "--workers=1",
+      "--reporter=list,json",
+      "--output=D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\before-operation-diagnostics-attempt2"
+    ],
+    "configFile": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\playwright.config.ts",
+    "rootDir": "D:/event-shopping-planner-routeplanning-1.9.6.7/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/event-shopping-planner-routeplanning-1.9.6.7/artifacts/priority-user-operation-consistency-20261018/before-operation-diagnostics-attempt2",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/event-shopping-planner-routeplanning-1.9.6.7/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": {
+      "command": "node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173",
+      "url": "http://127.0.0.1:4173",
+      "reuseExistingServer": false,
+      "timeout": 30000
+    }
+  },
+  "suites": [
+    {
+      "title": "priority-operation-diagnostics.spec.ts",
+      "file": "priority-operation-diagnostics.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "priority dialog and scope operations 150 @priority-operation-performance",
+          "ok": false,
+          "tags": [
+            "priority-operation-performance"
+          ],
+          "tests": [
+            {
+              "timeout": 300000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 16839,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: '限数にしますか？', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: '限数にしますか？', exact: true })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: '限数にしますか？', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: '限数にしますか？', exact: true })\u001b[22m\n\n    at D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-operation-diagnostics.spec.ts:362:30",
+                    "location": {
+                      "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-operation-diagnostics.spec.ts",
+                      "column": 30,
+                      "line": 362
+                    },
+                    "snippet": "  360 |           await clickResponse(radialLimited),\n  361 |         );\n> 362 |         await expect(choice).toBeVisible();\n      |                              ^\n  363 |         add(\n  364 |           timings,\n  365 |           \"single-choice-to-limited\","
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-operation-diagnostics.spec.ts",
+                        "column": 30,
+                        "line": 362
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: '限数にしますか？', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: '限数にしますか？', exact: true })\u001b[22m\n\n\n  360 |           await clickResponse(radialLimited),\n  361 |         );\n> 362 |         await expect(choice).toBeVisible();\n      |                              ^\n  363 |         add(\n  364 |           timings,\n  365 |           \"single-choice-to-limited\",\n    at D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-operation-diagnostics.spec.ts:362:30"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T09:25:50.708Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "priority-operation-diagnostics-before-150",
+                      "contentType": "application/json",
+                      "body": "ewogICJwaGFzZSI6ICJiZWZvcmUiLAogICJjb3VudCI6IDE1MCwKICAidmlld3BvcnQiOiB7CiAgICAid2lkdGgiOiAxMjgwLAogICAgImhlaWdodCI6IDkwMAogIH0sCiAgInJlc3BvbnNlRW5kcG9pbnQiOiAicGVyZm9ybWFuY2Uubm93IGJlZm9yZSBoYW5kbGVyIHRvIHJlcXVlc3RBbmltYXRpb25GcmFtZSB0aGVuIHRpbWVvdXQoMCkiLAogICJmaXJzdFNhbXBsZVBvbGljeSI6ICJ2YWx1ZXNbMF0gcmVwb3J0ZWQgc2VwYXJhdGVseTsgZm9sbG93aW5nIDIwIHNhbXBsZXMgZGVmaW5lIHdhcm0gc3VtbWFyeSIsCiAgInRpbWluZ3MiOiB7CiAgICAicmFkaWFsLW9wZW4iOiBbCiAgICAgIDksCiAgICAgIDExLjQwMDAwMDAwMDM3MjUyOSwKICAgICAgMTIuNDAwMDAwMDAwMzcyNTI5LAogICAgICAxMi41OTk5OTk5OTk2Mjc0NzEsCiAgICAgIDEyLjU5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTIsCiAgICAgIDExLAogICAgICAxMC45MDAwMDAwMDAzNzI1MjksCiAgICAgIDExLjIwMDAwMDAwMTExNzU4NywKICAgICAgMTAuNTk5OTk5OTk5NjI3NDcxLAogICAgICAxMSwKICAgICAgMTEuNzAwMDAwMDAxMTE3NTg3LAogICAgICAxMS43OTk5OTk5OTg4ODI0MTMsCiAgICAgIDExLjY5OTk5OTk5OTI1NDk0MiwKICAgICAgMTEuODAwMDAwMDAwNzQ1MDU4LAogICAgICAxMy41LAogICAgICAxMy41OTk5OTk5OTk2Mjc0NzEsCiAgICAgIDExLjYwMDAwMDAwMTQ5MDExNiwKICAgICAgMTEuNSwKICAgICAgMTAuODk5OTk5OTk4NTA5ODg0LAogICAgICAxMi4xOTk5OTk5OTkyNTQ5NDIKICAgIF0sCiAgICAicmFkaWFsLXRvLWxpbWl0ZWQtaW5wdXQiOiBbCiAgICAgIDE0LjIwMDAwMDAwMTExNzU4NywKICAgICAgMTMsCiAgICAgIDEzLjA5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTIuMjAwMDAwMDAxMTE3NTg3LAogICAgICAxMi45MDAwMDAwMDAzNzI1MjksCiAgICAgIDEyLjUsCiAgICAgIDEyLjkwMDAwMDAwMDM3MjUyOSwKICAgICAgMTIuNzk5OTk5OTk4ODgyNDEzLAogICAgICAxMy4wOTk5OTk5OTk2Mjc0NzEsCiAgICAgIDEzLjU5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTIuNSwKICAgICAgMTIuNSwKICAgICAgMTIuNjk5OTk5OTk5MjU0OTQyLAogICAgICAxMi44MDAwMDAwMDA3NDUwNTgsCiAgICAgIDEyLjc5OTk5OTk5ODg4MjQxMywKICAgICAgMTMsCiAgICAgIDEzLjA5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTMuNjk5OTk5OTk5MjU0OTQyLAogICAgICAxMS4wOTk5OTk5OTk2Mjc0NzEsCiAgICAgIDE0LjU5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTIuNTk5OTk5OTk5NjI3NDcxCiAgICBdLAogICAgImxpbWl0ZWQtcXVhbnRpdHktaW5wdXQiOiBbCiAgICAgIDkuNzk5OTk5OTk4ODgyNDEzLAogICAgICAxMy4yMDAwMDAwMDExMTc1ODcsCiAgICAgIDkuNzk5OTk5OTk4ODgyNDEzLAogICAgICAxNS40MDAwMDAwMDAzNzI1MjksCiAgICAgIDE1LjQwMDAwMDAwMDM3MjUyOSwKICAgICAgOS4zMDAwMDAwMDA3NDUwNTgsCiAgICAgIDE1LjUsCiAgICAgIDE2Ljc5OTk5OTk5ODg4MjQxMywKICAgICAgMTUuNzk5OTk5OTk4ODgyNDEzLAogICAgICAxNS4zMDAwMDAwMDA3NDUwNTgsCiAgICAgIDE0LjU5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTUuNDAwMDAwMDAwMzcyNTI5LAogICAgICAxNC4zMDAwMDAwMDA3NDUwNTgsCiAgICAgIDEzLjkwMDAwMDAwMDM3MjUyOSwKICAgICAgMi41OTk5OTk5OTk2Mjc0NzEsCiAgICAgIDE0LjU5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTUuNTk5OTk5OTk5NjI3NDcxLAogICAgICAxMi44MDAwMDAwMDA3NDUwNTgsCiAgICAgIDE1LjE5OTk5OTk5OTI1NDk0MiwKICAgICAgMTQuMjAwMDAwMDAxMTE3NTg3LAogICAgICAxNS40MDAwMDAwMDAzNzI1MjkKICAgIF0sCiAgICAibGltaXRlZC1jb25maXJtLW9wZW4iOiBbCiAgICAgIDEwLjQwMDAwMDAwMDM3MjUyOSwKICAgICAgMTEsCiAgICAgIDEwLjgwMDAwMDAwMDc0NTA1OCwKICAgICAgMTEuNTk5OTk5OTk5NjI3NDcxLAogICAgICAxMS45MDAwMDAwMDAzNzI1MjksCiAgICAgIDEyLjMwMDAwMDAwMDc0NTA1OCwKICAgICAgMTEuMzAwMDAwMDAwNzQ1MDU4LAogICAgICAzLjE5OTk5OTk5OTI1NDk0MiwKICAgICAgMTAuOTAwMDAwMDAwMzcyNTI5LAogICAgICAxMi4xOTk5OTk5OTkyNTQ5NDIsCiAgICAgIDkuNzk5OTk5OTk4ODgyNDEzLAogICAgICAxMS45MDAwMDAwMDAzNzI1MjksCiAgICAgIDkuNDAwMDAwMDAwMzcyNTI5LAogICAgICAxMS43OTk5OTk5OTg4ODI0MTMsCiAgICAgIDExLjQwMDAwMDAwMDM3MjUyOSwKICAgICAgMTEsCiAgICAgIDEwLjMwMDAwMDAwMDc0NTA1OCwKICAgICAgMTEuODAwMDAwMDAwNzQ1MDU4LAogICAgICA5LjkwMDAwMDAwMDM3MjUyOSwKICAgICAgMTAuNTk5OTk5OTk5NjI3NDcxLAogICAgICAxMC4xOTk5OTk5OTkyNTQ5NDIKICAgIF0sCiAgICAibGltaXRlZC1jb25maXJtLXJldHVybiI6IFsKICAgICAgMTAuNTk5OTk5OTk5NjI3NDcxLAogICAgICA2LjMwMDAwMDAwMDc0NTA1OCwKICAgICAgMTAuNDAwMDAwMDAwMzcyNTI5LAogICAgICAxMS4yMDAwMDAwMDExMTc1ODcsCiAgICAgIDExLjUsCiAgICAgIDEyLAogICAgICAxMS41LAogICAgICAxMC4yMDAwMDAwMDExMTc1ODcsCiAgICAgIDEwLjM5OTk5OTk5ODUwOTg4NCwKICAgICAgMTEuMjk5OTk5OTk4ODgyNDEzLAogICAgICAxMC41LAogICAgICAxMS41LAogICAgICAxMC4xOTk5OTk5OTkyNTQ5NDIsCiAgICAgIDEwLjUsCiAgICAgIDExLjMwMDAwMDAwMDc0NTA1OCwKICAgICAgMTAuNDAwMDAwMDAwMzcyNTI5LAogICAgICAxMS4zMDAwMDAwMDA3NDUwNTgsCiAgICAgIDExLAogICAgICAxMC41LAogICAgICAxMC4xOTk5OTk5OTkyNTQ5NDIsCiAgICAgIDkKICAgIF0sCiAgICAibGltaXRlZC1jYW5jZWwiOiBbCiAgICAgIDEwLjE5OTk5OTk5OTI1NDk0MiwKICAgICAgMTEuNTk5OTk5OTk5NjI3NDcxLAogICAgICAxMS44MDAwMDAwMDA3NDUwNTgsCiAgICAgIDEyLjEwMDAwMDAwMTQ5MDExNiwKICAgICAgMTEuNzAwMDAwMDAxMTE3NTg3LAogICAgICAxMS4yOTk5OTk5OTg4ODI0MTMsCiAgICAgIDExLAogICAgICAxMC44MDAwMDAwMDA3NDUwNTgsCiAgICAgIDEwLjYwMDAwMDAwMTQ5MDExNiwKICAgICAgMTIuODAwMDAwMDAwNzQ1MDU4LAogICAgICAxMC44MDAwMDAwMDA3NDUwNTgsCiAgICAgIDExLjE5OTk5OTk5OTI1NDk0MiwKICAgICAgMTAuNTk5OTk5OTk5NjI3NDcxLAogICAgICAxMC42OTk5OTk5OTkyNTQ5NDIsCiAgICAgIDExLjQwMDAwMDAwMDM3MjUyOSwKICAgICAgOS41OTk5OTk5OTk2Mjc0NzEsCiAgICAgIDEyLjE5OTk5OTk5OTI1NDk0MiwKICAgICAgMTAuNSwKICAgICAgMTAuNTk5OTk5OTk5NjI3NDcxLAogICAgICAxMS40MDAwMDAwMDAzNzI1MjksCiAgICAgIDEwLjMwMDAwMDAwMDc0NTA1OAogICAgXSwKICAgICJzYW1lLXNjcmVlbi1jb25maXJtYXRpb24taW52YWxpZGF0aW9uIjogWwogICAgICAxNi41LAogICAgICAxNS41OTk5OTk5OTk2Mjc0NzEsCiAgICAgIDE3LjU5OTk5OTk5OTYyNzQ3LAogICAgICAxNy4xMDAwMDAwMDE0OTAxMTYsCiAgICAgIDcuOTAwMDAwMDAwMzcyNTI5LAogICAgICAxNi43OTk5OTk5OTg4ODI0MTMsCiAgICAgIDE4LjA5OTk5OTk5OTYyNzQ3LAogICAgICA3LjY5OTk5OTk5OTI1NDk0MiwKICAgICAgNy4zMDAwMDAwMDA3NDUwNTgsCiAgICAgIDE2Ljc5OTk5OTk5ODg4MjQxMywKICAgICAgNy44MDAwMDAwMDA3NDUwNTgsCiAgICAgIDYuOTAwMDAwMDAwMzcyNTI5LAogICAgICAxNS4zOTk5OTk5OTg1MDk4ODQsCiAgICAgIDcuNjk5OTk5OTk5MjU0OTQyLAogICAgICA2LjgwMDAwMDAwMDc0NTA1OCwKICAgICAgNy4yOTk5OTk5OTg4ODI0MTMsCiAgICAgIDcuNSwKICAgICAgMTYuODAwMDAwMDAwNzQ1MDU4LAogICAgICA3LjQwMDAwMDAwMDM3MjUyOSwKICAgICAgMTguODk5OTk5OTk4NTA5ODg0LAogICAgICA3LjI5OTk5OTk5ODg4MjQxMwogICAgXSwKICAgICJyYWRpYWwtdG8tc2luZ2xlLWNob2ljZSI6IFsKICAgICAgMTEuNjk5OTk5OTk5MjU0OTQyCiAgICBdCiAgfSwKICAic3VtbWFyeSI6IHsKICAgICJyYWRpYWwtb3BlbiI6IHsKICAgICAgImZpcnN0TXMiOiA5LAogICAgICAiY291bnQiOiAyMCwKICAgICAgIm1lZGlhbk1zIjogMTEuNzAwMDAwMDAwMTg2MjY1LAogICAgICAicDk1TXMiOiAxMy41CiAgICB9LAogICAgInJhZGlhbC10by1saW1pdGVkLWlucHV0IjogewogICAgICAiZmlyc3RNcyI6IDE0LjIwMDAwMDAwMTExNzU4NywKICAgICAgImNvdW50IjogMjAsCiAgICAgICJtZWRpYW5NcyI6IDEyLjg1MDAwMDAwMDU1ODc5NCwKICAgICAgInA5NU1zIjogMTMuNjk5OTk5OTk5MjU0OTQyCiAgICB9LAogICAgImxpbWl0ZWQtcXVhbnRpdHktaW5wdXQiOiB7CiAgICAgICJmaXJzdE1zIjogOS43OTk5OTk5OTg4ODI0MTMsCiAgICAgICJjb3VudCI6IDIwLAogICAgICAibWVkaWFuTXMiOiAxNC44OTk5OTk5OTk0NDEyMDYsCiAgICAgICJwOTVNcyI6IDE1Ljc5OTk5OTk5ODg4MjQxMwogICAgfSwKICAgICJsaW1pdGVkLWNvbmZpcm0tb3BlbiI6IHsKICAgICAgImZpcnN0TXMiOiAxMC40MDAwMDAwMDAzNzI1MjksCiAgICAgICJjb3VudCI6IDIwLAogICAgICAibWVkaWFuTXMiOiAxMSwKICAgICAgInA5NU1zIjogMTIuMTk5OTk5OTk5MjU0OTQyCiAgICB9LAogICAgImxpbWl0ZWQtY29uZmlybS1yZXR1cm4iOiB7CiAgICAgICJmaXJzdE1zIjogMTAuNTk5OTk5OTk5NjI3NDcxLAogICAgICAiY291bnQiOiAyMCwKICAgICAgIm1lZGlhbk1zIjogMTAuNSwKICAgICAgInA5NU1zIjogMTEuNQogICAgfSwKICAgICJsaW1pdGVkLWNhbmNlbCI6IHsKICAgICAgImZpcnN0TXMiOiAxMC4xOTk5OTk5OTkyNTQ5NDIsCiAgICAgICJjb3VudCI6IDIwLAogICAgICAibWVkaWFuTXMiOiAxMS4wOTk5OTk5OTk2Mjc0NzEsCiAgICAgICJwOTVNcyI6IDEyLjE5OTk5OTk5OTI1NDk0MgogICAgfSwKICAgICJzYW1lLXNjcmVlbi1jb25maXJtYXRpb24taW52YWxpZGF0aW9uIjogewogICAgICAiZmlyc3RNcyI6IDE2LjUsCiAgICAgICJjb3VudCI6IDIwLAogICAgICAibWVkaWFuTXMiOiA3Ljg1MDAwMDAwMDU1ODc5MzUsCiAgICAgICJwOTVNcyI6IDE4LjA5OTk5OTk5OTYyNzQ3CiAgICB9LAogICAgInJhZGlhbC10by1zaW5nbGUtY2hvaWNlIjogewogICAgICAiZmlyc3RNcyI6IDExLjY5OTk5OTk5OTI1NDk0MiwKICAgICAgImNvdW50IjogMCwKICAgICAgIm1lZGlhbk1zIjogbnVsbAogICAgfQogIH0sCiAgImNvbXBsZXRpb25NcyI6IHsKICAgICJzYW1lLXNjcmVlbi1xdWFudGl0eS1zYXZlIjogWwogICAgICA0Mi41OTk5OTk5OTk2Mjc0NywKICAgICAgMzkuNSwKICAgICAgNDAuODAwMDAwMDAwNzQ1MDYsCiAgICAgIDM5Ljc5OTk5OTk5ODg4MjQxLAogICAgICAzMS42OTk5OTk5OTkyNTQ5NDIsCiAgICAgIDM5LjkwMDAwMDAwMDM3MjUzLAogICAgICA0MC4zMDAwMDAwMDA3NDUwNiwKICAgICAgMjkuODAwMDAwMDAwNzQ1MDU4LAogICAgICAzMC43MDAwMDAwMDExMTc1ODcsCiAgICAgIDM3Ljc5OTk5OTk5ODg4MjQxLAogICAgICAzMS4wOTk5OTk5OTk2Mjc0NywKICAgICAgMjkuMjk5OTk5OTk4ODgyNDEzLAogICAgICAzNywKICAgICAgMzIsCiAgICAgIDI3LjkwMDAwMDAwMDM3MjUzLAogICAgICAzMiwKICAgICAgMzIuMjAwMDAwMDAxMTE3NTksCiAgICAgIDM4LjU5OTk5OTk5OTYyNzQ3LAogICAgICAzMi4wOTk5OTk5OTk2Mjc0NywKICAgICAgMzkuMzk5OTk5OTk4NTA5ODg0LAogICAgICAzMS41CiAgICBdCiAgfSwKICAiZXJyb3JzIjogW10sCiAgIm9ic2VydmF0aW9ucyI6IHsKICAgICJwb3B1cFJldGFpbmVkQWZ0ZXJEYXlTd2l0Y2giOiBbXSwKICAgICJyYWRpYWxJbnB1dEZvY3VzZWQiOiBbCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UKICAgIF0sCiAgICAiYnVsa05leHRJbnB1dEZvY3VzZWQiOiBbXSwKICAgICJpbnZhbGlkYXRpb25JbnB1dEZvY3VzZWQiOiBbCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UKICAgIF0KICB9LAogICJyZWxheURpYWdub3N0aWNzIjogInRlc3RzL2Jyb3dzZXIvcHJpb3JpdHktcmVsYXktZGlhZ25vc3RpY3Muc3BlYy50cyIKfQ=="
+                    },
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\before-operation-diagnostics-attempt2\\priority-operation-diagnos-412f7-ority-operation-performance-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\before-operation-diagnostics-attempt2\\priority-operation-diagnos-412f7-ority-operation-performance-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-operation-diagnostics.spec.ts",
+                    "column": 30,
+                    "line": 362
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "1ed193823e13e050a3df-fc7fcdd343deb963b2d0",
+          "file": "priority-operation-diagnostics.spec.ts",
+          "line": 221,
+          "column": 3
+        },
+        {
+          "title": "priority dialog and scope operations 500 @priority-operation-performance",
+          "ok": false,
+          "tags": [
+            "priority-operation-performance"
+          ],
+          "tests": [
+            {
+              "timeout": 300000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 17154,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: '限数にしますか？', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: '限数にしますか？', exact: true })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: '限数にしますか？', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: '限数にしますか？', exact: true })\u001b[22m\n\n    at D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-operation-diagnostics.spec.ts:362:30",
+                    "location": {
+                      "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-operation-diagnostics.spec.ts",
+                      "column": 30,
+                      "line": 362
+                    },
+                    "snippet": "  360 |           await clickResponse(radialLimited),\n  361 |         );\n> 362 |         await expect(choice).toBeVisible();\n      |                              ^\n  363 |         add(\n  364 |           timings,\n  365 |           \"single-choice-to-limited\","
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-operation-diagnostics.spec.ts",
+                        "column": 30,
+                        "line": 362
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: '限数にしますか？', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: '限数にしますか？', exact: true })\u001b[22m\n\n\n  360 |           await clickResponse(radialLimited),\n  361 |         );\n> 362 |         await expect(choice).toBeVisible();\n      |                              ^\n  363 |         add(\n  364 |           timings,\n  365 |           \"single-choice-to-limited\",\n    at D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-operation-diagnostics.spec.ts:362:30"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T09:26:08.177Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "priority-operation-diagnostics-before-500",
+                      "contentType": "application/json",
+                      "body": "ewogICJwaGFzZSI6ICJiZWZvcmUiLAogICJjb3VudCI6IDUwMCwKICAidmlld3BvcnQiOiB7CiAgICAid2lkdGgiOiAxMjgwLAogICAgImhlaWdodCI6IDkwMAogIH0sCiAgInJlc3BvbnNlRW5kcG9pbnQiOiAicGVyZm9ybWFuY2Uubm93IGJlZm9yZSBoYW5kbGVyIHRvIHJlcXVlc3RBbmltYXRpb25GcmFtZSB0aGVuIHRpbWVvdXQoMCkiLAogICJmaXJzdFNhbXBsZVBvbGljeSI6ICJ2YWx1ZXNbMF0gcmVwb3J0ZWQgc2VwYXJhdGVseTsgZm9sbG93aW5nIDIwIHNhbXBsZXMgZGVmaW5lIHdhcm0gc3VtbWFyeSIsCiAgInRpbWluZ3MiOiB7CiAgICAicmFkaWFsLW9wZW4iOiBbCiAgICAgIDEwLjcwMDAwMDAwMTExNzU4NywKICAgICAgOS41LAogICAgICAxMi4xOTk5OTk5OTkyNTQ5NDIsCiAgICAgIDEzLAogICAgICAxMC43OTk5OTk5OTg4ODI0MTMsCiAgICAgIDExLjY5OTk5OTk5OTI1NDk0MiwKICAgICAgMTMuNTk5OTk5OTk5NjI3NDcxLAogICAgICAxMS42OTk5OTk5OTkyNTQ5NDIsCiAgICAgIDEyLjMwMDAwMDAwMDc0NTA1OCwKICAgICAgMTEuNjk5OTk5OTk5MjU0OTQyLAogICAgICAxMy4wOTk5OTk5OTk2Mjc0NzEsCiAgICAgIDEzLjcwMDAwMDAwMTExNzU4NywKICAgICAgMTEuNTk5OTk5OTk5NjI3NDcxLAogICAgICAxMS41OTk5OTk5OTk2Mjc0NzEsCiAgICAgIDExLjA5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTMuNSwKICAgICAgMTIuMTAwMDAwMDAxNDkwMTE2LAogICAgICAxMi40MDAwMDAwMDAzNzI1MjksCiAgICAgIDEwLjgwMDAwMDAwMDc0NTA1OCwKICAgICAgMTIuMzAwMDAwMDAwNzQ1MDU4LAogICAgICAxMi42OTk5OTk5OTkyNTQ5NDIKICAgIF0sCiAgICAicmFkaWFsLXRvLWxpbWl0ZWQtaW5wdXQiOiBbCiAgICAgIDE1LjA5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTQsCiAgICAgIDE1LjUsCiAgICAgIDE3LAogICAgICAxNS4wOTk5OTk5OTk2Mjc0NzEsCiAgICAgIDE1LjM5OTk5OTk5ODUwOTg4NCwKICAgICAgMTQuMDk5OTk5OTk5NjI3NDcxLAogICAgICAxNS45MDAwMDAwMDAzNzI1MjksCiAgICAgIDEzLjQwMDAwMDAwMDM3MjUyOSwKICAgICAgMTUuMTk5OTk5OTk5MjU0OTQyLAogICAgICAxNC44OTk5OTk5OTg1MDk4ODQsCiAgICAgIDE1LjIwMDAwMDAwMTExNzU4NywKICAgICAgMTQuNzk5OTk5OTk4ODgyNDEzLAogICAgICAxNS45MDAwMDAwMDAzNzI1MjksCiAgICAgIDEzLjkwMDAwMDAwMDM3MjUyOSwKICAgICAgMTQuNTk5OTk5OTk5NjI3NDcxLAogICAgICAxNC41LAogICAgICAxNC40MDAwMDAwMDAzNzI1MjksCiAgICAgIDEzLjYwMDAwMDAwMTQ5MDExNiwKICAgICAgMTUsCiAgICAgIDE1LjY5OTk5OTk5OTI1NDk0MgogICAgXSwKICAgICJsaW1pdGVkLXF1YW50aXR5LWlucHV0IjogWwogICAgICAzLjE5OTk5OTk5OTI1NDk0MiwKICAgICAgOS4yOTk5OTk5OTg4ODI0MTMsCiAgICAgIDEwLjI5OTk5OTk5ODg4MjQxMywKICAgICAgNy45MDAwMDAwMDAzNzI1MjksCiAgICAgIDkuNjAwMDAwMDAxNDkwMTE2LAogICAgICAzLAogICAgICAxMC4yOTk5OTk5OTg4ODI0MTMsCiAgICAgIDguODk5OTk5OTk4NTA5ODg0LAogICAgICA4LjA5OTk5OTk5OTYyNzQ3MSwKICAgICAgOS4xOTk5OTk5OTkyNTQ5NDIsCiAgICAgIDYuNzAwMDAwMDAxMTE3NTg3LAogICAgICA3LjcwMDAwMDAwMTExNzU4NywKICAgICAgOS42MDAwMDAwMDE0OTAxMTYsCiAgICAgIDcuNzAwMDAwMDAxMTE3NTg3LAogICAgICAxMC43MDAwMDAwMDExMTc1ODcsCiAgICAgIDkuNDAwMDAwMDAwMzcyNTI5LAogICAgICA4LjM5OTk5OTk5ODUwOTg4NCwKICAgICAgMTAuNzAwMDAwMDAxMTE3NTg3LAogICAgICAxMC4xOTk5OTk5OTkyNTQ5NDIsCiAgICAgIDguNSwKICAgICAgOAogICAgXSwKICAgICJsaW1pdGVkLWNvbmZpcm0tb3BlbiI6IFsKICAgICAgMTAuMjk5OTk5OTk4ODgyNDEzLAogICAgICAxMS4yMDAwMDAwMDExMTc1ODcsCiAgICAgIDEwLjUsCiAgICAgIDEyLjkwMDAwMDAwMDM3MjUyOSwKICAgICAgMTAuODAwMDAwMDAwNzQ1MDU4LAogICAgICAxMiwKICAgICAgMTIuMzAwMDAwMDAwNzQ1MDU4LAogICAgICA1LjY5OTk5OTk5OTI1NDk0MiwKICAgICAgOS40MDAwMDAwMDAzNzI1MjksCiAgICAgIDEwLjUsCiAgICAgIDExLjkwMDAwMDAwMDM3MjUyOSwKICAgICAgMTAuMzAwMDAwMDAwNzQ1MDU4LAogICAgICAxMS41OTk5OTk5OTk2Mjc0NzEsCiAgICAgIDExLjQwMDAwMDAwMDM3MjUyOSwKICAgICAgMTEuNjk5OTk5OTk5MjU0OTQyLAogICAgICAxMS41LAogICAgICAxMS45MDAwMDAwMDAzNzI1MjksCiAgICAgIDExLjgwMDAwMDAwMDc0NTA1OCwKICAgICAgMTEuODAwMDAwMDAwNzQ1MDU4LAogICAgICAxMS41LAogICAgICAxMgogICAgXSwKICAgICJsaW1pdGVkLWNvbmZpcm0tcmV0dXJuIjogWwogICAgICA5LjcwMDAwMDAwMTExNzU4NywKICAgICAgNiwKICAgICAgMTEuNTk5OTk5OTk5NjI3NDcxLAogICAgICAxMS4xMDAwMDAwMDE0OTAxMTYsCiAgICAgIDExLjI5OTk5OTk5ODg4MjQxMywKICAgICAgMTEuMjk5OTk5OTk4ODgyNDEzLAogICAgICAxMS4wOTk5OTk5OTk2Mjc0NzEsCiAgICAgIDExLjMwMDAwMDAwMDc0NTA1OCwKICAgICAgMTEuNSwKICAgICAgMTEsCiAgICAgIDExLjQwMDAwMDAwMDM3MjUyOSwKICAgICAgMTIuNzk5OTk5OTk4ODgyNDEzLAogICAgICAxMS43MDAwMDAwMDExMTc1ODcsCiAgICAgIDEzLjA5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTEuMDk5OTk5OTk5NjI3NDcxLAogICAgICAxMS43OTk5OTk5OTg4ODI0MTMsCiAgICAgIDEwLjg5OTk5OTk5ODUwOTg4NCwKICAgICAgMTAuODAwMDAwMDAwNzQ1MDU4LAogICAgICA5LjcwMDAwMDAwMTExNzU4NywKICAgICAgMTAuODAwMDAwMDAwNzQ1MDU4LAogICAgICAxMC45MDAwMDAwMDAzNzI1MjkKICAgIF0sCiAgICAibGltaXRlZC1jYW5jZWwiOiBbCiAgICAgIDguNjAwMDAwMDAxNDkwMTE2LAogICAgICAxMS4zMDAwMDAwMDA3NDUwNTgsCiAgICAgIDExLjU5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTEuMTk5OTk5OTk5MjU0OTQyLAogICAgICAxMC4xMDAwMDAwMDE0OTAxMTYsCiAgICAgIDExLjUsCiAgICAgIDEwLjMwMDAwMDAwMDc0NTA1OCwKICAgICAgMTAuNjk5OTk5OTk5MjU0OTQyLAogICAgICAxMS42OTk5OTk5OTkyNTQ5NDIsCiAgICAgIDEyLjE5OTk5OTk5OTI1NDk0MiwKICAgICAgMTEuMzAwMDAwMDAwNzQ1MDU4LAogICAgICA5LjgwMDAwMDAwMDc0NTA1OCwKICAgICAgMTAuNSwKICAgICAgMTIuNzk5OTk5OTk4ODgyNDEzLAogICAgICAxMS42MDAwMDAwMDE0OTAxMTYsCiAgICAgIDEyLjE5OTk5OTk5OTI1NDk0MiwKICAgICAgMTIuMTk5OTk5OTk5MjU0OTQyLAogICAgICAxMC42MDAwMDAwMDE0OTAxMTYsCiAgICAgIDEwLjU5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTAuODk5OTk5OTk4NTA5ODg0LAogICAgICAxMC4xOTk5OTk5OTkyNTQ5NDIKICAgIF0sCiAgICAic2FtZS1zY3JlZW4tY29uZmlybWF0aW9uLWludmFsaWRhdGlvbiI6IFsKICAgICAgMTcuNjk5OTk5OTk5MjU0OTQyLAogICAgICAxNS4xOTk5OTk5OTkyNTQ5NDIsCiAgICAgIDEyLjU5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTIuMDk5OTk5OTk5NjI3NDcxLAogICAgICAxMi41LAogICAgICAxNC41OTk5OTk5OTk2Mjc0NzEsCiAgICAgIDE0LjUsCiAgICAgIDE0LjU5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTUsCiAgICAgIDE0LjA5OTk5OTk5OTYyNzQ3MSwKICAgICAgMTQsCiAgICAgIDEzLjM5OTk5OTk5ODUwOTg4NCwKICAgICAgMTMuMjAwMDAwMDAxMTE3NTg3LAogICAgICAxNS4wOTk5OTk5OTk2Mjc0NzEsCiAgICAgIDE0LjMwMDAwMDAwMDc0NTA1OCwKICAgICAgMTMuMjAwMDAwMDAxMTE3NTg3LAogICAgICAxNS4wOTk5OTk5OTk2Mjc0NzEsCiAgICAgIDE0LjY5OTk5OTk5OTI1NDk0MiwKICAgICAgMTEuNzAwMDAwMDAxMTE3NTg3LAogICAgICAxNS42MDAwMDAwMDE0OTAxMTYsCiAgICAgIDE0LjUKICAgIF0sCiAgICAicmFkaWFsLXRvLXNpbmdsZS1jaG9pY2UiOiBbCiAgICAgIDE2CiAgICBdCiAgfSwKICAic3VtbWFyeSI6IHsKICAgICJyYWRpYWwtb3BlbiI6IHsKICAgICAgImZpcnN0TXMiOiAxMC43MDAwMDAwMDExMTc1ODcsCiAgICAgICJjb3VudCI6IDIwLAogICAgICAibWVkaWFuTXMiOiAxMi4xNTAwMDAwMDAzNzI1MjksCiAgICAgICJwOTVNcyI6IDEzLjU5OTk5OTk5OTYyNzQ3MQogICAgfSwKICAgICJyYWRpYWwtdG8tbGltaXRlZC1pbnB1dCI6IHsKICAgICAgImZpcnN0TXMiOiAxNS4wOTk5OTk5OTk2Mjc0NzEsCiAgICAgICJjb3VudCI6IDIwLAogICAgICAibWVkaWFuTXMiOiAxNC45NDk5OTk5OTkyNTQ5NDIsCiAgICAgICJwOTVNcyI6IDE1LjkwMDAwMDAwMDM3MjUyOQogICAgfSwKICAgICJsaW1pdGVkLXF1YW50aXR5LWlucHV0IjogewogICAgICAiZmlyc3RNcyI6IDMuMTk5OTk5OTk5MjU0OTQyLAogICAgICAiY291bnQiOiAyMCwKICAgICAgIm1lZGlhbk1zIjogOS4wNDk5OTk5OTg4ODI0MTMsCiAgICAgICJwOTVNcyI6IDEwLjcwMDAwMDAwMTExNzU4NwogICAgfSwKICAgICJsaW1pdGVkLWNvbmZpcm0tb3BlbiI6IHsKICAgICAgImZpcnN0TXMiOiAxMC4yOTk5OTk5OTg4ODI0MTMsCiAgICAgICJjb3VudCI6IDIwLAogICAgICAibWVkaWFuTXMiOiAxMS41NDk5OTk5OTk4MTM3MzUsCiAgICAgICJwOTVNcyI6IDEyLjMwMDAwMDAwMDc0NTA1OAogICAgfSwKICAgICJsaW1pdGVkLWNvbmZpcm0tcmV0dXJuIjogewogICAgICAiZmlyc3RNcyI6IDkuNzAwMDAwMDAxMTE3NTg3LAogICAgICAiY291bnQiOiAyMCwKICAgICAgIm1lZGlhbk1zIjogMTEuMjAwMDAwMDAwMTg2MjY1LAogICAgICAicDk1TXMiOiAxMi43OTk5OTk5OTg4ODI0MTMKICAgIH0sCiAgICAibGltaXRlZC1jYW5jZWwiOiB7CiAgICAgICJmaXJzdE1zIjogOC42MDAwMDAwMDE0OTAxMTYsCiAgICAgICJjb3VudCI6IDIwLAogICAgICAibWVkaWFuTXMiOiAxMS4yNSwKICAgICAgInA5NU1zIjogMTIuMTk5OTk5OTk5MjU0OTQyCiAgICB9LAogICAgInNhbWUtc2NyZWVuLWNvbmZpcm1hdGlvbi1pbnZhbGlkYXRpb24iOiB7CiAgICAgICJmaXJzdE1zIjogMTcuNjk5OTk5OTk5MjU0OTQyLAogICAgICAiY291bnQiOiAyMCwKICAgICAgIm1lZGlhbk1zIjogMTQuNDAwMDAwMDAwMzcyNTI5LAogICAgICAicDk1TXMiOiAxNS4xOTk5OTk5OTkyNTQ5NDIKICAgIH0sCiAgICAicmFkaWFsLXRvLXNpbmdsZS1jaG9pY2UiOiB7CiAgICAgICJmaXJzdE1zIjogMTYsCiAgICAgICJjb3VudCI6IDAsCiAgICAgICJtZWRpYW5NcyI6IG51bGwKICAgIH0KICB9LAogICJjb21wbGV0aW9uTXMiOiB7CiAgICAic2FtZS1zY3JlZW4tcXVhbnRpdHktc2F2ZSI6IFsKICAgICAgNTEuNjk5OTk5OTk5MjU0OTQsCiAgICAgIDQ1LAogICAgICA0Mi4yMDAwMDAwMDExMTc1OSwKICAgICAgMzkuNDAwMDAwMDAwMzcyNTMsCiAgICAgIDM3LjY5OTk5OTk5OTI1NDk0LAogICAgICA0Mi41LAogICAgICA0MCwKICAgICAgNDQuMTk5OTk5OTk5MjU0OTQsCiAgICAgIDQ1LjkwMDAwMDAwMDM3MjUzLAogICAgICA0My45MDAwMDAwMDAzNzI1MywKICAgICAgNDUsCiAgICAgIDQzLjMwMDAwMDAwMDc0NTA2LAogICAgICA0My41LAogICAgICA0MS45MDAwMDAwMDAzNzI1MywKICAgICAgNDUuMDk5OTk5OTk5NjI3NDcsCiAgICAgIDM4Ljg5OTk5OTk5ODUwOTg4NCwKICAgICAgNDUuMTk5OTk5OTk5MjU0OTQsCiAgICAgIDM5LjkwMDAwMDAwMDM3MjUzLAogICAgICAzOS41LAogICAgICA0NC44MDAwMDAwMDA3NDUwNiwKICAgICAgNDUuMjk5OTk5OTk4ODgyNDEKICAgIF0KICB9LAogICJlcnJvcnMiOiBbXSwKICAib2JzZXJ2YXRpb25zIjogewogICAgInBvcHVwUmV0YWluZWRBZnRlckRheVN3aXRjaCI6IFtdLAogICAgInJhZGlhbElucHV0Rm9jdXNlZCI6IFsKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZQogICAgXSwKICAgICJidWxrTmV4dElucHV0Rm9jdXNlZCI6IFtdLAogICAgImludmFsaWRhdGlvbklucHV0Rm9jdXNlZCI6IFsKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZSwKICAgICAgZmFsc2UsCiAgICAgIGZhbHNlLAogICAgICBmYWxzZQogICAgXQogIH0sCiAgInJlbGF5RGlhZ25vc3RpY3MiOiAidGVzdHMvYnJvd3Nlci9wcmlvcml0eS1yZWxheS1kaWFnbm9zdGljcy5zcGVjLnRzIgp9"
+                    },
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\before-operation-diagnostics-attempt2\\priority-operation-diagnos-a6047-ority-operation-performance-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\before-operation-diagnostics-attempt2\\priority-operation-diagnos-a6047-ority-operation-performance-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-operation-diagnostics.spec.ts",
+                    "column": 30,
+                    "line": 362
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "1ed193823e13e050a3df-348329a12d524ce3691e",
+          "file": "priority-operation-diagnostics.spec.ts",
+          "line": 221,
+          "column": 3
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-18T09:25:49.201Z",
+    "duration": 36545.539,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}

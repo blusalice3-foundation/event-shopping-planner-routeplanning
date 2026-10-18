@@ -1,0 +1,432 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\event-shopping-planner-routeplanning-1.9.6.7\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/priority-dialog-interaction.spec.ts",
+      "tests/browser/priority-event-overlay.spec.ts",
+      "tests/browser/priority-preference-consistency.spec.ts",
+      "--workers=2",
+      "--reporter=list,json",
+      "--output=artifacts/priority-user-operation-consistency-20261018/after-priority"
+    ],
+    "configFile": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\playwright.config.ts",
+    "rootDir": "D:/event-shopping-planner-routeplanning-1.9.6.7/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 2
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/event-shopping-planner-routeplanning-1.9.6.7/artifacts/priority-user-operation-consistency-20261018/after-priority",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/event-shopping-planner-routeplanning-1.9.6.7/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 2,
+    "webServer": {
+      "command": "node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173",
+      "url": "http://127.0.0.1:4173",
+      "reuseExistingServer": false,
+      "timeout": 30000
+    }
+  },
+  "suites": [
+    {
+      "title": "priority-dialog-interaction.spec.ts",
+      "file": "priority-dialog-interaction.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "bulk limited input contains touch and keyboard across confirmations and the next item: pc",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1261,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T09:35:37.306Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf55c0d36a89b0372caa-31448105e75ce362c48d",
+          "file": "priority-dialog-interaction.spec.ts",
+          "line": 113,
+          "column": 3
+        },
+        {
+          "title": "bulk limited input contains touch and keyboard across confirmations and the next item: smartphone",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1416,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T09:35:38.692Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf55c0d36a89b0372caa-ce3717f9b6630d314eea",
+          "file": "priority-dialog-interaction.spec.ts",
+          "line": 113,
+          "column": 3
+        },
+        {
+          "title": "keyboard day changes discard popup input while retaining the map canvas",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1036,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T09:35:40.124Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf55c0d36a89b0372caa-542efdc26b6d9efb91de",
+          "file": "priority-dialog-interaction.spec.ts",
+          "line": 180,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "priority-event-overlay.spec.ts",
+      "file": "priority-event-overlay.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "rename cancellation and unchanged-name submission close without changing the event, then normal rename persists",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "failed",
+                  "duration": 7233,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeHidden\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('heading', { name: '即売会名を変更' })\nExpected: hidden\nReceived: visible\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeHidden\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: '即売会名を変更' })\u001b[22m\n\u001b[2m    14 × locator resolved to <h2 class=\"text-xl font-bold text-slate-900 dark:text-white mb-4\">即売会名を変更</h2>\u001b[22m\n\u001b[2m       - unexpected value \"visible\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeHidden\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('heading', { name: '即売会名を変更' })\nExpected: hidden\nReceived: visible\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeHidden\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: '即売会名を変更' })\u001b[22m\n\u001b[2m    14 × locator resolved to <h2 class=\"text-xl font-bold text-slate-900 dark:text-white mb-4\">即売会名を変更</h2>\u001b[22m\n\u001b[2m       - unexpected value \"visible\"\u001b[22m\n\n    at D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-event-overlay.spec.ts:115:5",
+                    "location": {
+                      "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-event-overlay.spec.ts",
+                      "column": 5,
+                      "line": 115
+                    },
+                    "snippet": "  113 |   await expect(\n  114 |     page.getByRole(\"heading\", { name: \"即売会名を変更\" }),\n> 115 |   ).toBeHidden();\n      |     ^\n  116 |   await expect(page.getByText(renamed, { exact: true })).toBeVisible();\n  117 |   await page.reload();\n  118 |   await expect(page.getByText(renamed, { exact: true })).toBeVisible();"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-event-overlay.spec.ts",
+                        "column": 5,
+                        "line": 115
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeHidden\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('heading', { name: '即売会名を変更' })\nExpected: hidden\nReceived: visible\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeHidden\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: '即売会名を変更' })\u001b[22m\n\u001b[2m    14 × locator resolved to <h2 class=\"text-xl font-bold text-slate-900 dark:text-white mb-4\">即売会名を変更</h2>\u001b[22m\n\u001b[2m       - unexpected value \"visible\"\u001b[22m\n\n\n  113 |   await expect(\n  114 |     page.getByRole(\"heading\", { name: \"即売会名を変更\" }),\n> 115 |   ).toBeHidden();\n      |     ^\n  116 |   await expect(page.getByText(renamed, { exact: true })).toBeVisible();\n  117 |   await page.reload();\n  118 |   await expect(page.getByText(renamed, { exact: true })).toBeVisible();\n    at D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-event-overlay.spec.ts:115:5"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T09:35:37.836Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\after-priority\\priority-event-overlay-ren-6be5b-then-normal-rename-persists-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\after-priority\\priority-event-overlay-ren-6be5b-then-normal-rename-persists-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\after-priority\\priority-event-overlay-ren-6be5b-then-normal-rename-persists-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-event-overlay.spec.ts",
+                    "column": 5,
+                    "line": 115
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "91cffb28b3c342a49669-70a2fdd6fd3765d982b4",
+          "file": "priority-event-overlay.spec.ts",
+          "line": 77,
+          "column": 1
+        },
+        {
+          "title": "export cancellation and close icon reopen without downloading, then the real Excel Worker exports and closes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2912,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T09:35:46.232Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "91cffb28b3c342a49669-110364ac7d62493859a0",
+          "file": "priority-event-overlay.spec.ts",
+          "line": 124,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "priority-preference-consistency.spec.ts",
+      "file": "priority-preference-consistency.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "localStorage quota failures preserve the app, current settings, item persistence and JSON backup",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5514,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T09:35:41.179Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "906095c7eec5eb704de6-0feae04f4d53f086c195",
+          "file": "priority-preference-consistency.spec.ts",
+          "line": 78,
+          "column": 1
+        },
+        {
+          "title": "unavailable localStorage read retains a visible app and backup failure guidance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 809,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T09:35:46.704Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "storage-read-outcome",
+                      "contentType": "text/plain",
+                      "body": "RXhpc3Rpbmcgc3RhcnR1cCByZWNvdmVyeSBzY3JlZW4gcmVtYWluZWQgdmlzaWJsZTsgbm8gZGF0YSBjaGFuZ2VkLg=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "906095c7eec5eb704de6-4d71eba8e14d1721c87a",
+          "file": "priority-preference-consistency.spec.ts",
+          "line": 168,
+          "column": 3
+        },
+        {
+          "title": "unavailable localStorage getter retains a visible app and backup failure guidance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1387,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T09:35:47.529Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "storage-getter-outcome",
+                      "contentType": "text/plain",
+                      "body": "RXhpc3Rpbmcgc3RhcnR1cCByZWNvdmVyeSBzY3JlZW4gcmVtYWluZWQgdmlzaWJsZTsgbm8gZGF0YSBjaGFuZ2VkLg=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "906095c7eec5eb704de6-97a9236b4e226a958f89",
+          "file": "priority-preference-consistency.spec.ts",
+          "line": 168,
+          "column": 3
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-18T09:35:35.278Z",
+    "duration": 14330.787,
+    "expected": 7,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

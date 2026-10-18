@@ -1,0 +1,224 @@
+[
+  {
+    "Name": "priority-relay-diagnostics-before-map-150-roundtrip",
+    "Status": "passed",
+    "Samples": 21,
+    "Summary": {
+      "start": {
+        "firstMs": 9.699999999254942,
+        "count": 20,
+        "medianMs": 9.549999999813735,
+        "p95Ms": 10.900000000372529
+      },
+      "dayChange": {
+        "firstMs": 13.699999999254942,
+        "count": 20,
+        "medianMs": 15.199999999254942,
+        "p95Ms": 18.100000001490116
+      },
+      "returnDayChange": {
+        "firstMs": 9.700000001117587,
+        "count": 20,
+        "medianMs": 7.7999999998137355,
+        "p95Ms": 9.799999998882413
+      },
+      "retainedDomClickDelivery": {
+        "firstMs": 13,
+        "count": 20,
+        "medianMs": 16.5,
+        "p95Ms": 17.90000000037253
+      }
+    },
+    "SameKeyDistinctRequestSamples": 0,
+    "StaleDeliveredSamples": 0,
+    "CurrentDeliveredSamples": 0,
+    "BaselineRetainedUiSamples": 21
+  },
+  {
+    "Name": "priority-relay-diagnostics-before-preview-150-roundtrip",
+    "Status": "passed",
+    "Samples": 21,
+    "Summary": {
+      "start": {
+        "firstMs": 15.400000000372529,
+        "count": 20,
+        "medianMs": 5.2000000001862645,
+        "p95Ms": 6.300000000745058
+      },
+      "dayChange": {
+        "firstMs": 6.400000000372529,
+        "count": 20,
+        "medianMs": 14.900000000372529,
+        "p95Ms": 16.09999999962747
+      },
+      "returnDayChange": {
+        "firstMs": 9.400000000372529,
+        "count": 20,
+        "medianMs": 9.400000000372529,
+        "p95Ms": 10.599999999627471
+      },
+      "retainedDomClickDelivery": {
+        "firstMs": 9.900000000372529,
+        "count": 20,
+        "medianMs": 9.549999999813735,
+        "p95Ms": 11.199999999254942
+      }
+    },
+    "SameKeyDistinctRequestSamples": 0,
+    "StaleDeliveredSamples": 0,
+    "CurrentDeliveredSamples": 0,
+    "BaselineRetainedUiSamples": 21
+  },
+  {
+    "Name": "priority-relay-diagnostics-before-waiting-150-roundtrip",
+    "Status": "passed",
+    "Samples": 21,
+    "Summary": {
+      "start": {
+        "firstMs": 3.800000000745058,
+        "count": 20,
+        "medianMs": 15.150000000372529,
+        "p95Ms": 16.800000000745058
+      },
+      "dayChange": {
+        "firstMs": 9.400000000372529,
+        "count": 20,
+        "medianMs": 9.950000000186265,
+        "p95Ms": 11.600000001490116
+      },
+      "staleReplyDelivery": {
+        "firstMs": 13.400000000372529,
+        "count": 20,
+        "medianMs": 7.75,
+        "p95Ms": 12.200000001117587
+      },
+      "returnDayChange": {
+        "firstMs": 10.5,
+        "count": 20,
+        "medianMs": 8.000000000931323,
+        "p95Ms": 9
+      },
+      "retainedDomClickDelivery": {
+        "firstMs": 7.900000000372529,
+        "count": 20,
+        "medianMs": 1.300000000745058,
+        "p95Ms": 1.400000000372529
+      }
+    },
+    "SameKeyDistinctRequestSamples": 21,
+    "StaleDeliveredSamples": 21,
+    "CurrentDeliveredSamples": 21,
+    "BaselineRetainedUiSamples": 0
+  },
+  {
+    "Name": "priority-relay-diagnostics-before-map-500-roundtrip",
+    "Status": "passed",
+    "Samples": 21,
+    "Summary": {
+      "start": {
+        "firstMs": 11.899999998509884,
+        "count": 20,
+        "medianMs": 9.849999999627471,
+        "p95Ms": 10.899999998509884
+      },
+      "dayChange": {
+        "firstMs": 14.900000000372529,
+        "count": 20,
+        "medianMs": 15.850000000558794,
+        "p95Ms": 17.90000000037253
+      },
+      "returnDayChange": {
+        "firstMs": 14,
+        "count": 20,
+        "medianMs": 12,
+        "p95Ms": 13.599999999627471
+      },
+      "retainedDomClickDelivery": {
+        "firstMs": 10.5,
+        "count": 20,
+        "medianMs": 11.299999999813735,
+        "p95Ms": 14.399999998509884
+      }
+    },
+    "SameKeyDistinctRequestSamples": 0,
+    "StaleDeliveredSamples": 0,
+    "CurrentDeliveredSamples": 0,
+    "BaselineRetainedUiSamples": 21
+  },
+  {
+    "Name": "priority-relay-diagnostics-before-preview-500-roundtrip",
+    "Status": "passed",
+    "Samples": 21,
+    "Summary": {
+      "start": {
+        "firstMs": 15.400000000372529,
+        "count": 20,
+        "medianMs": 5.700000001117587,
+        "p95Ms": 7.199999999254942
+      },
+      "dayChange": {
+        "firstMs": 10.800000000745058,
+        "count": 20,
+        "medianMs": 15,
+        "p95Ms": 16.699999999254942
+      },
+      "returnDayChange": {
+        "firstMs": 17.799999998882413,
+        "count": 20,
+        "medianMs": 13.900000000372529,
+        "p95Ms": 15.399999998509884
+      },
+      "retainedDomClickDelivery": {
+        "firstMs": 10.699999999254942,
+        "count": 20,
+        "medianMs": 7.349999999627471,
+        "p95Ms": 8.900000000372529
+      }
+    },
+    "SameKeyDistinctRequestSamples": 0,
+    "StaleDeliveredSamples": 0,
+    "CurrentDeliveredSamples": 0,
+    "BaselineRetainedUiSamples": 21
+  },
+  {
+    "Name": "priority-relay-diagnostics-before-waiting-500-roundtrip",
+    "Status": "passed",
+    "Samples": 21,
+    "Summary": {
+      "start": {
+        "firstMs": 16.399999998509884,
+        "count": 20,
+        "medianMs": 15.5,
+        "p95Ms": 16.800000000745058
+      },
+      "dayChange": {
+        "firstMs": 11.799999998882413,
+        "count": 20,
+        "medianMs": 10.800000000745058,
+        "p95Ms": 12.300000000745058
+      },
+      "staleReplyDelivery": {
+        "firstMs": 13.900000000372529,
+        "count": 20,
+        "medianMs": 14.300000000745058,
+        "p95Ms": 15.699999999254942
+      },
+      "returnDayChange": {
+        "firstMs": 14.5,
+        "count": 20,
+        "medianMs": 12.700000000186265,
+        "p95Ms": 14.099999999627471
+      },
+      "retainedDomClickDelivery": {
+        "firstMs": 10.800000000745058,
+        "count": 20,
+        "medianMs": 1.4500000001862645,
+        "p95Ms": 12.900000000372529
+      }
+    },
+    "SameKeyDistinctRequestSamples": 21,
+    "StaleDeliveredSamples": 21,
+    "CurrentDeliveredSamples": 21,
+    "BaselineRetainedUiSamples": 0
+  }
+]

@@ -1,0 +1,240 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\event-shopping-planner-routeplanning-1.9.6.7\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/priority-dialog-interaction.spec.ts",
+      "--grep",
+      "bulk limited",
+      "--workers=1",
+      "--reporter=list,json",
+      "--output=artifacts/priority-user-operation-consistency-20261018/before-dialog-corrected-selector"
+    ],
+    "configFile": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\playwright.config.ts",
+    "rootDir": "D:/event-shopping-planner-routeplanning-1.9.6.7/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/event-shopping-planner-routeplanning-1.9.6.7/artifacts/priority-user-operation-consistency-20261018/before-dialog-corrected-selector",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/event-shopping-planner-routeplanning-1.9.6.7/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": {
+      "command": "node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173",
+      "url": "http://127.0.0.1:4173",
+      "reuseExistingServer": false,
+      "timeout": 30000
+    }
+  },
+  "suites": [
+    {
+      "title": "priority-dialog-interaction.spec.ts",
+      "file": "priority-dialog-interaction.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "bulk limited input contains touch and keyboard across confirmations and the next item: pc",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6276,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeFocused\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <input value=\"\" inputmode=\"numeric\" class=\"mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100\"/>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeFocused\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <input value=\"\" inputmode=\"numeric\" class=\"mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100\"/>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n\n    at D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-dialog-interaction.spec.ts:140:26",
+                    "location": {
+                      "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-dialog-interaction.spec.ts",
+                      "column": 26,
+                      "line": 140
+                    },
+                    "snippet": "  138 |     });\n  139 |     const actual = main.getByRole(\"textbox\", { name: \"実購入数\", exact: true });\n> 140 |     await expect(actual).toBeFocused();\n      |                          ^\n  141 |     await swipe(page, '[aria-labelledby=\"limited-purchase-dialog-title\"]');\n  142 |     await expect(\n  143 |       main.getByText(\"対象: 最初の入力\", { exact: true }),"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-dialog-interaction.spec.ts",
+                        "column": 26,
+                        "line": 140
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeFocused\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <input value=\"\" inputmode=\"numeric\" class=\"mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100\"/>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n\n\n  138 |     });\n  139 |     const actual = main.getByRole(\"textbox\", { name: \"実購入数\", exact: true });\n> 140 |     await expect(actual).toBeFocused();\n      |                          ^\n  141 |     await swipe(page, '[aria-labelledby=\"limited-purchase-dialog-title\"]');\n  142 |     await expect(\n  143 |       main.getByText(\"対象: 最初の入力\", { exact: true }),\n    at D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-dialog-interaction.spec.ts:140:26"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T09:18:20.131Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\before-dialog-corrected-selector\\priority-dialog-interactio-4d6b2-ations-and-the-next-item-pc-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\before-dialog-corrected-selector\\priority-dialog-interactio-4d6b2-ations-and-the-next-item-pc-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\before-dialog-corrected-selector\\priority-dialog-interactio-4d6b2-ations-and-the-next-item-pc-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-dialog-interaction.spec.ts",
+                    "column": 26,
+                    "line": 140
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bf55c0d36a89b0372caa-31448105e75ce362c48d",
+          "file": "priority-dialog-interaction.spec.ts",
+          "line": 113,
+          "column": 3
+        },
+        {
+          "title": "bulk limited input contains touch and keyboard across confirmations and the next item: smartphone",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6460,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeFocused\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <input value=\"\" inputmode=\"numeric\" class=\"mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100\"/>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeFocused\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <input value=\"\" inputmode=\"numeric\" class=\"mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100\"/>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n\n    at D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-dialog-interaction.spec.ts:140:26",
+                    "location": {
+                      "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-dialog-interaction.spec.ts",
+                      "column": 26,
+                      "line": 140
+                    },
+                    "snippet": "  138 |     });\n  139 |     const actual = main.getByRole(\"textbox\", { name: \"実購入数\", exact: true });\n> 140 |     await expect(actual).toBeFocused();\n      |                          ^\n  141 |     await swipe(page, '[aria-labelledby=\"limited-purchase-dialog-title\"]');\n  142 |     await expect(\n  143 |       main.getByText(\"対象: 最初の入力\", { exact: true }),"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-dialog-interaction.spec.ts",
+                        "column": 26,
+                        "line": 140
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeFocused\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <input value=\"\" inputmode=\"numeric\" class=\"mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100\"/>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n\n\n  138 |     });\n  139 |     const actual = main.getByRole(\"textbox\", { name: \"実購入数\", exact: true });\n> 140 |     await expect(actual).toBeFocused();\n      |                          ^\n  141 |     await swipe(page, '[aria-labelledby=\"limited-purchase-dialog-title\"]');\n  142 |     await expect(\n  143 |       main.getByText(\"対象: 最初の入力\", { exact: true }),\n    at D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-dialog-interaction.spec.ts:140:26"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T09:18:27.052Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\before-dialog-corrected-selector\\priority-dialog-interactio-e3166-nd-the-next-item-smartphone-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\before-dialog-corrected-selector\\priority-dialog-interactio-e3166-nd-the-next-item-smartphone-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\priority-user-operation-consistency-20261018\\before-dialog-corrected-selector\\priority-dialog-interactio-e3166-nd-the-next-item-smartphone-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\priority-dialog-interaction.spec.ts",
+                    "column": 26,
+                    "line": 140
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bf55c0d36a89b0372caa-ce3717f9b6630d314eea",
+          "file": "priority-dialog-interaction.spec.ts",
+          "line": 113,
+          "column": 3
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-18T09:18:18.641Z",
+    "duration": 15297.173999999999,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}

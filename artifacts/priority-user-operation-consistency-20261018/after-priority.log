@@ -1,0 +1,59 @@
+[WebServer] (node:4632) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 8 tests using 2 workers
+
+(node:31572) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:31332) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: pc (1.3s)
+  ok 3 [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: smartphone (1.4s)
+  ok 4 [chromium] › tests\browser\priority-dialog-interaction.spec.ts:180:1 › keyboard day changes discard popup input while retaining the map canvas (1.0s)
+  x  2 [chromium] › tests\browser\priority-event-overlay.spec.ts:77:1 › rename cancellation and unchanged-name submission close without changing the event, then normal rename persists (7.2s)
+(node:30680) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 5 [chromium] › tests\browser\priority-preference-consistency.spec.ts:78:1 › localStorage quota failures preserve the app, current settings, item persistence and JSON backup (5.5s)
+  ok 7 [chromium] › tests\browser\priority-preference-consistency.spec.ts:168:3 › unavailable localStorage read retains a visible app and backup failure guidance (809ms)
+  ok 8 [chromium] › tests\browser\priority-preference-consistency.spec.ts:168:3 › unavailable localStorage getter retains a visible app and backup failure guidance (1.4s)
+  ok 6 [chromium] › tests\browser\priority-event-overlay.spec.ts:124:1 › export cancellation and close icon reopen without downloading, then the real Excel Worker exports and closes (2.9s)
+
+
+  1) [chromium] › tests\browser\priority-event-overlay.spec.ts:77:1 › rename cancellation and unchanged-name submission close without changing the event, then normal rename persists 
+
+    Error: expect(locator).toBeHidden() failed
+
+    Locator:  getByRole('heading', { name: '即売会名を変更' })
+    Expected: hidden
+    Received: visible
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeHidden" with timeout 5000ms
+      - waiting for getByRole('heading', { name: '即売会名を変更' })
+        14 × locator resolved to <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4">即売会名を変更</h2>
+           - unexpected value "visible"
+
+
+      113 |   await expect(
+      114 |     page.getByRole("heading", { name: "即売会名を変更" }),
+    > 115 |   ).toBeHidden();
+          |     ^
+      116 |   await expect(page.getByText(renamed, { exact: true })).toBeVisible();
+      117 |   await page.reload();
+      118 |   await expect(page.getByText(renamed, { exact: true })).toBeVisible();
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-event-overlay.spec.ts:115:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\after-priority\priority-event-overlay-ren-6be5b-then-normal-rename-persists-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\after-priority\priority-event-overlay-ren-6be5b-then-normal-rename-persists-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\after-priority\priority-event-overlay-ren-6be5b-then-normal-rename-persists-chromium\error-context.md
+
+  1 failed
+    [chromium] › tests\browser\priority-event-overlay.spec.ts:77:1 › rename cancellation and unchanged-name submission close without changing the event, then normal rename persists 
+  7 passed (14.3s)

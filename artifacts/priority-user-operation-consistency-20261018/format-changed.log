@@ -1,0 +1,7 @@
+Checking formatting...
+[warn] src/hooks/useDisablePriceUndefinedCheck.ts
+[warn] src/components/map/MapView.popupRelay.integration.test.tsx
+[warn] src/features/app-shell/components/AppOverlayLayer.eventCancellation.integration.test.tsx
+[warn] src/hooks/preferencePersistenceFailure.test.tsx
+[warn] tests/browser/priority-event-overlay.spec.ts
+[warn] Code style issues found in 5 files. Run Prettier with --write to fix.

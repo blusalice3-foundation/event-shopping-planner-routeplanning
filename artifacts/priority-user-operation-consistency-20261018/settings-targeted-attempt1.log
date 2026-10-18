@@ -1,0 +1,43 @@
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+
+ ❯ |integration| src/components/map/MapView.popupRelay.integration.test.tsx (4 tests | 1 failed) 271ms
+     × does not resume an invalidated worker wait and resumes a new same-scope wait normally 39ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |integration| src/components/map/MapView.popupRelay.integration.test.tsx > MapView popup insertion relay ownership > does not resume an invalidated worker wait and resumes a new same-scope wait normally
+Error: expect(element).not.toBeInTheDocument()
+
+expected document not to contain element, found <div
+  class="shrink-0 rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-lg dark:border-slate-700 dark:bg-slate-800"
+  role="status"
+>
+  <div
+    class="font-medium text-slate-900 dark:text-slate-100"
+  >
+    ルート線または番号をクリックしてください
+  </div>
+  <button
+    class="mt-3 rounded bg-slate-100 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200"
+    type="button"
+  >
+    キャンセル
+  </button>
+</div> instead
+ ❯ src/components/map/MapView.popupRelay.integration.test.tsx:341:46
+    339|     expect(screen.getByRole("status")).toHaveTextContent("経路を計算しています…"…
+    340|     setRoutePending(false);
+    341|     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+       |                                              ^
+    342|     expect(latestCanvas().routeInsertSelectionActive).toBe(true);
+    343|     context.expectNoWrites();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 6 passed (7)
+      Tests  1 failed | 28 passed (29)
+   Start at  18:15:53
+   Duration  4.87s (transform 1.96s, setup 4.15s, import 3.62s, tests 781ms, environment 11.66s)
+

@@ -1,0 +1,301 @@
+[WebServer] (node:21196) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 9 tests using 2 workers
+
+(node:4932) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:31448) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: pc (1.3s)
+(node:33592) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  3 [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: smartphone (1.2s)
+(node:33356) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  2 [chromium] › tests\browser\priority-event-overlay.spec.ts:73:1 › rename cancellation and unchanged-name submission close without changing the event, then normal rename persists (6.7s)
+(node:9696) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  4 [chromium] › tests\browser\priority-dialog-interaction.spec.ts:178:1 › keyboard day changes discard popup input while retaining the map canvas (6.4s)
+(node:32424) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  5 [chromium] › tests\browser\priority-event-overlay.spec.ts:112:1 › export cancellation and close icon reopen without downloading, then the real Excel Worker exports and closes (6.6s)
+(node:10764) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  6 [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:38:1 › deletes the last item, reopens the saved empty event, adds a corrected manual item, and reloads it (7.8s)
+  x  7 [chromium] › tests\browser\priority-preference-consistency.spec.ts:78:1 › localStorage quota failures preserve the app, current settings, item persistence and JSON backup (32.8s)
+(node:32508) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 8 [chromium] › tests\browser\priority-preference-consistency.spec.ts:168:3 › unavailable localStorage read retains a visible app and backup failure guidance (977ms)
+  x  9 [chromium] › tests\browser\priority-preference-consistency.spec.ts:168:3 › unavailable localStorage getter retains a visible app and backup failure guidance (6.2s)
+
+
+  1) [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: pc 
+
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: '全限数', exact: true }) resolved to 2 elements:
+        1) <button class="px-2 py-0.5 text-xs flex-shrink-0 whitespace-nowrap font-medium rounded transition-colors bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-orange-100 dark:hover:bg-orange-900/30">全限数</button> aka getByLabel('A-1 2件').getByRole('button', { name: '全限数' })
+        2) <button class="px-2 py-0.5 text-xs flex-shrink-0 whitespace-nowrap font-medium rounded transition-colors bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-orange-100 dark:hover:bg-orange-900/30">全限数</button> aka getByLabel('A-2 1件').getByRole('button', { name: '全限数' })
+
+    Call log:
+      - waiting for getByRole('button', { name: '全限数', exact: true })
+
+
+      130 |     await page.getByTitle("集中モード", { exact: true }).click();
+      131 |     const origin = page.getByRole("button", { name: "全限数", exact: true });
+    > 132 |     await origin.click();
+          |                  ^
+      133 |     const main = page.getByRole("dialog", {
+      134 |       name: "限数購入の数量",
+      135 |       exact: true,
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-dialog-interaction.spec.ts:132:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-dialog-interactio-4d6b2-ations-and-the-next-item-pc-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-dialog-interactio-4d6b2-ations-and-the-next-item-pc-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\before-functional\priority-dialog-interactio-4d6b2-ations-and-the-next-item-pc-chromium\error-context.md
+
+  2) [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: smartphone 
+
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: '全限数', exact: true }) resolved to 2 elements:
+        1) <button class="px-1.5 py-0.5 text-[10px] flex-shrink-0 whitespace-nowrap font-medium rounded transition-colors bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-orange-100 dark:hover:bg-orange-900/30">全限数</button> aka getByLabel('A-1 2件').getByRole('button', { name: '全限数' })
+        2) <button class="px-1.5 py-0.5 text-[10px] flex-shrink-0 whitespace-nowrap font-medium rounded transition-colors bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-orange-100 dark:hover:bg-orange-900/30">全限数</button> aka getByLabel('A-2 1件').getByRole('button', { name: '全限数' })
+
+    Call log:
+      - waiting for getByRole('button', { name: '全限数', exact: true })
+
+
+      130 |     await page.getByTitle("集中モード", { exact: true }).click();
+      131 |     const origin = page.getByRole("button", { name: "全限数", exact: true });
+    > 132 |     await origin.click();
+          |                  ^
+      133 |     const main = page.getByRole("dialog", {
+      134 |       name: "限数購入の数量",
+      135 |       exact: true,
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-dialog-interaction.spec.ts:132:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-dialog-interactio-e3166-nd-the-next-item-smartphone-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-dialog-interactio-e3166-nd-the-next-item-smartphone-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\before-functional\priority-dialog-interactio-e3166-nd-the-next-item-smartphone-chromium\error-context.md
+
+  3) [chromium] › tests\browser\priority-dialog-interaction.spec.ts:178:1 › keyboard day changes discard popup input while retaining the map canvas 
+
+    Error: expect(locator).toBeHidden() failed
+
+    Locator:  getByRole('dialog', { name: 'A-1のアイテム一覧', exact: true })
+    Expected: hidden
+    Received: visible
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeHidden" with timeout 5000ms
+      - waiting for getByRole('dialog', { name: 'A-1のアイテム一覧', exact: true })
+        14 × locator resolved to <div role="dialog" aria-label="A-1のアイテム一覧" class="fixed left-1/2 top-1/2 z-50 max-h-[calc(100vh-2rem)] w-80 max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-xl transition-all duration-150 dark:border-slate-700 dark:bg-slate-800">…</div>
+           - unexpected value "visible"
+
+
+      196 |   await day2.focus();
+      197 |   await day2.press("Enter");
+    > 198 |   await expect(popup).toBeHidden();
+          |                       ^
+      199 |   await expect(canvas).toHaveAttribute("data-priority-identity", "kept");
+      200 |   const day1 = page.getByRole("button", { name: /^1日目/ }).first();
+      201 |   await day1.focus();
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-dialog-interaction.spec.ts:198:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-dialog-interactio-4d510-le-retaining-the-map-canvas-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-dialog-interactio-4d510-le-retaining-the-map-canvas-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\before-functional\priority-dialog-interactio-4d510-le-retaining-the-map-canvas-chromium\error-context.md
+
+  4) [chromium] › tests\browser\priority-event-overlay.spec.ts:73:1 › rename cancellation and unchanged-name submission close without changing the event, then normal rename persists 
+
+    Error: expect(locator).toBeHidden() failed
+
+    Locator:  getByRole('heading', { name: '即売会名を変更' })
+    Expected: hidden
+    Received: visible
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeHidden" with timeout 5000ms
+      - waiting for getByRole('heading', { name: '即売会名を変更' })
+        14 × locator resolved to <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4">即売会名を変更</h2>
+           - unexpected value "visible"
+
+
+      83 |   await page.getByLabel("新しい即売会名").fill("取り消す名称");
+      84 |   await page.getByRole("button", { name: "キャンセル", exact: true }).click();
+    > 85 |   await expect(page.getByRole("heading", { name: "即売会名を変更" })).toBeHidden();
+         |                                                                ^
+      86 |   await expect(page.getByText(eventName, { exact: true })).toBeVisible();
+      87 |   await expect(page.getByText("取り消す名称", { exact: true })).toHaveCount(0);
+      88 |   expect(downloads).toEqual([]);
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-event-overlay.spec.ts:85:64
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-event-overlay-ren-6be5b-then-normal-rename-persists-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-event-overlay-ren-6be5b-then-normal-rename-persists-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\before-functional\priority-event-overlay-ren-6be5b-then-normal-rename-persists-chromium\error-context.md
+
+  5) [chromium] › tests\browser\priority-event-overlay.spec.ts:112:1 › export cancellation and close icon reopen without downloading, then the real Excel Worker exports and closes 
+
+    Error: expect(locator).toBeHidden() failed
+
+    Locator:  getByRole('heading', { name: 'エクスポート設定' })
+    Expected: hidden
+    Received: visible
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeHidden" with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'エクスポート設定' })
+        14 × locator resolved to <h2 class="text-lg font-semibold text-slate-900 dark:text-white">エクスポート設定</h2>
+           - unexpected value "visible"
+
+
+      123 |   await openExport(page);
+      124 |   await page.getByRole("button", { name: "キャンセル", exact: true }).click();
+    > 125 |   await expect(page.getByRole("heading", { name: "エクスポート設定" })).toBeHidden();
+          |                                                                 ^
+      126 |   await expect(page.getByText(eventName, { exact: true })).toBeVisible();
+      127 |   expect(downloads).toEqual([]);
+      128 |
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-event-overlay.spec.ts:125:65
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-event-overlay-exp-6ec1d-l-Worker-exports-and-closes-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-event-overlay-exp-6ec1d-l-Worker-exports-and-closes-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\before-functional\priority-event-overlay-exp-6ec1d-l-Worker-exports-and-closes-chromium\error-context.md
+
+  6) [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:38:1 › deletes the last item, reopens the saved empty event, adds a corrected manual item, and reloads it 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: 'リストに追加', exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('button', { name: 'リストに追加', exact: true })
+
+
+      80 |   await expect(
+      81 |     page.getByRole("button", { name: "リストに追加", exact: true }),
+    > 82 |   ).toBeVisible();
+         |     ^
+      83 |   await page.getByLabel("サークル名", { exact: true }).fill("追加後のサークル");
+      84 |   await page.getByLabel("タイトル", { exact: true }).fill("再開した新刊");
+      85 |   await page.getByLabel("備考", { exact: true }).fill("保持するメモ");
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-manual-item-consistency.spec.ts:82:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-manual-item-consi-c9275--manual-item-and-reloads-it-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-manual-item-consi-c9275--manual-item-and-reloads-it-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\before-functional\priority-manual-item-consi-c9275--manual-item-and-reloads-it-chromium\error-context.md
+
+  7) [chromium] › tests\browser\priority-preference-consistency.spec.ts:78:1 › localStorage quota failures preserve the app, current settings, item persistence and JSON backup 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByText('設定保存障害の検証', { exact: true })
+
+
+       96 |   });
+       97 |   await page.reload();
+    >  98 |   await page.getByText(eventName, { exact: true }).click();
+          |                                                    ^
+       99 |   await expect(page.locator(`[data-item-id="${sourceItem.id}"]`)).toBeVisible();
+      100 |   await page.getByTitle("表示項目の設定", { exact: true }).click();
+      101 |   await page
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-preference-consistency.spec.ts:98:52
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-preference-consis-5f9bb-persistence-and-JSON-backup-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-preference-consis-5f9bb-persistence-and-JSON-backup-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\before-functional\priority-preference-consis-5f9bb-persistence-and-JSON-backup-chromium\error-context.md
+
+  8) [chromium] › tests\browser\priority-preference-consistency.spec.ts:168:3 › unavailable localStorage getter retains a visible app and backup failure guidance 
+
+    Error: expect(locator).not.toBeEmpty() failed
+
+    Locator:  locator('#root')
+    Expected: not empty
+    Received: empty
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "not toBeEmpty" with timeout 5000ms
+      - waiting for locator('#root')
+        14 × locator resolved to <div id="root"></div>
+           - unexpected value "empty"
+
+
+      207 |     }, kind);
+      208 |     await page.reload();
+    > 209 |     await expect(page.locator("#root")).not.toBeEmpty();
+          |                                             ^
+      210 |     const event = page.getByText(eventName, { exact: true });
+      211 |     const recovery = page.getByRole("heading", {
+      212 |       name: "保存データを安全に読み込めませんでした",
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-preference-consistency.spec.ts:209:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-preference-consis-941e9-and-backup-failure-guidance-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-functional\priority-preference-consis-941e9-and-backup-failure-guidance-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\before-functional\priority-preference-consis-941e9-and-backup-failure-guidance-chromium\error-context.md
+
+  8 failed
+    [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: pc 
+    [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: smartphone 
+    [chromium] › tests\browser\priority-dialog-interaction.spec.ts:178:1 › keyboard day changes discard popup input while retaining the map canvas 
+    [chromium] › tests\browser\priority-event-overlay.spec.ts:73:1 › rename cancellation and unchanged-name submission close without changing the event, then normal rename persists 
+    [chromium] › tests\browser\priority-event-overlay.spec.ts:112:1 › export cancellation and close icon reopen without downloading, then the real Excel Worker exports and closes 
+    [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:38:1 › deletes the last item, reopens the saved empty event, adds a corrected manual item, and reloads it 
+    [chromium] › tests\browser\priority-preference-consistency.spec.ts:78:1 › localStorage quota failures preserve the app, current settings, item persistence and JSON backup 
+    [chromium] › tests\browser\priority-preference-consistency.spec.ts:168:3 › unavailable localStorage getter retains a visible app and backup failure guidance 
+  1 passed (1.3m)

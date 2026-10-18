@@ -1,0 +1,12 @@
+Fixture corrected: quantity-one skip setting enabled to enter its existing choice dialog.
+[WebServer] (node:12468) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:28720) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › tests\browser\priority-operation-diagnostics.spec.ts:221:3 › priority dialog and scope operations 150 @priority-operation-performance (25.6s)
+  ok 2 [chromium] › tests\browser\priority-operation-diagnostics.spec.ts:221:3 › priority dialog and scope operations 500 @priority-operation-performance (29.1s)
+
+  2 passed (56.7s)

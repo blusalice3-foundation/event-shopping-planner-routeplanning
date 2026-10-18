@@ -1,0 +1,16 @@
+{
+  "time": "2026-10-18T19:20:53.4755112+09:00",
+  "diffCheckExit": 0,
+  "changedTsFiles": 36,
+  "sourceHashesUnchanged": true,
+  "artifactHashUnchanged": true,
+  "reportStrictUtf8": true,
+  "reportNoBom": true,
+  "reportLf": true,
+  "summarySha256": "A30489F3C44AEB328B5C66D58F834EE9BD817C1109C59607936775206DCAD0B2",
+  "sourceUnitCount": 7,
+  "finalStatus": "git-status-final.log",
+  "diffStat": "diff-stat-final.log",
+  "trackedChangedFiles": 23,
+  "untrackedEntries": 15
+}

@@ -1,0 +1,10 @@
+
+> event-shopping-planner@1.0.0 verify:architecture
+> node scripts/verify-architecture.mjs
+
+PASS architecture verification: 344 production files; 1642 import edges; 0 baseline exception(s); graph 1a351d1993cc8f618a5429acb2438e362362afe83611dc9bc07eb01a4e103e6e
+
+> event-shopping-planner@1.0.0 verify:test-project-membership
+> node scripts/verify-test-project-membership.mjs
+
+PASS test project membership: 251 files; integration=49, unit=192, worker=10

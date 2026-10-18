@@ -1,0 +1,13 @@
+Test-only corrections: one confirmation click followed by hidden wait; inspect canonical day map route in eventConsistency.
+[WebServer] (node:24364) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+(node:33516) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:209:3 › reopens an empty event from empty-backup, preserves settings, adds a corrected manual item and reloads it (2.9s)
+  ok 2 [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:209:3 › reopens an empty event from delete-last, preserves settings, adds a corrected manual item and reloads it (5.2s)
+  ok 3 [chromium] › tests\browser\priority-manual-item-consistency.spec.ts:209:3 › reopens an empty event from settings-only, preserves settings, adds a corrected manual item and reloads it (3.3s)
+
+  3 passed (13.8s)
