@@ -20,10 +20,14 @@ export function useDisableLimitedPurchaseQuantityCheck(
   });
 
   useEffect(() => {
-    preferences.savePreference(
-      STORAGE_KEY,
-      String(disableLimitedPurchaseQuantityCheck),
-    );
+    try {
+      preferences.savePreference(
+        STORAGE_KEY,
+        String(disableLimitedPurchaseQuantityCheck),
+      );
+    } catch {
+      // Ignore storage failures; the in-memory setting still updates.
+    }
   }, [disableLimitedPurchaseQuantityCheck, preferences]);
 
   return {

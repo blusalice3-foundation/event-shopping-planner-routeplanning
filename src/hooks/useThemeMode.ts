@@ -29,7 +29,11 @@ export function useThemeMode(preferences: PreferencePersistencePort) {
     };
 
     applyTheme();
-    preferences.savePreference("themeMode", themeMode);
+    try {
+      preferences.savePreference("themeMode", themeMode);
+    } catch {
+      // Ignore storage failures; theme application and monitoring still work.
+    }
 
     if (themeMode === "system") {
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
