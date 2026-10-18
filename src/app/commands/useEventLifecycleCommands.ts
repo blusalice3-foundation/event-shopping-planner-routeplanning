@@ -144,12 +144,17 @@ export const useEventLifecycleCommands = ({
 }: EventLifecycleCommandPorts): EventLifecycleCommands => {
   const selectEvent = useCallback(
     (eventName: string) => {
-      const tab = resolveEventListTab(recordEntry(eventLists, eventName) || []);
-      if (!tab) {
-        notify("参加日がないため処理を停止しました。");
-        return;
+      const items = recordEntry(eventLists, eventName);
+      if (items?.length === 0) {
+        navigation.showImport(eventName);
+      } else {
+        const tab = resolveEventListTab(items || []);
+        if (!tab) {
+          notify("参加日がないため処理を停止しました。");
+          return;
+        }
+        navigation.openEvent(eventName, tab);
       }
-      navigation.openEvent(eventName, tab);
       clearSelection();
       setSelectedBlockFilters(new Set());
     },
