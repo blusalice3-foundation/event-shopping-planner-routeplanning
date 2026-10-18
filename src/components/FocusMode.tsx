@@ -2479,6 +2479,18 @@ const FocusMode: React.FC<FocusModeProps> = ({
       openPostEventDistributionCheck,
     ],
   );
+  const resetDialogTouchGesture = useCallback((event: React.SyntheticEvent) => {
+    const target = event.target;
+    if (
+      event.type !== "touchcancel" &&
+      !(target instanceof Element && target.closest('[role="dialog"]'))
+    )
+      return;
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    isSwipingRef.current = false;
+  }, []);
+
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       if (
@@ -3249,6 +3261,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
         data-layout-height={focusViewportHeight}
         className="esp-layout-height relative flex flex-col"
         data-focus-inspecting={isInspecting || undefined}
+        onFocusCapture={resetDialogTouchGesture}
+        onTouchStartCapture={resetDialogTouchGesture}
+        onTouchEndCapture={resetDialogTouchGesture}
+        onTouchCancelCapture={resetDialogTouchGesture}
       >
         {visibleNotificationJSX}
         <div
@@ -3416,6 +3432,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
         data-layout-height={focusViewportHeight}
         className="esp-layout-height relative flex"
         data-focus-inspecting={isInspecting || undefined}
+        onFocusCapture={resetDialogTouchGesture}
+        onTouchStartCapture={resetDialogTouchGesture}
+        onTouchEndCapture={resetDialogTouchGesture}
+        onTouchCancelCapture={resetDialogTouchGesture}
       >
         {visibleNotificationJSX}
         <div className="w-1/2 flex flex-col border-r border-slate-200 dark:border-slate-700">
@@ -3587,6 +3607,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
       data-testid="focus-mode-scroll-region"
       className="esp-layout-height relative min-h-0 overflow-y-auto overscroll-contain pb-20"
       data-focus-inspecting={isInspecting || undefined}
+      onFocusCapture={resetDialogTouchGesture}
+      onTouchStartCapture={resetDialogTouchGesture}
+      onTouchEndCapture={resetDialogTouchGesture}
+      onTouchCancelCapture={resetDialogTouchGesture}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -43,6 +43,7 @@ const clickPrimaryButton = async (user: ReturnType<typeof userEvent.setup>) => {
 };
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -253,6 +254,7 @@ it.each([5, 6])(
     rendered.rerender(<LimitedPurchaseDialog {...props} initialPlanned={9} />);
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     expect(screen.getAllByRole("textbox")[0]).toHaveValue(String(actual));
+    expect(screen.getAllByRole("textbox")[0]).toHaveFocus();
     expect(screen.getAllByRole("textbox")[1]).toHaveValue("9");
     expect(submit).not.toHaveBeenCalled();
     await clickPrimaryButton(user);
@@ -265,5 +267,164 @@ it.each([5, 6])(
         baselinePlanned: 5,
       }),
     );
+  },
+);
+
+it("keeps Tab inside the main input and handles one Escape only once", async () => {
+  const user = userEvent.setup();
+  const { onCancel } = renderDialog({ showDeferButton: true });
+  const { actualInput, plannedInput, dialog } = getDialogInputs();
+  const saveButton = within(dialog).getByRole("button", { name: "保存" });
+  expect(actualInput).toHaveFocus();
+  await user.tab({ shift: true });
+  expect(saveButton).toHaveFocus();
+  await user.tab();
+  expect(actualInput).toHaveFocus();
+  await user.tab();
+  expect(plannedInput).toHaveFocus();
+  await user.keyboard("{Escape}");
+  expect(onCancel).toHaveBeenCalledTimes(1);
+});
+
+it.each(["5", "6"])(
+  "returns from confirmation %s to Save without a delayed focus request",
+  async (actual) => {
+    const user = userEvent.setup();
+    const { onCancel } = renderDialog();
+    const { actualInput, dialog } = getDialogInputs();
+    await user.type(actualInput, actual);
+    await user.click(within(dialog).getByRole("button", { name: "保存" }));
+    const confirm = screen.getAllByRole("dialog")[1];
+    expect(confirm).toContainElement(document.activeElement as HTMLElement);
+    await user.keyboard("{Escape}");
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(within(dialog).getByRole("button", { name: "保存" })).toHaveFocus();
+    expect(onCancel).not.toHaveBeenCalled();
+    await user.keyboard("{Escape}");
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  },
+);
+
+it("preserves edited planned intent and focuses actual after confirmation expires", async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn();
+  const props = {
+    isOpen: true,
+    itemId: "1",
+    initialPlanned: 5,
+    onSubmit,
+    onCancel: vi.fn(),
+  };
+  const { rerender } = render(<LimitedPurchaseDialog {...props} />);
+  const { actualInput, plannedInput, dialog } = getDialogInputs();
+  await user.type(actualInput, "6");
+  await user.clear(plannedInput);
+  await user.type(plannedInput, "6");
+  await user.click(within(dialog).getByRole("button", { name: "保存" }));
+  const expiredConfirm = screen.getByRole("button", { name: "購入済にする" });
+  rerender(<LimitedPurchaseDialog {...props} initialPlanned={9} />);
+  expect(actualInput).toHaveFocus();
+  expect(actualInput).toHaveValue("6");
+  expect(plannedInput).toHaveValue("6");
+  fireEvent.click(expiredConfirm);
+  expect(onSubmit).not.toHaveBeenCalled();
+  await user.click(within(dialog).getByRole("button", { name: "保存" }));
+  await user.click(screen.getByRole("button", { name: "購入済にする" }));
+  expect(onSubmit).toHaveBeenCalledWith(
+    expect.objectContaining({
+      kind: "purchased",
+      planned: 6,
+      plannedEdited: true,
+      baselinePlanned: 5,
+      observedPlanned: 9,
+    }),
+  );
+});
+
+it("stops all touch phases in the main dialog and its sibling confirmation", async () => {
+  const user = userEvent.setup();
+  const onTouch = vi.fn();
+  render(
+    <div
+      onTouchStart={onTouch}
+      onTouchMove={onTouch}
+      onTouchEnd={onTouch}
+      onTouchCancel={onTouch}
+    >
+      <LimitedPurchaseDialog
+        isOpen
+        initialPlanned={5}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    </div>,
+  );
+  const { actualInput, dialog } = getDialogInputs();
+  const touch = { identifier: 1, clientX: 120, clientY: 50 };
+  for (const target of [actualInput, dialog]) {
+    expect(fireEvent.touchStart(target, { touches: [touch] })).toBe(true);
+    expect(
+      fireEvent.touchMove(target, { touches: [{ ...touch, clientX: 20 }] }),
+    ).toBe(true);
+    expect(fireEvent.touchEnd(target, { changedTouches: [touch] })).toBe(true);
+    expect(fireEvent.touchCancel(target, { changedTouches: [touch] })).toBe(
+      true,
+    );
+  }
+  await user.type(actualInput, "5");
+  await user.click(within(dialog).getByRole("button", { name: "保存" }));
+  const confirm = screen.getAllByRole("dialog")[1];
+  fireEvent.touchStart(confirm, { touches: [touch] });
+  fireEvent.touchMove(confirm, { touches: [{ ...touch, clientX: 20 }] });
+  fireEvent.touchEnd(confirm, { changedTouches: [touch] });
+  fireEvent.touchCancel(confirm, { changedTouches: [touch] });
+  expect(onTouch).not.toHaveBeenCalled();
+});
+
+it("closes only confirmation when Escape is dispatched to the main root during confirmation", () => {
+  const { onCancel } = renderDialog();
+  const { actualInput, dialog } = getDialogInputs();
+  fireEvent.change(actualInput, { target: { value: "5" } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "保存" }));
+  fireEvent.keyDown(dialog, { key: "Escape" });
+  expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  expect(onCancel).not.toHaveBeenCalled();
+  expect(within(dialog).getByRole("button", { name: "保存" })).toHaveFocus();
+});
+
+it.each(["next", "reconfirm", "reopen"])(
+  "does not let cancelled-confirmation focus steal from %s",
+  (transition) => {
+    vi.useFakeTimers();
+    const props = {
+      isOpen: true,
+      itemId: "first",
+      initialPlanned: 5,
+      onSubmit: vi.fn(),
+      onCancel: vi.fn(),
+    };
+    const { rerender } = render(<LimitedPurchaseDialog {...props} />);
+    const { actualInput, dialog } = getDialogInputs();
+    fireEvent.change(actualInput, { target: { value: "5" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "保存" }));
+    fireEvent.click(screen.getByRole("button", { name: "入力に戻る" }));
+    if (transition === "next") {
+      rerender(<LimitedPurchaseDialog {...props} itemId="second" />);
+    } else if (transition === "reconfirm") {
+      fireEvent.click(within(dialog).getByRole("button", { name: "保存" }));
+    } else {
+      rerender(<LimitedPurchaseDialog {...props} isOpen={false} />);
+      rerender(<LimitedPurchaseDialog {...props} />);
+    }
+    const focus = document.activeElement;
+    vi.advanceTimersByTime(0);
+    expect(document.activeElement).toBe(focus);
+    if (transition === "reconfirm") {
+      expect(
+        screen.getByRole("button", { name: "購入済にする" }),
+      ).toHaveFocus();
+    } else {
+      expect(screen.getByRole("textbox", { name: "実購入数" })).toHaveFocus();
+    }
   },
 );

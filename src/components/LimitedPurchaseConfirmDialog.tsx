@@ -75,6 +75,10 @@ export default function LimitedPurchaseConfirmDialog({
       onMouseUp={stopDialogEvent}
       onPointerDown={stopDialogEvent}
       onPointerUp={stopDialogEvent}
+      onTouchStart={stopDialogEvent}
+      onTouchMove={stopDialogEvent}
+      onTouchEnd={stopDialogEvent}
+      onTouchCancel={stopDialogEvent}
       onKeyDown={handleKeyDown}
     >
       <div

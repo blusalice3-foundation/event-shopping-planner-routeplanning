@@ -497,6 +497,8 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   const longPressTimeout = useRef<number | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const purchaseStatusButtonRef = useRef<HTMLButtonElement>(null);
+  const pendingStatusButtonFocusRef = useRef(false);
+  const limitedDialogReturnToStatusRef = useRef(false);
   const [purchaseStatusMenuOpen, setPurchaseStatusMenuOpen] = useState(false);
   const [limitedDialogOpen, setLimitedDialogOpen] = useState(false);
   const [limitedDialogItem, setLimitedDialogItem] =
@@ -668,18 +670,37 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   );
 
   const restorePurchaseStatusButtonFocus = useCallback(() => {
-    const focusButton = () => purchaseStatusButtonRef.current?.focus();
-    if (typeof window.requestAnimationFrame === "function") {
-      window.requestAnimationFrame(focusButton);
+    pendingStatusButtonFocusRef.current = true;
+  }, []);
+
+  useLayoutEffect(() => {
+    if (
+      limitedDialogOpen ||
+      singleQuantityChoiceOpen ||
+      purchaseStatusMenuOpen
+    ) {
+      pendingStatusButtonFocusRef.current = false;
       return;
     }
-    window.setTimeout(focusButton, 0);
-  }, []);
+    if (!pendingStatusButtonFocusRef.current) return;
+    pendingStatusButtonFocusRef.current = false;
+    const button = purchaseStatusButtonRef.current;
+    if (
+      button?.isConnected &&
+      !button.disabled &&
+      !button.closest('[hidden], [aria-hidden="true"], [inert]')
+    ) {
+      button.focus({ preventScroll: true });
+    }
+  }, [limitedDialogOpen, purchaseStatusMenuOpen, singleQuantityChoiceOpen]);
 
   const closeLimitedDialog = useCallback(
     (options: { restoreFocus?: boolean } = {}) => {
-      const { restoreFocus = limitedDialogSource === "singleQuantityChoice" } =
-        options;
+      const {
+        restoreFocus = limitedDialogReturnToStatusRef.current ||
+          limitedDialogSource === "singleQuantityChoice",
+      } = options;
+      limitedDialogReturnToStatusRef.current = false;
       setLimitedDialogOpen(false);
       setLimitedDialogItem(null);
       setLimitedDialogSource("current");
@@ -743,6 +764,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
     (nextStatus: PurchaseStatus) => {
       if (readOnly) return;
       if (nextStatus === "LimitedPurchase") {
+        limitedDialogReturnToStatusRef.current = true;
         setLimitedDialogItem(null);
         setLimitedDialogSource("current");
         setLimitedDialogOpen(true);
@@ -780,16 +802,9 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
 
       if (!restoreFocus) return;
 
-      const focusButton = () => {
-        purchaseStatusButtonRef.current?.focus();
-      };
-      if (typeof window.requestAnimationFrame === "function") {
-        window.requestAnimationFrame(focusButton);
-        return;
-      }
-      window.setTimeout(focusButton, 0);
+      restorePurchaseStatusButtonFocus();
     },
-    [],
+    [restorePurchaseStatusButtonFocus],
   );
 
   const setPurchaseStatus = useCallback(
@@ -813,7 +828,9 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
         return;
       }
       commitPurchaseStatusChange(purchaseStatus);
-      closePurchaseStatusMenu();
+      closePurchaseStatusMenu({
+        restoreFocus: purchaseStatus !== "LimitedPurchase",
+      });
     },
     [
       item,

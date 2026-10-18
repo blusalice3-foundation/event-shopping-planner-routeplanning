@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
 import type { LimitedPurchaseDialogResult } from "../types/limitedPurchase";
 export type { LimitedPurchaseDialogResult } from "../types/limitedPurchase";
 import LimitedPurchaseConfirmDialog from "./LimitedPurchaseConfirmDialog";
@@ -67,7 +68,56 @@ export default function LimitedPurchaseDialog({
     actual: number;
     observedPlanned: number;
   } | null>(null);
+  const actualInputRef = useRef<HTMLInputElement | null>(null);
   const saveButtonRef = useRef<HTMLButtonElement | null>(null);
+  const pendingFocusRef = useRef<"actual" | "save" | null>(null);
+  const focusContextRef = useRef({
+    isOpen: false,
+    itemId,
+    dialogKey,
+    initialPlanned,
+  });
+  const isConfirmOpen = sameQuantityConfirm !== null || excessConfirm !== null;
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen,
+    onEscape: () => {
+      if (isConfirmOpen) {
+        pendingFocusRef.current = "save";
+        setSameQuantityConfirm(null);
+        setExcessConfirm(null);
+        return;
+      }
+      onCancel();
+    },
+    initialFocusRef: actualInputRef,
+  });
+
+  useLayoutEffect(() => {
+    const previous = focusContextRef.current;
+    focusContextRef.current = { isOpen, itemId, dialogKey, initialPlanned };
+    if (!isOpen) {
+      pendingFocusRef.current = null;
+      return;
+    }
+    if (
+      !previous.isOpen ||
+      previous.itemId !== itemId ||
+      previous.dialogKey !== dialogKey ||
+      (previous.initialPlanned !== initialPlanned && isConfirmOpen)
+    ) {
+      pendingFocusRef.current = "actual";
+    }
+  }, [dialogKey, initialPlanned, isConfirmOpen, isOpen, itemId]);
+
+  useLayoutEffect(() => {
+    if (!isOpen || isConfirmOpen || pendingFocusRef.current === null) return;
+    const target =
+      pendingFocusRef.current === "actual"
+        ? actualInputRef.current
+        : saveButtonRef.current;
+    pendingFocusRef.current = null;
+    target?.focus({ preventScroll: true });
+  });
   const plannedEdited = useRef(false);
   const baselinePlanned = useRef(initialPlanned);
   const initialValues = useRef({ initialActual, initialPlanned });
@@ -105,32 +155,24 @@ export default function LimitedPurchaseDialog({
   }, [initialPlanned, isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !isConfirmOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
-      if (sameQuantityConfirm !== null) {
-        setSameQuantityConfirm(null);
-        window.setTimeout(() => saveButtonRef.current?.focus(), 0);
-        return;
-      }
-      if (excessConfirm !== null) {
-        setExcessConfirm(null);
-        window.setTimeout(() => saveButtonRef.current?.focus(), 0);
-        return;
-      }
-      onCancel();
+      pendingFocusRef.current = "save";
+      setSameQuantityConfirm(null);
+      setExcessConfirm(null);
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [excessConfirm, isOpen, onCancel, sameQuantityConfirm]);
+  }, [isConfirmOpen, isOpen]);
 
   if (!isOpen) return null;
 
   const restoreSaveFocus = () => {
-    window.setTimeout(() => saveButtonRef.current?.focus(), 0);
+    pendingFocusRef.current = "save";
   };
 
   const closeSameQuantityConfirm = () => {
@@ -211,7 +253,6 @@ export default function LimitedPurchaseDialog({
     setError(toMessage(validation.error));
   };
 
-  const isConfirmOpen = sameQuantityConfirm !== null || excessConfirm !== null;
   const parsedPlannedForHelp = parseDecimalIntegerInput(plannedText);
   const shouldShowSingleQuantityHelp =
     error === null &&
@@ -222,6 +263,7 @@ export default function LimitedPurchaseDialog({
   const dialogContent = (
     <>
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal={!isConfirmOpen}
         aria-labelledby="limited-purchase-dialog-title"
@@ -229,6 +271,11 @@ export default function LimitedPurchaseDialog({
         onClick={stopDialogEvent}
         onMouseDown={stopDialogEvent}
         onPointerDown={stopDialogEvent}
+        onTouchStart={stopDialogEvent}
+        onTouchMove={stopDialogEvent}
+        onTouchEnd={stopDialogEvent}
+        onTouchCancel={stopDialogEvent}
+        onKeyDown={onDialogKeyDown}
       >
         <div className="w-full max-w-sm rounded-lg bg-white p-4 shadow-xl dark:bg-slate-800">
           <h3
@@ -245,6 +292,7 @@ export default function LimitedPurchaseDialog({
           <label className="mt-4 block text-sm font-medium text-slate-700 dark:text-slate-200">
             実購入数
             <input
+              ref={actualInputRef}
               value={actualText}
               onChange={(e) => {
                 setActualText(e.target.value);
