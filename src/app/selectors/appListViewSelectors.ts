@@ -384,6 +384,11 @@ export interface CandidateColumnItemsSelectorInput {
   readonly candidateNumberSortDirection: "asc" | "desc" | null;
 }
 
+const candidateDisplayCollator = new Intl.Collator("ja", {
+  numeric: true,
+  sensitivity: "base",
+});
+
 export const selectCandidateColumnItems = (
   input: CandidateColumnItemsSelectorInput,
 ): ShoppingItem[] => {
@@ -404,16 +409,13 @@ export const selectCandidateColumnItems = (
   if (input.candidateNumberSortDirection !== null) return filtered;
 
   return [...filtered].sort((first, second) => {
-    const blockComparison = first.block.localeCompare(second.block, "ja", {
-      numeric: true,
-      sensitivity: "base",
-    });
+    const blockComparison = candidateDisplayCollator.compare(
+      first.block,
+      second.block,
+    );
     return blockComparison !== 0
       ? blockComparison
-      : first.number.localeCompare(second.number, "ja", {
-          numeric: true,
-          sensitivity: "base",
-        });
+      : candidateDisplayCollator.compare(first.number, second.number);
   });
 };
 

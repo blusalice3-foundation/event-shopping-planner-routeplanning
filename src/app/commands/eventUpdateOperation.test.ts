@@ -61,3 +61,26 @@ describe("event update operation ownership", () => {
     });
   });
 });
+
+it("retains immutable submitted URL drafts, including an empty sheet, only for the current editable owner", () => {
+  const registry = createEventUpdateOperationRegistry();
+  const first = registry.start({ eventName: "A", phase: "url" })!;
+  const changed = vi.fn();
+  registry.subscribe(changed);
+  expect(registry.setUrlDraft(first, "https://new.example", "")).toBe(true);
+  const draft = first.urlDraft;
+  expect(draft).toEqual({
+    operationId: first.id,
+    eventName: "A",
+    url: "https://new.example",
+    sheetName: "",
+  });
+  expect(Object.isFrozen(draft)).toBe(true);
+  registry.changePhase(first, "saving");
+  expect(registry.setUrlDraft(first, "ignored", "ignored")).toBe(false);
+  registry.finish(first.id, { status: "saved" });
+  const next = registry.start({ eventName: "B", phase: "url" })!;
+  expect(next.urlDraft).toBeUndefined();
+  expect(registry.setUrlDraft(first, "stale", "stale")).toBe(false);
+  expect(changed).toHaveBeenCalled();
+});

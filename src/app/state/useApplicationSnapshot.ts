@@ -1,3 +1,7 @@
+import {
+  isPersistenceWriteStopReason,
+  type PersistenceWriteStopReason,
+} from "../ports/PersistenceCommandPort";
 import { normalizeSnapshotItemOptionalFields } from "../../utils/itemOptionalFields";
 import { recordEntry, setOwnValue } from "../../utils/ownRecord";
 import {
@@ -55,6 +59,7 @@ import {
 import {
   projectConsistencySnapshot,
   createConsistencySnapshotProjector,
+  canReuseProjectedItem,
 } from "../../features/consistency/domain/projection";
 import { createEventConsistency } from "../../types/consistency";
 import {
@@ -301,6 +306,7 @@ export function useApplicationSnapshot(
   contextRef.current = { eventName, day };
   const handlers = useRef<{
     drain(): Promise<void>;
+    stopWrites?(reason: PersistenceWriteStopReason): void;
     observeSnapshot?(
       snapshot: PersistedStateValues,
       base: PersistedStateValues,
@@ -310,6 +316,11 @@ export function useApplicationSnapshot(
     drain: async () => {},
     applied: (_snapshot: PersistedStateValues, _events: string[]) => {},
   });
+  const writeStopReason = useRef<PersistenceWriteStopReason>();
+  const terminalCleanupRef = useRef<
+    (reason: PersistenceWriteStopReason) => void
+  >(() => {});
+  const confirmationWork = useRef(0);
   const [requiresReload, setRequiresReload] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
@@ -423,6 +434,7 @@ export function useApplicationSnapshot(
         commitDayMutation: persistence.commitDayMutation,
         createBackupFile: async (base, accepted) => {
           if (!persistence.createBackupFile) {
+            if (writeStopReason.current) throw writeStopReason.current;
             return createAppBackupFile(accepted);
           }
           const changes = keys.flatMap((store) => {
@@ -517,8 +529,14 @@ export function useApplicationSnapshot(
           handlers.current.applied(rawRef.current, events);
         },
         onApplyFailure: (error) => {
+          if (writeStopReason.current) return;
+          writeStopReason.current = error;
+          // Register every writer before React can render or any request is cleaned up.
+          persistence.stopWrites?.(error);
+          handlers.current.stopWrites?.(error);
           setRequiresReload(true);
           setFailure(error.message);
+          terminalCleanupRef.current(error);
         },
         onExpired: (ids) => {
           const expired = new Set(ids);
@@ -665,8 +683,64 @@ export function useApplicationSnapshot(
     },
     [rebuildPreview, releasePending],
   );
+  terminalCleanupRef.current = (reason) => {
+    if (memoSaveTimer.current !== null) clearTimeout(memoSaveTimer.current);
+    if (memoMaxWaitTimer.current !== null)
+      clearTimeout(memoMaxWaitTimer.current);
+    memoSaveTimer.current = null;
+    memoMaxWaitTimer.current = null;
+    const batches = [
+      ...submitted.current,
+      ...(draft.current ? [draft.current] : []),
+    ];
+    draft.current = null;
+    submitted.current = batches.filter((batch) => {
+      if (batch.retryOnFailure && batch.retainOnConflict === undefined) {
+        try {
+          batch.retainOnConflict = shouldRetainSetterBatch(
+            batch,
+            rawRef.current,
+            planBatch(batch, rawRef.current),
+          );
+        } catch {
+          batch.retainOnConflict = false;
+        }
+      }
+      const accepted = !!batch.itemContentEdits || !!batch.retainOnConflict;
+      if (accepted) retained.current.add(batch.id);
+      else retained.current.delete(batch.id);
+      return accepted;
+    });
+    suspended.current.clear();
+    for (const resolver of resolvers.current.values()) resolver.reject(reason);
+    resolvers.current.clear();
+    setConfirmations([]);
+    setPendingCount(0);
+    setPendingChoices(0);
+    setPendingConfirmations(0);
+    setRetryableFailures([]);
+    setRetainedOperationIds([...retained.current]);
+    rebuildPreview();
+    setItemDraftRevision((revision) => revision + 1);
+  };
+  const stopWrites = useCallback(
+    (reason: PersistenceWriteStopReason) => {
+      coordinator.stopWrites(reason);
+    },
+    [coordinator],
+  );
+  useEffect(() => {
+    const release = persistence.onWritesStopped?.(stopWrites);
+    const reason = persistence.getWriteStopReason?.();
+    if (reason) stopWrites(reason);
+    return release;
+  }, [persistence, stopWrites]);
   const fail = useCallback(
     (id: string, error: unknown) => {
+      if (isPersistenceWriteStopReason(error)) {
+        stopWrites(error);
+        return;
+      }
       if (!resolvers.current.has(id)) return;
       const batch = submitted.current.find((entry) => entry.id === id);
       if (batch?.retryOnFailure && batch.retainOnConflict === undefined) {
@@ -721,12 +795,14 @@ export function useApplicationSnapshot(
           error instanceof Error ? error.message : "保存に失敗しました。",
         );
     },
-    [coordinator, rebuildPreview, releasePending],
+    [coordinator, rebuildPreview, releasePending, stopWrites],
   );
   const request = useCallback(
     (
       intent: Omit<MutationIntent, "id"> & { id?: string },
     ): Promise<PersistenceSnapshot> => {
+      if (writeStopReason.current)
+        return Promise.reject(writeStopReason.current);
       // A setter accepted in this turn must enter the queue before this command.
       flushDraftRef.current();
       const id = intent.id ?? `application:${++sequence.current}`;
@@ -859,6 +935,7 @@ export function useApplicationSnapshot(
     [request, rebuildPreview],
   );
   const flushDraft = useCallback(() => {
+    if (writeStopReason.current) return;
     if (memoSaveTimer.current !== null) clearTimeout(memoSaveTimer.current);
     if (memoMaxWaitTimer.current !== null)
       clearTimeout(memoMaxWaitTimer.current);
@@ -876,6 +953,7 @@ export function useApplicationSnapshot(
         keys.map((key) => [
           `set${key[0].toUpperCase()}${key.slice(1)}`,
           (action: SetStateAction<PersistedStateValues[typeof key]>) => {
+            if (writeStopReason.current) return;
             const previous = (draft.current?.draft ?? previewRef.current)[key];
             // React state updaters are immutable. Preserve all untouched date branches
             // for day commands instead of cloning historical visits and route settings.
@@ -944,6 +1022,7 @@ export function useApplicationSnapshot(
     (
       inputOrInputs: UpdateItemFieldsInput | readonly UpdateItemFieldsInput[],
     ) => {
+      if (writeStopReason.current) return;
       const finishInput = measureShoppingOperation("item-command");
       const inputs: readonly UpdateItemFieldsInput[] = Array.isArray(
         inputOrInputs,
@@ -1071,6 +1150,7 @@ export function useApplicationSnapshot(
         keys.map((key) => [
           `set${key[0].toUpperCase()}${key.slice(1)}`,
           (action: SetStateAction<PersistedStateValues[typeof key]>) => {
+            if (writeStopReason.current) return;
             const current = rawRef.current[key];
             const value =
               typeof action === "function"
@@ -1114,6 +1194,7 @@ export function useApplicationSnapshot(
             eventLists: reuseEqualItemLists(
               displayRef.current.eventLists,
               projectedValues.eventLists,
+              canReuseProjectedItem,
             ),
           }
         : projectedValues,
@@ -1184,6 +1265,8 @@ export function useApplicationSnapshot(
   );
   const choose = useCallback(
     (token: ConfirmationToken, choiceId: string, value: string) => {
+      if (writeStopReason.current) return;
+      confirmationWork.current++;
       setPendingChoices((count) => count + 1);
       void coordinator
         .choose(token, choiceId, value)
@@ -1191,12 +1274,17 @@ export function useApplicationSnapshot(
           (result) => handleResult(token.operationId, result),
           (error) => fail(token.operationId, error),
         )
-        .finally(() => setPendingChoices((count) => count - 1));
+        .finally(() => {
+          confirmationWork.current--;
+          setPendingChoices((count) => Math.max(0, count - 1));
+        });
     },
     [coordinator, handleResult, fail],
   );
   const confirm = useCallback(
     (token: ConfirmationToken) => {
+      if (writeStopReason.current) return;
+      confirmationWork.current++;
       setPendingConfirmations((count) => count + 1);
       void coordinator
         .confirm(token)
@@ -1204,7 +1292,10 @@ export function useApplicationSnapshot(
           (result) => handleResult(token.operationId, result),
           (error) => fail(token.operationId, error),
         )
-        .finally(() => setPendingConfirmations((count) => count - 1));
+        .finally(() => {
+          confirmationWork.current--;
+          setPendingConfirmations((count) => Math.max(0, count - 1));
+        });
     },
     [coordinator, handleResult, fail],
   );
@@ -1215,7 +1306,33 @@ export function useApplicationSnapshot(
     },
     [coordinator, handleResult],
   );
+  const getPendingMutationState = useCallback(
+    (id: string) => {
+      const state = coordinator.getPendingState(id);
+      const requestPending = resolvers.current.has(id) && state.requestPending;
+      return {
+        requestPending,
+        confirmationPending: state.confirmationPending,
+        canCancel:
+          requestPending &&
+          state.canCancel &&
+          confirmationWork.current === 0 &&
+          !writeStopReason.current,
+      };
+    },
+    [coordinator],
+  );
+  const cancelPendingMutation = useCallback(
+    (id: string): boolean => {
+      if (!getPendingMutationState(id).canCancel || !coordinator.discard(id))
+        return false;
+      handleResult(id, { status: "cancelled" });
+      return true;
+    },
+    [coordinator, getPendingMutationState, handleResult],
+  );
   const retryPending = useCallback(() => {
+    if (writeStopReason.current) return;
     const ids = [...suspended.current];
     setFailure(null);
     suspended.current.clear();
@@ -1293,6 +1410,10 @@ export function useApplicationSnapshot(
     request,
     commitPatch,
     coordinator,
+    stopWrites,
+    getWriteStopReason: () => writeStopReason.current,
+    cancelPendingMutation,
+    getPendingMutationState,
     flushDraft,
     flush,
     isPending,

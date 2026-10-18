@@ -1,3 +1,4 @@
+import { PersistenceOutcomeUnknownError } from "../../app/ports/PersistenceCommandPort";
 import { recordEntry } from "../../utils/ownRecord";
 import { registerItemGuardGenerations } from "../../utils/itemContentGuard";
 import {
@@ -171,27 +172,31 @@ export function createPersistenceWorkerServer(
         target.additionalDays,
       );
       await delegate.commitDayCommandSnapshot(next, expectedRoots, target);
-      const scoped = scopeDaySnapshot(
-        next,
-        target.eventName,
-        target.day,
-        target.additionalDays,
-      );
-      scoped.eventLists = {
-        [target.eventName]: recordEntry(next.eventLists, target.eventName),
-      };
-      if (recordEntry(scoped.eventConsistency, target.eventName))
-        recordEntry(scoped.eventConsistency, target.eventName).legacyPending =
-          recordEntry(next.eventConsistency, target.eventName).legacyPending;
-      return publish(
-        {
-          snapshot: scoped,
-          expectedRoots,
-          consistencyMissing: false,
-          scopeTarget: target,
-        },
-        false,
-      );
+      try {
+        const scoped = scopeDaySnapshot(
+          next,
+          target.eventName,
+          target.day,
+          target.additionalDays,
+        );
+        scoped.eventLists = {
+          [target.eventName]: recordEntry(next.eventLists, target.eventName),
+        };
+        if (recordEntry(scoped.eventConsistency, target.eventName))
+          recordEntry(scoped.eventConsistency, target.eventName).legacyPending =
+            recordEntry(next.eventConsistency, target.eventName).legacyPending;
+        return publish(
+          {
+            snapshot: scoped,
+            expectedRoots,
+            consistencyMissing: false,
+            scopeTarget: target,
+          },
+          false,
+        );
+      } catch (error) {
+        throw new PersistenceOutcomeUnknownError(error);
+      }
     },
     async commit(
       snapshot: PersistenceSnapshot,
@@ -212,8 +217,12 @@ export function createPersistenceWorkerServer(
         expectedRoots,
       });
       // The caller adopts its submitted snapshot when this commit resolves.
-      previous =
-        (await delegate.readDayCommandSnapshot?.())?.snapshot ?? snapshot;
+      try {
+        previous =
+          (await delegate.readDayCommandSnapshot?.())?.snapshot ?? snapshot;
+      } catch (error) {
+        throw new PersistenceOutcomeUnknownError(error);
+      }
     },
     async day(
       command: ApplicationDayMutation,
@@ -268,6 +277,7 @@ export function createPersistenceWorkerServer(
           ...validateSnapshotReferences(scoped, maps),
         ];
         if (errors.length) throw new Error(errors.join("\n"));
+        let committed = false;
         try {
           if (delegate.commitDayCommandSnapshot)
             await delegate.commitDayCommandSnapshot(
@@ -280,6 +290,7 @@ export function createPersistenceWorkerServer(
               expectedRoots: read.expectedRoots,
               changedStoresOnly: true,
             });
+          committed = true;
           return {
             status: "committed" as const,
             read: publish(
@@ -289,6 +300,7 @@ export function createPersistenceWorkerServer(
             ),
           };
         } catch (error) {
+          if (committed) throw new PersistenceOutcomeUnknownError(error);
           if (
             !(error instanceof Error) ||
             !["PersistenceConflict", "PersistenceConflictError"].includes(
@@ -338,11 +350,13 @@ export function createPersistenceWorkerServer(
         // A review is a hard boundary: no part of this group is written before it.
         if (plan.confirmation) return { status: "review-required" as const };
         validate(plan.snapshot);
+        let committed = false;
         try {
           await delegate.commitApplicationSnapshotAtomically(plan.snapshot, {
             expectedRoots: read.expectedRoots,
             changedStoresOnly: true,
           });
+          committed = true;
           return {
             status: "committed" as const,
             read: publish(
@@ -356,6 +370,7 @@ export function createPersistenceWorkerServer(
             ),
           };
         } catch (error) {
+          if (committed) throw new PersistenceOutcomeUnknownError(error);
           if (
             !(error instanceof Error) ||
             !["PersistenceConflict", "PersistenceConflictError"].includes(

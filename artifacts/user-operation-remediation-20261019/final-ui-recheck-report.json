@@ -1,0 +1,857 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\esp-op18\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/priority-dialog-interaction.spec.ts",
+      "tests/browser/a11y-flows.spec.ts",
+      "tests/browser/persistence-terminal-stop.spec.ts",
+      "tests/browser/ordinary-persistence-io.spec.ts",
+      "tests/browser/cross-feature-consistency.spec.ts",
+      "tests/browser/sheet-import-optional-url.spec.ts",
+      "--grep",
+      "OP0[12678]|OP1[01]|busy|keyboard day|bulk limited|@a11y|@layout|ordinary purchase|postcommit|late accepted|terminal|failure",
+      "--workers=2",
+      "--reporter=list,json",
+      "--output",
+      "artifacts/user-operation-remediation-20261019/final-ui-recheck"
+    ],
+    "configFile": "D:\\esp-op18\\playwright.config.ts",
+    "rootDir": "D:/esp-op18/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 2
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/esp-op18/artifacts/user-operation-remediation-20261019/final-ui-recheck",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/esp-op18/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 2,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "a11y-flows.spec.ts",
+      "file": "a11y-flows.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "@layout focus keeps the complete space header pinned across map, layout, and display zoom changes",
+          "ok": true,
+          "tags": [
+            "layout"
+          ],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11576,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:26.885Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "fb1f072ea4a9ff42b996-e96e5382711701bf7a93",
+          "file": "a11y-flows.spec.ts",
+          "line": 505,
+          "column": 1
+        },
+        {
+          "title": "@a11y representative list, focus, map, and dialog flows have no moderate-or-higher violations",
+          "ok": true,
+          "tags": [
+            "a11y"
+          ],
+          "tests": [
+            {
+              "timeout": 600000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 13047,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:38.591Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "fb1f072ea4a9ff42b996-435b5d3ef415ebece293",
+          "file": "a11y-flows.spec.ts",
+          "line": 626,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "cross-feature-consistency.spec.ts",
+      "file": "cross-feature-consistency.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "OP01 block selection preserves its draft on rejected navigation and ends before accepted day navigation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2212,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:27.507Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-9a8144f39eac3d250b73",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5052,
+          "column": 3
+        },
+        {
+          "title": "OP01 hall selection preserves its draft on rejected navigation and ends before accepted day navigation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2118,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:29.853Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-d750b79acc2a7c4fcfd5",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5052,
+          "column": 3
+        },
+        {
+          "title": "OP01 map discard and visit-list 保存して確定 only finish the editor after transition succeeds",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2981,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:31.981Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-d2bc443a6bd45182b011",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5107,
+          "column": 3
+        },
+        {
+          "title": "OP01 a failed visit-list 保存して確定 retains map selection and permits retry",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3042,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:34.972Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-5f4520557c79028ef459",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5130,
+          "column": 3
+        },
+        {
+          "title": "OP01 map discard and visit-list キャンセル（破棄） only finish the editor after transition succeeds",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3011,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:38.028Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-4e8ae7029a22ab62ad80",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5107,
+          "column": 3
+        },
+        {
+          "title": "OP01 a failed visit-list キャンセル（破棄） retains map selection and permits retry",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3001,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:41.050Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-bc1efd7ccb59b642d3f7",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5130,
+          "column": 3
+        },
+        {
+          "title": "OP08 visit-list swap exchanges unequal visits, persists Undo/Redo and survives reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3500,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:44.062Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-1c6574c5b654a2ac4b2c",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5172,
+          "column": 1
+        },
+        {
+          "title": "OP01 map file replacement retains its editor until the visit-list save succeeds",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3090,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:47.572Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-7613dfb1beed0e28cd96",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5224,
+          "column": 1
+        },
+        {
+          "title": "OP02 edited hall sync saves source and target, keeps its panel and uses committed IDs for a second sync",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2841,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:50.671Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-8931e259b6199f2a137c",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5289,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "ordinary-persistence-io.spec.ts",
+      "file": "ordinary-persistence-io.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "ordinary purchase, planned quantity and memo retain the same physical persistence boundary",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1153,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:57.766Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "ordinary-persistence-io",
+                      "contentType": "application/json",
+                      "body": "ewogICJsYWJlbCI6ICJ1bnNwZWNpZmllZCIsCiAgImZpeHR1cmUiOiAiMyBpdGVtcywgM3gzIG1hcDsgaXNvbGF0ZWQgb3JkaW5hcnkgb3BlcmF0aW9ucyIsCiAgIm5vdGVzIjogIlBoeXNpY2FsIGNvdW50cyBvYnNlcnZlIGNvbXBsZXRlZCByZWFkd3JpdGUgSURCIHRyYW5zYWN0aW9ucyBhbmQgdGhlaXIgaXNzdWVkIG9iamVjdFN0b3JlIG11dGF0aW9uIHJlcXVlc3RzOyBpbmRlcGVuZGVudCBvZiBhcHAgZGlhZ25vc3RpYyBldmVudHMuIFJlc3BvbnNlIGlzIG9uZSBhbmltYXRpb24gZnJhbWUgcGx1cyBmb2xsb3dpbmcgdGFzay4gU2F2ZSBjb21wbGV0aW9uIGlzIHN1Y2Nlc3NmdWwgd3JpdGUgUlBDIHJlcGx5LiBUaW1pbmcgdmFsdWVzIGFyZSBvYnNlcnZhdGlvbnMsIG5vdCBwZXJmb3JtYW5jZSBhY2NlcHRhbmNlLiIsCiAgIm9ic2VydmF0aW9ucyI6IFsKICAgIHsKICAgICAgIm9wZXJhdGlvbiI6ICJwdXJjaGFzZSIsCiAgICAgICJyZXNwb25zZU1zIjogMTIuNSwKICAgICAgInNhdmVDb21wbGV0aW9uTXMiOiAxOC4yMDAwMDAwMDI5ODAyMzIsCiAgICAgICJ3b3JrZXJSb3VuZFRyaXBzQnlNZXRob2QiOiB7CiAgICAgICAgIml0ZW1zIjogMQogICAgICB9LAogICAgICAicGh5c2ljYWxDb21taXR0ZWRUcmFuc2FjdGlvbnMiOiAxLAogICAgICAiY29tbWl0dGVkT2JqZWN0U3RvcmVNdXRhdGlvblJlcXVlc3RzIjogOSwKICAgICAgInRyYW5zYWN0aW9uU3RvcmVzIjogWwogICAgICAgIFsKICAgICAgICAgICJkYXlNb2RlcyIsCiAgICAgICAgICAiZXZlbnRDb25zaXN0ZW5jeSIsCiAgICAgICAgICAiZXZlbnRMaXN0cyIsCiAgICAgICAgICAiZXZlbnRNZXRhZGF0YSIsCiAgICAgICAgICAiZXhlY3V0ZU1vZGVJdGVtcyIsCiAgICAgICAgICAiaGFsbERlZmluaXRpb25zIiwKICAgICAgICAgICJoYWxsUm91dGVTZXR0aW5ncyIsCiAgICAgICAgICAibWFwRGF0YSIsCiAgICAgICAgICAibWFwUm90YXRpb25TZXR0aW5ncyIsCiAgICAgICAgICAibWFwVmlld3BvcnRTZXR0aW5ncyIsCiAgICAgICAgICAicm91dGVTZXR0aW5ncyIsCiAgICAgICAgICAic3luY1F1ZXVlIgogICAgICAgIF0KICAgICAgXSwKICAgICAgIm11dGF0aW9ucyI6IFsKICAgICAgICB7CiAgICAgICAgICAic3RvcmUiOiAiZXZlbnRMaXN0cyIsCiAgICAgICAgICAibWV0aG9kIjogImRlbGV0ZSIKICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICJzdG9yZSI6ICJldmVudExpc3RzIiwKICAgICAgICAgICJtZXRob2QiOiAiZGVsZXRlIgogICAgICAgIH0sCiAgICAgICAgewogICAgICAgICAgInN0b3JlIjogImV2ZW50TGlzdHMiLAogICAgICAgICAgIm1ldGhvZCI6ICJwdXQiCiAgICAgICAgfSwKICAgICAgICB7CiAgICAgICAgICAic3RvcmUiOiAiZXZlbnRMaXN0cyIsCiAgICAgICAgICAibWV0aG9kIjogInB1dCIKICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICJzdG9yZSI6ICJzeW5jUXVldWUiLAogICAgICAgICAgIm1ldGhvZCI6ICJkZWxldGUiCiAgICAgICAgfSwKICAgICAgICB7CiAgICAgICAgICAic3RvcmUiOiAic3luY1F1ZXVlIiwKICAgICAgICAgICJtZXRob2QiOiAicHV0IgogICAgICAgIH0sCiAgICAgICAgewogICAgICAgICAgInN0b3JlIjogInN5bmNRdWV1ZSIsCiAgICAgICAgICAibWV0aG9kIjogInB1dCIKICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICJzdG9yZSI6ICJzeW5jUXVldWUiLAogICAgICAgICAgIm1ldGhvZCI6ICJwdXQiCiAgICAgICAgfSwKICAgICAgICB7CiAgICAgICAgICAic3RvcmUiOiAic3luY1F1ZXVlIiwKICAgICAgICAgICJtZXRob2QiOiAicHV0IgogICAgICAgIH0KICAgICAgXQogICAgfSwKICAgIHsKICAgICAgIm9wZXJhdGlvbiI6ICJwbGFubmVkLXF1YW50aXR5IiwKICAgICAgInJlc3BvbnNlTXMiOiAxMS4xOTk5OTk5OTU1Mjk2NTIsCiAgICAgICJzYXZlQ29tcGxldGlvbk1zIjogMTEuMzk5OTk5OTk4NTA5ODg0LAogICAgICAid29ya2VyUm91bmRUcmlwc0J5TWV0aG9kIjogewogICAgICAgICJpdGVtcyI6IDEKICAgICAgfSwKICAgICAgInBoeXNpY2FsQ29tbWl0dGVkVHJhbnNhY3Rpb25zIjogMSwKICAgICAgImNvbW1pdHRlZE9iamVjdFN0b3JlTXV0YXRpb25SZXF1ZXN0cyI6IDksCiAgICAgICJ0cmFuc2FjdGlvblN0b3JlcyI6IFsKICAgICAgICBbCiAgICAgICAgICAiZGF5TW9kZXMiLAogICAgICAgICAgImV2ZW50Q29uc2lzdGVuY3kiLAogICAgICAgICAgImV2ZW50TGlzdHMiLAogICAgICAgICAgImV2ZW50TWV0YWRhdGEiLAogICAgICAgICAgImV4ZWN1dGVNb2RlSXRlbXMiLAogICAgICAgICAgImhhbGxEZWZpbml0aW9ucyIsCiAgICAgICAgICAiaGFsbFJvdXRlU2V0dGluZ3MiLAogICAgICAgICAgIm1hcERhdGEiLAogICAgICAgICAgIm1hcFJvdGF0aW9uU2V0dGluZ3MiLAogICAgICAgICAgIm1hcFZpZXdwb3J0U2V0dGluZ3MiLAogICAgICAgICAgInJvdXRlU2V0dGluZ3MiLAogICAgICAgICAgInN5bmNRdWV1ZSIKICAgICAgICBdCiAgICAgIF0sCiAgICAgICJtdXRhdGlvbnMiOiBbCiAgICAgICAgewogICAgICAgICAgInN0b3JlIjogImV2ZW50TGlzdHMiLAogICAgICAgICAgIm1ldGhvZCI6ICJkZWxldGUiCiAgICAgICAgfSwKICAgICAgICB7CiAgICAgICAgICAic3RvcmUiOiAiZXZlbnRMaXN0cyIsCiAgICAgICAgICAibWV0aG9kIjogImRlbGV0ZSIKICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICJzdG9yZSI6ICJldmVudExpc3RzIiwKICAgICAgICAgICJtZXRob2QiOiAicHV0IgogICAgICAgIH0sCiAgICAgICAgewogICAgICAgICAgInN0b3JlIjogImV2ZW50TGlzdHMiLAogICAgICAgICAgIm1ldGhvZCI6ICJwdXQiCiAgICAgICAgfSwKICAgICAgICB7CiAgICAgICAgICAic3RvcmUiOiAic3luY1F1ZXVlIiwKICAgICAgICAgICJtZXRob2QiOiAiZGVsZXRlIgogICAgICAgIH0sCiAgICAgICAgewogICAgICAgICAgInN0b3JlIjogInN5bmNRdWV1ZSIsCiAgICAgICAgICAibWV0aG9kIjogInB1dCIKICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICJzdG9yZSI6ICJzeW5jUXVldWUiLAogICAgICAgICAgIm1ldGhvZCI6ICJwdXQiCiAgICAgICAgfSwKICAgICAgICB7CiAgICAgICAgICAic3RvcmUiOiAic3luY1F1ZXVlIiwKICAgICAgICAgICJtZXRob2QiOiAicHV0IgogICAgICAgIH0sCiAgICAgICAgewogICAgICAgICAgInN0b3JlIjogInN5bmNRdWV1ZSIsCiAgICAgICAgICAibWV0aG9kIjogInB1dCIKICAgICAgICB9CiAgICAgIF0KICAgIH0sCiAgICB7CiAgICAgICJvcGVyYXRpb24iOiAibWVtbyIsCiAgICAgICJyZXNwb25zZU1zIjogNy4yOTk5OTk5OTcwMTk3NjgsCiAgICAgICJzYXZlQ29tcGxldGlvbk1zIjogMzIwLjM5OTk5OTk5ODUwOTksCiAgICAgICJ3b3JrZXJSb3VuZFRyaXBzQnlNZXRob2QiOiB7CiAgICAgICAgIml0ZW1zIjogMQogICAgICB9LAogICAgICAicGh5c2ljYWxDb21taXR0ZWRUcmFuc2FjdGlvbnMiOiAxLAogICAgICAiY29tbWl0dGVkT2JqZWN0U3RvcmVNdXRhdGlvblJlcXVlc3RzIjogOSwKICAgICAgInRyYW5zYWN0aW9uU3RvcmVzIjogWwogICAgICAgIFsKICAgICAgICAgICJkYXlNb2RlcyIsCiAgICAgICAgICAiZXZlbnRDb25zaXN0ZW5jeSIsCiAgICAgICAgICAiZXZlbnRMaXN0cyIsCiAgICAgICAgICAiZXZlbnRNZXRhZGF0YSIsCiAgICAgICAgICAiZXhlY3V0ZU1vZGVJdGVtcyIsCiAgICAgICAgICAiaGFsbERlZmluaXRpb25zIiwKICAgICAgICAgICJoYWxsUm91dGVTZXR0aW5ncyIsCiAgICAgICAgICAibWFwRGF0YSIsCiAgICAgICAgICAibWFwUm90YXRpb25TZXR0aW5ncyIsCiAgICAgICAgICAibWFwVmlld3BvcnRTZXR0aW5ncyIsCiAgICAgICAgICAicm91dGVTZXR0aW5ncyIsCiAgICAgICAgICAic3luY1F1ZXVlIgogICAgICAgIF0KICAgICAgXSwKICAgICAgIm11dGF0aW9ucyI6IFsKICAgICAgICB7CiAgICAgICAgICAic3RvcmUiOiAiZXZlbnRMaXN0cyIsCiAgICAgICAgICAibWV0aG9kIjogImRlbGV0ZSIKICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICJzdG9yZSI6ICJldmVudExpc3RzIiwKICAgICAgICAgICJtZXRob2QiOiAiZGVsZXRlIgogICAgICAgIH0sCiAgICAgICAgewogICAgICAgICAgInN0b3JlIjogImV2ZW50TGlzdHMiLAogICAgICAgICAgIm1ldGhvZCI6ICJwdXQiCiAgICAgICAgfSwKICAgICAgICB7CiAgICAgICAgICAic3RvcmUiOiAiZXZlbnRMaXN0cyIsCiAgICAgICAgICAibWV0aG9kIjogInB1dCIKICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICJzdG9yZSI6ICJzeW5jUXVldWUiLAogICAgICAgICAgIm1ldGhvZCI6ICJkZWxldGUiCiAgICAgICAgfSwKICAgICAgICB7CiAgICAgICAgICAic3RvcmUiOiAic3luY1F1ZXVlIiwKICAgICAgICAgICJtZXRob2QiOiAicHV0IgogICAgICAgIH0sCiAgICAgICAgewogICAgICAgICAgInN0b3JlIjogInN5bmNRdWV1ZSIsCiAgICAgICAgICAibWV0aG9kIjogInB1dCIKICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICJzdG9yZSI6ICJzeW5jUXVldWUiLAogICAgICAgICAgIm1ldGhvZCI6ICJwdXQiCiAgICAgICAgfSwKICAgICAgICB7CiAgICAgICAgICAic3RvcmUiOiAic3luY1F1ZXVlIiwKICAgICAgICAgICJtZXRob2QiOiAicHV0IgogICAgICAgIH0KICAgICAgXQogICAgfQogIF0KfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5a3522298447a8851d5-1cd75b7fa081f897bcad",
+          "file": "ordinary-persistence-io.spec.ts",
+          "line": 5,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "persistence-terminal-stop.spec.ts",
+      "file": "persistence-terminal-stop.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "a real persistence Worker dying after DB commit stops retries and exports without a new writer",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3868,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:51.665Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "432c587c387ed24a3dff-27cb454cb7f3d7b0c04d",
+          "file": "persistence-terminal-stop.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "the real confirmation host contains busy keyboard focus and defers a late failed-input focus request",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1095,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:55.544Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "432c587c387ed24a3dff-80f987a4de72383f468c",
+          "file": "persistence-terminal-stop.spec.ts",
+          "line": 213,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "priority-dialog-interaction.spec.ts",
+      "file": "priority-dialog-interaction.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "bulk limited input contains touch and keyboard across confirmations and the next item: pc",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1161,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:53.533Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf55c0d36a89b0372caa-31448105e75ce362c48d",
+          "file": "priority-dialog-interaction.spec.ts",
+          "line": 113,
+          "column": 3
+        },
+        {
+          "title": "bulk limited input contains touch and keyboard across confirmations and the next item: smartphone",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1317,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:54.703Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf55c0d36a89b0372caa-ce3717f9b6630d314eea",
+          "file": "priority-dialog-interaction.spec.ts",
+          "line": 113,
+          "column": 3
+        },
+        {
+          "title": "keyboard day changes discard popup input while retaining the map canvas",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1186,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:56.031Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf55c0d36a89b0372caa-542efdc26b6d9efb91de",
+          "file": "priority-dialog-interaction.spec.ts",
+          "line": 180,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "sheet-import-optional-url.spec.ts",
+      "file": "sheet-import-optional-url.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "OP06: edited planned quantity survives limited status and real save/reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1815,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:56.693Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "59a542e224b6071d33c0-ca092fca3009a637b8c5",
+          "file": "sheet-import-optional-url.spec.ts",
+          "line": 480,
+          "column": 1
+        },
+        {
+          "title": "OP11: failed URL update reopens with submitted URL and empty sheet name",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1298,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:58.517Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "59a542e224b6071d33c0-43549bfb8f6133d7d6fd",
+          "file": "sheet-import-optional-url.spec.ts",
+          "line": 539,
+          "column": 1
+        },
+        {
+          "title": "OP10: CSV read failure is reported and same file selection retries",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 740,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:31:59.825Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "59a542e224b6071d33c0-8d7da7df80de79a9a1a3",
+          "file": "sheet-import-optional-url.spec.ts",
+          "line": 569,
+          "column": 1
+        },
+        {
+          "title": "OP07: late JSON cannot reopen after newer candidate cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 539,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:32:00.575Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "59a542e224b6071d33c0-02f8c43d73ee3e09e81d",
+          "file": "sheet-import-optional-url.spec.ts",
+          "line": 626,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-18T15:31:25.567Z",
+    "duration": 35643.862,
+    "expected": 21,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

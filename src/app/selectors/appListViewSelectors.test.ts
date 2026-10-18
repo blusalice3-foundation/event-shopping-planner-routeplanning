@@ -203,6 +203,85 @@ describe("appListViewSelectors", () => {
     ).toEqual([]);
   });
 
+  it.each(["forward", "reverse", "rotate"])(
+    "preserves Japanese numeric/base candidate comparison and stable ties: %s",
+    (permutation) => {
+      const blocks = [
+        "A",
+        "a",
+        "Ａ",
+        "Á",
+        "A2",
+        "A10",
+        "あ",
+        "ア",
+        "ｱ",
+        "が",
+        "か",
+        "",
+      ];
+      const numbers = [
+        "01a",
+        "1A",
+        "１ａ",
+        "2",
+        "10",
+        "100",
+        "01a2",
+        "01a10",
+        "",
+        "二",
+      ];
+      const items = blocks.flatMap((block, blockIndex) =>
+        numbers.map((number, numberIndex) =>
+          item(`${blockIndex}-${numberIndex}`, { block, number }),
+        ),
+      );
+      const source =
+        permutation === "reverse"
+          ? [...items].reverse()
+          : permutation === "rotate"
+            ? [...items.slice(37), ...items.slice(0, 37)]
+            : items;
+      const original = [...source];
+      const legacyOrder = [...source].sort((first, second) => {
+        const blockComparison = first.block.localeCompare(second.block, "ja", {
+          numeric: true,
+          sensitivity: "base",
+        });
+        return blockComparison !== 0
+          ? blockComparison
+          : first.number.localeCompare(second.number, "ja", {
+              numeric: true,
+              sensitivity: "base",
+            });
+      });
+      const input = {
+        activeEventName: "event",
+        activeEventDate: "1日目",
+        executeModeItems: {},
+        currentTabItems: source,
+        selectedBlockFilters: new Set<string>(),
+      };
+
+      expect(
+        selectCandidateColumnItems({
+          ...input,
+          candidateNumberSortDirection: null,
+        }).map(({ id }) => id),
+      ).toEqual(legacyOrder.map(({ id }) => id));
+      for (const direction of ["asc", "desc"] as const) {
+        expect(
+          selectCandidateColumnItems({
+            ...input,
+            candidateNumberSortDirection: direction,
+          }),
+        ).toEqual(original);
+      }
+      expect(source).toEqual(original);
+    },
+  );
+
   it("derives candidate sorting, block options, and visible search matches", () => {
     const execute = item("execute", { block: "1" });
     const sourceFirst = item("source-first", {

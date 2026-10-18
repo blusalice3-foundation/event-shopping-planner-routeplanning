@@ -1539,3 +1539,41 @@ it("[ID 9] starting an update does not close an unrelated dialog before display 
     "review-request",
   );
 });
+
+it("OP11: publishes each submitted URL draft through failure and drops it at owner cancellation", async () => {
+  const h = createHarness();
+  const { result } = renderHook(() => useEventUpdateCommands(h.ports));
+  updateFlowMocks.buildEventUpdateDiffFromSpreadsheet.mockRejectedValue(
+    new Error("HTTP 503"),
+  );
+  await act(() => result.current.handleUpdateEvent(EVENT));
+  const operationId = result.current.currentUpdateOperationId;
+  await act(() =>
+    result.current.handleUrlUpdate(
+      "https://docs.google.com/spreadsheets/d/retry/edit",
+      "",
+      operationId,
+    ),
+  );
+  const draft = result.current.currentUpdateUrlDraft;
+  expect(draft).toEqual({
+    operationId,
+    eventName: EVENT,
+    url: "https://docs.google.com/spreadsheets/d/retry/edit",
+    sheetName: "",
+  });
+  expect(h.stores.eventMetadata[EVENT].spreadsheetUrl).toBe(SOURCE.url);
+  await act(() =>
+    result.current.handleUrlUpdate(
+      "https://docs.google.com/spreadsheets/d/second/edit",
+      "新規シート",
+      operationId,
+    ),
+  );
+  expect(result.current.currentUpdateUrlDraft).not.toBe(draft);
+  expect(result.current.currentUpdateUrlDraft?.sheetName).toBe("新規シート");
+  act(() => {
+    result.current.handleUrlUpdateCancel(operationId);
+  });
+  expect(result.current.currentUpdateUrlDraft).toBeUndefined();
+});

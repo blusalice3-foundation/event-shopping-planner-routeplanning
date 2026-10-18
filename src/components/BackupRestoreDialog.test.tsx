@@ -122,3 +122,25 @@ describe("BackupRestoreDialog", () => {
     });
   });
 });
+
+it("keeps a terminal restore draft visible while disabling repeat submission and Escape", () => {
+  const close = vi.fn(),
+    restore = vi.fn();
+  render(
+    <BackupRestoreDialog
+      isOpen
+      requiresReload
+      backupEventNames={["春イベント"]}
+      currentEventNames={[]}
+      onClose={close}
+      onRestore={restore}
+    />,
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent("再復元せず");
+  const button = screen.getByRole("button", { name: "別名で復元" });
+  expect(button).toBeDisabled();
+  fireEvent.click(button);
+  fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+  expect(restore).not.toHaveBeenCalled();
+  expect(close).not.toHaveBeenCalled();
+});

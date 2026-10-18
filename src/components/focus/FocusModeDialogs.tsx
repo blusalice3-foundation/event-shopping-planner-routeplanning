@@ -1,5 +1,6 @@
 import type React from "react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useModalDialogBehavior } from "../../hooks/useModalDialogBehavior";
 import { createPortal } from "react-dom";
 import type { FocusPhase } from "../../types/focus";
 import type { ShoppingItem } from "../../types/item";
@@ -474,12 +475,18 @@ export function TemporaryPhaseChoiceDialog({
   onSelect: (phase: FocusPhase) => void;
   onCancel: () => void;
 }) {
-  useModalInteractionLock(isOpen);
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen,
+    containExternalFocus: true,
+    onEscape: onCancel,
+  });
   if (!isOpen) return null;
 
   return createPortal(
     <div
       className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+      ref={dialogRef}
+      onKeyDown={onDialogKeyDown}
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -536,12 +543,18 @@ export function TemporaryRemainingSpacesDialog({
   onEnd: () => void;
   onCancel: () => void;
 }) {
-  useModalInteractionLock(isOpen);
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen,
+    containExternalFocus: true,
+    onEscape: onCancel,
+  });
   if (!isOpen) return null;
 
   return createPortal(
     <div
       className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+      ref={dialogRef}
+      onKeyDown={onDialogKeyDown}
       role="dialog"
       aria-modal="true"
       aria-label="一時巡回の残りスペース"

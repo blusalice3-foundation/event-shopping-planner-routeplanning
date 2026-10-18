@@ -577,3 +577,124 @@ it.each(["JSON", "Excel"])(
     expect(ports.confirmBackupRestore).toHaveBeenCalledOnce();
   },
 );
+
+it.each(["resolve", "reject"])(
+  "ignores a stale JSON %s after replacing and cancelling its candidate",
+  async (outcome) => {
+    const alert = vi
+      .spyOn(window, "alert")
+      .mockReset()
+      .mockImplementation(() => {});
+    const ports = createPorts({
+      openBackupRestore: vi.fn(() => "restore-B"),
+      closeBackupRestore: vi.fn(),
+    });
+    const { result } = renderHook(() => useEventTransferCommands(ports));
+    let resolve!: (text: string) => void, reject!: (error: unknown) => void;
+    const oldFile = {
+      text: () =>
+        new Promise<string>((yes, no) => {
+          resolve = yes;
+          reject = no;
+        }),
+    } as File;
+    const newFile = {
+      text: async () => JSON.stringify(createBackup()),
+    } as File;
+    const event = (file: File) =>
+      ({ target: { files: [file], value: "same" } }) as unknown as Parameters<
+        typeof result.current.handleBackupFileImport
+      >[0];
+    let old!: Promise<void>;
+    act(() => {
+      old = result.current.handleBackupFileImport(event(oldFile));
+    });
+    await act(() => result.current.handleBackupFileImport(event(newFile)));
+    expect(ports.openBackupRestore).toHaveBeenCalledOnce();
+    expect(result.current.handleBackupRestoreCancel("restore-B")).toBe(true);
+    await act(async () => {
+      if (outcome === "resolve") resolve(JSON.stringify(createBackup()));
+      else reject(new Error("stale"));
+      await old;
+    });
+    expect(ports.openBackupRestore).toHaveBeenCalledOnce();
+    expect(ports.closeBackupRestore).toHaveBeenCalledExactlyOnceWith(
+      "restore-B",
+    );
+    expect(alert).not.toHaveBeenCalled();
+    alert.mockRestore();
+  },
+);
+it("rejects new candidate input and cancellation while an accepted restore is waiting", async () => {
+  const backup = createBackup();
+  let resolve!: (value: ReturnType<typeof emptySnapshot>) => void;
+  const ports = createPorts({
+    pendingBackup: backup,
+    requestMutation: vi.fn<EventTransferCommandPorts["requestMutation"]>(
+      () =>
+        new Promise((yes) => {
+          resolve = yes;
+        }),
+    ),
+    closeBackupRestore: vi.fn(),
+  });
+  const { result } = renderHook(() => useEventTransferCommands(ports));
+  let pending!: Promise<void>;
+  act(() => {
+    pending = result.current.handleBackupRestore("source", "target");
+  });
+  await act(async () => {
+    await Promise.resolve();
+  });
+  const text = vi.fn(async () => JSON.stringify(backup));
+  const input = { files: [{ text }], value: "new" };
+  await act(() =>
+    result.current.handleBackupFileImport({
+      target: input,
+    } as unknown as Parameters<
+      typeof result.current.handleBackupFileImport
+    >[0]),
+  );
+  expect(input.value).toBe("");
+  expect(text).not.toHaveBeenCalled();
+  expect(result.current.handleBackupRestoreCancel()).toBe(false);
+  await act(async () => {
+    resolve({ ...emptySnapshot(), eventLists: { target: [eventItem] } });
+    await pending;
+  });
+  expect(ports.confirmBackupRestore).toHaveBeenCalledOnce();
+});
+
+it.each([
+  "Error",
+  "PersistenceOutcomeUnknownError",
+  "CommittedStateApplyError",
+])(
+  "classifies an initial restore read %s before permitting another attempt",
+  async (name) => {
+    const failure = Object.assign(new Error("read failed"), { name });
+    const read = vi.fn().mockRejectedValue(failure);
+    const ports = createPorts({
+      pendingBackup: createBackup(),
+      readExportSnapshot: read,
+    });
+    const { result } = renderHook(() => useEventTransferCommands(ports));
+    await act(async () => {
+      await expect(
+        result.current.handleBackupRestore("source", "target"),
+      ).rejects.toBe(failure);
+    });
+    expect(result.current.isBackupRestoreStopped).toBe(name !== "Error");
+    if (name === "Error") {
+      await act(async () => {
+        await expect(
+          result.current.handleBackupRestore("source", "target"),
+        ).rejects.toBe(failure);
+      });
+      expect(read).toHaveBeenCalledTimes(2);
+    } else {
+      await act(() => result.current.handleBackupRestore("source", "target"));
+      expect(read).toHaveBeenCalledTimes(1);
+    }
+  },
+);

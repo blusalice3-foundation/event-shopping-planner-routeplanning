@@ -1,0 +1,5 @@
+
+> event-shopping-planner@1.0.0 verify:architecture
+> node scripts/verify-architecture.mjs
+
+PASS architecture verification: 353 production files; 1712 import edges; 0 baseline exception(s); graph 57895a7f87402e51b0537d60953d359f4a98c36f4c960e4068b3a20090c2b294

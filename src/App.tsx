@@ -1,3 +1,7 @@
+import { MutationCancelledError } from "./app/state/useApplicationSnapshot";
+import type { MapEditorSession } from "./features/map/domain/mapEditorSession";
+import { MutationConfirmationDialog } from "./features/app-shell/components/MutationConfirmationDialog";
+import { requestModalSafeFocus } from "./utils/modalFocusBoundary";
 import { recordEntry } from "./utils/ownRecord";
 import { createItemContentGuard } from "./utils/itemContentGuard";
 import { parseFocusSessionKey } from "./utils/focusSessionKey";
@@ -141,9 +145,16 @@ const App: React.FC = () => {
     activeTab,
   );
   const conflictRetryButtonRef = useRef<HTMLButtonElement>(null);
+  const latestRetryableFailures = useRef(application.retryableFailures);
+  latestRetryableFailures.current = application.retryableFailures;
   useEffect(() => {
-    if (application.retryableFailures.length)
-      conflictRetryButtonRef.current?.focus();
+    const failures = application.retryableFailures;
+    if (failures.length)
+      requestModalSafeFocus(
+        () => conflictRetryButtonRef.current,
+        () =>
+          latestRetryableFailures.current === failures && failures.length > 0,
+      );
   }, [application.retryableFailures]);
   const {
     eventLists,
@@ -239,8 +250,14 @@ const App: React.FC = () => {
     [setExecuteModeItemsCommitted],
   );
   const navigationCommands = navigation.commands;
+  const finishMapEditorTransitionRef = useRef<() => void>(() => {});
+  const preserveMapEditorAtTabRef = useRef<ActiveTab | null>(null);
+  const restoreTransitionPendingRef = useRef(false);
   const navigateToTab = useCallback(
     (tab: ActiveTab) => {
+      if (preserveMapEditorAtTabRef.current === tab)
+        preserveMapEditorAtTabRef.current = null;
+      else finishMapEditorTransitionRef.current();
       if (tab === "eventList") {
         navigationCommands.showEventList();
         return;
@@ -294,6 +311,9 @@ const App: React.FC = () => {
     setCandidateNumberSortDirection,
   } = useAppUiState();
   const overlayController = useAppOverlayController();
+  const activeMapEditorSessionRef = useRef<MapEditorSession | null>(null);
+  activeMapEditorSessionRef.current =
+    overlayController.readModel.mapEditorSession;
   const {
     readModel: {
       itemToDelete,
@@ -455,6 +475,7 @@ const App: React.FC = () => {
     runExclusiveRestore,
     acceptCommittedSnapshot,
     observeSnapshot,
+    stopWrites: stopPersistenceWrites,
     migrationNotices,
     dismissMigrationNotices,
   } = useIndexedDbPersistence({
@@ -468,6 +489,7 @@ const App: React.FC = () => {
   const { flush: flushApplication, isPending: isApplicationPending } =
     application;
   application.handlers.current = {
+    stopWrites: stopPersistenceWrites,
     drain: flushPendingSave,
     observeSnapshot,
     applied: (snapshot, invalidatedEvents) => {
@@ -495,6 +517,7 @@ const App: React.FC = () => {
         overlayCommands.visitList.endSession();
         setItemToEdit(null);
         overlayCommands.item.close();
+        activeMapEditorSessionRef.current = null;
         overlayCommands.mapEditor.close();
         clearSearchScrollRequest();
         setHighlightedItemId(null);
@@ -897,7 +920,7 @@ const App: React.FC = () => {
   });
 
   const {
-    selectEvent: handleSelectEvent,
+    selectEvent: selectEvent,
     deleteEvent: handleDeleteEvent,
     requestRename: handleRenameEvent,
     confirmRename: handleConfirmRename,
@@ -1082,14 +1105,16 @@ const App: React.FC = () => {
 
   const {
     backupFileInputRef,
+    isBackupRestoreStopped,
     cancelXlsxOperation,
     handleExportEvent,
     previewEventExport,
     handleBackupExport,
     handlePersistenceRecoveryExport,
     handleBackupRestoreRequest,
+    handleBackupRestoreCancel,
     handleBackupFileImport,
-    handleBackupRestore,
+    handleBackupRestore: restoreBackup,
     handleConfirmExport,
     handleExportFileImport,
   } = useEventTransferCommands({
@@ -1099,7 +1124,7 @@ const App: React.FC = () => {
       return application.coordinator.readExportSnapshot();
     },
     createBackupFile: () => {
-      application.flushDraft();
+      if (!application.getWriteStopReason()) application.flushDraft();
       return application.coordinator.createBackupFile();
     },
     eventConsistency,
@@ -1118,13 +1143,24 @@ const App: React.FC = () => {
     exportEventName,
     pendingBackup,
     pendingXlsxRestoreCompletion,
-    navigationCommands,
+    navigationCommands: {
+      openEvent: (eventName, tab, view) => {
+        navigationCommands.openEvent(eventName, tab, view);
+        finishMapEditorTransitionRef.current();
+      },
+      showEventList: () => {
+        navigationCommands.showEventList();
+        finishMapEditorTransitionRef.current();
+      },
+    },
     clearSelection,
     runExclusiveRestore,
     openExport: overlayCommands.event.openExport,
     confirmEventOverlay: overlayCommands.event.confirm,
     openBackupRestore: overlayCommands.backup.openRestore,
     confirmBackupRestore: overlayCommands.backup.confirm,
+    closeBackupRestore: overlayCommands.backup.close,
+    stopWrites: application.stopWrites,
     startXlsxOperation: overlayCommands.status.startXlsxOperation,
     updateXlsxOperation: overlayCommands.status.updateXlsxOperation,
     clearXlsxOperation: overlayCommands.status.clearXlsxOperation,
@@ -1171,6 +1207,7 @@ const App: React.FC = () => {
     invalidateEventUpdateForEvent,
     isEventUpdateSaving,
     currentUpdateOperationId,
+    currentUpdateUrlDraft,
   } = useEventUpdateCommands({
     state: {
       eventLists,
@@ -1203,8 +1240,10 @@ const App: React.FC = () => {
   invalidateEventUpdateForEventRef.current = invalidateEventUpdateForEvent;
 
   const {
+    requestPending: mapImportRequestPending,
+    canCancel: canCancelMapImport,
     requestFileSelection: handleImportMapData,
-    selectFile: handleMapFileChange,
+    selectCapturedFile: selectCapturedMapFile,
     prepareImport: handleMapImportConfirm,
     confirmReimport: handleMapReimportConfirm,
     cancelReimport: handleMapReimportCancel,
@@ -1221,6 +1260,10 @@ const App: React.FC = () => {
       hallRouteSettings,
       mapViewportSettings,
       pendingEventName: mapImportPendingEventName,
+      importSessionId:
+        overlayController.state.mapImport.kind === "inactive"
+          ? null
+          : overlayController.state.mapImport.requestId,
       eventConsistency,
       pendingReimport: pendingMapReimport,
       mapViewActive,
@@ -1240,6 +1283,15 @@ const App: React.FC = () => {
       confirmReimport: overlayCommands.mapImport.confirmReimport,
     },
     settings: {
+      startImportMutation: (intent) => {
+        const id = crypto.randomUUID();
+        const result = application.request({ ...intent, id });
+        return {
+          result,
+          cancel: () => application.cancelPendingMutation(id),
+          getState: () => application.getPendingMutationState(id),
+        };
+      },
       requestMutation: application.request,
       commitApplicationSnapshotPatch,
     },
@@ -1249,10 +1301,12 @@ const App: React.FC = () => {
     effects: {
       notify: (message) => alert(message),
       reportDiagnostic: (message) => console.error(message),
+      onCommittedFailure: application.stopWrites,
     },
   });
 
   const {
+    isEditorWritePending,
     handleAddToExecuteListFromMap,
     handleAddToExecuteListFromMapAtPosition,
     handleRemoveFromExecuteListFromMap,
@@ -1278,7 +1332,13 @@ const App: React.FC = () => {
     handleConfirmCellSelection,
     handleCancelCellSelection,
   } = useMapEditorCommands({
+    readCommittedSnapshot: () => application.rawRef.current,
+    isEditorSessionCurrent: (session) =>
+      activeMapEditorSessionRef.current?.sessionId === session.sessionId &&
+      application.coordinator.generation(session.eventName) ===
+        session.eventGeneration,
     state: {
+      editorSession: overlayController.readModel.mapEditorSession,
       activeEventName,
       activeEventDate,
       isMapTab,
@@ -1318,10 +1378,59 @@ const App: React.FC = () => {
       getItemHallId,
       areItemsInSameHallGroup,
     },
-    effects: { selectionEventTarget: window, notify: alert },
+    effects: {
+      selectionEventTarget: window,
+      notify: alert,
+      onCommittedFailure: application.stopWrites,
+    },
     persistence: { commitApplicationSnapshotPatch },
   });
 
+  const endMapEditorSession = useCallback(() => {
+    activeMapEditorSessionRef.current = null;
+    overlayCommands.mapEditor.close();
+  }, [overlayCommands.mapEditor]);
+  finishMapEditorTransitionRef.current = endMapEditorSession;
+  const approveMapEditorDiscard = useCallback(() => {
+    if (!activeMapEditorSessionRef.current) return true;
+    if (isEditorWritePending() || application.getWriteStopReason())
+      return false;
+    return window.confirm("地図の編集中の内容を破棄して移動しますか？");
+  }, [application, isEditorWritePending]);
+  const openMapEditor = useCallback(
+    (editorKind: MapEditorSession["editorKind"]) => {
+      if (
+        !activeEventName ||
+        !activeEventDate ||
+        (editorKind !== "simple-hall-definition" && !currentMapTabName)
+      )
+        return;
+      const session: MapEditorSession = Object.freeze({
+        sessionId: crypto.randomUUID(),
+        eventName: activeEventName,
+        eventGeneration: application.coordinator.generation(activeEventName),
+        day: activeEventDate,
+        mapKey:
+          editorKind === "simple-hall-definition"
+            ? getMaplessKey(activeEventDate)
+            : currentMapTabName!,
+        editorKind,
+      });
+      activeMapEditorSessionRef.current = session;
+      if (editorKind === "block-definition")
+        overlayCommands.mapEditor.openBlockDefinition(null, session);
+      else if (editorKind === "hall-definition")
+        overlayCommands.mapEditor.openHallDefinition(null, session);
+      else overlayCommands.mapEditor.openSimpleHallDefinition(session);
+    },
+    [
+      activeEventName,
+      activeEventDate,
+      currentMapTabName,
+      application,
+      overlayCommands.mapEditor,
+    ],
+  );
   const currentMapExecuteItemIds = useMemo(() => {
     if (!activeEventName || !isMapTab || !activeEventDate) return [];
 
@@ -1363,8 +1472,8 @@ const App: React.FC = () => {
     saveChanges: handleVisitListConfirm,
     discardChanges: handleVisitListCancel,
     requestClose: handleVisitListClose,
-    requestTabChange: requestVisitListTabChange,
-    requestDayModeChange: requestVisitListDayModeChange,
+    requestTabChange: requestVisitListTabChangeRaw,
+    requestDayModeChange: requestVisitListDayModeChangeRaw,
     confirmPendingTransition: handleVisitListDialogConfirm,
     discardPendingTransition: handleVisitListDialogCancel,
   } = useMapVisitListCommands({
@@ -1400,6 +1509,91 @@ const App: React.FC = () => {
     },
   });
 
+  const requestVisitListTabChange = useCallback(
+    (tab: ActiveTab, after?: () => void) => {
+      if (showVisitListConfirmDialog || !approveMapEditorDiscard())
+        return "ignored" as const;
+      return requestVisitListTabChangeRaw(tab, after);
+    },
+    [
+      showVisitListConfirmDialog,
+      approveMapEditorDiscard,
+      requestVisitListTabChangeRaw,
+    ],
+  );
+  const requestVisitListDayModeChange = useCallback(
+    (tab: ActiveTab) => {
+      if (showVisitListConfirmDialog || !approveMapEditorDiscard())
+        return "ignored" as const;
+      return requestVisitListDayModeChangeRaw(tab);
+    },
+    [
+      showVisitListConfirmDialog,
+      approveMapEditorDiscard,
+      requestVisitListDayModeChangeRaw,
+    ],
+  );
+  const handleMapFileChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const input = event.target;
+      const file = input.files?.[0];
+      const eventName = input.dataset.eventName;
+      input.value = "";
+      if (!file || showVisitListConfirmDialog || !approveMapEditorDiscard())
+        return;
+      requestVisitListTabChangeRaw(activeTab, () =>
+        selectCapturedMapFile(file, eventName),
+      );
+    },
+    [
+      showVisitListConfirmDialog,
+      approveMapEditorDiscard,
+      requestVisitListTabChangeRaw,
+      activeTab,
+      selectCapturedMapFile,
+    ],
+  );
+  const handleBackupRestore = useCallback(
+    async (sourceEventName: string, targetEventName: string) => {
+      if (
+        restoreTransitionPendingRef.current ||
+        showVisitListConfirmDialog ||
+        !approveMapEditorDiscard()
+      )
+        throw new MutationCancelledError();
+      restoreTransitionPendingRef.current = true;
+      try {
+        await new Promise<void>((resolve, reject) => {
+          preserveMapEditorAtTabRef.current = activeTab;
+          const result = requestVisitListTabChangeRaw(activeTab, () => {
+            void restoreBackup(sourceEventName, targetEventName).then(
+              resolve,
+              reject,
+            );
+          });
+          if (result === "ignored") {
+            preserveMapEditorAtTabRef.current = null;
+            reject(new MutationCancelledError());
+          }
+        });
+      } finally {
+        restoreTransitionPendingRef.current = false;
+      }
+    },
+    [
+      showVisitListConfirmDialog,
+      approveMapEditorDiscard,
+      activeTab,
+      requestVisitListTabChangeRaw,
+      restoreBackup,
+    ],
+  );
+  const handleSelectEvent = useCallback(
+    (eventName: string) => {
+      requestVisitListTabChange(activeTab, () => selectEvent(eventName));
+    },
+    [requestVisitListTabChange, activeTab, selectEvent],
+  );
   const handleShowEventList = useCallback(() => {
     requestVisitListTabChange("eventList");
   }, [requestVisitListTabChange]);
@@ -1520,16 +1714,14 @@ const App: React.FC = () => {
     eventDates,
     select: (tab, callback) => {
       setMapTabMenuOpen(null);
-      if (callback) {
-        callback();
-        return;
-      }
-      setItemToEdit(null);
-      clearSelection();
-      setSelectedBlockFilters(new Set());
-      setCandidateNumberSortDirection(null);
-      setCollapsedSpaces(new Set());
-      requestVisitListTabChange(tab);
+      requestVisitListTabChange(tab, () => {
+        setItemToEdit(null);
+        clearSelection();
+        setSelectedBlockFilters(new Set());
+        setCandidateNumberSortDirection(null);
+        setCollapsedSpaces(new Set());
+        callback?.();
+      });
     },
     longPress: (tab) => {
       requestVisitListDayModeChange(tab);
@@ -1890,71 +2082,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-200 font-sans">
-      {application.confirmations.slice(0, 1).map(({ token, confirmation }) => (
-        <div
-          key={token.operationId}
-          className="fixed inset-0 z-[21000] bg-black/50 flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label={confirmation.title}
-          aria-busy={application.isConfirmationBusy}
-        >
-          <section className="flex max-h-[85dvh] w-full max-w-3xl flex-col overflow-hidden rounded bg-white p-5 dark:bg-slate-800">
-            <h2 className="mb-3 shrink-0 text-lg font-bold">
-              {confirmation.title}
-            </h2>
-            <div
-              role="region"
-              aria-label="確認内容"
-              tabIndex={0}
-              className="min-h-0 flex-1 overflow-y-auto"
-            >
-              {confirmation.choices?.map((choice) => (
-                <label key={choice.id} className="block my-3 text-sm">
-                  <span className="block font-medium mb-1">{choice.label}</span>
-                  <select
-                    className="w-full rounded border p-2 bg-white text-slate-900 dark:bg-slate-700 dark:text-slate-100"
-                    value={choice.value}
-                    disabled={application.isConfirmationBusy}
-                    onChange={(event) =>
-                      application.choose(token, choice.id, event.target.value)
-                    }
-                  >
-                    {choice.options.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
-              {confirmation.details.map((detail, index) => (
-                <pre
-                  key={index}
-                  className="whitespace-pre-wrap break-all text-sm my-3"
-                >
-                  {detail}
-                </pre>
-              ))}
-            </div>
-            <div className="mt-4 flex shrink-0 gap-3 border-t border-slate-200 pt-4 dark:border-slate-700">
-              <button
-                disabled={application.isConfirmationBusy}
-                onClick={() => application.cancel(token)}
-              >
-                取消
-              </button>
-              <button
-                className="bg-blue-600 text-white rounded px-4 py-2"
-                disabled={application.isConfirmationBusy}
-                onClick={() => application.confirm(token)}
-              >
-                確認して保存
-              </button>
-            </div>
-          </section>
-        </div>
-      ))}
+      <MutationConfirmationDialog application={application} />
       {migrationNotices.length > 0 && (
         <section role="status" className="bg-amber-50 text-amber-950 p-3">
           <h2 className="font-bold">保存データの移行内容</h2>
@@ -2191,8 +2319,13 @@ const App: React.FC = () => {
             getMapTabForDate,
             handleSetViewMode,
             onShowEventList: handleShowEventList,
-            onShowImport: navigationCommands.showImport,
-            onToggleEventSurface: navigationCommands.toggleEventSurface,
+            onShowImport: () => requestVisitListTabChange("import"),
+            onToggleEventSurface: () => {
+              if (approveMapEditorDiscard()) {
+                endMapEditorSession();
+                navigationCommands.toggleEventSurface();
+              }
+            },
           },
           map: {
             getHallExecuteCount,
@@ -2200,13 +2333,13 @@ const App: React.FC = () => {
             handleMapTabRotationAngleChange,
             openVisitListPanel,
             setBlockDefinitionMode: (open) => {
-              if (open) overlayCommands.mapEditor.openBlockDefinition(null);
+              if (open) openMapEditor("block-definition");
             },
             setGlobalHallOrderPanelOpen: (open) => {
               if (open) overlayCommands.mapEditor.openGlobalHallOrder();
             },
             setHallDefinitionMode: (open) => {
-              if (open) overlayCommands.mapEditor.openHallDefinition(null);
+              if (open) openMapEditor("hall-definition");
             },
             setMapHallSelectorOpen,
             setMapIsHallOrderOpen,
@@ -2216,7 +2349,7 @@ const App: React.FC = () => {
             setMapSmartInsertMode,
             setMapTabMenuOpen,
             setSimpleHallDefinitionMode: (open) => {
-              if (open) overlayCommands.mapEditor.openSimpleHallDefinition();
+              if (open) openMapEditor("simple-hall-definition");
             },
             showSmartInsertToast: (message, tone = "success") => {
               overlayCommands.status.showSmartInsertToast(message, tone);
@@ -2329,6 +2462,11 @@ const App: React.FC = () => {
         commit={handleUpdateItems}
       >
         <AppMainContent
+          eventGeneration={
+            activeEventName
+              ? application.coordinator.generation(activeEventName)
+              : 0
+          }
           model={{
             navigation: {
               activeEventDate,
@@ -2512,6 +2650,7 @@ const App: React.FC = () => {
             eventDates,
             eventMetadata,
             updateOperationId: currentUpdateOperationId,
+            updateUrlDraft: currentUpdateUrlDraft,
           },
           mapEditor: {
             allBlocksForHallDefinition,
@@ -2535,6 +2674,8 @@ const App: React.FC = () => {
           imports: {
             exportFileInputRef,
             mapFileInputRef,
+            mapImportRequestPending,
+            canCancelMapImport,
             mapImportSavedSettings: mapImportPendingEventName
               ? appRuntime.persistenceCommands.readBlockDetectionSettings(
                   mapImportPendingEventName,
@@ -2696,6 +2837,7 @@ const App: React.FC = () => {
         </section>
       )}
       <BackupRestoreDialog
+        requiresReload={isBackupRestoreStopped || application.requiresReload}
         isOpen={pendingBackup !== null}
         backupEventNames={
           pendingBackup ? Object.keys(pendingBackup.data.eventLists).sort() : []
@@ -2706,11 +2848,19 @@ const App: React.FC = () => {
             (change) => `${change.path}: ${change.message}`,
           ) ?? []
         }
-        onClose={overlayCommands.backup.close}
+        onClose={() =>
+          handleBackupRestoreCancel(
+            overlayController.state.backup.kind === "restore"
+              ? overlayController.state.backup.requestId
+              : undefined,
+          )
+        }
         onRestore={handleBackupRestore}
       />
       <MapReimportConfirmationDialog
         isOpen={pendingMapReimport !== null}
+        requestPending={mapImportRequestPending}
+        canCancel={canCancelMapImport}
         plan={pendingMapReimport?.plan ?? null}
         onCancel={handleMapReimportCancel}
         onConfirm={handleMapReimportConfirm}

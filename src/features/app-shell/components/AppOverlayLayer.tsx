@@ -90,6 +90,12 @@ type AppOverlayLayerFields = {
   handleCancelUpdate: (updateOperationId?: string) => void;
   eventMetadata: Record<string, EventMetadata>;
   updateOperationId?: string;
+  updateUrlDraft?: {
+    readonly operationId: string;
+    readonly eventName: string;
+    readonly url: string;
+    readonly sheetName: string;
+  };
   handleUrlUpdate: (
     url: string,
     sheetName: string,
@@ -153,6 +159,8 @@ type AppOverlayLayerFields = {
   handleMapFileChange: (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => void | Promise<void>;
+  mapImportRequestPending?: boolean;
+  canCancelMapImport?: boolean;
   mapImportSavedSettings: MapImportDialogProps["savedSettings"];
   handleMapImportConfirm: MapImportDialogProps["onImport"];
   handleMapImportClose: MapImportDialogProps["onClose"];
@@ -189,6 +197,7 @@ export type AppOverlayLayerModel = {
     | "eventDates"
     | "eventMetadata"
     | "updateOperationId"
+    | "updateUrlDraft"
   >;
   readonly mapEditor: Pick<
     AppOverlayLayerFields,
@@ -213,7 +222,11 @@ export type AppOverlayLayerModel = {
   >;
   readonly imports: Pick<
     AppOverlayLayerFields,
-    "exportFileInputRef" | "mapFileInputRef" | "mapImportSavedSettings"
+    | "exportFileInputRef"
+    | "mapFileInputRef"
+    | "mapImportSavedSettings"
+    | "mapImportRequestPending"
+    | "canCancelMapImport"
   >;
   readonly list: Pick<
     AppOverlayLayerFields,
@@ -319,6 +332,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       eventDates,
       eventMetadata,
       updateOperationId,
+      updateUrlDraft,
     },
     mapEditor: {
       allBlocksForHallDefinition,
@@ -339,7 +353,13 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       visitListItems,
       visitListHistoryVersion,
     },
-    imports: { exportFileInputRef, mapFileInputRef, mapImportSavedSettings },
+    imports: {
+      exportFileInputRef,
+      mapFileInputRef,
+      mapImportSavedSettings,
+      mapImportRequestPending,
+      canCancelMapImport,
+    },
     list: {
       candidateMovePlan,
       currentMode,
@@ -533,16 +553,22 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
         <UrlUpdateDialog
           key={updateOperationId ?? pendingUpdateEventName ?? "url-update"}
           currentUrl={
-            pendingUpdateEventName
-              ? recordEntry(eventMetadata, pendingUpdateEventName)
-                  ?.spreadsheetUrl || ""
-              : ""
+            updateUrlDraft?.operationId === updateOperationId &&
+            updateUrlDraft?.eventName === pendingUpdateEventName
+              ? updateUrlDraft.url
+              : pendingUpdateEventName
+                ? recordEntry(eventMetadata, pendingUpdateEventName)
+                    ?.spreadsheetUrl || ""
+                : ""
           }
           currentSheetName={
-            pendingUpdateEventName
-              ? recordEntry(eventMetadata, pendingUpdateEventName)
-                  ?.spreadsheetSheetName || ""
-              : ""
+            updateUrlDraft?.operationId === updateOperationId &&
+            updateUrlDraft?.eventName === pendingUpdateEventName
+              ? updateUrlDraft.sheetName
+              : pendingUpdateEventName
+                ? recordEntry(eventMetadata, pendingUpdateEventName)
+                    ?.spreadsheetSheetName || ""
+                : ""
           }
           onConfirm={(url, sheetName) =>
             handleUrlUpdate(url, sheetName, updateOperationId)
@@ -582,6 +608,8 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
 
       {blockDefinitionMode && currentMapData && (
         <BlockDefinitionPanel
+          key={overlay.mapEditorSession?.sessionId}
+          session={overlay.mapEditorSession ?? undefined}
           isOpen={blockDefinitionMode}
           onClose={mapEditorOverlayCommands.close}
           mapData={currentMapData}
@@ -658,6 +686,8 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
 
       {simpleHallDefinitionMode && (
         <SimpleHallDefinitionPanel
+          key={overlay.mapEditorSession?.sessionId}
+          session={overlay.mapEditorSession ?? undefined}
           isOpen={simpleHallDefinitionMode}
           onClose={mapEditorOverlayCommands.close}
           halls={currentMaplessHalls}
@@ -683,6 +713,8 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
 
       {hallDefinitionMode && currentMapData && (
         <HallDefinitionPanel
+          key={overlay.mapEditorSession?.sessionId}
+          session={overlay.mapEditorSession ?? undefined}
           isOpen={hallDefinitionMode}
           onClose={mapEditorOverlayCommands.close}
           mapData={currentMapData}
@@ -848,6 +880,8 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       />
 
       <MapImportDialog
+        requestPending={mapImportRequestPending}
+        canCancel={canCancelMapImport}
         isOpen={mapImportDialogOpen}
         file={mapImportPendingFile}
         eventName={mapImportPendingEventName}

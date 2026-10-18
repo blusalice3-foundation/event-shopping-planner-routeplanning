@@ -1,6 +1,7 @@
 import { recordEntry, setOwnValue } from "../../../utils/ownRecord";
 import {
   changedItemPositions,
+  itemPositions,
   registerItemChanges,
 } from "../../../utils/itemIndex";
 import { projectDayBuckets } from "./dayBuckets";
@@ -14,12 +15,75 @@ import type {
   RouteSettings,
 } from "../../../types/map";
 import { getMaplessKey, MAPLESS_HALL_KEY } from "../../../types/map";
-import type { HallGroupRef, HallRef } from "../../../types/consistency";
+import type {
+  HallGroupRef,
+  HallRef,
+  EventConsistencyV1,
+  VisitContextV1,
+} from "../../../types/consistency";
 import { getContextHalls, getDayConsistency, resolveDayMap } from "./context";
-import { createMembershipResolver, type Membership } from "./membership";
+import {
+  createMembershipResolver,
+  type Membership,
+  type LocationResolution,
+  type ResolvedCell,
+} from "./membership";
+import { semanticEqual } from "../../../utils/semanticEquality";
 
 const membershipByItem = new WeakMap<ShoppingItem, Membership>();
 const fullOrderSettings = new WeakSet<HallRouteSettings>();
+const sameResolvedCell = (before: ResolvedCell, next: ResolvedCell): boolean =>
+  before.block === next.block &&
+  before.numberValue === next.numberValue &&
+  before.cell.row === next.cell.row &&
+  before.cell.col === next.cell.col;
+function sameLocation(
+  before: LocationResolution | null,
+  next: LocationResolution | null,
+): boolean {
+  if (before === next) return true;
+  if (!before || !next || before.status !== next.status) return false;
+  if (before.status === "resolved" && next.status === "resolved")
+    return sameResolvedCell(before.location, next.location);
+  return (
+    before.status !== "resolved" &&
+    next.status !== "resolved" &&
+    before.candidates.length === next.candidates.length &&
+    before.candidates.every((cell, index) =>
+      sameResolvedCell(cell, next.candidates[index]),
+    )
+  );
+}
+function sameMembership(
+  before: Membership | undefined,
+  next: Membership | undefined,
+): boolean {
+  return (
+    before === next ||
+    (!!before &&
+      !!next &&
+      before.status === next.status &&
+      before.reason === next.reason &&
+      before.sharedKey === next.sharedKey &&
+      semanticEqual(before.hall, next.hall) &&
+      semanticEqual(before.candidates, next.candidates) &&
+      semanticEqual(before.memberIds, next.memberIds) &&
+      sameLocation(before.location, next.location))
+  );
+}
+/** Equal visible fields alone cannot replace an item carrying newer membership metadata. */
+export function canReuseProjectedItem(before: unknown, next: unknown): boolean {
+  const membership = (value: unknown) =>
+    value && typeof value === "object"
+      ? membershipByItem.get(value as ShoppingItem)
+      : undefined;
+  return sameMembership(membership(before), membership(next));
+}
+type PreviousProjectedEvent = {
+  items: PersistenceSnapshot["eventLists"][string];
+  definitions: PersistenceSnapshot["hallDefinitions"][string];
+  projection: Pick<PersistenceSnapshot, "eventLists" | "hallDefinitions">;
+};
 export const projectedMembership = (
   item: ShoppingItem,
 ): Membership | undefined => membershipByItem.get(item);
@@ -66,6 +130,15 @@ export function projectConsistencySnapshot(
   activeEvent: string | null,
   activeDay: string,
 ): PersistenceSnapshot {
+  return projectSnapshot(source, activeEvent, activeDay);
+}
+function projectSnapshot(
+  source: PersistenceSnapshot,
+  activeEvent: string | null,
+  activeDay: string,
+  previous?: ReadonlyMap<string, PreviousProjectedEvent>,
+  retainedItems?: ReadonlyMap<string, ShoppingItem[]>,
+): PersistenceSnapshot {
   const result: PersistenceSnapshot = {
     ...source,
     executeModeItems: Object.fromEntries(
@@ -94,53 +167,79 @@ export function projectConsistencySnapshot(
       string,
       DayMapData
     >;
-    setOwnValue(
-      result.hallDefinitions,
-      eventName,
-      Object.fromEntries(
-        Object.entries(definitions).map(([key, halls]) => [
-          key,
-          halls.map((hall) => ({
-            ...hall,
-            id: encodeHallRef(
-              key.startsWith(`${MAPLESS_HALL_KEY}:`)
-                ? {
-                    kind: "simple",
-                    dayKey: key.slice(MAPLESS_HALL_KEY.length + 1),
-                    hallId: hall.id,
-                  }
-                : { kind: "map", mapKey: key, hallId: hall.id },
-            ),
-          })),
-        ]),
-      ),
-    );
-    const simple = Object.fromEntries(
-      Object.entries(recordEntry(result.hallDefinitions, eventName))
-        .filter(([key]) => key.startsWith(`${MAPLESS_HALL_KEY}:`))
-        .map(([key, value]) => [key.slice(MAPLESS_HALL_KEY.length + 1), value]),
-    );
-    setOwnValue(result.hallDefinitions, eventName, {
-      ...Object.fromEntries(
-        Object.entries(recordEntry(result.hallDefinitions, eventName)).filter(
-          ([key]) => !key.startsWith(`${MAPLESS_HALL_KEY}:`),
+    const before = previous?.get(eventName);
+    if (
+      before &&
+      before.definitions === recordEntry(source.hallDefinitions, eventName)
+    ) {
+      setOwnValue(
+        result.hallDefinitions,
+        eventName,
+        recordEntry(before.projection.hallDefinitions, eventName),
+      );
+    } else {
+      setOwnValue(
+        result.hallDefinitions,
+        eventName,
+        Object.fromEntries(
+          Object.entries(definitions).map(([key, halls]) => [
+            key,
+            halls.map((hall) => ({
+              ...hall,
+              id: encodeHallRef(
+                key.startsWith(`${MAPLESS_HALL_KEY}:`)
+                  ? {
+                      kind: "simple",
+                      dayKey: key.slice(MAPLESS_HALL_KEY.length + 1),
+                      hallId: hall.id,
+                    }
+                  : { kind: "map", mapKey: key, hallId: hall.id },
+              ),
+            })),
+          ]),
         ),
-      ),
-      ...Object.fromEntries(
-        Object.entries(projectDayBuckets(simple)).map(([day, value]) => [
-          getMaplessKey(day),
-          value,
-        ]),
-      ),
-    });
-    const resolvers = new Map<
-      string,
-      ReturnType<typeof createMembershipResolver>
-    >();
-    setOwnValue(
-      result.eventLists,
-      eventName,
-      items.map((item) => {
+      );
+      const simple = Object.fromEntries(
+        Object.entries(recordEntry(result.hallDefinitions, eventName))
+          .filter(([key]) => key.startsWith(`${MAPLESS_HALL_KEY}:`))
+          .map(([key, value]) => [
+            key.slice(MAPLESS_HALL_KEY.length + 1),
+            value,
+          ]),
+      );
+      setOwnValue(result.hallDefinitions, eventName, {
+        ...Object.fromEntries(
+          Object.entries(recordEntry(result.hallDefinitions, eventName)).filter(
+            ([key]) => !key.startsWith(`${MAPLESS_HALL_KEY}:`),
+          ),
+        ),
+        ...Object.fromEntries(
+          Object.entries(projectDayBuckets(simple)).map(([day, value]) => [
+            getMaplessKey(day),
+            value,
+          ]),
+        ),
+      });
+    }
+    const retained = retainedItems?.get(eventName);
+    if (retained) {
+      setOwnValue(result.eventLists, eventName, retained);
+    } else {
+      const resolvers = new Map<
+        string,
+        ReturnType<typeof createMembershipResolver>
+      >();
+      const beforeItems = before?.items as ShoppingItem[] | undefined;
+      const beforeProjected =
+        before &&
+        (recordEntry(before.projection.eventLists, eventName) as
+          | ShoppingItem[]
+          | undefined);
+      const positions =
+        beforeItems && beforeItems !== items
+          ? itemPositions(beforeItems)
+          : null;
+      const projectedItems = items.map((item, index) => {
         const day = getDayConsistency(event, item.eventDate);
         const map = resolveDayMap(maps, item.eventDate, day?.selectedMapKey);
         const context =
@@ -166,14 +265,39 @@ export function projectConsistencySnapshot(
           resolvers.set(dayKey, resolve);
         }
         const membership = resolve(item);
+        const oldIndex =
+          beforeItems === items ? index : positions?.get(item.id);
+        const oldItem =
+          oldIndex === undefined ? undefined : beforeProjected?.[oldIndex];
+        if (
+          oldItem &&
+          oldIndex !== undefined &&
+          semanticEqual(beforeItems![oldIndex], item) &&
+          sameMembership(membershipByItem.get(oldItem), membership)
+        )
+          return oldItem;
         const projected = { ...item };
         delete projected.manualHallId;
         if (membership.hall)
           projected.manualHallId = encodeHallRef(membership.hall);
         membershipByItem.set(projected, membership);
         return projected;
-      }),
-    );
+      });
+      const changed =
+        beforeProjected &&
+        projectedItems.flatMap((item, index) =>
+          item === beforeProjected[index] ? [] : [index],
+        );
+      const shared =
+        beforeProjected &&
+        beforeProjected.length === projectedItems.length &&
+        !changed!.length
+          ? beforeProjected
+          : projectedItems;
+      if (beforeProjected && shared !== beforeProjected)
+        registerItemChanges(beforeProjected, shared, changed!);
+      setOwnValue(result.eventLists, eventName, shared);
+    }
     const displayDay =
       activeEvent === eventName ? activeDay : (items[0]?.eventDate ?? "");
     const day = getDayConsistency(event, displayDay);
@@ -222,6 +346,74 @@ function projectCachedDayStores<T>(
     ]),
   );
 }
+function sameMembershipContext(
+  before: EventConsistencyV1 | undefined,
+  next: EventConsistencyV1 | undefined,
+): boolean {
+  if (before === next) return true;
+  const previous = before?.days ?? {};
+  const after = next?.days ?? {};
+  const keys = Object.keys(previous);
+  const sameAssignments = (
+    left: VisitContextV1 | null | undefined,
+    right: VisitContextV1 | null | undefined,
+  ) =>
+    !!left === !!right &&
+    (!left || semanticEqual(left.assignments, right!.assignments));
+  return (
+    keys.length === Object.keys(after).length &&
+    keys.every((key) => {
+      if (!Object.prototype.hasOwnProperty.call(after, key)) return false;
+      const left = previous[key],
+        right = after[key];
+      const mapKeys = Object.keys(left.maps);
+      return (
+        left.selectedMapKey === right.selectedMapKey &&
+        sameAssignments(left.mapless, right.mapless) &&
+        mapKeys.length === Object.keys(right.maps).length &&
+        mapKeys.every(
+          (mapKey) =>
+            Object.prototype.hasOwnProperty.call(right.maps, mapKey) &&
+            sameAssignments(left.maps[mapKey], right.maps[mapKey]),
+        )
+      );
+    })
+  );
+}
+function projectCachedItemContent(
+  previous: ShoppingItem[],
+  items: ShoppingItem[],
+  projected: ShoppingItem[],
+): ShoppingItem[] | undefined {
+  if (previous === items) return projected;
+  const changed = changedItemPositions(previous, items);
+  if (
+    changed === null ||
+    changed.some(
+      (index) =>
+        items[index].id !== previous[index].id ||
+        items[index].eventDate !== previous[index].eventDate ||
+        items[index].block !== previous[index].block ||
+        items[index].number !== previous[index].number,
+    )
+  )
+    return undefined;
+  const contentChanges = changed.filter(
+    (index) => !semanticEqual(previous[index], items[index]),
+  );
+  if (!contentChanges.length) return projected;
+  const result = projected.slice();
+  for (const index of contentChanges) {
+    const value = { ...items[index] };
+    delete value.manualHallId;
+    const membership = membershipByItem.get(projected[index])!;
+    if (membership.hall) value.manualHallId = encodeHallRef(membership.hall);
+    membershipByItem.set(value, membership);
+    result[index] = value;
+  }
+  registerItemChanges(projected, result, contentChanges);
+  return result;
+}
 /** Cache only immutable UI snapshots. Mutation planners keep using the uncached adapter. */
 export function createConsistencySnapshotProjector() {
   type Entry = {
@@ -253,55 +445,37 @@ export function createConsistencySnapshotProjector() {
       return previousResult!;
     const nextEntries = new Map<string, Entry>();
     const changed: PersistenceSnapshot["eventLists"] = {};
+    const retainedItems = new Map<string, ShoppingItem[]>();
     for (const [name, rawItems] of Object.entries(source.eventLists)) {
       const cached = entries.get(name);
       const displayDay =
         activeEvent === name
           ? activeDay
           : ((rawItems as ShoppingItem[])[0]?.eventDate ?? "");
-      const sameContext =
+      const sameGeometry =
         cached &&
         cached.maps === recordEntry(source.mapData, name) &&
-        cached.definitions === recordEntry(source.hallDefinitions, name) &&
-        cached.consistency === recordEntry(source.eventConsistency, name) &&
+        cached.definitions === recordEntry(source.hallDefinitions, name);
+      const consistency = recordEntry(source.eventConsistency, name);
+      const sameContext =
+        sameGeometry &&
+        cached.consistency === consistency &&
         cached.day === displayDay;
-      let projection = sameContext ? cached.projection : undefined;
-      if (projection && rawItems !== cached!.items) {
-        const oldItems = cached!.items as ShoppingItem[];
-        const items = rawItems as ShoppingItem[];
-        const changedIndices = changedItemPositions(oldItems, items);
-        const sameMembership =
-          changedIndices !== null &&
-          changedIndices.every((index) => {
-            const item = items[index];
-            const old = oldItems[index];
-            return (
-              item.eventDate === old.eventDate &&
-              item.block === old.block &&
-              item.number === old.number
-            );
-          });
-        if (sameMembership) {
-          const oldProjected = recordEntry(
-            projection.eventLists,
-            name,
-          ) as ShoppingItem[];
-          const nextProjected = changedIndices!.length
-            ? oldProjected.slice()
-            : oldProjected;
-          for (const index of changedIndices!) {
-            const value = { ...items[index] };
-            delete value.manualHallId;
-            const membership = membershipByItem.get(oldProjected[index])!;
-            if (membership.hall)
-              value.manualHallId = encodeHallRef(membership.hall);
-            membershipByItem.set(value, membership);
-            nextProjected[index] = value;
-          }
-          registerItemChanges(oldProjected, nextProjected, changedIndices!);
-          projection = { ...projection, eventLists: { [name]: nextProjected } };
-        } else projection = undefined;
-      }
+      const reusable =
+        sameGeometry && sameMembershipContext(cached.consistency, consistency)
+          ? projectCachedItemContent(
+              cached.items as ShoppingItem[],
+              rawItems as ShoppingItem[],
+              recordEntry(cached.projection.eventLists, name) as ShoppingItem[],
+            )
+          : undefined;
+      const projection =
+        sameContext && reusable
+          ? reusable === recordEntry(cached.projection.eventLists, name)
+            ? cached.projection
+            : { ...cached.projection, eventLists: { [name]: reusable } }
+          : undefined;
+      if (!projection && reusable) retainedItems.set(name, reusable);
       if (!projection)
         Object.defineProperty(changed, name, {
           value: rawItems,
@@ -316,10 +490,12 @@ export function createConsistencySnapshotProjector() {
         projection: projection!,
       });
     }
-    const fresh = projectConsistencySnapshot(
+    const fresh = projectSnapshot(
       { ...source, eventLists: changed, executeModeItems: {}, dayModes: {} },
       activeEvent,
       activeDay,
+      entries,
+      retainedItems,
     );
     const projectedKeys = [
       "eventLists",

@@ -960,3 +960,237 @@ it.each([500, 1500])(
   },
   15000,
 );
+
+it.each([false, true])(
+  "activates a newly inserted visible %s-grouped row before an observer notification",
+  async (grouped) => {
+    const initial = items.slice(0, 100);
+    const inserted = { ...items[0], id: "inserted-visible" };
+    const model = (members: ShoppingItem[]) =>
+      buildListRows({
+        items: members,
+        ...(grouped
+          ? {
+              groups: [
+                { key: "existing-parent", label: "会場", items: members },
+              ],
+            }
+          : {}),
+      });
+    const initialModel = model(initial);
+    visibleKeys.add(initialModel.rows[0].rowKey);
+    visibleKeys.add(initialModel.itemRows[0].rowKey);
+    const input = (row: { itemId: string }) => (
+      <input aria-label={row.itemId} defaultValue="保持する入力" />
+    );
+    const content = (members: ShoppingItem[]) => (
+      <RetainedViewportListRenderer
+        model={model(members)}
+        accessibleLabel="新規行の表示"
+        {...(grouped
+          ? {
+              renderGroup: (
+                _row: unknown,
+                rows: readonly {
+                  row: { itemId: string };
+                  render(content: React.ReactNode): React.ReactElement;
+                }[],
+              ) => (
+                <section>
+                  {rows.map((row) => row.render(input(row.row)))}
+                </section>
+              ),
+            }
+          : {
+              renderRow: (row: { kind: string; itemId?: string }) =>
+                row.kind === "item" ? input({ itemId: row.itemId! }) : null,
+            })}
+      />
+    );
+    const view = render(content(initial));
+    const existing = view.getByRole("textbox", { name: "item-0" });
+    existing.focus();
+    fireEvent.change(existing, { target: { value: "編集中の入力" } });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    visibleKeys.add(model([inserted]).itemRows[0].rowKey);
+
+    // No IntersectionObserver callback is delivered between insertion and this assertion.
+    view.rerender(content([inserted, ...initial]));
+    expect(view.getByRole("textbox", { name: inserted.id })).toBeVisible();
+    expect(view.getByRole("textbox", { name: "item-0" })).toBe(existing);
+    expect(existing).toHaveValue("編集中の入力");
+    expect(existing).toHaveFocus();
+  },
+);
+
+it.each([false, true])(
+  "keeps a newly inserted offscreen %s-grouped row deferred",
+  async (grouped) => {
+    const inserted = { ...items[0], id: "inserted-offscreen" };
+    const content = (members: ShoppingItem[]) => {
+      const model = buildListRows({
+        items: members,
+        ...(grouped
+          ? {
+              groups: [
+                { key: "existing-parent", label: "会場", items: members },
+              ],
+            }
+          : {}),
+      });
+      visibleKeys.add(model.rows[0].rowKey);
+      visibleKeys.add(model.itemRows[0].rowKey);
+      return (
+        <RetainedViewportListRenderer
+          model={model}
+          accessibleLabel="画面外の新規行"
+          {...(grouped
+            ? {
+                renderGroup: (
+                  _row: unknown,
+                  rows: readonly {
+                    row: { itemId: string };
+                    render(content: React.ReactNode): React.ReactElement;
+                  }[],
+                ) => (
+                  <section>
+                    {rows.map((row) =>
+                      row.render(<input aria-label={row.row.itemId} />),
+                    )}
+                  </section>
+                ),
+              }
+            : {
+                renderRow: (row: { kind: string; itemId?: string }) =>
+                  row.kind === "item" ? (
+                    <input aria-label={row.itemId} />
+                  ) : null,
+              })}
+        />
+      );
+    };
+    const view = render(content(items));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    view.rerender(content([...items, inserted]));
+    expect(view.queryByRole("textbox", { name: inserted.id })).toBeNull();
+    expect(view.container.querySelectorAll("input")).toHaveLength(1);
+  },
+);
+
+it("does not remeasure existing row visibility for an ordinary item update", async () => {
+  const model = (members: ShoppingItem[]) => buildListRows({ items: members });
+  visibleKeys.add(model(items).itemRows[0].rowKey);
+  const content = (members: ShoppingItem[]) => (
+    <RetainedViewportListRenderer
+      model={model(members)}
+      accessibleLabel="通常更新"
+      renderRow={(row) =>
+        row.kind === "item" ? (
+          <input
+            aria-label={row.itemId}
+            value={row.item.purchaseStatus}
+            readOnly
+          />
+        ) : null
+      }
+    />
+  );
+  const view = render(content(items));
+  await act(async () => {
+    await Promise.resolve();
+  });
+  const measure = vi.mocked(HTMLElement.prototype.getBoundingClientRect);
+  measure.mockClear();
+  view.rerender(
+    content([{ ...items[0], purchaseStatus: "Purchased" }, ...items.slice(1)]),
+  );
+  expect(view.getByRole("textbox", { name: "item-0" })).toHaveValue(
+    "Purchased",
+  );
+  expect(
+    measure.mock.instances.filter(
+      (element) => !!(element as HTMLElement).dataset.viewportRowKey,
+    ),
+  ).toHaveLength(0);
+});
+
+it.each([500, 1500])(
+  "bounds new row visibility measurements when replacing all %i IDs in the same parent",
+  async (count) => {
+    const many = Array.from({ length: count }, (_, index) => ({
+      ...items[0],
+      id: `replace-before-${index}`,
+    }));
+    const replacement = many.map((item, index) => ({
+      ...item,
+      id: `replace-after-${index}`,
+    }));
+    const content = (members: ShoppingItem[]) => (
+      <>
+        <ViewportContent
+          rowKey="keep-registry-alive"
+          defer={false}
+          placeholder={null}
+          render={() => <span>別のリスト</span>}
+        />
+        <RetainedViewportListRenderer
+          model={buildListRows({ items: members })}
+          accessibleLabel="日付変更の全件置換"
+          renderRow={(row) =>
+            row.kind === "item" ? <input aria-label={row.itemId} /> : null
+          }
+        />
+      </>
+    );
+    visibleKeys.add(buildListRows({ items: many }).itemRows[0].rowKey);
+    const view = render(content(many));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    visibleKeys.add(buildListRows({ items: replacement }).itemRows[0].rowKey);
+    const measure = vi.mocked(HTMLElement.prototype.getBoundingClientRect);
+    measure.mockClear();
+    view.rerender(content(replacement));
+    const rowMeasurements = measure.mock.instances.filter(
+      (element) => !!(element as HTMLElement).dataset.viewportRowKey,
+    );
+    expect(rowMeasurements.length).toBeLessThan(20);
+    expect(view.container.querySelectorAll("input")).toHaveLength(1);
+    expect(
+      view.getByRole("textbox", { name: replacement[0].id }),
+    ).toBeVisible();
+  },
+  15000,
+);
+
+it("keeps an appended offscreen row deferred after the original parent anchor is removed", async () => {
+  const inserted = { ...items[0], id: "after-removed-anchor" };
+  const content = (members: ShoppingItem[]) => (
+    <RetainedViewportListRenderer
+      model={buildListRows({ items: members })}
+      accessibleLabel="先頭削除後の追加"
+      renderRow={(row) =>
+        row.kind === "item" ? <input aria-label={row.itemId} /> : null
+      }
+    />
+  );
+  visibleKeys.add(buildListRows({ items }).itemRows[0].rowKey);
+  const view = render(content(items));
+  await act(async () => {
+    await Promise.resolve();
+  });
+  view.rerender(content([...items.slice(1), inserted]));
+  expect(view.queryByRole("textbox", { name: inserted.id })).toBeNull();
+  const pending = [
+    ...view.container.querySelectorAll<HTMLElement>("[data-viewport-row-key]"),
+  ].find(
+    (element) =>
+      element.dataset.viewportRowKey ===
+      buildListRows({ items: [inserted] }).itemRows[0].rowKey,
+  );
+  expect(pending).toHaveAttribute("data-viewport-active", "false");
+});

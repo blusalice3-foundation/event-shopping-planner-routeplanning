@@ -1,3 +1,4 @@
+import { ShoppingDragProvider } from "../../shopping-list/drag/ShoppingDragWorkspace";
 import type { BulkImportResult } from "../../../types/import";
 import React, { Suspense } from "react";
 import EventListScreen from "../../../components/EventListScreen";
@@ -403,11 +404,16 @@ export type AppMainContentActions = {
 };
 
 export type AppMainContentProps = {
+  readonly eventGeneration?: number;
   readonly model: AppMainContentModel;
   readonly actions: AppMainContentActions;
 };
 
-const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
+const AppMainContent: React.FC<AppMainContentProps> = ({
+  model,
+  actions,
+  eventGeneration = 0,
+}) => {
   const {
     navigation: {
       activeEventDate,
@@ -684,205 +690,221 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
           }
         >
           {currentMode === "edit" ? (
-            <div className="grid grid-cols-2 gap-4">
-              {/* 表示処理の補足 */}
-              <div className="space-y-2">
-                <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                      実行リストアイテム
-                    </h2>
-                    <div className="flex flex-col items-end gap-2">
-                      <button
-                        onClick={() => {
-                          setSpaceGroupingEnabled((prev: boolean) => !prev);
-                          setCollapsedSpaces(new Set());
-                          handleClearRangeSelection();
-                        }}
-                        className={`px-2 py-0.5 text-xs font-medium rounded transition-colors ${
-                          spaceGroupingEnabled
-                            ? "bg-blue-600 text-white dark:bg-blue-600"
-                            : "bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600"
-                        }`}
-                      >
-                        スペース別
-                      </button>
-                      {spaceGroupingEnabled && (
+            <ShoppingDragProvider
+              eventName={activeEventName}
+              day={activeEventDate}
+              generation={eventGeneration}
+            >
+              <div className="grid grid-cols-2 gap-4">
+                {/* 表示処理の補足 */}
+                <div className="space-y-2">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <h2 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                        実行リストアイテム
+                      </h2>
+                      <div className="flex flex-col items-end gap-2">
                         <button
-                          onClick={() =>
-                            handleToggleAllSpaceCollapse(
-                              !allEditSpaceGroupsCollapsed,
-                            )
-                          }
-                          className="text-xs px-2 py-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                          onClick={() => {
+                            setSpaceGroupingEnabled((prev: boolean) => !prev);
+                            setCollapsedSpaces(new Set());
+                            handleClearRangeSelection();
+                          }}
+                          className={`px-2 py-0.5 text-xs font-medium rounded transition-colors ${
+                            spaceGroupingEnabled
+                              ? "bg-blue-600 text-white dark:bg-blue-600"
+                              : "bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600"
+                          }`}
                         >
-                          {allEditSpaceGroupsCollapsed
-                            ? "全て展開"
-                            : "全て折りたたむ"}
+                          スペース別
                         </button>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
-                    実行対象として選択中のアイテムを管理します。
-                  </p>
-                </div>
-                <ShoppingList
-                  items={executeColumnItems}
-                  onUpdateItem={handleUpdateItem}
-                  onMoveItem={handleMoveItem}
-                  onEditRequest={handleEditRequest}
-                  retainedItemIds={retainedItemIds}
-                  appZoomLevel={zoomLevel}
-                  onDeleteRequest={handleDeleteRequest}
-                  selectedItemIds={selectedItemIds}
-                  onSelectItem={handleSelectItem}
-                  onRemoveFromColumn={handleRemoveFromExecuteColumn}
-                  onMoveToColumn={handleMoveToExecuteColumn}
-                  columnType="execute"
-                  currentDay={activeEventDate}
-                  rangeScopeId={activeEventName ?? ""}
-                  onMoveItemUp={handleMoveItemUp}
-                  onMoveItemDown={handleMoveItemDown}
-                  rangeStart={rangeStart}
-                  rangeEnd={rangeEnd}
-                  onToggleRangeSelection={handleToggleRangeSelection}
-                  duplicateCircleItemIds={duplicateCircleItemIds}
-                  highlightedItemId={highlightedItemId}
-                  searchScrollRequest={searchScrollRequest}
-                  onSearchScrollRequestConsumed={onSearchScrollRequestConsumed}
-                  layoutMode={layoutMode}
-                  viewMode="edit"
-                  showHallGroups={!spaceGroupingEnabled}
-                  hallDefinitions={getHallsForDate(activeEventDate)}
-                  hallOrder={getHallOrderForDate(activeEventDate)}
-                  mapData={getMapDataForDate(activeEventDate)}
-                  showSpaceGroups={spaceGroupingEnabled}
-                  collapsedSpaces={collapsedSpaces}
-                  onToggleSpaceCollapse={handleToggleSpaceCollapse}
-                  onSetSpaceGroupDragItemIds={handleSetSpaceGroupDragItemIds}
-                  onSelectSpaceGroupForRange={handleSelectSpaceGroupForRange}
-                  onAddItem={handleAddItemFromFocusMode}
-                  purchaseStatusControlMode={purchaseStatusControlMode}
-                  skipLimitedPurchaseForSingleQuantity={
-                    skipLimitedPurchaseForSingleQuantity
-                  }
-                />
-              </div>
-
-              {/* 表示処理の補足 */}
-              <div className="space-y-2">
-                <div className="bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-lg p-3">
-                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                    候補アイテム
-                  </h2>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
-                    このリストから選択したアイテムを実行リストへ移動します。
-                  </p>
-                  {availableBlocks.length > 0 && (
-                    <div className="mt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          ブロックでフィルタ:
-                        </span>
-                        <div className="flex items-center gap-2">
-                          {selectedBlockFilters.size > 0 && (
-                            <>
-                              <button
-                                onClick={handleCandidateNumberSort}
-                                className={`p-1.5 rounded-md transition-colors ${
-                                  candidateNumberSortDirection
-                                    ? "bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300"
-                                    : "bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-600"
-                                }`}
-                                title={
-                                  candidateNumberSortDirection === "desc"
-                                    ? "番号を降順で並べ替え"
-                                    : candidateNumberSortDirection === "asc"
-                                      ? "番号を昇順で並べ替え"
-                                      : "番号で並べ替え"
-                                }
-                              >
-                                {candidateNumberSortDirection === "desc" ? (
-                                  <SortDescendingIcon className="w-4 h-4" />
-                                ) : (
-                                  <SortAscendingIcon className="w-4 h-4" />
-                                )}
-                              </button>
-                              <button
-                                onClick={handleClearBlockFilters}
-                                className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
-                              >
-                                すべて解除
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {availableBlocks.map((block: string) => (
+                        {spaceGroupingEnabled && (
                           <button
-                            key={block}
-                            onClick={() => handleToggleBlockFilter(block)}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                              selectedBlockFilters.has(block)
-                                ? "bg-blue-600 text-white dark:bg-blue-600"
-                                : blocksWithPriorityRemarks.has(block)
-                                  ? "bg-yellow-300 dark:bg-yellow-600 text-slate-700 dark:text-slate-300 hover:bg-yellow-400 dark:hover:bg-yellow-500 border border-slate-300 dark:border-slate-600"
-                                  : "bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600"
-                            }`}
+                            onClick={() =>
+                              handleToggleAllSpaceCollapse(
+                                !allEditSpaceGroupsCollapsed,
+                              )
+                            }
+                            className="text-xs px-2 py-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                           >
-                            {block}
+                            {allEditSpaceGroupsCollapsed
+                              ? "全て展開"
+                              : "全て折りたたむ"}
                           </button>
-                        ))}
+                        )}
                       </div>
-                      {selectedBlockFilters.size > 0 && (
-                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
-                          選択中: {selectedBlockFilters.size}件のブロック
-                        </p>
-                      )}
                     </div>
-                  )}
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
+                      実行対象として選択中のアイテムを管理します。
+                    </p>
+                  </div>
+                  <ShoppingList
+                    dragSourceItems={items}
+                    dragExecuteOrder={
+                      executeModeItems[activeEventName]?.[activeEventDate]
+                    }
+                    items={executeColumnItems}
+                    onUpdateItem={handleUpdateItem}
+                    onMoveItem={handleMoveItem}
+                    onEditRequest={handleEditRequest}
+                    retainedItemIds={retainedItemIds}
+                    appZoomLevel={zoomLevel}
+                    onDeleteRequest={handleDeleteRequest}
+                    selectedItemIds={selectedItemIds}
+                    onSelectItem={handleSelectItem}
+                    onRemoveFromColumn={handleRemoveFromExecuteColumn}
+                    onMoveToColumn={handleMoveToExecuteColumn}
+                    columnType="execute"
+                    currentDay={activeEventDate}
+                    rangeScopeId={activeEventName ?? ""}
+                    onMoveItemUp={handleMoveItemUp}
+                    onMoveItemDown={handleMoveItemDown}
+                    rangeStart={rangeStart}
+                    rangeEnd={rangeEnd}
+                    onToggleRangeSelection={handleToggleRangeSelection}
+                    duplicateCircleItemIds={duplicateCircleItemIds}
+                    highlightedItemId={highlightedItemId}
+                    searchScrollRequest={searchScrollRequest}
+                    onSearchScrollRequestConsumed={
+                      onSearchScrollRequestConsumed
+                    }
+                    layoutMode={layoutMode}
+                    viewMode="edit"
+                    showHallGroups={!spaceGroupingEnabled}
+                    hallDefinitions={getHallsForDate(activeEventDate)}
+                    hallOrder={getHallOrderForDate(activeEventDate)}
+                    mapData={getMapDataForDate(activeEventDate)}
+                    showSpaceGroups={spaceGroupingEnabled}
+                    collapsedSpaces={collapsedSpaces}
+                    onToggleSpaceCollapse={handleToggleSpaceCollapse}
+                    onSetSpaceGroupDragItemIds={handleSetSpaceGroupDragItemIds}
+                    onSelectSpaceGroupForRange={handleSelectSpaceGroupForRange}
+                    onAddItem={handleAddItemFromFocusMode}
+                    purchaseStatusControlMode={purchaseStatusControlMode}
+                    skipLimitedPurchaseForSingleQuantity={
+                      skipLimitedPurchaseForSingleQuantity
+                    }
+                  />
                 </div>
-                <ShoppingList
-                  items={candidateColumnItems}
-                  onUpdateItem={handleUpdateItem}
-                  onMoveItem={handleMoveItem}
-                  onEditRequest={handleEditRequest}
-                  retainedItemIds={retainedItemIds}
-                  appZoomLevel={zoomLevel}
-                  onDeleteRequest={handleDeleteRequest}
-                  selectedItemIds={selectedItemIds}
-                  onSelectItem={handleSelectItem}
-                  onMoveToColumn={handleMoveToExecuteColumn}
-                  onRemoveFromColumn={handleRemoveFromExecuteColumn}
-                  columnType="candidate"
-                  currentDay={activeEventDate}
-                  rangeScopeId={activeEventName ?? ""}
-                  onMoveItemUp={handleMoveItemUp}
-                  onMoveItemDown={handleMoveItemDown}
-                  rangeStart={rangeStart}
-                  rangeEnd={rangeEnd}
-                  onToggleRangeSelection={handleToggleRangeSelection}
-                  duplicateCircleItemIds={duplicateCircleItemIds}
-                  highlightedItemId={highlightedItemId}
-                  searchScrollRequest={searchScrollRequest}
-                  onSearchScrollRequestConsumed={onSearchScrollRequestConsumed}
-                  layoutMode={layoutMode}
-                  viewMode="edit"
-                  showSpaceGroups={spaceGroupingEnabled}
-                  collapsedSpaces={collapsedSpaces}
-                  onToggleSpaceCollapse={handleToggleSpaceCollapse}
-                  onSetSpaceGroupDragItemIds={handleSetSpaceGroupDragItemIds}
-                  onSelectSpaceGroupForRange={handleSelectSpaceGroupForRange}
-                  onAddItem={handleAddItemFromFocusMode}
-                  purchaseStatusControlMode={purchaseStatusControlMode}
-                  skipLimitedPurchaseForSingleQuantity={
-                    skipLimitedPurchaseForSingleQuantity
-                  }
-                />
+
+                {/* 表示処理の補足 */}
+                <div className="space-y-2">
+                  <div className="bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-lg p-3">
+                    <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                      候補アイテム
+                    </h2>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                      このリストから選択したアイテムを実行リストへ移動します。
+                    </p>
+                    {availableBlocks.length > 0 && (
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            ブロックでフィルタ:
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {selectedBlockFilters.size > 0 && (
+                              <>
+                                <button
+                                  onClick={handleCandidateNumberSort}
+                                  className={`p-1.5 rounded-md transition-colors ${
+                                    candidateNumberSortDirection
+                                      ? "bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300"
+                                      : "bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-600"
+                                  }`}
+                                  title={
+                                    candidateNumberSortDirection === "desc"
+                                      ? "番号を降順で並べ替え"
+                                      : candidateNumberSortDirection === "asc"
+                                        ? "番号を昇順で並べ替え"
+                                        : "番号で並べ替え"
+                                  }
+                                >
+                                  {candidateNumberSortDirection === "desc" ? (
+                                    <SortDescendingIcon className="w-4 h-4" />
+                                  ) : (
+                                    <SortAscendingIcon className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={handleClearBlockFilters}
+                                  className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
+                                >
+                                  すべて解除
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {availableBlocks.map((block: string) => (
+                            <button
+                              key={block}
+                              onClick={() => handleToggleBlockFilter(block)}
+                              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                                selectedBlockFilters.has(block)
+                                  ? "bg-blue-600 text-white dark:bg-blue-600"
+                                  : blocksWithPriorityRemarks.has(block)
+                                    ? "bg-yellow-300 dark:bg-yellow-600 text-slate-700 dark:text-slate-300 hover:bg-yellow-400 dark:hover:bg-yellow-500 border border-slate-300 dark:border-slate-600"
+                                    : "bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600"
+                              }`}
+                            >
+                              {block}
+                            </button>
+                          ))}
+                        </div>
+                        {selectedBlockFilters.size > 0 && (
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                            選択中: {selectedBlockFilters.size}件のブロック
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <ShoppingList
+                    candidateNumberSortDirection={candidateNumberSortDirection}
+                    dragSourceItems={items}
+                    items={candidateColumnItems}
+                    onUpdateItem={handleUpdateItem}
+                    onMoveItem={handleMoveItem}
+                    onEditRequest={handleEditRequest}
+                    retainedItemIds={retainedItemIds}
+                    appZoomLevel={zoomLevel}
+                    onDeleteRequest={handleDeleteRequest}
+                    selectedItemIds={selectedItemIds}
+                    onSelectItem={handleSelectItem}
+                    onMoveToColumn={handleMoveToExecuteColumn}
+                    onRemoveFromColumn={handleRemoveFromExecuteColumn}
+                    columnType="candidate"
+                    currentDay={activeEventDate}
+                    rangeScopeId={activeEventName ?? ""}
+                    onMoveItemUp={handleMoveItemUp}
+                    onMoveItemDown={handleMoveItemDown}
+                    rangeStart={rangeStart}
+                    rangeEnd={rangeEnd}
+                    onToggleRangeSelection={handleToggleRangeSelection}
+                    duplicateCircleItemIds={duplicateCircleItemIds}
+                    highlightedItemId={highlightedItemId}
+                    searchScrollRequest={searchScrollRequest}
+                    onSearchScrollRequestConsumed={
+                      onSearchScrollRequestConsumed
+                    }
+                    layoutMode={layoutMode}
+                    viewMode="edit"
+                    showSpaceGroups={spaceGroupingEnabled}
+                    collapsedSpaces={collapsedSpaces}
+                    onToggleSpaceCollapse={handleToggleSpaceCollapse}
+                    onSetSpaceGroupDragItemIds={handleSetSpaceGroupDragItemIds}
+                    onSelectSpaceGroupForRange={handleSelectSpaceGroupForRange}
+                    onAddItem={handleAddItemFromFocusMode}
+                    purchaseStatusControlMode={purchaseStatusControlMode}
+                    skipLimitedPurchaseForSingleQuantity={
+                      skipLimitedPurchaseForSingleQuantity
+                    }
+                  />
+                </div>
               </div>
-            </div>
+            </ShoppingDragProvider>
           ) : currentMode === "focus" ? (
             <Suspense
               fallback={

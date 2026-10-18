@@ -1,5 +1,8 @@
 import { recordEntry } from "../../../utils/ownRecord";
-import { isCompleteHallOrder } from "../../consistency/domain/projection";
+import {
+  encodeHallRef,
+  isCompleteHallOrder,
+} from "../../consistency/domain/projection";
 import type {
   DayMapData,
   HallDefinition,
@@ -8,7 +11,12 @@ import type {
   HallRouteSettingsStore,
 } from "../../../types/map";
 import type { ShoppingItem } from "../../../types/item";
-import { getMaplessKey } from "../../../types/map";
+import { getMaplessKey, MAPLESS_HALL_KEY } from "../../../types/map";
+import {
+  DayMergeRequiredError,
+  resolveSimpleKey,
+} from "../../consistency/domain/context";
+import type { MapEditorSession } from "./mapEditorSession";
 import { getHallIdForItem, parseGroupId } from "../../../utils/hallGrouping";
 import { coalesceExecutionVisitItemIdsForExplicitReorder } from "../../../utils/visitProjection";
 
@@ -425,4 +433,36 @@ export const getCombinedHallRouteSettingsForDate = ({
       ...(maplessSettings?.hallVisitLists || []),
     ],
   };
+};
+
+/** Match the regular display projection without projecting items or the snapshot. */
+export const getCommittedEditorHalls = (
+  definitions: HallDefinitionsStore,
+  session: MapEditorSession,
+): HallDefinition[] => {
+  const event = recordEntry(definitions, session.eventName);
+  const resolvedSimple = resolveSimpleKey(event, session.day);
+  if (resolvedSimple.status === "ambiguous")
+    throw new DayMergeRequiredError(session.day, resolvedSimple.keys);
+  const simpleKey =
+    resolvedSimple.status === "resolved"
+      ? resolvedSimple.key
+      : getMaplessKey(session.day);
+  const simpleDay = simpleKey.slice(MAPLESS_HALL_KEY.length + 1);
+  const simple = (event?.[simpleKey] ?? []).map((hall) => ({
+    ...hall,
+    id: encodeHallRef({ kind: "simple", dayKey: simpleDay, hallId: hall.id }),
+  }));
+  if (session.editorKind === "simple-hall-definition") return simple;
+  return [
+    ...(event?.[session.mapKey] ?? []).map((hall) => ({
+      ...hall,
+      id: encodeHallRef({
+        kind: "map",
+        mapKey: session.mapKey,
+        hallId: hall.id,
+      }),
+    })),
+    ...simple,
+  ];
 };

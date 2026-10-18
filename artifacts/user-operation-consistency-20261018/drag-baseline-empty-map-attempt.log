@@ -1,0 +1,8 @@
+
+Running 8 tests using 1 worker
+
+(node:42476) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2215:7 › @shopping-performance @shopping-drag-baseline 150 native grouping on (1.0m)
+(node:2748) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

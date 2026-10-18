@@ -678,3 +678,38 @@ describe("IndexedDB persistence command adapter", () => {
     );
   });
 });
+
+it("shares one terminal stop with every non-worker write entry while allowing only a durable backup", async () => {
+  const delegate = createDelegate();
+  const port = createIndexedDbPersistenceCommandAdapter(delegate);
+  const reason = Object.assign(new Error("reload"), {
+    name: "CommittedStateApplyError",
+  });
+  const listener = vi.fn();
+  port.onWritesStopped!(listener);
+  port.stopWrites!(reason);
+  port.stopWrites!(reason);
+  expect(listener).toHaveBeenCalledExactlyOnceWith(reason);
+  await expect(port.saveEventLists({})).rejects.toBe(reason);
+  await expect(port.saveMapDataChanges({}, {})).rejects.toBe(reason);
+  await expect(
+    port.commitApplicationSnapshotAtomically(snapshot()),
+  ).rejects.toBe(reason);
+  await expect(port.restoreAppDataAtomically(snapshot())).rejects.toBe(reason);
+  await expect(
+    port.saveBlockDetectionSettings("event", DEFAULT_BLOCK_DETECTION_SETTINGS),
+  ).rejects.toBe(reason);
+  expect(delegate.saveEventLists).not.toHaveBeenCalled();
+  expect(delegate.commitApplicationSnapshotAtomically).not.toHaveBeenCalled();
+  const fallback = vi.fn(() => snapshot());
+  const file = await port.createBackupFile!([], fallback);
+  expect(file.blob.size).toBeGreaterThan(0);
+  expect(delegate.readApplicationSnapshot).toHaveBeenCalledOnce();
+  expect(fallback).not.toHaveBeenCalled();
+  vi.mocked(delegate.readApplicationSnapshot).mockRejectedValueOnce(
+    new Error("read failed"),
+  );
+  await expect(port.createBackupFile!([], fallback)).rejects.toBe(reason);
+  expect(fallback).not.toHaveBeenCalled();
+  expect(port.getWriteStopReason!()).toBe(reason);
+});

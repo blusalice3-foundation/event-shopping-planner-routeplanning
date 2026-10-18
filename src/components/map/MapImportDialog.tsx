@@ -19,11 +19,13 @@ interface MapImportDialogProps {
   file: File | null;
   eventName: string;
   savedSettings: BlockDetectionSettings | null;
+  requestPending?: boolean;
+  canCancel?: boolean;
   onImport: (
     parsedData: Record<string, DayMapData>,
     settings: BlockDetectionSettings,
     initialAngles: Record<string, number>,
-  ) => void;
+  ) => void | Promise<void>;
   onClose: () => void;
   xlsxExecutionPort: XlsxExecutionPort;
 }
@@ -322,6 +324,8 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
   onImport,
   onClose,
   xlsxExecutionPort,
+  requestPending = false,
+  canCancel = true,
 }) => {
   const [settings, setSettings] = useState<BlockDetectionSettings>(
     cloneBlockDetectionSettings(
@@ -331,6 +335,11 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [submissionPending, setSubmissionPending] = useState(false);
+  const savePending = requestPending || submissionPending;
+  const submissionOwnerRef = useRef<object | null>(null);
+  const savePendingRef = useRef(savePending);
+  savePendingRef.current = savePending;
   const [previewData, setPreviewData] = useState<Record<
     string,
     DayMapData
@@ -385,7 +394,7 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
   // ダイアログを開いたとき、または保存設定の内容が変わったときだけ初期化
   useEffect(() => {
     invalidatePreviewForInputChange();
-    if (isOpen) {
+    if (isOpen && !savePendingRef.current) {
       setSettings(
         cloneBlockDetectionSettings(
           latestSavedSettingsRef.current || DEFAULT_BLOCK_DETECTION_SETTINGS,
@@ -405,6 +414,7 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
 
   // ファイル差し替えではユーザーが調整した検出設定を維持し、解析結果だけ失効
   useEffect(() => {
+    if (savePendingRef.current) return;
     invalidatePreviewForInputChange();
     setHighlightBlock(null);
     setActivePreviewSheet("");
@@ -441,7 +451,7 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
 
   // プレビュー実行
   const handlePreview = useCallback(async () => {
-    if (!file || !currentParseSignature) return;
+    if (savePendingRef.current || !file || !currentParseSignature) return;
     const requestToken = parseRequestTokenRef.current + 1;
     parseRequestTokenRef.current = requestToken;
     const requestSignature = currentParseSignature;
@@ -508,7 +518,7 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
 
   // インポート実行
   const handleImport = useCallback(async () => {
-    if (!file || !currentParseSignature) return;
+    if (savePendingRef.current || !file || !currentParseSignature) return;
     const requestToken = parseRequestTokenRef.current + 1;
     parseRequestTokenRef.current = requestToken;
     const requestSignature = currentParseSignature;
@@ -562,7 +572,23 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
             : 0;
         angleMap[sheetName] = normalizeRotationAngle(angle);
       });
-      onImport(data, settings, angleMap);
+      // Keep save ownership separate from parser invalidation and props updates.
+      const submissionOwner = {};
+      submissionOwnerRef.current = submissionOwner;
+      savePendingRef.current = true;
+      setSubmissionPending(true);
+      setIsLoading(false);
+      try {
+        await onImport(data, cloneBlockDetectionSettings(settings), {
+          ...angleMap,
+        });
+      } finally {
+        if (submissionOwnerRef.current === submissionOwner) {
+          submissionOwnerRef.current = null;
+          savePendingRef.current = false;
+          setSubmissionPending(false);
+        }
+      }
     } catch {
       if (!isCurrentRequest()) return;
       console.error("Map import failed (map-import-failed).");
@@ -590,6 +616,7 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
 
   // 初期値にリセット
   const handleResetSettings = useCallback(() => {
+    if (savePendingRef.current) return;
     setSettings({ ...DEFAULT_BLOCK_DETECTION_SETTINGS });
     invalidatePreviewForInputChange();
   }, [invalidatePreviewForInputChange]);
@@ -600,6 +627,7 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
       key: K,
       value: BlockDetectionSettings[K],
     ) => {
+      if (savePendingRef.current) return;
       setSettings((prev) => ({ ...prev, [key]: value }));
       invalidatePreviewForInputChange();
     },
@@ -611,6 +639,7 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
       charType: keyof BlockDetectionSettings["allowedCharTypes"],
       value: boolean,
     ) => {
+      if (savePendingRef.current) return;
       setSettings((prev) => ({
         ...prev,
         allowedCharTypes: { ...prev.allowedCharTypes, [charType]: value },
@@ -649,6 +678,14 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
     );
   }, [settings]);
 
+  const handleClose = useCallback(() => {
+    if (savePendingRef.current && !canCancel) return;
+    parseRequestTokenRef.current += 1;
+    parseAbortControllerRef.current?.abort();
+    parseAbortControllerRef.current = null;
+    onClose();
+  }, [canCancel, onClose]);
+
   if (!isOpen || !file) return null;
 
   return (
@@ -660,7 +697,8 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
             📋 マップデータ取り込み
           </h2>
           <button
-            onClick={onClose}
+            disabled={savePending && !canCancel}
+            onClick={handleClose}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
           >
             <svg
@@ -680,7 +718,10 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
         </div>
 
         {/* コンテンツ（スクロール可能） */}
-        <div className="px-6 py-4 space-y-4 overflow-y-auto flex-1">
+        <fieldset
+          disabled={savePending}
+          className="m-0 min-w-0 min-h-0 border-0 px-6 py-4 space-y-4 overflow-y-auto flex-1"
+        >
           {/* ファイル情報 */}
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <span>📄</span>
@@ -1124,6 +1165,7 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
                         step={1}
                         value={angle}
                         onChange={(e) => {
+                          if (savePendingRef.current) return;
                           const parsed = Number(e.target.value);
                           const safeValue =
                             Number.isFinite(parsed) && !Number.isNaN(parsed)
@@ -1142,8 +1184,7 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
               </div>
             )}
           </div>
-        </div>
-
+        </fieldset>
         {/* フッター */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-b-lg flex-shrink-0">
           <div className="text-xs text-slate-400">
@@ -1151,17 +1192,18 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
           </div>
           <div className="flex gap-3">
             <button
-              onClick={onClose}
+              disabled={savePending && !canCancel}
+              onClick={handleClose}
               className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors"
             >
               キャンセル
             </button>
             <button
               onClick={handleImport}
-              disabled={isLoading}
+              disabled={isLoading || savePending}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors disabled:opacity-50"
             >
-              {isLoading ? "取り込み中..." : "取り込む"}
+              {isLoading || savePending ? "取り込み中..." : "取り込む"}
             </button>
           </div>
         </div>

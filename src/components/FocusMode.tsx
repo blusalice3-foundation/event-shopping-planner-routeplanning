@@ -87,6 +87,7 @@ import {
   TemporaryTourEndStateView,
 } from "./focus/FocusModeStateViews";
 import { resolveResumeChoice } from "./focus/resumeChoice";
+import { planPhaseEnd } from "./focus/phaseEndPlan";
 import { useAutoSkipEmptyVisit } from "./focus/hooks/useAutoSkipEmptyVisit";
 import { useFocusSessionState } from "./focus/hooks/useFocusSessionState";
 import { useResumeFlow } from "./focus/hooks/useResumeFlow";
@@ -640,6 +641,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
     setPostponedPhaseItemIds,
     setLatePhaseItemIds,
   });
+  const formalTransitionReady =
+    isResumeInitResolved &&
+    !isResumeTransitioning &&
+    !resumeChoiceDialog?.isOpen;
   const closeNavigatorEditableSurfaces = useCallback(() => {
     clearAutoAdvanceTimer();
     activeLimitedBulkFlowTokenRef.current = null;
@@ -1771,77 +1776,63 @@ const FocusMode: React.FC<FocusModeProps> = ({
       window.removeEventListener("resize", checkOverlap);
     };
   }, [currentVisitDisplayItems, displayNavigatorIndex, displayPhase]);
-  // 次のフェーズまたは訪問先へ移動する関数
+  // 手動進行と空フェーズ回復は同じ末尾処理を通す。
+  const finishFormalPhase = useCallback(() => {
+    if (!formalTransitionReady) return;
+    clearAutoAdvanceTimer();
+    const next = planPhaseEnd(
+      currentPhase,
+      executeItems,
+      postponedPhaseItemIds,
+      latePhaseItemIds,
+    );
+    setPostponedPhaseItemIds(next.postponed);
+    setLatePhaseItemIds(next.late);
+    if (next.nextPhase) {
+      setNotification(
+        next.nextPhase === "postponed"
+          ? "後回しアイテムの巡回を開始します"
+          : "遅参アイテムの巡回を開始します",
+      );
+      setCurrentPhase(next.nextPhase);
+      setCurrentPhaseIndex(0);
+      setIsNextButtonBlinking(false);
+    } else {
+      setIsCompleted(true);
+    }
+  }, [
+    formalTransitionReady,
+    clearAutoAdvanceTimer,
+    currentPhase,
+    executeItems,
+    postponedPhaseItemIds,
+    latePhaseItemIds,
+    setPostponedPhaseItemIds,
+    setLatePhaseItemIds,
+    setNotification,
+    setCurrentPhase,
+    setCurrentPhaseIndex,
+    setIsNextButtonBlinking,
+    setIsCompleted,
+  ]);
   const moveToNext = useCallback(() => {
+    if (!formalTransitionReady) return;
     clearAutoAdvanceTimer();
     const nextIndex = currentPhaseIndex + 1;
     if (nextIndex < formalPhaseVisits.length) {
-      // 同じフェーズ内で次へ
       setCurrentPhaseIndex(nextIndex);
       setIsNextButtonBlinking(false);
     } else {
-      // フェーズの終わり - 次のフェーズへ
-      if (currentPhase === "normal") {
-        // 通常フェーズ終了 → 後回しアイテムIDを記憶
-        const postponedIds = new Set(
-          executeItems
-            .filter((item) => item.purchaseStatus === "Postpone")
-            .map((item) => item.id),
-        );
-        setPostponedPhaseItemIds(postponedIds);
-        const lateIds = new Set(
-          executeItems
-            .filter((item) => item.purchaseStatus === "Late")
-            .map((item) => item.id),
-        );
-        setLatePhaseItemIds(lateIds);
-        if (postponedIds.size > 0) {
-          setNotification("後回しアイテムの巡回を開始します");
-          setCurrentPhase("postponed");
-          setCurrentPhaseIndex(0);
-          setIsNextButtonBlinking(false);
-        } else if (lateIds.size > 0) {
-          setNotification("遅参アイテムの巡回を開始します");
-          setCurrentPhase("late");
-          setCurrentPhaseIndex(0);
-          setIsNextButtonBlinking(false);
-        } else {
-          setIsCompleted(true);
-        }
-      } else if (currentPhase === "postponed") {
-        const currentLateIds = new Set(latePhaseItemIds);
-        executeItems.forEach((item) => {
-          if (item.purchaseStatus === "Late") {
-            currentLateIds.add(item.id);
-          }
-        });
-        setLatePhaseItemIds(currentLateIds);
-        if (currentLateIds.size > 0) {
-          setNotification("遅参アイテムの巡回を開始します");
-          setCurrentPhase("late");
-          setCurrentPhaseIndex(0);
-          setIsNextButtonBlinking(false);
-        } else {
-          setIsCompleted(true);
-        }
-      } else {
-        setIsCompleted(true);
-      }
+      finishFormalPhase();
     }
   }, [
+    formalTransitionReady,
+    clearAutoAdvanceTimer,
     currentPhaseIndex,
     formalPhaseVisits.length,
-    currentPhase,
-    executeItems,
-    clearAutoAdvanceTimer,
-    latePhaseItemIds,
-    setCurrentPhase,
     setCurrentPhaseIndex,
-    setIsCompleted,
     setIsNextButtonBlinking,
-    setLatePhaseItemIds,
-    setNotification,
-    setPostponedPhaseItemIds,
+    finishFormalPhase,
   ]);
   const handleNext = useCallback(() => {
     const finishNavigation = measureShoppingOperation("focus-next");
@@ -1856,6 +1847,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
       }
       return;
     }
+    if (!formalTransitionReady) return;
     const latestVisitItems = currentVisitDisplayItems.flatMap((item) => {
       const latest = getLatestItemById(item.id);
       return latest ? [latest] : [];
@@ -1926,6 +1918,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     isTemporaryActive,
     moveTemporaryBy,
     moveToNext,
+    formalTransitionReady,
     setBlinkingPriceItemIds,
     setNotification,
   ]);
@@ -2604,7 +2597,8 @@ const FocusMode: React.FC<FocusModeProps> = ({
     setMapZoomLevel(newZoom);
   }, []);
   const isAutoAdvancing = useAutoSkipEmptyVisit({
-    paused: isNavigatorInteractionActive,
+    paused: isNavigatorInteractionActive || !formalTransitionReady,
+    finishPhase: finishFormalPhase,
     isCompleted,
     allVisitsLength: allVisits.length,
     currentVisitDisplayItemsLength: formalCurrentVisitDisplayItems.length,

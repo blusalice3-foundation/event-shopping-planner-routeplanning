@@ -1,9 +1,11 @@
+import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
 import React, { useEffect, useMemo, useState } from "react";
 
 type RestoreMode = "copy" | "replace";
 
 interface BackupRestoreDialogProps {
   isOpen: boolean;
+  requiresReload?: boolean;
   backupEventNames: string[];
   currentEventNames: string[];
   notices?: string[];
@@ -31,6 +33,7 @@ export function createUniqueRestoredEventName(
 
 const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
   isOpen,
+  requiresReload = false,
   backupEventNames,
   currentEventNames,
   notices = [],
@@ -76,12 +79,20 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
     sourceEventName.length > 0 &&
     resolvedTargetName.length > 0 &&
     !copyNameAlreadyExists &&
-    !isRestoring;
+    !isRestoring &&
+    !requiresReload;
   const replacesExistingEvent = useMemo(
     () => currentEventNames.includes(sourceEventName),
     [currentEventNames, sourceEventName],
   );
 
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen,
+    containExternalFocus: true,
+    onEscape: () => {
+      if (!isRestoring && !requiresReload) onClose();
+    },
+  });
   if (!isOpen) return null;
 
   const handleSourceChange = (nextSource: string) => {
@@ -125,10 +136,17 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
       role="presentation"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !isRestoring) onClose();
+        if (
+          event.target === event.currentTarget &&
+          !isRestoring &&
+          !requiresReload
+        )
+          onClose();
       }}
     >
       <div
+        ref={dialogRef}
+        onKeyDown={onDialogKeyDown}
         role="dialog"
         aria-modal="true"
         aria-labelledby="backup-restore-title"
@@ -150,7 +168,7 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
             className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
             value={sourceEventName}
             onChange={(event) => handleSourceChange(event.target.value)}
-            disabled={isRestoring}
+            disabled={isRestoring || requiresReload}
           >
             {backupEventNames.map((eventName) => (
               <option key={eventName} value={eventName}>
@@ -181,7 +199,7 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
               value="copy"
               checked={restoreMode === "copy"}
               onChange={() => handleModeChange("copy")}
-              disabled={isRestoring}
+              disabled={isRestoring || requiresReload}
             />
             <span>
               <span className="block font-medium text-slate-900 dark:text-white">
@@ -199,7 +217,7 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
               value="replace"
               checked={restoreMode === "replace"}
               onChange={() => handleModeChange("replace")}
-              disabled={isRestoring}
+              disabled={isRestoring || requiresReload}
             />
             <span>
               <span className="block font-medium text-red-700 dark:text-red-300">
@@ -223,7 +241,7 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
                 setTargetEventName(event.target.value);
                 setErrorMessage("");
               }}
-              disabled={isRestoring}
+              disabled={isRestoring || requiresReload}
             />
             {copyNameAlreadyExists && (
               <span className="mt-1 block text-sm text-red-600 dark:text-red-400">
@@ -242,6 +260,14 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
           </div>
         )}
 
+        {requiresReload && (
+          <p
+            role="alert"
+            className="px-6 text-sm text-red-600 dark:text-red-300"
+          >
+            保存結果の確認が必要です。再復元せず、画面を再読み込みしてください。
+          </p>
+        )}
         {errorMessage && (
           <p
             className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300"
@@ -256,7 +282,7 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
             type="button"
             className="rounded-lg px-4 py-2 text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-700"
             onClick={onClose}
-            disabled={isRestoring}
+            disabled={isRestoring || requiresReload}
           >
             キャンセル
           </button>

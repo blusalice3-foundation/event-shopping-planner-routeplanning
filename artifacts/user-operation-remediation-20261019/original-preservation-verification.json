@@ -1,0 +1,2394 @@
+{
+  "RecordedAt": "2026-10-19T03:11:06.9357660+09:00",
+  "BaseCommit": "5bf82a364d5b656cfa1e67c5233cfac0564840cf",
+  "SourceRoot": "D:\\esp-op18",
+  "TargetRoot": "D:\\event-shopping-planner-routeplanning-1.9.6.7",
+  "ModifiedBundleSHA256": "A554A5A960F6D3D82A62B381AF7E1D1EC4634310FFD7A5B55E0AA3E8367517DD",
+  "TrackedOriginalCleanBeforeCopy": true,
+  "OriginalStatusBefore": [
+    "?? artifacts/playwright-review-20261018/",
+    "?? artifacts/playwright-review-storage-outcome-20261018/",
+    "?? artifacts/playwright-review-u01u02-20261018/",
+    "?? artifacts/playwright-review-u03u04-20261018/",
+    "?? artifacts/playwright-review-u06u07-20261018/",
+    "?? docs/user-operation-consistency-remediation-plan-20261018.md"
+  ],
+  "PreservedExistingFiles": [
+    {
+      "Path": "artifacts/playwright-review-20261018/.last-run.json",
+      "BeforeSHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "AfterSHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Unchanged": true
+    },
+    {
+      "Path": "artifacts/playwright-review-storage-outcome-20261018/.last-run.json",
+      "BeforeSHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "AfterSHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Unchanged": true
+    },
+    {
+      "Path": "artifacts/playwright-review-u01u02-20261018/.last-run.json",
+      "BeforeSHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "AfterSHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Unchanged": true
+    },
+    {
+      "Path": "artifacts/playwright-review-u03u04-20261018/.last-run.json",
+      "BeforeSHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "AfterSHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Unchanged": true
+    },
+    {
+      "Path": "artifacts/playwright-review-u06u07-20261018/.last-run.json",
+      "BeforeSHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "AfterSHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Unchanged": true
+    },
+    {
+      "Path": "docs/user-operation-consistency-remediation-plan-20261018.md",
+      "BeforeSHA256": "D466D6C3F20824C3ADA9E38A7904D828D4F5014C9B82082B1709B884BC73584A",
+      "AfterSHA256": "D466D6C3F20824C3ADA9E38A7904D828D4F5014C9B82082B1709B884BC73584A",
+      "Unchanged": true
+    }
+  ],
+  "CopiedSourceAndDocumentCount": 93,
+  "CopiedSourceAndDocument": [
+    {
+      "Path": "src/App.tsx",
+      "Source": "D:\\esp-op18\\src\\App.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\App.tsx",
+      "SHA256": "8146628478F1A7D34ADE9ABF332A9BDD9C8F802387336353499B42A880F68AA7",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/applicationMutationCoordinator.test.ts",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\applicationMutationCoordinator.test.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\applicationMutationCoordinator.test.ts",
+      "SHA256": "B4AC5F57F0DF37B9074BFA248A9DAF4DF5BF1BF596FF9E1E0E2DAF2EFD0CEF4D",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/applicationMutationCoordinator.ts",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\applicationMutationCoordinator.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\applicationMutationCoordinator.ts",
+      "SHA256": "0C25B8C3D54798B898DD175EE883F8FD64AC14F7D8FF6E8D07A47B79DF4CB49C",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/ApplicationSnapshotCommitPort.ts",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\ApplicationSnapshotCommitPort.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\ApplicationSnapshotCommitPort.ts",
+      "SHA256": "FE3291F71F26558DDDF038F7CF277092E271C017E63ECD4F927E926B74B523E4",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/eventUpdateOperation.test.ts",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\eventUpdateOperation.test.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\eventUpdateOperation.test.ts",
+      "SHA256": "2B2AC72E85EB182DA8B24FDB030B4A8A278250253E3B55054817D1E63204C5F0",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/eventUpdateOperation.ts",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\eventUpdateOperation.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\eventUpdateOperation.ts",
+      "SHA256": "857263179E53D14507BB013916F29ACE391A5814DAD7C7B36B6B941BF6ADC151",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/useEventTransferCommands.test.tsx",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\useEventTransferCommands.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\useEventTransferCommands.test.tsx",
+      "SHA256": "79BF2A38B13E08AD16367DCE67BBD1C100D62411895475CF2A6B8C9359B36741",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/useEventTransferCommands.ts",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\useEventTransferCommands.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\useEventTransferCommands.ts",
+      "SHA256": "B472DC6A402BDB031BD38E314F0EF22A7B7F251FD6DCA0E672E4FDDD02186B05",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/useEventUpdateCommands.test.tsx",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\useEventUpdateCommands.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\useEventUpdateCommands.test.tsx",
+      "SHA256": "9D2CD601CF00EC96D29479CE41A6165E08C463DB93A9D7CBFCF8E1C82FF6565E",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/useEventUpdateCommands.ts",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\useEventUpdateCommands.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\useEventUpdateCommands.ts",
+      "SHA256": "BBC60B7FE4A1EF83C169B6A2C92AC86999DF7BB50B2DDFCBCE2D9D17D15AD308",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/useMapEditorCommands.integration.test.tsx",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\useMapEditorCommands.integration.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\useMapEditorCommands.integration.test.tsx",
+      "SHA256": "AEDE0D6EF178A4F37A6C72C79E4B6A3097121A6D047620D74F82E38638F122B5",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/useMapEditorCommands.test.tsx",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\useMapEditorCommands.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\useMapEditorCommands.test.tsx",
+      "SHA256": "2061257A86B97996B74C4827BC8DC85206CD407ABDAF9C3654A59914A5182F6B",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/useMapEditorCommands.ts",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\useMapEditorCommands.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\useMapEditorCommands.ts",
+      "SHA256": "A911646FEB206AAB77084C08340593A558D34762C82CB22A6AF3D4FA16066348",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/useMapImportCommands.integration.test.tsx",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\useMapImportCommands.integration.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\useMapImportCommands.integration.test.tsx",
+      "SHA256": "936809D2E4B0A0D63A0CD22A5265F60806DDE25415EA9805C4BE0DB59C9FEFFD",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/useMapImportCommands.test.tsx",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\useMapImportCommands.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\useMapImportCommands.test.tsx",
+      "SHA256": "ABFDDC57B3340AE11C19D0DDD0EA67B6339551C08A7F57D8AE1498BA71C4433C",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/useMapImportCommands.ts",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\useMapImportCommands.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\useMapImportCommands.ts",
+      "SHA256": "72E07D507AAA130C8DC648C8EC93F5B32952F7F228C5AA189928E4CDA30110DB",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/useShoppingItemMutationCommands.test.tsx",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\useShoppingItemMutationCommands.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\useShoppingItemMutationCommands.test.tsx",
+      "SHA256": "554E43E00B2ED26155920F3B6F02DE78A54DDD59026914324F249AF175A0D9B7",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/commands/useShoppingItemMutationCommands.ts",
+      "Source": "D:\\esp-op18\\src\\app\\commands\\useShoppingItemMutationCommands.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\commands\\useShoppingItemMutationCommands.ts",
+      "SHA256": "9ED68A98E198E3184EE3C771C3159EC55CA006F11BBEB6EA7CF40C81FC28AD6B",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/ports/HallEditorCommandPort.ts",
+      "Source": "D:\\esp-op18\\src\\app\\ports\\HallEditorCommandPort.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\ports\\HallEditorCommandPort.ts",
+      "SHA256": "B78269D0CCCA6A297DC2248F264AF7BB5811CEC5EE4ECBA69F9F44AF0C38093E",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/ports/PersistenceCommandPort.ts",
+      "Source": "D:\\esp-op18\\src\\app\\ports\\PersistenceCommandPort.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\ports\\PersistenceCommandPort.ts",
+      "SHA256": "50ECE3D3D6D08C4EBA04E839AE1AF90904BB954DE7A43F3DEEF104C418A1BDDA",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/selectors/appListViewSelectors.test.ts",
+      "Source": "D:\\esp-op18\\src\\app\\selectors\\appListViewSelectors.test.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\selectors\\appListViewSelectors.test.ts",
+      "SHA256": "E1A0F7699FC039D72742BF997EC0CFCC47270CE9EC7114FC58A980E1AFCE39B0",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/selectors/appListViewSelectors.ts",
+      "Source": "D:\\esp-op18\\src\\app\\selectors\\appListViewSelectors.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\selectors\\appListViewSelectors.ts",
+      "SHA256": "245A1D318FE4A352F244B64AD9CF17E6C97019E0DBDDEE1B8CBEADC90F902CEC",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/state/appOverlayState.test.ts",
+      "Source": "D:\\esp-op18\\src\\app\\state\\appOverlayState.test.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\state\\appOverlayState.test.ts",
+      "SHA256": "F8BE1AD1776E09EC03E98835EEF4823993DC17EE6F043491C91B899E32E4D2D7",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/state/appOverlayState.ts",
+      "Source": "D:\\esp-op18\\src\\app\\state\\appOverlayState.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\state\\appOverlayState.ts",
+      "SHA256": "F3CB4DDBA4FACA9CE5D2F27C0086AFB68AAC9E7ABADECEC937F5ACEEF680878E",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/state/useApplicationSnapshot.persistence.integration.test.tsx",
+      "Source": "D:\\esp-op18\\src\\app\\state\\useApplicationSnapshot.persistence.integration.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\state\\useApplicationSnapshot.persistence.integration.test.tsx",
+      "SHA256": "DC9361007A05FCFC79AE00FA0731B4CE2E38C5E0472AEF7D2DEEAC28DAE72417",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/state/useApplicationSnapshot.projection.test.tsx",
+      "Source": "D:\\esp-op18\\src\\app\\state\\useApplicationSnapshot.projection.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\state\\useApplicationSnapshot.projection.test.tsx",
+      "SHA256": "FBD6CAD3D50B7786253D90CDB55E959F33076B2649E3C13FCAFFC88C69D6E9A2",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/state/useApplicationSnapshot.test.tsx",
+      "Source": "D:\\esp-op18\\src\\app\\state\\useApplicationSnapshot.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\state\\useApplicationSnapshot.test.tsx",
+      "SHA256": "A308CC6D751B39AEE65FBB42B7CEE5B92D8A303AE8FA37321F36AE169183DB2E",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/state/useApplicationSnapshot.ts",
+      "Source": "D:\\esp-op18\\src\\app\\state\\useApplicationSnapshot.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\state\\useApplicationSnapshot.ts",
+      "SHA256": "86EECD44236F410209D93F719D33DC796C18A39F04FDA209389919037265FF8C",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/app/state/useAppOverlayController.ts",
+      "Source": "D:\\esp-op18\\src\\app\\state\\useAppOverlayController.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\app\\state\\useAppOverlayController.ts",
+      "SHA256": "0AF17774C2F13E5568A8A95D5E99AC44FB2C36DFF315CB4478C97EDC4FD15745",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/BackupRestoreDialog.test.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\BackupRestoreDialog.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\BackupRestoreDialog.test.tsx",
+      "SHA256": "A282D051A78C244AEDF8DAE71ABE2D439591EE6B79AB2CB60FED05D466E0B91E",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/BackupRestoreDialog.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\BackupRestoreDialog.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\BackupRestoreDialog.tsx",
+      "SHA256": "A72BAA821BF87DFB7357C35A7799E1E1299C1E71185866442E7C5902CCF4D78B",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/focus/FocusModeDialogs.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\focus\\FocusModeDialogs.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\focus\\FocusModeDialogs.tsx",
+      "SHA256": "EAD7C1A52647AD25BCA18B21B9165940C545B47FD921180CE931E9AF19243820",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/focus/hooks/useAutoSkipEmptyVisit.ts",
+      "Source": "D:\\esp-op18\\src\\components\\focus\\hooks\\useAutoSkipEmptyVisit.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\focus\\hooks\\useAutoSkipEmptyVisit.ts",
+      "SHA256": "021591C84F469D4A17B017AF4D2A0C64AD252222740C30385D49AA758FA23209",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/focus/phaseEndPlan.test.ts",
+      "Source": "D:\\esp-op18\\src\\components\\focus\\phaseEndPlan.test.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\focus\\phaseEndPlan.test.ts",
+      "SHA256": "4AF6D8C4720596876FE2491EEB143C45168FD69795D247454E7C0E4BE3BCC466",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/focus/phaseEndPlan.ts",
+      "Source": "D:\\esp-op18\\src\\components\\focus\\phaseEndPlan.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\focus\\phaseEndPlan.ts",
+      "SHA256": "F50678269E3513CA083DA479ADD0E242D89008FA46280132F39B0174EAC7242F",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/FocusMode.ticket05.test.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\FocusMode.ticket05.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\FocusMode.ticket05.test.tsx",
+      "SHA256": "68D5D82FBA2027021D6071D4407661E0B31CA5D8A09248DC855D58DB879CB687",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/FocusMode.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\FocusMode.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\FocusMode.tsx",
+      "SHA256": "6499836BCA9173F4B3194CC3A0C22BDAECA6B68DE0917C358A7E55B9FC8638F0",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/ImportScreen.sheetImport.integration.test.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\ImportScreen.sheetImport.integration.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\ImportScreen.sheetImport.integration.test.tsx",
+      "SHA256": "F71D48BEE055A0B2D9C0D0C0A158D829428CCDB33A02D86E7BF6041D26FBEE2E",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/ImportScreen.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\ImportScreen.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\ImportScreen.tsx",
+      "SHA256": "60955229C37F8F208CFCE31DE6F320BFCAA86E7A61ACC44AFD6EEA109F03D281",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/ItemEditDialog.accessibility.test.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\ItemEditDialog.accessibility.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\ItemEditDialog.accessibility.test.tsx",
+      "SHA256": "1DD4C9049AFDBA1915D33377C51F27FA3D1CDD45C2B2074C9E5FA80BF163DF77",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/ItemEditDialog.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\ItemEditDialog.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\ItemEditDialog.tsx",
+      "SHA256": "90F4EAE7646EF322D3B431354A1337A0503CAB28668D8E8B75FD587DB84591EB",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/map/BlockDefinitionPanel.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\map\\BlockDefinitionPanel.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\map\\BlockDefinitionPanel.tsx",
+      "SHA256": "44E7951FCA557A55B0FC6182C4A590A1C9ED065BCE3C6FA28B91832CC6AA5D9E",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/map/HallDefinitionPanel.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\map\\HallDefinitionPanel.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\map\\HallDefinitionPanel.tsx",
+      "SHA256": "EB0E29FCD55180F3F964AE969622A55F418AC13C4584B9B95E06DAB94A1143A3",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/map/HallEditor.save.test.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\map\\HallEditor.save.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\map\\HallEditor.save.test.tsx",
+      "SHA256": "54C1D4500F902B42840D6B6ED9933EEA8C4F993B6E06C903D4EB23BCE78F65FD",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/map/MapImportDialog.previewRace.test.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\map\\MapImportDialog.previewRace.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\map\\MapImportDialog.previewRace.test.tsx",
+      "SHA256": "4D900FE8BD76ADDF07B0C4D7123915027DA070D482D863CC6A6F304213AAD69A",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/map/MapImportDialog.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\map\\MapImportDialog.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\map\\MapImportDialog.tsx",
+      "SHA256": "359CA7EBB71173FDA509389BB95E3C7B7E5EB3761C6E6C5DCA14692D641B0AD2",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/map/MapReimportConfirmationDialog.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\map\\MapReimportConfirmationDialog.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\map\\MapReimportConfirmationDialog.tsx",
+      "SHA256": "D3599FE40996FF9B332F39C39EB7AE71B1838A9BCA7AC28FB7409C5E5AE621A5",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/map/SimpleHallDefinitionPanel.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\map\\SimpleHallDefinitionPanel.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\map\\SimpleHallDefinitionPanel.tsx",
+      "SHA256": "CC5B2102965431DC83EDA74DD58CE256329A54BAF25E4A763481FD78EB93D7EA",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/map/useHallEditorWrite.ts",
+      "Source": "D:\\esp-op18\\src\\components\\map\\useHallEditorWrite.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\map\\useHallEditorWrite.ts",
+      "SHA256": "CC928AE4EFC1E208D4B35ECB68DBAB7988950013436F50F44B2F830524A60711",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/ShoppingList.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\ShoppingList.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\ShoppingList.tsx",
+      "SHA256": "46309270B48C61673E5D71A80E72E9034345B53E06C7B227D9FE76B726E329EB",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/UserOperationConsistency.integration.test.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\UserOperationConsistency.integration.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\UserOperationConsistency.integration.test.tsx",
+      "SHA256": "F351FBC5A32D9B9ECAA429D72B38211711972AECDD782D999DFA1D0EEDDAD8F7",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/components/VisitListPanel.tsx",
+      "Source": "D:\\esp-op18\\src\\components\\VisitListPanel.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\components\\VisitListPanel.tsx",
+      "SHA256": "A4F590EDD980703795979DC34EB5C07675E9CFE23ECCB72C44D3C5C8594B425E",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/app-shell/components/AppMainContent.tsx",
+      "Source": "D:\\esp-op18\\src\\features\\app-shell\\components\\AppMainContent.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\app-shell\\components\\AppMainContent.tsx",
+      "SHA256": "B5AF6B14E61FAF1D98ABDD5D4C730D213F9A4923C4708DBE081202B11A358366",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/app-shell/components/AppOverlayLayer.tsx",
+      "Source": "D:\\esp-op18\\src\\features\\app-shell\\components\\AppOverlayLayer.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\app-shell\\components\\AppOverlayLayer.tsx",
+      "SHA256": "5B95247141ADF41F8F897FF705BCFCF59F677336EE7C39B8784C8959464FDA10",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/app-shell/components/MutationConfirmationDialog.integration.test.tsx",
+      "Source": "D:\\esp-op18\\src\\features\\app-shell\\components\\MutationConfirmationDialog.integration.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\app-shell\\components\\MutationConfirmationDialog.integration.test.tsx",
+      "SHA256": "9C81A61FA73A3D5FFE4F34265FBED3164B7DEE44368C405E7A0CE115EF70B7D1",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/app-shell/components/MutationConfirmationDialog.tsx",
+      "Source": "D:\\esp-op18\\src\\features\\app-shell\\components\\MutationConfirmationDialog.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\app-shell\\components\\MutationConfirmationDialog.tsx",
+      "SHA256": "EE55D40451F8E47E44F97B2A0D84E471A8ACC63F44641EDDA273E400074DCF8B",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/app-shell/types.ts",
+      "Source": "D:\\esp-op18\\src\\features\\app-shell\\types.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\app-shell\\types.ts",
+      "SHA256": "73B72092B168DD620F24EFDF19A45AC1A83F5C7810210A732DF59FF93B780DCB",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/consistency/domain/membership.ts",
+      "Source": "D:\\esp-op18\\src\\features\\consistency\\domain\\membership.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\consistency\\domain\\membership.ts",
+      "SHA256": "94596011419EE7EBBA60CC2CAACE4F44974739B5D7B26C62D10EFC26FF7551DA",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/consistency/domain/mutations.ts",
+      "Source": "D:\\esp-op18\\src\\features\\consistency\\domain\\mutations.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\consistency\\domain\\mutations.ts",
+      "SHA256": "9AAFDFCD15992B8CE34BA2FE2C1D993A34035EF1788C627759D72D5239F2E70B",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/consistency/domain/projection.test.ts",
+      "Source": "D:\\esp-op18\\src\\features\\consistency\\domain\\projection.test.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\consistency\\domain\\projection.test.ts",
+      "SHA256": "ECEB82DCF5F617493999A763FB72211A59752A557E66AB1A998ECAECC61580A2",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/consistency/domain/projection.ts",
+      "Source": "D:\\esp-op18\\src\\features\\consistency\\domain\\projection.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\consistency\\domain\\projection.ts",
+      "SHA256": "93131E587D9A73148B44D11F8A24F886D514105FE3D1F11C8454DB59E783002E",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/consistency/domain/workerMutationNormalization.test.ts",
+      "Source": "D:\\esp-op18\\src\\features\\consistency\\domain\\workerMutationNormalization.test.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\consistency\\domain\\workerMutationNormalization.test.ts",
+      "SHA256": "6ED409B9400508B56E2D14996CC5BEFFE1CC8E0341978EFDF5933D273DD5F912",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/events/itemOps/move.ts",
+      "Source": "D:\\esp-op18\\src\\features\\events\\itemOps\\move.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\events\\itemOps\\move.ts",
+      "SHA256": "7469D27996628B68D2AE8FFA50F3C1ECF1A92E735569E02DB9AB711D27EC0888",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/map/domain/hallOperations.test.ts",
+      "Source": "D:\\esp-op18\\src\\features\\map\\domain\\hallOperations.test.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\map\\domain\\hallOperations.test.ts",
+      "SHA256": "135BAB7FC4B5E3FCA83CB28C195759D97303F47A6E94E001D5D638C90BBEDC13",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/map/domain/hallOperations.ts",
+      "Source": "D:\\esp-op18\\src\\features\\map\\domain\\hallOperations.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\map\\domain\\hallOperations.ts",
+      "SHA256": "8D40E324670D61FE7BE184D889AC3EF8A67FC3976650DA9388D803148F23B492",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/map/domain/mapEditorSession.ts",
+      "Source": "D:\\esp-op18\\src\\features\\map\\domain\\mapEditorSession.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\map\\domain\\mapEditorSession.ts",
+      "SHA256": "138C1B3C2B54F3A987F247CA72898D327C1FBD5157A73D329CEC20F01FEBE8EC",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/shopping-list/drag/shoppingDrag.test.ts",
+      "Source": "D:\\esp-op18\\src\\features\\shopping-list\\drag\\shoppingDrag.test.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\shopping-list\\drag\\shoppingDrag.test.ts",
+      "SHA256": "5B94058E8533653E8B4BCDCA173F7F21EFCB5D9F0BD2E3B4BBD15B22F0CFD1F8",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/shopping-list/drag/shoppingDrag.ts",
+      "Source": "D:\\esp-op18\\src\\features\\shopping-list\\drag\\shoppingDrag.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\shopping-list\\drag\\shoppingDrag.ts",
+      "SHA256": "97972D30524184F7FE8665F7D0AC03446F22385ACFF4363C9B7465E78F9053C5",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/shopping-list/drag/ShoppingDragWorkspace.integration.test.tsx",
+      "Source": "D:\\esp-op18\\src\\features\\shopping-list\\drag\\ShoppingDragWorkspace.integration.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\shopping-list\\drag\\ShoppingDragWorkspace.integration.test.tsx",
+      "SHA256": "B7B7458EC704D28B99A1F3C8BE015CB83E8948AAAC1981BE1CDFA2D08ADFDAC8",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/shopping-list/drag/ShoppingDragWorkspace.tsx",
+      "Source": "D:\\esp-op18\\src\\features\\shopping-list\\drag\\ShoppingDragWorkspace.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\shopping-list\\drag\\ShoppingDragWorkspace.tsx",
+      "SHA256": "D46C50FAD5C92E1C00EFEF09781A266EF3C19A025C3BFB0D2AA46BBE02326EFE",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/shopping-list/renderers/RetainedViewportListRenderer.integration.test.tsx",
+      "Source": "D:\\esp-op18\\src\\features\\shopping-list\\renderers\\RetainedViewportListRenderer.integration.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\shopping-list\\renderers\\RetainedViewportListRenderer.integration.test.tsx",
+      "SHA256": "9EBB2DFD43592F65ACDEE31418278F5D9EA64F0279F75EA507905DC645B16A54",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/shopping-list/renderers/ViewportContent.tsx",
+      "Source": "D:\\esp-op18\\src\\features\\shopping-list\\renderers\\ViewportContent.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\shopping-list\\renderers\\ViewportContent.tsx",
+      "SHA256": "CEF670299D722BFD43429ECF8A24D7FFB4CABE669A22A18CD958B8D2B75B13CB",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/features/shopping-list/renderers/VirtualListRenderer.tsx",
+      "Source": "D:\\esp-op18\\src\\features\\shopping-list\\renderers\\VirtualListRenderer.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\features\\shopping-list\\renderers\\VirtualListRenderer.tsx",
+      "SHA256": "6BED8A599B61691D1F2E1E271C4CCF78B468E5FA93D6F225FFE457E62898627E",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/hooks/useIndexedDbPersistence.test.tsx",
+      "Source": "D:\\esp-op18\\src\\hooks\\useIndexedDbPersistence.test.tsx",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\hooks\\useIndexedDbPersistence.test.tsx",
+      "SHA256": "54355A65CB29B17ED4E05DFA02D85E16C17A2FA72B32DA98E65CD51CCA682397",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/hooks/useIndexedDbPersistence.ts",
+      "Source": "D:\\esp-op18\\src\\hooks\\useIndexedDbPersistence.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\hooks\\useIndexedDbPersistence.ts",
+      "SHA256": "2D969E74146667446EF928CB92DED1E6475EDA7866378408EA640444754C2747",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/hooks/useModalDialogBehavior.ts",
+      "Source": "D:\\esp-op18\\src\\hooks\\useModalDialogBehavior.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\hooks\\useModalDialogBehavior.ts",
+      "SHA256": "18D45073D00F7BC95918F328DC7B8427B948ADD16754488415C5A06BF703F054",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/persistence/adapters/indexedDbPersistenceCommandAdapter.test.ts",
+      "Source": "D:\\esp-op18\\src\\persistence\\adapters\\indexedDbPersistenceCommandAdapter.test.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\persistence\\adapters\\indexedDbPersistenceCommandAdapter.test.ts",
+      "SHA256": "C729DC910A57899BF7DA70C6DF4484F2DFF94C1C309E31DF58C413AD02E450BD",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/persistence/adapters/indexedDbPersistenceCommandAdapter.ts",
+      "Source": "D:\\esp-op18\\src\\persistence\\adapters\\indexedDbPersistenceCommandAdapter.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\persistence\\adapters\\indexedDbPersistenceCommandAdapter.ts",
+      "SHA256": "8AA3231799A6950AC67EFDDDB574EA5B00845D5F4F3A53E5DD79FAF1180AD491",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/persistence/adapters/workerPersistenceCommandAdapter.test.ts",
+      "Source": "D:\\esp-op18\\src\\persistence\\adapters\\workerPersistenceCommandAdapter.test.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\persistence\\adapters\\workerPersistenceCommandAdapter.test.ts",
+      "SHA256": "3FEF7AD76008536544E0D38CF27AA8A655F5712C0DA0BD8BF00C9AD0E3307351",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/persistence/adapters/workerPersistenceCommandAdapter.ts",
+      "Source": "D:\\esp-op18\\src\\persistence\\adapters\\workerPersistenceCommandAdapter.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\persistence\\adapters\\workerPersistenceCommandAdapter.ts",
+      "SHA256": "C338CB3623A323FD49538B65C447100D16291E67D3A9C6AA6D02179EF2732392",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/persistence/worker/persistence.worker.ts",
+      "Source": "D:\\esp-op18\\src\\persistence\\worker\\persistence.worker.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\persistence\\worker\\persistence.worker.ts",
+      "SHA256": "02A3BA458E5F9897CBC470F4F1C9F9C184DF251F9A5E8B8FD0164D531E13F2D3",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/persistence/worker/persistenceWorkerServer.ts",
+      "Source": "D:\\esp-op18\\src\\persistence\\worker\\persistenceWorkerServer.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\persistence\\worker\\persistenceWorkerServer.ts",
+      "SHA256": "A83C5517530051D64DEF7282C5279923411BEA29AE84F6A27BA3384CC0D90E0F",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/persistence/worker/persistenceWorkerServer.worker.test.ts",
+      "Source": "D:\\esp-op18\\src\\persistence\\worker\\persistenceWorkerServer.worker.test.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\persistence\\worker\\persistenceWorkerServer.worker.test.ts",
+      "SHA256": "AAC174A1359D678B2D520D3FCEA121620A1563E607ABE0F65209E46F7099E20B",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/utils/modalFocusBoundary.ts",
+      "Source": "D:\\esp-op18\\src\\utils\\modalFocusBoundary.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\utils\\modalFocusBoundary.ts",
+      "SHA256": "7D8A811BA974169C906DCF7C8CA8EF9937F65877A67149FC046B87052E24783D",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/utils/semanticEquality.ts",
+      "Source": "D:\\esp-op18\\src\\utils\\semanticEquality.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\utils\\semanticEquality.ts",
+      "SHA256": "78EB40EA8DDEB73E5EA84F7C032124FFF4874AAA8018203C4353F801E8C1C828",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/utils/swapVisitItems.test.ts",
+      "Source": "D:\\esp-op18\\src\\utils\\swapVisitItems.test.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\utils\\swapVisitItems.test.ts",
+      "SHA256": "A472376C86D354F5651BD00B57B660771CE8628D38C8F8A90BF6B0CC6086D033",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "src/utils/swapVisitItems.ts",
+      "Source": "D:\\esp-op18\\src\\utils\\swapVisitItems.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\src\\utils\\swapVisitItems.ts",
+      "SHA256": "2BA17026EA552EF86B5AA4280077761D35260506E0FD60510628C179A145ADB1",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "tests/browser/cross-feature-consistency.spec.ts",
+      "Source": "D:\\esp-op18\\tests\\browser\\cross-feature-consistency.spec.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\cross-feature-consistency.spec.ts",
+      "SHA256": "5F9C96914DD3C89F5E1F589F40B2ED3CD1E4C2A8C85C3F845BF222309DDFF8BE",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "tests/browser/ordinary-persistence-io.spec.ts",
+      "Source": "D:\\esp-op18\\tests\\browser\\ordinary-persistence-io.spec.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\ordinary-persistence-io.spec.ts",
+      "SHA256": "F01BCA353A5ED08EED6A506DFCBD2BA6C69029012CA614D4651645261427F482",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "tests/browser/persistence-terminal-stop.spec.ts",
+      "Source": "D:\\esp-op18\\tests\\browser\\persistence-terminal-stop.spec.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\persistence-terminal-stop.spec.ts",
+      "SHA256": "872D15E5457D27249B6B4C16F60189A0D466FB2597729623D1B6D029EBC796D5",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "tests/browser/sheet-import-optional-url.spec.ts",
+      "Source": "D:\\esp-op18\\tests\\browser\\sheet-import-optional-url.spec.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\sheet-import-optional-url.spec.ts",
+      "SHA256": "DC2A07F20043D1D9684FE08745B01DD4E23C3E48C03ECE858228099D2A7EE91B",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "tests/browser/shopping-cross-column-drag.spec.ts",
+      "Source": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+      "SHA256": "38DA6B1AE1E5B3F3224788BC25A28A851103B9729CA2EEEEEF4D847C90545AC2",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    },
+    {
+      "Path": "docs/user-operation-consistency-remediation-results-20261019.md",
+      "Source": "D:\\esp-op18\\docs\\user-operation-consistency-remediation-results-20261019.md",
+      "Target": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\docs\\user-operation-consistency-remediation-results-20261019.md",
+      "SHA256": "AA006DD1729DB223E25487C42D9097BAFE7BCA4D2CFA74AA5D380283DEEB34C2",
+      "Encoding": "UTF-8",
+      "BOM": false,
+      "Newlines": "LF"
+    }
+  ],
+  "ArtifactFileCount": 249,
+  "Artifacts": [
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline-copy-verification.json",
+      "SHA256": "2E31B285FC5A67208C41A9C73DE1542509BF974007F73A71582352FEAB17981B",
+      "Bytes": 7639,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\browser-final-validated-report.json",
+      "SHA256": "4F1D15E43BB051B9D8ACDD14A995FE47FB09C9E8DECC9F7C96F9090C6844001C",
+      "Bytes": 370155,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\browser-final-validated.log",
+      "SHA256": "C67BEA333AE97E62B4788E8220AB5753AE47844AA9669F09BD83EB64B3525CE6",
+      "Bytes": 39440,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\browser-regression-final.log",
+      "SHA256": "4A7FDF8AE846A7F1DFEE39236FC728B099E82C13FA6453AD60D5BD10B8FAE0F9",
+      "Bytes": 34781,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\cpu-optimization-product-build.log",
+      "SHA256": "F3486D9C29EC290DF033690964CFBC84678B077343424996D1501BEBE0B00EF2",
+      "Bytes": 2835,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-all-eslint.log",
+      "SHA256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "Bytes": 0,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-all-prettier.log",
+      "SHA256": "F20510A9DA4717C51C4CFFEE6D0DD88D6C9A723D0A83711D01216F5B48961283",
+      "Bytes": 68,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-eslint.log",
+      "SHA256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "Bytes": 0,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-header-product-build.log",
+      "SHA256": "1D9DE6CDA592BF8101BAF3CCBA41851E2514D94028CD1BFAD7DAC38EADAB3629",
+      "Bytes": 2835,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-independent-evidence-check.json",
+      "SHA256": "5436688697CEF6E040E9CAFFE8FF1E98476A74797F9A697CAC9803A49F6ABBC1",
+      "Bytes": 173886,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-prettier.log",
+      "SHA256": "F20510A9DA4717C51C4CFFEE6D0DD88D6C9A723D0A83711D01216F5B48961283",
+      "Bytes": 68,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-product-build.log",
+      "SHA256": "9C4FC5E0E49B3B805F547B23733C556C6930CF9E936999319A5FBE35C4E41E1A",
+      "Bytes": 2835,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-source-manifest.json",
+      "SHA256": "009365B54F8FF2C26C0613AF162DA9CD03273260686AF16BEF19F0827B84BC72",
+      "Bytes": 29812,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-test-encoding.log",
+      "SHA256": "3F4CBDA40A43CDF839276D6AD16A73C0580927A10BB3A733DBA4412B5CB86A4E",
+      "Bytes": 338,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-typecheck.log",
+      "SHA256": "D86DA3B8A00607AF4315CBEDFBC02B77CFE49C5951848717FDD4D9F972ABFDB2",
+      "Bytes": 100,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-ui-recheck-report.json",
+      "SHA256": "34349910C5DD2712E9F128431C86786B989127EED65C689B18237CE46A12CC7A",
+      "Bytes": 33010,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-validated-api.log",
+      "SHA256": "B8287C640726C0662B8CA9580C5D23F9DF3B37A9C01CAC01860AC1F07EFCA30E",
+      "Bytes": 1795,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-validated-architecture.log",
+      "SHA256": "900998F02515C065BF4C1FC19AFDDE8506D3B5FABB85FB4A260CBEA20B9E5CCF",
+      "Bytes": 266,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-validated-db-compatibility.log",
+      "SHA256": "7BAEE820102727F40C60BFDDB9114F41B6897DB79E325E7814C34DCD6A7DB603",
+      "Bytes": 230,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-validated-encoding.log",
+      "SHA256": "DE61DFF53B8FA1096EF663B5215EA650BC26C6D8E73E9E0D673C3A693CB64FA6",
+      "Bytes": 338,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-validated-eslint.log",
+      "SHA256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "Bytes": 0,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-validated-prettier.log",
+      "SHA256": "F20510A9DA4717C51C4CFFEE6D0DD88D6C9A723D0A83711D01216F5B48961283",
+      "Bytes": 68,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-validated-test-membership.log",
+      "SHA256": "45D2FF163E7428ECFD99CEBB2CE3EDF8137606F87B92258A4FE8DFC9649D04FF",
+      "Bytes": 196,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-validated-typecheck.log",
+      "SHA256": "D86DA3B8A00607AF4315CBEDFBC02B77CFE49C5951848717FDD4D9F972ABFDB2",
+      "Bytes": 100,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-verify-architecture.log",
+      "SHA256": "B500BCBB18A832AC7C83CC1D6F9B95AAF8F072BEA7D5856A1D15D1CCB429FC88",
+      "Bytes": 266,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-verify-db-compatibility.log",
+      "SHA256": "7BAEE820102727F40C60BFDDB9114F41B6897DB79E325E7814C34DCD6A7DB603",
+      "Bytes": 230,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-verify-test-project-membership.log",
+      "SHA256": "8ADFF82D7E86B38E06555F73843572F4505F53CC761A85F85189F021DC04280D",
+      "Bytes": 196,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-viewport-architecture.log",
+      "SHA256": "B500BCBB18A832AC7C83CC1D6F9B95AAF8F072BEA7D5856A1D15D1CCB429FC88",
+      "Bytes": 266,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-viewport-encoding.log",
+      "SHA256": "AA34721F201374A18DFA801C7EF370505BE4FAAA6712F317AED7BFE7499508BA",
+      "Bytes": 338,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-viewport-product-build.log",
+      "SHA256": "D7079A4C126A2F28A4BFFA523FF7FC6E912EEC862DAB886919C4CBCCE4BA92A9",
+      "Bytes": 3466,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\full-vitest-01.log",
+      "SHA256": "9CB4B610150ADE9ED90E6F18DC79B485C86815F363FBF6173A258C91613F6DF3",
+      "Bytes": 23753,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\full-vitest-final-isolated.log",
+      "SHA256": "C0EACACF80E411D37050D9FD3C09D156DE01BFA4A1A45F562A569BEE71A3409E",
+      "Bytes": 253,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\full-vitest-final-source-frozen.log",
+      "SHA256": "D8478DDA5A9E5DED94964733411BC6A79004F3C713CFC8B16B23B37D962CF657",
+      "Bytes": 16935,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\full-vitest-final-validated.log",
+      "SHA256": "E1678384EEAE8FD9AB75FCD1FA40F8602CE5264D6AF3CFD52362341FB72EB6C1",
+      "Bytes": 1325,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\full-vitest-final.log",
+      "SHA256": "E7550AAAF0E20DBFB0C0CE11EB4B1B04EA396B5F989BDB092A80BCF8C4F34B5F",
+      "Bytes": 18997,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\membership-optimization-product-build.log",
+      "SHA256": "135DE3CC2B665E7C7055598ED567CA5EEA2AF53422AEBC967F31945C5AB09947",
+      "Bytes": 2835,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\membership-optimization-source-manifest.json",
+      "SHA256": "009365B54F8FF2C26C0613AF162DA9CD03273260686AF16BEF19F0827B84BC72",
+      "Bytes": 29812,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\op09-browser.json",
+      "SHA256": "51337EC067C873A236E514F05E94E38B095C8C48A14F0786908F22B24A17FA7C",
+      "Bytes": 5287,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\ordinary-io-baseline.json",
+      "SHA256": "46EE48108C41B1FA764356F163934D351573BB98D366018771F46A560C667146",
+      "Bytes": 4703,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\ordinary-io-comparison.json",
+      "SHA256": "855A1F8EC65187A361B3BFD4FE3B564A29E80C17C35143E8776931ECD2575E7D",
+      "Bytes": 8114,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\ordinary-io-final-comparison.json",
+      "SHA256": "26D60094CC1493263DC5028F0A2C08A67A237961E909E3139E55FC7B84711E04",
+      "Bytes": 1870,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\ordinary-io-final-source.json",
+      "SHA256": "AF6E16C18F384AAA8D8D53765CF4A0EBDED9757033991AA39DDDA6FFC85E95F9",
+      "Bytes": 4696,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\ordinary-io-final-ui.json",
+      "SHA256": "62B57B1153CCEF040A42E3C675FB86F72D2388E402E05A175B174967006EA43E",
+      "Bytes": 4696,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\ordinary-io-modified.json",
+      "SHA256": "C54F8CBEBF6EFEB0DB05C9B77CD02FBC8F169AF2278993B857A8451F6F4C15E2",
+      "Bytes": 4695,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final-report.json",
+      "SHA256": "E0EE6F79EFBE49B186E77745E654B36F6CE73915EA83764A3836B23F4D613CCF",
+      "Bytes": 3773312,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final.log",
+      "SHA256": "0D13EEBE7C76D59A3E838DF62C189DFA805D5D4DF47D11E827ACBA2D838B0FDF",
+      "Bytes": 5172,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified-report.json",
+      "SHA256": "5415504ACD765758BF61DF19BC3673ADAD1038734BFA9299F7AA77409F48777E",
+      "Bytes": 3775715,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified.log",
+      "SHA256": "C09EB51572A703C5ADF669E098DE2BBE6F57974BD75A1F807692FA2EA2D7F656",
+      "Bytes": 5170,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-performance-comparison-before-drop-cpu-optimization.json",
+      "SHA256": "1A1792444346856B8F71B2A0E8260782F7C75328EE26E4CFE7E710847974ACEF",
+      "Bytes": 195114,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-performance-comparison.json",
+      "SHA256": "77295989AB1CA37B7E4ED145C28B927340597F289DBCC997E5A7A9B90E42E583",
+      "Bytes": 188556,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-performance-pairs-before-drop-cpu-optimization.csv",
+      "SHA256": "85D99D77417AC06F824A8232984BCA1A4489FE890095AF1655ADD2C70470C1D7",
+      "Bytes": 23388,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-performance-pairs.csv",
+      "SHA256": "A4E39E374ED36C759DF2D4EE47F36DC0954B18A7F37A6416E27A9D921DE0FF01",
+      "Bytes": 23225,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-performance-rows-before-drop-cpu-optimization.csv",
+      "SHA256": "02C6E09CF0A8D27AFCC107F78B99031182BFF8FB6EAA1D3294D77235F7FFC3D0",
+      "Bytes": 65308,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-performance-rows.csv",
+      "SHA256": "68964619B3E5D25D24156B8E0F1CFC714A09DF8B66077FA86B2897825887D243",
+      "Bytes": 64447,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\source-manifest-before-drop-cpu-optimization.json",
+      "SHA256": "8B0E9E68CA1730E36B098F532CA2AC6CE4C700B8A475E7F68EBEEFF22058255E",
+      "Bytes": 28221,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\source-manifest-before-header-viewport.json",
+      "SHA256": "447939C9963A21377A998B51A5EBF2CEC994E8DB8DECCEDE69B38CE8B106E7C2",
+      "Bytes": 25014,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\source-manifest-pre-final-ui.json",
+      "SHA256": "7741AEE528DA5436229F2A1D64CAF2588C0040AC4CDD59F75DD8AAD2BC5F82F3",
+      "Bytes": 12014,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\terminal-and-ordinary-io-report.json",
+      "SHA256": "72EE4ED830FD523286DE9C8D583F8B8AA9E2427C046BD8ABA7EE1C8F5EAD3A4F",
+      "Bytes": 11974,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\ordinary-io-baseline-report.json",
+      "SHA256": "6A6BF3B9153281917B593EA4762C4124DEA87A1D10E9C272E03DDDD289241542",
+      "Bytes": 9659,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline-report.json",
+      "SHA256": "29299B88BBCEAD17BC8E3B7BB2B7126009DFED2DE234CC4C6B4094DB58FBD3B4",
+      "Bytes": 3778285,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline-smoke-report.json",
+      "SHA256": "962843742C60BAF5B1569C288799C2C5F0B5D95BC83B78259D08B8DCD839FFD1",
+      "Bytes": 163318,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline.log",
+      "SHA256": "B23B7E96FCF953A53B84016B6D73EB7890A013FD7BD63D525451FCFE81F7C952",
+      "Bytes": 5170,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\ordinary-io-baseline\\.last-run.json",
+      "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Bytes": 45,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\ordinary-io-baseline-json\\.last-run.json",
+      "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Bytes": 45,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\.last-run.json",
+      "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Bytes": 45,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-037a3-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "6047D329FB4DF062BE92EE68E1E7214B8890973437A2934EDD3664FC3E75E5D7",
+      "Bytes": 120336,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-06835-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "3B662C3B9A391B1245B10DCEF99B433958516DB037DC1657D8E0727AAF16FAF6",
+      "Bytes": 120206,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-11b90-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "E961561DCC313C0258326D77FFEB5FAE19F7466F2A10D41D18512FC682F17961",
+      "Bytes": 114268,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-1c261-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "1B3AA8B2BCAAA60BADA409033E7067B5171BEA6DC59D81BD2295B66238FA0264",
+      "Bytes": 120699,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-1fd1d-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "66F53F75C8CE9D3AC60825AD45B9E0EBF7331EB5AD346410864EAB62FC099019",
+      "Bytes": 120561,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-290a0-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "ABBCC4C87686800D52294C1385F86BD9B03DB53253092CBD3303CC03537AE85E",
+      "Bytes": 119850,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-302a9-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "0F1DE2CE63D254E79A1EF4DB7C1E59A142EF50F71B9C9232288AEE42B2A02B53",
+      "Bytes": 113820,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-3ceed-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "212AD4FF80358FD362BD53F35348DE049B41D7396BA46504D74ECCF0AB8A69B5",
+      "Bytes": 113919,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-44a37-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "011F63925A267E69331C568BE32B7588AB6F436E0F93ACC08AC4F2626FD6699A",
+      "Bytes": 114086,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-456a7-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "43B0273D555699EFA4FCB1A11FA49A81074BB333CF2D95BFDDF8B8F0D9AA1392",
+      "Bytes": 113851,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-5005a-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "A3ACEC944497B96817BDCE45BF305F59D4646CEB45011632342EFFA76F927F83",
+      "Bytes": 113632,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-5b858-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "A444F425A334B0102E4615EFF232FFA832B3D96559662141066F972A5DAD8189",
+      "Bytes": 114035,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-65ffd-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "A66CBCF8EFE8608CD2D03E31F87719B05F7B673929E2AC5E685987F568F4DB03",
+      "Bytes": 113511,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-76418-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "8F0480DAF6C83F8CD56C83B71B25FE02CD257FDCBF2F8F6FD1DF9ADA64A38A48",
+      "Bytes": 120426,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-8937c-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "8C90346519EF5DAC231F199138DC2E4D635A592A9BE36E4237E1AE6B264FD824",
+      "Bytes": 119038,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-a5908-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "615C9AE1932374A7FDD41C893811380FE03A5490C32D8346C38AAA9E9E367CE5",
+      "Bytes": 119731,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-a77e3-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "7DD2153313EAE056CC66AB3D39AC6D775B3AC9452FB750FF098D099DA6D26C62",
+      "Bytes": 119602,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-c046c-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "33DBE4E8AF8B6ED45E310DF5D1D601D795F2BEF11D5362AA0BE72B9D422AD963",
+      "Bytes": 120300,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-c1ee7-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "18D386EB6A7A47CE3A44FDA2667C50221181AE491AAFB3DF987215C646F09D09",
+      "Bytes": 120276,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-c6302-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "597143749DAAAA3EDA936B13AE945895F6A0CBFD431A0A7079BFB966CEF270E7",
+      "Bytes": 113721,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-c9f3f-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "F88B3BDD1155B3907754F918741024745C5BA757CDC2CA70724DDAECAFC22054",
+      "Bytes": 113205,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-ddae0-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "8D553A7489F0EFA260C91F6BAE66E10F89C809EC5FF87D57F91FE354B0CDBE70",
+      "Bytes": 119851,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-f6958-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "F6368EDFB32FA85EC86D13A169F13F916FEF295D41FE5DCD2C1515ADB09F3437",
+      "Bytes": 113498,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline\\responsive-performance-loc-f80a9-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "6DDE3FBD54F0F3FD1305B5C19549F7902FE3C1967BAF4DE74ECD6F1C0AC0366A",
+      "Bytes": 114788,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline-smoke\\.last-run.json",
+      "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Bytes": 45,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\baseline\\shopping-baseline-smoke\\responsive-performance-loc-290a0-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "CAC3072C698327882B22E573BF6F057885CD1D47F7235D1AA57270C401968D10",
+      "Bytes": 119884,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\browser-final-validated\\.last-run.json",
+      "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Bytes": 45,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\browser-regression-final\\.last-run.json",
+      "SHA256": "123E69D7F3C1C949DAEF209D68A3BE4D3876DC128E66CB7579F50F8BC44CA198",
+      "Bytes": 96,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\browser-regression-final\\priority-dialog-interactio-4d510-le-retaining-the-map-canvas-chromium\\error-context.md",
+      "SHA256": "0EB602293406F82C6B791677DA9C7898329A5D5C3C168CD39431AA3486D0EB85",
+      "Bytes": 7095,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\browser-regression-final\\priority-dialog-interactio-4d510-le-retaining-the-map-canvas-chromium\\test-failed-1.png",
+      "SHA256": "0ECF72AC6D78DB7CC62BB422774DFF7EA39305F7BF31B61BC2466A59EA1A4C79",
+      "Bytes": 88196,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\browser-regression-final\\priority-dialog-interactio-4d510-le-retaining-the-map-canvas-chromium\\video.webm",
+      "SHA256": "3DF85DD5929A61F7A1B33CEF744649D2258DAF9CF5F9FD743A15670E74819876",
+      "Bytes": 176636,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\final-ui-recheck\\.last-run.json",
+      "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Bytes": 45,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\playwright-op09\\.last-run.json",
+      "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Bytes": 45,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\root-browser\\.last-run.json",
+      "SHA256": "D09BBEB98BE3A69AD1DCA8088457ABED8A57050C92BA77A14B667FB23B6EF016",
+      "Bytes": 96,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\root-browser\\sheet-import-optional-url--bd4a1-same-file-selection-retries-chromium\\error-context.md",
+      "SHA256": "6F2B0914F944BB4CBB9EDA9030C995F62067538E892511CD8F52023474B38FE5",
+      "Bytes": 10686,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\root-browser\\sheet-import-optional-url--bd4a1-same-file-selection-retries-chromium\\test-failed-1.png",
+      "SHA256": "980E71CB7ECBCEDBE625A61B8CFC86E581265F3FB79C2E82CE28DC6AB064F727",
+      "Bytes": 53718,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\root-browser\\sheet-import-optional-url--bd4a1-same-file-selection-retries-chromium\\video.webm",
+      "SHA256": "82C4F5FD21ECB1E6A55B1B85B94127236A41B2265062EAA9D9D81320942D82F2",
+      "Bytes": 173134,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\.last-run.json",
+      "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Bytes": 45,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-037a3-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "1AC6F97AD558FA20D8FC33DCEFCCF1D7F667C46A44ECB0BDED337FE4FFEF612F",
+      "Bytes": 119260,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-06835-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "CB17011DDACFE53F15529C08D3766B4C25FF1B9B237D39FDF7375B9F94C4D89A",
+      "Bytes": 119997,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-11b90-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "6E35A51189EC224179585AF6F7A57D8D464E8D403C710606E0666F1983D6022D",
+      "Bytes": 113776,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-1c261-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "C20C7730A7E700C8F0D34C34679626E99F884F740AA480739ED81BCC580CBBE1",
+      "Bytes": 120635,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-1fd1d-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "10C396E90782088D037FFB9ED4F9A59F316B4633EE720762DB2BAC45ECBF649C",
+      "Bytes": 120508,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-290a0-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "F6A7A7BC470CBFA7401A151C22346F9DC3E74C3481E152309C3144F523B8AD3D",
+      "Bytes": 119742,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-302a9-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "55ADF959033CF1103877C51811E53F5420EB730F1A5C7229EAE612D2DB144F60",
+      "Bytes": 113858,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-3ceed-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "4636A4877827D8ECAFFF0C5EDF60BD4B8BE67B120AD1C8198C0EA00756984037",
+      "Bytes": 113672,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-44a37-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "9C6BC536580DA504FE87A7FD5C75D6AF14FD85BAFFC1D67A599657E0A0811344",
+      "Bytes": 113737,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-456a7-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "830A60CE2EF72A6E01515629E09CE914F035518B7ACFBF8D63ABD39CD14686FF",
+      "Bytes": 113660,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-5005a-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "A6F0ADD42E4461523E8975B14F41C0C669746F556C775DD95D148D60A5E4313A",
+      "Bytes": 113555,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-5b858-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "39C68039E0040E0C9542150DD02F6DB8F575585F4D3380C3AB37396D8977B12F",
+      "Bytes": 114103,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-65ffd-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "A1CD0AC392787EA52D7BD7A7A366C1AAAF6BB027E2227CC07B2B21BEE7CAF436",
+      "Bytes": 114258,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-76418-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "369BD6F413552C33B3B39D9A3044A2772EA26835D6A93391C5742A1499C197B2",
+      "Bytes": 119613,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-8937c-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "F3F6D5A15199E32FC114DFF987278A24EDEBE04CDC1F479E9CEC0165F8B50A49",
+      "Bytes": 119575,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-a5908-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "C417F95B9D1DF426D096C0253A6B42F489D4D4FC472EF883B9551BE28A34A1B1",
+      "Bytes": 119685,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-a77e3-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "E2A7B28C68D6B1EF2ACC5DC5A7BE0FE68B9698D12B481DCE0A377F29BF2D6F27",
+      "Bytes": 119753,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-c046c-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "FD21584AD83450332E0DA0061E214FF3C1469DD35936ADAB75E7FD0CE6A480AB",
+      "Bytes": 120058,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-c1ee7-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "33D541F243C0D5BDFE66BDEDA02690ACBE9260FA394D49E6941CBE943EA5C9BC",
+      "Bytes": 120379,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-c6302-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "9DD6C0760A0FCBD28615A172B7A47CC5532F4408FA1F96D45882A22A8E61138D",
+      "Bytes": 112981,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-c9f3f-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "185C56F24D6A8170B21EE6406ECD47128DEF9F00CD6A3FF151060051E973C1DD",
+      "Bytes": 113056,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-ddae0-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "5D0E69949A747EF01BDAE98890A8F37894A81139215C68A73A92E152607DBB5F",
+      "Bytes": 120024,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-f6958-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "4D092A7ECAF32410189D05F1C74F43BEB7D2332F8D5EACBF8AEC73406277175E",
+      "Bytes": 113828,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-final\\responsive-performance-loc-f80a9-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "F59CEFD0F76B27431E5943F29139BB2D526F3A97EC41D78B478FD7FCB6AD680D",
+      "Bytes": 113772,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\.last-run.json",
+      "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Bytes": 45,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-037a3-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "B7383B8CB7E57002EF4713E9EA14AB8BE027D3BAD863E5E00D3ADDA9B68A0273",
+      "Bytes": 120240,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-06835-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "94B9FEA3D36AD1C69FF879166DF32E288B590BF228AA380D0DF758E8C210DA8D",
+      "Bytes": 120215,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-11b90-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "63EF90BC75894A3529ADB5CDB4FAEC81EC0721E0F4D2F14D0272004FE45D7065",
+      "Bytes": 113946,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-1c261-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "C2BEDC0265BAAD105C78E3F05E4BB8694691F46A0F64DC1B25A6282D5C663B98",
+      "Bytes": 120425,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-1fd1d-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "08205D584663E87DB3A1C5BDE80D47E3C32C56AC5F9149F07540EF4700761C57",
+      "Bytes": 120299,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-290a0-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "07FA3BEFEAD9792376493DF3756188089F8B95EC77AD555596F6D1DAA8CE00C8",
+      "Bytes": 120329,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-302a9-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "6855EC070AAA43868DA75E87DF840D2B5A2A2075E94EA1999E4A08FBE012819F",
+      "Bytes": 113326,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-3ceed-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "645DF549505957201C3D7B514DC9E6DFA15B67A7262C08E34550E1BC993F81B3",
+      "Bytes": 113476,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-44a37-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "4A4EDF923B02EC22B8B3E4779EB9FC0DFADA824936B3C1642A7B2917A614981A",
+      "Bytes": 113832,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-456a7-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "0E60CE739F5C4B0DFE4F5A8B0F58C6A025D8489EBF34DAC548D098BE989AD9F0",
+      "Bytes": 113589,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-5005a-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "E194A8296716A55F4E9EBAFF3932413A817C32EAA936A850715C477BE1C5E1FF",
+      "Bytes": 113792,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-5b858-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "17FBA7B1A762C72F23B7619326FE0F558F130E9CFAE2470A33F3F1B1102EF742",
+      "Bytes": 113475,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-65ffd-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "122C01B8E5A92A291B729A4847758C8E0CB3A3752B435045891B0F1FEE0B69D0",
+      "Bytes": 113826,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-76418-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "BB76780CCA213B2E2DBE18022E7F7F09F3BB3408298F6E782998F881D1FFE93C",
+      "Bytes": 120088,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-8937c-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "439A2C186357560E93E82AA8B3A06D0E53203AFE42351FA0280CB09A8961A4F1",
+      "Bytes": 119761,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-a5908-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "AE4422D08BAF502B693068331EF4D3A93DF7CC75F5791216B81B713E1F542C19",
+      "Bytes": 120008,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-a77e3-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "7D4F7445FA8D70D225E4E3D3D8C5F1ACF80D4FCBA658B7874D1848A3FB34052A",
+      "Bytes": 119874,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-c046c-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "B1891FC374EE122279925342A1D6ADEE7D963BC0C70742005A5BCAC4D456CD89",
+      "Bytes": 119769,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-c1ee7-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "99064A8FF49D614845D0D340993BBCBFA71048F3FDD532F89A56D08C30595562",
+      "Bytes": 120405,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-c6302-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "519ACC5FC5B1D8659712BAB70B49662D0F0608562A9020150AF64E73CE360650",
+      "Bytes": 113351,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-c9f3f-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "99D99B889DC79D3110251FFA870B9D827E981F455DA24D0B3DDAAA395DD6AA7B",
+      "Bytes": 113358,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-ddae0-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "454B0A1F8789C5288BAE7056C18C4C1FCD09968D9F850CAB621C49E7BCC2F037",
+      "Bytes": 119584,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-f6958-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "F16217A74A423F53E625FB8D5B4CAF7BC8783732AEE81DF6BA1818D9D0ADDDA3",
+      "Bytes": 114025,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\shopping-modified\\responsive-performance-loc-f80a9-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "SHA256": "C7FA9B8F1EF97CAD5C18F7687D28AE2E166D935656C64F82EA6BCAB326D0F255",
+      "Bytes": 114296,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-remediation-20261019\\terminal-and-ordinary-io\\.last-run.json",
+      "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+      "Bytes": 45,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\analyze-drag-main-cpu.ps1",
+      "SHA256": "CB4D86B6F637BE47048A7C6CF5828647A212B82A7704E4975CBC6698B4412187",
+      "Bytes": 4223,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\collect-drag-performance.ps1",
+      "SHA256": "341D20D5CD8BBD70062EADF55A071CA032028DADB6738AA76BD63FA4835B0318",
+      "Bytes": 8580,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-activation-smoke-raw.json",
+      "SHA256": "AA57483E24CDC7CE26602432322187D0EE873832D943A58484A1F0C14542D99C",
+      "Bytes": 144304,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-activation-smoke-report.json",
+      "SHA256": "564D9CFD1637639128A3D4E9F13D5E90892125F2B5B12D2BCB751BC8A8504F4A",
+      "Bytes": 195828,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-activation-smoke.log",
+      "SHA256": "B1274694C8055D0299C63736E6620F4D978BB28F161A0FFECCC6FFB8DA3B0BB4",
+      "Bytes": 386,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-probe-comparison-raw.json",
+      "SHA256": "DC76F627785E2CDFC512E93854D3662AF5C0D5BFADE821640325E0438DD4A67E",
+      "Bytes": 153209,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-probe-comparison-report.json",
+      "SHA256": "B8C3EE0CF8BB4309EDE34C4FC46DB671A91C083B3B6EC64EB59ACC52FB3263A8",
+      "Bytes": 211081,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-probe-comparison.log",
+      "SHA256": "3390A6E93A8DA63B540866ECC450D66D85AD9DE7CABB23D853581E8E5963B0BE",
+      "Bytes": 2167,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-smoke-report.json",
+      "SHA256": "6A9D3BB3057C3B37D4393701F1C7F84A910FE9C0C8F121508B0CB456B8D70525",
+      "Bytes": 6824,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-smoke.log",
+      "SHA256": "7D23A6161E67549DCA6BA6E92C227EE0F51C9C288EFF0F4CD0B95334B25130E1",
+      "Bytes": 2137,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-smoke2-raw.json",
+      "SHA256": "689562B4FFA18964888A1E94325FF6D8816488EF105F3B5140F7D6B5C963286A",
+      "Bytes": 139513,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-smoke2-report.json",
+      "SHA256": "5702D8CFFEFD52A13819846F27A4CDDA154FC5072231DC7BCFB227C59BD0B735",
+      "Bytes": 192811,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-smoke2.log",
+      "SHA256": "FC758FFDCD9456C5B47E655FD68F2E2E87DA4E16CA6EFE9BDA5983F58ED2BB33",
+      "Bytes": 2160,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-stage-trace-raw.json",
+      "SHA256": "94A084A51C57296EAFDCE02D833A9C781B658F57CDF0EBB03516DC50D08011C9",
+      "Bytes": 157093,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-stage-trace-report.json",
+      "SHA256": "B00D79E91A0B9974A333A690F306F28FBBC7C2D56F1FFEC8841594542ED7CA2E",
+      "Bytes": 216271,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-500-touch-off-stage-trace.log",
+      "SHA256": "27CB0584E9C44B3C31340909759554EBA18746C084CFEE751DC0A8E508EFE945",
+      "Bytes": 2170,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-audit-6-corrected-report.json",
+      "SHA256": "6B427577310DD1014D8B8B8CA95965E19D3570A9E01A21702E575607543B077B",
+      "Bytes": 8615,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-audit-6-corrected.log",
+      "SHA256": "A95918B4BB00E34D8819337FB1DCDFF321F8199E96346C95B35470314E29C608",
+      "Bytes": 1240,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-audit-6-final.log",
+      "SHA256": "38ED3212F3120AE8FEC6E5506AAA20F43DD18E2740C9038D5227BDA7C0B82D2D",
+      "Bytes": 846,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-auto-edge-control-report.json",
+      "SHA256": "CD9A1BE0C6D7C7B56C609E1F8FAA80931FABBE2D26EE3C04AC15CFF05DCBD77E",
+      "Bytes": 174742,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-auto-edge-control.log",
+      "SHA256": "5BC2A1A58F39726077CC5CBCB45BE6973E1191109F005900D3F00AE20B333861",
+      "Bytes": 386,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-auto-hit-control-report.json",
+      "SHA256": "96A9500B03292864715DE2025F97AC32A288A87BF2F329F3CED00C34A2B7B609",
+      "Bytes": 6166,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-auto-hit-control.log",
+      "SHA256": "104367876D348243A239F86B65CF958487E2FD2093B26F04DE4031BB50165977",
+      "Bytes": 2129,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-baseline-empty-map-attempt.log",
+      "SHA256": "E8BA6FF1A832C16AA4011C7C31062588740A896343CD53A3639512BBA420C433",
+      "Bytes": 526,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-baseline-final-report.json",
+      "SHA256": "7C8781E94771B50E364BAA0D85DAB1B8919EEF76AE8DC648934EC62607CD0863",
+      "Bytes": 345204,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-baseline-final.log",
+      "SHA256": "B17BEBEB71F294B72A46589A1B2F8E248DE697E68AAF6FE95060C111F07B3CA6",
+      "Bytes": 1495,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-baseline-mapless-control-attempt-report.json",
+      "SHA256": "FD5EF29F3DAF9BA60251C94DF9E3ABA530204DAFCFDFC0ACD844B81A28F84A4B",
+      "Bytes": 155972,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-baseline-mapless-control-attempt.log",
+      "SHA256": "3BAA205DA03A9D3CC2C4DE27D324388F0052C583260A81AEAAB8FB3F4943A0C9",
+      "Bytes": 9122,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-candidate-boundary-before-report.json",
+      "SHA256": "3088A2188AFA64E0BB890A47C2C946D312E80A561B062902BCD48EA5B9C92BAA",
+      "Bytes": 11505,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-candidate-header-before-report.json",
+      "SHA256": "758B1C1D3C1692748BE99C85B35418C7ADD8BD35B64A1DDA2C5C2E46B038750B",
+      "Bytes": 13734,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-candidate-header-before.log",
+      "SHA256": "C3E250B6BD3E28D174F040218265D655FDAD8EE28BB36185329511A00A22E364",
+      "Bytes": 5141,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-cpu-optimization-smoke-raw.json",
+      "SHA256": "0113422DAB51B0FD0BAC3830B0288BD108694A86504FDB74365224FEFCACCB54",
+      "Bytes": 153845,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-cpu-optimization-smoke-report.json",
+      "SHA256": "EC2A5137C89EEB5E0555725C449B9AE591C95D2457EED023FB65AC9960232193",
+      "Bytes": 211903,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-cpu-optimization-smoke.log",
+      "SHA256": "4198A0584474547C1051BA1F0FAF2CE753E4A5A8E8FA83BD2BE795C2B1955A9C",
+      "Bytes": 2148,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-cpu-optimization-stage-raw.json",
+      "SHA256": "924B95DDED35A2B77BCB4FBB8B46F88AF9FD405DA3A2731EE69D17FCFE8F64A6",
+      "Bytes": 173337,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-cpu-optimization-stage-report.json",
+      "SHA256": "F5EEE7F02AD1D87B88E3FBA26D7F31027692BF7678691CB6DFFA958E0AE4F7EF",
+      "Bytes": 237939,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-cpu-optimization-stage-summary.json",
+      "SHA256": "9AE9A8C6F585D79D7D25E5AC58088F273229E40702B24303D66CAB584DA00793",
+      "Bytes": 1298,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-cpu-optimization-stage.log",
+      "SHA256": "64194E64A8C25CAC1950750CC7C2B80C0CA638463E3E43A2EA13EC974F312D80",
+      "Bytes": 2165,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-evidence-index.json",
+      "SHA256": "2C8246A0C318FCDF3626E4D328EA7F92A0797FEA13F124FB21F531877BE68CE8",
+      "Bytes": 3957,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-functional-39-final-report.json",
+      "SHA256": "AF80EC71EE8042CBE708B5279BEBBA8340CEAF5199BB0303C7E2E65B4CBFCBAB",
+      "Bytes": 68339,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-functional-39-final.log",
+      "SHA256": "0D4246AD287CA599C03356B7918FCD303348E172E39F4B2F20E76E287221F418",
+      "Bytes": 18918,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-functional-39-verified-report.json",
+      "SHA256": "BAD7DEEEA813B6E3668985EB4C5B275A5D9A330706756C9323B7E57E7F231E37",
+      "Bytes": 44203,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-functional-39-verified.log",
+      "SHA256": "4E6FCA0D60BF4CF4239D8DAFA5107D8BDFDCA00948BCD42104608FF9CC3F12E1",
+      "Bytes": 6209,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-functional-41-activation-final.log",
+      "SHA256": "5214E137825B0C88A759808A3FB52F85AB6D3CCEC6FF4D9BD841B7BFAA8CFBCB",
+      "Bytes": 1691,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-functional-41-final-report.json",
+      "SHA256": "7148E4BD9898BD7DBA3E9D141387F29450EC4B54CB0567B01F96A692DBF9891D",
+      "Bytes": 46383,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-functional-41-final.log",
+      "SHA256": "2133EFCE260117435701815B5C7118227339A878775555C21A5D728296EAD3F9",
+      "Bytes": 6537,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-functional-candidate-final-report.json",
+      "SHA256": "81CC099858080AA79484272040A9EABA365F78C6587AEBE2BF363E6D52DB3B5F",
+      "Bytes": 34393,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-functional-final-report.json",
+      "SHA256": "786216E42B062D7CD75A302A37FD9DE92E1ADDCA1DC6983118B4DEEC85AF6717",
+      "Bytes": 32176,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-membership-cache-smoke-raw.json",
+      "SHA256": "ED4B72E32C795DF47BEA49469E0DFBC59B720B300D5E59C92908B1A74898347F",
+      "Bytes": 154550,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-membership-cache-smoke-report.json",
+      "SHA256": "F8FDEA60266D0E8D2C01A7BD128289E7F87666AD7F62811686553B94EE42B1CF",
+      "Bytes": 209484,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-membership-cache-smoke.log",
+      "SHA256": "D5DD29F835E4203DCDFA1D9707B16FD26C9D5001FF4E6168184776E8059DA40F",
+      "Bytes": 386,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-post-a554-final-report.json",
+      "SHA256": "D071645C1F7092E86483328CB2498E1810C480DEC59156C8B9463A3E58968188",
+      "Bytes": 1514614,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-post-a554-final.log",
+      "SHA256": "5BC3A5E2FC3C99DCFC0D6D080C5DF7D403FC06B46D152A8258335FAF1814E1F7",
+      "Bytes": 1527,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-post-auto-hit-attempt.log",
+      "SHA256": "15E24A587F9F0700DD5A85B1EA33AFB8CDC8F8F8463BC98C9E9FAFEB964ABC10",
+      "Bytes": 1185,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-post-valid-map-before-drop-optimization-report.json",
+      "SHA256": "823327C8593898A8D09E6FF3CBB10BC4A489369C8F7B05D0380D911BB1305D31",
+      "Bytes": 1521049,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-post-valid-map-before-drop-optimization.log",
+      "SHA256": "24AA0C414D9455F945DA42A2835FE15B4FE735E6BBAF790E23CB73C40C2C2052",
+      "Bytes": 9146,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-retained-rendering-final-report.json",
+      "SHA256": "239C248A506FAA796933F3EB6D230693C35AAC0774E396D342518EA74E6F5C77",
+      "Bytes": 56566,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-retained-rendering-final.log",
+      "SHA256": "4DF5CC3927969204ED8B92CDAB10726ED4C861BCF2DBDCEF540DFC168EB82BC2",
+      "Bytes": 8238,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-split-map-valid-report.json",
+      "SHA256": "78CB1E977BEADCC64DF1834B27771EC91C6872BDB9709EFDC778A202A6F4F8A9",
+      "Bytes": 7339,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-150-native-off-before-drop-optimization-raw.json",
+      "SHA256": "A0BB38A94121F1352A762378D180188A7BFE36EC01EBD40515229A7C4BB2534E",
+      "Bytes": 133145,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-150-native-on-before-drop-optimization-raw.json",
+      "SHA256": "CEC8E3D287CCBAE713767EFFA53BE78909C258BCA74D966D893096938A4CA4E7",
+      "Bytes": 128205,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-150-touch-off-before-drop-optimization-raw.json",
+      "SHA256": "29E8324385F75A2FAA49C64DB2CD6BEAEDC0A3D36522E48AE5E30B9359E0F398",
+      "Bytes": 133000,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-150-touch-on-before-drop-optimization-raw.json",
+      "SHA256": "697D9F15EECB0C7B90BF8CB8C9B98126AEAF3309B894096264D585E4C6A3985C",
+      "Bytes": 128292,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-native-off-before-drop-optimization-raw.json",
+      "SHA256": "995651FF6F078E11D05E078F70D03A737EB663A42B60D1F24AF65BECAF86CC4C",
+      "Bytes": 144889,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-native-on-before-drop-optimization-raw.json",
+      "SHA256": "E91D526E56B2A52A254172C2459B357C245C11AAA930FE65BF6223E696BD9664",
+      "Bytes": 154073,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-native-on-cpu-profile-raw.json",
+      "SHA256": "77FD7540EEF32AA44D18428B59ADC47AF6CEAE18A1B554365DD79DF53871780C",
+      "Bytes": 824785,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-native-on-cpu-report.json",
+      "SHA256": "59F9964F8030924D1DBA872C69AFBB485FA18F4122B879960D8D4FD616DE3ECC",
+      "Bytes": 1338407,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-native-on-cpu-response-raw.json",
+      "SHA256": "0CA774635C23831CA5AF5D800EC9F455F75CE92C0548066499EBB84B0ED0D5C2",
+      "Bytes": 173780,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-native-on-cpu-summary.json",
+      "SHA256": "D965BE0955CD9A2F5F9C8E1599EBB85AE4171C8C59627DDD1CBFAC6EE6B1DC08",
+      "Bytes": 39154,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-native-on-cpu.log",
+      "SHA256": "01D833064786F4A3EC7B5D740102EA53145DADEE18B2CE71A96FEB6F21443BF9",
+      "Bytes": 2146,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-native-on-metrics-raw.json",
+      "SHA256": "2F5AAFE41A77E0BD7325367876DF7F764EF723F3CCA38FFA54963CA415D71EE0",
+      "Bytes": 173957,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-native-on-metrics-report.json",
+      "SHA256": "E96BCC3D556E043F7DC634AC8AC33890D26F5BECEA29DFFC137079192687C250",
+      "Bytes": 238735,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-native-on-metrics.log",
+      "SHA256": "4365723E5A2DDBDC93B1D7D66B2DD2EC85D24A122BC3B2B724D419EF544EE749",
+      "Bytes": 2154,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-native-on-stage-raw.json",
+      "SHA256": "8CE5D7F678184756AF51387635BAAA15326DA76C7B65D88A6676C2AEB6FB079B",
+      "Bytes": 164300,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-native-on-stage-report.json",
+      "SHA256": "55B0B016FA6B68B4B237AB95D5F6944BE9BF5BB0923437E40F19D3F9D9A6AE14",
+      "Bytes": 225860,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-native-on-stage.log",
+      "SHA256": "A3821BE9B5623CFF8224FEE74E96F9DBBDED853E09C18DA70E9A87FD92A2CD1D",
+      "Bytes": 2150,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-touch-off-before-drop-optimization-raw.json",
+      "SHA256": "91BE3280D9DD04021318D10E204267696ABA302EDD0058B11E8F317A9D9734FF",
+      "Bytes": 145075,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-500-touch-on-before-drop-optimization-raw.json",
+      "SHA256": "2551BB841DE180B818E148C88C3E1E0177FBD12D70B981895A531DF17989B22F",
+      "Bytes": 154116,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-valid-map-before-drop-optimization-summary.json",
+      "SHA256": "0D331C0A3DA8526F03555BDDE142C034F152EAEAF1309674788FBBC91E5B74C8",
+      "Bytes": 14739,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-150-native-off-raw.json",
+      "SHA256": "1215E8F0CD7D14CE0272B46E89209FE36ACFEF02AB43A6A456AC9355CFDFD7A3",
+      "Bytes": 18725,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-150-native-on-raw.json",
+      "SHA256": "25C1A66A83A474EDB9A462680F4F2492304873C236FAC394EE19F584BC905A36",
+      "Bytes": 24750,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-150-touch-off-raw.json",
+      "SHA256": "EAB94A05D94C72B20699FDD18DFB0B43C3A382BA45C71E865891D83291DA781A",
+      "Bytes": 18961,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-150-touch-on-raw.json",
+      "SHA256": "BE97C751EB895AE7F76A18C6575939722DCCE8D229E82DA3931DD0F657DCAD34",
+      "Bytes": 24990,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-500-native-off-raw.json",
+      "SHA256": "2199D972F29BD0CA5E3F2C270D37BD61DD7D7E52BF0BA5E52EFBA27558140E1D",
+      "Bytes": 30216,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-500-native-on-raw.json",
+      "SHA256": "B7DFB493DFF952903EFFF8DE0B93018F096CA884ECE88C0476B4AE671A7A36CC",
+      "Bytes": 50556,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-500-touch-off-raw.json",
+      "SHA256": "856DC87781C31A9E7055DE4EE740B07FC72810A06490B3105C617E88A8C0949B",
+      "Bytes": 30360,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-500-touch-on-raw.json",
+      "SHA256": "D1BDBC1924C6BDA08C3822C659A74CC0F05BAA6592954826D71C40A7A1F48F91",
+      "Bytes": 50475,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\drag-performance-summary.json",
+      "SHA256": "88FC4BC56CAAD0A2989D9EA9F1B58E56919101F22C0E964733FBC12AECF6AB68",
+      "Bytes": 59137,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-150-native-off-raw.json",
+      "SHA256": "5491B3EDDF4C2B3278DFA1FBE718F8D1FD2557DB47CA112587AB3D5608A4E448",
+      "Bytes": 133836,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-150-native-on-raw.json",
+      "SHA256": "FD0E001F728D2792AE4445CAA5CAF04AAC2A61ADD36339B855BE0382731DE97F",
+      "Bytes": 129030,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-150-touch-off-raw.json",
+      "SHA256": "528E9FA333B45AF673DAD16D8220BB7A5B9E88C69274E594BC10A3A3557C6361",
+      "Bytes": 133749,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-150-touch-on-raw.json",
+      "SHA256": "1FD20E248FB44ABCB17A850562CD966C9F51D40856EDC9FDB19B13DAD6CFF2B1",
+      "Bytes": 129130,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-500-native-off-raw.json",
+      "SHA256": "9B92CD7FFDFA94948A6BA30C2333237E4B94043EFD1C01BB4D11F683EE5BF044",
+      "Bytes": 145355,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-500-native-on-raw.json",
+      "SHA256": "D19DAC79F914AECD640ADC70C3F5D24925BC2DF4F1F2E959752F53EBAFDD33FF",
+      "Bytes": 154764,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-500-touch-off-raw.json",
+      "SHA256": "6826B3BA09246408E425CB20FD9A20C37D844A7B1023BB8853F967C467E021CF",
+      "Bytes": 145441,
+      "Matched": true
+    },
+    {
+      "Path": "artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-500-touch-on-raw.json",
+      "SHA256": "81EAC412156D2C0284527DF7A45B048E7FA8B2848B6F219B35718349A14B2D6A",
+      "Bytes": 154817,
+      "Matched": true
+    }
+  ],
+  "UTF8NoBOMLF": true,
+  "EncodingChanged": false,
+  "Passed": true
+}

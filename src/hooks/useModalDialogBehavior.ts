@@ -6,6 +6,7 @@ import {
   type KeyboardEvent,
   type RefObject,
 } from "react";
+import { isTopModal, registerModalFocus } from "../utils/modalFocusBoundary";
 import { acquireBodyScrollLock } from "../utils/bodyScrollLock";
 
 const FOCUSABLE_SELECTOR = [
@@ -30,6 +31,7 @@ const getFocusableElements = (container: HTMLElement | null) =>
 
 type UseModalDialogBehaviorOptions = {
   isOpen: boolean;
+  containExternalFocus?: boolean;
   onEscape: () => void;
   initialFocusRef?: RefObject<HTMLElement | null>;
   fallbackFocusRef?: RefObject<HTMLElement | null>;
@@ -37,6 +39,7 @@ type UseModalDialogBehaviorOptions = {
 
 export const useModalDialogBehavior = <T extends HTMLElement = HTMLDivElement>({
   isOpen,
+  containExternalFocus = false,
   onEscape,
   initialFocusRef,
   fallbackFocusRef,
@@ -46,20 +49,12 @@ export const useModalDialogBehavior = <T extends HTMLElement = HTMLDivElement>({
 
   useEffect(() => {
     if (!isOpen) return;
-    const fallbackFocusContainer = fallbackFocusRef?.current ?? null;
     const releaseBodyScrollLock = acquireBodyScrollLock({
       lockOverscroll: true,
     });
 
     return () => {
       releaseBodyScrollLock();
-      const returnFocus = returnFocusRef.current;
-      returnFocusRef.current = null;
-      const fallbackFocus = getFocusableElements(fallbackFocusContainer)[0];
-      const focusTarget = returnFocus?.isConnected
-        ? returnFocus
-        : fallbackFocus;
-      focusTarget?.focus({ preventScroll: true });
     };
   }, [fallbackFocusRef, isOpen]);
 
@@ -71,10 +66,19 @@ export const useModalDialogBehavior = <T extends HTMLElement = HTMLDivElement>({
       document.activeElement !== document.body
         ? document.activeElement
         : null;
+    const element = dialogRef.current;
+    if (!element) return;
+    if (!element.hasAttribute("tabindex")) element.tabIndex = -1;
+    const restore =
+      returnFocusRef.current ??
+      getFocusableElements(fallbackFocusRef?.current ?? null)[0] ??
+      null;
+    const release = registerModalFocus(element, restore, containExternalFocus);
     const initialFocus =
-      initialFocusRef?.current ?? getFocusableElements(dialogRef.current)[0];
-    initialFocus?.focus({ preventScroll: true });
-  }, [initialFocusRef, isOpen]);
+      initialFocusRef?.current ?? getFocusableElements(element)[0] ?? element;
+    initialFocus.focus({ preventScroll: true });
+    return release;
+  }, [containExternalFocus, fallbackFocusRef, initialFocusRef, isOpen]);
 
   const onDialogKeyDown = useCallback(
     (event: KeyboardEvent<T>) => {
@@ -82,6 +86,12 @@ export const useModalDialogBehavior = <T extends HTMLElement = HTMLDivElement>({
       if (eventTarget?.closest('[role="dialog"]') !== event.currentTarget) {
         return;
       }
+
+      if (
+        !isTopModal(dialogRef.current) ||
+        event.currentTarget.getAttribute("aria-modal") === "false"
+      )
+        return;
 
       if (event.key === "Escape") {
         event.preventDefault();
@@ -95,8 +105,17 @@ export const useModalDialogBehavior = <T extends HTMLElement = HTMLDivElement>({
       const focusableElements = getFocusableElements(dialogElement);
       const first = focusableElements[0];
       const last = focusableElements[focusableElements.length - 1];
-      if (!first || !last) return;
+      if (!first || !last) {
+        event.preventDefault();
+        dialogElement?.focus({ preventScroll: true });
+        return;
+      }
 
+      if (!focusableElements.includes(document.activeElement as HTMLElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+        return;
+      }
       if (
         event.shiftKey &&
         (document.activeElement === first ||

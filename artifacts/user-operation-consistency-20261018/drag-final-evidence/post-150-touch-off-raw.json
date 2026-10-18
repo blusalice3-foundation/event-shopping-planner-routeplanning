@@ -1,0 +1,5162 @@
+{
+  "build": "npm run build:app",
+  "fixture": {
+    "count": 150,
+    "halls": [
+      "A",
+      "B"
+    ],
+    "priorities": [
+      "none",
+      "priority"
+    ]
+  },
+  "browser": "chromium",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+  "input": "touch",
+  "grouped": false,
+  "warmup": 1,
+  "probeCounting": {
+    "positiveControl": true,
+    "comparableStartEnd": false,
+    "pointer": true,
+    "drop": false
+  },
+  "records": {
+    "same-boundary": {
+      "samples": [
+        13.399999998509884,
+        13.5,
+        14.100000001490116,
+        14.300000004470348,
+        13.200000002980232,
+        14.099999994039536,
+        12.200000002980232,
+        14.799999997019768,
+        13.300000004470348,
+        14.099999994039536,
+        14.5,
+        13.199999995529652,
+        14.399999998509884,
+        13.700000002980232,
+        14.299999997019768,
+        14.199999995529652,
+        14.200000002980232,
+        14.400000005960464,
+        13.100000001490116,
+        13.600000001490116
+      ],
+      "medianMs": 14.099999994039536,
+      "p95Ms": 14.5
+    },
+    "boundary-switch": {
+      "samples": [
+        13.700000002980232,
+        14.100000001490116,
+        13.600000001490116,
+        14,
+        14,
+        13.399999998509884,
+        14.5,
+        14.199999995529652,
+        12.899999998509884,
+        14.399999998509884,
+        13.599999994039536,
+        13.299999997019768,
+        14.799999997019768,
+        13.200000002980232,
+        14.5,
+        13.399999998509884,
+        14.300000004470348,
+        13.200000002980232,
+        14.399999998509884,
+        14.200000002980232
+      ],
+      "medianMs": 14,
+      "p95Ms": 14.5
+    },
+    "multiple-merges": {
+      "samples": [
+        12.700000002980232,
+        13.800000004470348,
+        13.800000004470348,
+        13.899999998509884,
+        12.700000002980232,
+        12.5,
+        15,
+        12.200000002980232,
+        13.399999998509884,
+        13.600000001490116,
+        12.600000001490116,
+        15,
+        12,
+        13.899999998509884,
+        14.799999997019768,
+        12.899999998509884,
+        13.100000001490116,
+        13.899999998509884,
+        12.100000001490116,
+        13.800000004470348
+      ],
+      "medianMs": 13.399999998509884,
+      "p95Ms": 15
+    },
+    "mixed": {
+      "samples": [
+        11.699999995529652,
+        13.199999995529652,
+        14.199999995529652,
+        11.799999997019768,
+        13.800000004470348,
+        13.199999995529652,
+        13.600000001490116,
+        13.700000002980232,
+        12.699999995529652,
+        11.399999998509884,
+        13.200000002980232,
+        13.399999998509884,
+        13.5,
+        12.299999997019768,
+        13.399999998509884,
+        12.699999995529652,
+        12.699999995529652,
+        12.600000001490116,
+        13.899999998509884,
+        13.299999997019768
+      ],
+      "medianMs": 13.199999995529652,
+      "p95Ms": 13.899999998509884
+    },
+    "offscreen-merge": {
+      "samples": [
+        13.799999997019768,
+        12.799999997019768,
+        14.899999998509884,
+        12.100000001490116,
+        13.399999998509884,
+        12.799999997019768,
+        14,
+        12.399999998509884,
+        13.5,
+        13.799999997019768,
+        14.5,
+        11.899999998509884,
+        13.799999997019768,
+        13.899999998509884,
+        11.800000004470348,
+        14.199999995529652,
+        14,
+        12.799999997019768,
+        15.100000001490116,
+        13.799999997019768
+      ],
+      "medianMs": 13.799999997019768,
+      "p95Ms": 14.899999998509884
+    },
+    "auto-scroll": {
+      "samples": [
+        34.5,
+        29.399999998509884,
+        26.5,
+        28.600000001490116,
+        26.30000000447035,
+        29.899999998509884,
+        30.19999999552965,
+        28.799999997019768,
+        26,
+        28.5,
+        28.899999998509884,
+        28.5,
+        29,
+        29.099999994039536,
+        25.899999998509884,
+        29.5,
+        29.099999994039536,
+        27.899999998509884,
+        28.599999994039536,
+        28.30000000447035
+      ],
+      "medianMs": 28.600000001490116,
+      "p95Ms": 30.19999999552965
+    },
+    "rejected": {
+      "samples": [
+        13.299999997019768,
+        14.099999994039536,
+        13.900000005960464,
+        13.5,
+        13,
+        14,
+        14.200000002980232,
+        13.600000001490116,
+        13.299999997019768,
+        14,
+        13.700000002980232,
+        13.299999997019768,
+        12.700000002980232,
+        13.799999997019768,
+        14.5,
+        14.399999998509884,
+        13.700000002980232,
+        13,
+        13.099999994039536,
+        15
+      ],
+      "medianMs": 13.700000002980232,
+      "p95Ms": 14.5
+    },
+    "drop": {
+      "samples": [
+        37.19999999552965,
+        29.100000001490116,
+        28,
+        29,
+        28.799999997019768,
+        28.19999999552965,
+        28.5,
+        33.5,
+        29.299999997019768,
+        23.700000002980232,
+        29.600000001490116,
+        28.399999998509884,
+        28.5,
+        29,
+        26.100000001490116,
+        28,
+        28.400000005960464,
+        28.399999998509884,
+        29.399999998509884,
+        29.099999994039536
+      ],
+      "medianMs": 28.5,
+      "p95Ms": 33.5
+    }
+  },
+  "locality": {
+    "same-boundary": {
+      "counts": {},
+      "mounts": {},
+      "known": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:priority",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:new-2",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\"",
+        "item:new-65",
+        "item:new-66",
+        "item:new-67",
+        "item:new-68",
+        "item:new-69",
+        "item:merge-offscreen",
+        "item:execute-40",
+        "item:execute-45",
+        "item:execute-50",
+        "item:execute-55",
+        "item:execute-60",
+        "item:execute-65",
+        "item:offscreen",
+        "item:execute-35",
+        "item:execute-2",
+        "item:new-3"
+      ],
+      "mounted": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3"
+      ],
+      "mountedBefore": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3"
+      ],
+      "guideSamples": [
+        {
+          "ms": 13.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.300000004470348,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.099999994039536,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.300000004470348,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.099999994039536,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.199999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.700000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.199999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.400000005960464,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.600000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        }
+      ],
+      "io": {
+        "before": {
+          "requests": [],
+          "completed": []
+        },
+        "after": {
+          "requests": [],
+          "completed": []
+        },
+        "delta": {
+          "mutationRequests": [],
+          "completedReadwriteTransactions": []
+        }
+      }
+    },
+    "boundary-switch": {
+      "counts": {},
+      "mounts": {},
+      "known": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:priority",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:new-2",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\"",
+        "item:new-65",
+        "item:new-66",
+        "item:new-67",
+        "item:new-68",
+        "item:new-69",
+        "item:merge-offscreen",
+        "item:execute-40",
+        "item:execute-45",
+        "item:execute-50",
+        "item:execute-55",
+        "item:execute-60",
+        "item:execute-65",
+        "item:offscreen",
+        "item:execute-35",
+        "item:execute-2",
+        "item:new-3"
+      ],
+      "mounted": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3"
+      ],
+      "mountedBefore": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3"
+      ],
+      "guideSamples": [
+        {
+          "ms": 13.700000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.600000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.199999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.899999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.599999994039536,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.300000004470348,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            }
+          ],
+          "header": false
+        }
+      ],
+      "io": {
+        "before": {
+          "requests": [],
+          "completed": []
+        },
+        "after": {
+          "requests": [],
+          "completed": []
+        },
+        "delta": {
+          "mutationRequests": [],
+          "completedReadwriteTransactions": []
+        }
+      }
+    },
+    "multiple-merges": {
+      "counts": {},
+      "mounts": {},
+      "known": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:priority",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:new-2",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\"",
+        "item:new-65",
+        "item:new-66",
+        "item:new-67",
+        "item:new-68",
+        "item:new-69",
+        "item:merge-offscreen",
+        "item:execute-40",
+        "item:execute-45",
+        "item:execute-50",
+        "item:execute-55",
+        "item:execute-60",
+        "item:execute-65",
+        "item:offscreen",
+        "item:execute-35",
+        "item:execute-2",
+        "item:new-3"
+      ],
+      "mounted": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3"
+      ],
+      "mountedBefore": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3"
+      ],
+      "guideSamples": [
+        {
+          "ms": 12.700000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.800000004470348,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.800000004470348,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.899999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.700000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 15,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.600000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.600000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 15,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.899999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.899999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.899999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.800000004470348,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        }
+      ],
+      "io": {
+        "before": {
+          "requests": [],
+          "completed": []
+        },
+        "after": {
+          "requests": [],
+          "completed": []
+        },
+        "delta": {
+          "mutationRequests": [],
+          "completedReadwriteTransactions": []
+        }
+      }
+    },
+    "mixed": {
+      "counts": {},
+      "mounts": {},
+      "known": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:priority",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:new-2",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\"",
+        "item:new-65",
+        "item:new-66",
+        "item:new-67",
+        "item:new-68",
+        "item:new-69",
+        "item:merge-offscreen",
+        "item:execute-40",
+        "item:execute-45",
+        "item:execute-50",
+        "item:execute-55",
+        "item:execute-60",
+        "item:execute-65",
+        "item:offscreen",
+        "item:execute-35",
+        "item:execute-2",
+        "item:new-3"
+      ],
+      "mounted": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3"
+      ],
+      "mountedBefore": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3"
+      ],
+      "guideSamples": [
+        {
+          "ms": 11.699999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.199999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.199999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 11.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.800000004470348,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.199999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.600000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.700000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.699999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 11.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.699999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.699999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.600000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.899999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before",
+              "owner": "a1"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1"
+            }
+          ],
+          "header": false
+        }
+      ],
+      "io": {
+        "before": {
+          "requests": [],
+          "completed": []
+        },
+        "after": {
+          "requests": [],
+          "completed": []
+        },
+        "delta": {
+          "mutationRequests": [],
+          "completedReadwriteTransactions": []
+        }
+      }
+    },
+    "offscreen-merge": {
+      "counts": {},
+      "mounts": {},
+      "known": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:priority",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:new-2",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\"",
+        "item:new-65",
+        "item:new-66",
+        "item:new-67",
+        "item:new-68",
+        "item:new-69",
+        "item:merge-offscreen",
+        "item:execute-40",
+        "item:execute-45",
+        "item:execute-50",
+        "item:execute-55",
+        "item:execute-60",
+        "item:execute-65",
+        "item:offscreen",
+        "item:execute-35",
+        "item:execute-2",
+        "item:new-3"
+      ],
+      "mounted": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3"
+      ],
+      "mountedBefore": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3"
+      ],
+      "guideSamples": [
+        {
+          "ms": 13.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.899999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 11.899999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.899999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 11.800000004470348,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14.199999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 14,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 12.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 15.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        },
+        {
+          "ms": 13.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2"
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "item:\"offscreen\""
+            }
+          ],
+          "header": false
+        }
+      ],
+      "io": {
+        "before": {
+          "requests": [],
+          "completed": []
+        },
+        "after": {
+          "requests": [],
+          "completed": []
+        },
+        "delta": {
+          "mutationRequests": [],
+          "completedReadwriteTransactions": []
+        }
+      }
+    },
+    "auto-scroll": {
+      "counts": {},
+      "mounts": {
+        "item:execute-3": 1,
+        "item:new-4": 1,
+        "item:execute-4": 1,
+        "item:new-5": 1
+      },
+      "known": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:priority",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:new-2",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\"",
+        "item:new-65",
+        "item:new-66",
+        "item:new-67",
+        "item:new-68",
+        "item:new-69",
+        "item:merge-offscreen",
+        "item:execute-40",
+        "item:execute-45",
+        "item:execute-50",
+        "item:execute-55",
+        "item:execute-60",
+        "item:execute-65",
+        "item:offscreen",
+        "item:execute-35",
+        "item:execute-2",
+        "item:new-3",
+        "item:execute-3",
+        "item:new-4",
+        "item:execute-4",
+        "item:new-5"
+      ],
+      "mounted": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:execute-3",
+        "item:execute-4",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3",
+        "item:new-4",
+        "item:new-5"
+      ],
+      "mountedBefore": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3"
+      ],
+      "guideSamples": [
+        {
+          "ms": 34.5,
+          "scrollBefore": 200,
+          "scrollAfter": 220,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 793.84375,
+              "ownerTop": 579.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 1029.84375,
+              "ownerTop": 815.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17605.84375,
+              "ownerTop": 17391.84375
+            }
+          ]
+        },
+        {
+          "ms": 29.399999998509884,
+          "scrollBefore": 220,
+          "scrollAfter": 240,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 773.84375,
+              "ownerTop": 559.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 1009.84375,
+              "ownerTop": 795.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17585.84375,
+              "ownerTop": 17371.84375
+            }
+          ]
+        },
+        {
+          "ms": 26.5,
+          "scrollBefore": 240,
+          "scrollAfter": 260,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 753.84375,
+              "ownerTop": 539.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 989.84375,
+              "ownerTop": 775.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17565.84375,
+              "ownerTop": 17351.84375
+            }
+          ]
+        },
+        {
+          "ms": 28.600000001490116,
+          "scrollBefore": 260,
+          "scrollAfter": 280,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 948.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 733.84375,
+              "ownerTop": 519.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 969.84375,
+              "ownerTop": 755.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17545.84375,
+              "ownerTop": 17331.84375
+            }
+          ]
+        },
+        {
+          "ms": 26.30000000447035,
+          "scrollBefore": 280,
+          "scrollAfter": 300,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 938.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 713.84375,
+              "ownerTop": 499.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 949.84375,
+              "ownerTop": 735.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17525.84375,
+              "ownerTop": 17311.84375
+            }
+          ]
+        },
+        {
+          "ms": 29.899999998509884,
+          "scrollBefore": 300,
+          "scrollAfter": 320,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 928.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 693.84375,
+              "ownerTop": 479.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 929.84375,
+              "ownerTop": 715.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17505.84375,
+              "ownerTop": 17291.84375
+            }
+          ]
+        },
+        {
+          "ms": 30.19999999552965,
+          "scrollBefore": 320,
+          "scrollAfter": 340,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 918.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 673.84375,
+              "ownerTop": 459.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 909.84375,
+              "ownerTop": 695.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17485.84375,
+              "ownerTop": 17271.84375
+            }
+          ]
+        },
+        {
+          "ms": 28.799999997019768,
+          "scrollBefore": 340,
+          "scrollAfter": 360,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 908.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 653.84375,
+              "ownerTop": 439.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 889.84375,
+              "ownerTop": 675.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17465.84375,
+              "ownerTop": 17251.84375
+            }
+          ]
+        },
+        {
+          "ms": 26,
+          "scrollBefore": 360,
+          "scrollAfter": 380,
+          "trigger": {
+            "targetId": "execute-1",
+            "x": 132,
+            "y": 955.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 633.84375,
+              "ownerTop": 419.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 869.84375,
+              "ownerTop": 655.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17445.84375,
+              "ownerTop": 17231.84375
+            }
+          ]
+        },
+        {
+          "ms": 28.5,
+          "scrollBefore": 380,
+          "scrollAfter": 400,
+          "trigger": {
+            "targetId": "execute-1",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 613.84375,
+              "ownerTop": 399.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 849.84375,
+              "ownerTop": 635.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17425.84375,
+              "ownerTop": 17211.84375
+            }
+          ]
+        },
+        {
+          "ms": 28.899999998509884,
+          "scrollBefore": 400,
+          "scrollAfter": 420,
+          "trigger": {
+            "targetId": "execute-1",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 593.84375,
+              "ownerTop": 379.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 829.84375,
+              "ownerTop": 615.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17405.84375,
+              "ownerTop": 17191.84375
+            }
+          ]
+        },
+        {
+          "ms": 28.5,
+          "scrollBefore": 420,
+          "scrollAfter": 440,
+          "trigger": {
+            "targetId": "execute-1",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 573.84375,
+              "ownerTop": 359.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 809.84375,
+              "ownerTop": 595.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17385.84375,
+              "ownerTop": 17171.84375
+            }
+          ]
+        },
+        {
+          "ms": 29,
+          "scrollBefore": 440,
+          "scrollAfter": 460,
+          "trigger": {
+            "targetId": "execute-1",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 553.84375,
+              "ownerTop": 339.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 789.84375,
+              "ownerTop": 575.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17365.84375,
+              "ownerTop": 17151.84375
+            }
+          ]
+        },
+        {
+          "ms": 29.099999994039536,
+          "scrollBefore": 460,
+          "scrollAfter": 480,
+          "trigger": {
+            "targetId": "execute-1",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 533.84375,
+              "ownerTop": 319.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 769.84375,
+              "ownerTop": 555.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17345.84375,
+              "ownerTop": 17131.84375
+            }
+          ]
+        },
+        {
+          "ms": 25.899999998509884,
+          "scrollBefore": 480,
+          "scrollAfter": 500,
+          "trigger": {
+            "targetId": "execute-1",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 513.84375,
+              "ownerTop": 299.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 749.84375,
+              "ownerTop": 535.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17325.84375,
+              "ownerTop": 17111.84375
+            }
+          ]
+        },
+        {
+          "ms": 29.5,
+          "scrollBefore": 500,
+          "scrollAfter": 520,
+          "trigger": {
+            "targetId": "execute-1",
+            "x": 132,
+            "y": 946.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 493.84375,
+              "ownerTop": 279.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 729.84375,
+              "ownerTop": 515.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17305.84375,
+              "ownerTop": 17091.84375
+            }
+          ]
+        },
+        {
+          "ms": 29.099999994039536,
+          "scrollBefore": 520,
+          "scrollAfter": 540,
+          "trigger": {
+            "targetId": "execute-1",
+            "x": 132,
+            "y": 936.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 473.84375,
+              "ownerTop": 259.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 709.84375,
+              "ownerTop": 495.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17285.84375,
+              "ownerTop": 17071.84375
+            }
+          ]
+        },
+        {
+          "ms": 27.899999998509884,
+          "scrollBefore": 540,
+          "scrollAfter": 560,
+          "trigger": {
+            "targetId": "execute-1",
+            "x": 132,
+            "y": 926.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 453.84375,
+              "ownerTop": 239.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 689.84375,
+              "ownerTop": 475.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17265.84375,
+              "ownerTop": 17051.84375
+            }
+          ]
+        },
+        {
+          "ms": 28.599999994039536,
+          "scrollBefore": 560,
+          "scrollAfter": 580,
+          "trigger": {
+            "targetId": "execute-1",
+            "x": 132,
+            "y": 916.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 433.84375,
+              "ownerTop": 219.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 669.84375,
+              "ownerTop": 455.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17245.84375,
+              "ownerTop": 17031.84375
+            }
+          ]
+        },
+        {
+          "ms": 28.30000000447035,
+          "scrollBefore": 580,
+          "scrollAfter": 600,
+          "trigger": {
+            "targetId": "execute-1",
+            "x": 132,
+            "y": 906.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "a2",
+              "offsetPx": 0,
+              "viewportTop": 413.84375,
+              "ownerTop": 199.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "b1",
+              "offsetPx": 0,
+              "viewportTop": 649.84375,
+              "ownerTop": 435.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "offscreen",
+              "offsetPx": 0,
+              "viewportTop": 17225.84375,
+              "ownerTop": 17011.84375
+            }
+          ]
+        }
+      ],
+      "io": {
+        "before": {
+          "requests": [],
+          "completed": []
+        },
+        "after": {
+          "requests": [],
+          "completed": []
+        },
+        "delta": {
+          "mutationRequests": [],
+          "completedReadwriteTransactions": []
+        }
+      }
+    },
+    "rejected": {
+      "counts": {},
+      "mounts": {},
+      "known": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:priority",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:new-2",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\"",
+        "item:new-65",
+        "item:new-66",
+        "item:new-67",
+        "item:new-68",
+        "item:new-69",
+        "item:merge-offscreen",
+        "item:execute-40",
+        "item:execute-45",
+        "item:execute-50",
+        "item:execute-55",
+        "item:execute-60",
+        "item:execute-65",
+        "item:offscreen",
+        "item:execute-35",
+        "item:execute-2",
+        "item:new-3",
+        "item:execute-3",
+        "item:new-4",
+        "item:execute-4",
+        "item:new-5"
+      ],
+      "mounted": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3"
+      ],
+      "mountedBefore": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "item:priority",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:execute-2",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:new-2",
+        "item:new-3"
+      ],
+      "guideSamples": [
+        {
+          "ms": 13.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 14.099999994039536,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 13.900000005960464,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 13.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 13,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 14,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 14.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 13.600000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 13.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 14,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 13.700000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 13.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 12.700000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 13.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 14.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 14.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 13.700000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 13,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 13.099999994039536,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        },
+        {
+          "ms": 15,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "rejected",
+          "text": "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          "guides": [],
+          "header": false
+        }
+      ],
+      "io": {
+        "before": {
+          "requests": [],
+          "completed": []
+        },
+        "after": {
+          "requests": [],
+          "completed": []
+        },
+        "delta": {
+          "mutationRequests": [],
+          "completedReadwriteTransactions": []
+        }
+      }
+    }
+  },
+  "pointerIO": {
+    "settleMs": 600,
+    "before": {
+      "requests": [],
+      "completed": []
+    },
+    "after": {
+      "requests": [],
+      "completed": []
+    },
+    "delta": {
+      "mutationRequests": [],
+      "completedReadwriteTransactions": []
+    }
+  },
+  "start": [
+    {
+      "totalMs": 217.70000000298023,
+      "fallbackMs": 17.700000002980232,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 4.800000004470348,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 212.89999999850988,
+      "fallbackMs": 12.899999998509884,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5.699999995529652,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 211,
+      "fallbackMs": 11,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5.300000004470348,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 222.69999999552965,
+      "fallbackMs": 22.69999999552965,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5.699999995529652,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 217.69999999552965,
+      "fallbackMs": 17.69999999552965,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 4.899999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 215.79999999701977,
+      "fallbackMs": 15.799999997019768,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 4.799999997019768,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 211.79999999701977,
+      "fallbackMs": 11.799999997019768,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5.100000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 208.5,
+      "fallbackMs": 8.5,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5.100000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 219.60000000149012,
+      "fallbackMs": 19.600000001490116,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 4.600000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 216.39999999850988,
+      "fallbackMs": 16.399999998509884,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5.299999997019768,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 211.19999999552965,
+      "fallbackMs": 11.199999995529652,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 221.10000000149012,
+      "fallbackMs": 21.100000001490116,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 4.899999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 217.10000000149012,
+      "fallbackMs": 17.100000001490116,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 4.699999995529652,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 214.89999999850988,
+      "fallbackMs": 14.899999998509884,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5.100000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 212.10000000149012,
+      "fallbackMs": 12.100000001490116,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 4.9000000059604645,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 211.10000000149012,
+      "fallbackMs": 11.100000001490116,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 4.899999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 209.89999999850988,
+      "fallbackMs": 9.899999998509884,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 4.600000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 209.60000000149012,
+      "fallbackMs": 9.600000001490116,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5.299999997019768,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 207.69999999552965,
+      "fallbackMs": 7.699999995529652,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 219.89999999850988,
+      "fallbackMs": 19.899999998509884,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 4.5999999940395355,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    }
+  ],
+  "end": [
+    15.199999995529652,
+    6.600000001490116,
+    6,
+    8.5,
+    12.799999997019768,
+    16.100000001490116,
+    6,
+    6.899999998509884,
+    11.399999998509884,
+    15.399999998509884,
+    5.4000000059604645,
+    10,
+    14.600000001490116,
+    17.30000000447035,
+    6.399999998509884,
+    5.4000000059604645,
+    5.899999998509884,
+    5.200000002980232,
+    7.5,
+    11.399999998509884
+  ],
+  "fixtureControl": [
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\""
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-10:none",
+        "B-15:none",
+        "B-20:none",
+        "B-25:none",
+        "B-30:none",
+        "B-35:none",
+        "B-40:none",
+        "B-45:none",
+        "B-50:none",
+        "B-55:none",
+        "B-60:none",
+        "B-65:none",
+        "B-70:none",
+        "B-75:none",
+        "B-999a:none"
+      ]
+    },
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\""
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-10:none",
+        "B-15:none",
+        "B-20:none",
+        "B-25:none",
+        "B-30:none",
+        "B-35:none",
+        "B-40:none",
+        "B-45:none",
+        "B-50:none",
+        "B-55:none",
+        "B-60:none",
+        "B-65:none",
+        "B-70:none",
+        "B-75:none",
+        "B-999a:none"
+      ]
+    },
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\""
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-10:none",
+        "B-15:none",
+        "B-20:none",
+        "B-25:none",
+        "B-30:none",
+        "B-35:none",
+        "B-40:none",
+        "B-45:none",
+        "B-50:none",
+        "B-55:none",
+        "B-60:none",
+        "B-65:none",
+        "B-70:none",
+        "B-75:none",
+        "B-999a:none"
+      ]
+    }
+  ],
+  "positiveControl": {
+    "counts": {
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"": 6,
+      "item:priority": 4,
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"": 6
+    },
+    "mounts": {},
+    "known": [
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+      "item:merge-a",
+      "item:merge-b",
+      "item:new-x",
+      "item:bad-priority",
+      "item:new-0",
+      "item:new-1",
+      "item:priority",
+      "item:a1",
+      "item:a2",
+      "item:b1",
+      "item:execute-1",
+      "item:new-2",
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\"",
+      "item:new-65",
+      "item:new-66",
+      "item:new-67",
+      "item:new-68",
+      "item:new-69",
+      "item:merge-offscreen",
+      "item:execute-40",
+      "item:execute-45",
+      "item:execute-50",
+      "item:execute-55",
+      "item:execute-60",
+      "item:execute-65",
+      "item:offscreen",
+      "item:execute-35"
+    ],
+    "mounted": [
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+      "item:priority",
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+      "item:a1",
+      "item:a2",
+      "item:b1",
+      "item:execute-1",
+      "item:merge-a",
+      "item:merge-b",
+      "item:new-x",
+      "item:bad-priority",
+      "item:new-0",
+      "item:new-1",
+      "item:new-2"
+    ]
+  },
+  "fixturePersistence": {
+    "before": {
+      "contexts": [
+        {
+          "path": [
+            "days",
+            "1日目",
+            "maps",
+            "1日目マップ"
+          ],
+          "assignments": 0,
+          "hallVisitLists": 0
+        }
+      ],
+      "totalAssignments": 0,
+      "totalHallVisitLists": 0
+    },
+    "after": {
+      "contexts": [
+        {
+          "path": [
+            "days",
+            "1日目",
+            "maps",
+            "1日目マップ"
+          ],
+          "assignments": 0,
+          "hallVisitLists": 3
+        }
+      ],
+      "totalAssignments": 0,
+      "totalHallVisitLists": 3
+    }
+  },
+  "rendererBefore": [
+    {
+      "column": "execute",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 5,
+      "mountedGroups": 0
+    },
+    {
+      "column": "candidate",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 7,
+      "mountedGroups": 0
+    }
+  ],
+  "rendererAfter": [
+    {
+      "column": "execute",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 5,
+      "mountedGroups": 0
+    },
+    {
+      "column": "candidate",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 7,
+      "mountedGroups": 0
+    }
+  ],
+  "saveCompletionMs": [
+    47,
+    39,
+    37,
+    39,
+    38,
+    38,
+    37,
+    53,
+    39,
+    35,
+    38,
+    37,
+    37,
+    38,
+    35,
+    37,
+    38,
+    38,
+    38,
+    39
+  ],
+  "dropDetails": [
+    {
+      "id": "new-0",
+      "dispatchMs": 2.7999999970197678,
+      "observedMs": 34.099999994039536,
+      "paintedMs": 37.19999999552965,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-1",
+      "dispatchMs": 1.3999999985098839,
+      "observedMs": 26.200000002980232,
+      "paintedMs": 29.100000001490116,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-2",
+      "dispatchMs": 1.3999999985098839,
+      "observedMs": 25.19999999552965,
+      "paintedMs": 28,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-3",
+      "dispatchMs": 1.2999999970197678,
+      "observedMs": 25.700000002980232,
+      "paintedMs": 29,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-4",
+      "dispatchMs": 1.2999999970197678,
+      "observedMs": 25.19999999552965,
+      "paintedMs": 28.799999997019768,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-5",
+      "dispatchMs": 1.3999999985098839,
+      "observedMs": 24.599999994039536,
+      "paintedMs": 28.19999999552965,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-6",
+      "dispatchMs": 1.3999999985098839,
+      "observedMs": 22.899999998509884,
+      "paintedMs": 28.5,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-7",
+      "dispatchMs": 1.3000000044703484,
+      "observedMs": 30,
+      "paintedMs": 33.5,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-8",
+      "dispatchMs": 1.2999999970197678,
+      "observedMs": 23.099999994039536,
+      "paintedMs": 29.299999997019768,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-9",
+      "dispatchMs": 1.4000000059604645,
+      "observedMs": 20.700000002980232,
+      "paintedMs": 23.700000002980232,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-10",
+      "dispatchMs": 1.3999999985098839,
+      "observedMs": 25.600000001490116,
+      "paintedMs": 29.600000001490116,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-11",
+      "dispatchMs": 1.3999999985098839,
+      "observedMs": 23.600000001490116,
+      "paintedMs": 28.399999998509884,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-12",
+      "dispatchMs": 1.2999999970197678,
+      "observedMs": 23.5,
+      "paintedMs": 28.5,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-13",
+      "dispatchMs": 1.5,
+      "observedMs": 24.5,
+      "paintedMs": 29,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-14",
+      "dispatchMs": 1.2999999970197678,
+      "observedMs": 23,
+      "paintedMs": 26.100000001490116,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-15",
+      "dispatchMs": 1.2999999970197678,
+      "observedMs": 24.600000001490116,
+      "paintedMs": 28,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-16",
+      "dispatchMs": 1.3000000044703484,
+      "observedMs": 25.400000005960464,
+      "paintedMs": 28.400000005960464,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-17",
+      "dispatchMs": 1.2999999970197678,
+      "observedMs": 23.100000001490116,
+      "paintedMs": 28.399999998509884,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-18",
+      "dispatchMs": 1.3000000044703484,
+      "observedMs": 24.100000001490116,
+      "paintedMs": 29.399999998509884,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-19",
+      "dispatchMs": 1.2999999970197678,
+      "observedMs": 22.69999999552965,
+      "paintedMs": 29.099999994039536,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 7,
+      "measuredCommitCallbacks": 0
+    }
+  ],
+  "scenarioStarts": [
+    {
+      "name": "same-boundary",
+      "response": {
+        "totalMs": 218.19999999552965,
+        "fallbackMs": 18.19999999552965,
+        "intentionalLongPressMs": 200,
+        "postClonePaintMs": 9.299999997019768,
+        "renderer": [
+          {
+            "column": "execute",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 5
+          },
+          {
+            "column": "candidate",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 7
+          }
+        ]
+      }
+    },
+    {
+      "name": "boundary-switch",
+      "response": {
+        "totalMs": 221.79999999701977,
+        "fallbackMs": 21.799999997019768,
+        "intentionalLongPressMs": 200,
+        "postClonePaintMs": 6,
+        "renderer": [
+          {
+            "column": "execute",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 5
+          },
+          {
+            "column": "candidate",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 7
+          }
+        ]
+      }
+    },
+    {
+      "name": "multiple-merges",
+      "response": {
+        "totalMs": 220,
+        "fallbackMs": 20,
+        "intentionalLongPressMs": 200,
+        "postClonePaintMs": 17.600000001490116,
+        "renderer": [
+          {
+            "column": "execute",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 5
+          },
+          {
+            "column": "candidate",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 7
+          }
+        ]
+      }
+    },
+    {
+      "name": "mixed",
+      "response": {
+        "totalMs": 218.89999999850988,
+        "fallbackMs": 18.899999998509884,
+        "intentionalLongPressMs": 200,
+        "postClonePaintMs": 11.100000001490116,
+        "renderer": [
+          {
+            "column": "execute",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 5
+          },
+          {
+            "column": "candidate",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 7
+          }
+        ]
+      }
+    },
+    {
+      "name": "offscreen-merge",
+      "response": {
+        "totalMs": 223.69999999552965,
+        "fallbackMs": 23.69999999552965,
+        "intentionalLongPressMs": 200,
+        "postClonePaintMs": 6.0999999940395355,
+        "renderer": [
+          {
+            "column": "execute",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 5
+          },
+          {
+            "column": "candidate",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 7
+          }
+        ]
+      }
+    },
+    {
+      "name": "auto-scroll",
+      "response": {
+        "totalMs": 210.19999999552965,
+        "fallbackMs": 10.199999995529652,
+        "intentionalLongPressMs": 200,
+        "postClonePaintMs": 5.699999995529652,
+        "renderer": [
+          {
+            "column": "execute",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 5
+          },
+          {
+            "column": "candidate",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 7
+          }
+        ]
+      }
+    },
+    {
+      "name": "rejected",
+      "response": {
+        "totalMs": 215.29999999701977,
+        "fallbackMs": 15.299999997019768,
+        "intentionalLongPressMs": 200,
+        "postClonePaintMs": 4.699999995529652,
+        "renderer": [
+          {
+            "column": "execute",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 6
+          },
+          {
+            "column": "candidate",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 7
+          }
+        ]
+      }
+    }
+  ],
+  "scenarioEnds": [
+    {
+      "name": "same-boundary",
+      "ms": 10.899999998509884
+    },
+    {
+      "name": "boundary-switch",
+      "ms": 10
+    },
+    {
+      "name": "multiple-merges",
+      "ms": 10.300000004470348
+    },
+    {
+      "name": "mixed",
+      "ms": 9.600000001490116
+    },
+    {
+      "name": "offscreen-merge",
+      "ms": 9.200000002980232
+    },
+    {
+      "name": "auto-scroll",
+      "ms": 7.600000001490116
+    },
+    {
+      "name": "rejected",
+      "ms": 8.100000001490116
+    }
+  ],
+  "dropMeasurement": "input dispatch to observed execute item DOM, then requestAnimationFrame and following task; save completion polled separately",
+  "baseline": {
+    "crossColumn": "not functioning at 5bf82a3; no baseline UI timing is substituted",
+    "startEndComparison": "requires separately built 5bf82a3 run"
+  }
+}

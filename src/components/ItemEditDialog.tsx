@@ -22,7 +22,6 @@ import {
   applyPurchasedFromLimitedInput,
   clearLimitedPurchase,
   getActualPurchasedQuantity,
-  getPlannedQuantity,
   parseDecimalIntegerInput,
   validateLimitedPurchasePlannedQuantity,
   validateLimitedPurchaseQuantities,
@@ -113,12 +112,7 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
     manualHallId: item.manualHallId || "",
   });
   const [limitedActualText, setLimitedActualText] = useState(
-    item.purchaseStatus === "LimitedPurchase"
-      ? String(getActualPurchasedQuantity(item) ?? "")
-      : "",
-  );
-  const [limitedPlannedText, setLimitedPlannedText] = useState(
-    String(getPlannedQuantity(item)),
+    String(getActualPurchasedQuantity(item) ?? ""),
   );
   const [limitedError, setLimitedError] = useState<string | null>(null);
   const [excessConfirm, setExcessConfirm] = useState<{
@@ -244,15 +238,14 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
       manualHallId: form.manualHallId || undefined,
     };
 
+    const planned = parseDecimalIntegerInput(form.quantity);
+    const plannedValidation = validateLimitedPurchasePlannedQuantity(planned);
+    if (!plannedValidation.ok) {
+      setLimitedError(toLimitedPurchaseMessage(plannedValidation.error));
+      return;
+    }
     if (form.purchaseStatus === "LimitedPurchase") {
-      const planned = parseDecimalIntegerInput(limitedPlannedText);
       if (limitedActualText.trim() === "") {
-        const plannedValidation =
-          validateLimitedPurchasePlannedQuantity(planned);
-        if (!plannedValidation.ok) {
-          setLimitedError(toLimitedPurchaseMessage(plannedValidation.error));
-          return;
-        }
         save(applyLimitedPurchase(baseItem, { planned: planned! }));
         return;
       }
@@ -296,20 +289,13 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
 
     const updatedItem: ShoppingItem = clearLimitedPurchase({
       ...baseItem,
-      quantity: parseInt(form.quantity, 10) || 1,
+      quantity: planned!,
       purchaseStatus: form.purchaseStatus as PurchaseStatus,
     });
     save(updatedItem);
     // priority 変更の反映は onSave 経由（handleUpdateItem + hallOrder 更新を App 側で統合）に一本化。
     // 旧 onPriorityChange による二重 setEventLists は race condition の原因だったため廃止。
-  }, [
-    form,
-    item,
-    limitedActualText,
-    limitedPlannedText,
-    save,
-    validateEventDate,
-  ]);
+  }, [form, item, limitedActualText, save, validateEventDate]);
 
   const circleSuggestions = useMemo(
     () => [...new Set(allItems.map((i) => i.circle).filter(Boolean))],
@@ -533,9 +519,12 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
                   </label>
                   <input
                     id={fieldIds.limitedPlanned}
-                    value={limitedPlannedText}
+                    value={form.quantity}
                     onChange={(e) => {
-                      setLimitedPlannedText(e.target.value);
+                      setForm((prev) => ({
+                        ...prev,
+                        quantity: e.target.value,
+                      }));
                       setLimitedError(null);
                     }}
                     className={formInputClass}
@@ -579,10 +568,6 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
                     purchaseStatus: nextStatus,
                   }));
                   if (nextStatus === "LimitedPurchase") {
-                    setLimitedPlannedText(String(getPlannedQuantity(item)));
-                    setLimitedActualText(
-                      String(getActualPurchasedQuantity(item) ?? ""),
-                    );
                     setLimitedError(null);
                   }
                 }}

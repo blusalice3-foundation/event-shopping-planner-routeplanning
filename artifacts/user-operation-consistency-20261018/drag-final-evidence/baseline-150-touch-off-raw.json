@@ -1,0 +1,787 @@
+{
+  "commit": "5bf82a364d5b656cfa1e67c5233cfac0564840cf",
+  "probeCounting": {
+    "positiveControl": true,
+    "comparableStartEnd": false
+  },
+  "count": 150,
+  "input": "touch",
+  "grouped": false,
+  "browser": "chromium",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+  "start": [
+    {
+      "totalMs": 218.89999999850988,
+      "fallbackMs": 18.899999998509884,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 6.399999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 212.80000000447035,
+      "fallbackMs": 12.800000004470348,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 6.300000004470348,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 219.20000000298023,
+      "fallbackMs": 19.200000002980232,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 6.5,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 212.20000000298023,
+      "fallbackMs": 12.200000002980232,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5.799999997019768,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 222.60000000149012,
+      "fallbackMs": 22.600000001490116,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5.799999997019768,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 223.40000000596046,
+      "fallbackMs": 23.400000005960464,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 10.300000004470348,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 214.70000000298023,
+      "fallbackMs": 14.700000002980232,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 6,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 209.39999999850988,
+      "fallbackMs": 9.399999998509884,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5.5,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 221.39999999850988,
+      "fallbackMs": 21.399999998509884,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 7.399999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 214,
+      "fallbackMs": 14,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 6.899999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 208.39999999850988,
+      "fallbackMs": 8.399999998509884,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 4.899999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 221.80000000447035,
+      "fallbackMs": 21.80000000447035,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 4.9000000059604645,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 218.29999999701977,
+      "fallbackMs": 18.299999997019768,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 7.100000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 212.39999999850988,
+      "fallbackMs": 12.399999998509884,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 6.100000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 223.30000000447035,
+      "fallbackMs": 23.30000000447035,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5.899999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 220.39999999850988,
+      "fallbackMs": 20.399999998509884,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 6.600000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 218.10000000149012,
+      "fallbackMs": 18.100000001490116,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 8.200000002980232,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 210.79999999701977,
+      "fallbackMs": 10.799999997019768,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 5.299999997019768,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 219.70000000298023,
+      "fallbackMs": 19.700000002980232,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 6.100000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 217.39999999850988,
+      "fallbackMs": 17.399999998509884,
+      "intentionalLongPressMs": 200,
+      "postClonePaintMs": 7,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    }
+  ],
+  "end": [
+    14.300000004470348,
+    19.30000000447035,
+    10.200000002980232,
+    12.600000001490116,
+    9.200000002980232,
+    13.399999998509884,
+    17,
+    5.799999997019768,
+    12.299999997019768,
+    4.399999998509884,
+    6.100000001490116,
+    8.700000002980232,
+    13.299999997019768,
+    6.800000004470348,
+    7.899999998509884,
+    11.200000002980232,
+    14.099999994039536,
+    5.700000002980232,
+    11.5,
+    14.800000004470348
+  ],
+  "fixtureControl": [
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\""
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-10:none",
+        "B-15:none",
+        "B-20:none",
+        "B-25:none",
+        "B-30:none",
+        "B-35:none",
+        "B-40:none",
+        "B-45:none",
+        "B-50:none",
+        "B-55:none",
+        "B-60:none",
+        "B-65:none",
+        "B-70:none",
+        "B-75:none",
+        "B-999a:none"
+      ]
+    },
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\""
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-10:none",
+        "B-15:none",
+        "B-20:none",
+        "B-25:none",
+        "B-30:none",
+        "B-35:none",
+        "B-40:none",
+        "B-45:none",
+        "B-50:none",
+        "B-55:none",
+        "B-60:none",
+        "B-65:none",
+        "B-70:none",
+        "B-75:none",
+        "B-999a:none"
+      ]
+    },
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\""
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-10:none",
+        "B-15:none",
+        "B-20:none",
+        "B-25:none",
+        "B-30:none",
+        "B-35:none",
+        "B-40:none",
+        "B-45:none",
+        "B-50:none",
+        "B-55:none",
+        "B-60:none",
+        "B-65:none",
+        "B-70:none",
+        "B-75:none",
+        "B-999a:none"
+      ]
+    }
+  ],
+  "positiveControl": {
+    "counts": {
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"": 6,
+      "item:priority": 4,
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"": 6
+    },
+    "mounts": {},
+    "known": [
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+      "item:merge-a",
+      "item:merge-b",
+      "item:new-x",
+      "item:bad-priority",
+      "item:new-0",
+      "item:new-1",
+      "item:priority",
+      "item:a1",
+      "item:a2",
+      "item:b1",
+      "item:execute-1",
+      "item:new-2",
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\"",
+      "item:new-65",
+      "item:new-66",
+      "item:new-67",
+      "item:new-68",
+      "item:new-69",
+      "item:merge-offscreen",
+      "item:execute-40",
+      "item:execute-45",
+      "item:execute-50",
+      "item:execute-55",
+      "item:execute-60",
+      "item:execute-65",
+      "item:offscreen",
+      "item:execute-35"
+    ],
+    "mounted": [
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+      "item:priority",
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+      "item:a1",
+      "item:a2",
+      "item:b1",
+      "item:execute-1",
+      "item:merge-a",
+      "item:merge-b",
+      "item:new-x",
+      "item:bad-priority",
+      "item:new-0",
+      "item:new-1",
+      "item:new-2"
+    ]
+  },
+  "rendererBefore": [
+    {
+      "column": "execute",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 5,
+      "mountedGroups": 0
+    },
+    {
+      "column": "candidate",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 7,
+      "mountedGroups": 0
+    }
+  ],
+  "rendererAfter": [
+    {
+      "column": "execute",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 5,
+      "mountedGroups": 0
+    },
+    {
+      "column": "candidate",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 7,
+      "mountedGroups": 0
+    }
+  ],
+  "crossColumn": "not functioning; guide/drop baseline timings unavailable"
+}

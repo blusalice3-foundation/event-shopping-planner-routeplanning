@@ -1,0 +1,5 @@
+
+> event-shopping-planner@1.0.0 test:encoding
+> node scripts/verify-encoding.mjs
+
+PASS encoding verification: 1112 text files; UTF-8 without BOM; U+FFFD/mojibake/suspicious '?' absent; newlines: LF=1107, CRLF=3, none=2; question marks reviewed=15257; representative strings: ユーザー登録=149, エラーが発生しました=56

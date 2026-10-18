@@ -18,7 +18,13 @@ interface ViewportRegistry {
   requestedKeys: Map<string, number>;
   initialOffsets: WeakMap<
     Element,
-    { top: number; offset: number; width: number }
+    {
+      top: number;
+      offset: number;
+      width: number;
+      anchor: HTMLElement;
+      initialBatch: boolean;
+    }
   >;
   printing: boolean;
   backwardTab: boolean;
@@ -55,10 +61,28 @@ function initiallyVisible(
   if (!parent || !root.closest("[data-list-renderer], [data-viewport-list]"))
     return withinViewport(root);
   let position = registry.initialOffsets.get(parent);
+  if (
+    position &&
+    (!position.anchor.isConnected || !parent.contains(position.anchor))
+  )
+    position = undefined;
   if (!position) {
     const rect = parent.getBoundingClientRect();
-    position = { top: rect.top, offset: 0, width: rect.width };
-    registry.initialOffsets.set(parent, position);
+    const initial = {
+      top: rect.top,
+      offset: 0,
+      width: rect.width,
+      anchor: root,
+      initialBatch: true,
+    };
+    position = initial;
+    registry.initialOffsets.set(parent, initial);
+    queueMicrotask(() => {
+      initial.initialBatch = false;
+    });
+  } else if (!position.initialBatch) {
+    // Insertions beside existing rows use their committed position, not the old list's end offset.
+    return withinViewport(root);
   }
   const top = position.top + position.offset;
   position.offset += height;

@@ -759,3 +759,108 @@ it("checks an expired visit session before sending a queued day command", async 
   expect(base.readDurable).not.toHaveBeenCalled();
   expect(base.commit).not.toHaveBeenCalled();
 });
+
+it.each(["drain", "commit", "day", "day-snapshot", "items"])(
+  "shares an unknown write stop from %s with queued and new requests",
+  async (boundary) => {
+    const app = setup();
+    const reason = Object.assign(new Error("reload"), {
+      name: "PersistenceOutcomeUnknownError",
+    });
+    const notify = vi.fn();
+    const commit = vi.fn(async () => {
+      if (boundary === "commit") throw reason;
+    });
+    const read = async () => ({
+      snapshot: { ...structuredClone(app.read()), eventLists: { event: [] } },
+      expectedRoots: {},
+      consistencyMissing: false,
+    });
+    const coordinator = createApplicationMutationCoordinator({
+      readCurrent: app.read,
+      readDurable: read,
+      drain: async () => {
+        if (boundary === "drain") throw reason;
+      },
+      ...(boundary === "day"
+        ? {
+            commitDayMutation: async () => {
+              throw reason;
+            },
+          }
+        : {}),
+      ...(boundary === "day-snapshot"
+        ? {
+            readDayDurable: read,
+            commitDaySnapshot: async () => {
+              throw reason;
+            },
+          }
+        : {}),
+      ...(boundary === "items"
+        ? {
+            commitItemContentEdits: async () => {
+              throw reason;
+            },
+          }
+        : {}),
+      commit,
+      apply: vi.fn(),
+      onApplyFailure: notify,
+    });
+    const intent: MutationIntent = {
+      id: "first",
+      events: ["event"],
+      plan: (snapshot) => ({ snapshot }),
+      ...(["day", "day-snapshot"].includes(boundary)
+        ? {
+            dayMutation: {
+              kind: "mode" as const,
+              eventName: "event",
+              day: "1日目",
+            },
+          }
+        : {}),
+      ...(boundary === "items" ? { itemContentEdits: [] } : {}),
+    };
+    const first = coordinator.request(intent).catch((error: unknown) => error);
+    const queued = coordinator
+      .request({ ...intent, id: "queued" })
+      .catch((error: unknown) => error);
+    expect(await first).toBe(reason);
+    expect(await queued).toBe(reason);
+    await expect(coordinator.request({ ...intent, id: "new" })).rejects.toBe(
+      reason,
+    );
+    expect(notify).toHaveBeenCalledExactlyOnceWith(reason);
+    expect(coordinator.getWriteStopReason()).toBe(reason);
+    expect(coordinator.getPendingState("first").requestPending).toBe(false);
+    expect(commit).toHaveBeenCalledTimes(boundary === "commit" ? 1 : 0);
+  },
+);
+
+it("keeps the registered terminal reason when an older read subsequently rejects with a generic transport error", async () => {
+  const app = setup();
+  let reject!: (error: unknown) => void;
+  app.drain.mockImplementationOnce(
+    () =>
+      new Promise<undefined>((_resolve, fail) => {
+        reject = fail;
+      }),
+  );
+  const result = app.coordinator
+    .request({
+      id: "inflight",
+      events: ["event"],
+      plan: (snapshot) => ({ snapshot }),
+    })
+    .catch((error: unknown) => error);
+  await Promise.resolve();
+  const reason = Object.assign(new Error("unknown outcome"), {
+    name: "PersistenceOutcomeUnknownError",
+  });
+  app.coordinator.stopWrites(reason);
+  reject(new Error("read transport lost"));
+  expect(await result).toBe(reason);
+  expect(app.commit).not.toHaveBeenCalled();
+});

@@ -33,6 +33,7 @@ import type { AppOverlayOpenReceipt } from "../state/useAppOverlayController";
 import {
   createEventUpdateOperationRegistry,
   type EventUpdateOperation,
+  type EventUpdateUrlDraft,
   type EventUpdateOperationRegistry,
 } from "./eventUpdateOperation";
 
@@ -101,6 +102,7 @@ export interface EventUpdateCommandPorts {
 export interface EventUpdateCommands {
   readonly isEventUpdateSaving: boolean;
   readonly currentUpdateOperationId: string | undefined;
+  readonly currentUpdateUrlDraft: EventUpdateUrlDraft | undefined;
   finishUpdateOperation(
     updateOperationId: string,
     result: BulkImportResult,
@@ -165,6 +167,12 @@ export const useEventUpdateCommands = ({
   const currentUpdateOperationId = useSyncExternalStore(
     registry.subscribe,
     () => registry.current?.id,
+    () => undefined,
+  );
+
+  const currentUpdateUrlDraft = useSyncExternalStore(
+    registry.subscribe,
+    () => registry.current?.urlDraft,
     () => undefined,
   );
 
@@ -696,6 +704,7 @@ export const useEventUpdateCommands = ({
           operation.phase !== "loading")
       )
         return;
+      if (!registry.setUrlDraft(operation, newUrl, sheetName)) return;
       await previewEventUpdate(
         operation,
         "source-switch",
@@ -715,6 +724,7 @@ export const useEventUpdateCommands = ({
   return {
     isEventUpdateSaving,
     currentUpdateOperationId,
+    currentUpdateUrlDraft,
     finishUpdateOperation,
     invalidateEventUpdateForEvent,
     handleUpdateEvent,

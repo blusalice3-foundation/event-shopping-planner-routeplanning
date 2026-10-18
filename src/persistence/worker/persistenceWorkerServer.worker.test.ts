@@ -1309,3 +1309,74 @@ it.each([false, true])(
     expect(request.limitedPurchase).toMatchObject({ actual: 5 });
   },
 );
+
+it.each(["commit", "items", "day", "commitDay"])(
+  "reports post-commit %s failure as terminal while preserving the DB commit",
+  async (boundary) => {
+    const initial = await db.readApplicationSnapshot();
+    await db.commitApplicationSnapshotAtomically(seed(), {
+      expectedRoots: initial.expectedRoots,
+    });
+    let committed = false;
+    const commits = vi.fn(
+      async (
+        snapshot: PersistenceSnapshot,
+        options?: Parameters<typeof db.commitApplicationSnapshotAtomically>[1],
+      ) => {
+        await db.commitApplicationSnapshotAtomically(snapshot, options);
+        committed = true;
+        if (boundary === "day" || boundary === "commitDay") {
+          Object.defineProperty(snapshot.dayModes, "event", {
+            enumerable: true,
+            configurable: true,
+            get: () => {
+              throw new Error("publish failed after commit");
+            },
+          });
+        }
+      },
+    );
+    const server = createPersistenceWorkerServer({
+      readApplicationSnapshot: db.readApplicationSnapshot,
+      readDayCommandSnapshot: async () => {
+        if (committed && (boundary === "commit" || boundary === "items"))
+          throw new Error("post-commit read failed");
+        return db.readApplicationSnapshot();
+      },
+      commitApplicationSnapshotAtomically: commits,
+      commitDayCommandSnapshot: (snapshot, expectedRoots) =>
+        commits(snapshot, { expectedRoots, changedStoresOnly: true }),
+    });
+    const observed = await server.read();
+    const next = seed();
+    next.dayModes.event["1日目"] = "edit";
+    const result =
+      boundary === "commit"
+        ? server.commit(next, { observationId: observed.observationId })
+        : boundary === "items"
+          ? server.items([edit("quantity", 9)], ["item"], {})
+          : boundary === "day"
+            ? server.day(
+                {
+                  kind: "mode",
+                  eventName: "event",
+                  day: "1日目",
+                  mode: "edit",
+                },
+                "day",
+                {},
+              )
+            : server.commitDay(next, observed.observationId, {
+                eventName: "event",
+                day: "1日目",
+              });
+    await expect(result).rejects.toMatchObject({
+      name: "PersistenceOutcomeUnknownError",
+    });
+    expect(commits).toHaveBeenCalledOnce();
+    const durable = (await db.readApplicationSnapshot()).snapshot;
+    if (boundary === "items")
+      expect(durable.eventLists.event[0]).toMatchObject({ quantity: 9 });
+    else expect(durable.dayModes.event["1日目"]).toBe("edit");
+  },
+);

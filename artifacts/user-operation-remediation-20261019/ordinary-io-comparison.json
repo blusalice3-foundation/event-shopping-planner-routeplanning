@@ -1,0 +1,314 @@
+{
+  "baseline": "baseline-5bf82a3",
+  "modified": "modified-20261019-final",
+  "allIoExactlyMatches": true,
+  "notes": "Each operation is one observation, not performance acceptance. Physical commit is completed readwrite transaction; objectStore request counts include committed put/delete requests, distinct from transaction opened-store scope and from app diagnostics. Raw timing observations are preserved separately.",
+  "operations": [
+    {
+      "operation": "purchase",
+      "ioExactlyMatches": true,
+      "baseline": {
+        "workerRoundTripsByMethod": {
+          "items": 1
+        },
+        "physicalCommittedTransactions": 1,
+        "committedObjectStoreMutationRequests": 9,
+        "storeMutationRequests": [
+          {
+            "store": "eventLists",
+            "method": "delete",
+            "requests": 2
+          },
+          {
+            "store": "eventLists",
+            "method": "put",
+            "requests": 2
+          },
+          {
+            "store": "syncQueue",
+            "method": "delete",
+            "requests": 1
+          },
+          {
+            "store": "syncQueue",
+            "method": "put",
+            "requests": 4
+          }
+        ],
+        "transactionStores": [
+          [
+            "dayModes",
+            "eventConsistency",
+            "eventLists",
+            "eventMetadata",
+            "executeModeItems",
+            "hallDefinitions",
+            "hallRouteSettings",
+            "mapData",
+            "mapRotationSettings",
+            "mapViewportSettings",
+            "routeSettings",
+            "syncQueue"
+          ]
+        ]
+      },
+      "modified": {
+        "workerRoundTripsByMethod": {
+          "items": 1
+        },
+        "physicalCommittedTransactions": 1,
+        "committedObjectStoreMutationRequests": 9,
+        "storeMutationRequests": [
+          {
+            "store": "eventLists",
+            "method": "delete",
+            "requests": 2
+          },
+          {
+            "store": "eventLists",
+            "method": "put",
+            "requests": 2
+          },
+          {
+            "store": "syncQueue",
+            "method": "delete",
+            "requests": 1
+          },
+          {
+            "store": "syncQueue",
+            "method": "put",
+            "requests": 4
+          }
+        ],
+        "transactionStores": [
+          [
+            "dayModes",
+            "eventConsistency",
+            "eventLists",
+            "eventMetadata",
+            "executeModeItems",
+            "hallDefinitions",
+            "hallRouteSettings",
+            "mapData",
+            "mapRotationSettings",
+            "mapViewportSettings",
+            "routeSettings",
+            "syncQueue"
+          ]
+        ]
+      },
+      "responseObservationMs": {
+        "baseline": 14.600000001490116,
+        "modified": 13.5
+      },
+      "writeRpcCompletionObservationMs": {
+        "baseline": 18.400000005960464,
+        "modified": 19.899999998509884
+      }
+    },
+    {
+      "operation": "planned-quantity",
+      "ioExactlyMatches": true,
+      "baseline": {
+        "workerRoundTripsByMethod": {
+          "items": 1
+        },
+        "physicalCommittedTransactions": 1,
+        "committedObjectStoreMutationRequests": 9,
+        "storeMutationRequests": [
+          {
+            "store": "eventLists",
+            "method": "delete",
+            "requests": 2
+          },
+          {
+            "store": "eventLists",
+            "method": "put",
+            "requests": 2
+          },
+          {
+            "store": "syncQueue",
+            "method": "delete",
+            "requests": 1
+          },
+          {
+            "store": "syncQueue",
+            "method": "put",
+            "requests": 4
+          }
+        ],
+        "transactionStores": [
+          [
+            "dayModes",
+            "eventConsistency",
+            "eventLists",
+            "eventMetadata",
+            "executeModeItems",
+            "hallDefinitions",
+            "hallRouteSettings",
+            "mapData",
+            "mapRotationSettings",
+            "mapViewportSettings",
+            "routeSettings",
+            "syncQueue"
+          ]
+        ]
+      },
+      "modified": {
+        "workerRoundTripsByMethod": {
+          "items": 1
+        },
+        "physicalCommittedTransactions": 1,
+        "committedObjectStoreMutationRequests": 9,
+        "storeMutationRequests": [
+          {
+            "store": "eventLists",
+            "method": "delete",
+            "requests": 2
+          },
+          {
+            "store": "eventLists",
+            "method": "put",
+            "requests": 2
+          },
+          {
+            "store": "syncQueue",
+            "method": "delete",
+            "requests": 1
+          },
+          {
+            "store": "syncQueue",
+            "method": "put",
+            "requests": 4
+          }
+        ],
+        "transactionStores": [
+          [
+            "dayModes",
+            "eventConsistency",
+            "eventLists",
+            "eventMetadata",
+            "executeModeItems",
+            "hallDefinitions",
+            "hallRouteSettings",
+            "mapData",
+            "mapRotationSettings",
+            "mapViewportSettings",
+            "routeSettings",
+            "syncQueue"
+          ]
+        ]
+      },
+      "responseObservationMs": {
+        "baseline": 5.899999998509884,
+        "modified": 13.900000005960464
+      },
+      "writeRpcCompletionObservationMs": {
+        "baseline": 12.600000001490116,
+        "modified": 14.100000001490116
+      }
+    },
+    {
+      "operation": "memo",
+      "ioExactlyMatches": true,
+      "baseline": {
+        "workerRoundTripsByMethod": {
+          "items": 1
+        },
+        "physicalCommittedTransactions": 1,
+        "committedObjectStoreMutationRequests": 9,
+        "storeMutationRequests": [
+          {
+            "store": "eventLists",
+            "method": "delete",
+            "requests": 2
+          },
+          {
+            "store": "eventLists",
+            "method": "put",
+            "requests": 2
+          },
+          {
+            "store": "syncQueue",
+            "method": "delete",
+            "requests": 1
+          },
+          {
+            "store": "syncQueue",
+            "method": "put",
+            "requests": 4
+          }
+        ],
+        "transactionStores": [
+          [
+            "dayModes",
+            "eventConsistency",
+            "eventLists",
+            "eventMetadata",
+            "executeModeItems",
+            "hallDefinitions",
+            "hallRouteSettings",
+            "mapData",
+            "mapRotationSettings",
+            "mapViewportSettings",
+            "routeSettings",
+            "syncQueue"
+          ]
+        ]
+      },
+      "modified": {
+        "workerRoundTripsByMethod": {
+          "items": 1
+        },
+        "physicalCommittedTransactions": 1,
+        "committedObjectStoreMutationRequests": 9,
+        "storeMutationRequests": [
+          {
+            "store": "eventLists",
+            "method": "delete",
+            "requests": 2
+          },
+          {
+            "store": "eventLists",
+            "method": "put",
+            "requests": 2
+          },
+          {
+            "store": "syncQueue",
+            "method": "delete",
+            "requests": 1
+          },
+          {
+            "store": "syncQueue",
+            "method": "put",
+            "requests": 4
+          }
+        ],
+        "transactionStores": [
+          [
+            "dayModes",
+            "eventConsistency",
+            "eventLists",
+            "eventMetadata",
+            "executeModeItems",
+            "hallDefinitions",
+            "hallRouteSettings",
+            "mapData",
+            "mapRotationSettings",
+            "mapViewportSettings",
+            "routeSettings",
+            "syncQueue"
+          ]
+        ]
+      },
+      "responseObservationMs": {
+        "baseline": 14.099999994039536,
+        "modified": 15.5
+      },
+      "writeRpcCompletionObservationMs": {
+        "baseline": 312.5,
+        "modified": 315.1000000014901
+      }
+    }
+  ]
+}

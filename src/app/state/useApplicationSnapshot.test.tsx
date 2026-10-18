@@ -1833,3 +1833,121 @@ it("retains same-field conflict review when a reviewed update skips ordinary pla
     title: "今回の更新",
   });
 });
+
+it("terminates confirmations and resolvers once while preserving accepted input without resending", async () => {
+  const h = harness();
+  const reason = Object.assign(new Error("reload"), {
+    name: "PersistenceOutcomeUnknownError",
+  });
+  let confirmation!: Promise<unknown>;
+  act(() => {
+    confirmation = h.result.current
+      .request({
+        id: "review",
+        events: ["event"],
+        plan: (snapshot) => ({
+          snapshot,
+          confirmation: { title: "hall", details: [], comparison: "hall" },
+        }),
+      })
+      .catch((error: unknown) => error);
+  });
+  await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+  let release!: () => void;
+  h.result.current.handlers.current.drain = () =>
+    new Promise<void>((resolve) => {
+      release = resolve;
+    });
+  act(() =>
+    h.result.current.setters.setDayModes({ event: { "1日目": "execute" } }),
+  );
+  await waitFor(() => expect(release).toBeTypeOf("function"));
+  const stopHandler = vi.fn();
+  h.result.current.handlers.current.stopWrites = stopHandler;
+  act(() => {
+    h.result.current.stopWrites(reason);
+    h.result.current.stopWrites(reason);
+  });
+  expect(await confirmation).toBe(reason);
+  expect(stopHandler).toHaveBeenCalledExactlyOnceWith(reason);
+  expect(h.result.current.requiresReload).toBe(true);
+  expect(h.result.current.confirmations).toEqual([]);
+  expect(h.result.current.pendingCount).toBe(0);
+  expect(h.result.current.retryableFailures).toEqual([]);
+  expect(h.result.current.values.dayModes.event["1日目"]).toBe("execute");
+  const backup = vi.fn(
+    async (_changes: unknown, capture: () => PersistenceSnapshot) => {
+      expect(capture().dayModes.event["1日目"]).toBe("execute");
+      return { blob: new Blob(["backup"]), exportedAt: "now" };
+    },
+  );
+  h.port.createBackupFile = backup;
+  release();
+  await act(async () => {
+    await Promise.resolve();
+  });
+  await expect(h.result.current.coordinator.readExportSnapshot()).rejects.toBe(
+    reason,
+  );
+  await h.result.current.coordinator.createBackupFile();
+  expect(backup).toHaveBeenCalledOnce();
+  act(() => h.result.current.retryPending());
+  await expect(h.result.current.commitPatch({ dayModes: {} })).rejects.toBe(
+    reason,
+  );
+  expect(h.commit).not.toHaveBeenCalled();
+});
+
+it("cancels a pending import during drain exactly once and refuses cancellation after commit begins", async () => {
+  const h = harness();
+  let drain!: () => void;
+  h.result.current.handlers.current.drain = () =>
+    new Promise<void>((resolve) => {
+      drain = resolve;
+    });
+  let first!: Promise<unknown>;
+  act(() => {
+    first = h.result.current
+      .request({
+        id: "map",
+        events: ["event"],
+        plan: (snapshot) => ({ snapshot }),
+      })
+      .catch((error: unknown) => error);
+  });
+  await waitFor(() => expect(drain).toBeTypeOf("function"));
+  expect(h.result.current.getPendingMutationState("map")).toMatchObject({
+    requestPending: true,
+    canCancel: true,
+  });
+  act(() => expect(h.result.current.cancelPendingMutation("map")).toBe(true));
+  expect(h.result.current.cancelPendingMutation("map")).toBe(false);
+  expect(await first).toMatchObject({ name: "MutationCancelled" });
+  drain();
+  let commit!: () => void;
+  h.result.current.handlers.current.drain = async () => {};
+  h.commit.mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        commit = resolve;
+      }),
+  );
+  let second!: Promise<PersistenceSnapshot>;
+  act(() => {
+    second = h.result.current.request({
+      id: "next",
+      events: ["event"],
+      plan: (snapshot) => ({ snapshot }),
+    });
+  });
+  await waitFor(() => expect(commit).toBeTypeOf("function"));
+  expect(h.result.current.getPendingMutationState("next").canCancel).toBe(
+    false,
+  );
+  expect(h.result.current.cancelPendingMutation("next")).toBe(false);
+  await act(async () => {
+    commit();
+    await second;
+  });
+  expect(h.result.current.pendingCount).toBe(0);
+});

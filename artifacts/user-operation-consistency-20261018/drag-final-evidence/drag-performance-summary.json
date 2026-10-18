@@ -1,0 +1,2161 @@
+{
+  "generatedAtUtc": "2026-10-18T17:49:46.3435247Z",
+  "baselineCommit": "5bf82a364d5b656cfa1e67c5233cfac0564840cf",
+  "postBundleSha256": "A554A5A960F6D3D82A62B381AF7E1D1EC4634310FFD7A5B55E0AA3E8367517DD",
+  "specSha256": "38DA6B1AE1E5B3F3224788BC25A28A851103B9729CA2EEEEEF4D847C90545AC2",
+  "baselineSpecSha256": "AE5B869BBA684F080659891F9177B62B0F4989464D78C9943FBC55ADC04505FC",
+  "baselineSpecDifference": "Post-exclusive autoScroll hit-point selection and opt-in diagnostic fields differ; fixture, viewport, probe, positive controls and standard comparable20 start/end timed behavior remain identical.",
+  "earlierAttempts": [
+    "drag-baseline-mapless-control-attempt-report.json",
+    "drag-baseline-mapless-control-attempt.log",
+    "drag-baseline-empty-map-attempt.log",
+    "drag-post-auto-hit-attempt.log",
+    "drag-auto-hit-control-report.json",
+    "drag-auto-edge-control-report.json"
+  ],
+  "interruptedAttemptNote": "Empty-map baseline and first post were interrupted after diagnostic failures; JSON reporter did not finalize, while logs and browser error-context/screenshot artifacts remain preserved.",
+  "conditions": 8,
+  "operationConditions": 60,
+  "responseSamples": 1200.0,
+  "maxMedianMs": 52.5,
+  "maxP95Ms": 60.5,
+  "thresholds": {
+    "minimumSamples": 20,
+    "medianMs": 55,
+    "p95Ms": 100
+  },
+  "physicalPointerMutationRequests": 0,
+  "completedPointerReadwriteTransactions": 0,
+  "lifecycleNote": "Exactly20 independent start/end samples per configuration; counting disabled on both builds; touch200ms intentional wait recorded separately; no new absolute lifecycle threshold.",
+  "baselineCrossColumn": "Not functioning at5bf82a3; no baseline guide/drop time substituted.",
+  "operations": [
+    {
+      "condition": "150-native-on",
+      "operation": "same-boundary",
+      "count": 20,
+      "medianMs": 13.400000005960464,
+      "p95Ms": 15.200000002980232,
+      "pass": true
+    },
+    {
+      "condition": "150-native-on",
+      "operation": "boundary-switch",
+      "count": 20,
+      "medianMs": 13.5,
+      "p95Ms": 14.899999998509884,
+      "pass": true
+    },
+    {
+      "condition": "150-native-on",
+      "operation": "multiple-merges",
+      "count": 20,
+      "medianMs": 13.200000002980232,
+      "p95Ms": 14.299999997019768,
+      "pass": true
+    },
+    {
+      "condition": "150-native-on",
+      "operation": "mixed",
+      "count": 20,
+      "medianMs": 12.799999997019768,
+      "p95Ms": 13.600000001490116,
+      "pass": true
+    },
+    {
+      "condition": "150-native-on",
+      "operation": "offscreen-merge",
+      "count": 20,
+      "medianMs": 13.0,
+      "p95Ms": 14.199999995529652,
+      "pass": true
+    },
+    {
+      "condition": "150-native-on",
+      "operation": "auto-scroll",
+      "count": 20,
+      "medianMs": 12.0,
+      "p95Ms": 14.200000002980232,
+      "pass": true
+    },
+    {
+      "condition": "150-native-on",
+      "operation": "drop",
+      "count": 20,
+      "medianMs": 30.100000001490116,
+      "p95Ms": 33.70000000298023,
+      "pass": true
+    },
+    {
+      "condition": "150-native-off",
+      "operation": "same-boundary",
+      "count": 20,
+      "medianMs": 13.899999998509884,
+      "p95Ms": 15.799999997019768,
+      "pass": true
+    },
+    {
+      "condition": "150-native-off",
+      "operation": "boundary-switch",
+      "count": 20,
+      "medianMs": 13.5,
+      "p95Ms": 14.399999998509884,
+      "pass": true
+    },
+    {
+      "condition": "150-native-off",
+      "operation": "multiple-merges",
+      "count": 20,
+      "medianMs": 13.0,
+      "p95Ms": 14.100000001490116,
+      "pass": true
+    },
+    {
+      "condition": "150-native-off",
+      "operation": "mixed",
+      "count": 20,
+      "medianMs": 12.800000004470348,
+      "p95Ms": 14.199999995529652,
+      "pass": true
+    },
+    {
+      "condition": "150-native-off",
+      "operation": "offscreen-merge",
+      "count": 20,
+      "medianMs": 12.800000004470348,
+      "p95Ms": 14.200000002980232,
+      "pass": true
+    },
+    {
+      "condition": "150-native-off",
+      "operation": "auto-scroll",
+      "count": 20,
+      "medianMs": 11.700000002980232,
+      "p95Ms": 15.399999998509884,
+      "pass": true
+    },
+    {
+      "condition": "150-native-off",
+      "operation": "rejected",
+      "count": 20,
+      "medianMs": 13.100000001490116,
+      "p95Ms": 14.200000002980232,
+      "pass": true
+    },
+    {
+      "condition": "150-native-off",
+      "operation": "drop",
+      "count": 20,
+      "medianMs": 27.5,
+      "p95Ms": 29.5,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-on",
+      "operation": "same-boundary",
+      "count": 20,
+      "medianMs": 13.700000002980232,
+      "p95Ms": 14.799999997019768,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-on",
+      "operation": "boundary-switch",
+      "count": 20,
+      "medianMs": 13.600000001490116,
+      "p95Ms": 14.699999995529652,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-on",
+      "operation": "multiple-merges",
+      "count": 20,
+      "medianMs": 12.899999998509884,
+      "p95Ms": 14.100000001490116,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-on",
+      "operation": "mixed",
+      "count": 20,
+      "medianMs": 12.600000001490116,
+      "p95Ms": 14.0,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-on",
+      "operation": "offscreen-merge",
+      "count": 20,
+      "medianMs": 12.699999995529652,
+      "p95Ms": 14.100000001490116,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-on",
+      "operation": "auto-scroll",
+      "count": 20,
+      "medianMs": 28.100000001490116,
+      "p95Ms": 31.80000000447035,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-on",
+      "operation": "drop",
+      "count": 20,
+      "medianMs": 30.899999998509884,
+      "p95Ms": 34.29999999701977,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-off",
+      "operation": "same-boundary",
+      "count": 20,
+      "medianMs": 14.099999994039536,
+      "p95Ms": 14.5,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-off",
+      "operation": "boundary-switch",
+      "count": 20,
+      "medianMs": 14.0,
+      "p95Ms": 14.5,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-off",
+      "operation": "multiple-merges",
+      "count": 20,
+      "medianMs": 13.399999998509884,
+      "p95Ms": 15.0,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-off",
+      "operation": "mixed",
+      "count": 20,
+      "medianMs": 13.199999995529652,
+      "p95Ms": 13.899999998509884,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-off",
+      "operation": "offscreen-merge",
+      "count": 20,
+      "medianMs": 13.799999997019768,
+      "p95Ms": 14.899999998509884,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-off",
+      "operation": "auto-scroll",
+      "count": 20,
+      "medianMs": 28.600000001490116,
+      "p95Ms": 30.19999999552965,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-off",
+      "operation": "rejected",
+      "count": 20,
+      "medianMs": 13.700000002980232,
+      "p95Ms": 14.5,
+      "pass": true
+    },
+    {
+      "condition": "150-touch-off",
+      "operation": "drop",
+      "count": 20,
+      "medianMs": 28.5,
+      "p95Ms": 33.5,
+      "pass": true
+    },
+    {
+      "condition": "500-native-on",
+      "operation": "same-boundary",
+      "count": 20,
+      "medianMs": 13.800000004470348,
+      "p95Ms": 15.399999998509884,
+      "pass": true
+    },
+    {
+      "condition": "500-native-on",
+      "operation": "boundary-switch",
+      "count": 20,
+      "medianMs": 13.699999995529652,
+      "p95Ms": 15.0,
+      "pass": true
+    },
+    {
+      "condition": "500-native-on",
+      "operation": "multiple-merges",
+      "count": 20,
+      "medianMs": 13.300000004470348,
+      "p95Ms": 14.5,
+      "pass": true
+    },
+    {
+      "condition": "500-native-on",
+      "operation": "mixed",
+      "count": 20,
+      "medianMs": 13.100000001490116,
+      "p95Ms": 14.199999995529652,
+      "pass": true
+    },
+    {
+      "condition": "500-native-on",
+      "operation": "offscreen-merge",
+      "count": 20,
+      "medianMs": 13.599999994039536,
+      "p95Ms": 14.699999995529652,
+      "pass": true
+    },
+    {
+      "condition": "500-native-on",
+      "operation": "auto-scroll",
+      "count": 20,
+      "medianMs": 11.899999998509884,
+      "p95Ms": 14.899999998509884,
+      "pass": true
+    },
+    {
+      "condition": "500-native-on",
+      "operation": "drop",
+      "count": 20,
+      "medianMs": 52.29999999701977,
+      "p95Ms": 60.5,
+      "pass": true
+    },
+    {
+      "condition": "500-native-off",
+      "operation": "same-boundary",
+      "count": 20,
+      "medianMs": 14.0,
+      "p95Ms": 15.5,
+      "pass": true
+    },
+    {
+      "condition": "500-native-off",
+      "operation": "boundary-switch",
+      "count": 20,
+      "medianMs": 13.800000004470348,
+      "p95Ms": 14.700000002980232,
+      "pass": true
+    },
+    {
+      "condition": "500-native-off",
+      "operation": "multiple-merges",
+      "count": 20,
+      "medianMs": 13.400000005960464,
+      "p95Ms": 14.100000001490116,
+      "pass": true
+    },
+    {
+      "condition": "500-native-off",
+      "operation": "mixed",
+      "count": 20,
+      "medianMs": 12.799999997019768,
+      "p95Ms": 13.899999998509884,
+      "pass": true
+    },
+    {
+      "condition": "500-native-off",
+      "operation": "offscreen-merge",
+      "count": 20,
+      "medianMs": 13.5,
+      "p95Ms": 15.300000004470348,
+      "pass": true
+    },
+    {
+      "condition": "500-native-off",
+      "operation": "auto-scroll",
+      "count": 20,
+      "medianMs": 12.399999998509884,
+      "p95Ms": 14.200000002980232,
+      "pass": true
+    },
+    {
+      "condition": "500-native-off",
+      "operation": "rejected",
+      "count": 20,
+      "medianMs": 13.599999994039536,
+      "p95Ms": 15.0,
+      "pass": true
+    },
+    {
+      "condition": "500-native-off",
+      "operation": "drop",
+      "count": 20,
+      "medianMs": 45.5,
+      "p95Ms": 51.100000001490116,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-on",
+      "operation": "same-boundary",
+      "count": 20,
+      "medianMs": 13.899999998509884,
+      "p95Ms": 15.299999997019768,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-on",
+      "operation": "boundary-switch",
+      "count": 20,
+      "medianMs": 13.900000005960464,
+      "p95Ms": 15.399999998509884,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-on",
+      "operation": "multiple-merges",
+      "count": 20,
+      "medianMs": 13.399999998509884,
+      "p95Ms": 14.799999997019768,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-on",
+      "operation": "mixed",
+      "count": 20,
+      "medianMs": 13.5,
+      "p95Ms": 14.199999995529652,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-on",
+      "operation": "offscreen-merge",
+      "count": 20,
+      "medianMs": 13.5,
+      "p95Ms": 14.5,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-on",
+      "operation": "auto-scroll",
+      "count": 20,
+      "medianMs": 28.399999998509884,
+      "p95Ms": 31.700000002980232,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-on",
+      "operation": "drop",
+      "count": 20,
+      "medianMs": 52.5,
+      "p95Ms": 55.79999999701977,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-off",
+      "operation": "same-boundary",
+      "count": 20,
+      "medianMs": 13.899999998509884,
+      "p95Ms": 15.0,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-off",
+      "operation": "boundary-switch",
+      "count": 20,
+      "medianMs": 13.800000004470348,
+      "p95Ms": 15.199999995529652,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-off",
+      "operation": "multiple-merges",
+      "count": 20,
+      "medianMs": 13.600000001490116,
+      "p95Ms": 14.800000004470348,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-off",
+      "operation": "mixed",
+      "count": 20,
+      "medianMs": 13.200000002980232,
+      "p95Ms": 14.399999998509884,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-off",
+      "operation": "offscreen-merge",
+      "count": 20,
+      "medianMs": 13.0,
+      "p95Ms": 14.699999995529652,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-off",
+      "operation": "auto-scroll",
+      "count": 20,
+      "medianMs": 29.0,
+      "p95Ms": 32.0,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-off",
+      "operation": "rejected",
+      "count": 20,
+      "medianMs": 13.299999997019768,
+      "p95Ms": 13.900000005960464,
+      "pass": true
+    },
+    {
+      "condition": "500-touch-off",
+      "operation": "drop",
+      "count": 20,
+      "medianMs": 45.19999999552965,
+      "p95Ms": 49.80000000447035,
+      "pass": true
+    }
+  ],
+  "locality": [
+    {
+      "condition": "150-native-on",
+      "phase": "same-boundary",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-native-on",
+      "phase": "boundary-switch",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-native-on",
+      "phase": "multiple-merges",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-native-on",
+      "phase": "mixed",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-native-on",
+      "phase": "offscreen-merge",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-native-on",
+      "phase": "auto-scroll",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 8,
+      "actualAutoScrollSamples": 20,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-native-off",
+      "phase": "same-boundary",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-native-off",
+      "phase": "boundary-switch",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-native-off",
+      "phase": "multiple-merges",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-native-off",
+      "phase": "mixed",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-native-off",
+      "phase": "offscreen-merge",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-native-off",
+      "phase": "auto-scroll",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 4,
+      "actualAutoScrollSamples": 20,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-native-off",
+      "phase": "rejected",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-touch-on",
+      "phase": "same-boundary",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-touch-on",
+      "phase": "boundary-switch",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-touch-on",
+      "phase": "multiple-merges",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-touch-on",
+      "phase": "mixed",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-touch-on",
+      "phase": "offscreen-merge",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-touch-on",
+      "phase": "auto-scroll",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 8,
+      "actualAutoScrollSamples": 20,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-touch-off",
+      "phase": "same-boundary",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-touch-off",
+      "phase": "boundary-switch",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-touch-off",
+      "phase": "multiple-merges",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-touch-off",
+      "phase": "mixed",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-touch-off",
+      "phase": "offscreen-merge",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-touch-off",
+      "phase": "auto-scroll",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 4,
+      "actualAutoScrollSamples": 20,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "150-touch-off",
+      "phase": "rejected",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-native-on",
+      "phase": "same-boundary",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-native-on",
+      "phase": "boundary-switch",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-native-on",
+      "phase": "multiple-merges",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-native-on",
+      "phase": "mixed",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-native-on",
+      "phase": "offscreen-merge",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-native-on",
+      "phase": "auto-scroll",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 8,
+      "actualAutoScrollSamples": 20,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-native-off",
+      "phase": "same-boundary",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-native-off",
+      "phase": "boundary-switch",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-native-off",
+      "phase": "multiple-merges",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-native-off",
+      "phase": "mixed",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-native-off",
+      "phase": "offscreen-merge",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-native-off",
+      "phase": "auto-scroll",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 4,
+      "actualAutoScrollSamples": 20,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-native-off",
+      "phase": "rejected",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-touch-on",
+      "phase": "same-boundary",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-touch-on",
+      "phase": "boundary-switch",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-touch-on",
+      "phase": "multiple-merges",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-touch-on",
+      "phase": "mixed",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-touch-on",
+      "phase": "offscreen-merge",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-touch-on",
+      "phase": "auto-scroll",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 8,
+      "actualAutoScrollSamples": 20,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-touch-off",
+      "phase": "same-boundary",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-touch-off",
+      "phase": "boundary-switch",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-touch-off",
+      "phase": "multiple-merges",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-touch-off",
+      "phase": "mixed",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-touch-off",
+      "phase": "offscreen-merge",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-touch-off",
+      "phase": "auto-scroll",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 4,
+      "actualAutoScrollSamples": 20,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    },
+    {
+      "condition": "500-touch-off",
+      "phase": "rejected",
+      "existingKeyUpdates": 0,
+      "existingKeyRemounts": 0,
+      "newViewportMountKeys": 0,
+      "actualAutoScrollSamples": 0,
+      "mutationRequests": 0,
+      "completedReadwriteTransactions": 0
+    }
+  ],
+  "lifecycle": [
+    {
+      "condition": "150-native-on",
+      "baselineStart": {
+        "count": 20,
+        "medianMs": 17.100000001490116,
+        "p95Ms": 18.299999997019768
+      },
+      "postStart": {
+        "count": 20,
+        "medianMs": 16.899999998509884,
+        "p95Ms": 18.0
+      },
+      "startMedianDeltaMs": -0.20000000298023224,
+      "baselineEnd": {
+        "count": 20,
+        "medianMs": 12.299999997019768,
+        "p95Ms": 13.100000001490116
+      },
+      "postEnd": {
+        "count": 20,
+        "medianMs": 12.699999995529652,
+        "p95Ms": 13.200000002980232
+      },
+      "endMedianDeltaMs": 0.3999999985098839,
+      "baselineRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "baselineRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ],
+      "baselineRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "postRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "postRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ],
+      "postRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "intentionalTouchLongPressMs": 0
+    },
+    {
+      "condition": "150-native-off",
+      "baselineStart": {
+        "count": 20,
+        "medianMs": 17.0,
+        "p95Ms": 17.700000002980232
+      },
+      "postStart": {
+        "count": 20,
+        "medianMs": 16.700000002980232,
+        "p95Ms": 17.400000005960464
+      },
+      "startMedianDeltaMs": -0.29999999701976776,
+      "baselineEnd": {
+        "count": 20,
+        "medianMs": 12.5,
+        "p95Ms": 13.600000001490116
+      },
+      "postEnd": {
+        "count": 20,
+        "medianMs": 12.600000001490116,
+        "p95Ms": 13.299999997019768
+      },
+      "endMedianDeltaMs": 0.10000000149011612,
+      "baselineRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "baselineRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ],
+      "baselineRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "postRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "postRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ],
+      "postRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "intentionalTouchLongPressMs": 0
+    },
+    {
+      "condition": "150-touch-on",
+      "baselineStart": {
+        "count": 20,
+        "medianMs": 15.199999995529652,
+        "p95Ms": 23.0
+      },
+      "postStart": {
+        "count": 20,
+        "medianMs": 16.100000001490116,
+        "p95Ms": 23.600000001490116
+      },
+      "startMedianDeltaMs": 0.9000000059604645,
+      "baselineEnd": {
+        "count": 20,
+        "medianMs": 12.0,
+        "p95Ms": 18.799999997019768
+      },
+      "postEnd": {
+        "count": 20,
+        "medianMs": 9.799999997019768,
+        "p95Ms": 17.299999997019768
+      },
+      "endMedianDeltaMs": -2.2000000029802322,
+      "baselineRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "baselineRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ],
+      "baselineRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "postRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "postRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ],
+      "postRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "intentionalTouchLongPressMs": 200
+    },
+    {
+      "condition": "150-touch-off",
+      "baselineStart": {
+        "count": 20,
+        "medianMs": 18.100000001490116,
+        "p95Ms": 23.30000000447035
+      },
+      "postStart": {
+        "count": 20,
+        "medianMs": 12.899999998509884,
+        "p95Ms": 21.100000001490116
+      },
+      "startMedianDeltaMs": -5.200000002980232,
+      "baselineEnd": {
+        "count": 20,
+        "medianMs": 11.200000002980232,
+        "p95Ms": 17.0
+      },
+      "postEnd": {
+        "count": 20,
+        "medianMs": 7.5,
+        "p95Ms": 16.100000001490116
+      },
+      "endMedianDeltaMs": -3.7000000029802322,
+      "baselineRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "baselineRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ],
+      "baselineRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "postRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "postRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ],
+      "postRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "intentionalTouchLongPressMs": 200
+    },
+    {
+      "condition": "500-native-on",
+      "baselineStart": {
+        "count": 20,
+        "medianMs": 18.399999998509884,
+        "p95Ms": 19.600000001490116
+      },
+      "postStart": {
+        "count": 20,
+        "medianMs": 18.30000000447035,
+        "p95Ms": 19.600000001490116
+      },
+      "startMedianDeltaMs": -0.09999999403953552,
+      "baselineEnd": {
+        "count": 20,
+        "medianMs": 11.699999995529652,
+        "p95Ms": 13.100000001490116
+      },
+      "postEnd": {
+        "count": 20,
+        "medianMs": 12.5,
+        "p95Ms": 13.600000001490116
+      },
+      "endMedianDeltaMs": 0.8000000044703484,
+      "baselineRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "baselineRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ],
+      "baselineRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "postRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "postRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ],
+      "postRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "intentionalTouchLongPressMs": 0
+    },
+    {
+      "condition": "500-native-off",
+      "baselineStart": {
+        "count": 20,
+        "medianMs": 17.80000000447035,
+        "p95Ms": 19.299999997019768
+      },
+      "postStart": {
+        "count": 20,
+        "medianMs": 17.899999998509884,
+        "p95Ms": 18.80000000447035
+      },
+      "startMedianDeltaMs": 0.09999999403953552,
+      "baselineEnd": {
+        "count": 20,
+        "medianMs": 11.899999998509884,
+        "p95Ms": 13.300000004470348
+      },
+      "postEnd": {
+        "count": 20,
+        "medianMs": 12.899999998509884,
+        "p95Ms": 13.899999998509884
+      },
+      "endMedianDeltaMs": 1.0,
+      "baselineRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "baselineRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ],
+      "baselineRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "postRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "postRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ],
+      "postRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "intentionalTouchLongPressMs": 0
+    },
+    {
+      "condition": "500-touch-on",
+      "baselineStart": {
+        "count": 20,
+        "medianMs": 17.0,
+        "p95Ms": 24.799999997019768
+      },
+      "postStart": {
+        "count": 20,
+        "medianMs": 19.400000005960464,
+        "p95Ms": 23.700000002980232
+      },
+      "startMedianDeltaMs": 2.4000000059604645,
+      "baselineEnd": {
+        "count": 20,
+        "medianMs": 11.399999998509884,
+        "p95Ms": 17.200000002980232
+      },
+      "postEnd": {
+        "count": 20,
+        "medianMs": 10.200000002980232,
+        "p95Ms": 18.700000002980232
+      },
+      "endMedianDeltaMs": -1.1999999955296516,
+      "baselineRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "baselineRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ],
+      "baselineRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "postRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "postRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ],
+      "postRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6,
+          "mountedGroups": 6
+        }
+      ],
+      "intentionalTouchLongPressMs": 200
+    },
+    {
+      "condition": "500-touch-off",
+      "baselineStart": {
+        "count": 20,
+        "medianMs": 17.0,
+        "p95Ms": 25.100000001490116
+      },
+      "postStart": {
+        "count": 20,
+        "medianMs": 17.80000000447035,
+        "p95Ms": 25.100000001490116
+      },
+      "startMedianDeltaMs": 0.8000000044703484,
+      "baselineEnd": {
+        "count": 20,
+        "medianMs": 9.199999995529652,
+        "p95Ms": 16.899999998509884
+      },
+      "postEnd": {
+        "count": 20,
+        "medianMs": 8.100000001490116,
+        "p95Ms": 14.599999994039536
+      },
+      "endMedianDeltaMs": -1.0999999940395355,
+      "baselineRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "baselineRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ],
+      "baselineRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "postRendererBefore": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "postRendererDuring": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ],
+      "postRendererAfter": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5,
+          "mountedGroups": 0
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7,
+          "mountedGroups": 0
+        }
+      ],
+      "intentionalTouchLongPressMs": 200
+    }
+  ],
+  "saveCompletion": [
+    {
+      "condition": "150-native-on",
+      "statistics": {
+        "count": 20,
+        "medianMs": 41.0,
+        "p95Ms": 49.0
+      }
+    },
+    {
+      "condition": "150-native-off",
+      "statistics": {
+        "count": 20,
+        "medianMs": 37.0,
+        "p95Ms": 39.0
+      }
+    },
+    {
+      "condition": "150-touch-on",
+      "statistics": {
+        "count": 20,
+        "medianMs": 43.0,
+        "p95Ms": 53.0
+      }
+    },
+    {
+      "condition": "150-touch-off",
+      "statistics": {
+        "count": 20,
+        "medianMs": 38.0,
+        "p95Ms": 47.0
+      }
+    },
+    {
+      "condition": "500-native-on",
+      "statistics": {
+        "count": 20,
+        "medianMs": 73.0,
+        "p95Ms": 88.0
+      }
+    },
+    {
+      "condition": "500-native-off",
+      "statistics": {
+        "count": 20,
+        "medianMs": 58.0,
+        "p95Ms": 73.0
+      }
+    },
+    {
+      "condition": "500-touch-on",
+      "statistics": {
+        "count": 20,
+        "medianMs": 72.0,
+        "p95Ms": 77.0
+      }
+    },
+    {
+      "condition": "500-touch-off",
+      "statistics": {
+        "count": 20,
+        "medianMs": 56.0,
+        "p95Ms": 60.0
+      }
+    }
+  ],
+  "rawCases": [
+    {
+      "kind": "baseline",
+      "key": "150-native-on",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-150-native-on-raw.json",
+      "relativePath": "baseline-150-native-on-raw.json"
+    },
+    {
+      "kind": "baseline",
+      "key": "150-native-off",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-150-native-off-raw.json",
+      "relativePath": "baseline-150-native-off-raw.json"
+    },
+    {
+      "kind": "baseline",
+      "key": "150-touch-on",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-150-touch-on-raw.json",
+      "relativePath": "baseline-150-touch-on-raw.json"
+    },
+    {
+      "kind": "baseline",
+      "key": "150-touch-off",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-150-touch-off-raw.json",
+      "relativePath": "baseline-150-touch-off-raw.json"
+    },
+    {
+      "kind": "baseline",
+      "key": "500-native-on",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-500-native-on-raw.json",
+      "relativePath": "baseline-500-native-on-raw.json"
+    },
+    {
+      "kind": "baseline",
+      "key": "500-native-off",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-500-native-off-raw.json",
+      "relativePath": "baseline-500-native-off-raw.json"
+    },
+    {
+      "kind": "baseline",
+      "key": "500-touch-on",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-500-touch-on-raw.json",
+      "relativePath": "baseline-500-touch-on-raw.json"
+    },
+    {
+      "kind": "baseline",
+      "key": "500-touch-off",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\baseline-500-touch-off-raw.json",
+      "relativePath": "baseline-500-touch-off-raw.json"
+    },
+    {
+      "kind": "post",
+      "key": "150-native-on",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-150-native-on-raw.json",
+      "relativePath": "post-150-native-on-raw.json"
+    },
+    {
+      "kind": "post",
+      "key": "150-native-off",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-150-native-off-raw.json",
+      "relativePath": "post-150-native-off-raw.json"
+    },
+    {
+      "kind": "post",
+      "key": "150-touch-on",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-150-touch-on-raw.json",
+      "relativePath": "post-150-touch-on-raw.json"
+    },
+    {
+      "kind": "post",
+      "key": "150-touch-off",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-150-touch-off-raw.json",
+      "relativePath": "post-150-touch-off-raw.json"
+    },
+    {
+      "kind": "post",
+      "key": "500-native-on",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-500-native-on-raw.json",
+      "relativePath": "post-500-native-on-raw.json"
+    },
+    {
+      "kind": "post",
+      "key": "500-native-off",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-500-native-off-raw.json",
+      "relativePath": "post-500-native-off-raw.json"
+    },
+    {
+      "kind": "post",
+      "key": "500-touch-on",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-500-touch-on-raw.json",
+      "relativePath": "post-500-touch-on-raw.json"
+    },
+    {
+      "kind": "post",
+      "key": "500-touch-off",
+      "status": "passed",
+      "raw": "D:\\esp-op18\\artifacts\\user-operation-consistency-20261018\\drag-final-evidence\\post-500-touch-off-raw.json",
+      "relativePath": "post-500-touch-off-raw.json"
+    }
+  ]
+}

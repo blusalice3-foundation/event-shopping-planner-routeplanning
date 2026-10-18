@@ -1,3 +1,4 @@
+import { PersistenceOutcomeUnknownError } from "../../app/ports/PersistenceCommandPort";
 import { db } from "../facade/indexedDbPersistence";
 import { createPersistenceWorkerServer } from "./persistenceWorkerServer";
 
@@ -36,6 +37,7 @@ self.onmessage = (
           },
         },
       });
+      let writeCompleted = false;
       try {
         const method = request.method;
         const args = request.args;
@@ -79,6 +81,12 @@ self.onmessage = (
             throw new Error("Unknown persistence command.");
           result = await command(...args);
         }
+        writeCompleted =
+          method === "commit" ||
+          method === "commitDay" ||
+          method.startsWith("save") ||
+          ((method === "day" || method === "items") &&
+            (result as { status?: string })?.status === "committed");
         self.postMessage({
           id: request.id,
           result,
@@ -88,7 +96,9 @@ self.onmessage = (
           ]),
         });
       } catch (error) {
-        const value = error as Error & { recoveryBundle?: unknown };
+        const value = (
+          writeCompleted ? new PersistenceOutcomeUnknownError(error) : error
+        ) as Error & { recoveryBundle?: unknown };
         self.postMessage({
           id: request.id,
           error: {

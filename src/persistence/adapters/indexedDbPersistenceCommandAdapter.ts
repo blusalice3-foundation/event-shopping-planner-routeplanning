@@ -1,3 +1,9 @@
+import { buildWorkerBackup } from "../worker/backupWorkerServer";
+import {
+  createPersistenceWriteStopController,
+  PersistenceOutcomeUnknownError,
+  isPersistenceWriteStopReason,
+} from "../../app/ports/PersistenceCommandPort";
 import { recordEntry, setOwnValue } from "../../utils/ownRecord";
 import { createBackupInWorker } from "./backupWorker";
 import { inspectConsistencyUpgrade } from "../db/consistencyUpgrade";
@@ -81,14 +87,20 @@ export function createIndexedDbPersistenceCommandAdapter(
   let access:
     | Parameters<PersistenceCommandPort["bindApplicationSettings"]>[0]
     | null = null;
+  const writeStop = createPersistenceWriteStopController();
   let observed: PersistenceSnapshot | null = null;
   const read = () => access?.read() ?? observed;
   const commit: PersistenceCommandPort["commitApplicationSnapshotAtomically"] =
     async (snapshot, options) => {
       await delegate.commitApplicationSnapshotAtomically(snapshot, options);
-      observed = structuredClone(snapshot);
+      try {
+        observed = structuredClone(snapshot);
+      } catch (error) {
+        throw new PersistenceOutcomeUnknownError(error);
+      }
     };
-  return {
+  const adapter: PersistenceCommandPort = {
+    ...writeStop,
     inspectConsistencyUpgrade,
     ...(delegate.readDayApplicationSnapshot
       ? {
@@ -112,7 +124,25 @@ export function createIndexedDbPersistenceCommandAdapter(
           },
         }
       : {}),
-    createBackupFile: createBackupInWorker,
+    createBackupFile: async (changes, fallback, guardedItemEdits) => {
+      if (writeStop.getWriteStopReason() && typeof Worker !== "function") {
+        const result = await buildWorkerBackup(
+          () => delegate.readApplicationSnapshot(),
+          { changes, guardedItemEdits },
+        );
+        if ("file" in result) return result.file;
+        throw writeStop.getWriteStopReason();
+      }
+      return createBackupInWorker(
+        changes,
+        () => {
+          const reason = writeStop.getWriteStopReason();
+          if (reason) throw reason;
+          return fallback();
+        },
+        guardedItemEdits,
+      );
+    },
     ...(delegate.commitItemContentEdits
       ? {
           commitItemContentEdits: async (...args) => {
@@ -223,4 +253,59 @@ export function createIndexedDbPersistenceCommandAdapter(
       return commit(next, { invalidatedEvents: [eventName] });
     },
   };
+  const writeMethods = [
+    "migrateFromLocalStorage",
+    "adoptRecoveryCandidate",
+    "saveEventLists",
+    "saveEventMetadata",
+    "saveExecuteModeItems",
+    "saveDayModes",
+    "saveMapDataChanges",
+    "saveMapRotationSettings",
+    "saveRouteSettings",
+    "saveHallDefinitions",
+    "saveHallRouteSettings",
+    "saveMapViewportSettings",
+    "saveEventConsistency",
+    "saveBlockDetectionSettings",
+    "commitApplicationSnapshotAtomically",
+    "commitDayApplicationSnapshot",
+    "commitDayMutation",
+    "commitItemContentEdits",
+    "restoreAppDataAtomically",
+    "deleteEventAtomically",
+    "renameEventAtomically",
+    "restoreAppDataWithBlockDetectionSettings",
+  ] as const;
+  for (const method of writeMethods) {
+    const command = adapter[method];
+    if (!command) continue;
+    Object.assign(adapter, {
+      [method]: async (...args: unknown[]) => {
+        const stopped = writeStop.getWriteStopReason();
+        if (stopped) throw stopped;
+        try {
+          return await (command as (...args: unknown[]) => unknown)(...args);
+        } catch (error) {
+          if (isPersistenceWriteStopReason(error)) writeStop.stopWrites(error);
+          throw error;
+        }
+      },
+    });
+  }
+  for (const method of [
+    "savePreference",
+    "removeBlockDetectionSettingsForEvent",
+    "renameBlockDetectionSettingsForEvent",
+  ] as const) {
+    const command = adapter[method];
+    Object.assign(adapter, {
+      [method]: (...args: unknown[]) => {
+        const stopped = writeStop.getWriteStopReason();
+        if (stopped) throw stopped;
+        return (command as (...args: unknown[]) => unknown)(...args);
+      },
+    });
+  }
+  return adapter;
 }

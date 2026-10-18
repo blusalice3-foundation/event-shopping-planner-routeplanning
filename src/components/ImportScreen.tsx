@@ -336,10 +336,22 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
       return true;
     });
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || importInFlight.current) return;
-    const generation = inputGeneration.current;
-    const text = await file.text();
+    const input = e.currentTarget;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file || importInFlight.current || importRequiresReload) return;
+    const generation = ++inputGeneration.current;
+    setFileText(null);
+    let text: string;
+    try {
+      text = await file.text();
+    } catch {
+      if (generation === inputGeneration.current)
+        alert(
+          "CSVファイルを読み取れませんでした。同じファイルを選び直して再試行してください。",
+        );
+      return;
+    }
     if (generation !== inputGeneration.current) return;
     setFileText(text);
     await importFileText(text);

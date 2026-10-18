@@ -14,7 +14,15 @@ export type EventUpdateOperationPhase =
   | "finished";
 
 /** One owner survives URL retries and captures its original import completion. */
+export interface EventUpdateUrlDraft {
+  readonly operationId: string;
+  readonly eventName: string;
+  readonly url: string;
+  readonly sheetName: string;
+}
+
 export interface EventUpdateOperation {
+  urlDraft?: EventUpdateUrlDraft;
   readonly id: string;
   readonly eventName: string;
   readonly complete?: (result: BulkImportResult) => void;
@@ -47,6 +55,11 @@ export interface EventUpdateOperationRegistry {
     operation: EventUpdateOperation,
     phase: EventUpdateOperationPhase,
   ): void;
+  setUrlDraft(
+    operation: EventUpdateOperation,
+    url: string,
+    sheetName: string,
+  ): boolean;
   subscribe(listener: () => void): () => void;
   isSaving(): boolean;
 }
@@ -101,6 +114,21 @@ export function createEventUpdateOperationRegistry(): EventUpdateOperationRegist
         return;
       operation.phase = phase;
       changed();
+    },
+    setUrlDraft(operation, url, sheetName) {
+      if (
+        registry.current !== operation ||
+        !["url", "selection", "loading"].includes(operation.phase)
+      )
+        return false;
+      operation.urlDraft = Object.freeze({
+        operationId: operation.id,
+        eventName: operation.eventName,
+        url,
+        sheetName,
+      });
+      changed();
+      return true;
     },
     subscribe(listener) {
       listeners.add(listener);

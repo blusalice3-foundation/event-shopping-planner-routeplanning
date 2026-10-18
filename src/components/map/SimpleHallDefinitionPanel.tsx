@@ -1,4 +1,17 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
+import type { MapEditorSession } from "../../features/map/domain/mapEditorSession";
+import type {
+  HallEditorSave,
+  HallEditorSync,
+} from "../../app/ports/HallEditorCommandPort";
+import { useHallEditorWrite } from "./useHallEditorWrite";
+import { useModalDialogBehavior } from "../../hooks/useModalDialogBehavior";
 import type { HallDefinition } from "../../types/map";
 import { normalizeBlockName } from "../../utils/hallFallback";
 
@@ -19,13 +32,14 @@ const HALL_COLORS = [
 
 interface SimpleHallDefinitionPanelProps {
   isOpen: boolean;
+  session?: MapEditorSession;
   onClose: () => void;
   halls: HallDefinition[];
-  onUpdateHalls: (halls: HallDefinition[]) => void;
+  onUpdateHalls: HallEditorSave;
   availableBlocks: string[];
   eventDates?: string[];
   activeEventDate?: string;
-  onSyncToOtherDates?: (targetDates: string[]) => void;
+  onSyncToOtherDates?: HallEditorSync;
 }
 
 interface EditingHall {
@@ -46,6 +60,7 @@ export const SimpleHallDefinitionPanel: React.FC<
   SimpleHallDefinitionPanelProps
 > = ({
   isOpen,
+  session,
   onClose,
   halls,
   onUpdateHalls,
@@ -61,6 +76,18 @@ export const SimpleHallDefinitionPanel: React.FC<
     new Set(),
   );
 
+  const { busy, error, requiresReload, submit, canClose } =
+    useHallEditorWrite(session);
+  const handleClose = useCallback(() => {
+    if (canClose()) onClose();
+  }, [canClose, onClose]);
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen,
+    onEscape: handleClose,
+  });
+  const initialHalls = useRef(halls);
+  initialHalls.current = halls;
+
   const otherDates = useMemo(
     () => eventDates.filter((d) => d !== activeEventDate),
     [eventDates, activeEventDate],
@@ -68,12 +95,12 @@ export const SimpleHallDefinitionPanel: React.FC<
 
   useEffect(() => {
     if (isOpen) {
-      setLocalHalls(halls);
+      setLocalHalls(initialHalls.current);
       setEditing(null);
       setShowSyncUI(false);
       setSyncTargetDates(new Set());
     }
-  }, [isOpen, halls]);
+  }, [isOpen, session?.sessionId]);
 
   // ブロックが割り当てられているホール一覧
   const blockToHallsMap = useMemo(() => {
@@ -153,11 +180,14 @@ export const SimpleHallDefinitionPanel: React.FC<
     setEditing(null);
   }, []);
 
-  const handleConfirmAll = useCallback(() => {
-    onUpdateHalls(localHalls);
-    onClose();
-  }, [localHalls, onUpdateHalls, onClose]);
-
+  const handleConfirmAll = useCallback(async () => {
+    if (editing) return;
+    const saved = await submit(
+      () => onUpdateHalls(localHalls, session),
+      setLocalHalls,
+    );
+    if (saved) onClose();
+  }, [editing, localHalls, onUpdateHalls, onClose, session, submit]);
   const handleToggleSyncDate = useCallback((date: string) => {
     setSyncTargetDates((prev) => {
       const next = new Set(prev);
@@ -167,41 +197,90 @@ export const SimpleHallDefinitionPanel: React.FC<
     });
   }, []);
 
-  const handleSyncExecute = useCallback(() => {
-    if (syncTargetDates.size === 0 || !onSyncToOtherDates) return;
+  const handleSyncExecute = useCallback(async () => {
+    if (
+      editing ||
+      busy ||
+      requiresReload ||
+      syncTargetDates.size === 0 ||
+      !onSyncToOtherDates
+    )
+      return;
     if (
       !confirm(
         `選択した${syncTargetDates.size}日分のホール定義を上書きします。よろしいですか？`,
       )
     )
       return;
-    onSyncToOtherDates(Array.from(syncTargetDates));
-    setShowSyncUI(false);
-    setSyncTargetDates(new Set());
-  }, [syncTargetDates, onSyncToOtherDates]);
+    const saved = await submit(
+      () =>
+        onSyncToOtherDates(Array.from(syncTargetDates), localHalls, session),
+      setLocalHalls,
+    );
+    if (saved) {
+      setShowSyncUI(false);
+      setSyncTargetDates(new Set());
+    }
+  }, [
+    busy,
+    editing,
+    localHalls,
+    onSyncToOtherDates,
+    requiresReload,
+    session,
+    submit,
+    syncTargetDates,
+  ]);
 
-  const handleSyncAll = useCallback(() => {
-    if (!onSyncToOtherDates || otherDates.length === 0) return;
+  const handleSyncAll = useCallback(async () => {
+    if (
+      editing ||
+      busy ||
+      requiresReload ||
+      !onSyncToOtherDates ||
+      otherDates.length === 0
+    )
+      return;
     if (
       !confirm(
         `全ての他の日付（${otherDates.length}日分）のホール定義を上書きします。よろしいですか？`,
       )
     )
       return;
-    onSyncToOtherDates(otherDates);
-    setShowSyncUI(false);
-    setSyncTargetDates(new Set());
-  }, [onSyncToOtherDates, otherDates]);
+    const saved = await submit(
+      () => onSyncToOtherDates(otherDates, localHalls, session),
+      setLocalHalls,
+    );
+    if (saved) {
+      setShowSyncUI(false);
+      setSyncTargetDates(new Set());
+    }
+  }, [
+    busy,
+    editing,
+    localHalls,
+    onSyncToOtherDates,
+    otherDates,
+    requiresReload,
+    session,
+    submit,
+  ]);
 
   if (!isOpen) return null;
 
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={onClose}
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="ホール定義（ブロック割当）"
+      onKeyDown={onDialogKeyDown}
+      onClick={handleClose}
     >
-      <div
-        className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col"
+      <fieldset
+        disabled={busy}
+        className="m-0 min-w-0 border-0 p-0 bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -215,7 +294,7 @@ export const SimpleHallDefinitionPanel: React.FC<
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-white hover:text-white text-2xl leading-none px-2"
             aria-label="閉じる"
           >
@@ -223,6 +302,19 @@ export const SimpleHallDefinitionPanel: React.FC<
           </button>
         </div>
 
+        {error && (
+          <p
+            role="alert"
+            className="px-4 py-2 text-sm text-red-700 dark:text-red-300"
+          >
+            {error}
+          </p>
+        )}
+        {editing && (
+          <p className="px-4 py-2 text-sm text-amber-800 dark:text-amber-200">
+            先に個別編集を「確定」または「キャンセル」してください。同期・最終保存はその後に行えます。
+          </p>
+        )}
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4">
           {editing ? (
@@ -454,14 +546,19 @@ export const SimpleHallDefinitionPanel: React.FC<
                 </div>
                 <div className="flex gap-2 pt-1">
                   <button
-                    onClick={handleSyncAll}
+                    disabled={requiresReload}
+                    onClick={() => {
+                      void handleSyncAll();
+                    }}
                     className="flex-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-800/40 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800/60"
                   >
                     全日付に適用
                   </button>
                   <button
-                    onClick={handleSyncExecute}
-                    disabled={syncTargetDates.size === 0}
+                    onClick={() => {
+                      void handleSyncExecute();
+                    }}
+                    disabled={requiresReload || syncTargetDates.size === 0}
                     className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     選択した日に同期 ({syncTargetDates.size})
@@ -480,7 +577,7 @@ export const SimpleHallDefinitionPanel: React.FC<
             )}
             <div className="flex gap-2">
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="flex-1 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600"
               >
                 キャンセル
@@ -500,7 +597,10 @@ export const SimpleHallDefinitionPanel: React.FC<
                   </button>
                 )}
               <button
-                onClick={handleConfirmAll}
+                disabled={busy || requiresReload}
+                onClick={() => {
+                  void handleConfirmAll();
+                }}
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
               >
                 保存
@@ -508,7 +608,7 @@ export const SimpleHallDefinitionPanel: React.FC<
             </div>
           </div>
         )}
-      </div>
+      </fieldset>
     </div>
   );
 };

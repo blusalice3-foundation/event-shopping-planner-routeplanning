@@ -1,0 +1,78 @@
+
+Running 2 tests using 1 worker
+
+(node:42620) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1220:3 › collapsed candidate header preserves the first-member anchor: native (5.8s)
+(node:39456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  2 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1220:3 › collapsed candidate header preserves the first-member anchor: touch (6.0s)
+
+
+  1) [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1220:3 › collapsed candidate header preserves the first-member anchor: native 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+      Array [
+    -   "two",
+        "one",
+    +   "two",
+        "three",
+      ]
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      1239 |     await expect(page.locator('[data-shopping-drag-column="candidate"] [data-shopping-drag-guide]')).toHaveCount(0);
+      1240 |     await finish(page, input, true, "candidate");
+    > 1241 |     await expect.poll(async () => ((await stored(page, "eventLists"))[eventName] as { id: string }[]).map(item => item.id)).toEqual(["two", "one", "three"]);
+           |                                                                                                                             ^
+      1242 |     await reopen(page);
+      1243 |     await expect.poll(async () => ((await stored(page, "eventLists"))[eventName] as { id: string }[]).map(item => item.id)).toEqual(["two", "one", "three"]);
+      1244 |   });
+        at D:\esp-op18\tests\browser\shopping-cross-column-drag.spec.ts:1241:125
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\playwright-drag-candidate-header-before\shopping-cross-column-drag-3e63f--first-member-anchor-native-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\playwright-drag-candidate-header-before\shopping-cross-column-drag-3e63f--first-member-anchor-native-chromium\error-context.md
+
+  2) [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1220:3 › collapsed candidate header preserves the first-member anchor: touch 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+      Array [
+    -   "two",
+        "one",
+    +   "two",
+        "three",
+      ]
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      1239 |     await expect(page.locator('[data-shopping-drag-column="candidate"] [data-shopping-drag-guide]')).toHaveCount(0);
+      1240 |     await finish(page, input, true, "candidate");
+    > 1241 |     await expect.poll(async () => ((await stored(page, "eventLists"))[eventName] as { id: string }[]).map(item => item.id)).toEqual(["two", "one", "three"]);
+           |                                                                                                                             ^
+      1242 |     await reopen(page);
+      1243 |     await expect.poll(async () => ((await stored(page, "eventLists"))[eventName] as { id: string }[]).map(item => item.id)).toEqual(["two", "one", "three"]);
+      1244 |   });
+        at D:\esp-op18\tests\browser\shopping-cross-column-drag.spec.ts:1241:125
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\playwright-drag-candidate-header-before\shopping-cross-column-drag-833b6-e-first-member-anchor-touch-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\playwright-drag-candidate-header-before\shopping-cross-column-drag-833b6-e-first-member-anchor-touch-chromium\error-context.md
+
+  2 failed
+    [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1220:3 › collapsed candidate header preserves the first-member anchor: native 
+    [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1220:3 › collapsed candidate header preserves the first-member anchor: touch 

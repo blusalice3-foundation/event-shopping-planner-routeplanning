@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
-
+import { emptyApplicationSnapshot } from "../state/useApplicationSnapshot";
+import type { MutationIntent } from "./applicationMutationCoordinator";
+import type { PersistenceSnapshot } from "../ports/PersistenceCommandPort";
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ChangeEvent } from "react";
@@ -448,4 +450,124 @@ describe("useMapImportCommands", () => {
     expect(harness.spies.setMapData).not.toHaveBeenCalled();
     expect(harness.spies.notify).not.toHaveBeenCalled();
   });
+});
+
+it.each([false, true])(
+  "cancels the owned initial/reimport read without letting its late completion close the next file (reimport=%s)",
+  async (reimport) => {
+    const state = baseState();
+    const h = createHarness(
+      reimport ? { pendingReimport: preparedImport(state) } : {},
+    );
+    let reject!: (error: Error) => void;
+    let accepted!: Omit<MutationIntent, "id">;
+    const resultPromise = new Promise<PersistenceSnapshot>(
+      (_resolve, rejectPromise) => {
+        reject = rejectPromise;
+      },
+    );
+    const cancel = vi.fn(() => {
+      reject(Object.assign(new Error("取消"), { name: "MutationCancelled" }));
+      return true;
+    });
+    h.ports.settings.startImportMutation = vi.fn((intent) => {
+      accepted = intent;
+      return {
+        result: resultPromise,
+        cancel,
+        getState: () => ({ requestPending: true, canCancel: true }),
+      };
+    });
+    const hook = renderHook(() => useMapImportCommands(h.ports));
+    let operation!: Promise<void>;
+    act(() => {
+      operation = reimport
+        ? hook.result.current.confirmReimport({ preserveMaplessHalls: true })
+        : hook.result.current.prepareImport(
+            { [DAY]: dayMap("A") },
+            settings,
+            {},
+          );
+    });
+    expect(hook.result.current.requestPending).toBe(true);
+    expect(hook.result.current.canCancel).toBe(true);
+    act(() =>
+      reimport
+        ? hook.result.current.cancelReimport()
+        : hook.result.current.closeImport(),
+    );
+    const fileB = new File(["B"], "B.xlsx");
+    const target = {
+      files: [fileB],
+      dataset: { eventName: EVENT },
+      value: "fake-B.xlsx",
+    } as unknown as HTMLInputElement;
+    act(() =>
+      hook.result.current.selectFile({
+        target,
+      } as ChangeEvent<HTMLInputElement>),
+    );
+    await act(async () => operation);
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(h.stores.pendingFile).toBe(fileB);
+    expect(h.stores.dialogOpen).toBe(true);
+    expect(h.spies.openEvent).not.toHaveBeenCalled();
+    expect(h.spies.notify).not.toHaveBeenCalled();
+    expect(() => accepted.assertApplicable?.()).toThrow("終了");
+  },
+);
+
+it("rechecks cancelability at the click and refuses new input and duplicate imports until commit settles", async () => {
+  const h = createHarness();
+  let resolve!: (snapshot: PersistenceSnapshot) => void;
+  let canCancel = true;
+  const pending = new Promise<PersistenceSnapshot>((yes) => {
+    resolve = yes;
+  });
+  const cancel = vi.fn(() => true);
+  const start = vi.fn(() => ({
+    result: pending,
+    cancel,
+    getState: () => ({ requestPending: true, canCancel }),
+  }));
+  h.ports.settings.startImportMutation = start;
+  const hook = renderHook(() => useMapImportCommands(h.ports));
+  let operation!: Promise<void>;
+  act(() => {
+    operation = hook.result.current.prepareImport(
+      { [DAY]: dayMap("A") },
+      settings,
+      {},
+    );
+  });
+  expect(hook.result.current.canCancel).toBe(true);
+  canCancel = false;
+  const fileB = new File(["B"], "B.xlsx");
+  const target = {
+    files: [fileB],
+    dataset: { eventName: EVENT },
+    value: "fake-B.xlsx",
+  } as unknown as HTMLInputElement;
+  await act(async () => {
+    hook.result.current.closeImport();
+    hook.result.current.selectFile({ target } as ChangeEvent<HTMLInputElement>);
+    await hook.result.current.prepareImport(
+      { [DAY]: dayMap("duplicate") },
+      settings,
+      {},
+    );
+  });
+  expect(cancel).not.toHaveBeenCalled();
+  expect(h.spies.closeImportDialog).not.toHaveBeenCalled();
+  expect(h.spies.openImport).not.toHaveBeenCalled();
+  expect(target.value).toBe("");
+  expect(start).toHaveBeenCalledOnce();
+  expect(hook.result.current.requestPending).toBe(true);
+  await act(async () => {
+    resolve(emptyApplicationSnapshot());
+    await operation;
+  });
+  expect(h.spies.closeImportDialog).toHaveBeenCalledOnce();
+  expect(h.spies.openEvent).toHaveBeenCalledOnce();
+  expect(hook.result.current.requestPending).toBe(false);
 });

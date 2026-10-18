@@ -1,0 +1,34 @@
+
+Running 1 test using 1 worker
+
+(node:40196) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1656:7 › @shopping-performance @shopping-drag-performance 500 touch grouping off (31.8s)
+
+
+  1) [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1656:7 › @shopping-performance @shopping-drag-performance 500 touch grouping off 
+
+    Error: drop
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 55
+    Received:    62.5
+
+      2063 |         for (const [operation, value] of Object.entries(records)) {
+      2064 |           expect(value.samples.length, operation).toBeGreaterThanOrEqual(20);
+    > 2065 |           expect(value.medianMs, operation).toBeLessThanOrEqual(55);
+           |                                             ^
+      2066 |           expect(value.p95Ms, operation).toBeLessThanOrEqual(100);
+      2067 |         }
+      2068 |       });
+        at D:\esp-op18\tests\browser\shopping-cross-column-drag.spec.ts:2065:45
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\playwright-drag-500-touch-off-probe-comparison\shopping-cross-column-drag-9069d-ance-500-touch-grouping-off-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\playwright-drag-500-touch-off-probe-comparison\shopping-cross-column-drag-9069d-ance-500-touch-grouping-off-chromium\error-context.md
+
+  1 failed
+    [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1656:7 › @shopping-performance @shopping-drag-performance 500 touch grouping off 

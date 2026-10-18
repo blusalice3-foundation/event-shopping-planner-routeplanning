@@ -241,3 +241,80 @@ describe("ItemEditDialog map selection", () => {
     );
   });
 });
+
+describe("planned quantity draft", () => {
+  it("keeps an edited planned quantity through status changes and saves the visible 2/3", () => {
+    const onSave = vi.fn();
+    render(
+      <ItemEditDialog
+        item={{ ...item, quantity: 5 }}
+        onSave={onSave}
+        onClose={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("数量"), { target: { value: "3" } });
+    fireEvent.change(screen.getByLabelText("購入状態"), {
+      target: { value: "LimitedPurchase" },
+    });
+    expect(screen.getByLabelText("購入予定量")).toHaveValue("3");
+    fireEvent.change(screen.getByLabelText("実購入数"), {
+      target: { value: "2" },
+    });
+    fireEvent.change(screen.getByLabelText("購入状態"), {
+      target: { value: "None" },
+    });
+    fireEvent.change(screen.getByLabelText("購入状態"), {
+      target: { value: "LimitedPurchase" },
+    });
+    expect(screen.getByLabelText("実購入数")).toHaveValue("2");
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        quantity: 3,
+        limitedPurchasedQuantity: 2,
+        purchaseStatus: "LimitedPurchase",
+      }),
+      { kind: "unchanged" },
+    );
+  });
+  it("does not substitute a quantity for an empty planned draft after leaving limited mode", () => {
+    const onSave = vi.fn();
+    render(
+      <ItemEditDialog
+        item={{ ...item, purchaseStatus: "LimitedPurchase", quantity: 30 }}
+        onSave={onSave}
+        onClose={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("購入予定量"), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText("購入予定量を入力してください")).toBeVisible();
+  });
+});
+
+it("initializes purchased actual draft once, then retains it across limited status toggles", () => {
+  render(
+    <ItemEditDialog
+      item={{ ...item, purchaseStatus: "Purchased", quantity: 5 }}
+      onSave={vi.fn()}
+      onClose={vi.fn()}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText("購入状態"), {
+    target: { value: "LimitedPurchase" },
+  });
+  expect(screen.getByLabelText("実購入数")).toHaveValue("5");
+  fireEvent.change(screen.getByLabelText("実購入数"), {
+    target: { value: "2" },
+  });
+  fireEvent.change(screen.getByLabelText("購入状態"), {
+    target: { value: "Purchased" },
+  });
+  fireEvent.change(screen.getByLabelText("購入状態"), {
+    target: { value: "LimitedPurchase" },
+  });
+  expect(screen.getByLabelText("実購入数")).toHaveValue("2");
+});

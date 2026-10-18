@@ -1,3 +1,5 @@
+import type { HallDefinitionsStore } from "../../types/map";
+import { encodeHallRef } from "../../features/consistency/domain/projection";
 import { act, renderHook } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -189,6 +191,7 @@ async function harness(mapless = false) {
       },
       effects: { selectionEventTarget: window, notify: vi.fn() },
       persistence: { commitApplicationSnapshotPatch: application.commitPatch },
+      readCommittedSnapshot: () => application.rawRef.current,
     });
     return { application, commands };
   });
@@ -311,7 +314,7 @@ describe("map editor commits through the application coordinator", () => {
       await barrier;
       await commitApplicationSnapshotAtomically(snapshot, options);
     });
-    let pending!: Promise<void>;
+    let pending!: Promise<unknown>;
     await act(async () => {
       pending = Promise.resolve(
         h.result.current.commands.handleUpdateItemPriority("1", "highest"),
@@ -363,7 +366,7 @@ describe("map editor commits through the application coordinator", () => {
           lastImportDate: "2026-10-04",
         };
       });
-      let pending!: Promise<void>;
+      let pending!: Promise<unknown>;
       act(() => {
         pending = (async () => {
           const commands: MapEditorCommands = h.result.current.commands;
@@ -421,7 +424,9 @@ describe("map editor commits through the application coordinator", () => {
         expect(durable.eventConsistency[EVENT].days[DAY]).toEqual(sourceDay);
         const target =
           durable.eventConsistency[EVENT].days[OTHER_DAY].maps[OTHER_MAP];
-        expect(target.hallOrder.filter((group) => group.hall)).toEqual([
+        expect(
+          target.hallOrder.filter((group) => group.hall?.kind === "map"),
+        ).toEqual([
           {
             hall: {
               kind: "map",
@@ -470,7 +475,7 @@ it.each(priorityCases)(
       }));
     });
     await vi.waitFor(() => expect(h.commit).toHaveBeenCalledOnce());
-    let pending!: Promise<void>;
+    let pending!: Promise<unknown>;
     act(() => {
       pending = Promise.resolve(
         commandsFromPreviousRender[command]("1", "highest"),
@@ -547,7 +552,7 @@ it.each([
       )
         ? { ...entry, name: "変更後のホール名" }
         : entry;
-    let pending!: Promise<void>;
+    let pending!: Promise<unknown>;
     act(() => {
       pending = Promise.resolve(
         editor === "simple in simple editor"
@@ -667,11 +672,14 @@ it.each([
     halls = halls.map((entry) => ({ ...entry, name: "変更後の名前" }));
     h.commit.mockRejectedValueOnce(new Error("transaction aborted"));
   }
-  let pending!: Promise<void>;
+  let pending!: Promise<unknown>;
   act(() => {
     pending = Promise.resolve(
       h.result.current.commands.handleUpdateHalls(halls),
-    );
+    ).catch((error: unknown) => {
+      if (operation !== "failed rename") throw error;
+      expect(error).toBeInstanceOf(Error);
+    });
   });
   await act(async () => {
     await h.result.current.application.coordinator.enqueue(() => undefined);
@@ -706,4 +714,267 @@ it.each([
   }
   expect(h.result.current.application.raw).toEqual(durable);
   expect(h.commit).toHaveBeenCalledOnce();
+});
+
+it.each([false, true])(
+  "saves the edited source and clone atomically across CAS retry and returns only committed display references (simple=%s)",
+  async (simple) => {
+    const h = await harness(simple);
+    const sourceKey = simple ? getMaplessKey(DAY) : MAP;
+    const targetKey = simple ? getMaplessKey(OTHER_DAY) : OTHER_MAP;
+    const values = h.result.current.application.values;
+    const draft = [
+      ...values.hallDefinitions[EVENT][sourceKey],
+      ...(simple ? [] : values.hallDefinitions[EVENT][getMaplessKey(DAY)]),
+    ].map((entry) => ({ ...entry, name: `${entry.name}・編集中` }));
+    const attemptedCloneIds: string[] = [];
+    h.commit.mockImplementationOnce(async (snapshot, options) => {
+      attemptedCloneIds.push(
+        (snapshot.hallDefinitions[EVENT][targetKey][0] as { id: string }).id,
+      );
+      await h.otherTab((latest) => {
+        latest.eventMetadata[EVENT] = {
+          spreadsheetUrl: "",
+          spreadsheetSheetName: "無関係な最新設定",
+          lastImportDate: "2026-10-19",
+        };
+      });
+      await commitApplicationSnapshotAtomically(snapshot, options);
+    });
+    let pending!: ReturnType<MapEditorCommands["handleUpdateHalls"]>;
+    act(() => {
+      const command = simple
+        ? h.result.current.commands.handleSyncMaplessHallsToOtherDates
+        : h.result.current.commands.handleSyncPolygonHallsToOtherDates;
+      pending = command([OTHER_DAY], draft);
+      void pending.catch(() => undefined);
+    });
+    await act(async () =>
+      h.result.current.application.coordinator.enqueue(() => undefined),
+    );
+    for (
+      let count = 0;
+      count < 5 && h.result.current.application.confirmations.length;
+      count++
+    ) {
+      await act(async () => {
+        h.result.current.application.confirm(
+          h.result.current.application.confirmations[0].token,
+        );
+        await h.result.current.application.coordinator.enqueue(() => undefined);
+      });
+    }
+    let saved!: Awaited<typeof pending>;
+    await act(async () => {
+      saved = await pending;
+    });
+    const durable = (await readApplicationSnapshot()).snapshot;
+    expect(h.commit).toHaveBeenCalledTimes(2);
+    expect(h.applied).toHaveBeenCalledOnce();
+    const clone = durable.hallDefinitions[EVENT][targetKey][0] as {
+      id: string;
+      name: string;
+    };
+    expect(clone.id).toBe(attemptedCloneIds[0]);
+    expect(clone.name).toBe(draft[0].name);
+    expect(
+      (durable.hallDefinitions[EVENT][sourceKey][0] as { name: string }).name,
+    ).toBe(draft[0].name);
+    expect(durable.eventMetadata[EVENT]).toMatchObject({
+      spreadsheetSheetName: "無関係な最新設定",
+    });
+    expect(saved.status).toBe("saved");
+    if (saved.status === "saved") {
+      expect(saved.committedHalls.map((entry) => entry.id)).toEqual(
+        simple
+          ? [encodeHallRef({ kind: "simple", dayKey: DAY, hallId: "simple" })]
+          : [
+              encodeHallRef({ kind: "map", mapKey: MAP, hallId: "hall" }),
+              encodeHallRef({ kind: "simple", dayKey: DAY, hallId: "simple" }),
+            ],
+      );
+      expect(saved.committedHalls.map((entry) => entry.name)).toEqual(
+        draft.map((entry) => entry.name),
+      );
+    }
+    expect(
+      Object.values(durable.hallDefinitions[EVENT])
+        .flat()
+        .every((entry) => !(entry as { id: string }).id.startsWith("@hall:")),
+    ).toBe(true);
+    expect(durable.eventLists[EVENT]).toEqual(
+      h.result.current.application.raw.eventLists[EVENT],
+    );
+  },
+);
+
+it("keeps target-day simple hall order, visits and assignment when syncing detailed halls", async () => {
+  const h = await harness();
+  const simpleRef = {
+    kind: "simple" as const,
+    dayKey: OTHER_DAY,
+    hallId: "simple",
+  };
+  await h.otherTab((latest) => {
+    const target =
+      latest.eventConsistency[EVENT].days[OTHER_DAY].maps[OTHER_MAP];
+    target.assignments = { "3": simpleRef };
+    target.hallOrder = [
+      { hall: simpleRef, priority: "none" },
+      {
+        hall: { kind: "map", mapKey: OTHER_MAP, hallId: "hall" },
+        priority: "none",
+      },
+    ];
+    target.hallVisitLists = [{ group: target.hallOrder[0], itemIds: ["3"] }];
+  });
+  const before = (await readApplicationSnapshot()).snapshot;
+  act(() =>
+    h.result.current.application.hydrationSetters.setEventConsistency(
+      before.eventConsistency,
+    ),
+  );
+  const values = h.result.current.application.values;
+  const draft = [
+    ...values.hallDefinitions[EVENT][MAP],
+    ...values.hallDefinitions[EVENT][getMaplessKey(DAY)],
+  ].map((entry) => ({ ...entry, name: `${entry.name}編集` }));
+  let pending!: ReturnType<MapEditorCommands["handleUpdateHalls"]>;
+  act(() => {
+    pending = h.result.current.commands.handleSyncPolygonHallsToOtherDates(
+      [OTHER_DAY],
+      draft,
+    );
+    void pending.catch(() => undefined);
+  });
+  await act(async () =>
+    h.result.current.application.coordinator.enqueue(() => undefined),
+  );
+  while (h.result.current.application.confirmations.length) {
+    await act(async () => {
+      h.result.current.application.confirm(
+        h.result.current.application.confirmations[0].token,
+      );
+      await h.result.current.application.coordinator.enqueue(() => undefined);
+    });
+  }
+  await act(async () => pending);
+  const saved = (await readApplicationSnapshot()).snapshot;
+  const target = saved.eventConsistency[EVENT].days[OTHER_DAY].maps[OTHER_MAP];
+  expect(target.hallOrder[0]).toEqual({ hall: simpleRef, priority: "none" });
+  expect(target.hallVisitLists[0]).toMatchObject({
+    group: { hall: simpleRef, priority: "none" },
+    itemIds: ["3"],
+  });
+  expect(target.assignments["3"]).toEqual(simpleRef);
+  expect(saved.hallDefinitions[EVENT][getMaplessKey(OTHER_DAY)]).toEqual(
+    before.hallDefinitions[EVENT][getMaplessKey(OTHER_DAY)],
+  );
+});
+
+it("shares a detailed clone across target dates while retaining each day's own simple route references", async () => {
+  const h = await harness();
+  const third = "２日目";
+  await h.otherTab((latest) => {
+    (latest.eventLists[EVENT] as ShoppingItem[]).push(item("4", third));
+    latest.executeModeItems[EVENT][third] = ["4"];
+    latest.hallDefinitions[EVENT][getMaplessKey(third)] = [
+      { ...simpleHall, name: "三日目簡易" },
+    ];
+    for (const [day, id] of [
+      [OTHER_DAY, "3"],
+      [third, "4"],
+    ]) {
+      const simpleRef = {
+        kind: "simple" as const,
+        dayKey: day,
+        hallId: "simple",
+      };
+      const groups = [
+        { hall: simpleRef, priority: "none" as const },
+        {
+          hall: { kind: "map" as const, mapKey: OTHER_MAP, hallId: "hall" },
+          priority: "none" as const,
+        },
+      ];
+      latest.eventConsistency[EVENT].days[day] = {
+        selectedMapKey: OTHER_MAP,
+        mapless: null,
+        maps: {
+          [OTHER_MAP]: {
+            assignments: { [id]: simpleRef },
+            hallOrder: groups,
+            hallVisitLists: [{ group: groups[0], itemIds: [id] }],
+            route: null,
+          },
+        },
+      };
+    }
+  });
+  const before = (await readApplicationSnapshot()).snapshot;
+  act(() => {
+    const setters = h.result.current.application.hydrationSetters;
+    setters.setEventLists(before.eventLists as Record<string, ShoppingItem[]>);
+    setters.setExecuteModeItems(before.executeModeItems);
+    setters.setHallDefinitions(before.hallDefinitions as HallDefinitionsStore);
+    setters.setEventConsistency(before.eventConsistency);
+  });
+  const values = h.result.current.application.values;
+  const draft = [
+    ...values.hallDefinitions[EVENT][MAP],
+    ...values.hallDefinitions[EVENT][getMaplessKey(DAY)],
+  ].map((entry) => ({ ...entry, name: `${entry.name}新` }));
+  let pending!: ReturnType<MapEditorCommands["handleUpdateHalls"]>;
+  act(() => {
+    pending = h.result.current.commands.handleSyncPolygonHallsToOtherDates(
+      [DAY, OTHER_DAY, third],
+      draft,
+    );
+    void pending.catch(() => undefined);
+  });
+  await act(async () =>
+    h.result.current.application.coordinator.enqueue(() => undefined),
+  );
+  while (h.result.current.application.confirmations.length) {
+    await act(async () => {
+      h.result.current.application.confirm(
+        h.result.current.application.confirmations[0].token,
+      );
+      await h.result.current.application.coordinator.enqueue(() => undefined);
+    });
+  }
+  await act(async () => pending);
+  const saved = (await readApplicationSnapshot()).snapshot;
+  const cloned = saved.hallDefinitions[EVENT][OTHER_MAP][0] as { id: string };
+  expect(saved.hallDefinitions[EVENT][OTHER_MAP]).toHaveLength(1);
+  expect((saved.hallDefinitions[EVENT][MAP][0] as { id: string }).id).toBe(
+    "hall",
+  );
+  expect(h.commit).toHaveBeenCalledOnce();
+  for (const [day, id] of [
+    [OTHER_DAY, "3"],
+    [third, "4"],
+  ]) {
+    const simpleRef = {
+      kind: "simple" as const,
+      dayKey: day,
+      hallId: "simple",
+    };
+    const target = saved.eventConsistency[EVENT].days[day].maps[OTHER_MAP];
+    expect(target.hallOrder.slice(0, 2)).toEqual([
+      { hall: simpleRef, priority: "none" },
+      {
+        hall: { kind: "map", mapKey: OTHER_MAP, hallId: cloned.id },
+        priority: "none",
+      },
+    ]);
+    expect(target.hallVisitLists[0]).toMatchObject({
+      group: { hall: simpleRef, priority: "none" },
+      itemIds: [id],
+    });
+    expect(target.assignments[id]).toEqual(simpleRef);
+    expect(saved.hallDefinitions[EVENT][getMaplessKey(day)]).toEqual(
+      before.hallDefinitions[EVENT][getMaplessKey(day)],
+    );
+  }
 });

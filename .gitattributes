@@ -9,3 +9,7 @@ artifacts/item-update-confirmation/** -text whitespace=cr-at-eol
 
 # Preserve original bytes and CRLF/LF in priority-operation verification evidence.
 artifacts/priority-user-operation-consistency-20261018/** -text whitespace=cr-at-eol
+
+# Preserve original bytes and CRLF/LF in user-operation remediation evidence.
+artifacts/user-operation-remediation-20261019/** -text whitespace=cr-at-eol,-blank-at-eol,-blank-at-eof
+artifacts/user-operation-consistency-20261018/** -text whitespace=cr-at-eol,-blank-at-eol,-blank-at-eof

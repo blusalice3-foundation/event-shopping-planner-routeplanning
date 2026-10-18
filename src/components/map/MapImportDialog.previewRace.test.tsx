@@ -310,4 +310,78 @@ describe("MapImportDialog preview input race", () => {
     expect(importWorkbookMock).toHaveBeenCalledTimes(1);
     expect(onImport.mock.calls[0][0]).toBe(previewData);
   });
+  it("keeps save busy through settings and props invalidation and captures immutable settings and angles", async () => {
+    const data = createMapData("保存待ち");
+    importWorkbookMock.mockResolvedValueOnce(
+      mapWorkerResult("map-preview", successfulResult(data)),
+    );
+    const save = createDeferred<void>();
+    const onImport = vi.fn<
+      (
+        data: Record<string, DayMapData>,
+        settings: BlockDetectionSettings,
+        angles: Record<string, number>,
+      ) => Promise<void>
+    >(() => save.promise);
+    const onClose = vi.fn();
+    const file = new File(["map"], "pending.xlsx");
+    const props = {
+      isOpen: true,
+      file,
+      eventName: "対象イベント",
+      savedSettings: cloneDefaultSettings(),
+      onImport,
+      onClose,
+      xlsxExecutionPort,
+    };
+    const view = render(<MapImportDialog {...props} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /ブロック自動検出の詳細設定/ }),
+    );
+    const lengthInput = view.container.querySelector<HTMLInputElement>(
+      'input[type="range"][min="1"][max="10"]',
+    )!;
+    fireEvent.change(lengthInput, { target: { value: "6" } });
+    fireEvent.click(
+      screen.getByRole("button", { name: /プレビュー（ブロック検出）/ }),
+    );
+    await screen.findByText("保存待ち");
+    const angle = view.container.querySelector<HTMLInputElement>(
+      'input[type="number"][max="359"]',
+    )!;
+    fireEvent.change(angle, { target: { value: "45" } });
+    fireEvent.click(screen.getByRole("button", { name: "取り込む" }));
+    await waitFor(() => expect(onImport).toHaveBeenCalledOnce());
+    expect(lengthInput).toBeDisabled();
+    expect(angle).toBeDisabled();
+    fireEvent.change(lengthInput, { target: { value: "8" } });
+    fireEvent.change(angle, { target: { value: "90" } });
+    fireEvent.click(screen.getByRole("button", { name: /初期値に戻す/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /プレビュー（ブロック検出）/ }),
+    );
+    view.rerender(
+      <MapImportDialog
+        {...props}
+        savedSettings={{ ...props.savedSettings, maxBlockNameLength: 9 }}
+        requestPending
+        canCancel={false}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "取り込み中..." }),
+    ).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "取り込み中..." }));
+    fireEvent.click(screen.getByRole("button", { name: "キャンセル" }));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(onImport).toHaveBeenCalledOnce();
+    expect(onImport.mock.calls[0][1]).toMatchObject({ maxBlockNameLength: 6 });
+    expect(onImport.mock.calls[0][2]).toEqual({ "1日目マップ": 45 });
+    expect(importWorkbookMock).toHaveBeenCalledOnce();
+    await act(async () => save.resolve());
+    view.rerender(
+      <MapImportDialog {...props} requestPending={false} canCancel />,
+    );
+    expect(screen.getByRole("button", { name: "取り込む" })).toBeEnabled();
+  });
 });

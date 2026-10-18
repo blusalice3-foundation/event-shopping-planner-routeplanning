@@ -1,3 +1,9 @@
+import {
+  buildShoppingDragLayout,
+  resolveShoppingDragPlacement,
+  type ShoppingDragMoveContext,
+} from "../../features/shopping-list/drag/shoppingDrag";
+import { projectItemsToExecutionVisits } from "../../utils/visitProjection";
 // @vitest-environment jsdom
 
 import { emptyApplicationSnapshot as emptyApplicationSnapshotForImport } from "../state/useApplicationSnapshot";
@@ -286,6 +292,268 @@ const createHarness = (options: HarnessOptions = {}) => {
 };
 
 describe("useShoppingItemMutationCommands", () => {
+  it("freezes an exact same-column candidate selection without expanding its peers", () => {
+    const a = item("a", { number: "1a" }),
+      x1 = item("x1", { number: "2a" }),
+      x2 = item("x2", { number: "2a2" }),
+      y = item("y", { number: "3a" });
+    const harness = createHarness({
+      eventLists: { [EVENT]: [a, x1, x2, y] },
+      selectedItemIds: new Set(["x1", "x2"]),
+      executeModeItems: { [EVENT]: { [DAY]: ["a"] } },
+    });
+    const context: ShoppingDragMoveContext = {
+      token: Symbol(),
+      eventName: EVENT,
+      day: DAY,
+      generation: 0,
+      sourceColumn: "candidate",
+      targetColumn: "candidate",
+      requestedIds: ["x1", "y"],
+      effectiveIds: ["x1", "y"],
+      sourceVisits: projectItemsToExecutionVisits([x1, x2, y]).map((visit) => ({
+        key: visit.key,
+        ids: visit.itemIds,
+      })),
+      operation: "selection",
+      isCurrent: () => true,
+    };
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+    act(() =>
+      result.current.moveItem(
+        "x1",
+        "__END_OF_LIST__",
+        "candidate",
+        "candidate",
+        context,
+      ),
+    );
+    expect(
+      harness.stores.eventLists[EVENT].filter((item) => item.id !== "a").map(
+        (item) => item.id,
+      ),
+    ).toEqual(["x2", "x1", "y"]);
+  });
+  it("freezes the original execution groups for a same-column drag", () => {
+    const a1 = item("a1", { number: "1a" }),
+      a2 = item("a2", { number: "1a2" }),
+      b = item("b", { number: "2a" }),
+      c = item("c", { number: "3a" });
+    const harness = createHarness({
+      eventLists: { [EVENT]: [a1, b, a2, c] },
+      selectedItemIds: new Set(["a1", "c"]),
+      executeModeItems: { [EVENT]: { [DAY]: ["a1", "b", "a2", "c"] } },
+    });
+    const context: ShoppingDragMoveContext = {
+      token: Symbol(),
+      eventName: EVENT,
+      day: DAY,
+      generation: 0,
+      sourceColumn: "execute",
+      targetColumn: "execute",
+      requestedIds: ["a1", "b"],
+      effectiveIds: ["a1", "b", "a2"],
+      sourceVisits: projectItemsToExecutionVisits([a1, b, a2]).map((visit) => ({
+        key: visit.key,
+        ids: visit.itemIds,
+      })),
+      operation: "selection",
+      isCurrent: () => true,
+    };
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+    act(() =>
+      result.current.moveItem(
+        "a1",
+        "__END_OF_LIST__",
+        "execute",
+        "execute",
+        context,
+      ),
+    );
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "c",
+      "a1",
+      "b",
+      "a2",
+    ]);
+  });
+  it("refuses a candidate anchor whose column membership changed before drop", () => {
+    const a = item("a", { number: "1a" }),
+      target = item("target", { number: "2a" });
+    const harness = createHarness({
+      eventLists: { [EVENT]: [a, target] },
+      executeModeItems: { [EVENT]: { [DAY]: ["a"] } },
+    });
+    const context: ShoppingDragMoveContext = {
+      token: Symbol(),
+      eventName: EVENT,
+      day: DAY,
+      generation: 0,
+      sourceColumn: "execute",
+      targetColumn: "candidate",
+      requestedIds: ["a"],
+      effectiveIds: ["a"],
+      sourceVisits: projectItemsToExecutionVisits([a]).map((visit) => ({
+        key: visit.key,
+        ids: visit.itemIds,
+      })),
+      operation: "single",
+      isCurrent: () => true,
+    };
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+    harness.refs.executeModeItemsRef.current = {
+      [EVENT]: { [DAY]: ["a", "target"] },
+    };
+    act(() =>
+      result.current.moveItem("a", "target", "candidate", "execute", context),
+    );
+    expect(harness.spies.clearRangeSelection).not.toHaveBeenCalled();
+    expect(harness.spies.setSortState).not.toHaveBeenCalled();
+    expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+  });
+  it("uses the frozen drag selection instead of a later live selection", () => {
+    const a = item("a", { number: "1a" }),
+      x = item("x", { number: "2a" }),
+      sibling = item("sibling", { number: "2a2" }),
+      other = item("other", { number: "3a" });
+    const live = new Set(["other"]);
+    const harness = createHarness({
+      eventLists: { [EVENT]: [a, x, sibling, other] },
+      selectedItemIds: live,
+      executeModeItems: { [EVENT]: { [DAY]: ["a"] } },
+    });
+    const layout = buildShoppingDragLayout([a], {
+      spaceGroups: true,
+      hallGroups: false,
+      halls: [],
+      hallOrder: [],
+      map: null,
+    });
+    const context: ShoppingDragMoveContext = {
+      token: Symbol(),
+      eventName: EVENT,
+      day: DAY,
+      generation: 0,
+      sourceColumn: "candidate",
+      targetColumn: "execute",
+      requestedIds: ["x"],
+      effectiveIds: ["x", "sibling"],
+      sourceVisits: projectItemsToExecutionVisits([x, sibling]).map(
+        (visit) => ({ key: visit.key, ids: visit.itemIds }),
+      ),
+      operation: "single",
+      isCurrent: () => true,
+      placement: resolveShoppingDragPlacement(
+        layout,
+        [x, sibling],
+        "a",
+        "after",
+      )!,
+    };
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+    act(() =>
+      result.current.moveItem(
+        "x",
+        "__END_OF_LIST__",
+        "execute",
+        "candidate",
+        context,
+      ),
+    );
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "a",
+      "x",
+      "sibling",
+    ]);
+    expect(
+      harness.stores.eventLists[EVENT].find((item) => item.id === "other"),
+    ).toBe(other);
+  });
+  it("does not clear range or sort when a drag owner or generation is invalid", () => {
+    const x = item("x", { number: "2a" });
+    const harness = createHarness({
+      eventLists: { [EVENT]: [x] },
+      selectedItemIds: new Set(["x"]),
+    });
+    harness.ports.state.getEventGeneration = () => 2;
+    const context: ShoppingDragMoveContext = {
+      token: Symbol(),
+      eventName: EVENT,
+      day: DAY,
+      generation: 1,
+      sourceColumn: "candidate",
+      targetColumn: "execute",
+      requestedIds: ["x"],
+      effectiveIds: ["x"],
+      sourceVisits: projectItemsToExecutionVisits([x]).map((visit) => ({
+        key: visit.key,
+        ids: visit.itemIds,
+      })),
+      operation: "single",
+      isCurrent: () => true,
+    };
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+    act(() =>
+      result.current.moveItem(
+        "x",
+        "__END_OF_LIST__",
+        "execute",
+        "candidate",
+        context,
+      ),
+    );
+    expect(harness.spies.clearRangeSelection).not.toHaveBeenCalled();
+    expect(harness.spies.setSortState).not.toHaveBeenCalled();
+    expect(harness.spies.setEventLists).not.toHaveBeenCalled();
+    expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+  });
+  it("does not change sort or selection after a same-visit source member arrives during drag", () => {
+    const x = item("x", { number: "2a" }),
+      late = item("late", { number: "2a2" });
+    const harness = createHarness({ eventLists: { [EVENT]: [x] } });
+    const context: ShoppingDragMoveContext = {
+      token: Symbol(),
+      eventName: EVENT,
+      day: DAY,
+      generation: 0,
+      sourceColumn: "candidate",
+      targetColumn: "execute",
+      requestedIds: ["x"],
+      effectiveIds: ["x"],
+      sourceVisits: projectItemsToExecutionVisits([x]).map((visit) => ({
+        key: visit.key,
+        ids: visit.itemIds,
+      })),
+      operation: "single",
+      isCurrent: () => true,
+    };
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+    harness.refs.eventListsRef.current = { [EVENT]: [x, late] };
+    act(() =>
+      result.current.moveItem(
+        "x",
+        "__END_OF_LIST__",
+        "execute",
+        "candidate",
+        context,
+      ),
+    );
+    expect(harness.spies.clearRangeSelection).not.toHaveBeenCalled();
+    expect(harness.spies.setSortState).not.toHaveBeenCalled();
+    expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+  });
   it("commits a new bulk event through all related stores before navigation", async () => {
     const harness = createHarness({
       activeEventName: null,

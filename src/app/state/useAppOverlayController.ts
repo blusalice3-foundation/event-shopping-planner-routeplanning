@@ -1,3 +1,4 @@
+import type { MapEditorSession } from "../../features/map/domain/mapEditorSession";
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import {
   AppOverlayInvariantError,
@@ -89,9 +90,10 @@ export interface AppOverlayBackupCommands {
   openRestore(
     backup: RestoreOverlay["backup"],
     xlsxCompletion: RestoreOverlay["xlsxCompletion"],
+    onReceipt?: AppOverlayOpenReceiptCallback,
   ): string;
-  close(): void;
-  confirm(): void;
+  close(requestId?: string): void;
+  confirm(requestId?: string): void;
 }
 
 export interface AppOverlayMapImportCommands {
@@ -105,11 +107,13 @@ export interface AppOverlayMapImportCommands {
 export interface AppOverlayMapEditorCommands {
   openBlockDefinition(
     pendingSelection: BlockDefinitionOverlay["pendingSelection"],
+    session?: MapEditorSession,
   ): string;
-  openSimpleHallDefinition(): string;
+  openSimpleHallDefinition(session?: MapEditorSession): string;
   openGlobalHallOrder(): string;
   openHallDefinition(
     pendingSelection: HallDefinitionOverlay["pendingSelection"],
+    session?: MapEditorSession,
   ): string;
   startCellSelection(selection: CellSelectionOverlay["selection"]): void;
   clearPendingCellSelection(): void;
@@ -255,13 +259,17 @@ const reduceControllerWithReceipts = (
   const overlays = reduceAppOverlayControllerState(state.overlays, action);
   if (
     action.type === "event/open-update" ||
-    action.type === "event/open-url-update"
+    action.type === "event/open-url-update" ||
+    action.type === "backup/open-restore"
   ) {
     const expectedKind =
       action.type === "event/open-update" ? "update" : "url-update";
     const accepted =
-      overlays.event.kind === expectedKind &&
-      overlays.event.requestId === action.requestId;
+      action.type === "backup/open-restore"
+        ? overlays.backup.kind === "restore" &&
+          overlays.backup.requestId === action.requestId
+        : overlays.event.kind === expectedKind &&
+          overlays.event.requestId === action.requestId;
     return {
       overlays,
       openReceipts: [
@@ -427,8 +435,9 @@ export const useAppOverlayController = (
 
   const backupCommands = useMemo<AppOverlayBackupCommands>(
     () => ({
-      openRestore: (backup, xlsxCompletion) => {
+      openRestore: (backup, xlsxCompletion, onReceipt) => {
         const requestId = nextRequestId();
+        if (onReceipt) receiptCallbacks.current.set(requestId, onReceipt);
         dispatch({
           type: "backup/open-restore",
           requestId,
@@ -437,12 +446,20 @@ export const useAppOverlayController = (
         });
         return requestId;
       },
-      close: () => {
-        if (state.backup.kind !== "restore") return;
+      close: (requestId) => {
+        if (
+          state.backup.kind !== "restore" ||
+          (requestId !== undefined && state.backup.requestId !== requestId)
+        )
+          return;
         dispatch({ type: "backup/close", requestId: state.backup.requestId });
       },
-      confirm: () => {
-        if (state.backup.kind !== "restore") return;
+      confirm: (requestId) => {
+        if (
+          state.backup.kind !== "restore" ||
+          (requestId !== undefined && state.backup.requestId !== requestId)
+        )
+          return;
         dispatch({ type: "backup/confirm", requestId: state.backup.requestId });
       },
     }),
@@ -491,19 +508,21 @@ export const useAppOverlayController = (
 
   const mapEditorCommands = useMemo<AppOverlayMapEditorCommands>(
     () => ({
-      openBlockDefinition: (pendingSelection) => {
+      openBlockDefinition: (pendingSelection, session) => {
         const requestId = nextRequestId();
         dispatch({
           type: "map-editor/open-block-definition",
+          ...(session ? { session } : {}),
           requestId,
           pendingSelection,
         });
         return requestId;
       },
-      openSimpleHallDefinition: () => {
+      openSimpleHallDefinition: (session) => {
         const requestId = nextRequestId();
         dispatch({
           type: "map-editor/open-simple-hall-definition",
+          ...(session ? { session } : {}),
           requestId,
         });
         return requestId;
@@ -513,10 +532,11 @@ export const useAppOverlayController = (
         dispatch({ type: "map-editor/open-global-hall-order", requestId });
         return requestId;
       },
-      openHallDefinition: (pendingSelection) => {
+      openHallDefinition: (pendingSelection, session) => {
         const requestId = nextRequestId();
         dispatch({
           type: "map-editor/open-hall-definition",
+          ...(session ? { session } : {}),
           requestId,
           pendingSelection,
         });

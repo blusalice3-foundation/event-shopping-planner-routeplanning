@@ -10,6 +10,52 @@ import type {
   MapViewportState,
 } from "../../types/map";
 
+/** A sent write may have committed even though its response never arrived. */
+export class PersistenceOutcomeUnknownError extends Error {
+  constructor(readonly cause?: unknown) {
+    super(
+      "保存結果を確認できません。再送せず、JSONバックアップを保存して再読み込みしてください。",
+    );
+    this.name = "PersistenceOutcomeUnknownError";
+  }
+}
+/** Neutral error boundary shared by UI coordination and persistence adapters. */
+export type PersistenceWriteStopReason = Error;
+export function isPersistenceWriteStopReason(
+  error: unknown,
+): error is PersistenceWriteStopReason {
+  if (!error || typeof error !== "object") return false;
+  const name = (error as { name?: unknown }).name;
+  return (
+    name === "PersistenceOutcomeUnknownError" ||
+    name === "CommittedStateApplyError"
+  );
+}
+export function createPersistenceWriteStopController() {
+  let reason: PersistenceWriteStopReason | undefined;
+  const listeners = new Set<(reason: PersistenceWriteStopReason) => void>();
+  return {
+    getWriteStopReason: () => reason,
+    stopWrites(next: PersistenceWriteStopReason) {
+      if (reason) return;
+      reason = next;
+      for (const listener of listeners) {
+        try {
+          listener(next);
+        } catch {
+          /* All owners must observe the stop. */
+        }
+      }
+    },
+    onWritesStopped(listener: (reason: PersistenceWriteStopReason) => void) {
+      listeners.add(listener);
+      if (reason) listener(reason);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+}
 export class PersistenceSettingsRollbackError extends Error {
   readonly originalError: unknown;
   readonly rollbackError: unknown;
@@ -173,6 +219,12 @@ export interface ConsistencyUpgradeArchive {
   localStorage: Record<string, string>;
 }
 export interface PersistenceCommandPort extends PreferencePersistencePort {
+  /** Terminal until reload; registration and notification are synchronous and idempotent. */
+  stopWrites?(reason: PersistenceWriteStopReason): void;
+  getWriteStopReason?(): PersistenceWriteStopReason | undefined;
+  onWritesStopped?(
+    listener: (reason: PersistenceWriteStopReason) => void,
+  ): () => void;
   /** Align the local worker mirror with immutable state adopted after a durable commit. */
   adoptCommittedSnapshot?(snapshot: PersistenceSnapshot): void;
   inspectConsistencyUpgrade(): Promise<ConsistencyUpgradeArchive | null>;

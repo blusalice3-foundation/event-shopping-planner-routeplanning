@@ -1,0 +1,15 @@
+
+Running 8 tests using 1 worker
+
+(node:34300) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1870:7 › @shopping-performance @shopping-drag-performance 150 native grouping on (12.2s)
+  ok 2 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1870:7 › @shopping-performance @shopping-drag-performance 150 native grouping off (12.5s)
+  ok 3 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1870:7 › @shopping-performance @shopping-drag-performance 150 touch grouping on (21.8s)
+  ok 4 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1870:7 › @shopping-performance @shopping-drag-performance 150 touch grouping off (22.4s)
+  ok 5 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1870:7 › @shopping-performance @shopping-drag-performance 500 native grouping on (14.1s)
+  ok 6 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1870:7 › @shopping-performance @shopping-drag-performance 500 native grouping off (13.7s)
+  ok 7 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1870:7 › @shopping-performance @shopping-drag-performance 500 touch grouping on (23.5s)
+  ok 8 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1870:7 › @shopping-performance @shopping-drag-performance 500 touch grouping off (23.5s)
+
+  8 passed (2.4m)

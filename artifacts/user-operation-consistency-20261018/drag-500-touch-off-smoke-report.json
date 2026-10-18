@@ -1,0 +1,160 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\esp-op18\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/shopping-cross-column-drag.spec.ts",
+      "--grep",
+      "@shopping-drag-performance 500 touch grouping off",
+      "--workers=1",
+      "--reporter=list,json",
+      "--output",
+      "artifacts/playwright-drag-500-touch-off-smoke"
+    ],
+    "configFile": "D:\\esp-op18\\playwright.config.ts",
+    "rootDir": "D:/esp-op18/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/esp-op18/artifacts/playwright-drag-500-touch-off-smoke",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/esp-op18/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "shopping-cross-column-drag.spec.ts",
+      "file": "shopping-cross-column-drag.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "@shopping-performance @shopping-drag-performance 500 touch grouping off",
+          "ok": false,
+          "tags": [
+            "shopping-performance",
+            "shopping-drag-performance"
+          ],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 12721,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[32m- Object {}\u001b[39m\n\u001b[31m+ Object {\u001b[39m\n\u001b[31m+   \"item:execute-2\": 1,\u001b[39m\n\u001b[31m+ }\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[32m- Object {}\u001b[39m\n\u001b[31m+ Object {\u001b[39m\n\u001b[31m+   \"item:execute-2\": 1,\u001b[39m\n\u001b[31m+ }\u001b[39m\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:1856:35",
+                    "location": {
+                      "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                      "column": 35,
+                      "line": 1856
+                    },
+                    "snippet": "  1854 |           ).toEqual([]);\n  1855 |           if (scenario.name !== \"auto-scroll\")\n> 1856 |             expect(render.mounts).toEqual({});\n       |                                   ^\n  1857 |           if (grouped)\n  1858 |             expect(\n  1859 |               render.known.filter((key) => key.startsWith(\"group:\")).length,"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                        "column": 35,
+                        "line": 1856
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[32m- Object {}\u001b[39m\n\u001b[31m+ Object {\u001b[39m\n\u001b[31m+   \"item:execute-2\": 1,\u001b[39m\n\u001b[31m+ }\u001b[39m\n\n  1854 |           ).toEqual([]);\n  1855 |           if (scenario.name !== \"auto-scroll\")\n> 1856 |             expect(render.mounts).toEqual({});\n       |                                   ^\n  1857 |           if (grouped)\n  1858 |             expect(\n  1859 |               render.known.filter((key) => key.startsWith(\"group:\")).length,\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:1856:35"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T16:16:31.051Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-500-touch-off-smoke\\shopping-cross-column-drag-9069d-ance-500-touch-grouping-off-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-500-touch-off-smoke\\shopping-cross-column-drag-9069d-ance-500-touch-grouping-off-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                    "column": 35,
+                    "line": 1856
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-deb7ef06c528d8f3b7d2",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 1607,
+          "column": 7
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-18T16:16:30.532Z",
+    "duration": 13476.613,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

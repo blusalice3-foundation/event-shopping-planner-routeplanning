@@ -1,0 +1,1588 @@
+{
+  "diagnosticOnly": true,
+  "windows": 20,
+  "profileStartUs": 40923556899,
+  "profileEndUs": 40928765029,
+  "activeDropSamples": 2655,
+  "idleMs": 259.66,
+  "activeMs": 1491.517,
+  "activeAveragePerDropMs": 74.57585,
+  "selfFunctions": [
+    {
+      "id": 2,
+      "function": "(program)",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 407.421,
+      "inclusiveMs": 407.421
+    },
+    {
+      "id": 527,
+      "function": "w",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 15,
+      "column": 124446,
+      "selfMs": 69.875,
+      "inclusiveMs": 69.875
+    },
+    {
+      "id": 442,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 15,
+      "column": 35051,
+      "selfMs": 40.416,
+      "inclusiveMs": 40.416
+    },
+    {
+      "id": 291,
+      "function": "(garbage collector)",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 37.716,
+      "inclusiveMs": 37.716
+    },
+    {
+      "id": 523,
+      "function": "getBoundingClientRect",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 35.927,
+      "inclusiveMs": 35.927
+    },
+    {
+      "id": 512,
+      "function": "getBoundingClientRect",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 30.884,
+      "inclusiveMs": 30.884
+    },
+    {
+      "id": 1297,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 15,
+      "column": 35051,
+      "selfMs": 28.423,
+      "inclusiveMs": 28.423
+    },
+    {
+      "id": 502,
+      "function": "setAttribute",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 20.559,
+      "inclusiveMs": 20.559
+    },
+    {
+      "id": 405,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 2,
+      "column": 19254,
+      "selfMs": 14.655,
+      "inclusiveMs": 55.672
+    },
+    {
+      "id": 484,
+      "function": "LE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 12663,
+      "selfMs": 14.445,
+      "inclusiveMs": 14.445
+    },
+    {
+      "id": 400,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 2,
+      "column": 24129,
+      "selfMs": 13.787,
+      "inclusiveMs": 108.765
+    },
+    {
+      "id": 377,
+      "function": "querySelector",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 13.116,
+      "inclusiveMs": 13.116
+    },
+    {
+      "id": 407,
+      "function": "Kj",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 2,
+      "column": 18087,
+      "selfMs": 11.921,
+      "inclusiveMs": 28.749
+    },
+    {
+      "id": 325,
+      "function": "querySelector",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 10.626,
+      "inclusiveMs": 10.626
+    },
+    {
+      "id": 328,
+      "function": "querySelector",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 9.55,
+      "inclusiveMs": 9.55
+    },
+    {
+      "id": 79,
+      "function": "TE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 14882,
+      "selfMs": 8.214,
+      "inclusiveMs": 26.065
+    },
+    {
+      "id": 1342,
+      "function": "LE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 12663,
+      "selfMs": 7.721,
+      "inclusiveMs": 7.721
+    },
+    {
+      "id": 1270,
+      "function": "bh",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 3093,
+      "selfMs": 7.474,
+      "inclusiveMs": 101.354
+    },
+    {
+      "id": 485,
+      "function": "Uv",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 15,
+      "column": 122394,
+      "selfMs": 7.175,
+      "inclusiveMs": 9.95
+    },
+    {
+      "id": 689,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 35035,
+      "selfMs": 6.357,
+      "inclusiveMs": 9.246
+    },
+    {
+      "id": 698,
+      "function": "FE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 22729,
+      "selfMs": 6.21,
+      "inclusiveMs": 6.21
+    },
+    {
+      "id": 359,
+      "function": "Ln",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 3636,
+      "selfMs": 6.149,
+      "inclusiveMs": 6.149
+    },
+    {
+      "id": 510,
+      "function": "removeChild",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 6.068,
+      "inclusiveMs": 6.068
+    },
+    {
+      "id": 687,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 3780,
+      "selfMs": 5.972,
+      "inclusiveMs": 10.194
+    },
+    {
+      "id": 421,
+      "function": "Wp",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 11881,
+      "selfMs": 5.947,
+      "inclusiveMs": 10.936
+    },
+    {
+      "id": 382,
+      "function": "QL",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 80513,
+      "selfMs": 5.848,
+      "inclusiveMs": 91.73
+    },
+    {
+      "id": 408,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 2,
+      "column": 18212,
+      "selfMs": 5.68,
+      "inclusiveMs": 10.682
+    },
+    {
+      "id": 1236,
+      "function": "pb",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 40489,
+      "selfMs": 5.43,
+      "inclusiveMs": 206.843
+    },
+    {
+      "id": 758,
+      "function": "pl",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 2948,
+      "selfMs": 5.349,
+      "inclusiveMs": 5.349
+    },
+    {
+      "id": 274,
+      "function": "cloneNode",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 5.279,
+      "inclusiveMs": 5.279
+    },
+    {
+      "id": 473,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 71683,
+      "selfMs": 5.024,
+      "inclusiveMs": 16.757
+    },
+    {
+      "id": 387,
+      "function": "R",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 11,
+      "column": 6784,
+      "selfMs": 4.977,
+      "inclusiveMs": 4.977
+    },
+    {
+      "id": 1238,
+      "function": "TE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 14882,
+      "selfMs": 4.868,
+      "inclusiveMs": 14.836
+    },
+    {
+      "id": 401,
+      "function": "nd",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 2,
+      "column": 18845,
+      "selfMs": 4.734,
+      "inclusiveMs": 26.892
+    },
+    {
+      "id": 378,
+      "function": "bh",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 3093,
+      "selfMs": 4.618,
+      "inclusiveMs": 128.619
+    },
+    {
+      "id": 292,
+      "function": "YE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 44613,
+      "selfMs": 4.581,
+      "inclusiveMs": 255.898
+    },
+    {
+      "id": 1340,
+      "function": "Uv",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 15,
+      "column": 122394,
+      "selfMs": 4.535,
+      "inclusiveMs": 8.57
+    },
+    {
+      "id": 663,
+      "function": "V1",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 70238,
+      "selfMs": 4.527,
+      "inclusiveMs": 5.664
+    },
+    {
+      "id": 1387,
+      "function": "d",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 6,
+      "column": 12110,
+      "selfMs": 4.522,
+      "inclusiveMs": 4.522
+    },
+    {
+      "id": 64,
+      "function": "QL",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 80513,
+      "selfMs": 4.501,
+      "inclusiveMs": 6.158
+    },
+    {
+      "id": 684,
+      "function": "pl",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 2948,
+      "selfMs": 4.446,
+      "inclusiveMs": 4.446
+    },
+    {
+      "id": 771,
+      "function": "Ln",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 3636,
+      "selfMs": 4.222,
+      "inclusiveMs": 4.222
+    },
+    {
+      "id": 1284,
+      "function": "Wp",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 11881,
+      "selfMs": 4.097,
+      "inclusiveMs": 6.918
+    },
+    {
+      "id": 761,
+      "function": "av",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 2,
+      "column": 17781,
+      "selfMs": 3.983,
+      "inclusiveMs": 3.983
+    },
+    {
+      "id": 403,
+      "function": "xx",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 2,
+      "column": 17383,
+      "selfMs": 3.957,
+      "inclusiveMs": 15.794
+    },
+    {
+      "id": 4,
+      "function": "getBoundingClientRect",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 3.916,
+      "inclusiveMs": 3.916
+    },
+    {
+      "id": 455,
+      "function": "lx",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 3121,
+      "selfMs": 3.877,
+      "inclusiveMs": 3.877
+    },
+    {
+      "id": 411,
+      "function": "gi",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 7674,
+      "selfMs": 3.66,
+      "inclusiveMs": 3.66
+    },
+    {
+      "id": 345,
+      "function": "sO",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 15,
+      "column": 20234,
+      "selfMs": 3.624,
+      "inclusiveMs": 48.485
+    },
+    {
+      "id": 1313,
+      "function": "rk",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 18951,
+      "selfMs": 3.53,
+      "inclusiveMs": 9.237
+    },
+    {
+      "id": 1311,
+      "function": "Ln",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 3636,
+      "selfMs": 3.519,
+      "inclusiveMs": 3.519
+    },
+    {
+      "id": 1306,
+      "function": "QL",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 80513,
+      "selfMs": 3.504,
+      "inclusiveMs": 63.059
+    },
+    {
+      "id": 738,
+      "function": "Ln",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 3636,
+      "selfMs": 3.432,
+      "inclusiveMs": 5.379
+    },
+    {
+      "id": 468,
+      "function": "oL",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 34650,
+      "selfMs": 3.427,
+      "inclusiveMs": 9.986
+    },
+    {
+      "id": 78,
+      "function": "zE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 40408,
+      "selfMs": 3.426,
+      "inclusiveMs": 492.232
+    },
+    {
+      "id": 659,
+      "function": "vk",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 72727,
+      "selfMs": 3.419,
+      "inclusiveMs": 11.878
+    },
+    {
+      "id": 162,
+      "function": "ab",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 31534,
+      "selfMs": 3.412,
+      "inclusiveMs": 45.219
+    },
+    {
+      "id": 464,
+      "function": "oL",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 34650,
+      "selfMs": 3.412,
+      "inclusiveMs": 13.208
+    },
+    {
+      "id": 384,
+      "function": "dn",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 11,
+      "column": 9264,
+      "selfMs": 3.392,
+      "inclusiveMs": 13.602
+    },
+    {
+      "id": 1341,
+      "function": "d",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 6,
+      "column": 12110,
+      "selfMs": 3.352,
+      "inclusiveMs": 3.352
+    },
+    {
+      "id": 782,
+      "function": "Qv",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 71183,
+      "selfMs": 3.334,
+      "inclusiveMs": 5.512
+    },
+    {
+      "id": 383,
+      "function": "Xr",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 11,
+      "column": 10906,
+      "selfMs": 3.312,
+      "inclusiveMs": 19.095
+    },
+    {
+      "id": 1252,
+      "function": "YE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 44613,
+      "selfMs": 3.303,
+      "inclusiveMs": 186.577
+    },
+    {
+      "id": 1461,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 35035,
+      "selfMs": 3.109,
+      "inclusiveMs": 4.529
+    },
+    {
+      "id": 675,
+      "function": "Pu",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 2835,
+      "selfMs": 3.057,
+      "inclusiveMs": 3.057
+    },
+    {
+      "id": 968,
+      "function": "Kt",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 3458,
+      "selfMs": 2.978,
+      "inclusiveMs": 2.978
+    },
+    {
+      "id": 476,
+      "function": "R",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 11,
+      "column": 6784,
+      "selfMs": 2.93,
+      "inclusiveMs": 2.93
+    },
+    {
+      "id": 977,
+      "function": "Vu",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 11,
+      "column": 128,
+      "selfMs": 2.87,
+      "inclusiveMs": 2.87
+    },
+    {
+      "id": 660,
+      "function": "d",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 6,
+      "column": 12110,
+      "selfMs": 2.861,
+      "inclusiveMs": 2.861
+    },
+    {
+      "id": 369,
+      "function": "wi",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 2,
+      "column": 31355,
+      "selfMs": 2.86,
+      "inclusiveMs": 3.406
+    },
+    {
+      "id": 821,
+      "function": "Ln",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 3636,
+      "selfMs": 2.834,
+      "inclusiveMs": 2.834
+    },
+    {
+      "id": 737,
+      "function": "Ln",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 3636,
+      "selfMs": 2.823,
+      "inclusiveMs": 3.402
+    },
+    {
+      "id": 477,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 72384,
+      "selfMs": 2.797,
+      "inclusiveMs": 9.434
+    },
+    {
+      "id": 572,
+      "function": "V1",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 70238,
+      "selfMs": 2.785,
+      "inclusiveMs": 3.34
+    },
+    {
+      "id": 912,
+      "function": "Ln",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 1,
+      "column": 3636,
+      "selfMs": 2.781,
+      "inclusiveMs": 3.335
+    }
+  ],
+  "inclusiveFunctions": [
+    {
+      "id": 1,
+      "function": "(root)",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 0.0,
+      "inclusiveMs": 1491.517
+    },
+    {
+      "id": 74,
+      "function": "L",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 6,
+      "column": 16373,
+      "selfMs": 0.976,
+      "inclusiveMs": 750.465
+    },
+    {
+      "id": 75,
+      "function": "E",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 6,
+      "column": 15872,
+      "selfMs": 0.547,
+      "inclusiveMs": 747.831
+    },
+    {
+      "id": 76,
+      "function": "cb",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 35049,
+      "selfMs": 0.549,
+      "inclusiveMs": 747.284
+    },
+    {
+      "id": 77,
+      "function": "sp",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 40205,
+      "selfMs": 1.124,
+      "inclusiveMs": 494.46
+    },
+    {
+      "id": 78,
+      "function": "zE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 40408,
+      "selfMs": 3.426,
+      "inclusiveMs": 492.232
+    },
+    {
+      "id": 2,
+      "function": "(program)",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 407.421,
+      "inclusiveMs": 407.421
+    },
+    {
+      "id": 292,
+      "function": "YE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 44613,
+      "selfMs": 4.581,
+      "inclusiveMs": 255.898
+    },
+    {
+      "id": 84,
+      "function": "HE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 41058,
+      "selfMs": 0.0,
+      "inclusiveMs": 252.275
+    },
+    {
+      "id": 83,
+      "function": "zc",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 40933,
+      "selfMs": 0.0,
+      "inclusiveMs": 252.275
+    },
+    {
+      "id": 1236,
+      "function": "pb",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 40489,
+      "selfMs": 5.43,
+      "inclusiveMs": 206.843
+    },
+    {
+      "id": 1252,
+      "function": "YE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 44613,
+      "selfMs": 3.303,
+      "inclusiveMs": 186.577
+    },
+    {
+      "id": 171,
+      "function": "uo",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 11,
+      "column": 3177,
+      "selfMs": 0.0,
+      "inclusiveMs": 149.489
+    },
+    {
+      "id": 172,
+      "function": "db",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 37197,
+      "selfMs": 0.0,
+      "inclusiveMs": 149.489
+    },
+    {
+      "id": 378,
+      "function": "bh",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 3093,
+      "selfMs": 4.618,
+      "inclusiveMs": 128.619
+    },
+    {
+      "id": 180,
+      "function": "zc",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 40933,
+      "selfMs": 0.0,
+      "inclusiveMs": 121.808
+    },
+    {
+      "id": 181,
+      "function": "HE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 41058,
+      "selfMs": 0.0,
+      "inclusiveMs": 121.808
+    },
+    {
+      "id": 263,
+      "function": "ab",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 31534,
+      "selfMs": 0.0,
+      "inclusiveMs": 116.3
+    },
+    {
+      "id": 262,
+      "function": "KE",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 31500,
+      "selfMs": 0.0,
+      "inclusiveMs": 116.3
+    },
+    {
+      "id": 264,
+      "function": "ib",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 32016,
+      "selfMs": 0.562,
+      "inclusiveMs": 116.3
+    },
+    {
+      "id": 395,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 14,
+      "column": 5394,
+      "selfMs": 0.0,
+      "inclusiveMs": 113.218
+    },
+    {
+      "id": 396,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 14,
+      "column": 1669,
+      "selfMs": 0.0,
+      "inclusiveMs": 113.218
+    },
+    {
+      "id": 398,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 2,
+      "column": 25121,
+      "selfMs": 1.665,
+      "inclusiveMs": 112.662
+    },
+    {
+      "id": 397,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 14,
+      "column": 1190,
+      "selfMs": 0.0,
+      "inclusiveMs": 112.662
+    },
+    {
+      "id": 399,
+      "function": "hl",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 2,
+      "column": 23121,
+      "selfMs": 1.085,
+      "inclusiveMs": 110.997
+    },
+    {
+      "id": 400,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 2,
+      "column": 24129,
+      "selfMs": 13.787,
+      "inclusiveMs": 108.765
+    },
+    {
+      "id": 1270,
+      "function": "bh",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 3093,
+      "selfMs": 7.474,
+      "inclusiveMs": 101.354
+    },
+    {
+      "id": 381,
+      "function": "bh",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 3093,
+      "selfMs": 1.112,
+      "inclusiveMs": 92.842
+    },
+    {
+      "id": 380,
+      "function": "zy",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 2172,
+      "selfMs": 0.0,
+      "inclusiveMs": 92.842
+    },
+    {
+      "id": 382,
+      "function": "QL",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 80513,
+      "selfMs": 5.848,
+      "inclusiveMs": 91.73
+    },
+    {
+      "id": 7,
+      "function": "",
+      "url": "",
+      "line": 1,
+      "column": 2,
+      "selfMs": 0.0,
+      "inclusiveMs": 81.737
+    },
+    {
+      "id": 8,
+      "function": "evaluate",
+      "url": "",
+      "line": 305,
+      "column": 11,
+      "selfMs": 0.0,
+      "inclusiveMs": 81.737
+    },
+    {
+      "id": 324,
+      "function": "",
+      "url": "",
+      "line": 1,
+      "column": 1,
+      "selfMs": 0.545,
+      "inclusiveMs": 81.737
+    },
+    {
+      "id": 379,
+      "function": "H3",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 71,
+      "column": 3278,
+      "selfMs": 1.096,
+      "inclusiveMs": 72.922
+    },
+    {
+      "id": 526,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 15,
+      "column": 124398,
+      "selfMs": 0.0,
+      "inclusiveMs": 69.875
+    },
+    {
+      "id": 527,
+      "function": "w",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 15,
+      "column": 124446,
+      "selfMs": 69.875,
+      "inclusiveMs": 69.875
+    },
+    {
+      "id": 1304,
+      "function": "zy",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 2172,
+      "selfMs": 0.0,
+      "inclusiveMs": 64.716
+    },
+    {
+      "id": 1305,
+      "function": "bh",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 3093,
+      "selfMs": 1.109,
+      "inclusiveMs": 64.168
+    },
+    {
+      "id": 1306,
+      "function": "QL",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 80513,
+      "selfMs": 3.504,
+      "inclusiveMs": 63.059
+    },
+    {
+      "id": 329,
+      "function": "dispatchEvent",
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "selfMs": 0.546,
+      "inclusiveMs": 61.016
+    },
+    {
+      "id": 330,
+      "function": "nr",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 10,
+      "column": 17101,
+      "selfMs": 0.0,
+      "inclusiveMs": 60.47
+    },
+    {
+      "id": 331,
+      "function": "Vn",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 10,
+      "column": 17333,
+      "selfMs": 0.0,
+      "inclusiveMs": 60.47
+    },
+    {
+      "id": 335,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 10,
+      "column": 33120,
+      "selfMs": 0.0,
+      "inclusiveMs": 59.779
+    },
+    {
+      "id": 334,
+      "function": "_h",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 37537,
+      "selfMs": 0.0,
+      "inclusiveMs": 59.779
+    },
+    {
+      "id": 333,
+      "function": "un",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 10,
+      "column": 8915,
+      "selfMs": 0.0,
+      "inclusiveMs": 59.779
+    },
+    {
+      "id": 332,
+      "function": "en",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 10,
+      "column": 32632,
+      "selfMs": 0.0,
+      "inclusiveMs": 59.779
+    },
+    {
+      "id": 340,
+      "function": "It",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 10,
+      "column": 9751,
+      "selfMs": 0.641,
+      "inclusiveMs": 58.669
+    },
+    {
+      "id": 339,
+      "function": "Kn",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 10,
+      "column": 9946,
+      "selfMs": 0.0,
+      "inclusiveMs": 58.669
+    },
+    {
+      "id": 337,
+      "function": "Ad",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 10,
+      "column": 31304,
+      "selfMs": 0.0,
+      "inclusiveMs": 58.669
+    },
+    {
+      "id": 336,
+      "function": "Mc",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 10,
+      "column": 31409,
+      "selfMs": 0.0,
+      "inclusiveMs": 58.669
+    },
+    {
+      "id": 338,
+      "function": "Fn",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 10,
+      "column": 10016,
+      "selfMs": 0.0,
+      "inclusiveMs": 58.669
+    },
+    {
+      "id": 342,
+      "function": "drop",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 15,
+      "column": 108892,
+      "selfMs": 0.0,
+      "inclusiveMs": 57.481
+    },
+    {
+      "id": 341,
+      "function": "Zs",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 24,
+      "column": 103169,
+      "selfMs": 0.0,
+      "inclusiveMs": 57.481
+    },
+    {
+      "id": 405,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 2,
+      "column": 19254,
+      "selfMs": 14.655,
+      "inclusiveMs": 55.672
+    },
+    {
+      "id": 343,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 15,
+      "column": 118554,
+      "selfMs": 0.548,
+      "inclusiveMs": 55.229
+    },
+    {
+      "id": 344,
+      "function": "",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 64,
+      "column": 28081,
+      "selfMs": 0.557,
+      "inclusiveMs": 54.681
+    },
+    {
+      "id": 424,
+      "function": "jy",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 11,
+      "column": 22186,
+      "selfMs": 0.555,
+      "inclusiveMs": 54.173
+    },
+    {
+      "id": 423,
+      "function": "e.useMemo",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 2,
+      "column": 70524,
+      "selfMs": 0.0,
+      "inclusiveMs": 54.173
+    },
+    {
+      "id": 1276,
+      "function": "H3",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 71,
+      "column": 3278,
+      "selfMs": 1.124,
+      "inclusiveMs": 51.902
+    },
+    {
+      "id": 87,
+      "function": "sb",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27937,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.81
+    },
+    {
+      "id": 88,
+      "function": "$i",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27436,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.81
+    },
+    {
+      "id": 89,
+      "function": "sb",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27937,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.81
+    },
+    {
+      "id": 93,
+      "function": "sb",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27937,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.81
+    },
+    {
+      "id": 92,
+      "function": "$i",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27436,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.81
+    },
+    {
+      "id": 86,
+      "function": "$i",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27436,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.81
+    },
+    {
+      "id": 94,
+      "function": "$i",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27436,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.81
+    },
+    {
+      "id": 95,
+      "function": "sb",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27937,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.81
+    },
+    {
+      "id": 85,
+      "function": "sb",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27937,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.81
+    },
+    {
+      "id": 91,
+      "function": "sb",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27937,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.81
+    },
+    {
+      "id": 90,
+      "function": "$i",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27436,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.81
+    },
+    {
+      "id": 100,
+      "function": "$i",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27436,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.224
+    },
+    {
+      "id": 97,
+      "function": "sb",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27937,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.224
+    },
+    {
+      "id": 98,
+      "function": "$i",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27436,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.224
+    },
+    {
+      "id": 99,
+      "function": "sb",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27937,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.224
+    },
+    {
+      "id": 96,
+      "function": "$i",
+      "url": "http://127.0.0.1:4175/assets/release-role.js",
+      "line": 13,
+      "column": 27436,
+      "selfMs": 0.0,
+      "inclusiveMs": 50.224
+    }
+  ],
+  "hotStacks": [
+    {
+      "durationMs": 407.421,
+      "stack": "(program)@0:0 <- (root)@0:0"
+    },
+    {
+      "durationMs": 69.875,
+      "stack": "w@15:124446 <- @15:124398 <- ib@13:32016 <- ab@13:31534 <- KE@13:31500 <- HE@13:41058 <- zc@13:40933 <- db@13:37197 <- uo@11:3177 <- HE@13:41058"
+    },
+    {
+      "durationMs": 68.839,
+      "stack": "@15:35051 <- yO@15:34743 <- @15:40683 <- @15:39228 <- candidate@15:41949 <- @71:28394 <- jy@11:22186 <- e.useMemo@2:70524 <- H3@71:3278 <- bh@13:3093"
+    },
+    {
+      "durationMs": 37.716,
+      "stack": "(garbage collector)@0:0 <- (root)@0:0"
+    },
+    {
+      "durationMs": 35.927,
+      "stack": "getBoundingClientRect@0:0 <- gP@15:119182 <- @15:122674 <- ib@13:32016 <- ab@13:31534 <- KE@13:31500 <- HE@13:41058 <- zc@13:40933 <- db@13:37197 <- uo@11:3177"
+    },
+    {
+      "durationMs": 30.884,
+      "stack": "getBoundingClientRect@0:0 <- Hf@15:119924 <- gP@15:119182 <- @15:122674 <- ib@13:32016 <- ab@13:31534 <- KE@13:31500 <- HE@13:41058 <- zc@13:40933 <- cb@13:35049"
+    },
+    {
+      "durationMs": 23.294,
+      "stack": "setAttribute@0:0 <- j@6:23241 <- sb@13:27937 <- $i@13:27436 <- sb@13:27937 <- $i@13:27436 <- sb@13:27937 <- $i@13:27436 <- sb@13:27937 <- $i@13:27436"
+    },
+    {
+      "durationMs": 14.655,
+      "stack": "@2:19254 <- @2:24129 <- hl@2:23121 <- @2:25121 <- @14:1190 <- @14:1669 <- @14:5394 <- (root)@0:0"
+    },
+    {
+      "durationMs": 14.445,
+      "stack": "LE@13:12663 <- TE@13:14882 <- zE@13:40408 <- sp@13:40205 <- cb@13:35049 <- E@6:15872 <- L@6:16373 <- (root)@0:0"
+    },
+    {
+      "durationMs": 13.787,
+      "stack": "@2:24129 <- hl@2:23121 <- @2:25121 <- @14:1190 <- @14:1669 <- @14:5394 <- (root)@0:0"
+    },
+    {
+      "durationMs": 13.116,
+      "stack": "querySelector@0:0 <- check@28:21 <- (root)@0:0"
+    },
+    {
+      "durationMs": 11.921,
+      "stack": "Kj@2:18087 <- @2:19554 <- @2:19254 <- @2:24129 <- hl@2:23121 <- @2:25121 <- @14:1190 <- @14:1669 <- @14:5394 <- (root)@0:0"
+    },
+    {
+      "durationMs": 10.626,
+      "stack": "querySelector@0:0 <- @1:1 <- evaluate@305:11 <- @1:2 <- (root)@0:0"
+    },
+    {
+      "durationMs": 10.225,
+      "stack": "sb@13:27937 <- $i@13:27436 <- sb@13:27937 <- $i@13:27436 <- sb@13:27937 <- $i@13:27436 <- sb@13:27937 <- $i@13:27436 <- sb@13:27937 <- $i@13:27436"
+    },
+    {
+      "durationMs": 10.044,
+      "stack": "Wp@1:11881 <- Wr@1:11811 <- @1:13593 <- Sj@1:13398 <- @14:9656 <- jy@11:22186 <- e.useMemo@2:70524 <- PD@13:65337 <- H3@71:3278 <- bh@13:3093"
+    },
+    {
+      "durationMs": 9.55,
+      "stack": "querySelector@0:0 <- check@28:21 <- rendered@22:45 <- @1:1 <- evaluate@305:11 <- @1:2 <- (root)@0:0"
+    },
+    {
+      "durationMs": 9.466,
+      "stack": "@24:35035 <- oL@24:34650 <- @24:35846 <- @24:94448 <- jy@11:22186 <- e.useMemo@2:70524 <- QL@24:80513 <- bh@13:3093 <- zy@13:2172 <- YE@13:44613"
+    },
+    {
+      "durationMs": 8.214,
+      "stack": "TE@13:14882 <- zE@13:40408 <- sp@13:40205 <- cb@13:35049 <- E@6:15872 <- L@6:16373 <- (root)@0:0"
+    },
+    {
+      "durationMs": 7.721,
+      "stack": "LE@13:12663 <- TE@13:14882 <- mb@13:40598 <- pb@13:40489 <- zE@13:40408 <- sp@13:40205 <- cb@13:35049 <- E@6:15872 <- L@6:16373 <- (root)@0:0"
+    },
+    {
+      "durationMs": 7.474,
+      "stack": "bh@13:3093 <- YE@13:44613 <- pb@13:40489 <- zE@13:40408 <- sp@13:40205 <- cb@13:35049 <- E@6:15872 <- L@6:16373 <- (root)@0:0"
+    },
+    {
+      "durationMs": 7.175,
+      "stack": "Uv@15:122394 <- bh@13:3093 <- YE@13:44613 <- zE@13:40408 <- sp@13:40205 <- cb@13:35049 <- E@6:15872 <- L@6:16373 <- (root)@0:0"
+    },
+    {
+      "durationMs": 6.21,
+      "stack": "FE@13:22729 <- HE@13:41058 <- zc@13:40933 <- cb@13:35049 <- E@6:15872 <- L@6:16373 <- (root)@0:0"
+    },
+    {
+      "durationMs": 6.149,
+      "stack": "Ln@1:3636 <- @1:3780 <- Qa@1:3733 <- dx@1:3952 <- Fv@15:15726 <- rO@15:18455 <- sO@15:20234 <- @64:28081 <- @15:118554 <- drop@15:108892"
+    },
+    {
+      "durationMs": 6.068,
+      "stack": "removeChild@0:0 <- nb@13:26159 <- zl@13:26094 <- nb@13:26159 <- zl@13:26094 <- nb@13:26159 <- zl@13:26094 <- nb@13:26159 <- $i@13:27436 <- sb@13:27937"
+    },
+    {
+      "durationMs": 5.972,
+      "stack": "@1:3780 <- Qa@1:3733 <- @15:36460 <- aL@24:24013 <- QL@24:80513 <- bh@13:3093 <- zy@13:2172 <- YE@13:44613 <- zE@13:40408 <- sp@13:40205"
+    },
+    {
+      "durationMs": 5.848,
+      "stack": "QL@24:80513 <- bh@13:3093 <- zy@13:2172 <- YE@13:44613 <- zE@13:40408 <- sp@13:40205 <- cb@13:35049 <- E@6:15872 <- L@6:16373 <- (root)@0:0"
+    },
+    {
+      "durationMs": 5.68,
+      "stack": "@2:18212 <- Kj@2:18087 <- @2:19554 <- @2:19254 <- @2:24129 <- hl@2:23121 <- @2:25121 <- @14:1190 <- @14:1669 <- @14:5394"
+    },
+    {
+      "durationMs": 5.43,
+      "stack": "pb@13:40489 <- zE@13:40408 <- sp@13:40205 <- cb@13:35049 <- E@6:15872 <- L@6:16373 <- (root)@0:0"
+    },
+    {
+      "durationMs": 5.349,
+      "stack": "pl@1:2948 <- @2:17079 <- cC@2:17020 <- xx@2:17383 <- c@2:18908 <- nd@2:18845 <- @2:24129 <- hl@2:23121 <- @2:25121 <- @14:1190"
+    },
+    {
+      "durationMs": 5.279,
+      "stack": "cloneNode@0:0 <- N1@15:139026 <- EP@15:139177 <- @15:152970 <- ib@13:32016 <- ab@13:31534 <- KE@13:31500 <- HE@13:41058 <- zc@13:40933 <- db@13:37197"
+    }
+  ],
+  "intervals": [
+    {
+      "id": "new-0",
+      "startUs": 40923884510,
+      "endUs": 40923979854
+    },
+    {
+      "id": "new-1",
+      "startUs": 40924161346,
+      "endUs": 40924248381
+    },
+    {
+      "id": "new-2",
+      "startUs": 40924411485,
+      "endUs": 40924504257
+    },
+    {
+      "id": "new-3",
+      "startUs": 40924659482,
+      "endUs": 40924759872
+    },
+    {
+      "id": "new-4",
+      "startUs": 40924909301,
+      "endUs": 40924990215
+    },
+    {
+      "id": "new-5",
+      "startUs": 40925141863,
+      "endUs": 40925227425
+    },
+    {
+      "id": "new-6",
+      "startUs": 40925374441,
+      "endUs": 40925465401
+    },
+    {
+      "id": "new-7",
+      "startUs": 40925624980,
+      "endUs": 40925703514
+    },
+    {
+      "id": "new-8",
+      "startUs": 40925859250,
+      "endUs": 40925945106
+    },
+    {
+      "id": "new-9",
+      "startUs": 40926108822,
+      "endUs": 40926188149
+    },
+    {
+      "id": "new-10",
+      "startUs": 40926358653,
+      "endUs": 40926447140
+    },
+    {
+      "id": "new-11",
+      "startUs": 40926623947,
+      "endUs": 40926704715
+    },
+    {
+      "id": "new-12",
+      "startUs": 40926858300,
+      "endUs": 40926937011
+    },
+    {
+      "id": "new-13",
+      "startUs": 40927092260,
+      "endUs": 40927172147
+    },
+    {
+      "id": "new-14",
+      "startUs": 40927345393,
+      "endUs": 40927454938
+    },
+    {
+      "id": "new-15",
+      "startUs": 40927644075,
+      "endUs": 40927743508
+    },
+    {
+      "id": "new-16",
+      "startUs": 40927907402,
+      "endUs": 40927995619
+    },
+    {
+      "id": "new-17",
+      "startUs": 40928158794,
+      "endUs": 40928236247
+    },
+    {
+      "id": "new-18",
+      "startUs": 40928393632,
+      "endUs": 40928486237
+    },
+    {
+      "id": "new-19",
+      "startUs": 40928658492,
+      "endUs": 40928737869
+    }
+  ]
+}

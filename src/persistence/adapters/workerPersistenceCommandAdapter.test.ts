@@ -110,3 +110,113 @@ it("adopts equal UI references before the first day command and never rescans hi
   expect(inspect).not.toHaveBeenCalled();
   release();
 });
+
+it.each(["commit", "commitDay", "day", "items", "save"])(
+  "stops all writes after a sent %s loses its worker response",
+  async (method) => {
+    const workers: LossWorker[] = [];
+    class LossWorker {
+      onmessage?: (event: MessageEvent) => void;
+      onerror?: () => void;
+      onmessageerror?: () => void;
+      postMessage = vi.fn();
+      terminate = vi.fn();
+      constructor() {
+        workers.push(this);
+      }
+    }
+    vi.stubGlobal("Worker", LossWorker);
+    vi.stubGlobal("localStorage", { length: 0, key: () => null });
+    const port = createWorkerPersistenceCommandAdapter();
+    const stopped = vi.fn();
+    port.onWritesStopped!(stopped);
+    const snapshot = emptyApplicationSnapshot();
+    const result = (
+      method === "commit"
+        ? port.commitApplicationSnapshotAtomically(snapshot)
+        : method === "commitDay"
+          ? port.commitDayApplicationSnapshot!(
+              snapshot,
+              { workerObservation: 1 },
+              { eventName: "event", day: "1日目" },
+            )
+          : method === "day"
+            ? port.commitDayMutation!(
+                { kind: "mode", eventName: "event", day: "1日目" },
+                "day",
+                {},
+              )
+            : method === "items"
+              ? port.commitItemContentEdits!([], ["items"], {})
+              : port.saveEventLists({})
+    ).catch((error: unknown) => error);
+    workers[0].onmessageerror!();
+    const reason = await result;
+    expect(reason).toMatchObject({ name: "PersistenceOutcomeUnknownError" });
+    expect(stopped).toHaveBeenCalledExactlyOnceWith(reason);
+    await expect(port.saveHallDefinitions({})).rejects.toBe(reason);
+    await expect(
+      port.commitApplicationSnapshotAtomically(snapshot),
+    ).rejects.toBe(reason);
+    await expect(port.restoreAppDataAtomically(snapshot)).rejects.toBe(reason);
+    expect(workers).toHaveLength(1);
+    expect(workers[0].postMessage).toHaveBeenCalledOnce();
+  },
+);
+
+it("keeps read communication loss and a definite transaction abort retryable", async () => {
+  const workers: ReadWorker[] = [];
+  class ReadWorker {
+    onmessage?: (event: MessageEvent) => void;
+    onerror?: () => void;
+    postMessage = vi.fn();
+    terminate() {}
+    constructor() {
+      workers.push(this);
+    }
+  }
+  vi.stubGlobal("Worker", ReadWorker);
+  vi.stubGlobal("localStorage", { length: 0, key: () => null });
+  const port = createWorkerPersistenceCommandAdapter();
+  const read = port.readApplicationSnapshot().catch((error: unknown) => error);
+  workers[0].onerror!();
+  expect(await read).toMatchObject({ name: "Error" });
+  expect(port.getWriteStopReason!()).toBeUndefined();
+  const save = port.saveEventLists({}).catch((error: unknown) => error);
+  const id = workers[1].postMessage.mock.calls[0][0].id;
+  workers[1].onmessage!({
+    data: { id, error: { name: "AbortError", message: "transaction aborted" } },
+  } as MessageEvent);
+  expect(await save).toMatchObject({ name: "AbortError" });
+  expect(port.getWriteStopReason!()).toBeUndefined();
+  const retry = port.saveEventLists({});
+  const retryId = workers[1].postMessage.mock.calls[1][0].id;
+  workers[1].onmessage!({ data: { id: retryId } } as MessageEvent);
+  await retry;
+});
+
+it("does not label creation or synchronous postMessage failure as an unknown outcome", async () => {
+  vi.stubGlobal("localStorage", { length: 0, key: () => null });
+  class ThrowWorker {
+    postMessage() {
+      throw new DOMException("clone", "DataCloneError");
+    }
+  }
+  vi.stubGlobal("Worker", ThrowWorker);
+  const port = createWorkerPersistenceCommandAdapter();
+  await expect(port.saveEventLists({})).rejects.toMatchObject({
+    name: "DataCloneError",
+  });
+  expect(port.getWriteStopReason!()).toBeUndefined();
+  vi.stubGlobal(
+    "Worker",
+    class {
+      constructor() {
+        throw new Error("creation");
+      }
+    },
+  );
+  const fresh = createWorkerPersistenceCommandAdapter();
+  await expect(fresh.saveEventLists({})).rejects.toThrow("creation");
+  expect(fresh.getWriteStopReason!()).toBeUndefined();
+});

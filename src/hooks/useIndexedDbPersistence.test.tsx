@@ -1535,4 +1535,90 @@ describe("useIndexedDbPersistence", () => {
     expect(result.current.persistenceStatus).toBe("saved");
     expect(result.current.failedStores).toEqual([]);
   });
+
+  it.each(["PersistenceOutcomeUnknownError", "CommittedStateApplyError"])(
+    "stops every scheduled and manual writer synchronously for %s",
+    async (name) => {
+      const initial = createValues();
+      const setters = createSetters();
+      const { result, rerender } = renderHook(
+        ({ values }: { values: PersistedValues }) =>
+          useIndexedDbPersistence({ values, setters, saveDelayMs: 5 }),
+        { initialProps: { values: initial } },
+      );
+      await act(flushMicrotasks);
+      const next = {
+        ...initial,
+        eventLists: { event: [] },
+        dayModes: { event: { "1日目": "execute" as const } },
+      };
+      rerender({ values: next });
+      const reason = Object.assign(new Error("reload required"), { name });
+      await act(async () => {
+        // Exercise the imperative APIs before React's next render/effect.
+        result.current.stopWrites(reason);
+        result.current.retrySave();
+        await expect(result.current.flushPendingSave()).rejects.toBe(reason);
+        await expect(
+          result.current.observeSnapshot(next, initial),
+        ).rejects.toBe(reason);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+      expect(persistenceCommandMock.saveEventLists).not.toHaveBeenCalled();
+      expect(persistenceCommandMock.saveDayModes).not.toHaveBeenCalled();
+      expect(result.current.persistenceStatus).toBe("failed");
+      act(() => result.current.acceptCommittedSnapshot(next));
+      expect(result.current.getWriteStopReason()).toBe(reason);
+      expect(result.current.persistenceStatus).toBe("failed");
+    },
+  );
+
+  it("stops the next store and idle waiters when an in-flight write becomes unknown", async () => {
+    const initial = createValues();
+    const active = createDeferred<void>();
+    const setters = createSetters();
+    const reason = Object.assign(new Error("lost response"), {
+      name: "PersistenceOutcomeUnknownError",
+    });
+    persistenceCommandMock.saveEventLists.mockImplementationOnce(
+      () => active.promise,
+    );
+    const { result, rerender } = renderHook(
+      ({ values }: { values: PersistedValues }) =>
+        useIndexedDbPersistence({ values, setters, saveDelayMs: 1 }),
+      { initialProps: { values: initial } },
+    );
+    await act(flushMicrotasks);
+    rerender({
+      values: {
+        ...initial,
+        eventLists: { event: [] },
+        dayModes: { event: { "1日目": "execute" } },
+      },
+    });
+    act(() => vi.advanceTimersByTime(1));
+    await act(flushMicrotasks);
+    expect(persistenceCommandMock.saveEventLists).toHaveBeenCalledOnce();
+    let pending!: Promise<unknown>;
+    act(() => {
+      pending = result.current
+        .flushPendingSave()
+        .catch((error: unknown) => error);
+    });
+    await act(async () => {
+      active.reject(reason);
+      await flushMicrotasks();
+    });
+    expect(await pending).toBe(reason);
+    expect(persistenceCommandMock.saveDayModes).not.toHaveBeenCalled();
+    act(() => result.current.retrySave());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
+    });
+    await expect(result.current.flushPendingSave()).rejects.toBe(reason);
+    expect(persistenceCommandMock.saveEventLists).toHaveBeenCalledOnce();
+    expect(result.current.getWriteStopReason()).toBe(reason);
+  });
 });

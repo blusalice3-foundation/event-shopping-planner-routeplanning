@@ -1,0 +1,328 @@
+
+ RUN  v4.1.10 D:/esp-op18
+
+stderr | src/utils/indexedDB.resilience.integration.test.ts > db open resilience > times out a blocked open with a dedicated recovery error and permits retry
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.mapData.integration.test.tsx > db.loadMapData > reports an error after both IndexedDB reads fail without a legacy fallback
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.mapData.integration.test.tsx > db.loadMapData > does not use the legacy localStorage key after both IndexedDB reads fail
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.mapData.integration.test.tsx > db.loadMapData > does not use the legacy localStorage key after both IndexedDB reads fail
+IndexedDB open failed.
+
+stderr | src/persistence/db/consistencyMigration.integration.test.ts > consistency migration transaction > rejects both reads and writes through the actual previous database opener
+IndexedDB open failed.
+
+stderr | src/persistence/db/consistencyMigration.integration.test.ts > consistency migration transaction > rejects both reads and writes through the actual previous database opener
+IndexedDB open failed.
+
+stderr | src/persistence/db/consistencyMigration.integration.test.ts > pre-upgrade boundary > closes an already-open old client on versionchange and refuses its reconnect
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > does not modify a current version database with a missing required store
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > does not modify a current version database with a missing required store
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > refuses an unknown newer database without modifying it
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > refuses an unknown newer database without modifying it
+IndexedDB open failed.
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > related settings and manifest corruption > rejects a missing declared related-settings sheet instead of falling back to legacy
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > closed full-workbook declarations > rejects duplicate-metadata without falling back
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > closed full-workbook declarations > rejects future-workbook without falling back
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > closed full-workbook declarations > rejects future-schema without falling back
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/utils/exportImport.restoreSettings.test.ts > event XLSX restore settings > rejects malformed restore settings before any event can be replaced
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > rejects unsupported event names instead of creating object strings {"formula":"\"ユーザー登録\""}
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > rejects unsupported event names instead of creating object strings {"error":"#VALUE!"}
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > does not reinterpret structured contentManifest metadata as decorated JSON
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > does not reinterpret structured eventMetadata metadata as decorated JSON
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 B2 (参加日)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 C3 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in マップデータ A2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in マップデータ B2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in ルート情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in ルート情報 B2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in ルート情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 B2 (参加日)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 C3 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in マップデータ A2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in マップデータ B2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in ルート情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in ルート情報 B2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in ルート情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in 配置情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in マップデータ B2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in ルート情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in 配置情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in マップデータ B2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in ルート情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+··············································································································································································································································································································································································································----------------------------------------------------------------------------------------············································································································································································································································xx····················································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································xx····x·································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |unit| src/components/LimitedPurchaseDialog.test.tsx > returns from confirmation 5 to Save without a delayed focus request
+Error: expect(element).toContainElement(element)
+
+<div
+  aria-describedby=":r1d:"
+  aria-labelledby=":r1c:"
+  aria-modal="true"
+  class="fixed inset-0 z-[90] flex items-center justify-center bg-black/50"
+  role="dialog"
+/> does not contain: <div
+  aria-labelledby="limited-purchase-dialog-title"
+  aria-modal="false"
+  class="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+  role="dialog"
+  tabindex="-1"
+/>
+        
+ ❯ src/components/LimitedPurchaseDialog.test.tsx:298:21
+    296|     await user.click(within(dialog).getByRole("button", { name: "保存" }…
+    297|     const confirm = screen.getAllByRole("dialog")[1];
+    298|     expect(confirm).toContainElement(document.activeElement as HTMLEle…
+       |                     ^
+    299|     await user.keyboard("{Escape}");
+    300|     expect(screen.getAllByRole("dialog")).toHaveLength(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  |unit| src/components/LimitedPurchaseDialog.test.tsx > returns from confirmation 6 to Save without a delayed focus request
+Error: expect(element).toContainElement(element)
+
+<div
+  aria-describedby=":r1j:"
+  aria-labelledby=":r1i:"
+  aria-modal="true"
+  class="fixed inset-0 z-[90] flex items-center justify-center bg-black/50"
+  role="dialog"
+/> does not contain: <div
+  aria-labelledby="limited-purchase-dialog-title"
+  aria-modal="false"
+  class="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+  role="dialog"
+  tabindex="-1"
+/>
+        
+ ❯ src/components/LimitedPurchaseDialog.test.tsx:298:21
+    296|     await user.click(within(dialog).getByRole("button", { name: "保存" }…
+    297|     const confirm = screen.getAllByRole("dialog")[1];
+    298|     expect(confirm).toContainElement(document.activeElement as HTMLEle…
+       |                     ^
+    299|     await user.keyboard("{Escape}");
+    300|     expect(screen.getAllByRole("dialog")).toHaveLength(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  |unit| src/components/LimitedPurchaseDialog.test.tsx > does not let cancelled-confirmation focus steal from reconfirm
+Error: expect(element).toHaveFocus()
+
+Expected element with focus:
+  <button
+  class="rounded bg-blue-600 px-3 py-2 text-sm font-semibold text-white"
+  type="button"
+>
+  購入済にする
+</button>
+Received element with focus:
+  <div
+  aria-labelledby="limited-purchase-dialog-title"
+  aria-modal="false"
+  class="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+  role="dialog"
+  tabindex="-1"
+>
+  <div
+    class="w-full max-w-sm rounded-lg bg-white p-4 shadow-xl dark:bg-slate-800"
+  >
+    <h3
+      class="text-base font-semibold text-slate-900 dark:text-slate-100"
+      id="limited-purchase-dialog-title"
+    >
+      限数購入の数量
+    </h3>
+    <label
+      class="mt-4 block text-sm font-medium text-slate-700 dark:text-slate-200"
+    >
+      実購入数
+      <input
+        class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+        inputmode="numeric"
+        value="5"
+      />
+    </label>
+    <label
+      class="mt-3 block text-sm font-medium text-slate-700 dark:text-slate-200"
+    >
+      購入予定量
+      <input
+        class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+        inputmode="numeric"
+        value="5"
+      />
+    </label>
+    <div
+      class="mt-4 flex flex-wrap justify-end gap-2"
+    >
+      <button
+        class="rounded px-3 py-2 text-sm"
+        type="button"
+      >
+        キャンセル
+      </button>
+      <button
+        class="rounded bg-blue-600 px-3 py-2 text-sm font-semibold text-white"
+        type="button"
+      >
+        保存
+      </button>
+    </div>
+  </div>
+</div>
+ ❯ src/components/LimitedPurchaseDialog.test.tsx:425:9
+    423|       expect(
+    424|         screen.getByRole("button", { name: "購入済にする" }),
+    425|       ).toHaveFocus();
+       |         ^
+    426|     } else {
+    427|       expect(screen.getByRole("textbox", { name: "実購入数" })).toHaveFocu…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  |integration| src/components/FocusMode.limitedInteraction.integration.test.tsx > FocusMode real limited dialog interaction > keeps focus inside consecutive bulk input after equal
+Error: expect(element).toContainElement(element)
+
+<div
+  aria-describedby=":rp:"
+  aria-labelledby=":ro:"
+  aria-modal="true"
+  class="fixed inset-0 z-[90] flex items-center justify-center bg-black/50"
+  role="dialog"
+/> does not contain: <div
+  aria-labelledby="limited-purchase-dialog-title"
+  aria-modal="false"
+  class="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+  role="dialog"
+  tabindex="-1"
+/>
+        
+ ❯ src/components/FocusMode.limitedInteraction.integration.test.tsx:102:27
+    100|         if (kind !== "limited") {
+    101|           const confirm = screen.getAllByRole("dialog")[1];
+    102|           expect(confirm).toContainElement(
+       |                           ^
+    103|             document.activeElement as HTMLElement,
+    104|           );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  |integration| src/components/FocusMode.limitedInteraction.integration.test.tsx > FocusMode real limited dialog interaction > keeps focus inside consecutive bulk input after excess
+Error: expect(element).toContainElement(element)
+
+<div
+  aria-describedby=":r19:"
+  aria-labelledby=":r18:"
+  aria-modal="true"
+  class="fixed inset-0 z-[90] flex items-center justify-center bg-black/50"
+  role="dialog"
+/> does not contain: <div
+  aria-labelledby="limited-purchase-dialog-title"
+  aria-modal="false"
+  class="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+  role="dialog"
+  tabindex="-1"
+/>
+        
+ ❯ src/components/FocusMode.limitedInteraction.integration.test.tsx:102:27
+    100|         if (kind !== "limited") {
+    101|           const confirm = screen.getAllByRole("dialog")[1];
+    102|           expect(confirm).toContainElement(
+       |                           ^
+    103|             document.activeElement as HTMLElement,
+    104|           );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  2 failed | 256 passed | 1 skipped (259)
+      Tests  5 failed | 3027 passed | 88 skipped (3120)
+   Start at  00:05:16
+   Duration  240.32s (transform 14.18s, setup 72.32s, import 54.81s, tests 114.99s, environment 180.87s)
+

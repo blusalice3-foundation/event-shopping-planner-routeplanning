@@ -1,3 +1,4 @@
+import type { ShoppingDragMoveContext } from "../../features/shopping-list/drag/shoppingDrag";
 import { bulkImportFailureStatus } from "../../utils/importOutcome";
 import { itemUpdateGuard } from "../../utils/itemContentGuard";
 import type { BulkImportResult } from "../../types/import";
@@ -166,6 +167,7 @@ export interface ShoppingItemMutationCommands {
     hoverId: string,
     targetColumn?: ShoppingListColumn,
     sourceColumn?: ShoppingListColumn,
+    dragContext?: ShoppingDragMoveContext,
   ): void;
   moveItemUp(itemId: string, targetColumn?: ShoppingListColumn): void;
   moveItemDown(itemId: string, targetColumn?: ShoppingListColumn): void;
@@ -277,6 +279,7 @@ export const useShoppingItemMutationCommands = ({
   const {
     activeEventName,
     activeEventDate,
+    getEventGeneration,
     eventLists,
     eventListsRef,
     eventMetadata,
@@ -722,16 +725,34 @@ export const useShoppingItemMutationCommands = ({
       hoverId: string,
       targetColumn?: ShoppingListColumn,
       sourceColumn?: ShoppingListColumn,
+      dragContext?: ShoppingDragMoveContext,
     ) => {
       if (!activeEventName) return;
-      clearRangeSelection();
-      setSortState("Manual");
-      setBlockSortDirection(null);
+      if (!dragContext) {
+        clearRangeSelection();
+        setSortState("Manual");
+        setBlockSortDirection(null);
+      }
 
       const mode = recordEntry(dayModes, activeEventName)?.[activeEventDate];
-      const spaceGroupIds = spaceGroupDragItemIdsRef.current;
-      const effectiveSelectedIds = new Set(spaceGroupIds ?? selectedItemIds);
-      spaceGroupDragItemIdsRef.current = null;
+      if (
+        dragContext &&
+        (!dragContext.isCurrent() ||
+          dragContext.eventName !== activeEventName ||
+          dragContext.day !== activeEventDate ||
+          (getEventGeneration &&
+            dragContext.generation !== getEventGeneration(activeEventName)))
+      )
+        return;
+      const spaceGroupIds = dragContext
+        ? dragContext.operation === "space-group"
+          ? dragContext.effectiveIds
+          : null
+        : spaceGroupDragItemIdsRef.current;
+      const effectiveSelectedIds = new Set(
+        dragContext?.requestedIds ?? spaceGroupIds ?? selectedItemIds,
+      );
+      if (!dragContext) spaceGroupDragItemIdsRef.current = null;
 
       const currentEventExecuteItems =
         recordEntry(executeModeItemsRef.current, activeEventName) || {};
@@ -771,12 +792,20 @@ export const useShoppingItemMutationCommands = ({
         sourceColumn,
         mode: mode as ViewMode | undefined,
         effectiveSelectedIds,
-        allItems: recordEntry(eventLists, activeEventName) || [],
+        allItems: recordEntry(eventListsRef.current, activeEventName) || [],
         executeModeItems: currentExecuteItems,
         dayName: activeEventDate,
         selectedBlockFilters: new Set(selectedBlockFilters),
         areItemsInSameHall: hallCheck,
+        dragContext,
       });
+      if (dragContext) {
+        if (!result.eventListItems && !result.executeModeItems) return;
+        clearRangeSelection();
+        setSortState("Manual");
+        setBlockSortDirection(null);
+        spaceGroupDragItemIdsRef.current = null;
+      }
       if (result.eventListItems) {
         setEventLists((current) => ({
           ...current,
@@ -804,6 +833,8 @@ export const useShoppingItemMutationCommands = ({
       clearRangeSelection,
       dayModes,
       eventLists,
+      eventListsRef,
+      getEventGeneration,
       executeModeItemsRef,
       selectedBlockFilters,
       selectedItemIds,

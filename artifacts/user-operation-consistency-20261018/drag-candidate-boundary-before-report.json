@@ -1,0 +1,226 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\esp-op18\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/shopping-cross-column-drag.spec.ts",
+      "--grep",
+      "candidate lower-half",
+      "--workers=1",
+      "--output",
+      "artifacts/playwright-drag-candidate-before",
+      "--reporter=list,json"
+    ],
+    "configFile": "D:\\esp-op18\\playwright.config.ts",
+    "rootDir": "D:/esp-op18/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/esp-op18/artifacts/playwright-drag-candidate-before",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/esp-op18/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "shopping-cross-column-drag.spec.ts",
+      "file": "shopping-cross-column-drag.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "candidate lower-half hover preserves the existing next-row insertion: native",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 5756,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Array [\u001b[22m\n\u001b[32m-   \"one\",\u001b[39m\n\u001b[2m    \"two\",\u001b[22m\n\u001b[31m+   \"one\",\u001b[39m\n\u001b[2m    \"three\",\u001b[22m\n\u001b[2m  ]\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Array [\u001b[22m\n\u001b[32m-   \"one\",\u001b[39m\n\u001b[2m    \"two\",\u001b[22m\n\u001b[31m+   \"one\",\u001b[39m\n\u001b[2m    \"three\",\u001b[22m\n\u001b[2m  ]\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:886:8",
+                    "location": {
+                      "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                      "column": 8,
+                      "line": 886
+                    },
+                    "snippet": "  884 |         ),\n  885 |       )\n> 886 |       .toEqual([\"one\", \"two\", \"three\"]);\n      |        ^\n  887 |     await expect\n  888 |       .poll(\n  889 |         async () =>"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                        "column": 8,
+                        "line": 886
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Array [\u001b[22m\n\u001b[32m-   \"one\",\u001b[39m\n\u001b[2m    \"two\",\u001b[22m\n\u001b[31m+   \"one\",\u001b[39m\n\u001b[2m    \"three\",\u001b[22m\n\u001b[2m  ]\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n\n  884 |         ),\n  885 |       )\n> 886 |       .toEqual([\"one\", \"two\", \"three\"]);\n      |        ^\n  887 |     await expect\n  888 |       .poll(\n  889 |         async () =>\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:886:8"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:28:09.877Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-candidate-before\\shopping-cross-column-drag-74326-g-next-row-insertion-native-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-candidate-before\\shopping-cross-column-drag-74326-g-next-row-insertion-native-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                    "column": 8,
+                    "line": 886
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-a0fc085d475be6978ffd",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 870,
+          "column": 3
+        },
+        {
+          "title": "candidate lower-half hover preserves the existing next-row insertion: touch",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 5931,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Array [\u001b[22m\n\u001b[32m-   \"one\",\u001b[39m\n\u001b[2m    \"two\",\u001b[22m\n\u001b[31m+   \"one\",\u001b[39m\n\u001b[2m    \"three\",\u001b[22m\n\u001b[2m  ]\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Array [\u001b[22m\n\u001b[32m-   \"one\",\u001b[39m\n\u001b[2m    \"two\",\u001b[22m\n\u001b[31m+   \"one\",\u001b[39m\n\u001b[2m    \"three\",\u001b[22m\n\u001b[2m  ]\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:886:8",
+                    "location": {
+                      "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                      "column": 8,
+                      "line": 886
+                    },
+                    "snippet": "  884 |         ),\n  885 |       )\n> 886 |       .toEqual([\"one\", \"two\", \"three\"]);\n      |        ^\n  887 |     await expect\n  888 |       .poll(\n  889 |         async () =>"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                        "column": 8,
+                        "line": 886
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Array [\u001b[22m\n\u001b[32m-   \"one\",\u001b[39m\n\u001b[2m    \"two\",\u001b[22m\n\u001b[31m+   \"one\",\u001b[39m\n\u001b[2m    \"three\",\u001b[22m\n\u001b[2m  ]\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n\n  884 |         ),\n  885 |       )\n> 886 |       .toEqual([\"one\", \"two\", \"three\"]);\n      |        ^\n  887 |     await expect\n  888 |       .poll(\n  889 |         async () =>\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:886:8"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:28:16.330Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-candidate-before\\shopping-cross-column-drag-adf03-ng-next-row-insertion-touch-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-candidate-before\\shopping-cross-column-drag-adf03-ng-next-row-insertion-touch-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                    "column": 8,
+                    "line": 886
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-ca5419594b3b225ad670",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 870,
+          "column": 3
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-18T15:28:09.096Z",
+    "duration": 13379.387999999999,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}

@@ -70,6 +70,7 @@ async function harness(related = false, saveDelayMs = 1) {
     expectedRoots: initial.expectedRoots,
   });
   const single = vi.spyOn(db, "saveExecuteModeItems");
+  const atomicOriginal = db.commitApplicationSnapshotAtomically;
   const atomic = vi.spyOn(db, "commitApplicationSnapshotAtomically");
   const commands = createIndexedDbPersistenceCommandAdapter();
   const mount = () =>
@@ -82,6 +83,7 @@ async function harness(related = false, saveDelayMs = 1) {
         saveDelayMs,
       });
       application.handlers.current = {
+        stopWrites: persistence.stopWrites,
         drain: persistence.flushPendingSave,
         observeSnapshot: persistence.observeSnapshot,
         applied: persistence.acceptCommittedSnapshot,
@@ -92,7 +94,7 @@ async function harness(related = false, saveDelayMs = 1) {
   await waitFor(() =>
     expect(hook.result.current.persistence.isInitialized).toBe(true),
   );
-  return { ...hook, single, atomic, seed, mount };
+  return { ...hook, single, atomic, seed, mount, commands, atomicOriginal };
 }
 function reorder(h: Awaited<ReturnType<typeof harness>>) {
   h.result.current.application.setters.setExecuteModeItems((current) => ({
@@ -746,3 +748,77 @@ it.each(["queued", "cas-retry", "confirmation", "manual-retry"] as const)(
     if (phase !== "queued") expect(guard.mock.calls.length).toBeGreaterThan(1);
   },
 );
+
+it("App handler wiring synchronously stops retry/flush before rerender and exports a later accepted edit without writing", async () => {
+  const h = await harness(true);
+  const original = h.atomicOriginal;
+  let release!: () => void;
+  h.atomic.mockImplementationOnce(async (...args) => {
+    await original(...args);
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+  });
+  let first!: Promise<unknown>;
+  act(() => {
+    first = h.result.current.application
+      .commitPatch({
+        eventLists: {
+          [EVENT]: items.map((item) =>
+            item.id === "1" ? { ...item, remarks: "保存済み" } : item,
+          ),
+        },
+      })
+      .catch((error: unknown) => error);
+  });
+  await waitFor(() => expect(release).toBeTypeOf("function"));
+  act(() =>
+    h.result.current.application.setters.setEventLists((lists) => ({
+      ...lists,
+      [EVENT]: lists[EVENT].map((item) =>
+        item.id === "2" ? { ...item, remarks: "停止前に受理した入力" } : item,
+      ),
+    })),
+  );
+  let flush!: Promise<unknown>;
+  let stoppedReason: unknown;
+  h.result.current.application.handlers.current.stopWrites = (reason) => {
+    stoppedReason = reason;
+    h.result.current.persistence.stopWrites(reason);
+    h.result.current.persistence.retrySave();
+    flush = h.result.current.persistence
+      .flushPendingSave()
+      .catch((error: unknown) => error);
+  };
+  h.result.current.application.handlers.current.applied = (snapshot) => {
+    h.result.current.persistence.acceptCommittedSnapshot(snapshot);
+    throw new Error("App effect failed after durable save");
+  };
+  await act(async () => {
+    release();
+    await first;
+  });
+  expect(await first).toMatchObject({ name: "CommittedStateApplyError" });
+  expect(await flush).toBe(stoppedReason);
+  expect(h.result.current.application.requiresReload).toBe(true);
+  expect(h.result.current.application.pendingCount).toBe(0);
+  expect(h.atomic).toHaveBeenCalledOnce();
+  h.result.current.persistence.retrySave();
+  await expect(h.result.current.persistence.flushPendingSave()).rejects.toBe(
+    stoppedReason,
+  );
+  const file =
+    await h.result.current.application.coordinator.createBackupFile();
+  const exported = JSON.parse(await file.blob.text());
+  expect(exported.data.eventLists[EVENT][1].remarks).toBe(
+    "停止前に受理した入力",
+  );
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.eventLists[EVENT][1],
+  ).toMatchObject({ remarks: "ユーザー登録" });
+  expect(h.atomic).toHaveBeenCalledOnce();
+  const writes = vi.spyOn(db, "saveEventLists");
+  act(() => h.result.current.persistence.acceptCommittedSnapshot(h.seed));
+  await expect(h.commands.saveEventLists({})).rejects.toBe(stoppedReason);
+  expect(writes).not.toHaveBeenCalled();
+});

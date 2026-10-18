@@ -1,3 +1,7 @@
+import {
+  isPersistenceWriteStopReason,
+  type PersistenceWriteStopReason,
+} from "../ports/PersistenceCommandPort";
 import { registerItemGuardGenerations } from "../../utils/itemContentGuard";
 import { dayMutationScope } from "../../features/consistency/domain/dayScope";
 import { scopeDaySnapshot } from "../../features/consistency/domain/dayMutation";
@@ -138,7 +142,7 @@ export interface MutationCoordinatorPorts {
     invalidatedEvents?: readonly string[],
   ): Promise<void>;
   apply(snapshot: PersistenceSnapshot, invalidatedEvents: string[]): void;
-  onApplyFailure?(error: CommittedStateApplyError): void;
+  onApplyFailure?(error: PersistenceWriteStopReason): void;
   onExpired?(operationIds: string[]): void;
 }
 function clearedConfirmation(
@@ -192,7 +196,16 @@ export function createApplicationMutationCoordinator(
 ) {
   let tail: Promise<unknown> = Promise.resolve();
   let sequence = 0;
-  let stopped = false;
+  let stopped: PersistenceWriteStopReason | undefined;
+  function stopWrites(reason: PersistenceWriteStopReason) {
+    if (stopped) return;
+    stopped = reason;
+    try {
+      ports.onApplyFailure?.(reason);
+    } finally {
+      pending.clear();
+    }
+  }
   const generations = new Map<string, number>();
   let durableGenerations: Readonly<Record<string, number>> = {};
   const durableGeneration = (
@@ -225,10 +238,15 @@ export function createApplicationMutationCoordinator(
     );
   function enqueue<T>(task: () => Promise<T> | T): Promise<T> {
     openItemBatch = null;
-    const result = tail.then(() => {
-      if (stopped) throw new Error("保存済み状態を再読み込みしてください。");
-      return task();
-    });
+    const result = tail
+      .then(() => {
+        if (stopped) throw stopped;
+        return task();
+      })
+      .catch((error) => {
+        if (isPersistenceWriteStopReason(error)) stopWrites(error);
+        throw stopped ?? error;
+      });
     tail = result.catch(() => undefined);
     return result;
   }
@@ -262,6 +280,7 @@ export function createApplicationMutationCoordinator(
     if (confirmation && operation.token !== confirmation)
       return { status: "expired" };
     const validity = (): MutationResult | undefined => {
+      if (stopped) throw stopped;
       if (pending.get(id) !== operation) return { status: "cancelled" };
       if (
         operation.generation !== generation(operation.intent.events) ||
@@ -309,9 +328,8 @@ export function createApplicationMutationCoordinator(
           try {
             ports.apply(result.read.snapshot, invalidated);
           } catch (error) {
-            stopped = true;
             const failure = new CommittedStateApplyError(error);
-            ports.onApplyFailure?.(failure);
+            stopWrites(failure);
             throw failure;
           }
           expirePending();
@@ -355,9 +373,8 @@ export function createApplicationMutationCoordinator(
             externallyInvalidated,
           );
         } catch (error) {
-          stopped = true;
           const failure = new CommittedStateApplyError(error);
-          ports.onApplyFailure?.(failure);
+          stopWrites(failure);
           throw failure;
         }
       }
@@ -453,13 +470,12 @@ export function createApplicationMutationCoordinator(
           );
       } catch (error) {
         operation.committing = false;
-        const afterFailure = validity();
-        if (afterFailure) return afterFailure;
-        if (error instanceof CommittedStateApplyError) {
-          stopped = true;
-          ports.onApplyFailure?.(error);
+        if (isPersistenceWriteStopReason(error)) {
+          stopWrites(error);
           throw error;
         }
+        const afterFailure = validity();
+        if (afterFailure) return afterFailure;
         if (
           error instanceof Error &&
           (error.name === "PersistenceConflict" ||
@@ -485,9 +501,8 @@ export function createApplicationMutationCoordinator(
       try {
         ports.apply(plan.snapshot, plan.invalidatedEvents ?? []);
       } catch (error) {
-        stopped = true;
         const failure = new CommittedStateApplyError(error);
-        ports.onApplyFailure?.(failure);
+        stopWrites(failure);
         throw failure;
       }
       expirePending();
@@ -500,6 +515,7 @@ export function createApplicationMutationCoordinator(
     const ids = batch.ids.filter((id) => pending.has(id) && !completed.has(id));
     try {
       await ports.drain();
+      if (stopped) throw stopped;
       const operations = ids.map((id) => pending.get(id)!);
       if (!operations.length) return;
       if (
@@ -535,9 +551,8 @@ export function createApplicationMutationCoordinator(
       try {
         ports.apply(result.read.snapshot, []);
       } catch (error) {
-        stopped = true;
         const failure = new CommittedStateApplyError(error);
-        ports.onApplyFailure?.(failure);
+        stopWrites(failure);
         throw failure;
       }
       for (const id of ids)
@@ -545,10 +560,11 @@ export function createApplicationMutationCoordinator(
           .get(id)
           ?.resolve({ status: "committed", snapshot: result.read.snapshot });
     } catch (error) {
+      if (isPersistenceWriteStopReason(error)) stopWrites(error);
       for (const id of ids) {
         const operation = pending.get(id);
         if (operation) operation.committing = false;
-        batch.resolvers.get(id)?.reject(error);
+        batch.resolvers.get(id)?.reject(stopped ?? error);
       }
     } finally {
       for (const id of batch.ids) {
@@ -559,7 +575,18 @@ export function createApplicationMutationCoordinator(
   }
   return {
     enqueue,
+    stopWrites,
+    getWriteStopReason: () => stopped,
+    getPendingState(id: string) {
+      const operation = pending.get(id);
+      return {
+        requestPending: !!operation,
+        canCancel: !!operation && !operation.committing && !stopped,
+        confirmationPending: !!operation?.confirmation,
+      };
+    },
     request(intent: MutationIntent): Promise<MutationResult> {
+      if (stopped) return Promise.reject(stopped);
       if (completed.has(intent.id))
         return Promise.resolve({
           status: "committed",
@@ -672,7 +699,8 @@ export function createApplicationMutationCoordinator(
     createBackupFile: async (): Promise<ApplicationBackupFile> => {
       if (!ports.createBackupFile)
         throw new Error("Backup worker is unavailable.");
-      const captured = await enqueue(() => ({
+      openItemBatch = null;
+      const captured = await tail.then(() => ({
         base: ports.readCurrent(),
         accepted: (ports.readExportCurrent ?? ports.readCurrent)(),
       }));

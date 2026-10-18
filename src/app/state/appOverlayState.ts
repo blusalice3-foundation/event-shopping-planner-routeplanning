@@ -1,3 +1,4 @@
+import type { MapEditorSession } from "../../features/map/domain/mapEditorSession";
 import type {
   PendingDuplicateEventImport,
   PendingXlsxRestoreCompletion,
@@ -103,29 +104,35 @@ export type MapEditorOverlayState =
   | Readonly<{
       kind: "block-definition";
       requestId: string;
+      session?: MapEditorSession;
       pendingSelection: PendingCellSelection;
     }>
   | Readonly<{
       kind: "cell-selection";
       requestId: string;
+      session?: MapEditorSession;
       selection: NonNullable<CellSelectionMode>;
     }>
   | Readonly<{
       kind: "simple-hall-definition";
       requestId: string;
+      session?: MapEditorSession;
     }>
   | Readonly<{
       kind: "global-hall-order";
       requestId: string;
+      session?: MapEditorSession;
     }>
   | Readonly<{
       kind: "hall-definition";
       requestId: string;
+      session?: MapEditorSession;
       pendingSelection: PendingVertexSelection;
     }>
   | Readonly<{
       kind: "vertex-selection";
       requestId: string;
+      session?: MapEditorSession;
       selection: NonNullable<VertexSelectionMode>;
     }>;
 
@@ -191,6 +198,7 @@ export interface AppOverlayReadModel {
   readonly mapImportPendingFile: File | null;
   readonly mapImportPendingEventName: string;
   readonly pendingMapReimport: PreparedMapImport | null;
+  readonly mapEditorSession: MapEditorSession | null;
   readonly blockDefinitionMode: boolean;
   readonly pendingCellSelection: PendingCellSelection;
   readonly cellSelectionMode: CellSelectionMode;
@@ -278,6 +286,7 @@ export type AppOverlayAction =
   | Readonly<{
       type: "map-editor/open-block-definition";
       requestId: string;
+      session?: MapEditorSession;
       pendingSelection: PendingCellSelection;
     }>
   | Readonly<{
@@ -285,10 +294,12 @@ export type AppOverlayAction =
         | "map-editor/open-simple-hall-definition"
         | "map-editor/open-global-hall-order";
       requestId: string;
+      session?: MapEditorSession;
     }>
   | Readonly<{
       type: "map-editor/open-hall-definition";
       requestId: string;
+      session?: MapEditorSession;
       pendingSelection: PendingVertexSelection;
     }>
   | Readonly<{
@@ -573,15 +584,30 @@ const assertMapEditorOverlayState = (value: unknown): void => {
   if (record.kind === "inactive") {
     return assertInactive(record, "overlay.mapEditor");
   }
+  const sessionKeys = record.session === undefined ? [] : ["session"];
+  if (record.session !== undefined) {
+    const session = assertRecord(record.session, "overlay.mapEditor.session");
+    for (const key of ["sessionId", "eventName", "day", "mapKey", "editorKind"])
+      assertNonEmptyString(session[key], `overlay.mapEditor.session.${key}`);
+    if (!Number.isInteger(session.eventGeneration))
+      fail(
+        "overlay.mapEditor.session.eventGeneration",
+        "Event generation is required.",
+      );
+  }
   if (
     record.kind === "simple-hall-definition" ||
     record.kind === "global-hall-order"
   ) {
-    assertRequestState(record, [], "overlay.mapEditor");
+    assertRequestState(record, sessionKeys, "overlay.mapEditor");
     return;
   }
   if (record.kind === "block-definition" || record.kind === "hall-definition") {
-    assertRequestState(record, ["pendingSelection"], "overlay.mapEditor");
+    assertRequestState(
+      record,
+      ["pendingSelection", ...sessionKeys],
+      "overlay.mapEditor",
+    );
     if (
       record.pendingSelection !== null &&
       !isRecord(record.pendingSelection)
@@ -594,7 +620,11 @@ const assertMapEditorOverlayState = (value: unknown): void => {
     return;
   }
   if (record.kind === "cell-selection" || record.kind === "vertex-selection") {
-    assertRequestState(record, ["selection"], "overlay.mapEditor");
+    assertRequestState(
+      record,
+      ["selection", ...sessionKeys],
+      "overlay.mapEditor",
+    );
     assertObjectPayload(record.selection, "overlay.mapEditor.selection");
     return;
   }
@@ -927,6 +957,7 @@ export const reduceAppOverlayState = (
             action.requestId,
             "overlay.mapEditor.requestId",
           ),
+          ...(action.session ? { session: action.session } : {}),
           pendingSelection: action.pendingSelection,
         },
       });
@@ -944,6 +975,7 @@ export const reduceAppOverlayState = (
             action.requestId,
             "overlay.mapEditor.requestId",
           ),
+          ...(action.session ? { session: action.session } : {}),
         },
       });
     case "map-editor/open-hall-definition":
@@ -956,6 +988,7 @@ export const reduceAppOverlayState = (
             action.requestId,
             "overlay.mapEditor.requestId",
           ),
+          ...(action.session ? { session: action.session } : {}),
           pendingSelection: action.pendingSelection,
         },
       });
@@ -971,6 +1004,9 @@ export const reduceAppOverlayState = (
         mapEditor: {
           kind: "cell-selection",
           requestId: action.requestId,
+          ...(state.mapEditor.kind !== "inactive" && state.mapEditor.session
+            ? { session: state.mapEditor.session }
+            : {}),
           selection: action.selection,
         },
       });
@@ -986,6 +1022,9 @@ export const reduceAppOverlayState = (
         mapEditor: {
           kind: "block-definition",
           requestId: action.requestId,
+          ...(state.mapEditor.kind !== "inactive" && state.mapEditor.session
+            ? { session: state.mapEditor.session }
+            : {}),
           pendingSelection: null,
         },
       });
@@ -1032,6 +1071,9 @@ export const reduceAppOverlayState = (
         mapEditor: {
           kind: "block-definition",
           requestId: action.requestId,
+          ...(state.mapEditor.kind !== "inactive" && state.mapEditor.session
+            ? { session: state.mapEditor.session }
+            : {}),
           pendingSelection: action.pendingSelection,
         },
       });
@@ -1047,6 +1089,9 @@ export const reduceAppOverlayState = (
         mapEditor: {
           kind: "vertex-selection",
           requestId: action.requestId,
+          ...(state.mapEditor.kind !== "inactive" && state.mapEditor.session
+            ? { session: state.mapEditor.session }
+            : {}),
           selection: action.selection,
         },
       });
@@ -1062,6 +1107,9 @@ export const reduceAppOverlayState = (
         mapEditor: {
           kind: "hall-definition",
           requestId: action.requestId,
+          ...(state.mapEditor.kind !== "inactive" && state.mapEditor.session
+            ? { session: state.mapEditor.session }
+            : {}),
           pendingSelection: null,
         },
       });
@@ -1115,6 +1163,9 @@ export const reduceAppOverlayState = (
         mapEditor: {
           kind: "hall-definition",
           requestId: action.requestId,
+          ...(state.mapEditor.kind !== "inactive" && state.mapEditor.session
+            ? { session: state.mapEditor.session }
+            : {}),
           pendingSelection: action.pendingSelection,
         },
       });
@@ -1355,6 +1406,10 @@ export const selectAppOverlayReadModel = (
       state.mapImport.kind === "reimport"
         ? state.mapImport.preparedImport
         : null,
+    mapEditorSession:
+      state.mapEditor.kind === "inactive"
+        ? null
+        : (state.mapEditor.session ?? null),
     blockDefinitionMode: state.mapEditor.kind === "block-definition",
     pendingCellSelection:
       state.mapEditor.kind === "block-definition"
