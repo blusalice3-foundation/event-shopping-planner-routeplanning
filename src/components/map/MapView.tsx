@@ -5,6 +5,7 @@ import React, {
   useMemo,
   useRef,
   useEffect,
+  useLayoutEffect,
 } from "react";
 import {
   DayMapData,
@@ -59,6 +60,11 @@ import {
   buildExecutionVisitProjectionKey,
 } from "../../utils/visitProjection";
 
+import {
+  useMapPopupSession,
+  type MapPopupSession,
+} from "../../features/map/hooks/useMapPopupSession";
+
 const normalizeDisplayText = (value: string | null | undefined): string => {
   return (value || "").replace(/\u3000/g, " ").trim();
 };
@@ -81,6 +87,7 @@ type PendingHallVisitEntry = {
 };
 
 type MapRouteInsertPendingState = {
+  session: MapPopupSession;
   itemIds: string[];
   representativeItem: ShoppingItem;
   existingRoutePointsAtStart: MapRoutePoint[];
@@ -98,6 +105,7 @@ type MapRouteInsertPendingState = {
 interface MapViewProps {
   mapData: DayMapData;
   mapName: string;
+  operationScope: string;
   eventDate?: string;
   items: ShoppingItem[];
   executeModeItemIds: string[];
@@ -106,7 +114,7 @@ interface MapViewProps {
   onRemoveFromExecuteList: (itemId: string) => string[] | void;
   onMoveToFirst: (itemId: string) => void;
   onMoveToLast: (itemId: string) => void;
-  onUpdateItem?: (item: ShoppingItem) => void;
+  onUpdateItem?: (item: ShoppingItem, baseline?: ShoppingItem) => void;
   onUpdateItemPriority?: (
     itemId: string,
     level: "none" | "priority" | "highest",
@@ -171,6 +179,7 @@ interface MapViewProps {
 const MapView: React.FC<MapViewProps> = ({
   mapData,
   mapName,
+  operationScope,
   eventDate,
   items,
   executeModeItemIds,
@@ -211,6 +220,8 @@ const MapView: React.FC<MapViewProps> = ({
   onViewportChange,
   numberCellOutlineStyle = "rounded",
 }) => {
+  const { begin, isCurrent, isVisible, transfer, invalidate } =
+    useMapPopupSession(operationScope);
   void _onMoveToFirst;
   void _onMoveToLast;
 
@@ -252,6 +263,7 @@ const MapView: React.FC<MapViewProps> = ({
   const [insertDialogState, setInsertDialogState] = useState<{
     isOpen: boolean;
     item: ShoppingItem | null;
+    session?: MapPopupSession;
   }>({ isOpen: false, item: null });
 
   const [batchInsertPendingIds, setBatchInsertPendingIds] = useState<
@@ -289,6 +301,8 @@ const MapView: React.FC<MapViewProps> = ({
     blockName: string;
     number: number;
     items: ShoppingItem[];
+    session: MapPopupSession | null;
+    eventDate: string;
   }>({
     isOpen: false,
     row: 0,
@@ -296,6 +310,8 @@ const MapView: React.FC<MapViewProps> = ({
     blockName: "",
     number: 0,
     items: [],
+    session: null,
+    eventDate: "",
   });
 
   const executeModeItemIdsSet = useMemo(
@@ -778,8 +794,17 @@ const MapView: React.FC<MapViewProps> = ({
 
       if (!foundBlock && matchingItems.length === 0) return;
 
+      const session = begin(operationScope);
+      if (!session) return;
+      mapRouteInsertPendingRef.current = null;
+      setMapRouteInsertPending(null);
+      setInsertDialogState({ isOpen: false, item: null });
+      setBatchInsertPendingIds(null);
+      setWaitingRouteInsert(null);
       if (foundBlock) {
         setPopupState({
+          session,
+          eventDate: eventDate ?? mapDayName,
           isOpen: true,
           row,
           col,
@@ -793,6 +818,8 @@ const MapView: React.FC<MapViewProps> = ({
         const numValue = numStr ? parseInt(numStr, 10) : 0;
 
         setPopupState({
+          session,
+          eventDate: eventDate ?? mapDayName,
           isOpen: true,
           row,
           col,
@@ -809,12 +836,24 @@ const MapView: React.FC<MapViewProps> = ({
       vertexSelectionMode,
       cellSelectionMode,
       isCellInBlock,
+      begin,
+      operationScope,
+      eventDate,
+      mapDayName,
     ],
   );
 
-  const handleClosePopup = useCallback(() => {
-    setPopupState((prev) => ({ ...prev, isOpen: false }));
-  }, []);
+  const handleClosePopup = useCallback(
+    (session: MapPopupSession | null) => {
+      if (!session) return;
+      if (isCurrent(session, "popup")) invalidate(session);
+      else if (!isCurrent(session, "relay")) return;
+      setPopupState((prev) =>
+        prev.session?.id === session.id ? { ...prev, isOpen: false } : prev,
+      );
+    },
+    [isCurrent, invalidate],
+  );
 
   const normalizeInsertedItemIds = useCallback(
     (
@@ -939,12 +978,37 @@ const MapView: React.FC<MapViewProps> = ({
     itemIds: string[];
     item: ShoppingItem;
     key: string;
+    session: MapPopupSession;
   } | null>(null);
+
+  useLayoutEffect(() => {
+    mapRouteInsertPendingRef.current = null;
+    setMapRouteInsertPending(null);
+    setInsertDialogState((prev) =>
+      prev.isOpen || prev.item ? { isOpen: false, item: null } : prev,
+    );
+    setBatchInsertPendingIds(null);
+    setWaitingRouteInsert(null);
+    setPopupState((prev) =>
+      prev.isOpen || prev.session
+        ? { ...prev, isOpen: false, session: null, items: [] }
+        : prev,
+    );
+  }, [operationScope]);
   const tryStartMapRouteInsertSelection = useCallback(
-    (itemIds: string[], representativeItem: ShoppingItem): boolean => {
+    (
+      itemIds: string[],
+      representativeItem: ShoppingItem,
+      session: MapPopupSession,
+    ): boolean => {
+      if (!isCurrent(session, "popup") && !isCurrent(session, "relay"))
+        return true;
       if (vertexSelectionMode || cellSelectionMode) return false;
       if (routeCalculation.pending) {
+        if (!transfer(session)) return true;
+        setPopupState((prev) => ({ ...prev, isOpen: false }));
         setWaitingRouteInsert({
+          session,
           itemIds: [...itemIds],
           item: representativeItem,
           key: routeCalculation.key,
@@ -1000,6 +1064,7 @@ const MapView: React.FC<MapViewProps> = ({
         }),
       );
 
+      if (!transfer(session)) return true;
       setPopupState((prev) => ({ ...prev, isOpen: false }));
       setInsertDialogState({ isOpen: false, item: null });
       setBatchInsertPendingIds(null);
@@ -1008,6 +1073,7 @@ const MapView: React.FC<MapViewProps> = ({
         routeResolutionMapData,
       );
       const nextPending: MapRouteInsertPendingState = {
+        session,
         itemIds: [...itemIds],
         representativeItem: { ...representativeItem },
         existingRoutePointsAtStart,
@@ -1043,11 +1109,14 @@ const MapView: React.FC<MapViewProps> = ({
       mapName,
       selectedHallId,
       filteredMapData,
+      isCurrent,
+      transfer,
     ],
   );
 
   const handleAddToVisitList = useCallback(
-    (itemId: string) => {
+    (itemId: string, session: MapPopupSession) => {
+      if (!isCurrent(session, "popup")) return;
       const item = itemsById.get(itemId);
       if (!item) return;
 
@@ -1075,10 +1144,12 @@ const MapView: React.FC<MapViewProps> = ({
             const pendingIds = expandUninsertedMapSiblingIds([itemId]);
             const started =
               pendingIds.length > 0 &&
-              tryStartMapRouteInsertSelection(pendingIds, item);
+              tryStartMapRouteInsertSelection(pendingIds, item, session);
             if (started) return;
           } else if (smartInsertEnabled && smartInsertMode === "preview") {
-            setInsertDialogState({ isOpen: true, item });
+            if (!transfer(session)) return;
+            setPopupState((prev) => ({ ...prev, isOpen: false }));
+            setInsertDialogState({ isOpen: true, item, session });
             return;
           }
         }
@@ -1088,7 +1159,7 @@ const MapView: React.FC<MapViewProps> = ({
         const pendingIds = expandUninsertedMapSiblingIds([itemId]);
         const started =
           pendingIds.length > 0 &&
-          tryStartMapRouteInsertSelection(pendingIds, item);
+          tryStartMapRouteInsertSelection(pendingIds, item, session);
         if (started) return;
         const insertedIds = normalizeInsertedItemIds(
           onAddToExecuteList(itemId),
@@ -1117,7 +1188,9 @@ const MapView: React.FC<MapViewProps> = ({
         if (insertedIds) batchAddToHallVisitList(insertedIds);
         return;
       }
-      setInsertDialogState({ isOpen: true, item });
+      if (!transfer(session)) return;
+      setPopupState((prev) => ({ ...prev, isOpen: false }));
+      setInsertDialogState({ isOpen: true, item, session });
     },
     [
       onAddToExecuteList,
@@ -1131,21 +1204,31 @@ const MapView: React.FC<MapViewProps> = ({
       smartInsertEnabled,
       smartInsertMode,
       tryStartMapRouteInsertSelection,
+      isCurrent,
+      transfer,
     ],
   );
 
   useEffect(() => {
-    if (!waitingRouteInsert || routeCalculation.pending) return;
+    if (
+      !waitingRouteInsert ||
+      !isCurrent(waitingRouteInsert.session, "relay") ||
+      routeCalculation.pending
+    )
+      return;
     setWaitingRouteInsert(null);
     if (
       waitingRouteInsert.key !== routeCalculation.key ||
       routeCalculation.error
-    )
+    ) {
+      invalidate(waitingRouteInsert.session);
       return;
+    }
     if (
       tryStartMapRouteInsertSelection(
         waitingRouteInsert.itemIds,
         waitingRouteInsert.item,
+        waitingRouteInsert.session,
       )
     )
       return;
@@ -1156,6 +1239,7 @@ const MapView: React.FC<MapViewProps> = ({
       if (ids) collected.push(...ids);
     }
     if (collected.length) batchAddToHallVisitList(collected);
+    invalidate(waitingRouteInsert.session);
   }, [
     waitingRouteInsert,
     routeCalculation.pending,
@@ -1166,9 +1250,13 @@ const MapView: React.FC<MapViewProps> = ({
     normalizeInsertedItemIds,
     onAddToExecuteList,
     batchAddToHallVisitList,
+    isCurrent,
+    invalidate,
   ]);
   const handleInsertPositionSelect = useCallback(
     (position: InsertPosition) => {
+      const session = insertDialogState.session;
+      if (!session || !isCurrent(session, "relay")) return;
       const item = insertDialogState.item;
       if (!item) return;
 
@@ -1273,6 +1361,7 @@ const MapView: React.FC<MapViewProps> = ({
           } else if (onAddToExecuteListAtPosition) {
             if (isBatch) {
               if (!addBatchNormally()) return;
+              invalidate(session);
               setBatchInsertPendingIds(null);
               setInsertDialogState({ isOpen: false, item: null });
               return;
@@ -1336,11 +1425,15 @@ const MapView: React.FC<MapViewProps> = ({
         }
       }
 
+      invalidate(session);
       setBatchInsertPendingIds(null);
       setInsertDialogState({ isOpen: false, item: null });
     },
     [
       insertDialogState.item,
+      insertDialogState.session,
+      isCurrent,
+      invalidate,
       batchInsertPendingIds,
       onAddToExecuteList,
       onAddToExecuteListAtPosition,
@@ -1409,7 +1502,8 @@ const MapView: React.FC<MapViewProps> = ({
   );
 
   const handleBatchAddToVisitList = useCallback(
-    (itemIds: string[]) => {
+    (itemIds: string[], session: MapPopupSession) => {
+      if (!isCurrent(session, "popup")) return;
       if (itemIds.length === 0) return;
 
       const sortedIds = [...itemIds].sort((aId, bId) => {
@@ -1463,7 +1557,7 @@ const MapView: React.FC<MapViewProps> = ({
         const pendingIds = expandUninsertedMapSiblingIds(sortedIds);
         const started =
           pendingIds.length > 0 &&
-          tryStartMapRouteInsertSelection(pendingIds, firstItem);
+          tryStartMapRouteInsertSelection(pendingIds, firstItem, session);
         if (started) return;
 
         if (onBatchAddToExecuteList) {
@@ -1495,7 +1589,9 @@ const MapView: React.FC<MapViewProps> = ({
 
         if (nearbyVisitItems.length > 0) {
           setBatchInsertPendingIds(sortedIds);
-          setInsertDialogState({ isOpen: true, item: firstItem });
+          if (!transfer(session)) return;
+          setPopupState((prev) => ({ ...prev, isOpen: false }));
+          setInsertDialogState({ isOpen: true, item: firstItem, session });
           return;
         }
       }
@@ -1530,6 +1626,8 @@ const MapView: React.FC<MapViewProps> = ({
       smartInsertEnabled,
       smartInsertMode,
       tryStartMapRouteInsertSelection,
+      isCurrent,
+      transfer,
     ],
   );
 
@@ -1599,9 +1697,10 @@ const MapView: React.FC<MapViewProps> = ({
   );
 
   const applyMapRouteInsertAfter = useCallback(
-    (anchorItemId: string) => {
+    (anchorItemId: string, session: MapPopupSession) => {
+      if (!isCurrent(session, "relay")) return;
       const pending = mapRouteInsertPendingRef.current;
-      if (!pending) return;
+      if (!pending || pending.session.id !== session.id) return;
 
       if (!executeModeItemIds.includes(anchorItemId)) {
         setMapRouteInsertPending((prev) =>
@@ -1671,6 +1770,7 @@ const MapView: React.FC<MapViewProps> = ({
       }
 
       applyPendingHallVisitEntries(pending.pendingHallVisitEntries);
+      invalidate(session);
       mapRouteInsertPendingRef.current = null;
       setMapRouteInsertPending(null);
     },
@@ -1678,6 +1778,8 @@ const MapView: React.FC<MapViewProps> = ({
       applyPendingHallVisitEntries,
       executeModeItemIds,
       insertPendingItemsAfterAnchor,
+      isCurrent,
+      invalidate,
     ],
   );
 
@@ -1705,7 +1807,8 @@ const MapView: React.FC<MapViewProps> = ({
 
   const handleRouteInsertHit = useCallback(
     (hit: MapRouteHitResult) => {
-      if (!mapRouteInsertPendingRef.current) return;
+      const session = mapRouteInsertPending?.session;
+      if (!session || !isCurrent(session, "relay")) return;
 
       if (hit.type === "marker" && hit.duplicateCandidates.length > 1) {
         setMapRouteInsertPending((prev) =>
@@ -1725,14 +1828,22 @@ const MapView: React.FC<MapViewProps> = ({
 
       applyMapRouteInsertAfter(
         hit.type === "marker" ? hit.itemId : hit.fromItemId,
+        session,
       );
     },
-    [applyMapRouteInsertAfter, buildDuplicateAnchorCandidates],
+    [
+      applyMapRouteInsertAfter,
+      buildDuplicateAnchorCandidates,
+      mapRouteInsertPending?.session,
+      isCurrent,
+    ],
   );
 
   const handleRouteInsertMiss = useCallback(
     (miss: { kind: "cell" | "blank" }) => {
-      if (miss.kind === "blank") return;
+      const session = mapRouteInsertPending?.session;
+      if (!session || !isCurrent(session, "relay") || miss.kind === "blank")
+        return;
 
       setMapRouteInsertPending((prev) =>
         prev
@@ -1745,22 +1856,40 @@ const MapView: React.FC<MapViewProps> = ({
           : prev,
       );
     },
-    [],
+    [mapRouteInsertPending?.session, isCurrent],
   );
 
   const cancelMapRouteInsertSelection = useCallback(() => {
+    const session = mapRouteInsertPending?.session;
+    if (!session || !isCurrent(session, "relay")) return;
+    invalidate(session);
     mapRouteInsertPendingRef.current = null;
     setMapRouteInsertPending(null);
-  }, []);
+  }, [mapRouteInsertPending?.session, isCurrent, invalidate]);
+
+  const activeMapRouteInsertPending = isVisible(
+    mapRouteInsertPending?.session,
+    "relay",
+  )
+    ? mapRouteInsertPending
+    : null;
+  const popupSession = popupState.session;
+  const guardPopup =
+    <Args extends unknown[]>(callback: (...args: Args) => unknown) =>
+    (...args: Args) => {
+      if (isCurrent(popupSession, "popup")) callback(...args);
+    };
 
   const routePointsForCanvas =
-    mapRouteInsertPending?.existingRoutePointsAtStart ?? displayRoutePoints;
+    activeMapRouteInsertPending?.existingRoutePointsAtStart ??
+    displayRoutePoints;
   const routeSegmentsForCanvas =
-    mapRouteInsertPending?.existingRouteSegmentsAtStart ?? displayRouteSegments;
+    activeMapRouteInsertPending?.existingRouteSegmentsAtStart ??
+    displayRouteSegments;
   const mapDataForCanvas =
-    mapRouteInsertPending?.canvasMapDataAtStart ?? filteredMapData;
+    activeMapRouteInsertPending?.canvasMapDataAtStart ?? filteredMapData;
   const routeInsertMissMapDataForCanvas =
-    mapRouteInsertPending?.routeInsertMissMapDataAtStart;
+    activeMapRouteInsertPending?.routeInsertMissMapDataAtStart;
 
   return (
     <div
@@ -1768,7 +1897,9 @@ const MapView: React.FC<MapViewProps> = ({
       data-route-item-count={mapInsertRoutePoints.length}
       className="relative flex h-[calc(100vh-140px)] flex-col overflow-hidden bg-slate-100 dark:bg-slate-900"
     >
-      {(waitingRouteInsert || routeCalculation.error) && (
+      {((waitingRouteInsert &&
+        isVisible(waitingRouteInsert.session, "relay")) ||
+        routeCalculation.error) && (
         <p
           role="status"
           className="absolute bottom-4 left-4 z-20 rounded bg-white p-2 text-sm dark:bg-slate-800"
@@ -1839,17 +1970,17 @@ const MapView: React.FC<MapViewProps> = ({
       {hasRouteDiagnosticIssue(routeDiagnostics) && (
         <RouteDiagnosticsOverlay diagnostics={routeDiagnostics} />
       )}
-      {mapRouteInsertPending && (
+      {activeMapRouteInsertPending && (
         <div
           role="status"
           className="shrink-0 rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-lg dark:border-slate-700 dark:bg-slate-800"
         >
           <div className="font-medium text-slate-900 dark:text-slate-100">
-            {mapRouteInsertPending.message}
+            {activeMapRouteInsertPending.message}
           </div>
-          {mapRouteInsertPending.errorMessage && (
+          {activeMapRouteInsertPending.errorMessage && (
             <div className="mt-2 text-red-600 dark:text-red-400">
-              {mapRouteInsertPending.errorMessage}
+              {activeMapRouteInsertPending.errorMessage}
             </div>
           )}
           <button
@@ -1861,19 +1992,26 @@ const MapView: React.FC<MapViewProps> = ({
           </button>
         </div>
       )}
-      {mapRouteInsertPending &&
-        mapRouteInsertPending.duplicateCandidates.length > 0 && (
+      {activeMapRouteInsertPending &&
+        activeMapRouteInsertPending.duplicateCandidates.length > 0 && (
           <div className="shrink-0 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-            {mapRouteInsertPending.duplicateCandidates.map((candidate) => (
-              <button
-                key={`${candidate.itemId}-${candidate.order}`}
-                type="button"
-                onClick={() => applyMapRouteInsertAfter(candidate.itemId)}
-                className="block w-full rounded px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700"
-              >
-                {candidate.label}
-              </button>
-            ))}
+            {activeMapRouteInsertPending.duplicateCandidates.map(
+              (candidate) => (
+                <button
+                  key={`${candidate.itemId}-${candidate.order}`}
+                  type="button"
+                  onClick={() =>
+                    applyMapRouteInsertAfter(
+                      candidate.itemId,
+                      activeMapRouteInsertPending.session,
+                    )
+                  }
+                  className="block w-full rounded px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700"
+                >
+                  {candidate.label}
+                </button>
+              ),
+            )}
           </div>
         )}
       <div className="relative min-h-0 flex-1">
@@ -1891,8 +2029,8 @@ const MapView: React.FC<MapViewProps> = ({
           routePointsOverride={routePointsForCanvas}
           routeSegmentsOverride={routeSegmentsForCanvas}
           routeInsertMissMapDataOverride={routeInsertMissMapDataForCanvas}
-          forceRouteVisible={mapRouteInsertPending !== null}
-          routeInsertSelectionActive={mapRouteInsertPending !== null}
+          forceRouteVisible={activeMapRouteInsertPending !== null}
+          routeInsertSelectionActive={activeMapRouteInsertPending !== null}
           onRouteInsertHit={handleRouteInsertHit}
           onRouteInsertMiss={handleRouteInsertMiss}
           onCellClick={handleCellClick}
@@ -1918,24 +2056,37 @@ const MapView: React.FC<MapViewProps> = ({
         />
       </div>
       {/* Cell detail popup */}
-      <CellItemsPopup
-        isOpen={popupState.isOpen}
-        onClose={handleClosePopup}
-        blockName={popupState.blockName}
-        number={popupState.number}
-        items={popupState.items}
-        executeModeItemIds={executeModeItemIdsSet}
-        onAddToVisitList={handleAddToVisitList}
-        onRemoveFromVisitList={handleRemoveFromVisitList}
-        onBatchAddToVisitList={handleBatchAddToVisitList}
-        onBatchRemoveFromVisitList={handleBatchRemoveFromVisitList}
-        onUpdateItem={onUpdateItem}
-        onUpdateItemPriority={onUpdateItemPriority}
-        onDeleteItem={onDeleteItem}
-        onAddItem={onAddItem}
-        onEditRequest={onEditRequest}
-        eventDate={mapDayName || normalizeDisplayText(mapName)}
-      />
+      {popupState.isOpen &&
+        popupSession &&
+        isVisible(popupSession, "popup") && (
+          <CellItemsPopup
+            key={popupSession.id}
+            isOpen={true}
+            onClose={() => handleClosePopup(popupSession)}
+            blockName={popupState.blockName}
+            number={popupState.number}
+            items={popupState.items}
+            executeModeItemIds={executeModeItemIdsSet}
+            onAddToVisitList={guardPopup((id: string) =>
+              handleAddToVisitList(id, popupSession),
+            )}
+            onRemoveFromVisitList={guardPopup(handleRemoveFromVisitList)}
+            onBatchAddToVisitList={guardPopup((ids: string[]) =>
+              handleBatchAddToVisitList(ids, popupSession),
+            )}
+            onBatchRemoveFromVisitList={guardPopup(
+              handleBatchRemoveFromVisitList,
+            )}
+            onUpdateItem={onUpdateItem && guardPopup(onUpdateItem)}
+            onUpdateItemPriority={
+              onUpdateItemPriority && guardPopup(onUpdateItemPriority)
+            }
+            onDeleteItem={onDeleteItem && guardPopup(onDeleteItem)}
+            onAddItem={onAddItem && guardPopup(onAddItem)}
+            onEditRequest={onEditRequest && guardPopup(onEditRequest)}
+            eventDate={popupState.eventDate}
+          />
+        )}
       {/* Visit list panel */}
       <MapVisitListPanel
         isOpen={isVisitListOpen}
@@ -1955,20 +2106,24 @@ const MapView: React.FC<MapViewProps> = ({
         getItemCountInHall={getItemCountInHall}
         onReorderExecuteList={onReorderExecuteList}
       />
-      {insertDialogState.item && (
-        <InsertPositionDialog
-          isOpen={insertDialogState.isOpen}
-          addingItem={insertDialogState.item}
-          nearbyVisitItems={insertDialogNearbyItems}
-          allVisitItems={insertDialogAllVisitItems}
-          hasHallDefinition={insertDialogHasHall}
-          onSelect={handleInsertPositionSelect}
-          onCancel={() => {
-            setBatchInsertPendingIds(null);
-            setInsertDialogState({ isOpen: false, item: null });
-          }}
-        />
-      )}
+      {insertDialogState.item &&
+        isVisible(insertDialogState.session, "relay") && (
+          <InsertPositionDialog
+            isOpen={insertDialogState.isOpen}
+            addingItem={insertDialogState.item}
+            nearbyVisitItems={insertDialogNearbyItems}
+            allVisitItems={insertDialogAllVisitItems}
+            hasHallDefinition={insertDialogHasHall}
+            onSelect={handleInsertPositionSelect}
+            onCancel={() => {
+              const session = insertDialogState.session;
+              if (!session || !isCurrent(session, "relay")) return;
+              invalidate(session);
+              setBatchInsertPendingIds(null);
+              setInsertDialogState({ isOpen: false, item: null });
+            }}
+          />
+        )}
     </div>
   );
 };

@@ -75,6 +75,7 @@ type AppMainContentFields = {
   currentMapData: DayMapData | null;
   currentMapExecuteItemIds: string[];
   currentMapTabName: string | null;
+  mapOperationScope: string;
   currentMapTabRotationState: DayMapRotationState;
   currentMapTabViewport: MapViewportState | undefined;
   currentMode: ViewMode;
@@ -281,6 +282,7 @@ export type AppMainContentModel = {
     | "currentMapData"
     | "currentMapExecuteItemIds"
     | "currentMapTabName"
+    | "mapOperationScope"
     | "currentMapTabRotationState"
     | "currentMapTabViewport"
     | "getHallOrderForDate"
@@ -448,6 +450,7 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
       currentMapData,
       currentMapExecuteItemIds,
       currentMapTabName,
+      mapOperationScope,
       currentMapTabRotationState,
       currentMapTabViewport,
       getHallOrderForDate,
@@ -629,6 +632,7 @@ const AppMainContent: React.FC<AppMainContentProps> = ({ model, actions }) => {
         <MapView
           mapData={currentMapData}
           mapName={currentMapTabName}
+          operationScope={mapOperationScope}
           eventDate={activeEventDate}
           items={items}
           executeModeItemIds={currentMapExecuteItemIds}

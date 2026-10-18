@@ -2368,6 +2368,14 @@ const App: React.FC = () => {
               visibleItems,
             },
             map: {
+              mapOperationScope: JSON.stringify([
+                activeEventName,
+                activeEventName
+                  ? application.coordinator.generation(activeEventName)
+                  : 0,
+                normalizeExecutionVisitDay(activeEventDate),
+                currentMapTabName,
+              ]),
               cellSelectionMode,
               currentHallRouteSettings,
               currentHalls,
