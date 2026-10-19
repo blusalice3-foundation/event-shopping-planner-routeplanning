@@ -493,6 +493,15 @@ test("map import can resume after a pending import parser is replaced by a real 
   await expect(retry).toBeEnabled();
   expect(await allStores(page)).toEqual(before);
   await retry.click();
+  const impact = page.getByRole("dialog", {
+    name: "マップ再取り込みの影響を確認",
+    exact: true,
+  });
+  await expect(impact).toBeVisible();
+  expect(await allStores(page)).toEqual(before);
+  await impact
+    .getByRole("button", { name: "確認して保存", exact: true })
+    .click();
   await expect(dialog).toBeHidden();
   const after = await allStores(page);
   expect(after.mapData).not.toEqual(before.mapData);
@@ -507,7 +516,7 @@ test("map import can resume after a pending import parser is replaced by a real 
   expect(reloaded.mapData).toEqual(after.mapData);
   expect(reloaded.eventLists).toEqual(before.eventLists);
   expect(errors).toEqual([]);
-  expect(alerts).toEqual([]);
+  expect(alerts).toEqual(["1件のマップを取り込みました。"]);
   await testInfo.attach("real-worker-parser-switch", {
     body: Buffer.from(
       JSON.stringify({
