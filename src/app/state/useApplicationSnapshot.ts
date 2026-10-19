@@ -321,6 +321,40 @@ export function useApplicationSnapshot(
     (reason: PersistenceWriteStopReason) => void
   >(() => {});
   const confirmationWork = useRef(0);
+  const pendingMutationListeners = useRef(new Map<string, Set<() => void>>());
+  const notifyPendingMutationState = useCallback((id?: string) => {
+    if (!pendingMutationListeners.current.size) return;
+    const notify = (listener: () => void) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("Mutation pending-state subscriber failed.", error);
+      }
+    };
+    if (id !== undefined) {
+      const listeners = pendingMutationListeners.current.get(id);
+      if (listeners) for (const listener of listeners) notify(listener);
+    } else {
+      for (const listeners of pendingMutationListeners.current.values())
+        for (const listener of listeners) notify(listener);
+    }
+  }, []);
+  const subscribePendingMutationState = useCallback(
+    (id: string, listener: () => void): (() => void) => {
+      const listeners = pendingMutationListeners.current.get(id) ?? new Set();
+      listeners.add(listener);
+      pendingMutationListeners.current.set(id, listeners);
+      return () => {
+        listeners.delete(listener);
+        if (
+          !listeners.size &&
+          pendingMutationListeners.current.get(id) === listeners
+        )
+          pendingMutationListeners.current.delete(id);
+      };
+    },
+    [],
+  );
   const [requiresReload, setRequiresReload] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
@@ -416,6 +450,7 @@ export function useApplicationSnapshot(
   const coordinator = useMemo(
     () =>
       createApplicationMutationCoordinator({
+        onPendingStateChanged: notifyPendingMutationState,
         readCurrent: () => rawRef.current,
         readExportCurrent: readAcceptedSnapshot,
         readMutationCurrent: (snapshot, id) =>
@@ -554,7 +589,13 @@ export function useApplicationSnapshot(
           setPendingCount(resolvers.current.size);
         },
       }),
-    [persistence, precedingBatches, readAcceptedSnapshot, releasePending],
+    [
+      persistence,
+      precedingBatches,
+      readAcceptedSnapshot,
+      releasePending,
+      notifyPendingMutationState,
+    ],
   );
   readGuardGenerations.current = coordinator.durableEventGenerations;
   registerItemGuardGenerations(rawRef.current, readGuardGenerations.current());
@@ -1267,6 +1308,7 @@ export function useApplicationSnapshot(
     (token: ConfirmationToken, choiceId: string, value: string) => {
       if (writeStopReason.current) return;
       confirmationWork.current++;
+      notifyPendingMutationState();
       setPendingChoices((count) => count + 1);
       void coordinator
         .choose(token, choiceId, value)
@@ -1276,15 +1318,17 @@ export function useApplicationSnapshot(
         )
         .finally(() => {
           confirmationWork.current--;
+          notifyPendingMutationState();
           setPendingChoices((count) => Math.max(0, count - 1));
         });
     },
-    [coordinator, handleResult, fail],
+    [coordinator, handleResult, fail, notifyPendingMutationState],
   );
   const confirm = useCallback(
     (token: ConfirmationToken) => {
       if (writeStopReason.current) return;
       confirmationWork.current++;
+      notifyPendingMutationState();
       setPendingConfirmations((count) => count + 1);
       void coordinator
         .confirm(token)
@@ -1294,10 +1338,11 @@ export function useApplicationSnapshot(
         )
         .finally(() => {
           confirmationWork.current--;
+          notifyPendingMutationState();
           setPendingConfirmations((count) => Math.max(0, count - 1));
         });
     },
-    [coordinator, handleResult, fail],
+    [coordinator, handleResult, fail, notifyPendingMutationState],
   );
   const cancel = useCallback(
     (token: ConfirmationToken) => {
@@ -1414,6 +1459,7 @@ export function useApplicationSnapshot(
     getWriteStopReason: () => writeStopReason.current,
     cancelPendingMutation,
     getPendingMutationState,
+    subscribePendingMutationState,
     flushDraft,
     flush,
     isPending,

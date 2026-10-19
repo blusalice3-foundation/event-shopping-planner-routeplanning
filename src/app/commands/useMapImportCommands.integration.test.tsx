@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { act, renderHook, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import type { ChangeEvent } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { IDBFactory } from "fake-indexeddb";
@@ -17,6 +23,9 @@ import {
 } from "../../persistence/db/atomicRestoreTransaction";
 import { resetDatabaseConnection } from "../../persistence/db/openDatabase";
 import { DEFAULT_BLOCK_DETECTION_SETTINGS } from "../../types/map";
+import MapImportDialog from "../../components/map/MapImportDialog";
+import type { XlsxExecutionPort } from "../../xlsx/port/XlsxExecutionPort";
+import MapReimportConfirmationDialog from "../../components/map/MapReimportConfirmationDialog";
 
 const EVENT = "地図取込の取消";
 const DAY = "1日目";
@@ -118,7 +127,16 @@ async function connectedImport(withMap: boolean) {
   let nextId = 0;
   const navigate = vi.fn();
   const notify = vi.fn();
-  const hook = renderHook(() => {
+  const xlsxExecutionPort: XlsxExecutionPort = {
+    importWorkbook: vi.fn(),
+    exportWorkbook: vi.fn(),
+  };
+  let latest!: {
+    application: ReturnType<typeof useApplicationSnapshot>;
+    overlay: ReturnType<typeof useAppOverlayController>;
+    commands: ReturnType<typeof useMapImportCommands>;
+  };
+  function Connected() {
     const application = useApplicationSnapshot(port, EVENT, DAY);
     const overlay = useAppOverlayController();
     const commands = useMapImportCommands({
@@ -156,14 +174,48 @@ async function connectedImport(withMap: boolean) {
             result,
             cancel: () => application.cancelPendingMutation(id),
             getState: () => application.getPendingMutationState(id),
+            subscribe: (listener) =>
+              application.subscribePendingMutationState(id, listener),
           };
         },
       },
       navigation: { openEvent: navigate },
       effects: { notify, reportDiagnostic: vi.fn() },
     });
-    return { application, overlay, commands };
-  });
+    latest = { application, overlay, commands };
+    return (
+      <>
+        <MapImportDialog
+          isOpen={overlay.readModel.mapImportDialogOpen}
+          file={overlay.readModel.mapImportPendingFile}
+          eventName={overlay.readModel.mapImportPendingEventName}
+          savedSettings={null}
+          xlsxExecutionPort={xlsxExecutionPort}
+          requestPending={commands.requestPending}
+          canCancel={commands.canCancel}
+          onClose={commands.closeImport}
+          onImport={commands.prepareImport}
+        />
+        <MapReimportConfirmationDialog
+          isOpen={!!overlay.readModel.pendingMapReimport}
+          plan={overlay.readModel.pendingMapReimport?.plan ?? null}
+          requestPending={commands.requestPending}
+          canCancel={commands.canCancel}
+          onCancel={commands.cancelReimport}
+          onConfirm={commands.confirmReimport}
+        />
+      </>
+    );
+  }
+  const view = render(<Connected />);
+  const hook = {
+    ...view,
+    result: {
+      get current() {
+        return latest;
+      },
+    },
+  };
   act(() => {
     for (const [key, value] of Object.entries(saved)) {
       const setters = hook.result.current.application.hydrationSetters;
@@ -294,3 +346,139 @@ it.each([false, true])(
     }
   },
 );
+
+it.each(["initial", "reimport-direct"] as const)(
+  "keeps the %s dialog cancellation consistent through durable planning and commit",
+  async (kind) => {
+    const h = await connectedImport(kind === "reimport-direct");
+    if (kind === "reimport-direct") {
+      await act(async () =>
+        h.result.current.commands.prepareImport(
+          { [MAP]: map },
+          DEFAULT_BLOCK_DETECTION_SETTINGS,
+          {},
+        ),
+      );
+    }
+    const readGate = deferred();
+    const commitGate = deferred();
+    h.control.readGate = readGate;
+    h.commit.mockImplementationOnce(async (...args) => {
+      await commitGate.promise;
+      return commitApplicationSnapshotAtomically(...args);
+    });
+    let operation!: Promise<void>;
+    act(() => {
+      operation =
+        kind === "initial"
+          ? h.result.current.commands.prepareImport(
+              { [MAP]: map },
+              DEFAULT_BLOCK_DETECTION_SETTINGS,
+              {},
+            )
+          : h.result.current.commands.confirmReimport({
+              preserveMaplessHalls: true,
+              skipImpactConfirmation: true,
+            });
+    });
+    await waitFor(() => expect(h.read).toHaveBeenCalled());
+    const cancel = screen.getByRole("button", {
+      name: "キャンセル",
+    });
+    expect(cancel).toBeEnabled();
+    expect(h.result.current.commands.canCancel).toBe(true);
+    h.control.readGate = null;
+    await act(async () => readGate.resolve());
+    if (kind === "initial") {
+      await waitFor(() =>
+        expect(h.result.current.application.confirmations).toHaveLength(1),
+      );
+      act(() =>
+        h.result.current.application.confirm(
+          h.result.current.application.confirmations[0].token,
+        ),
+      );
+    }
+    await waitFor(() => expect(h.commit).toHaveBeenCalledOnce());
+    expect(
+      h.result.current.application.getPendingMutationState("owned-import-1"),
+    ).toMatchObject({ requestPending: true, canCancel: false });
+    expect(h.result.current.commands.canCancel).toBe(false);
+    expect(cancel).toBeDisabled();
+    fireEvent.click(cancel);
+    act(() => {
+      h.result.current.commands.closeImport();
+      h.result.current.commands.cancelReimport();
+    });
+    expect(h.result.current.commands.requestPending).toBe(true);
+    expect(h.result.current.overlay.state.mapImport.kind).toBe(
+      kind === "initial" ? "import" : "reimport",
+    );
+    await act(async () => {
+      commitGate.resolve();
+      await operation;
+    });
+    expect(h.result.current.overlay.state.mapImport.kind).toBe("inactive");
+    expect(h.result.current.commands.requestPending).toBe(false);
+    expect(h.commit).toHaveBeenCalledOnce();
+    expect(h.navigate).toHaveBeenCalledOnce();
+    expect(h.notify).toHaveBeenCalledOnce();
+    expect(
+      (await readApplicationSnapshot()).snapshot.mapData[EVENT][MAP],
+    ).toEqual(h.result.current.application.values.mapData[EVENT][MAP]);
+  },
+);
+
+it("isolates a failed request subscriber while another subscriber and the import still finish once", async () => {
+  const h = await connectedImport(false);
+  const observerError = new Error("subscriber failed");
+  const diagnostic = vi.spyOn(console, "error").mockImplementation(() => {});
+  const failing = vi.fn(() => {
+    throw observerError;
+  });
+  const healthy = vi.fn();
+  const releaseFailed =
+    h.result.current.application.subscribePendingMutationState(
+      "owned-import-1",
+      failing,
+    );
+  const releaseHealthy =
+    h.result.current.application.subscribePendingMutationState(
+      "owned-import-1",
+      healthy,
+    );
+  try {
+    let operation!: Promise<void>;
+    act(() => {
+      operation = h.result.current.commands.prepareImport(
+        { [MAP]: map },
+        DEFAULT_BLOCK_DETECTION_SETTINGS,
+        {},
+      );
+    });
+    await waitFor(() =>
+      expect(h.result.current.application.confirmations).toHaveLength(1),
+    );
+    await act(async () => {
+      h.result.current.application.confirm(
+        h.result.current.application.confirmations[0].token,
+      );
+      await operation;
+    });
+    expect(healthy).toHaveBeenCalledTimes(failing.mock.calls.length);
+    expect(healthy).toHaveBeenCalled();
+    expect(h.commit).toHaveBeenCalledOnce();
+    expect(h.result.current.overlay.state.mapImport.kind).toBe("inactive");
+    expect(h.result.current.application.getWriteStopReason()).toBeUndefined();
+    expect(h.navigate).toHaveBeenCalledOnce();
+    expect(h.notify).toHaveBeenCalledOnce();
+    expect(diagnostic).toHaveBeenCalledWith(
+      "Mutation pending-state subscriber failed.",
+      observerError,
+    );
+  } finally {
+    releaseFailed();
+    releaseHealthy();
+    diagnostic.mockRestore();
+  }
+});

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { summarizePerformanceSamples } from "./performance-summary";
 import {
   sheetSnapshot,
   SHEET_EVENT,
@@ -360,9 +361,6 @@ async function resetAndPrepareProbe(page: Page) {
   }
 }
 
-const percentile = (values: number[], fraction: number) =>
-  [...values].sort((a, b) => a - b)[Math.ceil(values.length * fraction) - 1];
-
 for (const count of [150, 500])
   for (const scenario of ["normal", "collision-title", "duplicates"] as const) {
     test(`${count} ${scenario}: update phases remain separate @item-update-performance`, async ({
@@ -582,14 +580,12 @@ for (const count of [150, 500])
           const values = samples.map(
             (sample) => (sample.timings as Record<string, number>)[name],
           );
-          return [
-            name,
-            {
-              sampleCount: values.length,
-              medianMs: percentile(values, 0.5),
-              p95Ms: percentile(values, 0.95),
-            },
-          ];
+          const {
+            count: sampleCount,
+            medianMs,
+            p95Ms,
+          } = summarizePerformanceSamples(values);
+          return [name, { sampleCount, medianMs, p95Ms }];
         }),
       );
       await testInfo.attach("item-update-phase-timings", {

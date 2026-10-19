@@ -259,7 +259,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
   const {
     currentPhase,
     setCurrentPhase,
-    currentPhaseIndex,
+    currentPhaseIndex: sessionPhaseIndex,
     setCurrentPhaseIndex,
     lastInteractedItemId,
     setLastInteractedItemId,
@@ -585,10 +585,13 @@ const FocusMode: React.FC<FocusModeProps> = ({
     () => visitsByPhase[currentPhase],
     [visitsByPhase, currentPhase],
   );
+  const currentPhaseIndex =
+    formalPhaseVisits.length > 0
+      ? Math.min(sessionPhaseIndex, formalPhaseVisits.length - 1)
+      : sessionPhaseIndex;
   const formalCurrentVisit = useMemo(() => {
     if (formalPhaseVisits.length === 0) return null;
-    const safeIndex = Math.min(currentPhaseIndex, formalPhaseVisits.length - 1);
-    return formalPhaseVisits[safeIndex] || null;
+    return formalPhaseVisits[currentPhaseIndex] || null;
   }, [formalPhaseVisits, currentPhaseIndex]);
   const formalCurrentVisitDisplayItems = useMemo(() => {
     if (!formalCurrentVisit) return [];
@@ -645,6 +648,23 @@ const FocusMode: React.FC<FocusModeProps> = ({
     isResumeInitResolved &&
     !isResumeTransitioning &&
     !resumeChoiceDialog?.isOpen;
+  useEffect(() => {
+    if (
+      formalTransitionReady &&
+      !isCompleted &&
+      formalPhaseVisits.length > 0 &&
+      sessionPhaseIndex !== currentPhaseIndex
+    ) {
+      setCurrentPhaseIndex(currentPhaseIndex);
+    }
+  }, [
+    formalTransitionReady,
+    isCompleted,
+    formalPhaseVisits.length,
+    sessionPhaseIndex,
+    currentPhaseIndex,
+    setCurrentPhaseIndex,
+  ]);
   const closeNavigatorEditableSurfaces = useCallback(() => {
     clearAutoAdvanceTimer();
     activeLimitedBulkFlowTokenRef.current = null;

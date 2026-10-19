@@ -389,8 +389,9 @@ export const ViewportContent = ({
         if (cache.size > 4096) cache.delete(cache.keys().next().value!);
       }
     };
-    if (heightRef.current === undefined || typeof ResizeObserver !== "function")
-      measure();
+    // ResizeObserver reports the committed border box before paint. Reading a new
+    // row synchronously here forces layout during a grouped drop's commit.
+    if (typeof ResizeObserver !== "function") measure();
     const observer =
       typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
     observer?.observe(root);

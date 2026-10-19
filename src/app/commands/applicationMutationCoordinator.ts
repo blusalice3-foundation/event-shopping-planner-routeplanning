@@ -144,6 +144,7 @@ export interface MutationCoordinatorPorts {
   apply(snapshot: PersistenceSnapshot, invalidatedEvents: string[]): void;
   onApplyFailure?(error: PersistenceWriteStopReason): void;
   onExpired?(operationIds: string[]): void;
+  onPendingStateChanged?(operationId: string): void;
 }
 function clearedConfirmation(
   previous: MutationConfirmation,
@@ -197,13 +198,23 @@ export function createApplicationMutationCoordinator(
   let tail: Promise<unknown> = Promise.resolve();
   let sequence = 0;
   let stopped: PersistenceWriteStopReason | undefined;
+  function notifyPendingStateChanged(id: string): void {
+    try {
+      ports.onPendingStateChanged?.(id);
+    } catch (error) {
+      // Read-model observers cannot change a persistence result or skip apply.
+      console.error("Mutation pending-state notification failed.", error);
+    }
+  }
   function stopWrites(reason: PersistenceWriteStopReason) {
     if (stopped) return;
     stopped = reason;
     try {
       ports.onApplyFailure?.(reason);
     } finally {
+      const ids = [...pending.keys()];
       pending.clear();
+      for (const id of ids) notifyPendingStateChanged(id);
     }
   }
   const generations = new Map<string, number>();
@@ -224,6 +235,20 @@ export function createApplicationMutationCoordinator(
       committing?: boolean;
     }
   >();
+  function deletePending(id: string): boolean {
+    const removed = pending.delete(id);
+    if (removed) notifyPendingStateChanged(id);
+    return removed;
+  }
+  function setCommitting(
+    operation: NonNullable<ReturnType<typeof pending.get>>,
+    committing: boolean,
+  ): void {
+    if (operation.committing === committing) return;
+    operation.committing = committing;
+    if (pending.get(operation.intent.id) === operation)
+      notifyPendingStateChanged(operation.intent.id);
+  }
   const completed = new Set<string>();
   let openItemBatch: {
     ids: string[];
@@ -260,7 +285,7 @@ export function createApplicationMutationCoordinator(
         ([, value]) => value.generation !== generation(value.intent.events),
       )
       .map(([operationId]) => operationId);
-    for (const operationId of expired) pending.delete(operationId);
+    for (const operationId of expired) deletePending(operationId);
     if (expired.length) ports.onExpired?.(expired);
   }
   async function execute(
@@ -274,7 +299,7 @@ export function createApplicationMutationCoordinator(
       !operation ||
       operation.generation !== generation(operation.intent.events)
     ) {
-      pending.delete(id);
+      deletePending(id);
       return { status: "expired" };
     }
     if (confirmation && operation.token !== confirmation)
@@ -301,7 +326,7 @@ export function createApplicationMutationCoordinator(
       !confirmation &&
       !ports.hasPendingAcceptedChanges?.(id)
     ) {
-      operation.committing = true;
+      setCommitting(operation, true);
       try {
         const result = await ports.commitDayMutation(
           operation.intent.dayMutation,
@@ -323,7 +348,7 @@ export function createApplicationMutationCoordinator(
           );
           durableGenerations = { ...nextGenerations };
           completed.add(id);
-          pending.delete(id);
+          deletePending(id);
           invalidate(invalidated);
           try {
             ports.apply(result.read.snapshot, invalidated);
@@ -336,7 +361,7 @@ export function createApplicationMutationCoordinator(
           return { status: "committed", snapshot: result.read.snapshot };
         }
       } finally {
-        operation.committing = false;
+        setCommitting(operation, false);
       }
       const afterCommand = validity();
       if (afterCommand) return afterCommand;
@@ -409,7 +434,7 @@ export function createApplicationMutationCoordinator(
         if (error instanceof MutationTargetMissingError) {
           // The other tab's removal is durable. End stale sessions and adopt
           // that snapshot without writing any part of this proposed edit.
-          pending.delete(id);
+          deletePending(id);
           invalidate(operation.intent.events);
           expirePending();
           ports.apply(
@@ -437,6 +462,7 @@ export function createApplicationMutationCoordinator(
           };
           operation.token = token;
           operation.confirmation = review;
+          notifyPendingStateChanged(id);
           return {
             status: "confirmation-required",
             token,
@@ -445,7 +471,7 @@ export function createApplicationMutationCoordinator(
         }
       }
       if (plan.skipCommit) {
-        pending.delete(id);
+        deletePending(id);
         return { status: "expired" };
       }
       if (ports.hasPendingAcceptedChanges?.(id))
@@ -453,7 +479,7 @@ export function createApplicationMutationCoordinator(
       const beforeCommit = validity();
       if (beforeCommit) return beforeCommit;
       try {
-        operation.committing = true;
+        setCommitting(operation, true);
         if (scopedOperation) {
           const committed = await ports.commitDaySnapshot!(
             plan.snapshot,
@@ -469,7 +495,7 @@ export function createApplicationMutationCoordinator(
             plan.invalidatedEvents,
           );
       } catch (error) {
-        operation.committing = false;
+        setCommitting(operation, false);
         if (isPersistenceWriteStopReason(error)) {
           stopWrites(error);
           throw error;
@@ -497,7 +523,7 @@ export function createApplicationMutationCoordinator(
         snapshot: plan.snapshot,
       };
       completed.add(id);
-      pending.delete(id);
+      deletePending(id);
       try {
         ports.apply(plan.snapshot, plan.invalidatedEvents ?? []);
       } catch (error) {
@@ -529,7 +555,7 @@ export function createApplicationMutationCoordinator(
           batch.resolvers.get(id)?.resolve(await execute(id));
         return;
       }
-      for (const operation of operations) operation.committing = true;
+      for (const operation of operations) setCommitting(operation, true);
       const result = await ports.commitItemContentEdits!(
         operations.flatMap(
           (operation) => operation.intent.itemContentEdits ?? [],
@@ -538,7 +564,7 @@ export function createApplicationMutationCoordinator(
         durableGenerations,
       );
       if (result.status === "review-required") {
-        for (const operation of operations) operation.committing = false;
+        for (const operation of operations) setCommitting(operation, false);
         for (const id of ids)
           batch.resolvers.get(id)?.resolve(await execute(id));
         return;
@@ -546,7 +572,7 @@ export function createApplicationMutationCoordinator(
       durableGenerations = { ...result.read.eventGenerations };
       for (const id of ids) {
         completed.add(id);
-        pending.delete(id);
+        deletePending(id);
       }
       try {
         ports.apply(result.read.snapshot, []);
@@ -563,7 +589,7 @@ export function createApplicationMutationCoordinator(
       if (isPersistenceWriteStopReason(error)) stopWrites(error);
       for (const id of ids) {
         const operation = pending.get(id);
-        if (operation) operation.committing = false;
+        if (operation) setCommitting(operation, false);
         batch.resolvers.get(id)?.reject(stopped ?? error);
       }
     } finally {
@@ -607,6 +633,7 @@ export function createApplicationMutationCoordinator(
           choices: {},
           generation: generation(intent.events),
         });
+      notifyPendingStateChanged(intent.id);
       if (
         intent.itemContentEdits &&
         ports.commitItemContentEdits &&
@@ -644,7 +671,7 @@ export function createApplicationMutationCoordinator(
     },
     discard(operationId: string): boolean {
       if (pending.get(operationId)?.committing) return false;
-      return pending.delete(operationId);
+      return deletePending(operationId);
     },
     choose(
       token: ConfirmationToken,
@@ -685,7 +712,7 @@ export function createApplicationMutationCoordinator(
     cancel(token: ConfirmationToken): boolean {
       const operation = pending.get(token.operationId);
       if (operation?.token !== token || operation.committing) return false;
-      return pending.delete(token.operationId);
+      return deletePending(token.operationId);
     },
     initializeEventGenerations(read: ApplicationSnapshotRead): void {
       durableGenerations = { ...read.eventGenerations };

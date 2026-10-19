@@ -326,6 +326,58 @@ describe("retained viewport rendering", () => {
     expect(input).toHaveValue("入力中の編集");
   });
 
+  it("measures and retains activated row heights without ResizeObserver", () => {
+    vi.stubGlobal("ResizeObserver", undefined);
+    visibleKeys.add("fallback-height-cache");
+    const offsetHeight = vi
+      .spyOn(HTMLElement.prototype, "offsetHeight", "get")
+      .mockReturnValue(184);
+    const view = render(
+      <div data-viewport-list>
+        <ViewportContent
+          rowKey="fallback-height-cache"
+          defer
+          placeholder={<span>準備中</span>}
+          render={() => <input aria-label="高さを保持する入力" />}
+        />
+      </div>,
+    );
+    const root = view.container.querySelector<HTMLElement>(
+      "[data-viewport-row-key]",
+    )!;
+    const intersect = (isIntersecting: boolean) =>
+      act(() =>
+        callback(
+          [
+            {
+              target: root,
+              isIntersecting,
+              boundingClientRect: new DOMRect(0, 0, 400, 184),
+              intersectionRect: isIntersecting
+                ? new DOMRect(0, 0, 400, 184)
+                : new DOMRect(),
+              intersectionRatio: Number(isIntersecting),
+              rootBounds: null,
+              time: 0,
+            },
+          ],
+          {} as IntersectionObserver,
+        ),
+      );
+
+    expect(offsetHeight).toHaveBeenCalledTimes(1);
+    intersect(false);
+    expect(root).toHaveAttribute("data-layout-height", "184px");
+    expect(view.queryByRole("textbox")).not.toBeInTheDocument();
+
+    offsetHeight.mockReturnValue(196);
+    intersect(true);
+    expect(view.getByRole("textbox")).toBeInTheDocument();
+    expect(offsetHeight).toHaveBeenCalledTimes(2);
+    intersect(false);
+    expect(root).toHaveAttribute("data-layout-height", "196px");
+  });
+
   it("uses reported heights without forced reads and reuses them on activation", () => {
     const callbacks = new Map<Element, ResizeObserverCallback>();
     vi.stubGlobal(
@@ -342,6 +394,7 @@ describe("retained viewport rendering", () => {
       },
     );
     visibleKeys.add("reported-height-cache");
+    const offsetHeight = vi.spyOn(HTMLElement.prototype, "offsetHeight", "get");
     const view = render(
       <div data-viewport-list>
         <ViewportContent
@@ -356,6 +409,7 @@ describe("retained viewport rendering", () => {
     const root = view.container.querySelector<HTMLElement>(
       "[data-viewport-row-key]",
     )!;
+    expect(offsetHeight).not.toHaveBeenCalled();
     const rectangles = vi.mocked(HTMLElement.prototype.getBoundingClientRect);
     const resize = (borderBoxSize: ResizeObserverSize[]) =>
       act(() =>

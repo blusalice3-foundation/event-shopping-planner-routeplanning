@@ -5789,3 +5789,59 @@ for (const kind of ["add", "phase"] as const) {
       });
   });
 }
+
+test("OP09: removing the third postponed visit keeps the remaining position, previous action and resume consistent", async ({
+  page,
+}) => {
+  const source = backup([
+    item("1"),
+    ...["2", "3", "4"].map((id) => ({
+      ...item(id),
+      purchaseStatus: "Postpone",
+    })),
+  ]);
+  source.data.dayModes[eventName]["1日目"] = "execute";
+  await restore(page, source);
+  await op09Postponed(page);
+  await page
+    .getByRole("button", { name: "次の訪問先へ移動", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "次の訪問先へ移動", exact: true })
+    .click();
+  await expect(page.locator('[data-item-id="4"]')).toBeVisible();
+  await expect(page.locator("#focus-mode-footer")).toContainText("後回し: 3/3");
+
+  await op09Delete(page, "4");
+  await expect(page.locator('[data-item-id="3"]')).toBeVisible();
+  await expect(page.locator("#focus-mode-footer")).toContainText("後回し: 2/2");
+  await expect
+    .poll(() => stored(page, "executeModeItems"))
+    .toMatchObject({
+      [eventName]: { "1日目": ["1", "2", "3"] },
+    });
+  expect((await stored(page, "eventLists"))[eventName]).toEqual(
+    source.data.eventLists[eventName].slice(0, 3),
+  );
+
+  await page.getByTitle("実行モード", { exact: true }).click();
+  await page.getByTitle("集中モード", { exact: true }).click();
+  await expect(page.locator('[data-item-id="3"]')).toBeVisible();
+  await expect(page.locator("#focus-mode-footer")).toContainText("後回し: 2/2");
+  await page
+    .getByRole("button", { name: "前の訪問先へ移動", exact: true })
+    .click();
+  await expect(page.locator('[data-item-id="2"]')).toBeVisible();
+  await expect(page.locator("#focus-mode-footer")).toContainText("後回し: 1/2");
+
+  await page.reload();
+  await expect(
+    page.locator('input[aria-label="バックアップファイルを選択"]'),
+  ).toBeAttached();
+  expect((await stored(page, "eventLists"))[eventName]).toEqual(
+    source.data.eventLists[eventName].slice(0, 3),
+  );
+  expect(await stored(page, "executeModeItems")).toMatchObject({
+    [eventName]: { "1日目": ["1", "2", "3"] },
+  });
+});

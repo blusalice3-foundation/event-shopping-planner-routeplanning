@@ -476,6 +476,7 @@ it.each([false, true])(
         result: resultPromise,
         cancel,
         getState: () => ({ requestPending: true, canCancel: true }),
+        subscribe: () => () => {},
       };
     });
     const hook = renderHook(() => useMapImportCommands(h.ports));
@@ -529,6 +530,7 @@ it("rechecks cancelability at the click and refuses new input and duplicate impo
     result: pending,
     cancel,
     getState: () => ({ requestPending: true, canCancel }),
+    subscribe: () => () => {},
   }));
   h.ports.settings.startImportMutation = start;
   const hook = renderHook(() => useMapImportCommands(h.ports));
@@ -571,3 +573,69 @@ it("rechecks cancelability at the click and refuses new input and duplicate impo
   expect(h.spies.openEvent).toHaveBeenCalledOnce();
   expect(hook.result.current.requestPending).toBe(false);
 });
+
+it.each(["cancel", "complete", "unmount"] as const)(
+  "releases the owned request subscription on %s and ignores its late notifications",
+  async (ending) => {
+    const h = createHarness();
+    let notify!: () => void;
+    let resolve!: (snapshot: PersistenceSnapshot) => void;
+    let reject!: (error: Error) => void;
+    let canCancel = true;
+    const release = vi.fn();
+    const pending = new Promise<PersistenceSnapshot>((yes, no) => {
+      resolve = yes;
+      reject = no;
+    });
+    const subscribe = vi.fn((listener: () => void) => {
+      notify = listener;
+      return release;
+    });
+    h.ports.settings.startImportMutation = vi.fn(() => ({
+      result: pending,
+      cancel: () => {
+        reject(Object.assign(new Error("取消"), { name: "MutationCancelled" }));
+        return true;
+      },
+      getState: () => ({ requestPending: true, canCancel }),
+      subscribe,
+    }));
+    const hook = renderHook(() => useMapImportCommands(h.ports));
+    let operation!: Promise<void>;
+    act(() => {
+      operation = hook.result.current.prepareImport(
+        { [DAY]: dayMap("A") },
+        settings,
+        {},
+      );
+    });
+    expect(subscribe).toHaveBeenCalledOnce();
+    canCancel = false;
+    act(() => notify());
+    expect(hook.result.current.canCancel).toBe(false);
+    canCancel = true;
+    act(() => notify());
+    expect(hook.result.current.canCancel).toBe(true);
+    if (ending === "cancel") {
+      act(() => hook.result.current.closeImport());
+      const fileB = new File(["B"], "B.xlsx");
+      act(() => hook.result.current.selectCapturedFile(fileB, EVENT));
+      expect(h.stores.pendingFile).toBe(fileB);
+      await act(async () => operation);
+      act(() => notify());
+      expect(hook.result.current.requestPending).toBe(false);
+      expect(h.stores.pendingFile).toBe(fileB);
+      expect(h.spies.notify).not.toHaveBeenCalled();
+    } else {
+      if (ending === "unmount") hook.unmount();
+      await act(async () => {
+        resolve(emptyApplicationSnapshot());
+        await operation;
+      });
+      act(() => notify());
+      if (ending === "complete")
+        expect(hook.result.current.requestPending).toBe(false);
+    }
+    expect(release).toHaveBeenCalledOnce();
+  },
+);

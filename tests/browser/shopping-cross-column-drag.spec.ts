@@ -1,4 +1,5 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { summarizePerformanceSamples } from "./performance-summary";
 
 test.use({
   video: "off",
@@ -345,21 +346,38 @@ async function hover(
       }
       await new Promise(requestAnimationFrame);
       await new Promise((resolve) => setTimeout(resolve, 0));
+      // Keep the existing response interval separate from the guide audit reads.
+      const ms = performance.now() - began;
       return {
-        ms: performance.now() - began,
+        ms,
         viewportScroll: { before: scrollBefore, after: window.scrollY },
         status: root.querySelector<HTMLElement>("[data-shopping-drag-status]")
           ?.dataset.shoppingDragStatus,
         text: root.querySelector("[data-shopping-drag-status]")?.textContent,
         guides: Array.from(
           root.querySelectorAll<HTMLElement>("[data-shopping-drag-guide]"),
-        ).map((line) => ({
-          kind: line.dataset.shoppingDragGuide,
-          edge: line.dataset.shoppingDragBoundary,
-          owner:
-            line.parentElement?.dataset.itemId ??
-            line.parentElement?.dataset.rowKey,
-        })),
+        ).map((line) => {
+          const owner = line.parentElement!;
+          const ownerRect = owner.getBoundingClientRect();
+          const lineRect = line.getBoundingClientRect();
+          const rowKey = owner.dataset.rowKey ?? owner.dataset.viewportRowKey;
+          const identity =
+            owner.dataset.itemId ??
+            (rowKey?.startsWith("item:")
+              ? (JSON.parse(rowKey.slice(5)) as string)
+              : rowKey);
+          return {
+            kind: line.dataset.shoppingDragGuide,
+            edge: line.dataset.shoppingDragBoundary,
+            owner: identity,
+            offsetPx:
+              line.dataset.shoppingDragBoundary === "before"
+                ? Math.abs(lineRect.top - ownerRect.top)
+                : Math.abs(lineRect.bottom - ownerRect.bottom),
+            ownerRect: { top: ownerRect.top, bottom: ownerRect.bottom },
+            guideRect: { top: lineRect.top, bottom: lineRect.bottom },
+          };
+        }),
         header: !!header,
       };
     },
@@ -1647,7 +1665,9 @@ for (const input of ["native", "touch"] as const)
       await start(page, input, "x");
       const result = await hover(page, input, "c", "after", false);
       expect(result.status).toBe("accepted");
-      expect(result.guides).toEqual([
+      expect(
+        result.guides.map(({ kind, edge, owner }) => ({ kind, edge, owner })),
+      ).toEqual([
         { kind: "merge", edge: "after", owner: compatible ? "a2" : "a1" },
       ]);
       await finish(page, input, true);
@@ -2040,14 +2060,10 @@ async function probePositiveControl(page: Page) {
   await renderCounts(page, true);
   return response;
 }
-const summary = (values: number[]) => {
-  const sorted = [...values].sort((a, b) => a - b);
-  return {
-    samples: values,
-    medianMs: sorted[Math.ceil(sorted.length * 0.5) - 1],
-    p95Ms: sorted[Math.ceil(sorted.length * 0.95) - 1],
-  };
-};
+const summary = (values: number[]) => ({
+  samples: values,
+  ...summarizePerformanceSamples(values),
+});
 async function attach(testInfo: TestInfo, name: string, data: unknown) {
   await testInfo.attach(name, {
     body: JSON.stringify(data, null, 2),
@@ -2237,7 +2253,27 @@ for (const count of [150, 500])
             await new Promise(requestAnimationFrame);
             await new Promise((resolve) => setTimeout(resolve, 0));
           });
-          await hover(page, input, scenario.target, "before", grouped);
+          const initialHover = await hover(
+            page,
+            input,
+            scenario.target,
+            "before",
+            grouped,
+          );
+          if (scenario.name === "boundary-switch")
+            expect(
+              initialHover.guides.map(({ kind, edge, owner }) => ({
+                kind,
+                edge,
+                owner,
+              })),
+            ).toEqual([
+              {
+                kind: "insert",
+                edge: "before",
+                owner: grouped ? 'group:"A-01a"' : "a1",
+              },
+            ]);
           await page.evaluate(async () => {
             await new Promise(requestAnimationFrame);
             await new Promise(requestAnimationFrame);
@@ -2246,6 +2282,12 @@ for (const count of [150, 500])
           const beforeIO = await physicalIO();
           const samples: number[] = [];
           const guideSamples: unknown[] = [];
+          const boundarySwitches: Array<{
+            sample: number;
+            from: string;
+            to: string;
+          }> = [];
+          let previousBoundary = initialHover.guides[0]?.edge;
           for (let i = 0; i < 20; i++) {
             if (scenario.name === "rejected") {
               const accepted = await hover(
@@ -2260,6 +2302,12 @@ for (const count of [150, 500])
                 accepted.guides.some((line) => line.kind === "insert"),
               ).toBe(true);
             }
+            // The setup is before, so the first alternating sample must switch to after.
+            const expectedEdge =
+              scenario.name === "rejected" ||
+              (scenario.alternating && i % 2 === 0)
+                ? "after"
+                : "before";
             const response =
               scenario.name === "auto-scroll"
                 ? await autoScroll(page, input)
@@ -2267,14 +2315,84 @@ for (const count of [150, 500])
                     page,
                     input,
                     scenario.target,
-                    scenario.name === "rejected" ||
-                      (scenario.alternating && i % 2)
-                      ? "after"
-                      : "before",
+                    expectedEdge,
                     grouped,
                   );
             samples.push(response.ms);
-            guideSamples.push(response);
+            const expectedGuides: Array<{
+              kind: string;
+              edge: string;
+              owner: string;
+            }> = [];
+            if (
+              scenario.name === "same-boundary" ||
+              scenario.name === "boundary-switch" ||
+              scenario.name === "mixed"
+            )
+              expectedGuides.push({
+                kind: "insert",
+                edge: expectedEdge,
+                owner: grouped
+                  ? 'group:"A-01a"'
+                  : expectedEdge === "before"
+                    ? "a1"
+                    : "a2",
+              });
+            if (
+              scenario.name === "multiple-merges" ||
+              scenario.name === "mixed" ||
+              scenario.name === "offscreen-merge" ||
+              scenario.name === "auto-scroll"
+            ) {
+              expectedGuides.push({
+                kind: "merge",
+                edge: "after",
+                owner: grouped ? 'group:"A-01a"' : "a2",
+              });
+              if (scenario.name !== "offscreen-merge")
+                expectedGuides.push({
+                  kind: "merge",
+                  edge: "after",
+                  owner: grouped ? 'group:"A-02a"' : "b1",
+                });
+              if (
+                scenario.name === "offscreen-merge" ||
+                scenario.name === "auto-scroll"
+              )
+                expectedGuides.push({
+                  kind: "merge",
+                  edge: "after",
+                  owner: grouped ? 'group:"B-999a"' : "offscreen",
+                });
+            }
+            const identity = (line: {
+              kind?: string;
+              edge?: string;
+              owner?: string;
+            }) => JSON.stringify([line.kind, line.edge, line.owner]);
+            expect(
+              response.guides.map(identity).sort(),
+              `${scenario.name} sample ${i} exact boundaries`,
+            ).toEqual(expectedGuides.map(identity).sort());
+            expect(
+              response.guides.every(
+                (line) => Number.isFinite(line.offsetPx) && line.offsetPx <= 1,
+              ),
+              `${scenario.name} sample ${i} rectangle alignment`,
+            ).toBe(true);
+            if (scenario.name === "boundary-switch") {
+              const observedBoundary = response.guides[0].edge!;
+              expect(previousBoundary, `sample ${i} previous boundary`).toBe(
+                expectedEdge === "after" ? "before" : "after",
+              );
+              boundarySwitches.push({
+                sample: i,
+                from: previousBoundary!,
+                to: observedBoundary,
+              });
+              previousBoundary = observedBoundary;
+            }
+            guideSamples.push({ ...response, expectedGuides });
             if ("viewportScroll" in response)
               expect(response.viewportScroll.after, scenario.name).toBe(
                 response.viewportScroll.before,
@@ -2318,6 +2436,8 @@ for (const count of [150, 500])
               }
             }
           }
+          if (scenario.name === "boundary-switch")
+            expect(boundarySwitches).toHaveLength(20);
           const render = await renderCounts(page);
           expect(
             render.known.filter((key) => key.startsWith("item:")).length,
@@ -2347,6 +2467,9 @@ for (const count of [150, 500])
             ...render,
             mountedBefore: beforeRender.mounted,
             guideSamples,
+            ...(scenario.name === "boundary-switch"
+              ? { boundarySwitches }
+              : {}),
             io: { before: beforeIO, after: afterIO, delta: ioDelta },
           };
           records[scenario.name] = summary(samples);

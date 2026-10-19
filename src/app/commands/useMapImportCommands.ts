@@ -7,7 +7,7 @@ import {
   normalizeMapDay,
 } from "../../features/consistency/domain/context";
 import { planMapReimport } from "../../features/consistency/domain/mapReimport";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommittedStateApplyError,
   type MutationIntent,
@@ -73,6 +73,7 @@ export interface MapImportMutationHandle {
   readonly result: Promise<PersistenceSnapshot>;
   cancel(): boolean;
   getState(): MapImportMutationState;
+  subscribe(listener: () => void): () => void;
 }
 
 export interface MapImportSettingsPort {
@@ -181,8 +182,18 @@ export const useMapImportCommands = ({
     request: MapImportMutationHandle | null;
     pending: boolean;
     stopped: boolean;
+    release: (() => void) | null;
   };
   const ownerRef = useRef<Owner | null>(null);
+  useEffect(
+    () => () => {
+      const owner = ownerRef.current;
+      owner?.release?.();
+      if (owner) owner.release = null;
+      ownerRef.current = null;
+    },
+    [],
+  );
   const liveImportSession = useRef(state.importSessionId);
   liveImportSession.current = state.importSessionId;
   const ensureOwner = useCallback(() => {
@@ -192,6 +203,7 @@ export const useMapImportCommands = ({
         request: null,
         pending: false,
         stopped: false,
+        release: null,
       };
     return ownerRef.current;
   }, []);
@@ -229,6 +241,7 @@ export const useMapImportCommands = ({
         request: null,
         pending: false,
         stopped: false,
+        release: null,
       };
       openImport(file, eventName);
     },
@@ -286,6 +299,13 @@ export const useMapImportCommands = ({
           };
           if (startImportMutation) {
             owner.request = startImportMutation(intent);
+            owner.release = owner.request.subscribe(() => {
+              if (
+                isCurrentOwner(owner) &&
+                liveImportSession.current === sessionId
+              )
+                refreshRequestState((value) => value + 1);
+            });
             await owner.request.result;
           } else await requestMutation!(intent);
           committed = true;
@@ -353,6 +373,8 @@ export const useMapImportCommands = ({
             : "マップを保存できませんでした。",
         );
       } finally {
+        owner.release?.();
+        owner.release = null;
         if (isCurrentOwner(owner)) {
           owner.pending = false;
           owner.request = null;
@@ -536,6 +558,8 @@ export const useMapImportCommands = ({
       if (!owner.request?.getState().canCancel || !owner.request.cancel())
         return false;
     }
+    owner?.release?.();
+    if (owner) owner.release = null;
     ownerRef.current = null;
     refreshRequestState((value) => value + 1);
     return true;

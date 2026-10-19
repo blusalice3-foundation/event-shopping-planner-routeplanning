@@ -1052,3 +1052,166 @@ it.each(["day fast path", "day snapshot", "items batch"] as const)(
     expect(durable).toEqual(saved);
   },
 );
+
+it.each(["snapshot", "day-command", "day-snapshot", "item-batch"] as const)(
+  "publishes the owned %s request state before persistence starts and when it ends",
+  async (route) => {
+    const app = setup();
+    (app.read().eventLists.event[0] as Record<string, unknown>).eventDate =
+      "1日目";
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const read = async (): Promise<ApplicationSnapshotRead> => ({
+      snapshot: structuredClone(app.read()),
+      expectedRoots: {},
+      consistencyMissing: false,
+      eventGenerations: { event: 0 },
+    });
+    const states: Array<{
+      id: string;
+      requestPending: boolean;
+      canCancel: boolean;
+      confirmationPending: boolean;
+    }> = [];
+    const commit = vi.fn(async () => {
+      expect(states.at(-1)).toMatchObject({
+        id: "owned",
+        requestPending: true,
+        canCancel: false,
+      });
+      await gate;
+    });
+    const coordinator = createApplicationMutationCoordinator({
+      readCurrent: app.read,
+      drain: async () => {},
+      readDurable: read,
+      ...(route === "day-command"
+        ? {
+            commitDayMutation: async () => {
+              await commit();
+              return { status: "committed" as const, read: await read() };
+            },
+          }
+        : {}),
+      ...(route === "day-snapshot"
+        ? {
+            readDayDurable: read,
+            commitDaySnapshot: async () => {
+              await commit();
+              return read();
+            },
+          }
+        : {}),
+      ...(route === "item-batch"
+        ? {
+            commitItemContentEdits: async () => {
+              await commit();
+              return { status: "committed" as const, read: await read() };
+            },
+          }
+        : {}),
+      commit,
+      apply: vi.fn(),
+      onPendingStateChanged: (id) =>
+        states.push({ id, ...coordinator.getPendingState(id) }),
+    });
+    const result = coordinator.request({
+      id: "owned",
+      events: ["event"],
+      plan: (snapshot) => ({ snapshot }),
+      ...(["day-command", "day-snapshot"].includes(route)
+        ? {
+            dayMutation: {
+              kind: "mode" as const,
+              eventName: "event",
+              day: "1日目",
+            },
+          }
+        : {}),
+      ...(route === "item-batch" ? { itemContentEdits: [] } : {}),
+    });
+    await vi.waitFor(() => expect(commit).toHaveBeenCalledOnce());
+    expect(coordinator.discard("owned")).toBe(false);
+    release();
+    expect((await result).status).toBe("committed");
+    expect(states).toEqual([
+      {
+        id: "owned",
+        requestPending: true,
+        canCancel: true,
+        confirmationPending: false,
+      },
+      {
+        id: "owned",
+        requestPending: true,
+        canCancel: false,
+        confirmationPending: false,
+      },
+      {
+        id: "owned",
+        requestPending: false,
+        canCancel: false,
+        confirmationPending: false,
+      },
+    ]);
+  },
+);
+
+it.each([false, true])(
+  "isolates pending-state observer failures from the committed apply result (apply fails=%s)",
+  async (applyFails) => {
+    const app = setup();
+    const observerError = new Error("observer failed");
+    const applyError = new Error("apply failed");
+    const diagnostic = vi.spyOn(console, "error").mockImplementation(() => {});
+    const commit = vi.fn(async () => {});
+    const apply = vi.fn(() => {
+      if (applyFails) throw applyError;
+    });
+    const stopped = vi.fn();
+    const observer = vi.fn(() => {
+      throw observerError;
+    });
+    try {
+      const coordinator = createApplicationMutationCoordinator({
+        readCurrent: app.read,
+        drain: async () => {},
+        readDurable: app.readDurable,
+        commit,
+        apply,
+        onApplyFailure: stopped,
+        onPendingStateChanged: observer,
+      });
+      const result = coordinator.request({
+        id: "owned",
+        events: ["event"],
+        plan: (snapshot) => ({ snapshot }),
+      });
+      if (applyFails) {
+        await expect(result).rejects.toMatchObject({
+          name: "CommittedStateApplyError",
+          cause: applyError,
+        });
+        expect(coordinator.getWriteStopReason()).toBeInstanceOf(
+          CommittedStateApplyError,
+        );
+        expect(stopped).toHaveBeenCalledOnce();
+      } else {
+        expect((await result).status).toBe("committed");
+        expect(coordinator.getWriteStopReason()).toBeUndefined();
+        expect(stopped).not.toHaveBeenCalled();
+      }
+      expect(commit).toHaveBeenCalledOnce();
+      expect(apply).toHaveBeenCalledOnce();
+      expect(observer).toHaveBeenCalledTimes(3);
+      expect(diagnostic).toHaveBeenCalledWith(
+        "Mutation pending-state notification failed.",
+        observerError,
+      );
+    } finally {
+      diagnostic.mockRestore();
+    }
+  },
+);

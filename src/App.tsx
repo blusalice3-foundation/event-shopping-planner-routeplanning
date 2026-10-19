@@ -1290,6 +1290,8 @@ const App: React.FC = () => {
           result,
           cancel: () => application.cancelPendingMutation(id),
           getState: () => application.getPendingMutationState(id),
+          subscribe: (listener) =>
+            application.subscribePendingMutationState(id, listener),
         };
       },
       requestMutation: application.request,

@@ -72,6 +72,44 @@ describe("visitProjection", () => {
     ).toEqual([["plain", "padded"]]);
   });
 
+  it.each<Partial<ShoppingItem>>([
+    { eventDate: "2日目" },
+    { block: "B" },
+    { number: "02a" },
+    { priorityLevel: "priority" },
+  ])("updates a visit identity changed in place: %j", (change) => {
+    const changed = item("same-id");
+    const originalKey = buildExecutionVisitProjectionKey(changed);
+    Object.assign(changed, change);
+
+    const fresh = item("same-id", change);
+    expect(buildExecutionVisitProjectionKey(changed)).toBe(
+      buildExecutionVisitProjectionKey(fresh),
+    );
+    expect(buildExecutionVisitProjectionKey(changed)).not.toBe(originalKey);
+    expect(
+      projectItemsToExecutionVisits([item("original"), changed]),
+    ).toHaveLength(2);
+  });
+
+  it("keeps the visit identity across content edits and normalized aliases", () => {
+    const changed = item("changed");
+    const originalKey = buildExecutionVisitProjectionKey(changed);
+    Object.assign(changed, {
+      eventDate: " 1日目\u3000",
+      block: "Ａ",
+      number: "０１ａ２",
+      purchaseStatus: "Purchased",
+      quantity: 3,
+      remarks: "ユーザー登録後のメモ",
+    });
+
+    expect(buildExecutionVisitProjectionKey(changed)).toBe(originalKey);
+    expect(
+      projectItemsToExecutionVisits([item("original"), changed]),
+    ).toHaveLength(1);
+  });
+
   it("retains unknown IDs instead of dropping persisted data", () => {
     const a1 = item("a1");
     const a2 = item("a2", { number: "01a2" });

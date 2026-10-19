@@ -31,8 +31,34 @@ const buildExecutionVisitParts = (item: ShoppingItem): string[] => [
   item.priorityLevel || "none",
 ];
 
+interface CachedExecutionVisitKey {
+  eventDate: string;
+  block: string;
+  number: string;
+  priorityLevel: ShoppingItem["priorityLevel"];
+  key: string;
+}
+const executionVisitKeys = new WeakMap<ShoppingItem, CachedExecutionVisitKey>();
+
 export function buildExecutionVisitProjectionKey(item: ShoppingItem): string {
-  return JSON.stringify(buildExecutionVisitParts(item));
+  const cached = executionVisitKeys.get(item);
+  if (
+    cached &&
+    cached.eventDate === item.eventDate &&
+    cached.block === item.block &&
+    cached.number === item.number &&
+    cached.priorityLevel === item.priorityLevel
+  )
+    return cached.key;
+  const key = JSON.stringify(buildExecutionVisitParts(item));
+  executionVisitKeys.set(item, {
+    eventDate: item.eventDate,
+    block: item.block,
+    number: item.number,
+    priorityLevel: item.priorityLevel,
+    key,
+  });
+  return key;
 }
 
 /** Phase identity: phase + the shared execution identity. */
