@@ -464,6 +464,7 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
       parseRequestTokenRef.current === requestToken &&
       currentParseSignatureRef.current === requestSignature;
 
+    setIsLoading(false);
     setIsPreviewing(true);
     try {
       const parsedResult = await parseMapWorkbook(

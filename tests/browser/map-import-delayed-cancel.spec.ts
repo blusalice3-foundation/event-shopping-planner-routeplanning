@@ -421,3 +421,104 @@ for (const route of [
     });
   });
 }
+
+test("map import can resume after a pending import parser is replaced by a real Worker preview", async ({
+  page,
+}, testInfo) => {
+  const errors: string[] = [];
+  const alerts: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("dialog", async (dialog) => {
+    alerts.push(dialog.message());
+    await dialog.accept();
+  });
+  await page.addInitScript(() => {
+    const post = Worker.prototype.postMessage;
+    let heldRequestId: unknown;
+    const trace = {
+      heldImport: false,
+      cancelled: false,
+      sent: [] as Array<{ type: string; kind?: string }>,
+    };
+    Object.assign(window, { __mapParserSwitch: trace });
+    Worker.prototype.postMessage = function (
+      ...args: Parameters<Worker["postMessage"]>
+    ) {
+      const message = args[0] as {
+        type?: string;
+        kind?: string;
+        requestId?: unknown;
+      };
+      if (message?.type?.startsWith("XLSX_")) {
+        trace.sent.push({ type: message.type, kind: message.kind });
+        if (
+          message.type === "XLSX_IMPORT_REQUEST" &&
+          message.kind === "map-import" &&
+          !trace.heldImport
+        ) {
+          trace.heldImport = true;
+          heldRequestId = message.requestId;
+          return;
+        }
+        if (
+          message.type === "XLSX_CANCEL_REQUEST" &&
+          message.requestId === heldRequestId
+        )
+          trace.cancelled = true;
+      }
+      return post.apply(this, args);
+    };
+  });
+  await restore(page, false);
+  const before = await allStores(page);
+  const dialog = await selectMap(
+    page,
+    "parser-switch.xlsx",
+    await workbook("プレビュー後に取り込む"),
+  );
+  await dialog.getByRole("button", { name: "取り込む", exact: true }).click();
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __mapParserSwitch: { heldImport: boolean } })
+        .__mapParserSwitch.heldImport,
+  );
+  await expect(
+    dialog.getByRole("button", { name: "取り込み中...", exact: true }),
+  ).toBeDisabled();
+  await dialog
+    .getByRole("button", { name: /プレビュー（ブロック検出）/ })
+    .click();
+  await expect(dialog.getByText(/✅ 1ブロック検出/)).toBeVisible();
+  const retry = dialog.getByRole("button", { name: "取り込む", exact: true });
+  await expect(retry).toBeEnabled();
+  expect(await allStores(page)).toEqual(before);
+  await retry.click();
+  await expect(dialog).toBeHidden();
+  const after = await allStores(page);
+  expect(after.mapData).not.toEqual(before.mapData);
+  expect(after.eventLists).toEqual(before.eventLists);
+  const trace = await page.evaluate(
+    () =>
+      (window as unknown as { __mapParserSwitch: unknown }).__mapParserSwitch,
+  );
+  expect(trace).toMatchObject({ heldImport: true, cancelled: true });
+  await page.reload();
+  const reloaded = await allStores(page);
+  expect(reloaded.mapData).toEqual(after.mapData);
+  expect(reloaded.eventLists).toEqual(before.eventLists);
+  expect(errors).toEqual([]);
+  expect(alerts).toEqual([]);
+  await testInfo.attach("real-worker-parser-switch", {
+    body: Buffer.from(
+      JSON.stringify({
+        trace,
+        durablePreviewUnchanged: true,
+        retryPersisted: true,
+        errors,
+        alerts,
+      }),
+      "utf8",
+    ),
+    contentType: "application/json",
+  });
+});

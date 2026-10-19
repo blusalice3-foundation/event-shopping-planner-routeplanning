@@ -81,7 +81,7 @@ export const useModalDialogBehavior = <T extends HTMLElement = HTMLDivElement>({
     const release = registerModalFocus(element, restore, containExternalFocus);
     const initialFocus =
       initialFocusRef?.current ?? getFocusableElements(element)[0] ?? element;
-    initialFocus.focus({ preventScroll: true });
+    if (isTopModal(element)) initialFocus.focus({ preventScroll: true });
     return release;
   }, [containExternalFocus, fallbackFocusRef, initialFocusRef, isOpen]);
 

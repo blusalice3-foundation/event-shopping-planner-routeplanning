@@ -7,11 +7,12 @@ import {
   emptyApplicationSnapshot,
   useApplicationSnapshot,
 } from "../../../app/state/useApplicationSnapshot";
+import BackupRestoreDialog from "../../../components/BackupRestoreDialog";
 import { useModalDialogBehavior } from "../../../hooks/useModalDialogBehavior";
 import { requestModalSafeFocus } from "../../../utils/modalFocusBoundary";
 import { MutationConfirmationDialog } from "./MutationConfirmationDialog";
 
-function harness() {
+function harness({ layeredRestore = false } = {}) {
   const current = { ...emptyApplicationSnapshot(), eventLists: { event: [] } };
   const commit = vi.fn(async () => {});
   const port = {
@@ -25,6 +26,8 @@ function harness() {
   } as unknown as PersistenceCommandPort;
   let application!: ReturnType<typeof useApplicationSnapshot>;
   let showNested!: (open: boolean) => void;
+  let showRestore!: (open: boolean) => void;
+  const restore = vi.fn(async () => showRestore(false));
   function Nested({ close }: { close(): void }) {
     const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
       isOpen: true,
@@ -50,6 +53,8 @@ function harness() {
     latestFailures.current = app.retryableFailures;
     const [nested, setNested] = useState(false);
     showNested = setNested;
+    const [restoreOpen, setRestoreOpen] = useState(false);
+    showRestore = setRestoreOpen;
     useEffect(() => {
       const failures = app.retryableFailures;
       if (failures.length)
@@ -90,8 +95,21 @@ function harness() {
             保留の再試行
           </button>
         )}
+        {layeredRestore && (
+          <style>{`
+            .z-\\[21000\\] { position: fixed; z-index: 21000; }
+            .z-\\[100\\] { position: fixed; z-index: 100; }
+          `}</style>
+        )}
         <MutationConfirmationDialog application={app} />
         {nested && <Nested close={() => setNested(false)} />}
+        <BackupRestoreDialog
+          isOpen={restoreOpen}
+          backupEventNames={["復元元"]}
+          currentEventNames={["event"]}
+          onClose={() => setRestoreOpen(false)}
+          onRestore={restore}
+        />
       </>
     );
   }
@@ -101,10 +119,68 @@ function harness() {
     app: () => application,
     commit,
     showNested: (open: boolean) => showNested(open),
+    showRestore: (open: boolean) => showRestore(open),
+    restore,
   };
 }
 
 describe("real mutation confirmation keyboard and failure focus", () => {
+  it("keeps a late lower restore behind A to B until both confirmations close", async () => {
+    const h = harness({ layeredRestore: true });
+    const user = userEvent.setup();
+    const opener = screen.getByRole("button", { name: "確認を開く" });
+    await user.click(opener);
+    const first = await screen.findByRole("dialog", { name: "確認A" });
+    const initialFocus = document.activeElement;
+    act(() => h.showRestore(true));
+    const backup = screen.getByRole("dialog", {
+      name: "バックアップからイベントを復元",
+    });
+    expect(getComputedStyle(first).zIndex).toBe("21000");
+    expect(getComputedStyle(backup.parentElement!).zIndex).toBe("100");
+    expect(document.activeElement).toBe(initialFocus);
+    for (let index = 0; index < 8; index++) {
+      await user.tab();
+      expect(first).toContainElement(document.activeElement as HTMLElement);
+    }
+    within(backup).getByRole("button", { name: "別名で復元" }).focus();
+    expect(first).toContainElement(document.activeElement as HTMLElement);
+    await user.tab();
+    await user.tab();
+    expect(within(first).getByRole("button", { name: "取消" })).toHaveFocus();
+    await user.keyboard("{Enter}");
+    const second = await screen.findByRole("dialog", { name: "確認B" });
+    expect(second).toBe(first);
+    expect(h.restore).not.toHaveBeenCalled();
+    await user.tab();
+    await user.tab();
+    await user.keyboard("{Enter}");
+    expect(second).toContainElement(document.activeElement as HTMLElement);
+    expect(h.app().confirmations).toHaveLength(1);
+    expect(h.restore).not.toHaveBeenCalled();
+    await user.keyboard("{Escape}");
+    expect(
+      screen.queryByRole("dialog", { name: "確認B" }),
+    ).not.toBeInTheDocument();
+    expect(backup).toContainElement(document.activeElement as HTMLElement);
+    const restoreButton = within(backup).getByRole("button", {
+      name: "別名で復元",
+    });
+    for (
+      let index = 0;
+      document.activeElement !== restoreButton && index < 12;
+      index++
+    ) {
+      await user.tab();
+      expect(backup).toContainElement(document.activeElement as HTMLElement);
+    }
+    expect(restoreButton).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(h.restore).toHaveBeenCalledOnce();
+    expect(h.commit).not.toHaveBeenCalled();
+    expect(opener).toHaveFocus();
+  });
+
   it("keeps one host through A to B, traps Tab/Shift+Tab and restores the original opener", async () => {
     const h = harness();
     const user = userEvent.setup();
