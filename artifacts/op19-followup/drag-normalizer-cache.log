@@ -1,0 +1,13 @@
+
+[WebServer] (node:19388) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:30260) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/2] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1940:7 › @shopping-performance @shopping-drag-performance 500 native grouping on
+[2/2] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1940:7 › @shopping-performance @shopping-drag-performance 500 touch grouping on
+  2 passed (41.2s)

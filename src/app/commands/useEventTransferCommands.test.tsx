@@ -1,4 +1,5 @@
 import type { EventWorkbookAdditionalData } from "../../xlsx/domain/eventWorkbook";
+import type { XlsxImportResult } from "../../xlsx/domain/types";
 import {
   buildXlsxEventRestoreSource,
   toImportedEventData,
@@ -696,5 +697,161 @@ it.each([
       await act(() => result.current.handleBackupRestore("source", "target"));
       expect(read).toHaveBeenCalledTimes(1);
     }
+  },
+);
+
+describe.each(["JSON", "XLSX"] as const)(
+  "restore reader replacement from %s to the other format",
+  (oldFormat) => {
+    const fileEvent = (file: File) =>
+      ({ target: { files: [file], value: "same" } }) as unknown as Parameters<
+        ReturnType<typeof useEventTransferCommands>["handleBackupFileImport"]
+      >[0];
+    const xlsxFile = {
+      name: "source.xlsx",
+      arrayBuffer: async () => new ArrayBuffer(1),
+    } as File;
+    const xlsxResponse = (id: string): XlsxImportResult => ({
+      kind: "event-import",
+      value: {
+        success: true,
+        eventName: "xlsx-source",
+        items: [{ ...eventItem, id }],
+        errors: [],
+      },
+    });
+
+    describe.each([false, true])(
+      "current candidate cancelled: %s",
+      (cancelled) => {
+        it.each(["resolve", "reject", "abort"] as const)(
+          "ignores old reader %s without replacing or clearing the current owner",
+          async (outcome) => {
+            const alert = vi
+              .spyOn(window, "alert")
+              .mockReset()
+              .mockImplementation(() => {});
+            const ports = createPorts({
+              openBackupRestore: vi.fn(() => "restore-current"),
+              closeBackupRestore: vi.fn(),
+            });
+            let resolveJson!: (text: string) => void;
+            let resolveXlsx!: (value: XlsxImportResult) => void;
+            let rejectOld!: (error: unknown) => void;
+            let oldXlsxSignal: AbortSignal | undefined;
+            const oldJsonFile = {
+              text: () =>
+                new Promise<string>((resolve, reject) => {
+                  resolveJson = resolve;
+                  rejectOld = reject;
+                }),
+            } as File;
+            const oldXlsx = new Promise<XlsxImportResult>((resolve, reject) => {
+              resolveXlsx = resolve;
+              if (oldFormat === "XLSX") rejectOld = reject;
+            });
+            ports.appRuntime.xlsxCommands.importWorkbook = vi.fn(
+              (_input, signal) => {
+                oldXlsxSignal = signal;
+                return oldFormat === "XLSX"
+                  ? oldXlsx
+                  : Promise.resolve(xlsxResponse("current-item"));
+              },
+            );
+            const { result } = renderHook(() =>
+              useEventTransferCommands(ports),
+            );
+            let old!: Promise<void>;
+            await act(async () => {
+              old =
+                oldFormat === "JSON"
+                  ? result.current.handleBackupFileImport(
+                      fileEvent(oldJsonFile),
+                    )
+                  : result.current.handleExportFileImport(fileEvent(xlsxFile));
+              await Promise.resolve();
+            });
+            expect(ports.openBackupRestore).not.toHaveBeenCalled();
+            await act(async () => {
+              if (oldFormat === "JSON") {
+                await result.current.handleExportFileImport(
+                  fileEvent(xlsxFile),
+                );
+              } else {
+                await result.current.handleBackupFileImport(
+                  fileEvent({
+                    text: async () =>
+                      JSON.stringify(
+                        createBackup([{ ...eventItem, id: "current-item" }]),
+                      ),
+                  } as File),
+                );
+              }
+            });
+            if (oldFormat === "XLSX") expect(oldXlsxSignal?.aborted).toBe(true);
+            expect(ports.openBackupRestore).toHaveBeenCalledOnce();
+            const currentBackup = vi.mocked(ports.openBackupRestore).mock
+              .calls[0][0];
+            expect(Object.values(currentBackup.data.eventLists).flat()).toEqual(
+              [expect.objectContaining({ id: "current-item" })],
+            );
+            const cleanupCount = vi.mocked(ports.clearXlsxOperation).mock.calls
+              .length;
+            if (cancelled) {
+              expect(
+                result.current.handleBackupRestoreCancel("restore-current"),
+              ).toBe(true);
+            } else {
+              expect(
+                result.current.handleBackupRestoreCancel("restore-old"),
+              ).toBe(false);
+            }
+            await act(async () => {
+              if (outcome === "resolve") {
+                if (oldFormat === "JSON")
+                  resolveJson(
+                    JSON.stringify(
+                      createBackup([{ ...eventItem, id: "old-item" }]),
+                    ),
+                  );
+                else resolveXlsx(xlsxResponse("old-item"));
+              } else {
+                rejectOld(
+                  outcome === "abort"
+                    ? new DOMException("old cancellation", "AbortError")
+                    : new Error("old reader failure"),
+                );
+              }
+              await old;
+            });
+            expect(ports.openBackupRestore).toHaveBeenCalledOnce();
+            expect(ports.clearXlsxOperation).toHaveBeenCalledTimes(
+              cleanupCount,
+            );
+            expect(ports.requestMutation).not.toHaveBeenCalled();
+            expect(alert).not.toHaveBeenCalled();
+            const text = vi.fn(async () => JSON.stringify(createBackup()));
+            const nextFile = new File([], "next.json");
+            Object.defineProperty(nextFile, "text", { value: text });
+            const next = fileEvent(nextFile);
+            await act(() => result.current.handleBackupFileImport(next));
+            expect(next.target.value).toBe("");
+            if (cancelled) {
+              expect(text).toHaveBeenCalledOnce();
+              expect(ports.openBackupRestore).toHaveBeenCalledTimes(2);
+            } else {
+              expect(text).not.toHaveBeenCalled();
+              expect(
+                result.current.handleBackupRestoreCancel("restore-current"),
+              ).toBe(true);
+            }
+            expect(ports.closeBackupRestore).toHaveBeenCalledExactlyOnceWith(
+              "restore-current",
+            );
+            alert.mockRestore();
+          },
+        );
+      },
+    );
   },
 );

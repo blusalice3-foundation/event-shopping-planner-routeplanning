@@ -1,3 +1,4 @@
+import { useModalFocusBoundary } from "../../hooks/useModalFocusBoundary";
 import { useEffect, useRef, useState } from "react";
 import type {
   MapReimportOptions,
@@ -24,6 +25,8 @@ export default function MapReimportConfirmationDialog({
   requestPending = false,
   canCancel = true,
 }: MapReimportConfirmationDialogProps) {
+  const dialogRef = useRef<HTMLElement>(null);
+  useModalFocusBoundary({ isOpen: isOpen && plan !== null, dialogRef });
   const [preserveMaplessHalls, setPreserveMaplessHalls] = useState(true);
   const [targetMapKeys, setTargetMapKeys] = useState<Record<string, string>>(
     {},
@@ -74,6 +77,7 @@ export default function MapReimportConfirmationDialog({
       }}
     >
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="map-reimport-confirmation-title"

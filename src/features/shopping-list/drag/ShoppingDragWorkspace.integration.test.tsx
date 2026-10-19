@@ -137,6 +137,11 @@ function dragOver(element: HTMLElement, y: number, dataTransfer: unknown) {
   });
   fireEvent(element, event);
 }
+function dragLeave(element: HTMLElement, relatedTarget: Element | null) {
+  const event = new Event("dragleave", { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "relatedTarget", { value: relatedTarget });
+  fireEvent(element, event);
+}
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -355,6 +360,48 @@ describe("workspace cross-column drag", () => {
       expect(s.onMove).not.toHaveBeenCalled();
       expect(document.querySelector(".esp-shopping-touch-clone")).toBeNull();
       expect(document.body).not.toHaveClass("esp-body-scroll-lock");
+    },
+  );
+  it.each([true, false])(
+    "clears native guides outside the list while retaining the owner for re-entry (grouped %s)",
+    (grouped) => {
+      const s = setup(grouped);
+      fireEvent.dragStart(s.row("x1"), { dataTransfer: s.transfer });
+      dragOver(s.row("a1"), 100, s.transfer);
+      expect(
+        s.root("execute").querySelector("[data-shopping-drag-guide]"),
+      ).not.toBeNull();
+      dragLeave(s.row("a1"), s.row("a2"));
+      expect(
+        s.root("execute").querySelector("[data-shopping-drag-guide]"),
+      ).not.toBeNull();
+      dragLeave(s.root("execute"), s.view.container);
+      expect(
+        s.view.container.querySelector("[data-shopping-drag-guide]"),
+      ).toBeNull();
+      expect(
+        s.view.container.querySelector("[data-shopping-drag-status]"),
+      ).toBeNull();
+      dragOver(s.row("a1"), 100, s.transfer);
+      expect(
+        s.root("execute").querySelector("[data-shopping-drag-guide]"),
+      ).not.toBeNull();
+      fireEvent.drop(s.root("execute"), { dataTransfer: s.transfer });
+      expect(s.onMove).toHaveBeenCalledTimes(1);
+    },
+  );
+  it.each([true, false])(
+    "rejects a native drop after leaving the last accepted list (grouped %s)",
+    (grouped) => {
+      const s = setup(grouped);
+      fireEvent.dragStart(s.row("x1"), { dataTransfer: s.transfer });
+      dragOver(s.row("a1"), 100, s.transfer);
+      dragLeave(s.root("execute"), null);
+      fireEvent.drop(s.root("execute"), { dataTransfer: s.transfer });
+      expect(s.onMove).not.toHaveBeenCalled();
+      expect(
+        s.view.container.querySelector("[data-shopping-drag-status]"),
+      ).toBeNull();
     },
   );
   it("clears guide and frozen owner when its scope generation changes", () => {

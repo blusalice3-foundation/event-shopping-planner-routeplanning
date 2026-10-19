@@ -1,0 +1,12 @@
+
+> event-shopping-planner@1.0.0 build:app
+> tsc --noEmit && node scripts/build-release-vite.mjs
+
+src/app/commands/useEventTransferCommands.test.tsx(834,36): error TS2352: Conversion of type '{ text: Mock<() => Promise<string>>; }' to type 'File' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ text: Mock<() => Promise<string>>; }' is missing the following properties from type 'File': lastModified, name, webkitRelativePath, size, and 5 more.
+src/components/modalFailureFocus.integration.test.tsx(42,61): error TS2322: Type 'DuplicateEventAnalysis' is not assignable to type 'SameSourceEventAnalysis | DifferentSourceEventAnalysis'.
+  Type 'CreateEventAnalysis' is not assignable to type 'SameSourceEventAnalysis | DifferentSourceEventAnalysis'.
+    Type 'CreateEventAnalysis' is not assignable to type 'DifferentSourceEventAnalysis'.
+      Type 'CreateEventAnalysis' is not assignable to type '{ kind: "different-source"; }'.
+        Types of property 'kind' are incompatible.
+          Type '"create"' is not assignable to type '"different-source"'.

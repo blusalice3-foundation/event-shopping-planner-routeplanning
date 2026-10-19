@@ -1,0 +1,938 @@
+{
+  "Date": "2026-10-19",
+  "SourceFiles": 29,
+  "ArtifactFiles": 187,
+  "PreservedFiles": 8,
+  "Mismatches": 0,
+  "SourceChecks": [
+    {
+      "Path": "docs/user-operation-consistency-followup-results-20261019.md",
+      "SHA256": "CA7A35087E7BEDF611C3C0E82D530CFF5E7D79B8675FA5CE1A09380E1D1F3B68",
+      "Match": true
+    },
+    {
+      "Path": "src/app/commands/useEventTransferCommands.test.tsx",
+      "SHA256": "568329544B231AFB7CB777EB8A31FD99FCF7D081CCE3A388A1DCE0D54160DB81",
+      "Match": true
+    },
+    {
+      "Path": "src/components/DeleteConfirmationModal.tsx",
+      "SHA256": "EE7540CDB758E2D9BF4CD98FE15FEEED2DFF768B270DE2B0091202A0F416E852",
+      "Match": true
+    },
+    {
+      "Path": "src/components/DuplicateEventDialog.tsx",
+      "SHA256": "81AA5B5992C29AEA627113263FDE27223657A369C799D66D309C2B4AD2FB1304",
+      "Match": true
+    },
+    {
+      "Path": "src/components/focus/FocusModeDialogs.tsx",
+      "SHA256": "A3F867ACD18B6D1B665CFADFFEF97DEA38BF71CA97FC50588EB360ED702CE93D",
+      "Match": true
+    },
+    {
+      "Path": "src/components/focus/FocusModeStateViews.tsx",
+      "SHA256": "D0934F86E103CB6393DA2D7495C4EF5DB562F58E611F7083688C8E7463BF6CA1",
+      "Match": true
+    },
+    {
+      "Path": "src/components/ItemEditDialog.accessibility.test.tsx",
+      "SHA256": "FE4CC58145A098C0B7DF57C6E07B5A0F0CD87272A7403757F1D537CDDECC29A9",
+      "Match": true
+    },
+    {
+      "Path": "src/components/ItemEditDialog.tsx",
+      "SHA256": "D9A1E1001431D67CC23B053789C6A298B861689E37D0E3732D597B6D996B74E1",
+      "Match": true
+    },
+    {
+      "Path": "src/components/LegacyConsistencyReview.tsx",
+      "SHA256": "B7BE787C467EA6166EA7C614AEC5A456A45284BBA639B5D99DE4FCD3B88D9465",
+      "Match": true
+    },
+    {
+      "Path": "src/components/LimitedPurchaseConfirmDialog.tsx",
+      "SHA256": "61E4AA38ABF9C2F9B6757BFDF39F107DDA5988CBA895FE411C50717991C1E1F6",
+      "Match": true
+    },
+    {
+      "Path": "src/components/map/InsertPositionDialog.tsx",
+      "SHA256": "069A35538A293A639C6E65247686567A3FACA6BEDB884DF1A2D6E7E0A13FD9EE",
+      "Match": true
+    },
+    {
+      "Path": "src/components/map/MapReimportConfirmationDialog.tsx",
+      "SHA256": "E41215F6D2586A70F20962E94454561707EBF8E6910D53AA12D0D6C23C4825A6",
+      "Match": true
+    },
+    {
+      "Path": "src/components/modalFailureFocus.integration.test.tsx",
+      "SHA256": "F4A6F5ACBEBB4CC777F5B19C7F4C97F0F93CE90FC8855AC8E61B2D3DCFBCA8A7",
+      "Match": true
+    },
+    {
+      "Path": "src/components/PostEventDistributionCheckDialog.tsx",
+      "SHA256": "1CA844A872D161E0D5206579595A884A6D7A239D0A83C0770BAEE2DFE44D84EC",
+      "Match": true
+    },
+    {
+      "Path": "src/components/ShoppingList.tsx",
+      "SHA256": "2FC440B5BD65D293526F9BDFAF0ED227BB592A051EC9C1403F9BDC38159DB637",
+      "Match": true
+    },
+    {
+      "Path": "src/components/SingleQuantityLimitedPurchaseChoiceDialog.test.tsx",
+      "SHA256": "2D3C910AC4E91CC7EF2605BB8DE8CACF46B87E32E6113ED837867D07435D22A8",
+      "Match": true
+    },
+    {
+      "Path": "src/components/SingleQuantityLimitedPurchaseChoiceDialog.tsx",
+      "SHA256": "CB22D7587883FF9B7168D416A885A906751E2B3ADEDD3539ED72C187988BEC53",
+      "Match": true
+    },
+    {
+      "Path": "src/features/shopping-list/drag/shoppingDrag.test.ts",
+      "SHA256": "A39C601C26EE5D86D09E01DFADD3A7E62E729375F5E7D1A933C9D8C5D6468D62",
+      "Match": true
+    },
+    {
+      "Path": "src/features/shopping-list/drag/shoppingDrag.ts",
+      "SHA256": "8647F84E9EE88DAEDD58A24378926F6333907B444EFC7290B01A98C7C20C363C",
+      "Match": true
+    },
+    {
+      "Path": "src/features/shopping-list/drag/ShoppingDragWorkspace.integration.test.tsx",
+      "SHA256": "2BC37461387865B1E91A8E4A45B69D5C2F73B5E3BAA986CB720DBDE9655F1C6B",
+      "Match": true
+    },
+    {
+      "Path": "src/features/shopping-list/renderers/RetainedViewportListRenderer.integration.test.tsx",
+      "SHA256": "16B5A45867D11975AE9D0931D8BB0792F72C11C57DEFC29BB84D996B68533E08",
+      "Match": true
+    },
+    {
+      "Path": "src/features/shopping-list/renderers/ViewportContent.tsx",
+      "SHA256": "71C07B582F5AD28F90CCB7E402E687304A7003540BB134750C1A1AB541AA93AB",
+      "Match": true
+    },
+    {
+      "Path": "src/features/space-navigation/components/SpaceNavigatorActionDialog.tsx",
+      "SHA256": "3EEAD977CAC71750BDE438579DFD73639AD74992184E2912411AFF8E1E59AF41",
+      "Match": true
+    },
+    {
+      "Path": "src/features/space-navigation/components/SpaceNavigatorPicker.tsx",
+      "SHA256": "74E9D0048337D9F2C6BB2DC3BBCAD8A519D5CF5867D0B9AE4E27D24CC72B9A83",
+      "Match": true
+    },
+    {
+      "Path": "src/features/space-navigation/domain/visitIdentity.test.ts",
+      "SHA256": "2262A9C8AB85DE36C3689EFB46DD868749BE1CD71B563681CE7233F1D61146B3",
+      "Match": true
+    },
+    {
+      "Path": "src/features/space-navigation/domain/visitIdentity.ts",
+      "SHA256": "359E7D41F7A4C06B7F51E8BB53F331820C91251F9B408971A12485DE12856EB1",
+      "Match": true
+    },
+    {
+      "Path": "src/hooks/useModalFocusBoundary.ts",
+      "SHA256": "7BAB89871BEF4FD2B431D0DF7879B1DC7910D3C2653BB3345F8018F4DA38EC51",
+      "Match": true
+    },
+    {
+      "Path": "tests/browser/cross-feature-consistency.spec.ts",
+      "SHA256": "ECFC4E7B3EBA103FAFFABDB19895CF418DB801D09A8790798D10E91B03652BFD",
+      "Match": true
+    },
+    {
+      "Path": "tests/browser/shopping-cross-column-drag.spec.ts",
+      "SHA256": "CD295BE3821697C217F7096D94B7AB341F63936735F23917C0670816D952CFFE",
+      "Match": true
+    }
+  ],
+  "ArtifactChecks": [
+    {
+      "Path": "artifacts\\op19-followup\\baseline-release-verifier.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\browser-before-performance-optimization-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\browser-final.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\browser-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\build-before-closed-dialog-optimization.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\build-before-observer-optimization.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\build-closed-dialog-only.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\build-height-key-memo.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\build-initial-type-errors.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\build-junction-graph-rejection.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\build-observer-attempt.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\build-observer-fixture-type-attempt.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\build-visit-key-memo.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\build.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\compare-persistence-io.ps1",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-baseline-current-environment-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-baseline-current-environment.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-closed-dialog-optimization-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-closed-dialog-optimization.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-cpu-diagnostic-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-cpu-diagnostic.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-cpu-profile-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-cpu-profile.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-cpu-summary.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-height-key-memo-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-height-key-memo.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-normalizer-cache-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-normalizer-cache.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-after-short-circuit-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-after-short-circuit.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-cli-attempt.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-initial-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-initial.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-observer-attempt-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-observer-attempt.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-rows.csv",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-visit-key-memo-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-visit-key-memo.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\earlier-baseline-source-check.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\environment.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\esp-op19-baseline-add.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\esp-op19-baseline-browser.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\esp-op19-baseline-build.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\esp-op19-baseline-focus.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\esp-op19-baseline-io.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\final-document-check.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\final-encoding.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\final-source-manifest.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\format.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\io-comparison.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\performance-summary.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\preservation-before.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\quality-final.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\quality-status-initial.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\quality-status.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\quality.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\reflect-verified-changes.ps1",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\regression-browser-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\run-final-checks.ps1",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-pairs.csv",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-rows.csv",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\summarize-performance.ps1",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\viewport-empty-requested-tests.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\viewport-empty-requested-tests.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\viewport-final-short-circuit-tests.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\viewport-final-short-circuit-tests.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\viewport-key-memo-tests.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\viewport-observer-tests.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\viewport-short-circuit-tests.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\vitest-before-performance-optimization.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\vitest-final-report.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\vitest-final.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\vitest.log",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\write-source-manifest.ps1",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-add\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-add\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-add\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-add\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\video.webm",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-browser\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--24374-nd-durable-quantity-03-None-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--24374-nd-durable-quantity-03-None-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--24374-nd-durable-quantity-03-None-chromium\\video.webm",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\video.webm",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--a5748-the-focus-mode-phase-dialog-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--a5748-the-focus-mode-phase-dialog-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--a5748-the-focus-mode-phase-dialog-chromium\\video.webm",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--e8dbc-rable-quantity-03-Purchased-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--e8dbc-rable-quantity-03-Purchased-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--e8dbc-rable-quantity-03-Purchased-chromium\\video.webm",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-focus\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-focus\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-focus\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-focus\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\video.webm",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-focus\\cross-feature-consistency--a5748-the-focus-mode-phase-dialog-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-focus\\cross-feature-consistency--a5748-the-focus-mode-phase-dialog-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-focus\\cross-feature-consistency--a5748-the-focus-mode-phase-dialog-chromium\\video.webm",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\baseline-io\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\browser\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\browser-final\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-baseline-current-environment\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-baseline-current-environment\\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-baseline-current-environment\\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-baseline-current-environment\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-baseline-current-environment\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-closed-dialog-optimization\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-closed-dialog-optimization\\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-closed-dialog-optimization\\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-closed-dialog-optimization\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-closed-dialog-optimization\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-cpu-diagnostic\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-cpu-diagnostic\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-cpu-diagnostic\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-cpu-profile\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-cpu-profile\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-cpu-profile\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-height-key-memo\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-height-key-memo\\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-height-key-memo\\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-height-key-memo\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-height-key-memo\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-normalizer-cache\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-after-short-circuit\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-after-short-circuit\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-after-short-circuit\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-initial\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-initial\\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-initial\\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-initial\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-initial\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-observer-attempt\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-observer-attempt\\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-observer-attempt\\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-observer-attempt\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-performance-observer-attempt\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-visit-key-memo\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-visit-key-memo\\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-visit-key-memo\\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-visit-key-memo\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\drag-visit-key-memo\\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\height-key-memo-experiment-source\\RetainedViewportListRenderer.integration.test.tsx",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\height-key-memo-experiment-source\\ViewportContent.tsx",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\observer-experiment-source\\RetainedViewportListRenderer.integration.test.tsx",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\observer-experiment-source\\ViewportContent.tsx",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\regression-browser\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-037a3-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-06835-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-11b90-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-1c261-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-1fd1d-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-290a0-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-302a9-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-3ceed-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-44a37-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-456a7-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-5005a-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-5b858-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-65ffd-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-76418-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-8937c-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-a5908-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-a77e3-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-c046c-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-c1ee7-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-c6302-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-c9f3f-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-ddae0-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-f6958-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\shopping-performance\\responsive-performance-loc-f80a9-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\visit-key-memo-experiment-source\\visitProjection.test.ts",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op19-followup\\visit-key-memo-experiment-source\\visitProjection.ts",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op04-before\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op04-before\\shopping-cross-column-drag-3f944--buckets-before-drop-native-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op04-before\\shopping-cross-column-drag-3f944--buckets-before-drop-native-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op04-before\\shopping-cross-column-drag-6c480-fore-release-grouping-false-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op04-before\\shopping-cross-column-drag-6c480-fore-release-grouping-false-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op04-before\\shopping-cross-column-drag-bdc2a-efore-release-grouping-true-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op04-before\\shopping-cross-column-drag-bdc2a-efore-release-grouping-true-chromium\\test-failed-1.png",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op04-before\\shopping-cross-column-drag-c45c8-l-buckets-before-drop-touch-chromium\\error-context.md",
+      "Match": true
+    },
+    {
+      "Path": "artifacts\\op04-before\\shopping-cross-column-drag-c45c8-l-buckets-before-drop-touch-chromium\\test-failed-1.png",
+      "Match": true
+    }
+  ],
+  "PreservedChecks": [
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\docs\\user-operation-consistency-remediation-plan-20261018.md",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\consistency-audit-20261019-1230\\browser-report.json",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\consistency-audit-20261019-1230\\browser-output\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\playwright-review-20261018\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\playwright-review-storage-outcome-20261018\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\playwright-review-u01u02-20261018\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\playwright-review-u03u04-20261018\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\playwright-review-u06u07-20261018\\.last-run.json",
+      "Match": true
+    }
+  ]
+}

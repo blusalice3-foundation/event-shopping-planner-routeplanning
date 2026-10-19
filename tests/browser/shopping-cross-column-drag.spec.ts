@@ -1001,6 +1001,76 @@ for (const input of ["native", "touch"] as const)
       page.locator(rowSelector("bad-priority")).getByRole("checkbox"),
     ).toBeChecked();
   });
+for (const input of ["native", "touch"] as const)
+  test(`OFF selection rejects reversed hall buckets before drop: ${input}`, async ({
+    page,
+  }) => {
+    const backup = fixture(4);
+    backup.data.eventLists[eventName] = [
+      makeItem("a1", "01", "A"),
+      makeItem("b1", "02", "B"),
+      makeItem("x", "03", "B"),
+      makeItem("y", "04", "A"),
+    ];
+    backup.data.executeModeItems[eventName][day] = ["a1", "b1"];
+    await restore(page, backup);
+    await grouping(page, false);
+    await select(page, ["x", "y"]);
+    await start(page, input, "x");
+    const guide = await hover(page, input, "a1", "after", false);
+    expect(guide.status).toBe("rejected");
+    expect(guide.guides).toHaveLength(0);
+    await finish(page, input, true);
+    expect(
+      (
+        (await stored(page, "executeModeItems"))[eventName] as Record<
+          string,
+          string[]
+        >
+      )[day],
+    ).toEqual(["a1", "b1"]);
+    expect(await ids(page, "candidate")).toEqual(["y", "x"]);
+    for (const id of ["x", "y"])
+      await expect(
+        page.locator(rowSelector(id)).getByRole("checkbox"),
+      ).toBeChecked();
+  });
+for (const grouped of [true, false])
+  test(`actual Chromium native leave clears shared guides before release: grouping ${grouped}`, async ({
+    page,
+  }) => {
+    await restore(page, fixture());
+    await grouping(page, grouped);
+    const before = (await stored(page, "executeModeItems"))[eventName];
+    const source = await page.locator(rowSelector("new-x")).boundingBox();
+    const target = await page.locator(rowSelector("a1")).boundingBox();
+    expect(source).not.toBeNull();
+    expect(target).not.toBeNull();
+    await page.mouse.move(source!.x + 4, source!.y + 40);
+    await page.mouse.down();
+    try {
+      await page.mouse.move(target!.x + 4, target!.y + 30, { steps: 12 });
+      await page.mouse.move(target!.x + 6, target!.y + 32);
+      await expect(
+        page.locator('[data-shopping-drag-status="accepted"]'),
+      ).toBeVisible();
+      await expect(
+        page.locator('[data-shopping-drag-guide="insert"]'),
+      ).toBeVisible();
+      const header = await page
+        .getByRole("heading", { name: eventName, exact: true })
+        .boundingBox();
+      expect(header).not.toBeNull();
+      await page.mouse.move(header!.x + 6, header!.y + header!.height / 2, {
+        steps: 12,
+      });
+      await expect(page.locator("[data-shopping-drag-status]")).toHaveCount(0);
+      await expect(page.locator("[data-shopping-drag-guide]")).toHaveCount(0);
+    } finally {
+      await page.mouse.up();
+    }
+    expect((await stored(page, "executeModeItems"))[eventName]).toEqual(before);
+  });
 test("actual Chromium native drag uses the shared column owner", async ({
   page,
 }) => {

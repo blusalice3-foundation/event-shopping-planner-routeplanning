@@ -10,6 +10,7 @@ import {
   prewarmViewportContent,
   revealViewportContent,
   ViewportContent,
+  VIEWPORT_RETENTION_EVENT,
 } from "./ViewportContent";
 import { evaluateRetainedViewportEligibility } from "./retainedViewportEligibility";
 
@@ -129,6 +130,138 @@ describe("retained viewport rendering", () => {
     );
   });
 
+  it.each(["nondeferred", "retained", "visible", "printing"] as const)(
+    "keeps %s rows active without scanning their descendants",
+    (reason) => {
+      const rowKey = `skip-retention-scan-${reason}`;
+      if (reason === "visible") visibleKeys.add(rowKey);
+      const view = render(
+        <ViewportContent
+          rowKey={rowKey}
+          defer={reason !== "nondeferred"}
+          retain={reason === "retained"}
+          placeholder={<span>pending</span>}
+          render={() => (
+            <input aria-label="既存の入力" defaultValue="ユーザー登録" />
+          )}
+        />,
+      );
+      if (reason === "printing") fireEvent(window, new Event("beforeprint"));
+      const root = view.container.firstElementChild as HTMLElement;
+      const input = view.getByRole("textbox", { name: "既存の入力" });
+      const query = vi.spyOn(root, "querySelector");
+      const queryAll = vi.spyOn(root, "querySelectorAll");
+      fireEvent(root, new Event(VIEWPORT_RETENTION_EVENT, { bubbles: true }));
+      expect(query).not.toHaveBeenCalled();
+      expect(queryAll).not.toHaveBeenCalled();
+      expect(root).toHaveAttribute("data-viewport-active", "true");
+      expect(view.getByRole("textbox", { name: "既存の入力" })).toBe(input);
+      if (reason === "printing") fireEvent(window, new Event("afterprint"));
+    },
+  );
+
+  it("keeps an offscreen pinned descendant active without scanning requested rows", () => {
+    const view = render(
+      <ViewportContent
+        rowKey="offscreen-pinned-descendant"
+        placeholder={<span data-viewport-retain="true">pending</span>}
+        render={() => (
+          <input data-viewport-retain="true" aria-label="保持中の入力" />
+        )}
+      />,
+    );
+    const root = view.container.firstElementChild as HTMLElement;
+    const input = view.getByRole("textbox", { name: "保持中の入力" });
+    const queryAll = vi.spyOn(root, "querySelectorAll");
+    fireEvent(root, new Event(VIEWPORT_RETENTION_EVENT, { bubbles: true }));
+    expect(queryAll).not.toHaveBeenCalled();
+    expect(root).toHaveAttribute("data-viewport-active", "true");
+    expect(view.getByRole("textbox", { name: "保持中の入力" })).toBe(input);
+    input.removeAttribute("data-viewport-retain");
+    fireEvent(root, new Event(VIEWPORT_RETENTION_EVENT, { bubbles: true }));
+    expect(root).toHaveAttribute("data-viewport-active", "false");
+  });
+
+  it("keeps an offscreen requested row active until its owner releases it", () => {
+    const view = render(
+      <ViewportContent
+        rowKey="offscreen-requested-row"
+        placeholder={<span>pending</span>}
+        render={() => <input aria-label="要求中の入力" />}
+      />,
+    );
+    const root = view.container.firstElementChild as HTMLElement;
+    expect(root).toHaveAttribute("data-viewport-active", "false");
+    let release!: () => void;
+    act(() => {
+      release = prewarmViewportContent(root);
+    });
+    const input = view.getByRole("textbox", { name: "要求中の入力" });
+    fireEvent(root, new Event(VIEWPORT_RETENTION_EVENT, { bubbles: true }));
+    expect(view.getByRole("textbox", { name: "要求中の入力" })).toBe(input);
+    act(() => release());
+    expect(root).toHaveAttribute("data-viewport-active", "false");
+    expect(input).not.toBeInTheDocument();
+  });
+
+  it("does not scan offscreen descendants when no rows are requested", () => {
+    const view = render(
+      <ViewportContent
+        rowKey="empty-requested-keys"
+        placeholder={<span>pending</span>}
+        render={() => <input aria-label="非表示の入力" />}
+      />,
+    );
+    const root = view.container.firstElementChild as HTMLElement;
+    const queryAll = vi.spyOn(root, "querySelectorAll");
+    fireEvent(root, new Event(VIEWPORT_RETENTION_EVENT, { bubbles: true }));
+    expect(queryAll).not.toHaveBeenCalled();
+    expect(root).toHaveAttribute("data-viewport-active", "false");
+    expect(view.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("keeps an offscreen ancestor active for a requested descendant until release", () => {
+    const view = render(
+      <ViewportContent
+        rowKey="requested-descendant-parent"
+        placeholder={
+          <span data-viewport-row-key="requested-descendant-child">
+            pending
+          </span>
+        }
+        render={() => (
+          <input
+            data-viewport-row-key="requested-descendant-child"
+            aria-label="要求された子の入力"
+          />
+        )}
+      />,
+    );
+    const root = view.container.firstElementChild as HTMLElement;
+    const requestTarget = document.createElement("span");
+    requestTarget.dataset.viewportRowKey = "requested-descendant-child";
+    const queryAll = vi.spyOn(root, "querySelectorAll");
+    let release!: () => void;
+    act(() => {
+      release = prewarmViewportContent(requestTarget);
+      fireEvent(root, new Event(VIEWPORT_RETENTION_EVENT, { bubbles: true }));
+    });
+    const input = view.getByRole("textbox", { name: "要求された子の入力" });
+    expect(queryAll).toHaveBeenCalledWith("[data-viewport-row-key]");
+    fireEvent(root, new Event(VIEWPORT_RETENTION_EVENT, { bubbles: true }));
+    expect(root).toHaveAttribute("data-viewport-active", "true");
+    expect(view.getByRole("textbox", { name: "要求された子の入力" })).toBe(
+      input,
+    );
+    queryAll.mockClear();
+    act(() => {
+      release();
+      fireEvent(root, new Event(VIEWPORT_RETENTION_EVENT, { bubbles: true }));
+    });
+    expect(root).toHaveAttribute("data-viewport-active", "false");
+    expect(input).not.toBeInTheDocument();
+    expect(queryAll).not.toHaveBeenCalled();
+  });
   it("preserves row heights while a list is hidden and resets them for a real width change", () => {
     const callbacks = new Map<Element, ResizeObserverCallback>();
     vi.stubGlobal(

@@ -199,10 +199,20 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
     }
     return options;
   }, []);
-  const quantityOptions = useMemo(
-    () => buildQuantityOptions(form.quantity),
-    [form.quantity],
-  );
+  const { quantityOptions, quantitySelectValue, needsQuantityDraftOption } =
+    useMemo(() => {
+      const planned = parseDecimalIntegerInput(form.quantity);
+      const options = buildQuantityOptions(planned);
+      const value =
+        planned !== undefined && Number.isFinite(planned)
+          ? String(planned)
+          : form.quantity;
+      return {
+        quantityOptions: options,
+        quantitySelectValue: value,
+        needsQuantityDraftOption: !options.some((num) => String(num) === value),
+      };
+    }, [form.quantity]);
 
   const handlePriceInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -539,13 +549,20 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
                 </label>
                 <select
                   id={fieldIds.quantity}
-                  value={form.quantity}
+                  value={quantitySelectValue}
                   aria-label="数量"
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, quantity: e.target.value }))
                   }
                   className={formInputClass}
                 >
+                  {needsQuantityDraftOption && (
+                    <option value={quantitySelectValue}>
+                      {form.quantity.trim() === ""
+                        ? "購入予定量を入力してください"
+                        : `${form.quantity}（現在の入力）`}
+                    </option>
+                  )}
                   {quantityOptions.map((num) => (
                     <option key={num} value={num}>
                       {isStandardQuantityOption(num) ? num : `${num}（現在値）`}

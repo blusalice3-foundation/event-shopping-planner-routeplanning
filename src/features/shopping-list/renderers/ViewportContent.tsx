@@ -300,10 +300,22 @@ export const ViewportContent = ({
         registry.visibility.get(root) ??
         initiallyVisible(root, registry, cachedHeight ?? estimatedHeight),
       update: () => {
+        if (!defer || retain || registry.printing || subscription.visible) {
+          setActivated(true);
+          return;
+        }
         const pinned =
           root.contains(root.ownerDocument.activeElement) ||
           root.dataset.viewportRetain === "true" ||
           root.querySelector('[data-viewport-retain="true"]') !== null;
+        if (pinned) {
+          setActivated(true);
+          return;
+        }
+        if (registry.requestedKeys.size === 0) {
+          setActivated(false);
+          return;
+        }
         const requested =
           registry.requestedKeys.has(rowKey) ||
           [
@@ -311,14 +323,7 @@ export const ViewportContent = ({
           ].some((child) =>
             registry.requestedKeys.has(child.dataset.viewportRowKey ?? ""),
           );
-        setActivated(
-          !defer ||
-            retain ||
-            registry.printing ||
-            subscription.visible ||
-            pinned ||
-            requested,
-        );
+        setActivated(requested);
       },
     };
     registry.visibility.set(root, subscription.visible);

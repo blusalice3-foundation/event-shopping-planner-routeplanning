@@ -1,0 +1,210 @@
+{
+  "Date": "2026-10-19",
+  "BuildCommand": "npm run build:app",
+  "BuildExitCode": 0,
+  "SourceFiles": 29,
+  "AssetFiles": 9,
+  "PreservedFiles": 8,
+  "Mismatches": 0,
+  "BundleSHA256": "729425339A9C9796D505C73B79A8CEC837A8A904162512C6D841678DB6FDC8FD",
+  "TestedBundleSHA256": "729425339A9C9796D505C73B79A8CEC837A8A904162512C6D841678DB6FDC8FD",
+  "SourceChecks": [
+    {
+      "Path": "docs/user-operation-consistency-followup-results-20261019.md",
+      "Match": true
+    },
+    {
+      "Path": "src/app/commands/useEventTransferCommands.test.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/DeleteConfirmationModal.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/DuplicateEventDialog.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/focus/FocusModeDialogs.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/focus/FocusModeStateViews.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/ItemEditDialog.accessibility.test.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/ItemEditDialog.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/LegacyConsistencyReview.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/LimitedPurchaseConfirmDialog.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/map/InsertPositionDialog.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/map/MapReimportConfirmationDialog.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/modalFailureFocus.integration.test.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/PostEventDistributionCheckDialog.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/ShoppingList.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/SingleQuantityLimitedPurchaseChoiceDialog.test.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/components/SingleQuantityLimitedPurchaseChoiceDialog.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/features/shopping-list/drag/shoppingDrag.test.ts",
+      "Match": true
+    },
+    {
+      "Path": "src/features/shopping-list/drag/shoppingDrag.ts",
+      "Match": true
+    },
+    {
+      "Path": "src/features/shopping-list/drag/ShoppingDragWorkspace.integration.test.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/features/shopping-list/renderers/RetainedViewportListRenderer.integration.test.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/features/shopping-list/renderers/ViewportContent.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/features/space-navigation/components/SpaceNavigatorActionDialog.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/features/space-navigation/components/SpaceNavigatorPicker.tsx",
+      "Match": true
+    },
+    {
+      "Path": "src/features/space-navigation/domain/visitIdentity.test.ts",
+      "Match": true
+    },
+    {
+      "Path": "src/features/space-navigation/domain/visitIdentity.ts",
+      "Match": true
+    },
+    {
+      "Path": "src/hooks/useModalFocusBoundary.ts",
+      "Match": true
+    },
+    {
+      "Path": "tests/browser/cross-feature-consistency.spec.ts",
+      "Match": true
+    },
+    {
+      "Path": "tests/browser/shopping-cross-column-drag.spec.ts",
+      "Match": true
+    }
+  ],
+  "AssetChecks": [
+    {
+      "Path": "app-A2yh4wV2.css",
+      "SHA256": "2AE1C1A647D96CC486EE832E9411035F4BC39EBE670A529200546AD78F54CAAA",
+      "Match": true
+    },
+    {
+      "Path": "backup.worker-CmLUrcml.js",
+      "SHA256": "209E231E7229F8F3D0A7ECBCC32C8A143C10AAA5C9326BA37DE23BEC63FC5207",
+      "Match": true
+    },
+    {
+      "Path": "FocusModeContainer-DXzioiUg.js",
+      "SHA256": "C7AA0DE1686860CBE80A6582D6C196AA2E4A97336E14EB8621B2C01D68AE7317",
+      "Match": true
+    },
+    {
+      "Path": "ImportScreen-CmWNa8bN.js",
+      "SHA256": "81A22CABEE7E7C730E29B8D7FA0F8FECEA9E4DC7B6F5976751C1AD217D2455E0",
+      "Match": true
+    },
+    {
+      "Path": "outer-recovery-agent.js",
+      "SHA256": "24EBCB17C0E601DED6E6AB183B801263B6284F360FDD812AD81839977567900E",
+      "Match": true
+    },
+    {
+      "Path": "persistence.worker-jgnXY_Tt.js",
+      "SHA256": "E7D49E8F539D61A3649B967E8D6EAE62269D2234614FF57EE0DF210B0A1C14D4",
+      "Match": true
+    },
+    {
+      "Path": "release-role.js",
+      "SHA256": "729425339A9C9796D505C73B79A8CEC837A8A904162512C6D841678DB6FDC8FD",
+      "Match": true
+    },
+    {
+      "Path": "route.worker-vkpwhvUq.js",
+      "SHA256": "71DB28340A1F002F14A35A0EBBCDFC2683447040FB7678AAC8CC06EA58452641",
+      "Match": true
+    },
+    {
+      "Path": "xlsx.worker-DA2gqYv7.js",
+      "SHA256": "EC40D5E4B9702FEB472BD5413938F01F6A06A7F18FB360C59A9492B53E15B112",
+      "Match": true
+    }
+  ],
+  "PreservationChecks": [
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\docs\\user-operation-consistency-remediation-plan-20261018.md",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\consistency-audit-20261019-1230\\browser-report.json",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\consistency-audit-20261019-1230\\browser-output\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\playwright-review-20261018\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\playwright-review-storage-outcome-20261018\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\playwright-review-u01u02-20261018\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\playwright-review-u03u04-20261018\\.last-run.json",
+      "Match": true
+    },
+    {
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\playwright-review-u06u07-20261018\\.last-run.json",
+      "Match": true
+    }
+  ]
+}

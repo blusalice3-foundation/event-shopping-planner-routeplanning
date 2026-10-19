@@ -1,0 +1,448 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\esp-op19-fix\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/cross-feature-consistency.spec.ts",
+      "--grep",
+      "OP06 normalized|OP05 late",
+      "--workers=1",
+      "--reporter=json",
+      "--output=artifacts/op19-followup/baseline-browser"
+    ],
+    "configFile": "D:\\esp-op19-fix\\playwright.config.ts",
+    "rootDir": "D:/esp-op19-fix/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/esp-op19-fix/artifacts/op19-followup/baseline-browser",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/esp-op19-fix/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "cross-feature-consistency.spec.ts",
+      "file": "cross-feature-consistency.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "OP06 normalized planned draft matches visible select and durable quantity: 3 None",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3448,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T03:49:19.476Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-9aa990fdef0b8f89e2cf",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5559,
+          "column": 5
+        },
+        {
+          "title": "OP06 normalized planned draft matches visible select and durable quantity: 3 Purchased",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3294,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T03:49:23.060Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-3e66e160b4967fee811a",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5559,
+          "column": 5
+        },
+        {
+          "title": "OP06 normalized planned draft matches visible select and durable quantity: 03 None",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6944,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('combobox', { name: '数量', exact: true })\nExpected: \u001b[32m\"3\"\u001b[39m\nReceived: \u001b[31m\"1\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('combobox', { name: '数量', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <select aria-label=\"数量\" id=\":r5:-quantity\" class=\"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white\">…</select>\u001b[22m\n\u001b[2m       - unexpected value \"1\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('combobox', { name: '数量', exact: true })\nExpected: \u001b[32m\"3\"\u001b[39m\nReceived: \u001b[31m\"1\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('combobox', { name: '数量', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <select aria-label=\"数量\" id=\":r5:-quantity\" class=\"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white\">…</select>\u001b[22m\n\u001b[2m       - unexpected value \"1\"\u001b[22m\n\n    at D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:5582:9",
+                    "location": {
+                      "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                      "column": 9,
+                      "line": 5582
+                    },
+                    "snippet": "  5580 |       await expect(\n  5581 |         editor.getByRole(\"combobox\", { name: \"数量\", exact: true }),\n> 5582 |       ).toHaveValue(\"3\");\n       |         ^\n  5583 |       await purchaseStatus.selectOption(\"LimitedPurchase\");\n  5584 |       await expect(\n  5585 |         editor.getByRole(\"textbox\", { name: \"実購入数\", exact: true }),"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                        "column": 9,
+                        "line": 5582
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('combobox', { name: '数量', exact: true })\nExpected: \u001b[32m\"3\"\u001b[39m\nReceived: \u001b[31m\"1\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('combobox', { name: '数量', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <select aria-label=\"数量\" id=\":r5:-quantity\" class=\"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white\">…</select>\u001b[22m\n\u001b[2m       - unexpected value \"1\"\u001b[22m\n\n\n  5580 |       await expect(\n  5581 |         editor.getByRole(\"combobox\", { name: \"数量\", exact: true }),\n> 5582 |       ).toHaveValue(\"3\");\n       |         ^\n  5583 |       await purchaseStatus.selectOption(\"LimitedPurchase\");\n  5584 |       await expect(\n  5585 |         editor.getByRole(\"textbox\", { name: \"実購入数\", exact: true }),\n    at D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:5582:9"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T03:49:26.365Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--24374-nd-durable-quantity-03-None-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--24374-nd-durable-quantity-03-None-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--24374-nd-durable-quantity-03-None-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                    "column": 9,
+                    "line": 5582
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-099fd65f010bafdc3001",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5559,
+          "column": 5
+        },
+        {
+          "title": "OP06 normalized planned draft matches visible select and durable quantity: 03 Purchased",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 7001,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('combobox', { name: '数量', exact: true })\nExpected: \u001b[32m\"3\"\u001b[39m\nReceived: \u001b[31m\"1\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('combobox', { name: '数量', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <select aria-label=\"数量\" id=\":r5:-quantity\" class=\"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white\">…</select>\u001b[22m\n\u001b[2m       - unexpected value \"1\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('combobox', { name: '数量', exact: true })\nExpected: \u001b[32m\"3\"\u001b[39m\nReceived: \u001b[31m\"1\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('combobox', { name: '数量', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <select aria-label=\"数量\" id=\":r5:-quantity\" class=\"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white\">…</select>\u001b[22m\n\u001b[2m       - unexpected value \"1\"\u001b[22m\n\n    at D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:5582:9",
+                    "location": {
+                      "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                      "column": 9,
+                      "line": 5582
+                    },
+                    "snippet": "  5580 |       await expect(\n  5581 |         editor.getByRole(\"combobox\", { name: \"数量\", exact: true }),\n> 5582 |       ).toHaveValue(\"3\");\n       |         ^\n  5583 |       await purchaseStatus.selectOption(\"LimitedPurchase\");\n  5584 |       await expect(\n  5585 |         editor.getByRole(\"textbox\", { name: \"実購入数\", exact: true }),"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                        "column": 9,
+                        "line": 5582
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('combobox', { name: '数量', exact: true })\nExpected: \u001b[32m\"3\"\u001b[39m\nReceived: \u001b[31m\"1\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'アイテム編集', exact: true }).getByRole('combobox', { name: '数量', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <select aria-label=\"数量\" id=\":r5:-quantity\" class=\"w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white\">…</select>\u001b[22m\n\u001b[2m       - unexpected value \"1\"\u001b[22m\n\n\n  5580 |       await expect(\n  5581 |         editor.getByRole(\"combobox\", { name: \"数量\", exact: true }),\n> 5582 |       ).toHaveValue(\"3\");\n       |         ^\n  5583 |       await purchaseStatus.selectOption(\"LimitedPurchase\");\n  5584 |       await expect(\n  5585 |         editor.getByRole(\"textbox\", { name: \"実購入数\", exact: true }),\n    at D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:5582:9"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T03:49:34.480Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--e8dbc-rable-quantity-03-Purchased-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--e8dbc-rable-quantity-03-Purchased-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--e8dbc-rable-quantity-03-Purchased-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                    "column": 9,
+                    "line": 5582
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-df6053aa692729745fc4",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5559,
+          "column": 5
+        },
+        {
+          "title": "OP05 late purchase failure keeps focus inside the focus-mode add dialog",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 5930,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'バックアップからイベントを復元' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'バックアップからイベントを復元' })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'バックアップからイベントを復元' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'バックアップからイベントを復元' })\u001b[22m\n\n    at restore (D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:82:24)\n    at D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:5683:5",
+                    "location": {
+                      "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                      "column": 24,
+                      "line": 82
+                    },
+                    "snippet": "  80 |     name: \"バックアップからイベントを復元\",\n  81 |   });\n> 82 |   await expect(dialog).toBeVisible();\n     |                        ^\n  83 |   await dialog.getByRole(\"radio\", { name: /同名で置換/ }).check();\n  84 |   await dialog.getByRole(\"button\", { name: \"置換して復元\" }).click();\n  85 |   if (reviewTitle) {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                        "column": 24,
+                        "line": 82
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'バックアップからイベントを復元' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'バックアップからイベントを復元' })\u001b[22m\n\n\n  80 |     name: \"バックアップからイベントを復元\",\n  81 |   });\n> 82 |   await expect(dialog).toBeVisible();\n     |                        ^\n  83 |   await dialog.getByRole(\"radio\", { name: /同名で置換/ }).check();\n  84 |   await dialog.getByRole(\"button\", { name: \"置換して復元\" }).click();\n  85 |   if (reviewTitle) {\n    at restore (D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:82:24)\n    at D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:5683:5"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T03:49:42.763Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                    "column": 24,
+                    "line": 82
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-d568ee8f6c5a57f08daf",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5676,
+          "column": 3
+        },
+        {
+          "title": "OP05 late purchase failure keeps focus inside the focus-mode phase dialog",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 5768,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'バックアップからイベントを復元' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'バックアップからイベントを復元' })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'バックアップからイベントを復元' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'バックアップからイベントを復元' })\u001b[22m\n\n    at restore (D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:82:24)\n    at D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:5683:5",
+                    "location": {
+                      "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                      "column": 24,
+                      "line": 82
+                    },
+                    "snippet": "  80 |     name: \"バックアップからイベントを復元\",\n  81 |   });\n> 82 |   await expect(dialog).toBeVisible();\n     |                        ^\n  83 |   await dialog.getByRole(\"radio\", { name: /同名で置換/ }).check();\n  84 |   await dialog.getByRole(\"button\", { name: \"置換して復元\" }).click();\n  85 |   if (reviewTitle) {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                        "column": 24,
+                        "line": 82
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'バックアップからイベントを復元' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'バックアップからイベントを復元' })\u001b[22m\n\n\n  80 |     name: \"バックアップからイベントを復元\",\n  81 |   });\n> 82 |   await expect(dialog).toBeVisible();\n     |                        ^\n  83 |   await dialog.getByRole(\"radio\", { name: /同名で置換/ }).check();\n  84 |   await dialog.getByRole(\"button\", { name: \"置換して復元\" }).click();\n  85 |   if (reviewTitle) {\n    at restore (D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:82:24)\n    at D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:5683:5"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T03:49:49.961Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--a5748-the-focus-mode-phase-dialog-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--a5748-the-focus-mode-phase-dialog-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-browser\\cross-feature-consistency--a5748-the-focus-mode-phase-dialog-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                    "column": 24,
+                    "line": 82
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-d52f60dcf0578659b929",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5676,
+          "column": 3
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-19T03:49:16.524Z",
+    "duration": 39447.558000000005,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 4,
+    "flaky": 0
+  }
+}

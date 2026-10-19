@@ -240,6 +240,7 @@ export function resolveShoppingDragPlacement(
   // Resolve the canonical slot from prepared ranks, including legacy non-contiguous raw members.
   // This checks only the moving visits and indexed hall buckets; full projection remains a drop check.
   let previousBucket: string | undefined;
+  let previousBucketHasSuffix = false;
   const emittedBuckets = new Set<string>();
   for (const visit of positioned) {
     const bucket = dragBucket(visit.items[0], layout.presentation);
@@ -251,6 +252,7 @@ export function resolveShoppingDragPlacement(
       return null;
     const position = layout.bucketPositions.get(bucket);
     let actualIndex = 0;
+    let prefixSize = 0;
     if (position) {
       actualIndex = position.first;
       for (
@@ -258,7 +260,8 @@ export function resolveShoppingDragPlacement(
         index < position.ranks.length && position.ranks[index] < rawAnchorIndex;
         index++
       )
-        actualIndex += position.counts[index];
+        prefixSize += position.counts[index];
+      actualIndex += prefixSize;
     } else {
       layout.bucketPositions.forEach((existing) => {
         if (existing.firstRawIndex < rawAnchorIndex)
@@ -266,9 +269,20 @@ export function resolveShoppingDragPlacement(
       });
     }
     if (actualIndex !== insertionIndex) return null;
-    if (previousBucket !== bucket && emittedBuckets.has(bucket)) return null;
+    if (previousBucket !== bucket) {
+      // Across buckets, the moved visits must remain one contiguous sequence:
+      // only the first bucket may have an existing prefix and only the last a suffix.
+      // Individual canonical slots can coincide even when hall grouping reverses them.
+      if (
+        emittedBuckets.has(bucket) ||
+        (previousBucket !== undefined &&
+          (previousBucketHasSuffix || prefixSize > 0))
+      )
+        return null;
+    }
     emittedBuckets.add(bucket);
     previousBucket = bucket;
+    previousBucketHasSuffix = (position?.size ?? 0) > prefixSize;
   }
   const nextItem =
     positioned.length > 0 ? layout.items[insertionIndex] : undefined;
@@ -308,51 +322,58 @@ export function validateShoppingDragPlacement(
   before: readonly ShoppingItem[],
   after: readonly ShoppingItem[],
 ): boolean {
+  const beforeVisits = projectItemsToExecutionVisits(before);
+  const beforeVisitIds = new Map(
+    beforeVisits.map((visit) => [visit.key, visit.itemIds]),
+  );
+  const preservesVisitOrder =
+    placement.presentation.spaceGroups || !placement.presentation.hallGroups;
   const beforeKeys: string[] = [];
-  projectShoppingDragDisplay(before, placement.presentation).forEach((item) => {
-    const key = buildExecutionVisitProjectionKey(item);
-    if (beforeKeys.at(-1) !== key) beforeKeys.push(key);
-  });
+  if (preservesVisitOrder) {
+    beforeVisits.forEach((visit) => beforeKeys.push(visit.key));
+  } else {
+    projectShoppingDragDisplay(before, placement.presentation).forEach(
+      (item) => {
+        const key = buildExecutionVisitProjectionKey(item);
+        if (beforeKeys.at(-1) !== key) beforeKeys.push(key);
+      },
+    );
+  }
   if (
     beforeKeys.length !== placement.baseVisitKeys.length ||
     beforeKeys.some((key, index) => key !== placement.baseVisitKeys[index])
   )
     return false;
-  if (placement.positionedVisitKeys.some((key) => beforeKeys.includes(key)))
+  if (placement.positionedVisitKeys.some((key) => beforeVisitIds.has(key)))
     return false;
   if (
     placement.mergeVisits.some(
       (visit) =>
-        !sameDragIds(
-          before
-            .filter(
-              (item) => buildExecutionVisitProjectionKey(item) === visit.key,
-            )
-            .map((item) => item.id),
-          visit.itemIds,
-        ),
+        !sameDragIds(beforeVisitIds.get(visit.key) ?? [], visit.itemIds),
     )
   )
     return false;
-  if (placement.referenceKey) {
-    const reference = before.filter(
-      (item) =>
-        buildExecutionVisitProjectionKey(item) === placement.referenceKey,
-    );
-    if (
-      !sameDragIds(
-        reference.map((item) => item.id),
-        placement.referenceMemberIds,
-      )
+  if (
+    placement.referenceKey &&
+    !sameDragIds(
+      beforeVisitIds.get(placement.referenceKey) ?? [],
+      placement.referenceMemberIds,
     )
-      return false;
-  }
-  const projected = projectShoppingDragDisplay(after, placement.presentation);
+  )
+    return false;
   const actual: string[] = [];
-  projected.forEach((item) => {
-    const key = buildExecutionVisitProjectionKey(item);
-    if (actual.at(-1) !== key) actual.push(key);
-  });
+  if (preservesVisitOrder) {
+    projectItemsToExecutionVisits(after).forEach((visit) =>
+      actual.push(visit.key),
+    );
+  } else {
+    projectShoppingDragDisplay(after, placement.presentation).forEach(
+      (item) => {
+        const key = buildExecutionVisitProjectionKey(item);
+        if (actual.at(-1) !== key) actual.push(key);
+      },
+    );
+  }
   const expected = [...placement.baseVisitKeys];
   expected.splice(
     placement.insertVisitIndex,

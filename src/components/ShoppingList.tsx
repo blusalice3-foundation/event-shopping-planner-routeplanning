@@ -90,6 +90,7 @@ import {
   type ExecutionNavigationGuardFeedback,
 } from "../features/space-navigation/hooks/useExecutionSpaceNavigator";
 import { acquireBodyScrollLock } from "../utils/bodyScrollLock";
+import { useModalFocusBoundary } from "../hooks/useModalFocusBoundary";
 import { buildQuantityOptions } from "./quantityOptions";
 import {
   buildRangePresentation,
@@ -1410,6 +1411,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   });
   const addDialogBaseId = React.useId();
   const addDialogRef = useRef<HTMLDivElement>(null);
+  useModalFocusBoundary({
+    isOpen: addDialogOpen && !isInspecting,
+    dialogRef: addDialogRef,
+  });
   const addDialogInputRef = useRef<HTMLInputElement>(null);
   const addDialogReturnFocusRef = useRef<HTMLElement | null>(null);
   const addDialogIds = {
@@ -2481,6 +2486,13 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       dragWorkspace?.hover(columnType, undefined, e.clientY, e.clientX);
   };
 
+  const handleContainerDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    const nextTarget = e.relatedTarget;
+    if (nextTarget instanceof Node && e.currentTarget.contains(nextTarget))
+      return;
+    dragWorkspace?.leave();
+    setActiveDropTarget(null);
+  };
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -3025,6 +3037,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           onBlurCapture: handleFullListBlurCapture,
           onDragOver: !isInspecting ? handleContainerDragOver : undefined,
           onDrop: !isInspecting ? handleDrop : undefined,
+          onDragLeave: handleContainerDragLeave,
           onFocusCapture: handleFullListFocusCapture,
         }}
         beforeContent={limitedPurchaseOverlays}
@@ -4361,7 +4374,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           onBlurCapture: handleFullListBlurCapture,
           onDragOver: !isInspecting ? handleContainerDragOver : undefined,
           onDrop: !isInspecting ? handleDrop : undefined,
-          onDragLeave: () => setActiveDropTarget(null),
+          onDragLeave: handleContainerDragLeave,
           onFocusCapture: handleFullListFocusCapture,
         }}
         beforeContent={
@@ -5098,7 +5111,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           onBlurCapture: handleFullListBlurCapture,
           onDragOver: !isInspecting ? handleContainerDragOver : undefined,
           onDrop: !isInspecting ? handleDrop : undefined,
-          onDragLeave: () => setActiveDropTarget(null),
+          onDragLeave: handleContainerDragLeave,
           onFocusCapture: handleFullListFocusCapture,
         }}
         renderDependencies={[
@@ -5499,7 +5512,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           onFocusCapture: handleFullListFocusCapture,
           onDragOver: !isInspecting ? handleContainerDragOver : undefined,
           onDrop: !isInspecting ? handleDrop : undefined,
-          onDragLeave: () => setActiveDropTarget(null),
+          onDragLeave: handleContainerDragLeave,
         }}
         beforeContent={limitedPurchaseOverlays}
         renderRow={(row, index) =>
@@ -5526,7 +5539,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         className="pb-[var(--footer-height,96px)]"
         beforeContent={limitedPurchaseOverlays}
         rootRef={containerRef}
-        onDragLeave={() => setActiveDropTarget(null)}
+        onDragLeave={handleContainerDragLeave}
         rootProps={{
           onDragOver: !isInspecting ? handleContainerDragOver : undefined,
           onDrop: !isInspecting ? handleDrop : undefined,
@@ -5552,7 +5565,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         onBlurCapture: handleFullListBlurCapture,
         onDragOver: !isInspecting ? handleContainerDragOver : undefined,
         onDrop: !isInspecting ? handleDrop : undefined,
-        onDragLeave: () => setActiveDropTarget(null),
+        onDragLeave: handleContainerDragLeave,
         onFocusCapture: handleFullListFocusCapture,
       }}
       beforeContent={limitedPurchaseOverlays}

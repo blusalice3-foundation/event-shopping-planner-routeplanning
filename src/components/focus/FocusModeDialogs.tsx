@@ -1,6 +1,7 @@
 import type React from "react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useModalDialogBehavior } from "../../hooks/useModalDialogBehavior";
+import { useModalFocusBoundary } from "../../hooks/useModalFocusBoundary";
 import { createPortal } from "react-dom";
 import type { FocusPhase } from "../../types/focus";
 import type { ShoppingItem } from "../../types/item";
@@ -96,33 +97,12 @@ export function PhaseChangeDialogView({
 }) {
   const titleId = useId();
   const descriptionId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
   const isRendered = dialog.isOpen && dialog.targetPhase !== null;
-
-  useModalInteractionLock(isRendered);
-
-  useLayoutEffect(() => {
-    if (!isRendered) return;
-
-    returnFocusRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    dialogRef.current
-      ?.querySelector<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      )
-      ?.focus({ preventScroll: true });
-
-    return () => {
-      const returnFocus = returnFocusRef.current;
-      returnFocusRef.current = null;
-      if (returnFocus?.isConnected) {
-        returnFocus.focus({ preventScroll: true });
-      }
-    };
-  }, [isRendered]);
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen: isRendered,
+    onEscape: onCancel,
+    containExternalFocus: true,
+  });
 
   if (!isRendered || !dialog.targetPhase) return null;
 
@@ -138,43 +118,6 @@ export function PhaseChangeDialogView({
     ? `${targetVisit.items[0]?.block}-${targetVisit.items[0]?.number} ${targetVisit.items[0]?.circle}`
     : "";
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      onCancel();
-      return;
-    }
-    if (event.key !== "Tab") return;
-
-    const dialogElement = dialogRef.current;
-    if (!dialogElement) return;
-    const focusableElements = Array.from(
-      dialogElement.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      ),
-    );
-    const first = focusableElements[0];
-    const last = focusableElements[focusableElements.length - 1];
-    if (!first || !last) return;
-
-    if (
-      event.shiftKey &&
-      (document.activeElement === first ||
-        !dialogElement.contains(document.activeElement))
-    ) {
-      event.preventDefault();
-      last.focus();
-    } else if (
-      !event.shiftKey &&
-      (document.activeElement === last ||
-        !dialogElement.contains(document.activeElement))
-    ) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
-
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div
@@ -183,7 +126,7 @@ export function PhaseChangeDialogView({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
-        onKeyDown={handleKeyDown}
+        onKeyDown={onDialogKeyDown}
         className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-md w-full mx-4 overflow-hidden"
       >
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4">
@@ -266,6 +209,8 @@ export function CellItemPopup({
   onClose: () => void;
 }) {
   useModalInteractionLock(state.isOpen);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocusBoundary({ isOpen: state.isOpen, dialogRef });
   const operationLockRef = useRef(false);
   const suppressOpeningClickRef = useRef(false);
   const openingClickGuardTimerRef = useRef<number | null>(null);
@@ -345,6 +290,7 @@ export function CellItemPopup({
       role="dialog"
       aria-modal="true"
       aria-label={`${state.blockName}-${state.number}のアイテム`}
+      ref={dialogRef}
       onClick={handleBackdropClick}
       onClickCapture={handlePopupClickCapture}
       onPointerDown={handlePopupInteractionStart}
@@ -653,32 +599,11 @@ export function AddItemDialogView({
   onSubmit: () => void;
 }) {
   const idPrefix = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
-
-  useModalInteractionLock(dialog.isOpen);
-
-  useLayoutEffect(() => {
-    if (!dialog.isOpen) return;
-
-    returnFocusRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    dialogRef.current
-      ?.querySelector<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      )
-      ?.focus({ preventScroll: true });
-
-    return () => {
-      const returnFocus = returnFocusRef.current;
-      returnFocusRef.current = null;
-      if (returnFocus?.isConnected) {
-        returnFocus.focus({ preventScroll: true });
-      }
-    };
-  }, [dialog.isOpen]);
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen: dialog.isOpen,
+    onEscape: onClose,
+    containExternalFocus: true,
+  });
 
   if (!dialog.isOpen) return null;
 
@@ -707,43 +632,6 @@ export function AddItemDialogView({
       ]
     : [];
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      onClose();
-      return;
-    }
-    if (event.key !== "Tab") return;
-
-    const dialogElement = dialogRef.current;
-    if (!dialogElement) return;
-    const focusableElements = Array.from(
-      dialogElement.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      ),
-    );
-    const first = focusableElements[0];
-    const last = focusableElements[focusableElements.length - 1];
-    if (!first || !last) return;
-
-    if (
-      event.shiftKey &&
-      (document.activeElement === first ||
-        !dialogElement.contains(document.activeElement))
-    ) {
-      event.preventDefault();
-      last.focus();
-    } else if (
-      !event.shiftKey &&
-      (document.activeElement === last ||
-        !dialogElement.contains(document.activeElement))
-    ) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
-
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div
@@ -752,7 +640,7 @@ export function AddItemDialogView({
         aria-modal="true"
         aria-labelledby={ids.dialogTitle}
         aria-describedby={ids.dialogDescription}
-        onKeyDown={handleKeyDown}
+        onKeyDown={onDialogKeyDown}
         className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-lg w-full mx-4 overflow-hidden max-h-[90vh] overflow-y-auto"
       >
         <div className="bg-gradient-to-r from-green-700 to-emerald-700 text-white p-4">

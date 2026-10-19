@@ -5553,3 +5553,235 @@ test("OP09: resumed phase synchronizes replacement postponed targets before reco
   ).toBeVisible();
   expect((await stored(page, "eventLists"))[eventName]).toEqual([item("1")]);
 });
+
+for (const planned of ["3", "03"]) {
+  for (const status of ["None", "Purchased"]) {
+    test(`OP06 normalized planned draft matches visible select and durable quantity: ${planned} ${status}`, async ({
+      page,
+    }) => {
+      await restore(page, backup([item("1")]));
+      await editMemo(page, "数量の往復入力を保持");
+      const editor = page.getByRole("dialog", {
+        name: "アイテム編集",
+        exact: true,
+      });
+      const purchaseStatus = editor.getByRole("combobox", {
+        name: "購入状態",
+        exact: true,
+      });
+      await purchaseStatus.selectOption("LimitedPurchase");
+      await editor
+        .getByRole("textbox", { name: "購入予定量", exact: true })
+        .fill(planned);
+      await editor
+        .getByRole("textbox", { name: "実購入数", exact: true })
+        .fill("2");
+      await purchaseStatus.selectOption(status);
+      await expect(
+        editor.getByRole("combobox", { name: "数量", exact: true }),
+      ).toHaveValue("3");
+      await purchaseStatus.selectOption("LimitedPurchase");
+      await expect(
+        editor.getByRole("textbox", { name: "実購入数", exact: true }),
+      ).toHaveValue("2");
+      await purchaseStatus.selectOption(status);
+      const quantity = editor.getByRole("combobox", {
+        name: "数量",
+        exact: true,
+      });
+      await expect(quantity).toHaveValue("3");
+      await expect(quantity.locator("option:checked")).toHaveText("3");
+      await editor.getByRole("button", { name: "保存", exact: true }).click();
+      await expect(editor).toBeHidden();
+      const expected = {
+        id: "1",
+        quantity: 3,
+        purchaseStatus: status,
+        remarks: "数量の往復入力を保持",
+      };
+      await expect
+        .poll(() => stored(page, "eventLists"))
+        .toMatchObject({ [eventName]: [expect.objectContaining(expected)] });
+      await page.reload();
+      await page.getByText(eventName, { exact: true }).click();
+      await editMemo(page, "数量の往復入力を保持");
+      await expect(
+        editor.getByRole("combobox", { name: "数量", exact: true }),
+      ).toHaveValue("3");
+      expect(await stored(page, "eventLists")).toMatchObject({
+        [eventName]: [expect.objectContaining(expected)],
+      });
+      await editor
+        .getByRole("button", { name: "キャンセル", exact: true })
+        .click();
+    });
+  }
+}
+
+async function gateNextPurchaseReadAndAbort(page: Page) {
+  await persistenceRealm(page).evaluate(() => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      IDBTransaction.prototype,
+      "oncomplete",
+    )!;
+    const originalPut = IDBObjectStore.prototype.put;
+    const gate = { ready: false, calls: [] as string[], release: () => {} };
+    Object.assign(globalThis, { __modalPurchaseGate: gate });
+    globalThis.addEventListener(
+      "message",
+      (event: MessageEvent<{ method?: string }>) => {
+        if (event.data.method) gate.calls.push(event.data.method);
+      },
+    );
+    let intercepted = false;
+    Object.defineProperty(IDBTransaction.prototype, "oncomplete", {
+      ...descriptor,
+      set(this: IDBTransaction, handler: IDBTransaction["oncomplete"]) {
+        if (
+          !intercepted &&
+          this.mode === "readonly" &&
+          this.objectStoreNames.contains("syncQueue")
+        ) {
+          intercepted = true;
+          descriptor.set!.call(this, (event: Event) => {
+            gate.ready = true;
+            gate.release = () => {
+              Object.defineProperty(
+                IDBTransaction.prototype,
+                "oncomplete",
+                descriptor,
+              );
+              handler?.call(this, event);
+            };
+          });
+        } else descriptor.set!.call(this, handler);
+      },
+    });
+    IDBObjectStore.prototype.put = function (
+      ...args: Parameters<typeof originalPut>
+    ) {
+      if (
+        this.transaction.mode === "readwrite" &&
+        this.transaction.objectStoreNames.contains("eventConsistency")
+      ) {
+        IDBObjectStore.prototype.put = originalPut;
+        throw new DOMException("ダイアログ中の購入保存失敗", "AbortError");
+      }
+      return originalPut.apply(this, args);
+    };
+  });
+}
+
+for (const kind of ["add", "phase"] as const) {
+  test(`OP05 late purchase failure keeps focus inside the focus-mode ${kind} dialog`, async ({
+    page,
+  }) => {
+    const source = backup([
+      item("1"),
+      { ...item("2"), purchaseStatus: "Postpone" },
+    ]);
+    await restore(page, source);
+    await page.getByTitle("集中モード", { exact: true }).click();
+    await expect(page.locator("#focus-mode-footer")).toBeVisible();
+    await gateNextPurchaseReadAndAbort(page);
+    await page
+      .locator('[data-item-id="1"]')
+      .getByRole("button", { name: /Current status:/ })
+      .click();
+    await expect
+      .poll(() =>
+        persistenceRealm(page).evaluate(
+          () =>
+            (
+              globalThis as typeof globalThis & {
+                __modalPurchaseGate: { ready: boolean };
+              }
+            ).__modalPurchaseGate.ready,
+        ),
+      )
+      .toBe(true);
+    if (kind === "add")
+      await page.getByTitle("新規アイテム追加", { exact: true }).click();
+    else
+      await page.getByLabel("phase", { exact: true }).selectOption("postponed");
+    const dialog = page.getByRole("dialog", {
+      name: kind === "add" ? "新規アイテム追加" : "フェーズを切り替えますか？",
+      exact: true,
+    });
+    await expect(dialog).toBeVisible();
+    await persistenceRealm(page).evaluate(() =>
+      (
+        globalThis as typeof globalThis & {
+          __modalPurchaseGate: { release(): void };
+        }
+      ).__modalPurchaseGate.release(),
+    );
+    const pending = page
+      .getByRole("alert")
+      .filter({ hasText: "件の操作を未保存のまま保留しています" });
+    await expect(pending).toBeVisible();
+    await expect
+      .poll(() =>
+        dialog.evaluate((element) => element.contains(document.activeElement)),
+      )
+      .toBe(true);
+    const before = await persistenceRealm(page).evaluate(
+      () =>
+        (
+          globalThis as typeof globalThis & {
+            __modalPurchaseGate: { calls: string[] };
+          }
+        ).__modalPurchaseGate.calls.length,
+    );
+    for (let index = 0; index < 12; index++) {
+      await page.keyboard.press(index % 2 ? "Shift+Tab" : "Tab");
+      expect(
+        await dialog.evaluate((element) =>
+          element.contains(document.activeElement),
+        ),
+      ).toBe(true);
+    }
+    await dialog.evaluate((element: HTMLElement) => {
+      element.tabIndex = -1;
+      element.focus();
+    });
+    await page.keyboard.press("Enter");
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => setTimeout(resolve, 0)),
+        ),
+    );
+    expect(
+      await persistenceRealm(page).evaluate(
+        () =>
+          (
+            globalThis as typeof globalThis & {
+              __modalPurchaseGate: { calls: string[] };
+            }
+          ).__modalPurchaseGate.calls.length,
+      ),
+    ).toBe(before);
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(
+      pending.getByRole("button", {
+        name: "保留中の保存を再試行",
+        exact: true,
+      }),
+    ).toBeFocused();
+    await pending
+      .getByRole("button", { name: "保留中の保存を再試行", exact: true })
+      .click();
+    await expect(pending).toBeHidden();
+    await expect
+      .poll(() => stored(page, "eventLists"))
+      .toMatchObject({
+        [eventName]: [
+          expect.objectContaining({ id: "1", purchaseStatus: "Purchased" }),
+          expect.objectContaining({ id: "2", purchaseStatus: "Postpone" }),
+        ],
+      });
+  });
+}
