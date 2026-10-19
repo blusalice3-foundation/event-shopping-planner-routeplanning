@@ -1,4 +1,5 @@
-type ModalOwner = { element: HTMLElement; restore: HTMLElement | null };
+type ModalRestoreTarget = HTMLElement | null | (() => HTMLElement | null);
+type ModalOwner = { element: HTMLElement; restore: ModalRestoreTarget };
 const owners: ModalOwner[] = [];
 let deferredFocus: {
   target: () => HTMLElement | null;
@@ -26,10 +27,14 @@ export function isTopModal(element: HTMLElement | null) {
 }
 export function registerModalFocus(
   element: HTMLElement,
-  restore: HTMLElement | null,
+  restore: ModalRestoreTarget,
   containExternalFocus = false,
 ) {
   const owner = { element, restore };
+  const getRestoreTarget = () => {
+    const target = typeof restore === "function" ? restore() : restore;
+    return target?.isConnected ? target : null;
+  };
   owners.push(owner);
   const containFocus = (event: FocusEvent) => {
     if (
@@ -52,8 +57,11 @@ export function registerModalFocus(
     if (!wasTop) return;
     const parent = owners.at(-1)?.element;
     if (parent) {
+      const restoreTarget = getRestoreTarget();
       const target =
-        restore?.isConnected && parent.contains(restore) ? restore : parent;
+        restoreTarget && parent.contains(restoreTarget)
+          ? restoreTarget
+          : parent;
       target.focus({ preventScroll: true });
       if (!parent.contains(document.activeElement))
         parent.focus({ preventScroll: true });
@@ -62,9 +70,9 @@ export function registerModalFocus(
     // A new dialog may mount in this same commit. Recheck after its layout effects.
     if (deferredFocus) {
       queueMicrotask(() => {
-        if (!owners.length && !flushDeferredFocus() && restore?.isConnected)
-          restore.focus({ preventScroll: true });
+        if (!owners.length && !flushDeferredFocus())
+          getRestoreTarget()?.focus({ preventScroll: true });
       });
-    } else if (restore?.isConnected) restore.focus({ preventScroll: true });
+    } else getRestoreTarget()?.focus({ preventScroll: true });
   };
 }

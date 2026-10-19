@@ -34,6 +34,7 @@ function Harness({
   onMove = vi.fn(),
   selectedIds = new Set<string>(),
   collapsedCandidate = false,
+  initialCandidate = [x1, x2],
 }: {
   grouped?: boolean;
   sort?: "asc" | "desc" | null;
@@ -41,9 +42,11 @@ function Harness({
   onMove?: (...args: unknown[]) => void;
   selectedIds?: Set<string>;
   collapsedCandidate?: boolean;
+  initialCandidate?: ShoppingItem[];
 }) {
   const [execute, setExecute] = useState([a1, a2]);
-  const [candidate, setCandidate] = useState([x1, x2]);
+  const [candidate, setCandidate] = useState(initialCandidate);
+  const allItems = [a1, a2, ...initialCandidate];
   const move = (
     dragId: string,
     hoverId: string,
@@ -59,7 +62,7 @@ function Harness({
       sourceColumn,
       mode: "edit",
       effectiveSelectedIds: new Set(dragContext?.requestedIds),
-      allItems: [a1, a2, x1, x2],
+      allItems,
       executeModeItems: { Day1: execute.map((value) => value.id) },
       dayName: "Day1",
       selectedBlockFilters: new Set(),
@@ -67,7 +70,7 @@ function Harness({
     });
     if (result.executeModeItems) {
       const ids = result.executeModeItems.Day1;
-      const values = result.eventListItems ?? [a1, a2, x1, x2];
+      const values = result.eventListItems ?? allItems;
       setExecute(ids.map((id) => values.find((value) => value.id === id)!));
       setCandidate(values.filter((value) => !ids.includes(value.id)));
     }
@@ -145,6 +148,7 @@ function dragLeave(element: HTMLElement, relatedTarget: Element | null) {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 describe("workspace cross-column drag", () => {
   it.each([
@@ -175,6 +179,126 @@ describe("workspace cross-column drag", () => {
       expect(
         s.view.container.querySelector("[data-shopping-drag-guide]"),
       ).toBeNull();
+    },
+  );
+  it.each([
+    { input: "native", grouped: true, scale: 1 },
+    { input: "native", grouped: false, scale: 1 },
+    { input: "touch", grouped: true, scale: 0.75 },
+    { input: "touch", grouped: false, scale: 1.25 },
+  ] as const)(
+    "keeps offscreen merge guidance visible while scrolling: $input, grouped $grouped",
+    ({ input, grouped, scale }) => {
+      const elementFromPoint = Object.getOwnPropertyDescriptor(
+        document,
+        "elementFromPoint",
+      );
+      const headerHeight = document.documentElement.dataset.appHeaderHeight;
+      document.documentElement.dataset.appHeaderHeight = "120px";
+      try {
+        const onMove = vi.fn();
+        const view = render(
+          <Harness
+            grouped={grouped}
+            initialCandidate={[item("merge", "01a3")]}
+            onMove={onMove}
+          />,
+        );
+        const root = view.container.querySelector<HTMLElement>(
+          '[data-shopping-drag-column="execute"]',
+        )!;
+        const source = view.container.querySelector<HTMLElement>(
+          '[data-item-id="merge"]:not([data-space-group-key])',
+        )!;
+        const destination = view.container.querySelector<HTMLElement>(
+          '[data-item-id="a2"]:not([data-space-group-key])',
+        )!;
+        const group = destination.closest<HTMLElement>(
+          '[data-row-key^="group:"]',
+        );
+        vi.spyOn(destination, "getBoundingClientRect").mockReturnValue(
+          rect(-1000, -900),
+        );
+        if (group)
+          vi.spyOn(group, "getBoundingClientRect").mockReturnValue(
+            rect(-1100, -900),
+          );
+        const rootRect = vi
+          .spyOn(root, "getBoundingClientRect")
+          .mockReturnValue(rect(-1200, 1800));
+        Object.defineProperties(root, {
+          offsetHeight: { configurable: true, value: 3000 / scale },
+          offsetWidth: { configurable: true, value: 100 / scale },
+        });
+        vi.spyOn(
+          HTMLElement.prototype,
+          "offsetHeight",
+          "get",
+        ).mockImplementation(function (this: HTMLElement) {
+          return this.hasAttribute("data-shopping-drag-status") ? 48 : 0;
+        });
+        const hitTest = vi.fn(() => root);
+        Object.defineProperty(document, "elementFromPoint", {
+          configurable: true,
+          value: hitTest,
+        });
+        const transfer = { setData: vi.fn(), getData: () => "candidate" };
+        if (input === "native") {
+          fireEvent.dragStart(source, { dataTransfer: transfer });
+          dragOver(root, 400, transfer);
+        } else {
+          vi.useFakeTimers();
+          vi.stubGlobal("scrollBy", vi.fn());
+          fireEvent.touchStart(source, {
+            touches: [{ clientX: 80, clientY: 160 }],
+          });
+          act(() => vi.advanceTimersByTime(250));
+          fireEvent.touchMove(source, {
+            touches: [{ clientX: 10, clientY: 400 }],
+          });
+        }
+        const status = root.querySelector<HTMLElement>(
+          "[data-shopping-drag-status]",
+        )!;
+        expect(status).toHaveTextContent("既存の1訪問の末尾へ合流します。");
+        expect(status).toHaveTextContent("画面外の合流先を含みます。");
+        const expectVisible = () => {
+          const screenTop =
+            root.getBoundingClientRect().top +
+            Number.parseFloat(status.style.top) * scale;
+          expect(screenTop).toBeGreaterThanOrEqual(128);
+          expect(screenTop + 48 * scale).toBeLessThanOrEqual(
+            window.innerHeight - 8,
+          );
+          expect(
+            Number.parseFloat(status.style.maxWidth) * scale,
+          ).toBeLessThanOrEqual(100);
+        };
+        expectVisible();
+        rootRect.mockReturnValue(rect(-1600, 1400));
+        fireEvent.scroll(window);
+        expect(root.querySelector("[data-shopping-drag-status]")).toBe(status);
+        expectVisible();
+        vi.stubGlobal("innerHeight", 200);
+        fireEvent.resize(window);
+        expectVisible();
+        expect(onMove).not.toHaveBeenCalled();
+        if (input === "native") fireEvent.dragEnd(source);
+        else fireEvent.touchCancel(source);
+        expect(
+          view.container.querySelector("[data-shopping-drag-status]"),
+        ).toBeNull();
+        expect(
+          view.container.querySelector("[data-shopping-drag-guide]"),
+        ).toBeNull();
+      } finally {
+        if (elementFromPoint)
+          Object.defineProperty(document, "elementFromPoint", elementFromPoint);
+        else Reflect.deleteProperty(document, "elementFromPoint");
+        if (headerHeight === undefined)
+          delete document.documentElement.dataset.appHeaderHeight;
+        else document.documentElement.dataset.appHeaderHeight = headerHeight;
+      }
     },
   );
   it.each([null, "asc", "desc"] as const)(

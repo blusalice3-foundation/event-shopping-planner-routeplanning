@@ -1,0 +1,20 @@
+[
+  {
+    "Name": "shopping",
+    "StartUtc": "2026-10-19T13:06:26.5948676+00:00",
+    "EndUtc": "2026-10-19T13:25:13.3630561+00:00",
+    "ExitCode": 0,
+    "Workers": 1,
+    "Retries": 0,
+    "ConcurrentHeavyTests": false
+  },
+  {
+    "Name": "drag",
+    "StartUtc": "2026-10-19T13:25:13.4094162+00:00",
+    "EndUtc": "2026-10-19T13:27:44.6391302+00:00",
+    "ExitCode": 1,
+    "Workers": 1,
+    "Retries": 0,
+    "ConcurrentHeavyTests": false
+  }
+]

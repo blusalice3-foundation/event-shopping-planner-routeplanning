@@ -1,0 +1,26 @@
+[
+  {
+    "script": "typecheck",
+    "exitCode": 0
+  },
+  {
+    "script": "verify:architecture",
+    "exitCode": 0
+  },
+  {
+    "script": "verify:test-project-membership",
+    "exitCode": 0
+  },
+  {
+    "script": "verify:db-compatibility",
+    "exitCode": 0
+  },
+  {
+    "script": "test:encoding",
+    "exitCode": 0
+  },
+  {
+    "script": "test:api",
+    "exitCode": 0
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "decidedUtc": "2026-10-19T13:32:08.6316841+00:00",
+  "reason": "Initial 500 touch grouping-on drop exceeded median limit (56.15ms); dispatch increase was 0.1ms and response varied within the batch. Assess repeatability with unchanged product code.",
+  "additionalFullRuns": 2,
+  "totalBatches": 3,
+  "expectedSamplesPerDragCategory": 60,
+  "categoriesPerBatch": 60,
+  "configurationsPerBatch": 8,
+  "thresholds": {
+    "medianMs": 55,
+    "p95Ms": 100,
+    "minimumSamples": 20
+  },
+  "policy": "All initial and additional raw samples in all 60 categories are included. No outlier or warmup exclusion, no stop-after-pass, and all batch outcomes remain visible. Diagnostic instrumented data is excluded from acceptance.",
+  "sourceManifestSha256": "409FD1E64288ACCC0C028D5852C1AAE352E3FC848E9F44B29316DCFA4CC53472",
+  "initialDragReportSha256": "28B446429A5CCDDD498440C66D29862FD2AFF10544C5736DE17BFDB32D4A0AEF"
+}

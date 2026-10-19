@@ -946,6 +946,126 @@ for (const input of ["native", "touch"] as const)
       await expect(page.locator(rowSelector("new-x"))).toBeVisible();
       expect((await ids(page, "execute")).slice(0, 6)).toEqual(expected);
     });
+    test(`scrolled offscreen merge keeps its notice visible: ${input} grouping ${grouped}`, async ({
+      page,
+    }, testInfo) => {
+      const backup = fixture();
+      for (const item of backup.data.eventLists[eventName]) {
+        if (item.id === "a1") item.number = "9000a";
+        if (item.id === "a2") item.number = "9000a2";
+        if (item.id === "merge-a") item.number = "9000a3";
+      }
+      await restore(page, backup);
+      await grouping(page, grouped);
+      await start(page, input, "merge-a");
+      await page.evaluate(async (input) => {
+        const root = document.querySelector<HTMLElement>(
+          '[data-shopping-drag-column="execute"]',
+        )!;
+        const target = Array.from(
+          root.querySelectorAll<HTMLElement>(
+            "[data-item-id]:not([data-space-group-key])",
+          ),
+        ).find((element) => {
+          const rect = element.getBoundingClientRect();
+          const x = rect.left + 20;
+          const y = Math.max(180, rect.top + 30);
+          return (
+            rect.bottom > y + 10 &&
+            y < window.innerHeight - 150 &&
+            document
+              .elementFromPoint(x, y)
+              ?.closest("[data-shopping-drag-column]") === root
+          );
+        });
+        if (!target)
+          throw new Error("No visible execution target after scrolling");
+        const rect = target.getBoundingClientRect();
+        const point = {
+          clientX: rect.left + 20,
+          clientY: Math.max(180, rect.top + 30),
+        };
+        const state = window as unknown as {
+          __dragTransfer: DataTransfer;
+          __dragSource: string;
+        };
+        if (input === "native")
+          target.dispatchEvent(
+            new DragEvent("dragover", {
+              bubbles: true,
+              cancelable: true,
+              dataTransfer: state.__dragTransfer,
+              ...point,
+            }),
+          );
+        else {
+          const source = document.querySelector<HTMLElement>(
+            `[data-item-id=${JSON.stringify(state.__dragSource)}]:not([data-space-group-key])`,
+          )!;
+          const touch = new Touch({ identifier: 1, target: source, ...point });
+          source.dispatchEvent(
+            new TouchEvent("touchmove", {
+              bubbles: true,
+              cancelable: true,
+              touches: [touch],
+              changedTouches: [touch],
+            }),
+          );
+        }
+        await new Promise(requestAnimationFrame);
+      }, input);
+      const status = page.locator(
+        '[data-shopping-drag-column="execute"] [data-shopping-drag-status="accepted"]',
+      );
+      const expectVisibleNotice = async () => {
+        await expect(status).toContainText("画面外");
+        await expect(status).toBeInViewport({ ratio: 1 });
+        await expect
+          .poll(() =>
+            status.evaluate((element) => {
+              const rect = element.getBoundingClientRect();
+              const { appHeaderHeight, footerHeight } =
+                document.documentElement.dataset;
+              const header = Number.parseFloat(appHeaderHeight ?? "") || 0;
+              const footer = Number.parseFloat(footerHeight ?? "") || 0;
+              return (
+                rect.top >= header + 7 &&
+                rect.bottom <= window.innerHeight - footer - 7
+              );
+            }),
+          )
+          .toBe(true);
+      };
+      await expectVisibleNotice();
+      expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
+      const beforeScroll = await page.evaluate(() => window.scrollY);
+      await page.evaluate(() => window.scrollBy(0, -120));
+      await expect
+        .poll(() => page.evaluate(() => window.scrollY))
+        .toBeLessThan(beforeScroll);
+      await expectVisibleNotice();
+      await testInfo.attach("scrolled-merge-notice", {
+        body: await page.screenshot(),
+        contentType: "image/png",
+      });
+      await finish(page, input, true);
+      await expect(
+        page.locator("[data-shopping-drag-status], [data-shopping-drag-guide]"),
+      ).toHaveCount(0);
+      await expect
+        .poll(async () => {
+          const order = (
+            (await stored(page, "executeModeItems"))[eventName] as Record<
+              string,
+              string[]
+            >
+          )[day];
+          return order.slice(order.indexOf("a1"), order.indexOf("a1") + 3);
+        })
+        .toEqual(["a1", "a2", "merge-a"]);
+      await reopen(page);
+      await expect.poll(() => ids(page, "candidate")).not.toContain("merge-a");
+    });
     test(`offscreen merge follows its own destination: ${input} grouping ${grouped}`, async ({
       page,
     }) => {

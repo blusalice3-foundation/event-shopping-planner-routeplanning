@@ -1,0 +1,8 @@
+file:///D:/event-shopping-planner-routeplanning-1.9.6.7/scripts/verify-release-a-build.mjs:68
+  throw new Error(
+        ^
+
+Error: Release A capability verification failed: legacy cleanup is not provably forced off.
+    at file:///D:/event-shopping-planner-routeplanning-1.9.6.7/scripts/verify-release-a-build.mjs:68:9
+
+Node.js v24.19.0

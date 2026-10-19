@@ -1,0 +1,32 @@
+[
+  {
+    "path": "src/features/shopping-list/drag/ShoppingDragWorkspace.tsx",
+    "sha256": "6594DDD866971E93D7173163D712ABE4D79C6733D2E930300A7F33457CD5E5FA",
+    "matches": true
+  },
+  {
+    "path": "src/features/shopping-list/drag/ShoppingDragWorkspace.integration.test.tsx",
+    "sha256": "B8E92AD4A95EB14586D8AEFCFBA5E4154B50FD966DBBA3F948CBDA7BA3FCCBCD",
+    "matches": true
+  },
+  {
+    "path": "src/hooks/useModalDialogBehavior.ts",
+    "sha256": "7C51FC9B938158E486E905204AB74BDD6378151EC131789B78F566E53B7BA1E7",
+    "matches": true
+  },
+  {
+    "path": "src/utils/modalFocusBoundary.ts",
+    "sha256": "00791D3E65AC763D4FB065C82CF2CFB4657A56279ED8334E95D2360802882FF8",
+    "matches": true
+  },
+  {
+    "path": "tests/browser/shopping-cross-column-drag.spec.ts",
+    "sha256": "4F6804FE7AD32FF6B91A50AEAE8DF005F1FE066F9C9802F6C6FACEAABF2DC397",
+    "matches": true
+  },
+  {
+    "path": "src/hooks/useModalDialogBehavior.integration.test.tsx",
+    "sha256": "02E177E6049218BC88E00D1BB9885F0B9CEA75982767B193C60FF7767655AE8D",
+    "matches": true
+  }
+]

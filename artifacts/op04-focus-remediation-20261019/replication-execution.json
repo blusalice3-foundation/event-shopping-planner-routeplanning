@@ -1,0 +1,20 @@
+[
+  {
+    "round": 2,
+    "exitCode": 1,
+    "startUtc": "2026-10-19T13:32:08.7338844+00:00",
+    "endUtc": "2026-10-19T13:34:41.6309478+00:00",
+    "workers": 1,
+    "retries": 0,
+    "concurrentHeavyTests": false
+  },
+  {
+    "round": 3,
+    "exitCode": 0,
+    "startUtc": "2026-10-19T13:34:41.6502866+00:00",
+    "endUtc": "2026-10-19T13:37:18.0388773+00:00",
+    "workers": 1,
+    "retries": 0,
+    "concurrentHeavyTests": false
+  }
+]

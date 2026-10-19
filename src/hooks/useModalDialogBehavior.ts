@@ -18,14 +18,18 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(", ");
 
+const isAvailableFocusTarget = (element: HTMLElement | null) =>
+  element?.isConnected &&
+  !element.matches(":disabled") &&
+  !element.closest('[hidden], [aria-hidden="true"], [inert]');
+
 const getFocusableElements = (container: HTMLElement | null) =>
   container
     ? Array.from(
         container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
       ).filter(
         (element) =>
-          !element.matches(":disabled") &&
-          !element.closest('[hidden], [aria-hidden="true"]') &&
+          isAvailableFocusTarget(element) &&
           element.getAttribute("tabindex") !== "-1",
       )
     : [];
@@ -46,7 +50,6 @@ export const useModalDialogBehavior = <T extends HTMLElement = HTMLDivElement>({
   fallbackFocusRef,
 }: UseModalDialogBehaviorOptions) => {
   const dialogRef = useRef<T>(null);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -62,7 +65,7 @@ export const useModalDialogBehavior = <T extends HTMLElement = HTMLDivElement>({
   useLayoutEffect(() => {
     if (!isOpen) return;
 
-    returnFocusRef.current =
+    const opener =
       document.activeElement instanceof HTMLElement &&
       document.activeElement !== document.body
         ? document.activeElement
@@ -70,10 +73,11 @@ export const useModalDialogBehavior = <T extends HTMLElement = HTMLDivElement>({
     const element = dialogRef.current;
     if (!element) return;
     if (!element.hasAttribute("tabindex")) element.tabIndex = -1;
-    const restore =
-      returnFocusRef.current ??
-      getFocusableElements(fallbackFocusRef?.current ?? null)[0] ??
-      null;
+    const restore = () => {
+      return isAvailableFocusTarget(opener)
+        ? opener
+        : (getFocusableElements(fallbackFocusRef?.current ?? null)[0] ?? null);
+    };
     const release = registerModalFocus(element, restore, containExternalFocus);
     const initialFocus =
       initialFocusRef?.current ?? getFocusableElements(element)[0] ?? element;

@@ -1,0 +1,35 @@
+{
+  "stats": {
+    "startTime": "2026-10-19T12:41:00.011Z",
+    "duration": 1454998.13,
+    "expected": 308,
+    "skipped": 54,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "errors": [],
+  "newCases": [
+    {
+      "title": "scrolled offscreen merge keeps its notice visible: native grouping true",
+      "status": "passed",
+      "retry": 0
+    },
+    {
+      "title": "scrolled offscreen merge keeps its notice visible: native grouping false",
+      "status": "passed",
+      "retry": 0
+    },
+    {
+      "title": "scrolled offscreen merge keeps its notice visible: touch grouping true",
+      "status": "passed",
+      "retry": 0
+    },
+    {
+      "title": "scrolled offscreen merge keeps its notice visible: touch grouping false",
+      "status": "passed",
+      "retry": 0
+    }
+  ],
+  "retries": 0,
+  "ordinaryIO": "passed"
+}

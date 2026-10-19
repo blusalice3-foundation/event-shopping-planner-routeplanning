@@ -1,0 +1,17 @@
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+
+Not implemented: Window's scrollBy() method
+Not implemented: Window's scrollBy() method
+Not implemented: Window's scrollBy() method
+Not implemented: Window's scrollBy() method
+Not implemented: Window's scrollBy() method
+Not implemented: Window's scrollBy() method
+·······················
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  21:47:35
+   Duration  4.91s (transform 865ms, setup 311ms, import 1.73s, tests 1.45s, environment 1.17s)
+
+JSON report written to D:/event-shopping-planner-routeplanning-1.9.6.7/artifacts/op04-focus-remediation-20261019/drag-final.json

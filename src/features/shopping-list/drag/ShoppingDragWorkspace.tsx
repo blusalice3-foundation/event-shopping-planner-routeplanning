@@ -100,6 +100,7 @@ function createWorkspace(
   } | null = null;
   const decorations: HTMLElement[] = [];
   let decorationKey = "";
+  let dragStatus: { root: HTMLElement; element: HTMLElement } | null = null;
   let layoutObserver: MutationObserver | null = null;
   let candidateNavigation: {
     list: DragList;
@@ -114,6 +115,43 @@ function createWorkspace(
   const clearDecorations = () => {
     decorations.splice(0).forEach((element) => element.remove());
     decorationKey = "";
+    dragStatus = null;
+  };
+  const positionStatus = () => {
+    if (!dragStatus) return;
+    const { root, element } = dragStatus;
+    const bounds = root.getBoundingClientRect();
+    const rootWidth = root.offsetWidth;
+    const rootHeight = root.offsetHeight;
+    // The list can be inside the app's scaled content; keep the overlay in
+    // list coordinates while positioning its visible box in the viewport.
+    const scaleX =
+      rootWidth > 0 && bounds.width > 0 ? bounds.width / rootWidth : 1;
+    const scaleY =
+      rootHeight > 0 && bounds.height > 0 ? bounds.height / rootHeight : 1;
+    const margin = 8;
+    const width = Math.max(
+      0,
+      Math.min(bounds.width, window.innerWidth - margin * 2),
+    );
+    const left = Math.max(
+      margin,
+      Math.min(bounds.left, window.innerWidth - width - margin),
+    );
+    element.style.maxWidth = `${width / scaleX}px`;
+    element.style.left = `${(left - bounds.left) / scaleX}px`;
+    const { appHeaderHeight, footerHeight } = document.documentElement.dataset;
+    const topLimit = (Number.parseFloat(appHeaderHeight ?? "") || 0) + margin;
+    const bottomLimit =
+      window.innerHeight -
+      (Number.parseFloat(footerHeight ?? "") || 0) -
+      element.offsetHeight * scaleY -
+      margin;
+    const top = Math.max(
+      margin,
+      Math.min(Math.max(bounds.top, topLimit), bottomLimit),
+    );
+    element.style.top = `${(top - bounds.top) / scaleY}px`;
   };
   const itemElement = (root: HTMLElement, id: string): HTMLElement | null => {
     const rowKey = `item:${JSON.stringify(id)}`;
@@ -186,6 +224,8 @@ function createWorkspace(
     status.textContent = text;
     root.prepend(status);
     decorations.push(status);
+    dragStatus = { root, element: status };
+    positionStatus();
     lines.forEach(({ element, edge, kind }) => {
       const line = document.createElement("div");
       line.dataset.shoppingDragGuide = kind;
@@ -437,6 +477,7 @@ function createWorkspace(
     },
     refresh() {
       if (!active || !hoverPoint) return;
+      positionStatus();
       const point = hoverPoint;
       const element =
         point.x === undefined || typeof document.elementFromPoint !== "function"
