@@ -1,0 +1,38 @@
+[
+  {
+    "check": "test:encoding",
+    "exitCode": 0
+  },
+  {
+    "check": "typecheck",
+    "exitCode": 0
+  },
+  {
+    "check": "verify:architecture",
+    "exitCode": 0
+  },
+  {
+    "check": "verify:test-project-membership",
+    "exitCode": 0
+  },
+  {
+    "check": "verify:db-compatibility",
+    "exitCode": 0
+  },
+  {
+    "check": "verify:dependency-usage",
+    "exitCode": 0
+  },
+  {
+    "check": "test:api",
+    "exitCode": 0
+  },
+  {
+    "check": "prettier",
+    "exitCode": 0
+  },
+  {
+    "check": "eslint",
+    "exitCode": 0
+  }
+]

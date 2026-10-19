@@ -1,5 +1,7 @@
+import { useModalDialogBehavior } from "../../hooks/useModalDialogBehavior";
 import React, {
   useState,
+  useId,
   useCallback,
   useMemo,
   useRef,
@@ -686,14 +688,32 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
     onClose();
   }, [canCancel, onClose]);
 
+  const titleId = useId();
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen: isOpen && !!file,
+    containExternalFocus: true,
+    onEscape: handleClose,
+  });
+
   if (!isOpen || !file) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="mx-4 flex max-h-[90vh] w-full max-w-[640px] flex-col rounded-lg bg-white shadow-xl dark:bg-slate-800">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={onDialogKeyDown}
+        className="mx-4 flex max-h-[90vh] w-full max-w-[640px] flex-col rounded-lg bg-white shadow-xl dark:bg-slate-800"
+      >
         {/* ヘッダー */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h2
+            id={titleId}
+            className="text-lg font-semibold text-slate-900 dark:text-white"
+          >
             📋 マップデータ取り込み
           </h2>
           <button

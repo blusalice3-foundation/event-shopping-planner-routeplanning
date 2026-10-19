@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
+import React, { useId, useState } from "react";
 
 interface UrlUpdateDialogProps {
   currentUrl: string;
@@ -13,6 +14,12 @@ const UrlUpdateDialog: React.FC<UrlUpdateDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const titleId = useId();
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen: true,
+    containExternalFocus: true,
+    onEscape: onCancel,
+  });
   const [url, setUrl] = useState(currentUrl);
   const [sheetName, setSheetName] = useState(currentSheetName);
 
@@ -25,9 +32,20 @@ const UrlUpdateDialog: React.FC<UrlUpdateDialogProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={onDialogKeyDown}
+        className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4"
+      >
         <div className="p-6">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+          <h2
+            id={titleId}
+            className="text-xl font-bold text-slate-900 dark:text-white mb-4"
+          >
             スプレッドシートURLを更新
           </h2>
 

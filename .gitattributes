@@ -17,3 +17,6 @@ artifacts/user-operation-consistency-20261018/** -text whitespace=cr-at-eol,-bla
 # Preserve original bytes and console whitespace in operation follow-up evidence.
 artifacts/op19-followup/** -text whitespace=cr-at-eol,-blank-at-eol,-blank-at-eof
 artifacts/op04-before/** -text whitespace=cr-at-eol,-blank-at-eol,-blank-at-eof
+
+# Preserve original bytes and console whitespace in final remediation evidence.
+artifacts/op19-final-remediation-20261019/** -text whitespace=cr-at-eol,-blank-at-eol,-blank-at-eof

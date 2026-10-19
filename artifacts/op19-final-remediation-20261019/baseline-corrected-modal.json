@@ -1,0 +1,428 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\espfix-261019\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/modal-late-save-failure.spec.ts",
+      "--workers=1",
+      "--reporter=json",
+      "--output",
+      "D:/espfix-evidence-261019/baseline-corrected-results"
+    ],
+    "configFile": "D:\\espfix-261019\\playwright.config.ts",
+    "rootDir": "D:/espfix-261019/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/espfix-evidence-261019/baseline-corrected-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/espfix-261019/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "modal-late-save-failure.spec.ts",
+      "file": "modal-late-save-failure.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "delayed real save failure keeps keyboard inside url until close",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1209,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts:189:7",
+                    "location": {
+                      "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                      "column": 7,
+                      "line": 189
+                    },
+                    "snippet": "  187 |         element.contains(document.activeElement),\n  188 |       ),\n> 189 |     ).toBe(true);\n      |       ^\n  190 |     const before = await worker.evaluate(() => [\n  191 |       ...(self as unknown as FailureProbe).__lateFailureMethods,\n  192 |     ]);"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                        "column": 7,
+                        "line": 189
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  187 |         element.contains(document.activeElement),\n  188 |       ),\n> 189 |     ).toBe(true);\n      |       ^\n  190 |     const before = await worker.evaluate(() => [\n  191 |       ...(self as unknown as FailureProbe).__lateFailureMethods,\n  192 |     ]);\n    at D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts:189:7"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T07:01:57.173Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\espfix-evidence-261019\\baseline-corrected-results\\modal-late-save-failure-de-621da-oard-inside-url-until-close-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\espfix-evidence-261019\\baseline-corrected-results\\modal-late-save-failure-de-621da-oard-inside-url-until-close-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                    "column": 7,
+                    "line": 189
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "90b7c9c74bf4bca312c8-b556429ea96944c08aa1",
+          "file": "modal-late-save-failure.spec.ts",
+          "line": 125,
+          "column": 3
+        },
+        {
+          "title": "delayed real save failure keeps keyboard inside update until close",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1236,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts:189:7",
+                    "location": {
+                      "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                      "column": 7,
+                      "line": 189
+                    },
+                    "snippet": "  187 |         element.contains(document.activeElement),\n  188 |       ),\n> 189 |     ).toBe(true);\n      |       ^\n  190 |     const before = await worker.evaluate(() => [\n  191 |       ...(self as unknown as FailureProbe).__lateFailureMethods,\n  192 |     ]);"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                        "column": 7,
+                        "line": 189
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  187 |         element.contains(document.activeElement),\n  188 |       ),\n> 189 |     ).toBe(true);\n      |       ^\n  190 |     const before = await worker.evaluate(() => [\n  191 |       ...(self as unknown as FailureProbe).__lateFailureMethods,\n  192 |     ]);\n    at D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts:189:7"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T07:01:59.552Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\espfix-evidence-261019\\baseline-corrected-results\\modal-late-save-failure-de-684cc-d-inside-update-until-close-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\espfix-evidence-261019\\baseline-corrected-results\\modal-late-save-failure-de-684cc-d-inside-update-until-close-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                    "column": 7,
+                    "line": 189
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "90b7c9c74bf4bca312c8-b1f35d61426ce8049974",
+          "file": "modal-late-save-failure.spec.ts",
+          "line": 125,
+          "column": 3
+        },
+        {
+          "title": "delayed real save failure keeps keyboard inside rename until close",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1211,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts:189:7",
+                    "location": {
+                      "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                      "column": 7,
+                      "line": 189
+                    },
+                    "snippet": "  187 |         element.contains(document.activeElement),\n  188 |       ),\n> 189 |     ).toBe(true);\n      |       ^\n  190 |     const before = await worker.evaluate(() => [\n  191 |       ...(self as unknown as FailureProbe).__lateFailureMethods,\n  192 |     ]);"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                        "column": 7,
+                        "line": 189
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  187 |         element.contains(document.activeElement),\n  188 |       ),\n> 189 |     ).toBe(true);\n      |       ^\n  190 |     const before = await worker.evaluate(() => [\n  191 |       ...(self as unknown as FailureProbe).__lateFailureMethods,\n  192 |     ]);\n    at D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts:189:7"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T07:02:01.925Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\espfix-evidence-261019\\baseline-corrected-results\\modal-late-save-failure-de-0fd1d-d-inside-rename-until-close-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\espfix-evidence-261019\\baseline-corrected-results\\modal-late-save-failure-de-0fd1d-d-inside-rename-until-close-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                    "column": 7,
+                    "line": 189
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "90b7c9c74bf4bca312c8-0edb507547544faa7353",
+          "file": "modal-late-save-failure.spec.ts",
+          "line": 125,
+          "column": 3
+        },
+        {
+          "title": "delayed real save failure keeps keyboard inside map until close",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1302,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts:189:7",
+                    "location": {
+                      "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                      "column": 7,
+                      "line": 189
+                    },
+                    "snippet": "  187 |         element.contains(document.activeElement),\n  188 |       ),\n> 189 |     ).toBe(true);\n      |       ^\n  190 |     const before = await worker.evaluate(() => [\n  191 |       ...(self as unknown as FailureProbe).__lateFailureMethods,\n  192 |     ]);"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                        "column": 7,
+                        "line": 189
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  187 |         element.contains(document.activeElement),\n  188 |       ),\n> 189 |     ).toBe(true);\n      |       ^\n  190 |     const before = await worker.evaluate(() => [\n  191 |       ...(self as unknown as FailureProbe).__lateFailureMethods,\n  192 |     ]);\n    at D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts:189:7"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T07:02:04.231Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\espfix-evidence-261019\\baseline-corrected-results\\modal-late-save-failure-de-c65a2-oard-inside-map-until-close-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\espfix-evidence-261019\\baseline-corrected-results\\modal-late-save-failure-de-c65a2-oard-inside-map-until-close-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                    "column": 7,
+                    "line": 189
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "90b7c9c74bf4bca312c8-dd4a7af42a1bb715580e",
+          "file": "modal-late-save-failure.spec.ts",
+          "line": 125,
+          "column": 3
+        },
+        {
+          "title": "delayed real save failure keeps keyboard inside menu until close",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1111,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts:189:7",
+                    "location": {
+                      "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                      "column": 7,
+                      "line": 189
+                    },
+                    "snippet": "  187 |         element.contains(document.activeElement),\n  188 |       ),\n> 189 |     ).toBe(true);\n      |       ^\n  190 |     const before = await worker.evaluate(() => [\n  191 |       ...(self as unknown as FailureProbe).__lateFailureMethods,\n  192 |     ]);"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                        "column": 7,
+                        "line": 189
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  187 |         element.contains(document.activeElement),\n  188 |       ),\n> 189 |     ).toBe(true);\n      |       ^\n  190 |     const before = await worker.evaluate(() => [\n  191 |       ...(self as unknown as FailureProbe).__lateFailureMethods,\n  192 |     ]);\n    at D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts:189:7"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T07:02:06.677Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\espfix-evidence-261019\\baseline-corrected-results\\modal-late-save-failure-de-3c13c-ard-inside-menu-until-close-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\espfix-evidence-261019\\baseline-corrected-results\\modal-late-save-failure-de-3c13c-ard-inside-menu-until-close-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\espfix-261019\\tests\\browser\\modal-late-save-failure.spec.ts",
+                    "column": 7,
+                    "line": 189
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "90b7c9c74bf4bca312c8-c52a38f359bfdc33258c",
+          "file": "modal-late-save-failure.spec.ts",
+          "line": 125,
+          "column": 3
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-19T07:01:55.591Z",
+    "duration": 12391.756000000001,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 5,
+    "flaky": 0
+  }
+}

@@ -1,5 +1,6 @@
+import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
 import type { EventUpdateDiff } from "../features/events/updateDiff";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useState } from "react";
 import type { EventUpdateApplyOptions } from "../features/events/updateApply";
 import type { SpreadsheetSource } from "../features/events/updateFlow";
 import type {
@@ -52,6 +53,14 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const titleId = useId();
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen: true,
+    containExternalFocus: true,
+    onEscape: () => {
+      if (!isSaving) onCancel();
+    },
+  });
   const purchasedQuantityConfirmationKey = JSON.stringify(
     pendingPurchasedQuantityChanges.map((change) => [
       change.itemId,
@@ -80,9 +89,20 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={onDialogKeyDown}
+        className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+      >
         <div className="p-6">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+          <h2
+            id={titleId}
+            className="text-xl font-bold text-slate-900 dark:text-white mb-4"
+          >
             アイテム更新の確認
           </h2>
 

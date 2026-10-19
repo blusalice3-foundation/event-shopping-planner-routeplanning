@@ -5496,6 +5496,10 @@ test("OP09: resumed phase synchronizes replacement postponed targets before reco
   await restore(page, source);
   await op09Postponed(page);
   await page.getByTitle("編集モード", { exact: true }).click();
+  await expect(page.locator("#focus-mode-footer")).toBeHidden();
+  await expect(
+    page.getByRole("heading", { name: "実行リストアイテム", exact: true }),
+  ).toBeVisible();
   await op09Delete(page, "2");
   await op09CardMenu(page, "4");
   await page.getByRole("button", { name: "編集", exact: true }).click();

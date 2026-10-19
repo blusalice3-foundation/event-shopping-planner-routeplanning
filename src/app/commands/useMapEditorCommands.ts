@@ -981,6 +981,7 @@ export const useMapEditorCommands = ({
       const routeDays: Record<string, string[]> = { [sourceKey]: [day] };
       if (kind === "hall-definition") routeDays[maplessKey] = [day];
       const targets = new Map<string, string[]>();
+      const sourceMapTargetDays: string[] = [];
       for (const date of new Set(targetDates)) {
         const key =
           kind === "simple-hall-definition"
@@ -990,7 +991,11 @@ export const useMapEditorCommands = ({
         (routeDays[key] ??= []).push(
           ...(routeDays[key]?.includes(date) ? [] : [date]),
         );
-        if (key === sourceKey) continue;
+        if (key === sourceKey) {
+          if (kind === "hall-definition" && date !== day)
+            sourceMapTargetDays.push(date);
+          continue;
+        }
         const dates = targets.get(key) ?? [];
         dates.push(date);
         targets.set(key, dates);
@@ -1030,6 +1035,13 @@ export const useMapEditorCommands = ({
             routeDays: { [eventName]: routeDays },
             ...(kind === "hall-definition" && clones.size
               ? { polygonHallSyncTargets: { [eventName]: [...clones.keys()] } }
+              : {}),
+            ...(sourceMapTargetDays.length
+              ? {
+                  polygonHallSyncTargetDays: {
+                    [eventName]: { [sourceKey]: sourceMapTargetDays },
+                  },
+                }
               : {}),
           },
           (snapshot) => {

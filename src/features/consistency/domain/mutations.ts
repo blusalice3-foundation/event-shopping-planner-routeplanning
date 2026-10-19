@@ -728,6 +728,12 @@ function planProjectedMutationAfterMerge(
         const mapKey = key.startsWith(`${MAPLESS_HALL_KEY}:`) ? null : key;
         const target = ensureVisitContext(targetDay, mapKey);
         const settings = raw as HallRouteSettings;
+        const sharesSourceMap =
+          !!input.polygonHallSyncTargetDays?.[eventName]?.[key]?.includes(day);
+        const polygonSync =
+          mapKey !== null &&
+          (sharesSourceMap ||
+            !!input.polygonHallSyncTargets?.[eventName]?.includes(key));
         const decodeGroup = (id: string) => {
           const decoded = decodeHallGroup(id);
           if (decoded) return decoded;
@@ -738,15 +744,12 @@ function planProjectedMutationAfterMerge(
                 string,
                 HallDefinition[]
               >,
-              day,
+              sharesSourceMap ? input.day : day,
               mapKey,
             ),
           );
           return candidates.length === 1 ? candidates[0] : null;
         };
-        const polygonSync =
-          mapKey !== null &&
-          !!input.polygonHallSyncTargets?.[eventName]?.includes(key);
         const previousOrder = target.hallOrder;
         const nextOrder = settings.hallOrder.map((id) => {
           const group = decodeGroup(id);

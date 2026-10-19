@@ -24,6 +24,7 @@ const getFocusableElements = (container: HTMLElement | null) =>
         container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
       ).filter(
         (element) =>
+          !element.matches(":disabled") &&
           !element.closest('[hidden], [aria-hidden="true"]') &&
           element.getAttribute("tabindex") !== "-1",
       )

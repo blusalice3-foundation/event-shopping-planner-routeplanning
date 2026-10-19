@@ -1062,3 +1062,38 @@ it("normalizes confirmation cancellation and exposes synchronous write ownership
     ports.persistence.commitApplicationSnapshotPatch,
   ).toHaveBeenCalledOnce();
 });
+
+it.each([
+  { dates: [DAY], targetDays: [] },
+  { dates: [DAY, "１日目", "１日目"], targetDays: ["１日目"] },
+])(
+  "keeps source-map synchronization scoped to distinct destination days ($targetDays)",
+  async ({ dates, targetDays }) => {
+    const harness = createHarness();
+    const ports = harness.createPorts();
+    ports.selectors.getMapTabForDate = () => MAP;
+    const { result } = renderHook(() => useMapEditorCommands(ports));
+    const draft = [polygonHall("polygon"), maplessHall("manual")];
+    await act(async () => {
+      await result.current.handleSyncPolygonHallsToOtherDates(dates, draft);
+    });
+    expect(harness.spies.commitApplicationSnapshotPatch).toHaveBeenCalledOnce();
+    expect(harness.stores.hallDefinitions[EVENT][MAP]).toEqual([draft[0]]);
+    expect(harness.stores.hallDefinitions[EVENT][getMaplessKey(DAY)]).toEqual([
+      draft[1],
+    ]);
+    expect(
+      harness.spies.commitApplicationSnapshotPatch.mock.calls[0][2],
+    ).toEqual({
+      routeDays: {
+        [EVENT]: {
+          [MAP]: [DAY, ...targetDays],
+          [getMaplessKey(DAY)]: [DAY],
+        },
+      },
+      ...(targetDays.length
+        ? { polygonHallSyncTargetDays: { [EVENT]: { [MAP]: targetDays } } }
+        : {}),
+    });
+  },
+);

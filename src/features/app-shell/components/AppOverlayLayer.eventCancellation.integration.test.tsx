@@ -110,7 +110,7 @@ describe("event cancellation through the real overlay controller and dialogs", (
     act(() => staleClose());
     expect(getController().state.event).toBe(currentRequest);
     expect(screen.getByText("エクスポート設定")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: /^$/ }));
+    fireEvent.click(screen.getByRole("button", { name: "閉じる" }));
     expect(getController().state.event.kind).toBe("inactive");
     expect(confirmExport).not.toHaveBeenCalled();
 

@@ -1,8 +1,9 @@
+import { useModalDialogBehavior } from "../../../hooks/useModalDialogBehavior";
 import { recordEntry } from "../../../utils/ownRecord";
 import type { HallSelectionIntent } from "../../../types/consistency";
 import type { ItemMembershipPreview } from "../../consistency/domain/itemEdit";
 import { applyChangedFields } from "../../consistency/domain/mutations";
-import React from "react";
+import React, { useId } from "react";
 import DeleteConfirmationModal from "../../../components/DeleteConfirmationModal";
 import { ItemEditDialog } from "../../../components/ItemEditDialog";
 import UpdateConfirmationModal from "../../../components/UpdateConfirmationModal";
@@ -466,6 +467,17 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
     event: eventOverlayCommands,
     mapEditor: mapEditorOverlayCommands,
   } = overlayCommands;
+  const visitListConfirmTitleId = useId();
+  const {
+    dialogRef: visitListConfirmRef,
+    onDialogKeyDown: onVisitListConfirmKeyDown,
+  } = useModalDialogBehavior({
+    isOpen: showVisitListConfirmDialog,
+    containExternalFocus: true,
+    onEscape: () => {
+      // Discarding the visit draft requires the explicit discard button.
+    },
+  });
 
   return (
     <>
@@ -759,8 +771,19 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
 
       {showVisitListConfirmDialog && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3">
+          <div
+            ref={visitListConfirmRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={visitListConfirmTitleId}
+            tabIndex={-1}
+            onKeyDown={onVisitListConfirmKeyDown}
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
+          >
+            <h3
+              id={visitListConfirmTitleId}
+              className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3"
+            >
               変更を保存しますか？
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">

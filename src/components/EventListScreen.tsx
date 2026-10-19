@@ -1,3 +1,4 @@
+import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
 import React, { useState } from "react";
 import TrashIcon from "./icons/TrashIcon";
 
@@ -74,6 +75,11 @@ const EventListScreen: React.FC<EventListScreenProps> = ({
   onRestoreBackup,
 }) => {
   const [menuVisibleFor, setMenuVisibleFor] = useState<string | null>(null);
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen: menuVisibleFor !== null && eventNames.length > 0,
+    containExternalFocus: true,
+    onEscape: () => setMenuVisibleFor(null),
+  });
 
   const handleDelete = (eventName: string) => {
     if (
@@ -235,6 +241,12 @@ const EventListScreen: React.FC<EventListScreenProps> = ({
           }}
         >
           <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${menuVisibleFor}の操作`}
+            tabIndex={-1}
+            onKeyDown={onDialogKeyDown}
             className="bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 min-w-[280px] max-w-[90vw] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >

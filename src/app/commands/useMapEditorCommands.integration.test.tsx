@@ -17,7 +17,7 @@ import {
   commitApplicationSnapshotAtomically,
 } from "../../persistence/db/atomicRestoreTransaction";
 import { resetDatabaseConnection } from "../../persistence/db/openDatabase";
-import type { ShoppingItem } from "../../types/item";
+import type { DayModeState, ShoppingItem } from "../../types/item";
 import { getMaplessKey } from "../../types/map";
 import {
   useMapEditorCommands,
@@ -96,7 +96,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-async function harness(mapless = false) {
+async function harness(mapless = false, sourceMapDates: string[] = []) {
   const { eventConsistency: _consistency, ...empty } =
     emptyApplicationSnapshot();
   let seed = migrateLegacyConsistency({
@@ -182,7 +182,11 @@ async function harness(mapless = false) {
       actions,
       selectors: {
         getMapTabForDate: (date) =>
-          mapless ? null : date === DAY ? MAP : OTHER_MAP,
+          mapless
+            ? null
+            : date === DAY || sourceMapDates.includes(date)
+              ? MAP
+              : OTHER_MAP,
         getItemHallId: () =>
           mapless
             ? null
@@ -977,4 +981,170 @@ it("shares a detailed clone across target dates while retaining each day's own s
       before.hallDefinitions[EVENT][getMaplessKey(day)],
     );
   }
+});
+
+it("preserves each target's simple route when detailed sync shares the source map and saves the full source draft", async () => {
+  const aliases = ["１日目", "1 日目"];
+  const h = await harness(false, aliases);
+  const simpleRef = (dayKey: string, hallId: string) => ({
+    kind: "simple" as const,
+    dayKey,
+    hallId,
+  });
+  const polygonRef = { kind: "map" as const, mapKey: MAP, hallId: "hall" };
+  const newPolygon = {
+    ...hall,
+    id: "new-polygon",
+    name: "新規詳細",
+    vertices: [
+      { row: 5, col: 5 },
+      { row: 5, col: 6 },
+      { row: 6, col: 6 },
+      { row: 6, col: 5 },
+    ],
+  };
+  await h.otherTab((latest) => {
+    const source = latest.eventConsistency[EVENT].days[DAY].maps[MAP];
+    source.hallOrder = [
+      { hall: simpleRef(DAY, "simple"), priority: "none" },
+      { hall: polygonRef, priority: "none" },
+    ];
+    source.assignments = { "1": simpleRef(DAY, "simple"), "2": polygonRef };
+    source.hallVisitLists = [
+      { group: source.hallOrder[0], itemIds: ["1"] },
+      { group: source.hallOrder[1], itemIds: ["2"] },
+    ];
+    for (const [index, day] of aliases.entries()) {
+      const ids = [`alias-${index}-c`, `alias-${index}-b`];
+      (latest.eventLists[EVENT] as ShoppingItem[]).push(
+        ...ids.map((id, index) => ({
+          ...item(id, day),
+          block: index ? "B" : "C",
+        })),
+      );
+      latest.executeModeItems[EVENT][day] = ids;
+      latest.dayModes[EVENT][day] = "execute";
+      latest.hallDefinitions[EVENT][getMaplessKey(day)] = [
+        { ...simpleHall, id: "b", name: "簡易B", blockNames: ["B"] },
+        { ...simpleHall, id: "c", name: "簡易C", blockNames: ["C"] },
+      ];
+      const groups = [
+        { hall: simpleRef(day, "c"), priority: "none" as const },
+        { hall: simpleRef(day, "b"), priority: "none" as const },
+        { hall: polygonRef, priority: "none" as const },
+      ];
+      latest.eventConsistency[EVENT].days[day] = {
+        selectedMapKey: MAP,
+        mapless: null,
+        maps: {
+          [MAP]: {
+            assignments: { [ids[0]]: groups[0].hall, [ids[1]]: groups[1].hall },
+            hallOrder: groups,
+            hallVisitLists: groups.slice(0, 2).map((group, i) => ({
+              group,
+              itemIds: [ids[i]],
+            })),
+            route: null,
+          },
+        },
+      };
+    }
+  });
+  const before = (await readApplicationSnapshot()).snapshot;
+  act(() => {
+    const setters = h.result.current.application.hydrationSetters;
+    setters.setEventLists(before.eventLists as Record<string, ShoppingItem[]>);
+    setters.setExecuteModeItems(before.executeModeItems);
+    setters.setDayModes(before.dayModes as Record<string, DayModeState>);
+    setters.setHallDefinitions(before.hallDefinitions as HallDefinitionsStore);
+    setters.setEventConsistency(before.eventConsistency);
+  });
+  const values = h.result.current.application.values;
+  const draft = [
+    ...values.hallDefinitions[EVENT][MAP],
+    newPolygon,
+    ...values.hallDefinitions[EVENT][getMaplessKey(DAY)].map((entry) => ({
+      ...entry,
+      name: "同期元簡易の編集",
+    })),
+    {
+      ...simpleHall,
+      id: "new-simple",
+      name: "同期元の新規簡易",
+      blockNames: ["Z"],
+    },
+  ];
+  let pending!: ReturnType<MapEditorCommands["handleUpdateHalls"]>;
+  act(() => {
+    pending = h.result.current.commands.handleSyncPolygonHallsToOtherDates(
+      [DAY, ...aliases, aliases[0]],
+      draft,
+    );
+    void pending.catch(() => undefined);
+  });
+  await act(async () =>
+    h.result.current.application.coordinator.enqueue(() => undefined),
+  );
+  while (h.result.current.application.confirmations.length) {
+    await act(async () => {
+      h.result.current.application.confirm(
+        h.result.current.application.confirmations[0].token,
+      );
+      await h.result.current.application.coordinator.enqueue(() => undefined);
+    });
+  }
+  let result!: Awaited<typeof pending>;
+  await act(async () => {
+    result = await pending;
+  });
+  const saved = (await readApplicationSnapshot()).snapshot;
+  expect(result.status).toBe("saved");
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(h.applied).toHaveBeenCalledOnce();
+  expect(saved.hallDefinitions[EVENT][MAP]).toEqual([hall, newPolygon]);
+  expect(saved.hallDefinitions[EVENT][getMaplessKey(DAY)]).toEqual([
+    { ...simpleHall, name: "同期元簡易の編集" },
+    {
+      ...simpleHall,
+      id: "new-simple",
+      name: "同期元の新規簡易",
+      blockNames: ["Z"],
+    },
+  ]);
+  expect(
+    saved.eventConsistency[EVENT].days[DAY].maps[MAP].hallOrder.map(
+      (group) => group.hall,
+    ),
+  ).toEqual([
+    simpleRef(DAY, "simple"),
+    polygonRef,
+    { kind: "map", mapKey: MAP, hallId: "new-polygon" },
+    simpleRef(DAY, "new-simple"),
+  ]);
+  for (const day of aliases) {
+    const target = saved.eventConsistency[EVENT].days[day].maps[MAP];
+    const previous = before.eventConsistency[EVENT].days[day].maps[MAP];
+    expect(target.hallOrder).toEqual([
+      ...previous.hallOrder,
+      {
+        hall: { kind: "map", mapKey: MAP, hallId: "new-polygon" },
+        priority: "none",
+      },
+    ]);
+    expect(
+      target.hallVisitLists.filter(
+        (list) => list.group.hall?.kind === "simple",
+      ),
+    ).toEqual(previous.hallVisitLists);
+    expect(target.hallVisitLists.flatMap((list) => list.itemIds)).toEqual(
+      previous.hallVisitLists.flatMap((list) => list.itemIds),
+    );
+    expect(target.assignments).toEqual(previous.assignments);
+    expect(saved.hallDefinitions[EVENT][getMaplessKey(day)]).toEqual(
+      before.hallDefinitions[EVENT][getMaplessKey(day)],
+    );
+  }
+  expect(saved.eventLists).toEqual(before.eventLists);
+  expect(saved.executeModeItems).toEqual(before.executeModeItems);
+  expect(h.result.current.application.raw).toEqual(saved);
 });

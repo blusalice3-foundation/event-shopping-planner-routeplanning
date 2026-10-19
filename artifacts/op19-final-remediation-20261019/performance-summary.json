@@ -1,0 +1,538 @@
+{
+  "Date": "2026-10-19",
+  "Passed": true,
+  "Criteria": {
+    "P95MaxMs": 100,
+    "MinimumSamples": 20,
+    "MedianMaxMs": 55,
+    "QuantileMethod": "nearest rank: sorted[ceil(n*q)-1], q=0.50/0.95"
+  },
+  "ResponseSummary": [
+    {
+      "Scope": "Required150500",
+      "Metrics": 96,
+      "Samples": 2120.0,
+      "MinimumSamples": 20.0,
+      "MaximumMedianMs": 34.29999999888241,
+      "MaximumP95Ms": 41.90000000037253,
+      "Passed": true
+    },
+    {
+      "Scope": "Existing1500",
+      "Metrics": 48,
+      "Samples": 1060.0,
+      "MinimumSamples": 20.0,
+      "MaximumMedianMs": 46.5,
+      "MaximumP95Ms": 55.80000000074506,
+      "Passed": true
+    },
+    {
+      "Scope": "Drag",
+      "Metrics": 60,
+      "Samples": 1200.0,
+      "MinimumSamples": 20.0,
+      "MaximumMedianMs": 50.69999999925494,
+      "MaximumP95Ms": 61.19999999925494,
+      "Passed": true
+    }
+  ],
+  "ResponseBudgetFailures": [],
+  "SaveTiming": {
+    "ShoppingMetrics": 72,
+    "AppliesResponseBudget": false,
+    "Pairs": [
+      "shopping-diagnostic-pairs.csv",
+      "drag-save-pairs.csv"
+    ],
+    "DragMetrics": 8,
+    "Rows": [
+      "shopping-save-rows.csv",
+      "drag-save-rows.csv"
+    ]
+  },
+  "LifecycleTiming": {
+    "Rows": "drag-lifecycle-rows.csv",
+    "AppliesResponseBudget": false,
+    "IntentionalTouchDelayRecordedSeparately": true,
+    "Pairs": "drag-lifecycle-pairs.csv",
+    "Metrics": 40
+  },
+  "PointerAndLocality": {
+    "FinalProfiles": 8,
+    "FinalScenarios": 52,
+    "MutationRequests": 0.0,
+    "ReadwriteTransactions": 0.0,
+    "ScenarioMutationRequests": 0.0,
+    "ScenarioReadwriteTransactions": 0.0,
+    "UnrelatedUpdates": 0.0,
+    "PreviouslyMountedRemounts": 0.0,
+    "AutoScrollNewMounts": 48.0,
+    "UnexpectedNewMounts": 0.0,
+    "LocalityOrIOFailures": 0
+  },
+  "Baseline": {
+    "SourceCheckSha256": "8FADC4238BC2FE77A21F522D81FEF1D4482AD160126F65C14817D41CAE9CFF09",
+    "Drag": "Fresh full response measurement",
+    "SourceCheckPath": "D:\\espfix-evidence-261019\\baseline-source-check.json",
+    "AllSourceChecksMatch": true,
+    "Shopping": "Inherited measurements, recomputed from raw samples",
+    "SourceChecks": 28
+  },
+  "FinalNormalAndDragReportsDoNotOverlap": true,
+  "Environment": {
+    "Different": [],
+    "Details": "performance-environment-pairs.csv",
+    "AbsentFields": [
+      {
+        "Kind": "shopping",
+        "Profile": "150-false-false-pc",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-false-false-pc",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-false-false-smartphone",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-false-false-smartphone",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-false-true-pc",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-false-true-pc",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-false-true-smartphone",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-false-true-smartphone",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-true-false-pc",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-true-false-pc",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-true-false-smartphone",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-true-false-smartphone",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-true-true-pc",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-true-true-pc",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-true-true-smartphone",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "150-true-true-smartphone",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-false-false-pc",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-false-false-pc",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-false-false-smartphone",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-false-false-smartphone",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-false-true-pc",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-false-true-pc",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-false-true-smartphone",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-false-true-smartphone",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-true-false-pc",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-true-false-pc",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-true-false-smartphone",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-true-false-smartphone",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-true-true-pc",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-true-true-pc",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-true-true-smartphone",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "1500-true-true-smartphone",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-false-false-pc",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-false-false-pc",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-false-false-smartphone",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-false-false-smartphone",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-false-true-pc",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-false-true-pc",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-false-true-smartphone",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-false-true-smartphone",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-true-false-pc",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-true-false-pc",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-true-false-smartphone",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-true-false-smartphone",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-true-true-pc",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-true-true-pc",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-true-true-smartphone",
+        "Field": "browser",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      },
+      {
+        "Kind": "shopping",
+        "Profile": "500-true-true-smartphone",
+        "Field": "userAgent",
+        "Baseline": null,
+        "Final": null,
+        "Status": "absent-both"
+      }
+    ],
+    "ProjectComparisons": [
+      {
+        "Kind": "shopping",
+        "Equal": true
+      },
+      {
+        "Kind": "drag",
+        "Equal": true
+      }
+    ],
+    "ComparedFields": [
+      "browser",
+      "userAgent"
+    ]
+  },
+  "EmbeddedSummaryMismatches": [],
+  "Reports": [
+    {
+      "Role": "final-shopping",
+      "Path": "D:\\espfix-evidence-261019\\shopping-performance.json",
+      "Sha256": "34D8EDFB0415A481A91C403EB5230CE7E325FB3726B8EA524BCBBC7730603087",
+      "StartTime": "2026-10-19T07:29:16.362Z",
+      "DurationMs": 1063183.911,
+      "Workers": 1,
+      "Projects": [
+        "chromium"
+      ],
+      "Tests": 24
+    },
+    {
+      "Role": "final-drag",
+      "Path": "D:\\espfix-evidence-261019\\drag-performance.json",
+      "Sha256": "0F429135F419563782656F526EB6D1B4CDB8D4DA2C0AEF1F5C46CBE65E2507DE",
+      "StartTime": "2026-10-19T07:47:01.17Z",
+      "DurationMs": 143649.98400000003,
+      "Workers": 1,
+      "Projects": [
+        "chromium"
+      ],
+      "Tests": 8
+    },
+    {
+      "Role": "inherited-baseline-shopping",
+      "Path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\op19-followup\\shopping-performance-report.json",
+      "Sha256": "80FD4E5A26E7CBECF6D08F21E3FA3FFE911DA27467F0FEC89351621A3034DF98",
+      "StartTime": "2026-10-19T04:59:10.116Z",
+      "DurationMs": 1072926.2089999998,
+      "Workers": 1,
+      "Projects": [
+        "chromium"
+      ],
+      "Tests": 24
+    },
+    {
+      "Role": "fresh-baseline-drag",
+      "Path": "D:\\espfix-evidence-261019\\drag-baseline.json",
+      "Sha256": "1195E2F30332592303CF90F398DC094A2EAE1DD207DF0E6C500C39BB80B8FFBA",
+      "StartTime": "2026-10-19T07:26:51.616Z",
+      "DurationMs": 143282.91100000002,
+      "Workers": 1,
+      "Projects": [
+        "chromium"
+      ],
+      "Tests": 8
+    }
+  ],
+  "SummarizerSha256": "054BCFEA6242226F60E3C736A820B5CA7AB96D55C5B7BE53406D912ACDDDBB1B"
+}
