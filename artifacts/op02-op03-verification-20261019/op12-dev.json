@@ -1,0 +1,236 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\opverify-20261019\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/map-import-delayed-cancel.spec.ts",
+      "--workers=1",
+      "--reporter=json",
+      "--output=artifacts/op02-op03-verification-20261019/op12-dev"
+    ],
+    "configFile": "D:\\opverify-20261019\\playwright.config.ts",
+    "rootDir": "D:/opverify-20261019/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/opverify-20261019/artifacts/op02-op03-verification-20261019/op12-dev",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/opverify-20261019/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "map-import-delayed-cancel.spec.ts",
+      "file": "map-import-delayed-cancel.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "OP12 real App cancels initial during initial durable read and keeps the next file after its late reply",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 2530,
+                  "error": {
+                    "message": "Error: worker.evaluate: Target page, context or browser has been closed",
+                    "stack": "Error: worker.evaluate: Target page, context or browser has been closed\n    at gateTrace (D:\\opverify-20261019\\tests\\browser\\map-import-delayed-cancel.spec.ts:287:10)\n    at D:\\opverify-20261019\\tests\\browser\\map-import-delayed-cancel.spec.ts:340:32\n    at D:\\opverify-20261019\\tests\\browser\\map-import-delayed-cancel.spec.ts:339:5",
+                    "location": {
+                      "file": "D:\\opverify-20261019\\tests\\browser\\map-import-delayed-cancel.spec.ts",
+                      "column": 10,
+                      "line": 287
+                    },
+                    "snippet": "  285 |\n  286 | const gateTrace = (worker: Worker) =>\n> 287 |   worker.evaluate(\n      |          ^\n  288 |     () => (globalThis as unknown as ReadGateRealm).__mapCancelReadGate,\n  289 |   );\n  290 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\opverify-20261019\\tests\\browser\\map-import-delayed-cancel.spec.ts",
+                        "column": 10,
+                        "line": 287
+                      },
+                      "message": "Error: worker.evaluate: Target page, context or browser has been closed\n\n  285 |\n  286 | const gateTrace = (worker: Worker) =>\n> 287 |   worker.evaluate(\n      |          ^\n  288 |     () => (globalThis as unknown as ReadGateRealm).__mapCancelReadGate,\n  289 |   );\n  290 |\n    at gateTrace (D:\\opverify-20261019\\tests\\browser\\map-import-delayed-cancel.spec.ts:287:10)\n    at D:\\opverify-20261019\\tests\\browser\\map-import-delayed-cancel.spec.ts:340:32\n    at D:\\opverify-20261019\\tests\\browser\\map-import-delayed-cancel.spec.ts:339:5"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T11:34:15.501Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\opverify-20261019\\artifacts\\op02-op03-verification-20261019\\op12-dev\\map-import-delayed-cancel--56a56-t-file-after-its-late-reply-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\opverify-20261019\\artifacts\\op02-op03-verification-20261019\\op12-dev\\map-import-delayed-cancel--56a56-t-file-after-its-late-reply-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\opverify-20261019\\artifacts\\op02-op03-verification-20261019\\op12-dev\\map-import-delayed-cancel--56a56-t-file-after-its-late-reply-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\opverify-20261019\\tests\\browser\\map-import-delayed-cancel.spec.ts",
+                    "column": 10,
+                    "line": 287
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "21962e0999de5bf91a9c-404bd900e7bd2764e269",
+          "file": "map-import-delayed-cancel.spec.ts",
+          "line": 296,
+          "column": 3
+        },
+        {
+          "title": "OP12 real App cancels reimport with impact during initial durable read and keeps the next file after its late reply",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2889,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T11:34:19.808Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "real-worker-delayed-map-import-cancel",
+                      "contentType": "application/json",
+                      "body": "ewogICJyb3V0ZSI6ICJyZWltcG9ydCB3aXRoIGltcGFjdCIsCiAgIndvcmtlclVybCI6ICJodHRwOi8vMTI3LjAuMC4xOjQxNzYvc3JjL3BlcnNpc3RlbmNlL3dvcmtlci9wZXJzaXN0ZW5jZS53b3JrZXIudHM/d29ya2VyX2ZpbGUmdHlwZT1tb2R1bGUiLAogICJ0cmFjZSI6IHsKICAgICJyZWFkUmVxdWVzdHMiOiBbCiAgICAgIDYKICAgIF0sCiAgICAicmVhZFJlcGxpZXMiOiBbCiAgICAgIDYKICAgIF0sCiAgICAiZ2F0ZWRSZWFkSWQiOiA2LAogICAgImdhdGVSZWFjaGVkIjogMSwKICAgICJyZWxlYXNlZCI6IHRydWUsCiAgICAid3JpdGVzIjogW10sCiAgICAicmVhZHdyaXRlU3RhcnRlZCI6IDAsCiAgICAicmVhZHdyaXRlQ29tcGxldGVkIjogMAogIH0KfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "21962e0999de5bf91a9c-4e6c432dfdfce720a6e3",
+          "file": "map-import-delayed-cancel.spec.ts",
+          "line": 296,
+          "column": 3
+        },
+        {
+          "title": "OP12 real App cancels reimport without impact during initial durable read and keeps the next file after its late reply",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2220,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T11:34:22.876Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "real-worker-delayed-map-import-cancel",
+                      "contentType": "application/json",
+                      "body": "ewogICJyb3V0ZSI6ICJyZWltcG9ydCB3aXRob3V0IGltcGFjdCIsCiAgIndvcmtlclVybCI6ICJodHRwOi8vMTI3LjAuMC4xOjQxNzYvc3JjL3BlcnNpc3RlbmNlL3dvcmtlci9wZXJzaXN0ZW5jZS53b3JrZXIudHM/d29ya2VyX2ZpbGUmdHlwZT1tb2R1bGUiLAogICJ0cmFjZSI6IHsKICAgICJyZWFkUmVxdWVzdHMiOiBbCiAgICAgIDYKICAgIF0sCiAgICAicmVhZFJlcGxpZXMiOiBbCiAgICAgIDYKICAgIF0sCiAgICAiZ2F0ZWRSZWFkSWQiOiA2LAogICAgImdhdGVSZWFjaGVkIjogMSwKICAgICJyZWxlYXNlZCI6IHRydWUsCiAgICAid3JpdGVzIjogW10sCiAgICAicmVhZHdyaXRlU3RhcnRlZCI6IDAsCiAgICAicmVhZHdyaXRlQ29tcGxldGVkIjogMAogIH0KfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "21962e0999de5bf91a9c-4612c4d5529bf801a006",
+          "file": "map-import-delayed-cancel.spec.ts",
+          "line": 296,
+          "column": 3
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-19T11:34:13.833Z",
+    "duration": 11430.164,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

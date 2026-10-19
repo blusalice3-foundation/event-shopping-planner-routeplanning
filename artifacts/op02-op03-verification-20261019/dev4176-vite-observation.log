@@ -1,0 +1,31 @@
+Vite dev helper stdout/stderr observation (2026-10-19, Asia/Tokyo)
+Server: http://127.0.0.1:4176/
+Working directory: D:\opverify-20261019
+Tool process session: 82158
+
+Observed stdout excerpt, preserved from functions.write_stdin output:
+20:33:03 [vite] (client) [optimizer] bundling dependencies...
+20:33:06 [vite] (client) [console.warn] Something has shimmed the React DevTools global hook (__REACT_DEVTOOLS_GLOBAL_HOOK__). Fast Refresh is not compatible with this shim and will be disabled.
+20:34:17 [vite] (client) dependencies optimized: @zip.js/zip.js, exceljs
+20:34:17 [vite] (client) optimized dependencies changed. reloading
+20:34:18 [vite] (client) [console.warn] Something has shimmed the React DevTools global hook (__REACT_DEVTOOLS_GLOBAL_HOOK__). Fast Refresh is not compatible with this shim and will be disabled.
+
+Related OP12 evidence:
+- Initial dev report: op12-dev.json (same artifact directory).
+- The first initial-import case reported worker.evaluate: Target page, context or browser has been closed.
+- The initial case started at 2026-10-19T11:34:15.501Z (20:34:15.501 JST) and lasted 2530 ms.
+- The dev dependency optimizer reload at 20:34:17 is temporally consistent with that failure. This observation establishes correlation; it does not independently prove the cause of the worker closure.
+- The isolated dev rerun (op12-dev-initial.json), subsequent full dev rerun (op12-dev-final.json), and clean production run (op12-production.json) are separate evidence and passed.
+
+Helper termination observed at 2026-10-19 20:37-20:38 JST:
+- Get-NetTCPConnection -LocalPort 4176 -State Listen returned no listener.
+- No node.exe process for this helper was present.
+- Polling tool session 82158 returned exit code 1 and an EBUSY filesystem-watcher error for a temporary browser-final .crdownload file.
+- Relevant stderr excerpt:
+  Error: EBUSY: resource busy or locked, watch 'D:\opverify-20261019\artifacts\op02-op03-verification-20261019\browser-final\.playwright-artifacts-0\22df72dd-08bf-4e59-92cf-7c1c6d028d46.crdownload'
+  syscall: 'watch'
+  code: 'EBUSY'
+  Node.js v24.19.0
+- The helper had already stopped; no process was killed. The production helper on port 4175 was not modified.
+
+Encoding: UTF-8 without BOM; LF. This file is a preserved observation excerpt, not an uninterrupted raw process log.

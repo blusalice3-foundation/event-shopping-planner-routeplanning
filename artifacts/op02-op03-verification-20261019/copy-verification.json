@@ -1,0 +1,63 @@
+{
+  "Head": "53e05faae59ed8972c0e574a027f137275131f77",
+  "Files": [
+    {
+      "Path": "src/app/commands/applicationMutationCoordinator.test.ts",
+      "SHA256": "688B7B62209D25207956830E28EA25A4DE42B4280E0AACA3E5B9BE171C5BD30E",
+      "CopyMatches": true,
+      "UTF8Valid": true,
+      "BOM": false,
+      "CRLF": 0,
+      "LF": 1054
+    },
+    {
+      "Path": "src/app/state/useApplicationSnapshot.persistence.integration.test.tsx",
+      "SHA256": "01F5A4942D6825C04C591742A84AA5D6374DD48221F3C0171B6901DB1116C562",
+      "CopyMatches": true,
+      "UTF8Valid": true,
+      "BOM": false,
+      "CRLF": 0,
+      "LF": 996
+    },
+    {
+      "Path": "src/app/state/routeApplyFailure.integration.test.tsx",
+      "SHA256": "971716438BB510BFCB31CA7F121DCC2B393A4AB07F39F7A277A405EB29AA63C3",
+      "CopyMatches": true,
+      "UTF8Valid": true,
+      "BOM": false,
+      "CRLF": 0,
+      "LF": 360
+    },
+    {
+      "Path": "tests/browser/hall-sync-worker-atomicity.spec.ts",
+      "SHA256": "5F91AC5E3CB84ED674711AB495A6DF75D1EE69DC6C73AF57770B06F35E2EEF8E",
+      "CopyMatches": true,
+      "UTF8Valid": true,
+      "BOM": false,
+      "CRLF": 0,
+      "LF": 645
+    },
+    {
+      "Path": "tests/browser/map-import-delayed-cancel.spec.ts",
+      "SHA256": "918E1FBFFB5EE77D3468C7C71D9946DFF4CFE262E78BA69AF46DEAD58279B9B3",
+      "CopyMatches": true,
+      "UTF8Valid": true,
+      "BOM": false,
+      "CRLF": 0,
+      "LF": 423
+    },
+    {
+      "Path": "docs/user-operation-consistency-verification-completion-20261019.md",
+      "SHA256": "5CF3B75906CDB83767361991F3C259E1E6F878C9EF265F85D0C5FF1ACE09A30C",
+      "CopyMatches": true,
+      "UTF8Valid": true,
+      "BOM": false,
+      "CRLF": 0,
+      "LF": 57
+    }
+  ],
+  "VerifiedGeneratedBuildFiles": 32,
+  "GeneratedBuildAllMatch": true,
+  "OriginalUntrackedPreserved": 9,
+  "MeasuredProductionFilesMatched": 377
+}

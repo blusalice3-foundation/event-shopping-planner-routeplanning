@@ -1,0 +1,162 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\opverify-20261019\\node_modules\\playwright\\cli.js",
+      "test",
+      "tests/browser/hall-sync-worker-atomicity.spec.ts",
+      "--workers=1",
+      "--reporter=json",
+      "--output=artifacts/op02-op03-verification-20261019/hall-sync-production"
+    ],
+    "configFile": "D:\\opverify-20261019\\playwright.config.ts",
+    "rootDir": "D:/opverify-20261019/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/opverify-20261019/artifacts/op02-op03-verification-20261019/hall-sync-production",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/opverify-20261019/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "hall-sync-worker-atomicity.spec.ts",
+      "file": "hall-sync-worker-atomicity.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "OP02 real Worker simple hall sync rolls back every source/target after successful IDB writes, then retries atomically",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3263,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T11:35:57.013Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "real-worker-hall-sync-transaction-trace",
+                      "contentType": "application/json",
+                      "body": "ewogICJ3cml0ZVJlcXVlc3RzIjogWwogICAgImNvbW1pdCIsCiAgICAiY29tbWl0IgogIF0sCiAgImluamVjdGVkIjogMSwKICAidHJhbnNhY3Rpb25zIjogWwogICAgewogICAgICAic3RvcmVzIjogWwogICAgICAgICJkYXlNb2RlcyIsCiAgICAgICAgImV2ZW50Q29uc2lzdGVuY3kiLAogICAgICAgICJldmVudExpc3RzIiwKICAgICAgICAiZXZlbnRNZXRhZGF0YSIsCiAgICAgICAgImV4ZWN1dGVNb2RlSXRlbXMiLAogICAgICAgICJoYWxsRGVmaW5pdGlvbnMiLAogICAgICAgICJoYWxsUm91dGVTZXR0aW5ncyIsCiAgICAgICAgIm1hcERhdGEiLAogICAgICAgICJtYXBSb3RhdGlvblNldHRpbmdzIiwKICAgICAgICAibWFwVmlld3BvcnRTZXR0aW5ncyIsCiAgICAgICAgInJvdXRlU2V0dGluZ3MiLAogICAgICAgICJzeW5jUXVldWUiCiAgICAgIF0sCiAgICAgICJvdXRjb21lIjogImFib3J0IiwKICAgICAgInB1dHMiOiA1NiwKICAgICAgInN1Y2Nlc3NmdWxQdXRzIjogNTIsCiAgICAgICJxdWV1ZWREZWZpbml0aW9ucyI6IFsKICAgICAgICAiX19tYXBsZXNzX186MeaXpeebriIsCiAgICAgICAgIl9fbWFwbGVzc19fOjLml6Xnm64iLAogICAgICAgICJfX21hcGxlc3NfXzrvvJLml6Xnm64iLAogICAgICAgICJfX21hcGxlc3NfXzoz5pel55uuIiwKICAgICAgICAiX19tYXBsZXNzX186NOaXpeebriIKICAgICAgXSwKICAgICAgInN1Y2Nlc3NmdWxEZWZpbml0aW9ucyI6IFsKICAgICAgICAiX19tYXBsZXNzX186MeaXpeebriIsCiAgICAgICAgIl9fbWFwbGVzc19fOjLml6Xnm64iLAogICAgICAgICJfX21hcGxlc3NfXzrvvJLml6Xnm64iLAogICAgICAgICJfX21hcGxlc3NfXzoz5pel55uuIgogICAgICBdCiAgICB9LAogICAgewogICAgICAic3RvcmVzIjogWwogICAgICAgICJkYXlNb2RlcyIsCiAgICAgICAgImV2ZW50Q29uc2lzdGVuY3kiLAogICAgICAgICJldmVudExpc3RzIiwKICAgICAgICAiZXZlbnRNZXRhZGF0YSIsCiAgICAgICAgImV4ZWN1dGVNb2RlSXRlbXMiLAogICAgICAgICJoYWxsRGVmaW5pdGlvbnMiLAogICAgICAgICJoYWxsUm91dGVTZXR0aW5ncyIsCiAgICAgICAgIm1hcERhdGEiLAogICAgICAgICJtYXBSb3RhdGlvblNldHRpbmdzIiwKICAgICAgICAibWFwVmlld3BvcnRTZXR0aW5ncyIsCiAgICAgICAgInJvdXRlU2V0dGluZ3MiLAogICAgICAgICJzeW5jUXVldWUiCiAgICAgIF0sCiAgICAgICJvdXRjb21lIjogImNvbXBsZXRlIiwKICAgICAgInB1dHMiOiA1NiwKICAgICAgInN1Y2Nlc3NmdWxQdXRzIjogNTYsCiAgICAgICJxdWV1ZWREZWZpbml0aW9ucyI6IFsKICAgICAgICAiX19tYXBsZXNzX186MeaXpeebriIsCiAgICAgICAgIl9fbWFwbGVzc19fOjLml6Xnm64iLAogICAgICAgICJfX21hcGxlc3NfXzrvvJLml6Xnm64iLAogICAgICAgICJfX21hcGxlc3NfXzoz5pel55uuIiwKICAgICAgICAiX19tYXBsZXNzX186NOaXpeebriIKICAgICAgXSwKICAgICAgInN1Y2Nlc3NmdWxEZWZpbml0aW9ucyI6IFsKICAgICAgICAiX19tYXBsZXNzX186MeaXpeebriIsCiAgICAgICAgIl9fbWFwbGVzc19fOjLml6Xnm64iLAogICAgICAgICJfX21hcGxlc3NfXzrvvJLml6Xnm64iLAogICAgICAgICJfX21hcGxlc3NfXzoz5pel55uuIiwKICAgICAgICAiX19tYXBsZXNzX186NOaXpeebriIKICAgICAgXQogICAgfQogIF0KfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a926a674056449e4f7fd-4771b745361c4dbbc321",
+          "file": "hall-sync-worker-atomicity.spec.ts",
+          "line": 431,
+          "column": 3
+        },
+        {
+          "title": "OP02 real Worker detailed hall sync rolls back every source/target after successful IDB writes, then retries atomically",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4703,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T11:36:00.402Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "real-worker-hall-sync-transaction-trace",
+                      "contentType": "application/json",
+                      "body": "ewogICJ3cml0ZVJlcXVlc3RzIjogWwogICAgImNvbW1pdCIsCiAgICAiY29tbWl0IgogIF0sCiAgImluamVjdGVkIjogMSwKICAidHJhbnNhY3Rpb25zIjogWwogICAgewogICAgICAic3RvcmVzIjogWwogICAgICAgICJkYXlNb2RlcyIsCiAgICAgICAgImV2ZW50Q29uc2lzdGVuY3kiLAogICAgICAgICJldmVudExpc3RzIiwKICAgICAgICAiZXZlbnRNZXRhZGF0YSIsCiAgICAgICAgImV4ZWN1dGVNb2RlSXRlbXMiLAogICAgICAgICJoYWxsRGVmaW5pdGlvbnMiLAogICAgICAgICJoYWxsUm91dGVTZXR0aW5ncyIsCiAgICAgICAgIm1hcERhdGEiLAogICAgICAgICJtYXBSb3RhdGlvblNldHRpbmdzIiwKICAgICAgICAibWFwVmlld3BvcnRTZXR0aW5ncyIsCiAgICAgICAgInJvdXRlU2V0dGluZ3MiLAogICAgICAgICJzeW5jUXVldWUiCiAgICAgIF0sCiAgICAgICJvdXRjb21lIjogImFib3J0IiwKICAgICAgInB1dHMiOiA2NSwKICAgICAgInN1Y2Nlc3NmdWxQdXRzIjogNTYsCiAgICAgICJxdWV1ZWREZWZpbml0aW9ucyI6IFsKICAgICAgICAiMeaXpeebruODnuODg+ODlyIsCiAgICAgICAgIjLml6Xnm67jg57jg4Pjg5ciLAogICAgICAgICIz5pel55uu44Oe44OD44OXIiwKICAgICAgICAiNOaXpeebruODnuODg+ODlyIsCiAgICAgICAgIl9fbWFwbGVzc19fOjHml6Xnm64iLAogICAgICAgICJfX21hcGxlc3NfXzoy5pel55uuIiwKICAgICAgICAiX19tYXBsZXNzX18677yS5pel55uuIiwKICAgICAgICAiX19tYXBsZXNzX186M+aXpeebriIsCiAgICAgICAgIl9fbWFwbGVzc19fOjTml6Xnm64iCiAgICAgIF0sCiAgICAgICJzdWNjZXNzZnVsRGVmaW5pdGlvbnMiOiBbCiAgICAgICAgIjHml6Xnm67jg57jg4Pjg5ciLAogICAgICAgICIy5pel55uu44Oe44OD44OXIiwKICAgICAgICAiM+aXpeebruODnuODg+ODlyIKICAgICAgXQogICAgfSwKICAgIHsKICAgICAgInN0b3JlcyI6IFsKICAgICAgICAiZGF5TW9kZXMiLAogICAgICAgICJldmVudENvbnNpc3RlbmN5IiwKICAgICAgICAiZXZlbnRMaXN0cyIsCiAgICAgICAgImV2ZW50TWV0YWRhdGEiLAogICAgICAgICJleGVjdXRlTW9kZUl0ZW1zIiwKICAgICAgICAiaGFsbERlZmluaXRpb25zIiwKICAgICAgICAiaGFsbFJvdXRlU2V0dGluZ3MiLAogICAgICAgICJtYXBEYXRhIiwKICAgICAgICAibWFwUm90YXRpb25TZXR0aW5ncyIsCiAgICAgICAgIm1hcFZpZXdwb3J0U2V0dGluZ3MiLAogICAgICAgICJyb3V0ZVNldHRpbmdzIiwKICAgICAgICAic3luY1F1ZXVlIgogICAgICBdLAogICAgICAib3V0Y29tZSI6ICJjb21wbGV0ZSIsCiAgICAgICJwdXRzIjogNjUsCiAgICAgICJzdWNjZXNzZnVsUHV0cyI6IDY1LAogICAgICAicXVldWVkRGVmaW5pdGlvbnMiOiBbCiAgICAgICAgIjHml6Xnm67jg57jg4Pjg5ciLAogICAgICAgICIy5pel55uu44Oe44OD44OXIiwKICAgICAgICAiM+aXpeebruODnuODg+ODlyIsCiAgICAgICAgIjTml6Xnm67jg57jg4Pjg5ciLAogICAgICAgICJfX21hcGxlc3NfXzox5pel55uuIiwKICAgICAgICAiX19tYXBsZXNzX186MuaXpeebriIsCiAgICAgICAgIl9fbWFwbGVzc19fOu+8kuaXpeebriIsCiAgICAgICAgIl9fbWFwbGVzc19fOjPml6Xnm64iLAogICAgICAgICJfX21hcGxlc3NfXzo05pel55uuIgogICAgICBdLAogICAgICAic3VjY2Vzc2Z1bERlZmluaXRpb25zIjogWwogICAgICAgICIx5pel55uu44Oe44OD44OXIiwKICAgICAgICAiMuaXpeebruODnuODg+ODlyIsCiAgICAgICAgIjPml6Xnm67jg57jg4Pjg5ciLAogICAgICAgICI05pel55uu44Oe44OD44OXIiwKICAgICAgICAiX19tYXBsZXNzX186MeaXpeebriIsCiAgICAgICAgIl9fbWFwbGVzc19fOjLml6Xnm64iLAogICAgICAgICJfX21hcGxlc3NfXzrvvJLml6Xnm64iLAogICAgICAgICJfX21hcGxlc3NfXzoz5pel55uuIiwKICAgICAgICAiX19tYXBsZXNzX186NOaXpeebriIKICAgICAgXQogICAgfQogIF0KfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a926a674056449e4f7fd-d344ce1e5fe06f9cbf09",
+          "file": "hall-sync-worker-atomicity.spec.ts",
+          "line": 431,
+          "column": 3
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-19T11:35:56.398Z",
+    "duration": 8840.597,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
