@@ -1,0 +1,29 @@
+{
+  "DateJST": "2026-10-19",
+  "Snapshot": "3908b1328ddd8c8f6e03e1c9dfcd755b6533a1eb",
+  "BuildIdentity": {
+    "buildId": "3908b1328ddd8c8f6e03e1c9dfcd755b6533a1eb",
+    "outerAgentSha256": "24ebcb17c0e601ded6e6ab183b801263b6284f360fdd812ad81839977567900e",
+    "outerAgentUrl": "/assets/outer-recovery-agent.js",
+    "pwaLifecycle": "prompt-close-all-v1",
+    "releaseRole": "standard",
+    "requiredDbCompatibilityFingerprint": "59cab323aedb35d8677e289545053591d34348970bfa268be3c4c437faf7c91f",
+    "roleEntrySha256": "2330e6e59af314f1aee33f8077f9bcdce3a62c4e7744b71c01b65f73249172b6",
+    "roleEntryUrl": "/assets/release-role.js",
+    "schemaVersion": 1,
+    "serviceWorkerSha256": "29f6956a0def1e7f4e5d37bfb1324b32cb7d7cff8603469c541ef55cc89c3381",
+    "serviceWorkerUrl": "/sw.js",
+    "sourceSha": "3908b1328ddd8c8f6e03e1c9dfcd755b6533a1eb",
+    "variantId": "830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611"
+  },
+  "Node": "v24.19.0",
+  "Npm": "11.19.0",
+  "Browser": {
+    "version": "151.0.7922.34",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+    "executable": "C:\\Users\\blu\\AppData\\Local\\ms-playwright\\chromium-1234\\chrome-win64\\chrome.exe"
+  },
+  "Workers": 1,
+  "Build": "npm run build:release-a",
+  "HeavyFunctionalSuitesCompleted": true
+}

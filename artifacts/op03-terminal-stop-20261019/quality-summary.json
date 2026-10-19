@@ -1,0 +1,57 @@
+{
+  "DateJST": "2026-10-19",
+  "OriginalHEAD": "418b92f7744186d0a1a7e536b51749ccc1007906",
+  "VerificationSnapshot": "3908b1328ddd8c8f6e03e1c9dfcd755b6533a1eb",
+  "Vitest": {
+    "ExistingSkipped": 88,
+    "Failed": 0,
+    "ProductAndSrcTestsUnchanged": true,
+    "Passed": 3195
+  },
+  "Browser": {
+    "Failed": 0,
+    "Flaky": 0,
+    "Skipped": 0,
+    "Passed": 236
+  },
+  "API": {
+    "Failed": 0,
+    "Passed": 21
+  },
+  "Checks": [
+    "typecheck",
+    "architecture",
+    "test-project-membership",
+    "db-compatibility-contract",
+    "changed-file-eslint",
+    "changed-file-prettier",
+    "encoding",
+    "clean-standard-build",
+    "strict-release-build-verification"
+  ],
+  "Performance": {
+    "FinalExisting1500Categories": 48,
+    "FinalRequiredCategories": 96,
+    "FinalPassed": true,
+    "ThresholdChanged": false,
+    "P95LimitMs": 100,
+    "FinalDragCategories": 60,
+    "LargeHistoricalNormalIncreaseRetained": true,
+    "MedianLimitMs": 55,
+    "MinimumSamples": 20,
+    "FreshBaselineAndFinalPaired": true,
+    "SampleExcluded": false,
+    "InitialDragFailed": {
+      "Samples": 20,
+      "MedianMs": 55.4,
+      "Case": "500/native/groupingOn/drop",
+      "P95Ms": 73.4
+    },
+    "InitialAndFinal40SamplesAreDiagnosticOnly": true
+  },
+  "Encoding": {
+    "ReplacementCharacters": 0,
+    "ChangedFiles": 6,
+    "UTF8NoBOMLF": true
+  }
+}

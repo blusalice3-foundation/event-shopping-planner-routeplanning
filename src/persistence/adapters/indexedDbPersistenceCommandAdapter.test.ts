@@ -1,7 +1,14 @@
 import { createEventConsistency } from "../../types/consistency";
 import { DEFAULT_BLOCK_DETECTION_SETTINGS } from "../../types/map";
-import { describe, expect, it, vi } from "vitest";
-import { type PersistenceSnapshot } from "../../app/ports/PersistenceCommandPort";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { IDBFactory, IDBKeyRange, IDBObjectStore } from "fake-indexeddb";
+import {
+  PersistenceOutcomeUnknownError,
+  type PersistenceSnapshot,
+} from "../../app/ports/PersistenceCommandPort";
+import { db } from "../facade/indexedDbPersistence";
+import { openDatabase, resetDatabaseConnection } from "../db/openDatabase";
+import { STORES } from "../db/constants";
 import type { BlockDetectionSettings } from "../../types/map";
 import type { StartupRecoveryCandidate } from "../../utils/persistenceResilience";
 import {
@@ -712,4 +719,192 @@ it("shares one terminal stop with every non-worker write entry while allowing on
   await expect(port.createBackupFile!([], fallback)).rejects.toBe(reason);
   expect(fallback).not.toHaveBeenCalled();
   expect(port.getWriteStopReason!()).toBe(reason);
+});
+
+describe("non-worker adapter with real IndexedDB transactions", () => {
+  let failNextStorageLength: boolean;
+  const storageFailure = new DOMException("storage denied", "SecurityError");
+  beforeEach(() => {
+    resetDatabaseConnection();
+    vi.stubGlobal("indexedDB", new IDBFactory());
+    vi.stubGlobal("IDBKeyRange", IDBKeyRange);
+    vi.stubGlobal("Worker", undefined);
+    failNextStorageLength = false;
+    const storage = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      get length() {
+        if (failNextStorageLength) {
+          failNextStorageLength = false;
+          throw storageFailure;
+        }
+        return storage.size;
+      },
+      key: (index: number) => [...storage.keys()][index] ?? null,
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    });
+  });
+  afterEach(() => {
+    resetDatabaseConnection();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+  async function seed() {
+    const value = snapshot();
+    value.eventLists.event = [{ id: "item-1", quantity: 1 }];
+    value.eventConsistency.event = createEventConsistency();
+    const initial = await db.readApplicationSnapshot();
+    await db.commitApplicationSnapshotAtomically(value, {
+      expectedRoots: initial.expectedRoots,
+    });
+    return value;
+  }
+  it("stops every write with the same reason when storage access fails after DB commit", async () => {
+    await seed();
+    const optionalWrite = vi.fn(async () => {
+      throw new Error("a stopped delegate must not be invoked");
+    });
+    const auxiliary = createAuxiliaryDelegate();
+    const port = createIndexedDbPersistenceCommandAdapter(
+      {
+        ...db,
+        readDayApplicationSnapshot: () => db.readApplicationSnapshot(),
+        commitDayApplicationSnapshot: optionalWrite,
+        commitDayMutation: optionalWrite,
+        commitItemContentEdits: optionalWrite,
+      },
+      auxiliary,
+    );
+    const listener = vi.fn();
+    port.onWritesStopped!(listener);
+    const before = await port.readApplicationSnapshot();
+    const next = structuredClone(before.snapshot);
+    next.eventLists.event = [{ id: "item-1", quantity: 2 }];
+    const database = await openDatabase();
+    const original = database.transaction;
+    let startedWrites = 0;
+    let completedWrites = 0;
+    vi.spyOn(database, "transaction").mockImplementation(function (
+      this: IDBDatabase,
+      storeNames,
+      mode,
+      options,
+    ) {
+      const transaction = original.call(this, storeNames, mode, options);
+      if (mode === "readwrite") {
+        startedWrites++;
+        transaction.addEventListener("complete", () => {
+          completedWrites++;
+          failNextStorageLength = true;
+        });
+      }
+      return transaction;
+    });
+    const reason = await port
+      .commitApplicationSnapshotAtomically(next, {
+        expectedRoots: before.expectedRoots,
+      })
+      .catch((error: unknown) => error);
+    expect(reason).toBeInstanceOf(PersistenceOutcomeUnknownError);
+    expect(reason).toMatchObject({ cause: storageFailure });
+    expect(port.getWriteStopReason!()).toBe(reason);
+    expect(listener).toHaveBeenCalledExactlyOnceWith(reason);
+    expect(startedWrites).toBe(1);
+    expect(completedWrites).toBe(1);
+    expect(
+      (await port.readApplicationSnapshot()).snapshot.eventLists.event,
+    ).toEqual([{ id: "item-1", quantity: 2 }]);
+
+    const later = structuredClone(next);
+    later.eventLists.event = [{ id: "item-1", quantity: 3 }];
+    const target = { eventName: "event", day: "day-1" };
+    const writes = [
+      () => port.migrateFromLocalStorage(),
+      () => port.adoptRecoveryCandidate({} as StartupRecoveryCandidate),
+      () => port.saveEventLists(later.eventLists),
+      () => port.saveEventMetadata(later.eventMetadata),
+      () => port.saveExecuteModeItems(later.executeModeItems),
+      () => port.saveDayModes(later.dayModes),
+      () => port.saveMapDataChanges(next.mapData, later.mapData),
+      () => port.saveMapRotationSettings(later.mapRotationSettings),
+      () => port.saveRouteSettings(later.routeSettings),
+      () => port.saveHallDefinitions(later.hallDefinitions),
+      () => port.saveHallRouteSettings(later.hallRouteSettings),
+      () => port.saveMapViewportSettings(later.mapViewportSettings),
+      () => port.saveEventConsistency(later.eventConsistency),
+      () =>
+        port.saveBlockDetectionSettings(
+          "event",
+          DEFAULT_BLOCK_DETECTION_SETTINGS,
+        ),
+      () => port.commitApplicationSnapshotAtomically(later),
+      () =>
+        port.commitDayApplicationSnapshot!(later, before.expectedRoots, target),
+      () =>
+        port.commitDayMutation!(
+          { kind: "mode", ...target, mode: "focus" },
+          "later",
+          {},
+        ),
+      () => port.commitItemContentEdits!([], ["later"], {}),
+      () => port.restoreAppDataAtomically(later),
+      () => port.deleteEventAtomically(later, "event"),
+      () => port.renameEventAtomically(later, "event", "renamed"),
+      () => port.restoreAppDataWithBlockDetectionSettings(later, "event", null),
+    ];
+    for (const write of writes) await expect(write()).rejects.toBe(reason);
+    expect(() => port.savePreference("theme", "dark")).toThrow(reason);
+    expect(() => port.removeBlockDetectionSettingsForEvent("event")).toThrow(
+      reason,
+    );
+    expect(() =>
+      port.renameBlockDetectionSettingsForEvent("event", "renamed"),
+    ).toThrow(reason);
+    expect(optionalWrite).not.toHaveBeenCalled();
+    expect(auxiliary.savePreference).not.toHaveBeenCalled();
+    expect(startedWrites).toBe(1);
+    expect(completedWrites).toBe(1);
+    expect(
+      (await port.readApplicationSnapshot()).snapshot.eventLists.event,
+    ).toEqual([{ id: "item-1", quantity: 2 }]);
+    expect(listener).toHaveBeenCalledOnce();
+  });
+  it("allows retry after an explicit transaction abort without stopping writes", async () => {
+    await seed();
+    const port = createIndexedDbPersistenceCommandAdapter();
+    const before = await port.readApplicationSnapshot();
+    const next = structuredClone(before.snapshot);
+    next.eventLists.event = [{ id: "item-1", quantity: 2 }];
+    const failure = new Error("explicit transaction abort");
+    const original = IDBObjectStore.prototype.put;
+    let abortNextWrite = true;
+    vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(function (
+      this: IDBObjectStore,
+      value,
+      key,
+    ) {
+      if (this.name === STORES.EVENT_LISTS && abortNextWrite) {
+        abortNextWrite = false;
+        throw failure;
+      }
+      return original.call(this, value, key);
+    });
+    await expect(
+      port.commitApplicationSnapshotAtomically(next, {
+        expectedRoots: before.expectedRoots,
+      }),
+    ).rejects.toBe(failure);
+    expect(port.getWriteStopReason!()).toBeUndefined();
+    expect(
+      (await port.readApplicationSnapshot()).snapshot.eventLists.event,
+    ).toEqual([{ id: "item-1", quantity: 1 }]);
+    await port.commitApplicationSnapshotAtomically(next, {
+      expectedRoots: before.expectedRoots,
+    });
+    expect(
+      (await port.readApplicationSnapshot()).snapshot.eventLists.event,
+    ).toEqual([{ id: "item-1", quantity: 2 }]);
+    expect(port.getWriteStopReason!()).toBeUndefined();
+  });
 });

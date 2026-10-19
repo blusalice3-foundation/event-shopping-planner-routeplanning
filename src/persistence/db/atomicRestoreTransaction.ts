@@ -42,10 +42,12 @@ import { assertEventConsistency } from "../../types/consistencyValidation";
  * cleanup are committed as one operation without exposing partial state.
  */
 
-import type {
-  AppData,
-  ApplicationSnapshotRead,
-  AtomicSnapshotOptions,
+import {
+  isPersistenceWriteStopReason,
+  PersistenceOutcomeUnknownError,
+  type AppData,
+  type ApplicationSnapshotRead,
+  type AtomicSnapshotOptions,
 } from "../../app/ports/PersistenceCommandPort";
 import type { MapDataStore } from "../../types/map";
 import {
@@ -1402,76 +1404,85 @@ export async function commitApplicationSnapshotAtomically(
     }
   });
 
-  const nextDayRecords = new Map(observation.dayRecords);
-  dayRecordWrites.forEach((write, store) =>
-    nextDayRecords.set(store, adoptDayRecordWrite(write)),
-  );
-  preparedMetadata.forEach((metadata, storeName) => {
-    const checkpoint = preparedCheckpoints.get(storeName);
-    if (!checkpoint) {
-      throw new Error(`Missing committed restore checkpoint for ${storeName}.`);
-    }
-    expectedRevisionRoots.set(
-      getObservedRootKey(storeName, DATA_KEY),
-      storeName === STORES.MAP_DATA
-        ? {
-            ...metadata,
-            missing: Object.keys(stableMapData).length === 0,
-          }
-        : metadata,
+  // The transaction is durable; later failures must never permit a resend.
+  try {
+    const nextDayRecords = new Map(observation.dayRecords);
+    dayRecordWrites.forEach((write, store) =>
+      nextDayRecords.set(store, adoptDayRecordWrite(write)),
     );
-    expectedPersistenceCheckpoints.set(
-      getObservedRootKey(storeName, DATA_KEY),
-      checkpoint,
-    );
-  });
-  cleanupRuntimeCandidateSnapshots(observation.runtimeCandidates);
-  if (!options.migration) {
-    const roots = new Map(observation.roots),
-      checkpoints = new Map(observation.checkpoints);
-    preparedMetadata.forEach((metadata, store) => {
-      roots.set(store, metadata);
-      checkpoints.set(store, preparedCheckpoints.get(store)!);
+    preparedMetadata.forEach((metadata, storeName) => {
+      const checkpoint = preparedCheckpoints.get(storeName);
+      if (!checkpoint) {
+        throw new Error(
+          `Missing committed restore checkpoint for ${storeName}.`,
+        );
+      }
+      expectedRevisionRoots.set(
+        getObservedRootKey(storeName, DATA_KEY),
+        storeName === STORES.MAP_DATA
+          ? {
+              ...metadata,
+              missing: Object.keys(stableMapData).length === 0,
+            }
+          : metadata,
+      );
+      expectedPersistenceCheckpoints.set(
+        getObservedRootKey(storeName, DATA_KEY),
+        checkpoint,
+      );
     });
-    verifiedCommandCache = {
-      database,
-      observation: {
-        ...observation,
-        roots,
-        checkpoints,
-        snapshot: stableData,
-        scopeReady: new Map([
-          ...observation.scopeReady,
-          ...[...sidecars.keys()].map(
-            (store) =>
-              [
-                store,
-                preparedMetadata.get(store)?.revision ??
-                  observation.roots.get(store)!.revision,
-              ] as const,
-          ),
-          ...(mapScopeRoots ? [[STORES.MAP_DATA, mapRevision] as const] : []),
-        ]),
-        dayRecords: nextDayRecords,
-        consistencyMissing: false,
-        mapDataNormalized: true,
-        eventGenerations: Object.fromEntries(
-          [
-            ...new Set([
-              ...Object.keys(observation.eventGenerations),
-              ...(options.invalidatedEvents ?? []),
-            ]),
-          ].map((event) => [
-            event,
-            (recordEntry(observation.eventGenerations, event) ?? 0) +
-              (options.invalidatedEvents?.includes(event) ? 1 : 0),
+    cleanupRuntimeCandidateSnapshots(observation.runtimeCandidates);
+    if (!options.migration) {
+      const roots = new Map(observation.roots),
+        checkpoints = new Map(observation.checkpoints);
+      preparedMetadata.forEach((metadata, store) => {
+        roots.set(store, metadata);
+        checkpoints.set(store, preparedCheckpoints.get(store)!);
+      });
+      verifiedCommandCache = {
+        database,
+        observation: {
+          ...observation,
+          roots,
+          checkpoints,
+          snapshot: stableData,
+          scopeReady: new Map([
+            ...observation.scopeReady,
+            ...[...sidecars.keys()].map(
+              (store) =>
+                [
+                  store,
+                  preparedMetadata.get(store)?.revision ??
+                    observation.roots.get(store)!.revision,
+                ] as const,
+            ),
+            ...(mapScopeRoots ? [[STORES.MAP_DATA, mapRevision] as const] : []),
           ]),
-        ),
-        runtimeCandidates: [],
-      },
-      fallbackKey: runtimeFallbackKey(),
-    };
-  } else verifiedCommandCache = undefined;
+          dayRecords: nextDayRecords,
+          consistencyMissing: false,
+          mapDataNormalized: true,
+          eventGenerations: Object.fromEntries(
+            [
+              ...new Set([
+                ...Object.keys(observation.eventGenerations),
+                ...(options.invalidatedEvents ?? []),
+              ]),
+            ].map((event) => [
+              event,
+              (recordEntry(observation.eventGenerations, event) ?? 0) +
+                (options.invalidatedEvents?.includes(event) ? 1 : 0),
+            ]),
+          ),
+          runtimeCandidates: [],
+        },
+        fallbackKey: runtimeFallbackKey(),
+      };
+    } else verifiedCommandCache = undefined;
+  } catch (error) {
+    verifiedCommandCache = undefined;
+    if (isPersistenceWriteStopReason(error)) throw error;
+    throw new PersistenceOutcomeUnknownError(error);
+  }
 }
 
 /** Compatibility entry point for backup restore callers. */

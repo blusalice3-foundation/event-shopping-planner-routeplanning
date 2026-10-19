@@ -1,0 +1,10 @@
+{
+  "stage": "before-production-fix",
+  "passed": 20,
+  "source": "tool-observed test output, 2026-10-19",
+  "failure": "expected DOMException SecurityError to be an instance of PersistenceOutcomeUnknownError",
+  "failed": 1,
+  "ordinaryAbortRetry": "passed",
+  "tests": 21,
+  "command": "npx vitest run --project unit src/persistence/adapters/indexedDbPersistenceCommandAdapter.test.ts"
+}
