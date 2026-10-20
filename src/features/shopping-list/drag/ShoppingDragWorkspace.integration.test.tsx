@@ -263,15 +263,16 @@ describe("workspace cross-column drag", () => {
         expect(status).toHaveTextContent("既存の1訪問の末尾へ合流します。");
         expect(status).toHaveTextContent("画面外の合流先を含みます。");
         const expectVisible = () => {
+          expect(status).not.toHaveAttribute("style");
           const screenTop =
             root.getBoundingClientRect().top +
-            Number.parseFloat(status.style.top) * scale;
+            Number.parseFloat(status.dataset.layoutTop!) * scale;
           expect(screenTop).toBeGreaterThanOrEqual(128);
           expect(screenTop + 48 * scale).toBeLessThanOrEqual(
             window.innerHeight - 8,
           );
           expect(
-            Number.parseFloat(status.style.maxWidth) * scale,
+            Number.parseFloat(status.dataset.layoutMaxWidth!) * scale,
           ).toBeLessThanOrEqual(100);
         };
         expectVisible();

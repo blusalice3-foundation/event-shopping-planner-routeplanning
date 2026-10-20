@@ -1,3 +1,9 @@
+.esp-shopping-drag-status {
+  max-width: attr(data-layout-max-width type(<length>), none);
+  left: attr(data-layout-left type(<length>), 0px);
+  top: attr(data-layout-top type(<length>), 0px);
+}
+
 .esp-shopping-touch-clone {
   position: fixed !important;
   z-index: 9999 !important;

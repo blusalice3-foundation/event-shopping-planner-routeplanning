@@ -138,8 +138,8 @@ function createWorkspace(
       margin,
       Math.min(bounds.left, window.innerWidth - width - margin),
     );
-    element.style.maxWidth = `${width / scaleX}px`;
-    element.style.left = `${(left - bounds.left) / scaleX}px`;
+    element.dataset.layoutMaxWidth = `${width / scaleX}px`;
+    element.dataset.layoutLeft = `${(left - bounds.left) / scaleX}px`;
     const { appHeaderHeight, footerHeight } = document.documentElement.dataset;
     const topLimit = (Number.parseFloat(appHeaderHeight ?? "") || 0) + margin;
     const bottomLimit =
@@ -151,7 +151,7 @@ function createWorkspace(
       margin,
       Math.min(Math.max(bounds.top, topLimit), bottomLimit),
     );
-    element.style.top = `${(top - bounds.top) / scaleY}px`;
+    element.dataset.layoutTop = `${(top - bounds.top) / scaleY}px`;
   };
   const itemElement = (root: HTMLElement, id: string): HTMLElement | null => {
     const rowKey = `item:${JSON.stringify(id)}`;
@@ -220,7 +220,7 @@ function createWorkspace(
     status.setAttribute("role", "status");
     status.dataset.shoppingDragStatus = accepted ? "accepted" : "rejected";
     status.className =
-      "absolute top-0 left-0 z-40 rounded bg-blue-100 px-3 py-2 text-sm text-blue-950 pointer-events-none";
+      "esp-shopping-drag-status absolute z-40 rounded bg-blue-100 px-3 py-2 text-sm text-blue-950 pointer-events-none";
     status.textContent = text;
     root.prepend(status);
     decorations.push(status);
