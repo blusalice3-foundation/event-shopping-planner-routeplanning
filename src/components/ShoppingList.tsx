@@ -296,6 +296,7 @@ const EMPTY_DUPLICATE_CIRCLE_ITEM_IDS = new Set<string>();
 const DEFAULT_LIST_RENDERER_PREFERENCE_PORT =
   createLocalStorageListRendererPreferenceAdapter();
 const VIRTUAL_LIST_MINIMUM_ROW_COUNT = 80;
+const FLAT_RANGE_ANIMATION_ITEM_LIMIT = 80;
 const RETAINED_VIEWPORT_MINIMUM_ROW_COUNT = 32;
 const VIRTUAL_LIST_ESTIMATED_ROW_HEIGHT_PX = 136;
 const VIRTUAL_LIST_SUPPORTED_ZOOM_PERCENTS = [100] as const;
@@ -557,9 +558,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 }) => {
   const onMoveItemUp = useStableOptionalCallback(onMoveItemUpProp);
   const onMoveItemDown = useStableOptionalCallback(onMoveItemDownProp);
-  const onToggleRangeSelection = useStableOptionalCallback(
-    onToggleRangeSelectionProp,
-  );
+
   const onToggleSpaceCollapse = useStableOptionalCallback(
     onToggleSpaceCollapseProp,
   );
@@ -1797,6 +1796,17 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     ],
   );
 
+  const onToggleRangeSelection = useStableOptionalCallback(
+    onToggleRangeSelectionProp
+      ? (rangeItemIds: readonly string[]) => {
+          dispatchListController(
+            shoppingListCommand.toggleRangeSelection(rangeItemIds),
+          );
+          onToggleRangeSelectionProp(rangeItemIds);
+        }
+      : undefined,
+  );
+
   const onSelectItem = useStableCallback(
     (
       itemId: string,
@@ -2022,7 +2032,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       });
     }
 
-    if (showHallGroups) {
+    if (shouldShowHallGroups) {
       const groups = hallGroups.map((group) => ({
         key: group.groupId,
         itemIds: group.items.map((item) => item.id),
@@ -2060,7 +2070,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     hallGroups,
     items,
     rangeScopeId,
-    showHallGroups,
+    shouldShowHallGroups,
     showSpaceGroups,
     spaceGroups,
     viewMode,
@@ -5171,6 +5181,11 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     const isEnd = rangeInfo && index === rangeInfo.endIndex;
     const isMiddle =
       rangeInfo && index > rangeInfo.startIndex && index < rangeInfo.endIndex;
+    const rangeAppearanceClassName =
+      rangeInfo &&
+      rangeInfo.rangeItems.length >= FLAT_RANGE_ANIMATION_ITEM_LIMIT
+        ? "esp-flat-range-chain-large"
+        : "transition-opacity";
 
     return (
       <div
@@ -5242,7 +5257,17 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                   rangeInfo.rangeItems.map((rangeItem) => rangeItem.id),
                 );
               }}
-              className={`pointer-events-auto absolute h-full w-full transition-opacity ${
+              className={`esp-flat-range-chain ${
+                isStart
+                  ? "esp-flat-range-chain-start"
+                  : isEnd
+                    ? "esp-flat-range-chain-end"
+                    : ""
+              } ${
+                columnType === "candidate"
+                  ? "esp-flat-range-chain-candidate"
+                  : ""
+              } pointer-events-auto absolute h-full w-full ${rangeAppearanceClassName} ${
                 rangeInfo.onlyStartEndSelected
                   ? "opacity-50 hover:opacity-100"
                   : "opacity-100"
@@ -5255,126 +5280,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                   : "範囲内のチェックを入れる"
               }
               data-no-long-press
-            >
-              <svg
-                width="40"
-                height="100%"
-                preserveAspectRatio="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-full h-full"
-              >
-                <defs>
-                  <linearGradient
-                    id={`chainMetal-${item.id}`}
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="0%"
-                  >
-                    <stop offset="0%" stopColor="#9CA3AF" />
-                    <stop offset="30%" stopColor="#F3F4F6" />
-                    <stop offset="50%" stopColor="#D1D5DB" />
-                    <stop offset="70%" stopColor="#9CA3AF" />
-                    <stop offset="100%" stopColor="#6B7280" />
-                  </linearGradient>
-                  <pattern
-                    id={`chainPattern-${item.id}`}
-                    x="0"
-                    y="0"
-                    width="40"
-                    height="20"
-                    patternUnits="userSpaceOnUse"
-                  >
-                    <rect
-                      x="14"
-                      y="-2"
-                      width="12"
-                      height="18"
-                      rx="6"
-                      fill="none"
-                      stroke={`url(#chainMetal-${item.id})`}
-                      strokeWidth="3"
-                    />
-                    <rect
-                      x="17"
-                      y="13"
-                      width="6"
-                      height="8"
-                      rx="2"
-                      fill={`url(#chainMetal-${item.id})`}
-                      stroke="#4B5563"
-                      strokeWidth="0.5"
-                    />
-                  </pattern>
-                </defs>
-
-                {/* チェーンの描画範囲を制御 */}
-                {isStart && (
-                  // 起点: 中央から下まで
-                  <rect
-                    x="0"
-                    y="50%"
-                    width="40"
-                    height="50%"
-                    fill={`url(#chainPattern-${item.id})`}
-                  />
-                )}
-                {isEnd && (
-                  // 終点: 上から中央まで
-                  <rect
-                    x="0"
-                    y="0"
-                    width="40"
-                    height="50%"
-                    fill={`url(#chainPattern-${item.id})`}
-                  />
-                )}
-                {isMiddle && (
-                  <rect
-                    x="0"
-                    y="0"
-                    width="40"
-                    height="100%"
-                    fill={`url(#chainPattern-${item.id})`}
-                  />
-                )}
-
-                {/* フック（アイテムと鎖を繋ぐ金具） - 全ての範囲内アイテムに表示 */}
-                <g transform="translate(0, 50)">
-                  {columnType === "candidate" ? (
-                    <path
-                      d="M 40 0 L 20 0"
-                      stroke={`url(#chainMetal-${item.id})`}
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                  ) : (
-                    <path
-                      d="M 0 0 L 20 0"
-                      stroke={`url(#chainMetal-${item.id})`}
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                  )}
-                  <circle
-                    cx="20"
-                    cy="0"
-                    r="4"
-                    fill={`url(#chainMetal-${item.id})`}
-                    stroke="#4B5563"
-                    strokeWidth="0.5"
-                  />
-                  <circle
-                    cx={columnType === "candidate" ? 38 : 2}
-                    cy="0"
-                    r="3"
-                    fill="#9CA3AF"
-                  />
-                </g>
-              </svg>
-            </button>
+            ></button>
           </div>
         )}
 
@@ -5397,7 +5303,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     rangeInfo.rangeItems.map((rangeItem) => rangeItem.id),
                   );
                 }}
-                className={`pointer-events-auto absolute w-full h-full transition-opacity ${
+                className={`esp-flat-range-chain-gap pointer-events-auto absolute w-full h-full ${rangeAppearanceClassName} ${
                   rangeInfo.onlyStartEndSelected
                     ? "opacity-50 hover:opacity-100"
                     : "opacity-100"
@@ -5408,67 +5314,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     : "範囲内のチェックを入れる"
                 }
                 data-no-long-press
-              >
-                <svg
-                  width="40"
-                  height="16"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-full h-full"
-                >
-                  {/* パターン定義を再利用するためにdefsを定義（本当はuseタグを使いたいが、IDスコープが面倒なので再定義） */}
-                  <defs>
-                    <linearGradient
-                      id={`chainMetal-gap-${item.id}`}
-                      x1="0%"
-                      y1="0%"
-                      x2="100%"
-                      y2="0%"
-                    >
-                      <stop offset="0%" stopColor="#9CA3AF" />
-                      <stop offset="30%" stopColor="#F3F4F6" />
-                      <stop offset="50%" stopColor="#D1D5DB" />
-                      <stop offset="70%" stopColor="#9CA3AF" />
-                      <stop offset="100%" stopColor="#6B7280" />
-                    </linearGradient>
-                    <pattern
-                      id={`chainPattern-gap-${item.id}`}
-                      x="0"
-                      y="0"
-                      width="40"
-                      height="20"
-                      patternUnits="userSpaceOnUse"
-                    >
-                      <rect
-                        x="14"
-                        y="-2"
-                        width="12"
-                        height="18"
-                        rx="6"
-                        fill="none"
-                        stroke={`url(#chainMetal-gap-${item.id})`}
-                        strokeWidth="3"
-                      />
-                      <rect
-                        x="17"
-                        y="13"
-                        width="6"
-                        height="8"
-                        rx="2"
-                        fill={`url(#chainMetal-gap-${item.id})`}
-                        stroke="#4B5563"
-                        strokeWidth="0.5"
-                      />
-                    </pattern>
-                  </defs>
-                  <rect
-                    x="0"
-                    y="0"
-                    width="40"
-                    height="100%"
-                    fill={`url(#chainPattern-gap-${item.id})`}
-                  />
-                </svg>
-              </button>
+              ></button>
             </div>
           )}
       </div>

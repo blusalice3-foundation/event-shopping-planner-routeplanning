@@ -1,9 +1,19 @@
 import React from "react";
-import { fireEvent, render } from "@testing-library/react";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, waitFor } from "@testing-library/react";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import ShoppingList from "../../components/ShoppingList";
 import type { ShoppingItem } from "../../types/item";
 import { getSpaceKey } from "../../utils/spaceGrouping";
+import { useListInteractionState } from "../lists/hooks/useListInteractionState";
+import { revealViewportContent } from "./renderers/ViewportContent";
 import {
   buildListRows,
   type ShoppingListReadModel,
@@ -418,4 +428,298 @@ describe("ShoppingList renderer integration", () => {
       ),
     ).toBe("virtual-ineligible");
   });
+});
+
+interface RangeRendererCase {
+  name: string;
+  layoutMode: "pc" | "smartphone";
+  preference: "auto" | "full";
+  intersectionObserver: boolean;
+  renderer: "full" | "virtual";
+  strategy: "retained-viewport" | null;
+  reason: "preference-full" | "virtual-eligible";
+  count: number;
+}
+
+const rangeRendererCases: RangeRendererCase[] = [
+  {
+    name: "Full PC",
+    layoutMode: "pc",
+    preference: "full",
+    intersectionObserver: true,
+    renderer: "full",
+    strategy: null,
+    reason: "preference-full",
+    count: 150,
+  },
+  {
+    name: "Full smartphone",
+    layoutMode: "smartphone",
+    preference: "full",
+    intersectionObserver: true,
+    renderer: "full",
+    strategy: null,
+    reason: "preference-full",
+    count: 500,
+  },
+  {
+    name: "Retained PC",
+    layoutMode: "pc",
+    preference: "auto",
+    intersectionObserver: true,
+    renderer: "virtual",
+    strategy: "retained-viewport",
+    reason: "virtual-eligible",
+    count: 150,
+  },
+  {
+    name: "Retained smartphone",
+    layoutMode: "smartphone",
+    preference: "auto",
+    intersectionObserver: true,
+    renderer: "virtual",
+    strategy: "retained-viewport",
+    reason: "virtual-eligible",
+    count: 500,
+  },
+  {
+    name: "TanStack smartphone",
+    layoutMode: "smartphone",
+    preference: "auto",
+    intersectionObserver: false,
+    renderer: "virtual",
+    strategy: null,
+    reason: "virtual-eligible",
+    count: 500,
+  },
+];
+
+const RendererRangeHarness = ({
+  rangeItems,
+  layoutMode,
+  port,
+  onSelectItem,
+}: {
+  rangeItems: ShoppingItem[];
+  layoutMode: "pc" | "smartphone";
+  port: ListRendererPreferencePort;
+  onSelectItem: SelectItemHandler;
+}) => {
+  const state = useListInteractionState();
+  return (
+    <>
+      <output data-testid="range-selection">
+        {JSON.stringify([...state.selectedItemIds].sort())}
+      </output>
+      <output data-testid="range-endpoints">
+        {JSON.stringify([state.rangeStart, state.rangeEnd])}
+      </output>
+      <button onClick={state.clearRangeSelection}>Clear endpoints</button>
+      <ShoppingList
+        items={rangeItems}
+        onUpdateItem={vi.fn()}
+        onMoveItem={vi.fn()}
+        onEditRequest={vi.fn()}
+        onDeleteRequest={vi.fn()}
+        selectedItemIds={state.selectedItemIds}
+        onSelectItem={(itemId, column, presentation) => {
+          onSelectItem(itemId, column, presentation);
+          state.selectItemForRange(itemId, presentation);
+        }}
+        rangeStart={state.rangeStart}
+        rangeEnd={state.rangeEnd}
+        onToggleRangeSelection={state.toggleRangeItemIdsSelection}
+        skipLimitedPurchaseForSingleQuantity={false}
+        listRendererPreferencePort={port}
+        layoutMode={layoutMode}
+        recoveryActive={false}
+        currentDay="1日目"
+        viewMode="edit"
+        columnType="execute"
+        showSpaceGroups={false}
+        showHallGroups
+        hallDefinitions={[]}
+      />
+    </>
+  );
+};
+
+// Keep the real TanStack runtime and deferred row controls; only browser geometry
+// and capabilities are supplied by the test environment.
+describe("ShoppingList range selection across renderer strategies", () => {
+  let geometrySpy: ReturnType<typeof vi.spyOn>;
+  afterEach(() => {
+    geometrySpy?.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it.each(
+    rangeRendererCases.flatMap((rendererCase) =>
+      (["forward", "reverse"] as const).flatMap((direction) =>
+        (["short", "long"] as const).map((rangeLength) => ({
+          ...rendererCase,
+          direction,
+          rangeLength,
+        })),
+      ),
+    ),
+  )(
+    "$name selects and clears the same $rangeLength range $direction without changing outside checks",
+    async (rendererCase) => {
+      setViewportScale(1);
+      vi.stubGlobal("scrollY", 0);
+      vi.stubGlobal("pageYOffset", 0);
+      vi.stubGlobal(
+        "IntersectionObserver",
+        rendererCase.intersectionObserver
+          ? class {
+              observe() {}
+              unobserve() {}
+              disconnect() {}
+            }
+          : undefined,
+      );
+      geometrySpy = vi
+        .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+        .mockImplementation(function (this: HTMLElement) {
+          const index = Number(this.dataset.index ?? "0");
+          const top = index * 144 - window.scrollY;
+          return {
+            top,
+            bottom: top + 136,
+            height: 136,
+            width: 400,
+            left: 0,
+            right: 400,
+            x: 0,
+            y: top,
+            toJSON: () => ({}),
+          } as DOMRect;
+        });
+      const rangeItems = Array.from(
+        { length: rendererCase.count },
+        (_, index) => ({ ...item(index + 1), priorityLevel: "none" as const }),
+      );
+      const onSelectItem = vi.fn<SelectItemHandler>();
+      const view = render(
+        <RendererRangeHarness
+          rangeItems={rangeItems}
+          layoutMode={rendererCase.layoutMode}
+          port={preferencePort({
+            status: "ok",
+            value: rendererCase.preference,
+          })}
+          onSelectItem={onSelectItem}
+        />,
+      );
+      const root = view.container.querySelector<HTMLElement>(
+        "[data-list-renderer]",
+      )!;
+      const assertRenderer = () => {
+        expect(root).toHaveAttribute(
+          "data-list-renderer",
+          rendererCase.renderer,
+        );
+        expect(root.getAttribute("data-list-renderer-strategy")).toBe(
+          rendererCase.strategy,
+        );
+        expect(root).toHaveAttribute(
+          "data-list-renderer-reason",
+          rendererCase.reason,
+        );
+        expect(root).toHaveAttribute(
+          "data-list-row-count",
+          String(rendererCase.count),
+        );
+        expect(typeof IntersectionObserver === "function").toBe(
+          rendererCase.intersectionObserver,
+        );
+        expect(typeof ResizeObserver).toBe("function");
+        expect(typeof HTMLElement.prototype.focus).toBe("function");
+        expect(window.visualViewport?.scale).toBe(1);
+      };
+      const checkbox = (index: number): HTMLInputElement => {
+        const control = root.querySelector<HTMLInputElement>(
+          `[data-item-id="item-${index}"] input[type="checkbox"]`,
+        );
+        if (!control) throw new Error(`Item ${index} is not rendered`);
+        return control;
+      };
+      const selectedIds = () =>
+        JSON.parse(view.getByTestId("range-selection").textContent ?? "[]");
+
+      const showCheckbox = async (index: number) => {
+        if (rendererCase.strategy === "retained-viewport") {
+          const row = root.querySelector<HTMLElement>(
+            `[aria-posinset="${index}"]`,
+          )!;
+          act(() => revealViewportContent(row));
+        } else if (rendererCase.renderer === "virtual") {
+          act(() => {
+            vi.stubGlobal("scrollY", (index - 1) * 144);
+            vi.stubGlobal("pageYOffset", window.scrollY);
+            fireEvent.scroll(window);
+          });
+          await waitFor(() => expect(checkbox(index)).toBeInTheDocument());
+        }
+        return checkbox(index);
+      };
+
+      assertRenderer();
+      if (rendererCase.renderer === "virtual") {
+        expect(
+          root.querySelectorAll('input[type="checkbox"]').length,
+        ).toBeLessThan(rendererCase.count);
+      }
+      const lastEndpoint =
+        rendererCase.rangeLength === "short" ? 3 : rendererCase.count;
+      if (rendererCase.rangeLength === "short") {
+        fireEvent.click(await showCheckbox(4));
+        fireEvent.click(view.getByRole("button", { name: "Clear endpoints" }));
+      }
+      const endpoints =
+        rendererCase.direction === "forward"
+          ? [1, lastEndpoint]
+          : [lastEndpoint, 1];
+      for (const endpoint of endpoints)
+        fireEvent.click(await showCheckbox(endpoint));
+      expect(onSelectItem).toHaveBeenLastCalledWith(
+        `item-${endpoints[1]}`,
+        "execute",
+        expect.objectContaining({ grouping: "flat" }),
+      );
+      fireEvent.click(view.getAllByTitle("範囲内のチェックを入れる")[0]);
+      const expectedIds =
+        rendererCase.rangeLength === "short"
+          ? ["item-1", "item-2", "item-3", "item-4"]
+          : rangeItems.map((item) => item.id).sort();
+      expect(selectedIds()).toEqual(expectedIds);
+      const checkIndexes =
+        rendererCase.rangeLength === "short"
+          ? [1, 2, 3, 4]
+          : [1, Math.floor(rendererCase.count / 2), rendererCase.count];
+      for (const index of checkIndexes)
+        expect(await showCheckbox(index)).toBeChecked();
+      fireEvent.click(view.getAllByTitle("範囲内のチェックを外す")[0]);
+      expect(selectedIds()).toEqual(
+        rendererCase.rangeLength === "short" ? ["item-4"] : [],
+      );
+      expect(view.getByTestId("range-endpoints")).toHaveTextContent(
+        "[null,null]",
+      );
+      for (const index of checkIndexes) {
+        if (rendererCase.rangeLength === "short" && index === 4) {
+          expect(await showCheckbox(index)).toBeChecked();
+        } else {
+          expect(await showCheckbox(index)).not.toBeChecked();
+        }
+      }
+      expect(view.queryByTitle("範囲内のチェックを入れる")).toBeNull();
+      expect(view.queryByTitle("範囲内のチェックを外す")).toBeNull();
+      assertRenderer();
+      expect(await showCheckbox(rendererCase.count)).not.toBeChecked();
+      view.unmount();
+    },
+    30_000,
+  );
 });

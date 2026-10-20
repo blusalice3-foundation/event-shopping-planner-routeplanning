@@ -40,6 +40,14 @@ import ClockIcon from "./icons/ClockIcon";
 import ChevronUpIcon from "./icons/ChevronUpIcon";
 import ChevronDownIcon from "./icons/ChevronDownIcon";
 import { areSameItemSnapshot } from "./itemSnapshot";
+import {
+  ShoppingItemSelectionCheckbox,
+  ShoppingItemSelectionFrame,
+  ShoppingItemSelectionInfoBackground,
+  ShoppingItemSelectionProvider,
+  ShoppingItemSelectionStripe,
+  ShoppingItemSelectionWarning,
+} from "./ShoppingItemCardSelection";
 import LimitedPurchaseDialog from "./LimitedPurchaseDialog";
 import SingleQuantityLimitedPurchaseChoiceDialog from "./SingleQuantityLimitedPurchaseChoiceDialog";
 import {
@@ -420,9 +428,11 @@ export const SHOPPING_ITEM_CARD_COMPARISON_KEYS = [
   "preferNativeOptions",
 ] as const satisfies readonly (keyof ShoppingItemCardProps)[];
 
-export const areSameShoppingItemCardProps = (
-  prev: ShoppingItemCardProps,
-  next: ShoppingItemCardProps,
+type ShoppingItemCardContentProps = Omit<ShoppingItemCardProps, "isSelected">;
+
+const areSameShoppingItemCardContentProps = (
+  prev: ShoppingItemCardContentProps,
+  next: ShoppingItemCardContentProps,
 ): boolean =>
   areSameItemSnapshot(prev.item, next.item) &&
   prev.onUpdate === next.onUpdate &&
@@ -432,7 +442,6 @@ export const areSameShoppingItemCardProps = (
   prev.onMoveUp === next.onMoveUp &&
   prev.onMoveDown === next.onMoveDown &&
   prev.isStriped === next.isStriped &&
-  prev.isSelected === next.isSelected &&
   prev.blockBackgroundColor === next.blockBackgroundColor &&
   prev.canMoveUp === next.canMoveUp &&
   prev.canMoveDown === next.canMoveDown &&
@@ -455,13 +464,19 @@ export const areSameShoppingItemCardProps = (
   prev.readOnly === next.readOnly &&
   prev.preferNativeOptions === next.preferNativeOptions;
 
-const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
+export const areSameShoppingItemCardProps = (
+  prev: ShoppingItemCardProps,
+  next: ShoppingItemCardProps,
+): boolean =>
+  prev.isSelected === next.isSelected &&
+  areSameShoppingItemCardContentProps(prev, next);
+
+const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
   item: sourceItem,
   onUpdate,
   isStriped,
   onEditRequest,
   onDeleteRequest,
-  isSelected,
   onSelectItem,
   blockBackgroundColor,
   onMoveUp,
@@ -1126,9 +1141,6 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   const useBlockColor = isUnpurchased && blockBackgroundColor;
 
   const textAreaOverlayClassName = useMemo(() => {
-    if (isSelected) {
-      return "bg-blue-100/80 dark:bg-blue-900/30";
-    }
     if (useBlockColor) {
       return "bg-transparent dark:bg-slate-900/45";
     }
@@ -1136,23 +1148,25 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
       return "bg-blue-50/40 dark:bg-slate-900/25";
     }
     return "bg-white/80 dark:bg-slate-800/35";
-  }, [isSelected, useBlockColor, isStriped]);
+  }, [useBlockColor, isStriped]);
 
   const focusInfoAreaClassName = !onMoveUp
     ? "dark:bg-slate-900/35 dark:rounded-md dark:px-2"
     : "";
 
-  const baseBg = isSelected
-    ? "bg-blue-100 dark:bg-blue-900/50"
-    : useBlockColor
-      ? blockBackgroundColor
-      : isStriped
-        ? "bg-blue-50/50 dark:bg-slate-900/50"
-        : "bg-white dark:bg-slate-800";
+  const baseBg = useBlockColor
+    ? blockBackgroundColor
+    : isStriped
+      ? "bg-blue-50/50 dark:bg-slate-900/50"
+      : "bg-white dark:bg-slate-800";
+
+  const cardTransitionClassName =
+    preferNativeOptions && viewMode === "edit"
+      ? "transition-shadow"
+      : "transition-all";
 
   const cardClasses = `
-    rounded-lg shadow-md transition-all duration-300 relative overflow-hidden
-    ${baseBg}
+    rounded-lg shadow-md ${cardTransitionClassName} duration-300 relative overflow-hidden
     ${isSearchMatch ? "ring-4 ring-red-500 ring-offset-2" : ""}
   `;
 
@@ -1335,8 +1349,9 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
 
     if (viewMode !== "edit") {
       return (
-        <div
+        <ShoppingItemSelectionFrame
           className={cardClasses}
+          unselectedBackgroundClassName={baseBg}
           ref={cardRef}
           onPointerDown={readOnly ? undefined : handlePointerDown}
           onPointerUp={handlePointerUp}
@@ -1345,9 +1360,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
           data-search-match={isSearchMatch ? "true" : undefined}
           data-testid="shopping-item-card-smartphone-compact"
         >
-          {isSelected && (
-            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500" />
-          )}
+          <ShoppingItemSelectionStripe />
           {statusBgOverlay && <div className={statusBgOverlay} />}
           {warningStripe}
 
@@ -1421,13 +1434,14 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
           {purchaseStatusRadialMenu}
           {limitedPurchaseDialog}
           {contextualMenu}
-        </div>
+        </ShoppingItemSelectionFrame>
       );
     }
 
     return (
-      <div
+      <ShoppingItemSelectionFrame
         className={cardClasses}
+        unselectedBackgroundClassName={baseBg}
         ref={cardRef}
         onPointerDown={readOnly ? undefined : handlePointerDown}
         onPointerUp={handlePointerUp}
@@ -1435,9 +1449,7 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
         onTouchMove={handlePointerLeave}
         data-search-match={isSearchMatch ? "true" : undefined}
       >
-        {isSelected && (
-          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500" />
-        )}
+        <ShoppingItemSelectionStripe />
         {statusBgOverlay && <div className={statusBgOverlay} />}
         {warningStripe}
 
@@ -1459,9 +1471,8 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
                 {hallIndex + 1}
               </div>
             )}
-            <input
+            <ShoppingItemSelectionCheckbox
               type="checkbox"
-              checked={isSelected}
               disabled={readOnly}
               onChange={() => onSelectItem(item.id)}
               onClick={(e) => e.stopPropagation()}
@@ -1569,19 +1580,19 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
         {purchaseStatusRadialMenu}
         {limitedPurchaseDialog}
         {contextualMenu}
-      </div>
+      </ShoppingItemSelectionFrame>
     );
   }
 
   const pcCardClasses = `
-    rounded-lg shadow-md transition-all duration-300 flex items-stretch relative overflow-hidden
-    ${baseBg}
+    rounded-lg shadow-md ${cardTransitionClassName} duration-300 flex items-stretch relative overflow-hidden
     ${isSearchMatch ? "ring-4 ring-red-500 ring-offset-2" : ""}
   `;
 
   return (
-    <div
+    <ShoppingItemSelectionFrame
       className={pcCardClasses}
+      unselectedBackgroundClassName={baseBg}
       ref={cardRef}
       onPointerDown={readOnly ? undefined : handlePointerDown}
       onPointerUp={handlePointerUp}
@@ -1589,14 +1600,14 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
       onTouchMove={handlePointerLeave} // Cancel on scroll
       data-search-match={isSearchMatch ? "true" : undefined}
     >
-      {isSelected && (
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500 z-30"></div>
-      )}
+      <ShoppingItemSelectionStripe className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500 z-30" />
       {statusBgOverlay && <div className={statusBgOverlay}></div>}
 
       {/* 警告ストライプ: カード左端の縦バー（右側の可読性を阻害しない） */}
-      {hasWarningTags && !isSelected && (
-        <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-1.5 [background-image:repeating-linear-gradient(45deg,#fef08a_0px,#fef08a_6px,#000_6px,#000_12px)]" />
+      {hasWarningTags && (
+        <ShoppingItemSelectionWarning>
+          <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-1.5 [background-image:repeating-linear-gradient(45deg,#fef08a_0px,#fef08a_6px,#000_6px,#000_12px)]" />
+        </ShoppingItemSelectionWarning>
       )}
 
       {/* 左サイドバー */}
@@ -1618,9 +1629,8 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
             {hallIndex + 1}
           </div>
         )}
-        <input
+        <ShoppingItemSelectionCheckbox
           type="checkbox"
-          checked={isSelected}
           disabled={readOnly}
           onChange={() => onSelectItem(item.id)}
           onClick={(e) => e.stopPropagation()}
@@ -1688,9 +1698,9 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
       {/* 中央エリア: CSS Grid 3行構造（情報 / タイトル / 備考） */}
       <div className="relative z-20 grid min-w-0 flex-grow grid-rows-[auto_1fr_auto] gap-2 p-4">
         {/* 背景オーバーレイ */}
-        <div
-          className={`absolute inset-0 rounded-lg pointer-events-none ${textAreaOverlayClassName}`}
-        ></div>
+        <ShoppingItemSelectionInfoBackground
+          unselectedBackgroundClassName={textAreaOverlayClassName}
+        />
 
         {/* Row 1: 日付バッジ + 配置バッジ + サークル名 + 警告バッジ列 */}
         <div className="relative z-10 flex items-center gap-2 flex-wrap min-w-0">
@@ -1941,8 +1951,22 @@ const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
           </div>
         </div>
       )}
-    </div>
+    </ShoppingItemSelectionFrame>
   );
 };
+
+const MemoizedShoppingItemCardContent = React.memo(
+  ShoppingItemCardContent,
+  areSameShoppingItemCardContentProps,
+);
+
+const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
+  isSelected,
+  ...contentProps
+}) => (
+  <ShoppingItemSelectionProvider value={isSelected}>
+    <MemoizedShoppingItemCardContent {...contentProps} />
+  </ShoppingItemSelectionProvider>
+);
 
 export default React.memo(ShoppingItemCard, areSameShoppingItemCardProps);
