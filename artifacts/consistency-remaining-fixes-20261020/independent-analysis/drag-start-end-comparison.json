@@ -1,0 +1,714 @@
+[
+  {
+    "baseline": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 16.899999998509884,
+        "p95Ms": 17.899999998509884,
+        "maximumMs": 19.399999998509884
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 16.899999998509884,
+        "p95Ms": 17.899999998509884,
+        "maximumMs": 19.399999998509884
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 0.0,
+        "p95Ms": 0.0,
+        "maximumMs": 0.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 16.899999998509884,
+        "p95Ms": 17.899999998509884,
+        "maximumMs": 19.399999998509884
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 12.25,
+        "p95Ms": 13.5,
+        "maximumMs": 13.900000005960464
+      }
+    },
+    "profile": "150-native-grouping-True",
+    "current": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 17.099999994039536,
+        "p95Ms": 17.5,
+        "maximumMs": 17.900000005960464
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 17.099999994039536,
+        "p95Ms": 17.5,
+        "maximumMs": 17.900000005960464
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 0.0,
+        "p95Ms": 0.0,
+        "maximumMs": 0.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 17.099999994039536,
+        "p95Ms": 17.5,
+        "maximumMs": 17.900000005960464
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 12.450000002980232,
+        "p95Ms": 14.299999997019768,
+        "maximumMs": 14.400000005960464
+      }
+    },
+    "differences": {
+      "totalMs": {
+        "medianDeltaMs": 0.19999999552965164,
+        "p95DeltaMs": -0.3999999985098839
+      },
+      "fallbackMs": {
+        "medianDeltaMs": 0.19999999552965164,
+        "p95DeltaMs": -0.3999999985098839
+      },
+      "intentionalLongPressMs": {
+        "medianDeltaMs": 0.0,
+        "p95DeltaMs": 0.0
+      },
+      "postClonePaintMs": {
+        "medianDeltaMs": 0.19999999552965164,
+        "p95DeltaMs": -0.3999999985098839
+      },
+      "endMs": {
+        "medianDeltaMs": 0.20000000298023224,
+        "p95DeltaMs": 0.7999999970197678
+      }
+    }
+  },
+  {
+    "baseline": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 17.0,
+        "p95Ms": 17.700000002980232,
+        "maximumMs": 18.600000001490116
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 17.0,
+        "p95Ms": 17.700000002980232,
+        "maximumMs": 18.600000001490116
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 0.0,
+        "p95Ms": 0.0,
+        "maximumMs": 0.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 17.0,
+        "p95Ms": 17.700000002980232,
+        "maximumMs": 18.600000001490116
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 13.300000000745058,
+        "p95Ms": 15.0,
+        "maximumMs": 15.199999995529652
+      }
+    },
+    "profile": "150-native-grouping-False",
+    "current": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 17.049999997019768,
+        "p95Ms": 17.69999998807907,
+        "maximumMs": 18.299999997019768
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 17.099999994039536,
+        "p95Ms": 17.69999998807907,
+        "maximumMs": 18.299999997019768
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 0.0,
+        "p95Ms": 0.0,
+        "maximumMs": 0.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 17.099999994039536,
+        "p95Ms": 17.69999998807907,
+        "maximumMs": 18.299999997019768
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 13.00000000745058,
+        "p95Ms": 13.599999994039536,
+        "maximumMs": 15.0
+      }
+    },
+    "differences": {
+      "totalMs": {
+        "medianDeltaMs": 0.04999999701976776,
+        "p95DeltaMs": -1.4901161193847656E-08
+      },
+      "fallbackMs": {
+        "medianDeltaMs": 0.09999999403953552,
+        "p95DeltaMs": -1.4901161193847656E-08
+      },
+      "intentionalLongPressMs": {
+        "medianDeltaMs": 0.0,
+        "p95DeltaMs": 0.0
+      },
+      "postClonePaintMs": {
+        "medianDeltaMs": 0.09999999403953552,
+        "p95DeltaMs": -1.4901161193847656E-08
+      },
+      "endMs": {
+        "medianDeltaMs": -0.29999999329447746,
+        "p95DeltaMs": -1.4000000059604645
+      }
+    }
+  },
+  {
+    "baseline": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 215.14999999850988,
+        "p95Ms": 222.59999999403954,
+        "maximumMs": 224.70000000298023
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 15.149999998509884,
+        "p95Ms": 22.599999994039536,
+        "maximumMs": 24.700000002980232
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 200.0,
+        "p95Ms": 200.0,
+        "maximumMs": 200.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 5.699999999254942,
+        "p95Ms": 7.399999998509884,
+        "maximumMs": 8.099999994039536
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 11.599999997764826,
+        "p95Ms": 18.600000001490116,
+        "maximumMs": 20.0
+      }
+    },
+    "profile": "150-touch-grouping-True",
+    "current": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 213.14999999850988,
+        "p95Ms": 222.79999999701977,
+        "maximumMs": 223.90000000596046
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 13.149999998509884,
+        "p95Ms": 22.799999997019768,
+        "maximumMs": 23.900000005960464
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 200.0,
+        "p95Ms": 200.0,
+        "maximumMs": 200.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 5.6500000059604645,
+        "p95Ms": 6.4000000059604645,
+        "maximumMs": 6.800000011920929
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 7.600000001490116,
+        "p95Ms": 17.799999997019768,
+        "maximumMs": 18.0
+      }
+    },
+    "differences": {
+      "totalMs": {
+        "medianDeltaMs": -2.0,
+        "p95DeltaMs": 0.20000000298023224
+      },
+      "fallbackMs": {
+        "medianDeltaMs": -2.0,
+        "p95DeltaMs": 0.20000000298023224
+      },
+      "intentionalLongPressMs": {
+        "medianDeltaMs": 0.0,
+        "p95DeltaMs": 0.0
+      },
+      "postClonePaintMs": {
+        "medianDeltaMs": -0.04999999329447746,
+        "p95DeltaMs": -0.9999999925494194
+      },
+      "endMs": {
+        "medianDeltaMs": -3.9999999962747097,
+        "p95DeltaMs": -0.8000000044703484
+      }
+    }
+  },
+  {
+    "baseline": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 216.39999999850988,
+        "p95Ms": 224.5,
+        "maximumMs": 225.19999999552965
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 16.449999999254942,
+        "p95Ms": 24.5,
+        "maximumMs": 25.19999999552965
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 200.0,
+        "p95Ms": 200.0,
+        "maximumMs": 200.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 5.799999997019768,
+        "p95Ms": 6.800000004470348,
+        "maximumMs": 8.5
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 10.75,
+        "p95Ms": 17.100000001490116,
+        "maximumMs": 18.900000005960464
+      }
+    },
+    "profile": "150-touch-grouping-False",
+    "current": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 213.95000000298023,
+        "p95Ms": 222.3999999910593,
+        "maximumMs": 223.6000000089407
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 13.950000002980232,
+        "p95Ms": 22.399999991059303,
+        "maximumMs": 23.600000008940697
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 200.0,
+        "p95Ms": 200.0,
+        "maximumMs": 200.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 5.3499999940395355,
+        "p95Ms": 5.800000011920929,
+        "maximumMs": 5.9000000059604645
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 8.450000002980232,
+        "p95Ms": 16.799999997019768,
+        "maximumMs": 17.400000005960464
+      }
+    },
+    "differences": {
+      "totalMs": {
+        "medianDeltaMs": -2.4499999955296516,
+        "p95DeltaMs": -2.1000000089406967
+      },
+      "fallbackMs": {
+        "medianDeltaMs": -2.4999999962747097,
+        "p95DeltaMs": -2.1000000089406967
+      },
+      "intentionalLongPressMs": {
+        "medianDeltaMs": 0.0,
+        "p95DeltaMs": 0.0
+      },
+      "postClonePaintMs": {
+        "medianDeltaMs": -0.45000000298023224,
+        "p95DeltaMs": -0.9999999925494194
+      },
+      "endMs": {
+        "medianDeltaMs": -2.2999999970197678,
+        "p95DeltaMs": -0.30000000447034836
+      }
+    }
+  },
+  {
+    "baseline": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 18.599999997764826,
+        "p95Ms": 19.899999998509884,
+        "maximumMs": 20.299999997019768
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 18.599999997764826,
+        "p95Ms": 19.899999998509884,
+        "maximumMs": 20.299999997019768
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 0.0,
+        "p95Ms": 0.0,
+        "maximumMs": 0.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 18.599999997764826,
+        "p95Ms": 19.899999998509884,
+        "maximumMs": 20.299999997019768
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 12.300000000745058,
+        "p95Ms": 14.099999994039536,
+        "maximumMs": 14.100000001490116
+      }
+    },
+    "profile": "500-native-grouping-True",
+    "current": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 18.299999997019768,
+        "p95Ms": 19.5,
+        "maximumMs": 20.100000008940697
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 18.299999997019768,
+        "p95Ms": 19.5,
+        "maximumMs": 20.100000008940697
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 0.0,
+        "p95Ms": 0.0,
+        "maximumMs": 0.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 18.299999997019768,
+        "p95Ms": 19.5,
+        "maximumMs": 20.100000008940697
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 12.549999997019768,
+        "p95Ms": 13.400000005960464,
+        "maximumMs": 14.200000002980232
+      }
+    },
+    "differences": {
+      "totalMs": {
+        "medianDeltaMs": -0.30000000074505806,
+        "p95DeltaMs": -0.3999999985098839
+      },
+      "fallbackMs": {
+        "medianDeltaMs": -0.30000000074505806,
+        "p95DeltaMs": -0.3999999985098839
+      },
+      "intentionalLongPressMs": {
+        "medianDeltaMs": 0.0,
+        "p95DeltaMs": 0.0
+      },
+      "postClonePaintMs": {
+        "medianDeltaMs": -0.30000000074505806,
+        "p95DeltaMs": -0.3999999985098839
+      },
+      "endMs": {
+        "medianDeltaMs": 0.2499999962747097,
+        "p95DeltaMs": -0.699999988079071
+      }
+    }
+  },
+  {
+    "baseline": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 17.099999997764826,
+        "p95Ms": 19.099999994039536,
+        "maximumMs": 19.19999999552965
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 17.099999997764826,
+        "p95Ms": 19.099999994039536,
+        "maximumMs": 19.19999999552965
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 0.0,
+        "p95Ms": 0.0,
+        "maximumMs": 0.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 17.099999997764826,
+        "p95Ms": 19.099999994039536,
+        "maximumMs": 19.19999999552965
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 12.050000000745058,
+        "p95Ms": 13.5,
+        "maximumMs": 14.400000005960464
+      }
+    },
+    "profile": "500-native-grouping-False",
+    "current": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 18.25,
+        "p95Ms": 19.299999997019768,
+        "maximumMs": 19.399999991059303
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 18.25,
+        "p95Ms": 19.299999997019768,
+        "maximumMs": 19.399999991059303
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 0.0,
+        "p95Ms": 0.0,
+        "maximumMs": 0.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 18.25,
+        "p95Ms": 19.299999997019768,
+        "maximumMs": 19.399999991059303
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 12.699999995529652,
+        "p95Ms": 14.399999991059303,
+        "maximumMs": 14.600000008940697
+      }
+    },
+    "differences": {
+      "totalMs": {
+        "medianDeltaMs": 1.1500000022351742,
+        "p95DeltaMs": 0.20000000298023224
+      },
+      "fallbackMs": {
+        "medianDeltaMs": 1.1500000022351742,
+        "p95DeltaMs": 0.20000000298023224
+      },
+      "intentionalLongPressMs": {
+        "medianDeltaMs": 0.0,
+        "p95DeltaMs": 0.0
+      },
+      "postClonePaintMs": {
+        "medianDeltaMs": 1.1500000022351742,
+        "p95DeltaMs": 0.20000000298023224
+      },
+      "endMs": {
+        "medianDeltaMs": 0.6499999947845936,
+        "p95DeltaMs": 0.8999999910593033
+      }
+    }
+  },
+  {
+    "baseline": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 218.5,
+        "p95Ms": 225.69999999552965,
+        "maximumMs": 227.60000000149012
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 18.5,
+        "p95Ms": 25.69999999552965,
+        "maximumMs": 27.600000001490116
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 200.0,
+        "p95Ms": 200.0,
+        "maximumMs": 200.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 7.850000001490116,
+        "p95Ms": 8.600000001490116,
+        "maximumMs": 9.799999997019768
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 10.300000004470348,
+        "p95Ms": 16.899999998509884,
+        "maximumMs": 19.900000005960464
+      }
+    },
+    "profile": "500-touch-grouping-True",
+    "current": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 216.54999999701977,
+        "p95Ms": 226.79999999701977,
+        "maximumMs": 227.1000000089407
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 16.549999997019768,
+        "p95Ms": 26.799999997019768,
+        "maximumMs": 27.100000008940697
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 200.0,
+        "p95Ms": 200.0,
+        "maximumMs": 200.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 8.200000002980232,
+        "p95Ms": 9.5,
+        "maximumMs": 11.599999994039536
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 11.649999998509884,
+        "p95Ms": 17.400000005960464,
+        "maximumMs": 20.900000005960464
+      }
+    },
+    "differences": {
+      "totalMs": {
+        "medianDeltaMs": -1.9500000029802322,
+        "p95DeltaMs": 1.1000000014901161
+      },
+      "fallbackMs": {
+        "medianDeltaMs": -1.9500000029802322,
+        "p95DeltaMs": 1.1000000014901161
+      },
+      "intentionalLongPressMs": {
+        "medianDeltaMs": 0.0,
+        "p95DeltaMs": 0.0
+      },
+      "postClonePaintMs": {
+        "medianDeltaMs": 0.3500000014901161,
+        "p95DeltaMs": 0.8999999985098839
+      },
+      "endMs": {
+        "medianDeltaMs": 1.3499999940395355,
+        "p95DeltaMs": 0.5000000074505806
+      }
+    }
+  },
+  {
+    "baseline": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 222.70000000298023,
+        "p95Ms": 227.79999999701977,
+        "maximumMs": 229.59999999403954
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 22.700000002980232,
+        "p95Ms": 27.799999997019768,
+        "maximumMs": 29.599999994039536
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 200.0,
+        "p95Ms": 200.0,
+        "maximumMs": 200.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 7.899999998509884,
+        "p95Ms": 10.299999997019768,
+        "maximumMs": 14.599999994039536
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 9.25,
+        "p95Ms": 17.30000000447035,
+        "maximumMs": 18.100000001490116
+      }
+    },
+    "profile": "500-touch-grouping-False",
+    "current": {
+      "totalMs": {
+        "count": 20,
+        "medianMs": 218.55000000447035,
+        "p95Ms": 225.80000001192093,
+        "maximumMs": 227.0
+      },
+      "fallbackMs": {
+        "count": 20,
+        "medianMs": 18.55000000447035,
+        "p95Ms": 25.80000001192093,
+        "maximumMs": 27.0
+      },
+      "intentionalLongPressMs": {
+        "count": 20,
+        "medianMs": 200.0,
+        "p95Ms": 200.0,
+        "maximumMs": 200.0
+      },
+      "postClonePaintMs": {
+        "count": 20,
+        "medianMs": 7.649999998509884,
+        "p95Ms": 8.300000011920929,
+        "maximumMs": 9.5
+      },
+      "endMs": {
+        "count": 20,
+        "medianMs": 8.800000004470348,
+        "p95Ms": 16.5,
+        "maximumMs": 17.200000002980232
+      }
+    },
+    "differences": {
+      "totalMs": {
+        "medianDeltaMs": -4.149999998509884,
+        "p95DeltaMs": -1.9999999850988388
+      },
+      "fallbackMs": {
+        "medianDeltaMs": -4.149999998509884,
+        "p95DeltaMs": -1.9999999850988388
+      },
+      "intentionalLongPressMs": {
+        "medianDeltaMs": 0.0,
+        "p95DeltaMs": 0.0
+      },
+      "postClonePaintMs": {
+        "medianDeltaMs": -0.25,
+        "p95DeltaMs": -1.9999999850988388
+      },
+      "endMs": {
+        "medianDeltaMs": -0.44999999552965164,
+        "p95DeltaMs": -0.8000000044703484
+      }
+    }
+  }
+]

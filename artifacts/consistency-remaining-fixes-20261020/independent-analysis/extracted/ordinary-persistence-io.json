@@ -1,0 +1,199 @@
+{
+  "label": "unspecified",
+  "fixture": "3 items, 3x3 map; isolated ordinary operations",
+  "notes": "Physical counts observe completed readwrite IDB transactions and their issued objectStore mutation requests; independent of app diagnostic events. Response is one animation frame plus following task. Save completion is successful write RPC reply. Timing values are observations, not performance acceptance.",
+  "observations": [
+    {
+      "operation": "purchase",
+      "responseMs": 12.099999994039536,
+      "saveCompletionMs": 16.899999991059303,
+      "workerRoundTripsByMethod": {
+        "items": 1
+      },
+      "physicalCommittedTransactions": 1,
+      "committedObjectStoreMutationRequests": 9,
+      "transactionStores": [
+        [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ]
+      ],
+      "mutations": [
+        {
+          "store": "eventLists",
+          "method": "delete"
+        },
+        {
+          "store": "eventLists",
+          "method": "delete"
+        },
+        {
+          "store": "eventLists",
+          "method": "put"
+        },
+        {
+          "store": "eventLists",
+          "method": "put"
+        },
+        {
+          "store": "syncQueue",
+          "method": "delete"
+        },
+        {
+          "store": "syncQueue",
+          "method": "put"
+        },
+        {
+          "store": "syncQueue",
+          "method": "put"
+        },
+        {
+          "store": "syncQueue",
+          "method": "put"
+        },
+        {
+          "store": "syncQueue",
+          "method": "put"
+        }
+      ]
+    },
+    {
+      "operation": "planned-quantity",
+      "responseMs": 10.100000008940697,
+      "saveCompletionMs": 12.900000005960464,
+      "workerRoundTripsByMethod": {
+        "items": 1
+      },
+      "physicalCommittedTransactions": 1,
+      "committedObjectStoreMutationRequests": 9,
+      "transactionStores": [
+        [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ]
+      ],
+      "mutations": [
+        {
+          "store": "eventLists",
+          "method": "delete"
+        },
+        {
+          "store": "eventLists",
+          "method": "delete"
+        },
+        {
+          "store": "eventLists",
+          "method": "put"
+        },
+        {
+          "store": "eventLists",
+          "method": "put"
+        },
+        {
+          "store": "syncQueue",
+          "method": "delete"
+        },
+        {
+          "store": "syncQueue",
+          "method": "put"
+        },
+        {
+          "store": "syncQueue",
+          "method": "put"
+        },
+        {
+          "store": "syncQueue",
+          "method": "put"
+        },
+        {
+          "store": "syncQueue",
+          "method": "put"
+        }
+      ]
+    },
+    {
+      "operation": "memo",
+      "responseMs": 7.799999997019768,
+      "saveCompletionMs": 316.40000000596046,
+      "workerRoundTripsByMethod": {
+        "items": 1
+      },
+      "physicalCommittedTransactions": 1,
+      "committedObjectStoreMutationRequests": 9,
+      "transactionStores": [
+        [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ]
+      ],
+      "mutations": [
+        {
+          "store": "eventLists",
+          "method": "delete"
+        },
+        {
+          "store": "eventLists",
+          "method": "delete"
+        },
+        {
+          "store": "eventLists",
+          "method": "put"
+        },
+        {
+          "store": "eventLists",
+          "method": "put"
+        },
+        {
+          "store": "syncQueue",
+          "method": "delete"
+        },
+        {
+          "store": "syncQueue",
+          "method": "put"
+        },
+        {
+          "store": "syncQueue",
+          "method": "put"
+        },
+        {
+          "store": "syncQueue",
+          "method": "put"
+        },
+        {
+          "store": "syncQueue",
+          "method": "put"
+        }
+      ]
+    }
+  ]
+}

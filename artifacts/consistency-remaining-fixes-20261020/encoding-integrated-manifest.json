@@ -1,0 +1,92 @@
+[
+  {
+    "path": "src/components/map/MapImportDialog.previewRace.test.tsx",
+    "sha256": "518616CF303CF8F85A237302B62CF0790A961F68879B5F6FB84FF54D95697DC3",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 528,
+    "replacementCharacters": 0,
+    "questionMarks": 10
+  },
+  {
+    "path": "src/components/map/MapImportDialog.tsx",
+    "sha256": "DF5594D1DFB9B0EAB200050DA66D729151FFB72C7B28D0642A8C87544BB6D1C9",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 1236,
+    "replacementCharacters": 0,
+    "questionMarks": 35
+  },
+  {
+    "path": "src/features/app-shell/components/MutationConfirmationDialog.integration.test.tsx",
+    "sha256": "2DCC7A76E6B3878CA12840FA44EE6C9E3508AE6352D7AFD6AFE37196AA94690A",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 358,
+    "replacementCharacters": 0,
+    "questionMarks": 1
+  },
+  {
+    "path": "src/hooks/useModalDialogBehavior.integration.test.tsx",
+    "sha256": "82CE7EB14D58ECDE3AF00672F27A7C1205863927BE8A1296C37C6943BB5DE808",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 330,
+    "replacementCharacters": 0,
+    "questionMarks": 6
+  },
+  {
+    "path": "src/hooks/useModalDialogBehavior.ts",
+    "sha256": "430891721588CC7D5FA7E8726E9658C732AAB726F8BD896EE3F4263C58394399",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 144,
+    "replacementCharacters": 0,
+    "questionMarks": 23
+  },
+  {
+    "path": "src/utils/modalFocusBoundary.ts",
+    "sha256": "352BBB417CF2C361999AB3957FADE0862BE915FA992A5121B011558E713EE838",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 165,
+    "replacementCharacters": 0,
+    "questionMarks": 22
+  },
+  {
+    "path": "tests/browser/map-import-delayed-cancel.spec.ts",
+    "sha256": "84293657BEA5644361AACEF822893216002ABB8F73A9941CC03D8869B71A9482",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 533,
+    "replacementCharacters": 0,
+    "questionMarks": 17
+  },
+  {
+    "path": "tests/browser/modal-layer-order.spec.ts",
+    "sha256": "8ADAC89DB17C7DBCFCC57B6B50E6C0850AC9576B8812CA94715ED988DA04A459",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 208,
+    "replacementCharacters": 0,
+    "questionMarks": 3
+  },
+  {
+    "path": "docs/user-operation-consistency-remaining-fixes-results-20261020.md",
+    "sha256": "A57A66FAFF1F6176F1A22B39F9B1C799F3DE03C44DAB4A7367CE4EB195584532",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 83,
+    "replacementCharacters": 0,
+    "questionMarks": 0
+  }
+]

@@ -26,3 +26,6 @@ artifacts/op03-terminal-stop-20261019/** -text whitespace=cr-at-eol,-blank-at-eo
 
 # Preserve original bytes and console whitespace in OP04/focus verification evidence.
 artifacts/op04-focus-remediation-20261019/** -text whitespace=cr-at-eol,-blank-at-eol,-blank-at-eof
+
+# Preserve original bytes and console whitespace in remaining-fix verification evidence.
+artifacts/consistency-remaining-fixes-20261020/** -text whitespace=cr-at-eol,-blank-at-eol,-blank-at-eof

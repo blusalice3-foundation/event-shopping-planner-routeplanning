@@ -1,0 +1,42 @@
+
+Running 1 test using 1 worker
+
+
+
+(node:37296) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1/1] [chromium] › tests\browser\map-import-delayed-cancel.spec.ts:425:1 › map import can resume after a pending import parser is replaced by a real Worker preview
+  1) [chromium] › tests\browser\map-import-delayed-cancel.spec.ts:425:1 › map import can resume after a pending import parser is replaced by a real Worker preview 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "1件のマップを取り込みました。",
+    + ]
+
+      517 |   expect(reloaded.eventLists).toEqual(before.eventLists);
+      518 |   expect(errors).toEqual([]);
+    > 519 |   expect(alerts).toEqual([]);
+          |                  ^
+      520 |   await testInfo.attach("real-worker-parser-switch", {
+      521 |     body: Buffer.from(
+      522 |       JSON.stringify({
+        at D:\esp-remain-261020\tests\browser\map-import-delayed-cancel.spec.ts:519:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\consistency-remaining-fixes-20261020\browser-map-confirmation-output\map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\consistency-remaining-fixes-20261020\browser-map-confirmation-output\map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\consistency-remaining-fixes-20261020\browser-map-confirmation-output\map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium\error-context.md
+
+
+  1 failed
+    [chromium] › tests\browser\map-import-delayed-cancel.spec.ts:425:1 › map import can resume after a pending import parser is replaced by a real Worker preview 

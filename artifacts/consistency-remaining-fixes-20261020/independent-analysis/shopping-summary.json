@@ -1,0 +1,2527 @@
+{
+  "saveDiagnosticRows": [
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-False-map-False-pc",
+      "statistics": {
+        "count": 18,
+        "medianMs": 523.8499999940395,
+        "p95Ms": 699.5999999940395,
+        "maximumMs": 699.5999999940395
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-False-map-False-pc",
+      "statistics": {
+        "count": 35,
+        "medianMs": 414.79999999701977,
+        "p95Ms": 683.7000000029802,
+        "maximumMs": 686.5999999940395
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-False-map-False-pc",
+      "statistics": {
+        "count": 61,
+        "medianMs": 410.1000000089407,
+        "p95Ms": 569.0,
+        "maximumMs": 606.2999999970198
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-False-map-False-smartphone",
+      "statistics": {
+        "count": 18,
+        "medianMs": 441.44999999552965,
+        "p95Ms": 603.1000000089407,
+        "maximumMs": 603.1000000089407
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-False-map-False-smartphone",
+      "statistics": {
+        "count": 33,
+        "medianMs": 370.1000000089407,
+        "p95Ms": 598.3000000119209,
+        "maximumMs": 630.5
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-False-map-False-smartphone",
+      "statistics": {
+        "count": 61,
+        "medianMs": 425.0,
+        "p95Ms": 589.6999999880791,
+        "maximumMs": 659.2000000029802
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-False-map-True-pc",
+      "statistics": {
+        "count": 20,
+        "medianMs": 483.2500000074506,
+        "p95Ms": 603.3999999910593,
+        "maximumMs": 689.2000000029802
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-False-map-True-pc",
+      "statistics": {
+        "count": 33,
+        "medianMs": 375.19999998807907,
+        "p95Ms": 572.5999999940395,
+        "maximumMs": 605.7999999970198
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-False-map-True-pc",
+      "statistics": {
+        "count": 61,
+        "medianMs": 432.59999999403954,
+        "p95Ms": 597.7999999970198,
+        "maximumMs": 617.0999999940395
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-False-map-True-smartphone",
+      "statistics": {
+        "count": 20,
+        "medianMs": 462.6499999985099,
+        "p95Ms": 588.7000000029802,
+        "maximumMs": 643.8000000119209
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-False-map-True-smartphone",
+      "statistics": {
+        "count": 28,
+        "medianMs": 408.1499999985099,
+        "p95Ms": 566.0999999940395,
+        "maximumMs": 634.6000000089407
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-False-map-True-smartphone",
+      "statistics": {
+        "count": 61,
+        "medianMs": 439.59999999403954,
+        "p95Ms": 584.6000000089407,
+        "maximumMs": 623.7999999970198
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-True-map-False-pc",
+      "statistics": {
+        "count": 20,
+        "medianMs": 485.59999999403954,
+        "p95Ms": 631.0,
+        "maximumMs": 682.0
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-True-map-False-pc",
+      "statistics": {
+        "count": 31,
+        "medianMs": 432.3999999910593,
+        "p95Ms": 599.0999999940395,
+        "maximumMs": 635.7000000029802
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-True-map-False-pc",
+      "statistics": {
+        "count": 60,
+        "medianMs": 436.05000000447035,
+        "p95Ms": 573.8000000119209,
+        "maximumMs": 641.5
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-True-map-False-smartphone",
+      "statistics": {
+        "count": 20,
+        "medianMs": 459.29999999701977,
+        "p95Ms": 586.5,
+        "maximumMs": 617.2000000029802
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-True-map-False-smartphone",
+      "statistics": {
+        "count": 34,
+        "medianMs": 418.05000000447035,
+        "p95Ms": 618.3999999910593,
+        "maximumMs": 642.6000000089407
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-True-map-False-smartphone",
+      "statistics": {
+        "count": 60,
+        "medianMs": 423.19999999552965,
+        "p95Ms": 572.6000000089407,
+        "maximumMs": 645.7000000029802
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-True-map-True-pc",
+      "statistics": {
+        "count": 20,
+        "medianMs": 473.55000000447035,
+        "p95Ms": 610.6000000089407,
+        "maximumMs": 674.5
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-True-map-True-pc",
+      "statistics": {
+        "count": 33,
+        "medianMs": 388.0,
+        "p95Ms": 588.1999999880791,
+        "maximumMs": 588.2999999970198
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-True-map-True-pc",
+      "statistics": {
+        "count": 60,
+        "medianMs": 439.55000000447035,
+        "p95Ms": 576.8000000119209,
+        "maximumMs": 652.0
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-True-map-True-smartphone",
+      "statistics": {
+        "count": 20,
+        "medianMs": 438.9999999925494,
+        "p95Ms": 578.7999999970198,
+        "maximumMs": 604.8000000119209
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-True-map-True-smartphone",
+      "statistics": {
+        "count": 35,
+        "medianMs": 413.79999999701977,
+        "p95Ms": 594.2000000029802,
+        "maximumMs": 627.0
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "150-concentrated-True-map-True-smartphone",
+      "statistics": {
+        "count": 60,
+        "medianMs": 433.0,
+        "p95Ms": 582.6000000089407,
+        "maximumMs": 637.0
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-False-map-False-pc",
+      "statistics": {
+        "count": 20,
+        "medianMs": 536.3499999940395,
+        "p95Ms": 708.7999999970198,
+        "maximumMs": 768.2000000029802
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-False-map-False-pc",
+      "statistics": {
+        "count": 35,
+        "medianMs": 451.30000001192093,
+        "p95Ms": 639.9000000059605,
+        "maximumMs": 662.9000000059605
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-False-map-False-pc",
+      "statistics": {
+        "count": 61,
+        "medianMs": 478.8999999910593,
+        "p95Ms": 648.5,
+        "maximumMs": 764.3999999910593
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-False-map-False-smartphone",
+      "statistics": {
+        "count": 20,
+        "medianMs": 502.6000000014901,
+        "p95Ms": 635.9000000059605,
+        "maximumMs": 679.2999999970198
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-False-map-False-smartphone",
+      "statistics": {
+        "count": 35,
+        "medianMs": 412.09999999403954,
+        "p95Ms": 609.2000000029802,
+        "maximumMs": 630.5999999940395
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-False-map-False-smartphone",
+      "statistics": {
+        "count": 61,
+        "medianMs": 471.59999999403954,
+        "p95Ms": 621.2000000029802,
+        "maximumMs": 648.7999999970198
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-False-map-True-pc",
+      "statistics": {
+        "count": 18,
+        "medianMs": 517.9500000029802,
+        "p95Ms": 697.7000000029802,
+        "maximumMs": 697.7000000029802
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-False-map-True-pc",
+      "statistics": {
+        "count": 37,
+        "medianMs": 547.3000000119209,
+        "p95Ms": 967.6000000089407,
+        "maximumMs": 1015.2999999970198
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-False-map-True-pc",
+      "statistics": {
+        "count": 61,
+        "medianMs": 456.29999999701977,
+        "p95Ms": 619.0999999940395,
+        "maximumMs": 698.5999999940395
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-False-map-True-smartphone",
+      "statistics": {
+        "count": 20,
+        "medianMs": 507.25,
+        "p95Ms": 642.1000000089407,
+        "maximumMs": 680.3999999910593
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-False-map-True-smartphone",
+      "statistics": {
+        "count": 35,
+        "medianMs": 435.1000000089407,
+        "p95Ms": 593.4000000059605,
+        "maximumMs": 642.8999999910593
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-False-map-True-smartphone",
+      "statistics": {
+        "count": 61,
+        "medianMs": 437.90000000596046,
+        "p95Ms": 608.8000000119209,
+        "maximumMs": 664.8999999910593
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-True-map-False-pc",
+      "statistics": {
+        "count": 20,
+        "medianMs": 485.54999999701977,
+        "p95Ms": 625.7000000029802,
+        "maximumMs": 675.6000000089407
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-True-map-False-pc",
+      "statistics": {
+        "count": 33,
+        "medianMs": 501.20000000298023,
+        "p95Ms": 683.4000000059605,
+        "maximumMs": 691.4000000059605
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-True-map-False-pc",
+      "statistics": {
+        "count": 60,
+        "medianMs": 437.2999999895692,
+        "p95Ms": 621.0999999940395,
+        "maximumMs": 668.5999999940395
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-True-map-False-smartphone",
+      "statistics": {
+        "count": 20,
+        "medianMs": 465.54999999701977,
+        "p95Ms": 604.9000000059605,
+        "maximumMs": 623.4000000059605
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-True-map-False-smartphone",
+      "statistics": {
+        "count": 35,
+        "medianMs": 444.5,
+        "p95Ms": 606.2999999970198,
+        "maximumMs": 655.7000000029802
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-True-map-False-smartphone",
+      "statistics": {
+        "count": 60,
+        "medianMs": 478.45000000298023,
+        "p95Ms": 635.2000000029802,
+        "maximumMs": 649.5
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-True-map-True-pc",
+      "statistics": {
+        "count": 18,
+        "medianMs": 488.34999999403954,
+        "p95Ms": 683.2000000029802,
+        "maximumMs": 683.2000000029802
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-True-map-True-pc",
+      "statistics": {
+        "count": 31,
+        "medianMs": 504.30000001192093,
+        "p95Ms": 658.8000000119209,
+        "maximumMs": 664.2999999970198
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-True-map-True-pc",
+      "statistics": {
+        "count": 60,
+        "medianMs": 516.0999999940395,
+        "p95Ms": 691.5,
+        "maximumMs": 756.6999999880791
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-True-map-True-smartphone",
+      "statistics": {
+        "count": 20,
+        "medianMs": 500.29999999701977,
+        "p95Ms": 631.1000000089407,
+        "maximumMs": 640.6000000089407
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-True-map-True-smartphone",
+      "statistics": {
+        "count": 35,
+        "medianMs": 470.59999999403954,
+        "p95Ms": 651.0,
+        "maximumMs": 688.1999999880791
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "500-concentrated-True-map-True-smartphone",
+      "statistics": {
+        "count": 60,
+        "medianMs": 477.40000000596046,
+        "p95Ms": 623.0,
+        "maximumMs": 660.7999999970198
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-False-map-False-pc",
+      "statistics": {
+        "count": 20,
+        "medianMs": 676.5,
+        "p95Ms": 966.0,
+        "maximumMs": 984.0
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-False-map-False-pc",
+      "statistics": {
+        "count": 36,
+        "medianMs": 558.25,
+        "p95Ms": 776.8999999910593,
+        "maximumMs": 829.2999999970198
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-False-map-False-pc",
+      "statistics": {
+        "count": 61,
+        "medianMs": 584.3999999910593,
+        "p95Ms": 801.2999999970198,
+        "maximumMs": 895.9000000059605
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-False-map-False-smartphone",
+      "statistics": {
+        "count": 20,
+        "medianMs": 666.8500000014901,
+        "p95Ms": 889.6999999880791,
+        "maximumMs": 986.9000000059605
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-False-map-False-smartphone",
+      "statistics": {
+        "count": 37,
+        "medianMs": 583.5,
+        "p95Ms": 815.0,
+        "maximumMs": 835.2999999970198
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-False-map-False-smartphone",
+      "statistics": {
+        "count": 61,
+        "medianMs": 589.8999999910593,
+        "p95Ms": 811.7000000029802,
+        "maximumMs": 875.5
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-False-map-True-pc",
+      "statistics": {
+        "count": 20,
+        "medianMs": 663.4500000029802,
+        "p95Ms": 838.6999999880791,
+        "maximumMs": 1010.5
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-False-map-True-pc",
+      "statistics": {
+        "count": 36,
+        "medianMs": 566.0500000044703,
+        "p95Ms": 813.5,
+        "maximumMs": 843.5999999940395
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-False-map-True-pc",
+      "statistics": {
+        "count": 61,
+        "medianMs": 551.3999999910593,
+        "p95Ms": 727.5999999940395,
+        "maximumMs": 863.7999999970198
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-False-map-True-smartphone",
+      "statistics": {
+        "count": 19,
+        "medianMs": 709.9000000059605,
+        "p95Ms": 1023.5999999940395,
+        "maximumMs": 1023.5999999940395
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-False-map-True-smartphone",
+      "statistics": {
+        "count": 36,
+        "medianMs": 601.0,
+        "p95Ms": 761.7000000029802,
+        "maximumMs": 765.0999999940395
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-False-map-True-smartphone",
+      "statistics": {
+        "count": 61,
+        "medianMs": 599.2000000029802,
+        "p95Ms": 825.3999999910593,
+        "maximumMs": 879.0
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-True-map-False-pc",
+      "statistics": {
+        "count": 19,
+        "medianMs": 630.7000000029802,
+        "p95Ms": 848.7999999970198,
+        "maximumMs": 848.7999999970198
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-True-map-False-pc",
+      "statistics": {
+        "count": 31,
+        "medianMs": 513.1000000089407,
+        "p95Ms": 732.0999999940395,
+        "maximumMs": 821.8000000119209
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-True-map-False-pc",
+      "statistics": {
+        "count": 60,
+        "medianMs": 657.5500000044703,
+        "p95Ms": 905.2000000029802,
+        "maximumMs": 961.9000000059605
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-True-map-False-smartphone",
+      "statistics": {
+        "count": 20,
+        "medianMs": 653.8999999910593,
+        "p95Ms": 823.9000000059605,
+        "maximumMs": 830.2000000029802
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-True-map-False-smartphone",
+      "statistics": {
+        "count": 37,
+        "medianMs": 562.5,
+        "p95Ms": 793.5,
+        "maximumMs": 893.2000000029802
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-True-map-False-smartphone",
+      "statistics": {
+        "count": 60,
+        "medianMs": 618.2999999970198,
+        "p95Ms": 807.5,
+        "maximumMs": 944.3999999910593
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-True-map-True-pc",
+      "statistics": {
+        "count": 20,
+        "medianMs": 624.6499999985099,
+        "p95Ms": 900.9000000059605,
+        "maximumMs": 950.0999999940395
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-True-map-True-pc",
+      "statistics": {
+        "count": 33,
+        "medianMs": 575.2000000029802,
+        "p95Ms": 794.0999999940395,
+        "maximumMs": 820.3999999910593
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-True-map-True-pc",
+      "statistics": {
+        "count": 60,
+        "medianMs": 620.2000000029802,
+        "p95Ms": 868.9000000059605,
+        "maximumMs": 881.0999999940395
+      },
+      "diagnosticPhase": "diagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-True-map-True-smartphone",
+      "statistics": {
+        "count": 17,
+        "medianMs": 592.9000000059605,
+        "p95Ms": 826.7000000029802,
+        "maximumMs": 826.7000000029802
+      },
+      "diagnosticPhase": "executionDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-True-map-True-smartphone",
+      "statistics": {
+        "count": 34,
+        "medianMs": 609.3499999940395,
+        "p95Ms": 961.3999999910593,
+        "maximumMs": 1059.5
+      },
+      "diagnosticPhase": "executionRecordDiagnostic"
+    },
+    {
+      "operation": "item-command",
+      "profile": "1500-concentrated-True-map-True-smartphone",
+      "statistics": {
+        "count": 60,
+        "medianMs": 593.9500000029802,
+        "p95Ms": 871.0999999940395,
+        "maximumMs": 925.5
+      },
+      "diagnosticPhase": "diagnostic"
+    }
+  ],
+  "responseRows": [
+    {
+      "profile": "150-concentrated-False-map-False-pc",
+      "itemCount": 150,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 14.24999999254942,
+        "p95Ms": 16.80000001192093,
+        "maximumMs": 19.100000008940697,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-False-pc",
+      "itemCount": 150,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 10.550000004470348,
+        "p95Ms": 12.0,
+        "maximumMs": 12.800000011920929,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-False-pc",
+      "itemCount": 150,
+      "operation": "focus",
+      "statistics": {
+        "count": 22,
+        "medianMs": 13.049999997019768,
+        "p95Ms": 14.5,
+        "maximumMs": 14.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-False-pc",
+      "itemCount": 150,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 10.0,
+        "p95Ms": 11.5,
+        "maximumMs": 11.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-False-pc",
+      "itemCount": 150,
+      "operation": "next",
+      "statistics": {
+        "count": 41,
+        "medianMs": 11.700000002980232,
+        "p95Ms": 13.0,
+        "maximumMs": 13.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-False-pc",
+      "itemCount": 150,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 11.700000002980232,
+        "p95Ms": 13.799999997019768,
+        "maximumMs": 13.900000005960464,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-False-smartphone",
+      "itemCount": 150,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 14.149999991059303,
+        "p95Ms": 15.899999991059303,
+        "maximumMs": 16.200000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-False-smartphone",
+      "itemCount": 150,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 10.450000002980232,
+        "p95Ms": 11.900000005960464,
+        "maximumMs": 12.200000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-False-smartphone",
+      "itemCount": 150,
+      "operation": "focus",
+      "statistics": {
+        "count": 22,
+        "medianMs": 11.949999995529652,
+        "p95Ms": 13.600000008940697,
+        "maximumMs": 14.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-False-smartphone",
+      "itemCount": 150,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 9.850000001490116,
+        "p95Ms": 11.200000002980232,
+        "maximumMs": 11.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-False-smartphone",
+      "itemCount": 150,
+      "operation": "next",
+      "statistics": {
+        "count": 41,
+        "medianMs": 10.799999997019768,
+        "p95Ms": 12.700000002980232,
+        "maximumMs": 12.900000005960464,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-False-smartphone",
+      "itemCount": 150,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 10.5,
+        "p95Ms": 11.5,
+        "maximumMs": 11.899999991059303,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-True-pc",
+      "itemCount": 150,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 14.149999998509884,
+        "p95Ms": 16.5,
+        "maximumMs": 21.400000005960464,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-True-pc",
+      "itemCount": 150,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 10.399999991059303,
+        "p95Ms": 12.300000011920929,
+        "maximumMs": 12.399999991059303,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-True-pc",
+      "itemCount": 150,
+      "operation": "focus",
+      "statistics": {
+        "count": 22,
+        "medianMs": 15.25,
+        "p95Ms": 17.099999994039536,
+        "maximumMs": 17.200000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-True-pc",
+      "itemCount": 150,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 11.800000004470348,
+        "p95Ms": 13.400000005960464,
+        "maximumMs": 13.700000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-True-pc",
+      "itemCount": 150,
+      "operation": "next",
+      "statistics": {
+        "count": 41,
+        "medianMs": 17.69999998807907,
+        "p95Ms": 22.400000005960464,
+        "maximumMs": 23.900000005960464,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-True-pc",
+      "itemCount": 150,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 16.75,
+        "p95Ms": 21.799999997019768,
+        "maximumMs": 23.399999991059303,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-True-smartphone",
+      "itemCount": 150,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 13.900000005960464,
+        "p95Ms": 15.299999997019768,
+        "maximumMs": 17.69999998807907,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-True-smartphone",
+      "itemCount": 150,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 10.74999999254942,
+        "p95Ms": 12.5,
+        "maximumMs": 13.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-True-smartphone",
+      "itemCount": 150,
+      "operation": "focus",
+      "statistics": {
+        "count": 22,
+        "medianMs": 14.00000000745058,
+        "p95Ms": 17.599999994039536,
+        "maximumMs": 17.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-True-smartphone",
+      "itemCount": 150,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 11.349999994039536,
+        "p95Ms": 12.799999997019768,
+        "maximumMs": 13.699999988079071,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-True-smartphone",
+      "itemCount": 150,
+      "operation": "next",
+      "statistics": {
+        "count": 41,
+        "medianMs": 13.5,
+        "p95Ms": 19.600000008940697,
+        "maximumMs": 21.600000008940697,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-False-map-True-smartphone",
+      "itemCount": 150,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 13.050000004470348,
+        "p95Ms": 17.5,
+        "maximumMs": 17.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-False-pc",
+      "itemCount": 150,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 11.350000001490116,
+        "p95Ms": 13.5,
+        "maximumMs": 22.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-False-pc",
+      "itemCount": 150,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 10.200000010430813,
+        "p95Ms": 11.400000005960464,
+        "maximumMs": 11.900000005960464,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-False-pc",
+      "itemCount": 150,
+      "operation": "focus",
+      "statistics": {
+        "count": 21,
+        "medianMs": 12.400000005960464,
+        "p95Ms": 13.799999997019768,
+        "maximumMs": 14.700000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-False-pc",
+      "itemCount": 150,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 9.899999998509884,
+        "p95Ms": 12.699999988079071,
+        "maximumMs": 12.700000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-False-pc",
+      "itemCount": 150,
+      "operation": "next",
+      "statistics": {
+        "count": 21,
+        "medianMs": 11.700000002980232,
+        "p95Ms": 13.200000002980232,
+        "maximumMs": 13.299999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-False-pc",
+      "itemCount": 150,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 15.0,
+        "p95Ms": 16.099999994039536,
+        "maximumMs": 17.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-False-smartphone",
+      "itemCount": 150,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 12.200000002980232,
+        "p95Ms": 14.299999997019768,
+        "maximumMs": 14.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-False-smartphone",
+      "itemCount": 150,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 10.049999997019768,
+        "p95Ms": 11.799999997019768,
+        "maximumMs": 12.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-False-smartphone",
+      "itemCount": 150,
+      "operation": "focus",
+      "statistics": {
+        "count": 21,
+        "medianMs": 11.899999991059303,
+        "p95Ms": 13.100000008940697,
+        "maximumMs": 13.900000005960464,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-False-smartphone",
+      "itemCount": 150,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 9.800000004470348,
+        "p95Ms": 11.5,
+        "maximumMs": 11.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-False-smartphone",
+      "itemCount": 150,
+      "operation": "next",
+      "statistics": {
+        "count": 21,
+        "medianMs": 13.200000002980232,
+        "p95Ms": 14.600000008940697,
+        "maximumMs": 15.900000005960464,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-False-smartphone",
+      "itemCount": 150,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 13.550000004470348,
+        "p95Ms": 14.600000008940697,
+        "maximumMs": 18.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-True-pc",
+      "itemCount": 150,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 11.950000002980232,
+        "p95Ms": 13.900000005960464,
+        "maximumMs": 19.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-True-pc",
+      "itemCount": 150,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 10.300000004470348,
+        "p95Ms": 11.400000005960464,
+        "maximumMs": 13.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-True-pc",
+      "itemCount": 150,
+      "operation": "focus",
+      "statistics": {
+        "count": 21,
+        "medianMs": 14.099999994039536,
+        "p95Ms": 15.0,
+        "maximumMs": 15.300000011920929,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-True-pc",
+      "itemCount": 150,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 11.799999997019768,
+        "p95Ms": 13.299999997019768,
+        "maximumMs": 14.0,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-True-pc",
+      "itemCount": 150,
+      "operation": "next",
+      "statistics": {
+        "count": 21,
+        "medianMs": 20.69999998807907,
+        "p95Ms": 28.899999991059303,
+        "maximumMs": 41.79999999701977,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-True-pc",
+      "itemCount": 150,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 16.849999994039536,
+        "p95Ms": 18.5,
+        "maximumMs": 20.899999991059303,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-True-smartphone",
+      "itemCount": 150,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 12.949999995529652,
+        "p95Ms": 14.200000002980232,
+        "maximumMs": 14.899999991059303,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-True-smartphone",
+      "itemCount": 150,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 9.900000005960464,
+        "p95Ms": 13.300000011920929,
+        "maximumMs": 13.400000005960464,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-True-smartphone",
+      "itemCount": 150,
+      "operation": "focus",
+      "statistics": {
+        "count": 21,
+        "medianMs": 13.299999997019768,
+        "p95Ms": 15.200000002980232,
+        "maximumMs": 16.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-True-smartphone",
+      "itemCount": 150,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 11.149999998509884,
+        "p95Ms": 12.0,
+        "maximumMs": 12.200000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-True-smartphone",
+      "itemCount": 150,
+      "operation": "next",
+      "statistics": {
+        "count": 21,
+        "medianMs": 20.0,
+        "p95Ms": 24.5,
+        "maximumMs": 24.900000005960464,
+        "passed": true
+      }
+    },
+    {
+      "profile": "150-concentrated-True-map-True-smartphone",
+      "itemCount": 150,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 17.799999997019768,
+        "p95Ms": 23.599999994039536,
+        "maximumMs": 28.100000008940697,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-False-pc",
+      "itemCount": 500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 16.850000001490116,
+        "p95Ms": 27.5,
+        "maximumMs": 34.0,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-False-pc",
+      "itemCount": 500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 15.899999998509884,
+        "p95Ms": 18.899999991059303,
+        "maximumMs": 19.0,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-False-pc",
+      "itemCount": 500,
+      "operation": "focus",
+      "statistics": {
+        "count": 22,
+        "medianMs": 13.200000002980232,
+        "p95Ms": 14.0,
+        "maximumMs": 14.099999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-False-pc",
+      "itemCount": 500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 10.899999998509884,
+        "p95Ms": 12.0,
+        "maximumMs": 13.099999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-False-pc",
+      "itemCount": 500,
+      "operation": "next",
+      "statistics": {
+        "count": 41,
+        "medianMs": 13.200000002980232,
+        "p95Ms": 15.200000002980232,
+        "maximumMs": 16.299999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-False-pc",
+      "itemCount": 500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 13.549999997019768,
+        "p95Ms": 14.799999997019768,
+        "maximumMs": 16.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-False-smartphone",
+      "itemCount": 500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 19.600000001490116,
+        "p95Ms": 22.0,
+        "maximumMs": 31.099999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-False-smartphone",
+      "itemCount": 500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 16.049999997019768,
+        "p95Ms": 20.30000001192093,
+        "maximumMs": 20.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-False-smartphone",
+      "itemCount": 500,
+      "operation": "focus",
+      "statistics": {
+        "count": 22,
+        "medianMs": 13.150000005960464,
+        "p95Ms": 14.100000008940697,
+        "maximumMs": 14.299999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-False-smartphone",
+      "itemCount": 500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 10.5,
+        "p95Ms": 12.100000008940697,
+        "maximumMs": 12.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-False-smartphone",
+      "itemCount": 500,
+      "operation": "next",
+      "statistics": {
+        "count": 41,
+        "medianMs": 11.100000008940697,
+        "p95Ms": 13.899999991059303,
+        "maximumMs": 18.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-False-smartphone",
+      "itemCount": 500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 11.449999995529652,
+        "p95Ms": 16.899999991059303,
+        "maximumMs": 18.100000008940697,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-True-pc",
+      "itemCount": 500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 20.80000000447035,
+        "p95Ms": 25.0,
+        "maximumMs": 30.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-True-pc",
+      "itemCount": 500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 16.350000001490116,
+        "p95Ms": 19.400000005960464,
+        "maximumMs": 19.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-True-pc",
+      "itemCount": 500,
+      "operation": "focus",
+      "statistics": {
+        "count": 22,
+        "medianMs": 17.44999999552965,
+        "p95Ms": 18.799999997019768,
+        "maximumMs": 19.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-True-pc",
+      "itemCount": 500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 13.0,
+        "p95Ms": 14.699999988079071,
+        "maximumMs": 15.199999988079071,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-True-pc",
+      "itemCount": 500,
+      "operation": "next",
+      "statistics": {
+        "count": 41,
+        "medianMs": 20.400000005960464,
+        "p95Ms": 26.099999994039536,
+        "maximumMs": 28.700000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-True-pc",
+      "itemCount": 500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 17.450000002980232,
+        "p95Ms": 19.30000001192093,
+        "maximumMs": 21.30000001192093,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-True-smartphone",
+      "itemCount": 500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 19.94999999552965,
+        "p95Ms": 23.799999997019768,
+        "maximumMs": 25.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-True-smartphone",
+      "itemCount": 500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 16.600000001490116,
+        "p95Ms": 19.600000008940697,
+        "maximumMs": 20.19999998807907,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-True-smartphone",
+      "itemCount": 500,
+      "operation": "focus",
+      "statistics": {
+        "count": 22,
+        "medianMs": 15.150000005960464,
+        "p95Ms": 17.100000008940697,
+        "maximumMs": 17.399999991059303,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-True-smartphone",
+      "itemCount": 500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 12.150000005960464,
+        "p95Ms": 14.100000008940697,
+        "maximumMs": 14.600000008940697,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-True-smartphone",
+      "itemCount": 500,
+      "operation": "next",
+      "statistics": {
+        "count": 41,
+        "medianMs": 17.400000005960464,
+        "p95Ms": 21.399999991059303,
+        "maximumMs": 22.299999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-False-map-True-smartphone",
+      "itemCount": 500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 17.099999994039536,
+        "p95Ms": 21.799999997019768,
+        "maximumMs": 22.600000008940697,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-False-pc",
+      "itemCount": 500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 16.149999998509884,
+        "p95Ms": 20.799999997019768,
+        "maximumMs": 25.299999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-False-pc",
+      "itemCount": 500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 14.049999997019768,
+        "p95Ms": 16.700000002980232,
+        "maximumMs": 17.299999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-False-pc",
+      "itemCount": 500,
+      "operation": "focus",
+      "statistics": {
+        "count": 21,
+        "medianMs": 13.599999994039536,
+        "p95Ms": 14.700000002980232,
+        "maximumMs": 14.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-False-pc",
+      "itemCount": 500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 11.150000005960464,
+        "p95Ms": 12.5,
+        "maximumMs": 13.399999991059303,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-False-pc",
+      "itemCount": 500,
+      "operation": "next",
+      "statistics": {
+        "count": 21,
+        "medianMs": 12.699999988079071,
+        "p95Ms": 15.700000002980232,
+        "maximumMs": 17.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-False-pc",
+      "itemCount": 500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 20.899999991059303,
+        "p95Ms": 22.399999991059303,
+        "maximumMs": 22.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-False-smartphone",
+      "itemCount": 500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 15.100000008940697,
+        "p95Ms": 19.400000005960464,
+        "maximumMs": 23.0,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-False-smartphone",
+      "itemCount": 500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 17.049999997019768,
+        "p95Ms": 18.400000005960464,
+        "maximumMs": 19.099999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-False-smartphone",
+      "itemCount": 500,
+      "operation": "focus",
+      "statistics": {
+        "count": 21,
+        "medianMs": 13.100000008940697,
+        "p95Ms": 15.399999991059303,
+        "maximumMs": 16.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-False-smartphone",
+      "itemCount": 500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 11.450000002980232,
+        "p95Ms": 13.5,
+        "maximumMs": 15.200000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-False-smartphone",
+      "itemCount": 500,
+      "operation": "next",
+      "statistics": {
+        "count": 21,
+        "medianMs": 10.799999997019768,
+        "p95Ms": 17.899999991059303,
+        "maximumMs": 18.099999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-False-smartphone",
+      "itemCount": 500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 15.899999998509884,
+        "p95Ms": 26.0,
+        "maximumMs": 26.400000005960464,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-True-pc",
+      "itemCount": 500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 18.299999997019768,
+        "p95Ms": 22.299999997019768,
+        "maximumMs": 23.80000001192093,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-True-pc",
+      "itemCount": 500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 15.899999998509884,
+        "p95Ms": 18.5,
+        "maximumMs": 21.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-True-pc",
+      "itemCount": 500,
+      "operation": "focus",
+      "statistics": {
+        "count": 21,
+        "medianMs": 16.19999998807907,
+        "p95Ms": 19.399999991059303,
+        "maximumMs": 19.700000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-True-pc",
+      "itemCount": 500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 14.450000002980232,
+        "p95Ms": 16.099999994039536,
+        "maximumMs": 16.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-True-pc",
+      "itemCount": 500,
+      "operation": "next",
+      "statistics": {
+        "count": 21,
+        "medianMs": 31.799999997019768,
+        "p95Ms": 38.0,
+        "maximumMs": 57.1000000089407,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-True-pc",
+      "itemCount": 500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 22.400000005960464,
+        "p95Ms": 27.69999998807907,
+        "maximumMs": 27.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-True-smartphone",
+      "itemCount": 500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 16.0,
+        "p95Ms": 21.400000005960464,
+        "maximumMs": 22.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-True-smartphone",
+      "itemCount": 500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 15.399999998509884,
+        "p95Ms": 17.900000005960464,
+        "maximumMs": 19.0,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-True-smartphone",
+      "itemCount": 500,
+      "operation": "focus",
+      "statistics": {
+        "count": 21,
+        "medianMs": 15.700000002980232,
+        "p95Ms": 18.80000001192093,
+        "maximumMs": 20.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-True-smartphone",
+      "itemCount": 500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 12.850000001490116,
+        "p95Ms": 15.599999994039536,
+        "maximumMs": 15.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-True-smartphone",
+      "itemCount": 500,
+      "operation": "next",
+      "statistics": {
+        "count": 21,
+        "medianMs": 20.700000002980232,
+        "p95Ms": 29.600000008940697,
+        "maximumMs": 30.0,
+        "passed": true
+      }
+    },
+    {
+      "profile": "500-concentrated-True-map-True-smartphone",
+      "itemCount": 500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 23.799999997019768,
+        "p95Ms": 33.0,
+        "maximumMs": 49.20000000298023,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-False-pc",
+      "itemCount": 1500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 48.400000005960464,
+        "p95Ms": 56.29999999701977,
+        "maximumMs": 58.0,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-False-pc",
+      "itemCount": 1500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 30.899999998509884,
+        "p95Ms": 38.099999994039536,
+        "maximumMs": 40.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-False-pc",
+      "itemCount": 1500,
+      "operation": "focus",
+      "statistics": {
+        "count": 22,
+        "medianMs": 15.0,
+        "p95Ms": 19.400000005960464,
+        "maximumMs": 20.399999991059303,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-False-pc",
+      "itemCount": 1500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 13.950000002980232,
+        "p95Ms": 15.5,
+        "maximumMs": 15.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-False-pc",
+      "itemCount": 1500,
+      "operation": "next",
+      "statistics": {
+        "count": 41,
+        "medianMs": 15.0,
+        "p95Ms": 20.900000005960464,
+        "maximumMs": 21.69999998807907,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-False-pc",
+      "itemCount": 1500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 15.300000004470348,
+        "p95Ms": 20.099999994039536,
+        "maximumMs": 21.200000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-False-smartphone",
+      "itemCount": 1500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 42.899999998509884,
+        "p95Ms": 48.599999994039536,
+        "maximumMs": 58.29999999701977,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-False-smartphone",
+      "itemCount": 1500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 30.80000000447035,
+        "p95Ms": 35.79999999701977,
+        "maximumMs": 36.20000000298023,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-False-smartphone",
+      "itemCount": 1500,
+      "operation": "focus",
+      "statistics": {
+        "count": 22,
+        "medianMs": 15.400000005960464,
+        "p95Ms": 18.299999997019768,
+        "maximumMs": 18.399999991059303,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-False-smartphone",
+      "itemCount": 1500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 13.399999998509884,
+        "p95Ms": 14.700000002980232,
+        "maximumMs": 15.100000008940697,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-False-smartphone",
+      "itemCount": 1500,
+      "operation": "next",
+      "statistics": {
+        "count": 41,
+        "medianMs": 16.900000005960464,
+        "p95Ms": 22.200000002980232,
+        "maximumMs": 24.399999991059303,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-False-smartphone",
+      "itemCount": 1500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 17.75,
+        "p95Ms": 20.099999994039536,
+        "maximumMs": 20.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-True-pc",
+      "itemCount": 1500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 41.25,
+        "p95Ms": 56.900000005960464,
+        "maximumMs": 71.70000000298023,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-True-pc",
+      "itemCount": 1500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 35.75000000745058,
+        "p95Ms": 41.099999994039536,
+        "maximumMs": 44.20000000298023,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-True-pc",
+      "itemCount": 1500,
+      "operation": "focus",
+      "statistics": {
+        "count": 22,
+        "medianMs": 20.299999997019768,
+        "p95Ms": 26.19999998807907,
+        "maximumMs": 27.0,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-True-pc",
+      "itemCount": 1500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 15.549999997019768,
+        "p95Ms": 18.099999994039536,
+        "maximumMs": 18.700000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-True-pc",
+      "itemCount": 1500,
+      "operation": "next",
+      "statistics": {
+        "count": 41,
+        "medianMs": 26.0,
+        "p95Ms": 36.79999999701977,
+        "maximumMs": 42.29999999701977,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-True-pc",
+      "itemCount": 1500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 24.299999997019768,
+        "p95Ms": 28.299999997019768,
+        "maximumMs": 33.0,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-True-smartphone",
+      "itemCount": 1500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 42.29999999701977,
+        "p95Ms": 57.29999999701977,
+        "maximumMs": 77.79999999701977,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-True-smartphone",
+      "itemCount": 1500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 32.100000001490116,
+        "p95Ms": 39.0,
+        "maximumMs": 40.29999999701977,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-True-smartphone",
+      "itemCount": 1500,
+      "operation": "focus",
+      "statistics": {
+        "count": 22,
+        "medianMs": 19.30000000447035,
+        "p95Ms": 24.900000005960464,
+        "maximumMs": 26.200000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-True-smartphone",
+      "itemCount": 1500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 15.799999997019768,
+        "p95Ms": 19.0,
+        "maximumMs": 21.299999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-True-smartphone",
+      "itemCount": 1500,
+      "operation": "next",
+      "statistics": {
+        "count": 41,
+        "medianMs": 21.799999997019768,
+        "p95Ms": 29.299999997019768,
+        "maximumMs": 33.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-False-map-True-smartphone",
+      "itemCount": 1500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 20.650000005960464,
+        "p95Ms": 23.700000002980232,
+        "maximumMs": 26.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-False-pc",
+      "itemCount": 1500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 37.1000000089407,
+        "p95Ms": 43.30000001192093,
+        "maximumMs": 46.29999999701977,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-False-pc",
+      "itemCount": 1500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 33.850000001490116,
+        "p95Ms": 40.29999999701977,
+        "maximumMs": 40.29999999701977,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-False-pc",
+      "itemCount": 1500,
+      "operation": "focus",
+      "statistics": {
+        "count": 21,
+        "medianMs": 22.799999997019768,
+        "p95Ms": 25.299999997019768,
+        "maximumMs": 26.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-False-pc",
+      "itemCount": 1500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 18.399999998509884,
+        "p95Ms": 22.799999997019768,
+        "maximumMs": 23.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-False-pc",
+      "itemCount": 1500,
+      "operation": "next",
+      "statistics": {
+        "count": 21,
+        "medianMs": 16.700000002980232,
+        "p95Ms": 25.299999997019768,
+        "maximumMs": 31.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-False-pc",
+      "itemCount": 1500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 38.0,
+        "p95Ms": 44.30000001192093,
+        "maximumMs": 48.70000000298023,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-False-smartphone",
+      "itemCount": 1500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 38.69999999552965,
+        "p95Ms": 47.6000000089407,
+        "maximumMs": 75.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-False-smartphone",
+      "itemCount": 1500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 34.94999999552965,
+        "p95Ms": 43.30000001192093,
+        "maximumMs": 45.19999998807907,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-False-smartphone",
+      "itemCount": 1500,
+      "operation": "focus",
+      "statistics": {
+        "count": 21,
+        "medianMs": 22.200000002980232,
+        "p95Ms": 26.5,
+        "maximumMs": 27.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-False-smartphone",
+      "itemCount": 1500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 18.19999999552965,
+        "p95Ms": 19.5,
+        "maximumMs": 19.900000005960464,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-False-smartphone",
+      "itemCount": 1500,
+      "operation": "next",
+      "statistics": {
+        "count": 21,
+        "medianMs": 17.0,
+        "p95Ms": 24.30000001192093,
+        "maximumMs": 29.100000008940697,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-False-smartphone",
+      "itemCount": 1500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 37.55000000447035,
+        "p95Ms": 55.400000005960464,
+        "maximumMs": 55.400000005960464,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-True-pc",
+      "itemCount": 1500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 38.30000000447035,
+        "p95Ms": 43.8999999910593,
+        "maximumMs": 44.0,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-True-pc",
+      "itemCount": 1500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 31.349999994039536,
+        "p95Ms": 40.20000000298023,
+        "maximumMs": 43.0,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-True-pc",
+      "itemCount": 1500,
+      "operation": "focus",
+      "statistics": {
+        "count": 21,
+        "medianMs": 26.700000002980232,
+        "p95Ms": 32.5,
+        "maximumMs": 32.70000000298023,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-True-pc",
+      "itemCount": 1500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 22.649999998509884,
+        "p95Ms": 27.099999994039536,
+        "maximumMs": 29.799999997019768,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-True-pc",
+      "itemCount": 1500,
+      "operation": "next",
+      "statistics": {
+        "count": 21,
+        "medianMs": 26.900000005960464,
+        "p95Ms": 34.0,
+        "maximumMs": 34.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-True-pc",
+      "itemCount": 1500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 47.25,
+        "p95Ms": 56.6000000089407,
+        "maximumMs": 62.599999994039536,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-True-smartphone",
+      "itemCount": 1500,
+      "operation": "execute",
+      "statistics": {
+        "count": 20,
+        "medianMs": 35.399999998509884,
+        "p95Ms": 43.0,
+        "maximumMs": 44.29999999701977,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-True-smartphone",
+      "itemCount": 1500,
+      "operation": "executeRecord",
+      "statistics": {
+        "count": 20,
+        "medianMs": 33.899999998509884,
+        "p95Ms": 40.70000000298023,
+        "maximumMs": 41.0,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-True-smartphone",
+      "itemCount": 1500,
+      "operation": "focus",
+      "statistics": {
+        "count": 21,
+        "medianMs": 25.899999991059303,
+        "p95Ms": 29.399999991059303,
+        "maximumMs": 32.5,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-True-smartphone",
+      "itemCount": 1500,
+      "operation": "record",
+      "statistics": {
+        "count": 20,
+        "medianMs": 19.549999997019768,
+        "p95Ms": 25.299999997019768,
+        "maximumMs": 25.700000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-True-smartphone",
+      "itemCount": 1500,
+      "operation": "next",
+      "statistics": {
+        "count": 21,
+        "medianMs": 23.200000002980232,
+        "p95Ms": 25.5,
+        "maximumMs": 25.700000002980232,
+        "passed": true
+      }
+    },
+    {
+      "profile": "1500-concentrated-True-map-True-smartphone",
+      "itemCount": 1500,
+      "operation": "back",
+      "statistics": {
+        "count": 20,
+        "medianMs": 41.6000000089407,
+        "p95Ms": 47.099999994039536,
+        "maximumMs": 49.400000005960464,
+        "passed": true
+      }
+    }
+  ],
+  "saveDiagnosticNote": "Save phase observations are separate and have no 55/100 ms response gate."
+}

@@ -1,0 +1,27 @@
+[
+  {
+    "path": "D:\\esp-remain-261020\\artifacts\\consistency-remaining-fixes-20261020\\browser.json",
+    "sha256": "CC68D4A849637EBD8096FBF7A6785F474E2D2AE2E3D74A1FDF63A1BFE7C16D1D",
+    "role": "browser"
+  },
+  {
+    "path": "D:\\esp-remain-261020\\artifacts\\consistency-remaining-fixes-20261020\\shopping-performance.json",
+    "sha256": "66AB32FC5720B41DB1F83EBAFA0EF8CB0E49177560E11FB1DD343740B6103858",
+    "role": "shopping"
+  },
+  {
+    "path": "D:\\esp-remain-261020\\artifacts\\consistency-remaining-fixes-20261020\\drag-performance.json",
+    "sha256": "FE8D2C837B837C791A7FFCCB3E8FC96C6E6D46BBDE8790610D281C4C2721BFE2",
+    "role": "drag"
+  },
+  {
+    "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\consistency-review-20261020-comprehensive\\ordinary-io-results.json",
+    "sha256": "E2A611F6FAFDFDFB4A4269863EA817009199F9CEE20E3C5C570F93EDB5431B51",
+    "role": "baseline"
+  },
+  {
+    "path": "D:\\event-shopping-planner-routeplanning-1.9.6.7\\artifacts\\consistency-review-20261020-comprehensive\\strict-drag-probe\\strict-drag-results.json",
+    "sha256": "D6076D61AC319E8D2C5FCFFA5CC51AF094F1AB02FB77BFDD55B56680ACB700B3",
+    "role": "baseline"
+  }
+]

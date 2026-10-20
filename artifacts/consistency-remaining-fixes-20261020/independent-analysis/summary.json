@@ -1,0 +1,93 @@
+{
+  "generatedAt": "2026-10-20T00:24:06.0021108+00:00",
+  "protocol": {
+    "selfChecksPassed": true,
+    "p95": "nearest rank",
+    "p95LimitMs": 100.0,
+    "rawSamplesNeverPooledAcrossProfilesOrAttempts": true,
+    "medianLimitMs": 55.0,
+    "median": "average of two middle values (same value twice for odd N)",
+    "minimumSamples": 20
+  },
+  "reports": {
+    "browser": {
+      "stats": {
+        "startTime": "2026-10-19T23:57:07.507Z",
+        "duration": 331833.975,
+        "expected": 248,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "errors": [],
+      "retriedAttempts": 0
+    },
+    "shopping": {
+      "stats": {
+        "startTime": "2026-10-20T00:02:39.953Z",
+        "duration": 1101856.7449999999,
+        "expected": 24,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "errors": [],
+      "retriedAttempts": 0
+    },
+    "drag": {
+      "stats": {
+        "startTime": "2026-10-20T00:21:02.486Z",
+        "duration": 145626.27599999998,
+        "expected": 8,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "errors": [],
+      "retriedAttempts": 0
+    }
+  },
+  "shopping": {
+    "maximumMedianMs": 48.400000005960464,
+    "categories": 144,
+    "required150And500Categories": 96,
+    "maximumP95Ms": 57.29999999701977,
+    "profiles": 24,
+    "legacy1500Categories": 48,
+    "failedCategories": []
+  },
+  "drag": {
+    "profiles": 8,
+    "guideObservations": 1920.0,
+    "pointerMutationRequests": 0.0,
+    "maximumRecomputedGuideOffsetPx": 0.0,
+    "pointerCompletedTransactions": 0.0,
+    "maximumP95Ms": 72.1000000089407,
+    "reportedOnlyOffsetObservations": 480.0,
+    "unrelatedRenderUpdates": 0.0,
+    "failedCategories": [],
+    "independentlyRecomputedRectangles": 1440.0,
+    "actualBoundarySwitches": 160.0,
+    "categories": 60,
+    "maximumReportedGuideOffsetPx": 0.0,
+    "maximumMedianMs": 52.94999999552965
+  },
+  "ordinaryIo": {
+    "timingIsObservationOnly": true,
+    "unchangedOperations": 3,
+    "operations": 3
+  },
+  "baselineStartEndComparison": {
+    "profiles": 8,
+    "acceptance": "Separate descriptive comparison; no new start/end threshold and no substituted pre-implementation cross-column UI timings",
+    "baselineLabel": "c4e981bdcf9c00cda7887faf212964ef53b4478a comprehensive strict report"
+  },
+  "notes": [
+    "Response acceptance excludes separately recorded save completion times.",
+    "Guide offsets are checked for every observed guide. Full owner/guide rectangles are independently recomputed where emitted; auto-scroll currently emits a browser-measured offset without both complete rectangles.",
+    "Boundary switches are independently counted from observed insert-guide edges, with the test-verified before setup as predecessor, and checked against the emitted transition records.",
+    "Historical evidence is read-only. No samples from failed or retried attempts are silently discarded or combined."
+  ],
+  "passed": true,
+  "failures": []
+}
