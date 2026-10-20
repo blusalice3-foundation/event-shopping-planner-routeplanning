@@ -721,6 +721,54 @@ it("shares one terminal stop with every non-worker write entry while allowing on
   expect(port.getWriteStopReason!()).toBe(reason);
 });
 
+it("rejects a pending worker snapshot fallback if writes stop after backup starts", async () => {
+  const delegate = createDelegate();
+  const port = createIndexedDbPersistenceCommandAdapter(delegate);
+  const fallback = vi.fn(() => snapshot());
+  const reason = new PersistenceOutcomeUnknownError(new Error("reload"));
+  class SnapshotWorker {
+    static instances: SnapshotWorker[] = [];
+    onmessage:
+      | ((event: MessageEvent<{ needsSnapshot: boolean }>) => void)
+      | null = null;
+    onerror: (() => void) | null = null;
+    postMessage = vi.fn();
+    terminate = vi.fn();
+    constructor() {
+      SnapshotWorker.instances.push(this);
+    }
+  }
+  try {
+    vi.stubGlobal("Worker", undefined);
+    const file = await port.createBackupFile!([], fallback);
+    expect(file.blob.size).toBeGreaterThan(0);
+    expect(fallback).toHaveBeenCalledOnce();
+    fallback.mockClear();
+
+    vi.stubGlobal("Worker", SnapshotWorker);
+    const pending = port.createBackupFile!([], fallback);
+    const rejected = expect(pending).rejects.toBe(reason);
+    const worker = SnapshotWorker.instances[0]!;
+    expect(worker).toBeDefined();
+    port.stopWrites!(reason);
+    worker.onmessage!({
+      data: { needsSnapshot: true },
+    } as MessageEvent<{ needsSnapshot: boolean }>);
+    await rejected;
+
+    expect(fallback).not.toHaveBeenCalled();
+    expect(delegate.readApplicationSnapshot).not.toHaveBeenCalled();
+    expect(worker.postMessage).toHaveBeenCalledExactlyOnceWith({
+      changes: [],
+      guardedItemEdits: [],
+    });
+    expect(worker.terminate).toHaveBeenCalledOnce();
+    expect(port.getWriteStopReason!()).toBe(reason);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
 describe("non-worker adapter with real IndexedDB transactions", () => {
   let failNextStorageLength: boolean;
   const storageFailure = new DOMException("storage denied", "SecurityError");
@@ -869,6 +917,56 @@ describe("non-worker adapter with real IndexedDB transactions", () => {
       (await port.readApplicationSnapshot()).snapshot.eventLists.event,
     ).toEqual([{ id: "item-1", quantity: 2 }]);
     expect(listener).toHaveBeenCalledOnce();
+  });
+  it("stops writes when observing a committed snapshot cannot be cloned", async () => {
+    await seed();
+    const failure = new DOMException("snapshot clone failed", "DataCloneError");
+    const commit = vi.fn(
+      async (
+        ...args: Parameters<typeof db.commitApplicationSnapshotAtomically>
+      ) => {
+        await db.commitApplicationSnapshotAtomically(...args);
+        vi.spyOn(globalThis, "structuredClone").mockImplementationOnce(() => {
+          throw failure;
+        });
+      },
+    );
+    const saveEventLists = vi.fn(db.saveEventLists);
+    const port = createIndexedDbPersistenceCommandAdapter({
+      ...db,
+      commitApplicationSnapshotAtomically: commit,
+      saveEventLists,
+    });
+    const listener = vi.fn();
+    port.onWritesStopped!(listener);
+    const before = await port.readApplicationSnapshot();
+    const next = structuredClone(before.snapshot);
+    next.eventLists.event = [{ id: "item-1", quantity: 2 }];
+    const reason = await port
+      .commitApplicationSnapshotAtomically(next, {
+        expectedRoots: before.expectedRoots,
+      })
+      .catch((error: unknown) => error);
+    expect(reason).toBeInstanceOf(PersistenceOutcomeUnknownError);
+    expect(reason).toMatchObject({ cause: failure });
+    expect(port.getWriteStopReason!()).toBe(reason);
+    expect(listener).toHaveBeenCalledExactlyOnceWith(reason);
+    expect(
+      (await port.readApplicationSnapshot()).snapshot.eventLists.event,
+    ).toEqual([{ id: "item-1", quantity: 2 }]);
+
+    const later = structuredClone(next);
+    later.eventLists.event = [{ id: "item-1", quantity: 3 }];
+    await expect(port.commitApplicationSnapshotAtomically(later)).rejects.toBe(
+      reason,
+    );
+    await expect(port.saveEventLists(later.eventLists)).rejects.toBe(reason);
+    expect(commit).toHaveBeenCalledOnce();
+    expect(saveEventLists).not.toHaveBeenCalled();
+    expect(listener).toHaveBeenCalledOnce();
+    expect(
+      (await port.readApplicationSnapshot()).snapshot.eventLists.event,
+    ).toEqual([{ id: "item-1", quantity: 2 }]);
   });
   it("allows retry after an explicit transaction abort without stopping writes", async () => {
     await seed();
