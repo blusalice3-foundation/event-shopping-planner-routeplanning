@@ -1,0 +1,60 @@
+
+> event-shopping-planner@1.0.0 build:app
+> tsc --noEmit && node scripts/build-release-vite.mjs
+
+vite v8.2.0 building client environment for release-a...
+[2K
+transforming...✓ 323 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/release-capabilities.8fc18707f365c9df9ef710e06999f963fe6c72d4.json      0.29 kB │ gzip:   0.19 kB
+dist/release-capabilities.json                                               0.29 kB │ gzip:   0.19 kB
+dist/manifest.webmanifest                                                    0.58 kB
+dist/outer-agent-graph.json                                                  1.72 kB │ gzip:   0.44 kB
+dist/index.html                                                              1.82 kB │ gzip:   0.84 kB
+dist/assets/route.worker-vkpwhvUq.js                                        19.92 kB
+dist/assets/outer-recovery-agent.js                                         19.93 kB
+dist/release-role-graph.json                                                93.06 kB │ gzip:   8.60 kB
+dist/assets/backup.worker-CmLUrcml.js                                      256.07 kB
+dist/assets/persistence.worker-Dgzz1Tkn.js                                 318.44 kB
+dist/assets/xlsx.worker-DA2gqYv7.js                                      1,589.34 kB
+dist/assets/app-BrHt8xwC.css                                                92.00 kB │ gzip:  17.16 kB
+dist/assets/ImportScreen-DMfCPFwv.js                                        20.35 kB │ gzip:   6.54 kB
+dist/assets/FocusModeContainer-CEn02htn.js                                 158.02 kB │ gzip:  47.50 kB
+dist/assets/release-role.js                                              1,323.60 kB │ gzip: 382.37 kB
+
+✓ built in 3.73s
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+PWA v1.3.0
+Building src/sw.ts service worker ("es" format)...
+vite v8.2.0 building client environment for release-a...
+
+ WARN  inlineDynamicImports option is deprecated, please use codeSplitting: false instead.
+
+[2K
+transforming...✓ 3 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/sw.mjs  4.03 kB │ gzip: 1.69 kB
+
+✓ built in 20ms
+PWA v1.3.0
+mode      injectManifest
+format:   es
+precache  27 entries (4869.42 KiB)
+files generated
+  dist/sw.js
+[PLUGIN_TIMINGS] Your build spent 100% of 3.7s inside plugin hooks (4.4s).
+Measured inside the callback, so queue time is excluded and time the callback itself awaited is not:
+  - vite-plugin-pwa:build closeBundle (35%, 1.3s, 1 call)
+Those rows are 35% of the build; the rest of the 100% is below.
+Not measurable — 2 hooks whose calls overlap, so elapsed time covers work other calls were doing. Profile with `node --cpu-prof`:
+  - vite:esbuild-transpile renderChunk (4 calls)
+  - vite:worker-import-meta-url transform (4 calls)
+See https://rolldown.rs/reference/InputOptions.checks#plugintimings for more details.
+
+Built production standard release 8fc18707f365c9df9ef710e06999f963fe6c72d4/830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611; identity 0e81fd45295c1ad1d0c3f2d93a297e91635c774f583f5b86bf44fe3c0200d420; source dirty.

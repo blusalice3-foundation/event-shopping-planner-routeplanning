@@ -18,7 +18,13 @@ interface ViewportRegistry {
   requestedKeys: Map<string, number>;
   initialOffsets: WeakMap<
     Element,
-    { top: number; offset: number; width: number }
+    {
+      top: number;
+      offset: number;
+      width: number;
+      anchor: HTMLElement;
+      initialBatch: boolean;
+    }
   >;
   printing: boolean;
   backwardTab: boolean;
@@ -55,10 +61,28 @@ function initiallyVisible(
   if (!parent || !root.closest("[data-list-renderer], [data-viewport-list]"))
     return withinViewport(root);
   let position = registry.initialOffsets.get(parent);
+  if (
+    position &&
+    (!position.anchor.isConnected || !parent.contains(position.anchor))
+  )
+    position = undefined;
   if (!position) {
     const rect = parent.getBoundingClientRect();
-    position = { top: rect.top, offset: 0, width: rect.width };
-    registry.initialOffsets.set(parent, position);
+    const initial = {
+      top: rect.top,
+      offset: 0,
+      width: rect.width,
+      anchor: root,
+      initialBatch: true,
+    };
+    position = initial;
+    registry.initialOffsets.set(parent, initial);
+    queueMicrotask(() => {
+      initial.initialBatch = false;
+    });
+  } else if (!position.initialBatch) {
+    // Insertions beside existing rows use their committed position, not the old list's end offset.
+    return withinViewport(root);
   }
   const top = position.top + position.offset;
   position.offset += height;
@@ -276,10 +300,22 @@ export const ViewportContent = ({
         registry.visibility.get(root) ??
         initiallyVisible(root, registry, cachedHeight ?? estimatedHeight),
       update: () => {
+        if (!defer || retain || registry.printing || subscription.visible) {
+          setActivated(true);
+          return;
+        }
         const pinned =
           root.contains(root.ownerDocument.activeElement) ||
           root.dataset.viewportRetain === "true" ||
           root.querySelector('[data-viewport-retain="true"]') !== null;
+        if (pinned) {
+          setActivated(true);
+          return;
+        }
+        if (registry.requestedKeys.size === 0) {
+          setActivated(false);
+          return;
+        }
         const requested =
           registry.requestedKeys.has(rowKey) ||
           [
@@ -287,14 +323,7 @@ export const ViewportContent = ({
           ].some((child) =>
             registry.requestedKeys.has(child.dataset.viewportRowKey ?? ""),
           );
-        setActivated(
-          !defer ||
-            retain ||
-            registry.printing ||
-            subscription.visible ||
-            pinned ||
-            requested,
-        );
+        setActivated(requested);
       },
     };
     registry.visibility.set(root, subscription.visible);
@@ -360,8 +389,9 @@ export const ViewportContent = ({
         if (cache.size > 4096) cache.delete(cache.keys().next().value!);
       }
     };
-    if (heightRef.current === undefined || typeof ResizeObserver !== "function")
-      measure();
+    // ResizeObserver reports the committed border box before paint. Reading a new
+    // row synchronously here forces layout during a grouped drop's commit.
+    if (typeof ResizeObserver !== "function") measure();
     const observer =
       typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
     observer?.observe(root);

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { ShoppingItem } from "../../types/item";
 import { applyEventUpdateToItems } from "./updateApply";
+import { createEventUpdateDiff } from "./updateDiff";
+import { getActualPurchasedQuantity } from "../../utils/purchaseQuantity";
 import type {
   AppFieldSyncCandidate,
   EventUpdateDiff,
@@ -435,3 +437,88 @@ describe("applyEventUpdateToItems allowlist", () => {
     });
   });
 });
+
+it.each([false, true])(
+  "applies quantity consent to the preserved collision IDs, accepted=%s",
+  (accepted) => {
+    const before = [
+      item({
+        id: "A",
+        circle: "X ",
+        title: "旧A",
+        catalogPrice: 500,
+        purchaseStatus: "Purchased",
+        protectionLevel: "none",
+        price: 900,
+      }),
+      item({
+        id: "B",
+        circle: "X",
+        title: "旧B",
+        catalogPrice: 700,
+        purchaseStatus: "LimitedPurchase",
+        protectionLevel: "none",
+        price: 1200,
+      }),
+    ];
+    const incoming = [
+      { ...before[1], title: "旧A", quantity: 1, rawQuantity: "7" },
+      {
+        ...before[0],
+        circle: "X",
+        title: "新A",
+        quantity: 1,
+        rawQuantity: "8",
+      },
+    ];
+    const diff = createEventUpdateDiff(before, incoming);
+    expect(diff.itemsToAdd).toEqual([]);
+    expect(diff.itemsToDelete).toEqual([]);
+    const after = applyEventUpdateToItems(before, diff, {
+      applyPurchasedQuantityChanges: accepted,
+    });
+    expect(
+      after.map(
+        ({ id, title, circle, quantity, price, remarks, purchaseStatus }) => ({
+          id,
+          title,
+          circle,
+          quantity,
+          price,
+          remarks,
+          purchaseStatus,
+        }),
+      ),
+    ).toEqual([
+      {
+        id: "A",
+        title: "新A",
+        circle: "X ",
+        quantity: accepted ? 8 : 4,
+        price: 900,
+        remarks: "利用者メモ",
+        purchaseStatus: "Purchased",
+      },
+      {
+        id: "B",
+        title: "旧A",
+        circle: "X",
+        quantity: accepted ? 7 : 4,
+        price: 1200,
+        remarks: "利用者メモ",
+        purchaseStatus: "LimitedPurchase",
+      },
+    ]);
+    expect(after.map(getActualPurchasedQuantity)).toEqual([
+      accepted ? 8 : 4,
+      2,
+    ]);
+    expect(
+      after.reduce(
+        (total, item) =>
+          total + (item.price ?? 0) * (getActualPurchasedQuantity(item) ?? 0),
+        0,
+      ),
+    ).toBe(accepted ? 9600 : 6000);
+  },
+);

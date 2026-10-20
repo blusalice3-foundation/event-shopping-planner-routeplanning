@@ -1,8 +1,9 @@
+import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
 import type {
   ContentManifest,
   WorkbookContentSection,
 } from "../xlsx/domain/consistencyWorkbook";
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { ExportOptions } from "../types/export";
 
 interface ExportOptionsDialogProps {
@@ -20,6 +21,12 @@ const ExportOptionsDialog: React.FC<ExportOptionsDialogProps> = ({
   hasMapData,
   previewManifest,
 }) => {
+  const titleId = useId();
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen,
+    containExternalFocus: true,
+    onEscape: onClose,
+  });
   const [options, setOptions] = useState<ExportOptions>({
     includeItems: true,
     includeLayoutInfo: true,
@@ -84,13 +91,25 @@ const ExportOptionsDialog: React.FC<ExportOptionsDialogProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-auto">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={onDialogKeyDown}
+        className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-auto"
+      >
         {/* ヘッダー */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h2
+            id={titleId}
+            className="text-lg font-semibold text-slate-900 dark:text-white"
+          >
             エクスポート設定
           </h2>
           <button
+            aria-label="閉じる"
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
           >

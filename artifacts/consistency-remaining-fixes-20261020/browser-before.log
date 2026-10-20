@@ -1,0 +1,82 @@
+
+Running 2 tests using 1 worker
+
+
+
+[1/2] [chromium] › tests\browser\map-import-delayed-cancel.spec.ts:425:1 › map import can resume after a pending import parser is replaced by a real Worker preview
+  1) [chromium] › tests\browser\map-import-delayed-cancel.spec.ts:425:1 › map import can resume after a pending import parser is replaced by a real Worker preview 
+
+    Error: expect(locator).toBeEnabled() failed
+
+    Locator: getByRole('dialog', { name: '📋 マップデータ取り込み', exact: true }).getByRole('button', { name: '取り込む', exact: true })
+    Expected: enabled
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeEnabled" with timeout 5000ms
+      - waiting for getByRole('dialog', { name: '📋 マップデータ取り込み', exact: true }).getByRole('button', { name: '取り込む', exact: true })
+
+
+      491 |   await expect(dialog.getByText(/✅ 1ブロック検出/)).toBeVisible();
+      492 |   const retry = dialog.getByRole("button", { name: "取り込む", exact: true });
+    > 493 |   await expect(retry).toBeEnabled();
+          |                       ^
+      494 |   expect(await allStores(page)).toEqual(before);
+      495 |   await retry.click();
+      496 |   await expect(dialog).toBeHidden();
+        at D:\esp-remain-261020\tests\browser\map-import-delayed-cancel.spec.ts:493:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\consistency-remaining-fixes-20261020\browser-before-output\map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\consistency-remaining-fixes-20261020\browser-before-output\map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\consistency-remaining-fixes-20261020\browser-before-output\map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium\error-context.md
+
+
+
+
+[2/2] [chromium] › tests\browser\modal-layer-order.spec.ts:86:1 › OP05 late lower restore dialog keeps Tab and Enter in the visible save confirmation
+  2) [chromium] › tests\browser\modal-layer-order.spec.ts:86:1 › OP05 late lower restore dialog keeps Tab and Enter in the visible save confirmation 
+
+    Error: expect(locator).toBeFocused() failed
+
+    Locator:  getByRole('dialog', { name: '所属・配置の変更を確認', exact: true }).getByRole('region', { name: '確認内容' })
+    Expected: focused
+    Received: inactive
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeFocused" with timeout 5000ms
+      - waiting for getByRole('dialog', { name: '所属・配置の変更を確認', exact: true }).getByRole('region', { name: '確認内容' })
+        14 × locator resolved to <div tabindex="0" role="region" aria-label="確認内容" class="min-h-0 flex-1 overflow-y-auto">…</div>
+           - unexpected value "inactive"
+
+
+      160 |   );
+      161 |   await expect(restore).toBeVisible();
+    > 162 |   await expect(front.getByRole("region", { name: "確認内容" })).toBeFocused();
+          |                                                             ^
+      163 |   await page.keyboard.press("Enter");
+      164 |   const observations = [];
+      165 |   for (const key of [
+        at D:\esp-remain-261020\tests\browser\modal-layer-order.spec.ts:162:61
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\consistency-remaining-fixes-20261020\browser-before-output\modal-layer-order-OP05-lat-b4bee-e-visible-save-confirmation-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\consistency-remaining-fixes-20261020\browser-before-output\modal-layer-order-OP05-lat-b4bee-e-visible-save-confirmation-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\consistency-remaining-fixes-20261020\browser-before-output\modal-layer-order-OP05-lat-b4bee-e-visible-save-confirmation-chromium\error-context.md
+
+
+  2 failed
+    [chromium] › tests\browser\map-import-delayed-cancel.spec.ts:425:1 › map import can resume after a pending import parser is replaced by a real Worker preview 
+    [chromium] › tests\browser\modal-layer-order.spec.ts:86:1 › OP05 late lower restore dialog keeps Tab and Enter in the visible save confirmation 

@@ -1,0 +1,666 @@
+diff --git a/src/components/map/MapImportDialog.previewRace.test.tsx b/src/components/map/MapImportDialog.previewRace.test.tsx
+index 1de3daa..a49172c 100644
+--- a/src/components/map/MapImportDialog.previewRace.test.tsx
++++ b/src/components/map/MapImportDialog.previewRace.test.tsx
+@@ -310,6 +310,147 @@ describe("MapImportDialog preview input race", () => {
+     expect(importWorkbookMock).toHaveBeenCalledTimes(1);
+     expect(onImport.mock.calls[0][0]).toBe(previewData);
+   });
++  it.each(["success", "error", "rejection"] as const)(
++    "allows import after an in-flight import parser is replaced by a preview with %s",
++    async (previewOutcome) => {
++      const staleImport = createDeferred<ParseMapFileResult>();
++      const replacementPreview = createDeferred<ParseMapFileResult>();
++      const currentData = createMapData("切替後ブロック");
++      importWorkbookMock
++        .mockReturnValueOnce(
++          staleImport.promise.then((value) =>
++            mapWorkerResult("map-import", value),
++          ),
++        )
++        .mockReturnValueOnce(
++          replacementPreview.promise.then((value) =>
++            mapWorkerResult("map-preview", value),
++          ),
++        )
++        .mockResolvedValueOnce(
++          mapWorkerResult("map-import", successfulResult(currentData)),
++        );
++      vi.spyOn(console, "error").mockImplementation(() => {});
++      const { onImport } = renderDialog(new File(["map"], "switch.xlsx"));
++
++      fireEvent.click(screen.getByRole("button", { name: "取り込む" }));
++      await waitFor(() => expect(importWorkbookMock).toHaveBeenCalledTimes(1));
++      fireEvent.click(
++        screen.getByRole("button", { name: /プレビュー（ブロック検出）/ }),
++      );
++      await waitFor(() => expect(importWorkbookMock).toHaveBeenCalledTimes(2));
++      expect(importWorkbookMock.mock.calls[0][1]?.aborted).toBe(true);
++      expect(screen.getByRole("button", { name: "取り込む" })).toBeEnabled();
++
++      await act(async () => {
++        if (previewOutcome === "success") {
++          replacementPreview.resolve(successfulResult(currentData));
++        } else if (previewOutcome === "error") {
++          replacementPreview.resolve({
++            data: null,
++            skippedSheets: [],
++            error: "プレビュー解析エラー",
++          });
++        } else {
++          replacementPreview.reject(new Error("preview parser rejected"));
++        }
++      });
++      expect(screen.getByRole("button", { name: "取り込む" })).toBeEnabled();
++      if (previewOutcome === "success") {
++        expect(screen.getByText("切替後ブロック")).toBeInTheDocument();
++      } else {
++        expect(screen.queryByText("切替後ブロック")).not.toBeInTheDocument();
++      }
++
++      await act(async () => {
++        staleImport.resolve({
++          ...successfulResult(createMapData("失効した取込ブロック")),
++          skippedSheets: ["失効したシート"],
++        });
++      });
++      expect(onImport).not.toHaveBeenCalled();
++      expect(alert).toHaveBeenCalledTimes(previewOutcome === "success" ? 0 : 1);
++      expect(
++        screen.queryByText("失効した取込ブロック"),
++      ).not.toBeInTheDocument();
++      expect(screen.getByRole("button", { name: "取り込む" })).toBeEnabled();
++
++      fireEvent.click(screen.getByRole("button", { name: "取り込む" }));
++      await waitFor(() => expect(onImport).toHaveBeenCalledOnce());
++      expect(onImport.mock.calls[0][0]).toBe(currentData);
++      expect(importWorkbookMock).toHaveBeenCalledTimes(
++        previewOutcome === "success" ? 2 : 3,
++      );
++    },
++  );
++
++  it("keeps a replacement import busy when both superseded parsers finish", async () => {
++    const staleImport = createDeferred<ParseMapFileResult>();
++    const stalePreview = createDeferred<ParseMapFileResult>();
++    const currentImport = createDeferred<ParseMapFileResult>();
++    const save = createDeferred<void>();
++    importWorkbookMock
++      .mockReturnValueOnce(
++        staleImport.promise.then((value) =>
++          mapWorkerResult("map-import", value),
++        ),
++      )
++      .mockReturnValueOnce(
++        stalePreview.promise.then((value) =>
++          mapWorkerResult("map-preview", value),
++        ),
++      )
++      .mockReturnValueOnce(
++        currentImport.promise.then((value) =>
++          mapWorkerResult("map-import", value),
++        ),
++      );
++    vi.spyOn(console, "error").mockImplementation(() => {});
++    const onImport = vi.fn<(data: Record<string, DayMapData>) => Promise<void>>(
++      () => save.promise,
++    );
++    renderDialog(new File(["map"], "replace-parser.xlsx"), onImport);
++
++    fireEvent.click(screen.getByRole("button", { name: "取り込む" }));
++    await waitFor(() => expect(importWorkbookMock).toHaveBeenCalledTimes(1));
++    fireEvent.click(
++      screen.getByRole("button", { name: /プレビュー（ブロック検出）/ }),
++    );
++    await waitFor(() => expect(importWorkbookMock).toHaveBeenCalledTimes(2));
++    fireEvent.click(screen.getByRole("button", { name: "取り込む" }));
++    await waitFor(() => expect(importWorkbookMock).toHaveBeenCalledTimes(3));
++    expect(importWorkbookMock.mock.calls[0][1]?.aborted).toBe(true);
++    expect(importWorkbookMock.mock.calls[1][1]?.aborted).toBe(true);
++    expect(importWorkbookMock.mock.calls[2][1]?.aborted).toBe(false);
++
++    await act(async () => {
++      staleImport.resolve({
++        data: null,
++        skippedSheets: [],
++        error: "旧取込エラー",
++      });
++      stalePreview.reject(new Error("superseded preview rejected"));
++    });
++    expect(onImport).not.toHaveBeenCalled();
++    expect(alert).not.toHaveBeenCalled();
++    expect(console.error).not.toHaveBeenCalled();
++    expect(
++      screen.getByRole("button", { name: "取り込み中..." }),
++    ).toBeDisabled();
++
++    const currentData = createMapData("現在の取込ブロック");
++    await act(async () => currentImport.resolve(successfulResult(currentData)));
++    await waitFor(() => expect(onImport).toHaveBeenCalledOnce());
++    expect(onImport.mock.calls[0][0]).toBe(currentData);
++    expect(
++      screen.getByRole("button", { name: "取り込み中..." }),
++    ).toBeDisabled();
++    expect(importWorkbookMock.mock.calls[2][1]?.aborted).toBe(false);
++
++    await act(async () => save.resolve());
++    expect(screen.getByRole("button", { name: "取り込む" })).toBeEnabled();
++  });
++
+   it("keeps save busy through settings and props invalidation and captures immutable settings and angles", async () => {
+     const data = createMapData("保存待ち");
+     importWorkbookMock.mockResolvedValueOnce(
+diff --git a/src/components/map/MapImportDialog.tsx b/src/components/map/MapImportDialog.tsx
+index e79a6f8..a77c50f 100644
+--- a/src/components/map/MapImportDialog.tsx
++++ b/src/components/map/MapImportDialog.tsx
+@@ -464,6 +464,7 @@ const MapImportDialog: React.FC<MapImportDialogProps> = ({
+       parseRequestTokenRef.current === requestToken &&
+       currentParseSignatureRef.current === requestSignature;
+ 
++    setIsLoading(false);
+     setIsPreviewing(true);
+     try {
+       const parsedResult = await parseMapWorkbook(
+diff --git a/src/features/app-shell/components/MutationConfirmationDialog.integration.test.tsx b/src/features/app-shell/components/MutationConfirmationDialog.integration.test.tsx
+index f55ea18..28bfafc 100644
+--- a/src/features/app-shell/components/MutationConfirmationDialog.integration.test.tsx
++++ b/src/features/app-shell/components/MutationConfirmationDialog.integration.test.tsx
+@@ -7,11 +7,12 @@ import {
+   emptyApplicationSnapshot,
+   useApplicationSnapshot,
+ } from "../../../app/state/useApplicationSnapshot";
++import BackupRestoreDialog from "../../../components/BackupRestoreDialog";
+ import { useModalDialogBehavior } from "../../../hooks/useModalDialogBehavior";
+ import { requestModalSafeFocus } from "../../../utils/modalFocusBoundary";
+ import { MutationConfirmationDialog } from "./MutationConfirmationDialog";
+ 
+-function harness() {
++function harness({ layeredRestore = false } = {}) {
+   const current = { ...emptyApplicationSnapshot(), eventLists: { event: [] } };
+   const commit = vi.fn(async () => {});
+   const port = {
+@@ -25,6 +26,8 @@ function harness() {
+   } as unknown as PersistenceCommandPort;
+   let application!: ReturnType<typeof useApplicationSnapshot>;
+   let showNested!: (open: boolean) => void;
++  let showRestore!: (open: boolean) => void;
++  const restore = vi.fn(async () => showRestore(false));
+   function Nested({ close }: { close(): void }) {
+     const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+       isOpen: true,
+@@ -50,6 +53,8 @@ function harness() {
+     latestFailures.current = app.retryableFailures;
+     const [nested, setNested] = useState(false);
+     showNested = setNested;
++    const [restoreOpen, setRestoreOpen] = useState(false);
++    showRestore = setRestoreOpen;
+     useEffect(() => {
+       const failures = app.retryableFailures;
+       if (failures.length)
+@@ -90,8 +95,21 @@ function harness() {
+             保留の再試行
+           </button>
+         )}
++        {layeredRestore && (
++          <style>{`
++            .z-\\[21000\\] { position: fixed; z-index: 21000; }
++            .z-\\[100\\] { position: fixed; z-index: 100; }
++          `}</style>
++        )}
+         <MutationConfirmationDialog application={app} />
+         {nested && <Nested close={() => setNested(false)} />}
++        <BackupRestoreDialog
++          isOpen={restoreOpen}
++          backupEventNames={["復元元"]}
++          currentEventNames={["event"]}
++          onClose={() => setRestoreOpen(false)}
++          onRestore={restore}
++        />
+       </>
+     );
+   }
+@@ -101,10 +119,68 @@ function harness() {
+     app: () => application,
+     commit,
+     showNested: (open: boolean) => showNested(open),
++    showRestore: (open: boolean) => showRestore(open),
++    restore,
+   };
+ }
+ 
+ describe("real mutation confirmation keyboard and failure focus", () => {
++  it("keeps a late lower restore behind A to B until both confirmations close", async () => {
++    const h = harness({ layeredRestore: true });
++    const user = userEvent.setup();
++    const opener = screen.getByRole("button", { name: "確認を開く" });
++    await user.click(opener);
++    const first = await screen.findByRole("dialog", { name: "確認A" });
++    const initialFocus = document.activeElement;
++    act(() => h.showRestore(true));
++    const backup = screen.getByRole("dialog", {
++      name: "バックアップからイベントを復元",
++    });
++    expect(getComputedStyle(first).zIndex).toBe("21000");
++    expect(getComputedStyle(backup.parentElement!).zIndex).toBe("100");
++    expect(document.activeElement).toBe(initialFocus);
++    for (let index = 0; index < 8; index++) {
++      await user.tab();
++      expect(first).toContainElement(document.activeElement as HTMLElement);
++    }
++    within(backup).getByRole("button", { name: "別名で復元" }).focus();
++    expect(first).toContainElement(document.activeElement as HTMLElement);
++    await user.tab();
++    await user.tab();
++    expect(within(first).getByRole("button", { name: "取消" })).toHaveFocus();
++    await user.keyboard("{Enter}");
++    const second = await screen.findByRole("dialog", { name: "確認B" });
++    expect(second).toBe(first);
++    expect(h.restore).not.toHaveBeenCalled();
++    await user.tab();
++    await user.tab();
++    await user.keyboard("{Enter}");
++    expect(second).toContainElement(document.activeElement as HTMLElement);
++    expect(h.app().confirmations).toHaveLength(1);
++    expect(h.restore).not.toHaveBeenCalled();
++    await user.keyboard("{Escape}");
++    expect(
++      screen.queryByRole("dialog", { name: "確認B" }),
++    ).not.toBeInTheDocument();
++    expect(backup).toContainElement(document.activeElement as HTMLElement);
++    const restoreButton = within(backup).getByRole("button", {
++      name: "別名で復元",
++    });
++    for (
++      let index = 0;
++      document.activeElement !== restoreButton && index < 12;
++      index++
++    ) {
++      await user.tab();
++      expect(backup).toContainElement(document.activeElement as HTMLElement);
++    }
++    expect(restoreButton).toHaveFocus();
++    await user.keyboard("{Enter}");
++    expect(h.restore).toHaveBeenCalledOnce();
++    expect(h.commit).not.toHaveBeenCalled();
++    expect(opener).toHaveFocus();
++  });
++
+   it("keeps one host through A to B, traps Tab/Shift+Tab and restores the original opener", async () => {
+     const h = harness();
+     const user = userEvent.setup();
+diff --git a/src/hooks/useModalDialogBehavior.integration.test.tsx b/src/hooks/useModalDialogBehavior.integration.test.tsx
+index ef8d428..8673cdc 100644
+--- a/src/hooks/useModalDialogBehavior.integration.test.tsx
++++ b/src/hooks/useModalDialogBehavior.integration.test.tsx
+@@ -1,6 +1,7 @@
+ import { act, render, screen, within } from "@testing-library/react";
+ import userEvent from "@testing-library/user-event";
+-import { useRef, useState, type RefObject } from "react";
++import { useRef, useState, type CSSProperties, type RefObject } from "react";
++import { createPortal } from "react-dom";
+ import { describe, expect, it } from "vitest";
+ import { requestModalSafeFocus } from "../utils/modalFocusBoundary";
+ import { useModalDialogBehavior } from "./useModalDialogBehavior";
+@@ -205,3 +206,125 @@ describe("nested modal return focus after its opener disappears", () => {
+     },
+   );
+ });
++
++function LayerDialog({ name, layer }: { name: string; layer: number }) {
++  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
++    isOpen: true,
++    containExternalFocus: true,
++    onEscape: () => {},
++  });
++  return (
++    <div
++      role="dialog"
++      aria-label={name}
++      aria-modal="true"
++      style={{ position: "fixed", zIndex: layer }}
++      ref={dialogRef}
++      onKeyDown={onDialogKeyDown}
++    >
++      <button>{name}先頭</button>
++      <button>{name}末尾</button>
++    </div>
++  );
++}
++
++describe("modal ownership follows its enclosing stacking contexts", () => {
++  it("keeps a body portal above a later equal-z modal inside the application root", async () => {
++    function Layers({ front, behind }: { front: boolean; behind: boolean }) {
++      return (
++        <>
++          {front &&
++            createPortal(
++              <LayerDialog name="前面ポータル" layer={100} />,
++              document.body,
++            )}
++          {behind && <LayerDialog name="背面アプリ" layer={100} />}
++        </>
++      );
++    }
++    const view = render(<Layers front behind={false} />);
++    const user = userEvent.setup();
++    const front = screen.getByRole("dialog", { name: "前面ポータル" });
++    const initialFocus = document.activeElement;
++    view.rerender(<Layers front behind />);
++    expect(document.activeElement).toBe(initialFocus);
++    screen.getByRole("button", { name: "背面アプリ先頭" }).focus();
++    expect(front).toHaveFocus();
++    for (let index = 0; index < 5; index++) {
++      await user.tab();
++      expect(front).toContainElement(document.activeElement as HTMLElement);
++    }
++    view.rerender(<Layers front={false} behind />);
++    const behind = screen.getByRole("dialog", { name: "背面アプリ" });
++    expect(behind).toContainElement(document.activeElement as HTMLElement);
++    await user.tab();
++    expect(
++      screen.getByRole("button", { name: "背面アプリ先頭" }),
++    ).toHaveFocus();
++  });
++
++  it.each<{ name: string; parentStyle: CSSProperties }>([
++    {
++      name: "positioned z-index",
++      parentStyle: { position: "relative", zIndex: 50 },
++    },
++    { name: "transform", parentStyle: { transform: "translateX(0)" } },
++    { name: "opacity", parentStyle: { opacity: 0.9 } },
++    { name: "isolation", parentStyle: { isolation: "isolate" } },
++  ])(
++    "keeps a large inner z-index behind an earlier higher $name context",
++    async ({ parentStyle }) => {
++      function Layers({ front, behind }: { front: boolean; behind: boolean }) {
++        return (
++          <>
++            {front && <LayerDialog name="前面" layer={100} />}
++            {behind && (
++              <div style={parentStyle}>
++                <LayerDialog name="背面" layer={99999} />
++              </div>
++            )}
++          </>
++        );
++      }
++      const view = render(<Layers front behind={false} />);
++      const user = userEvent.setup();
++      const front = screen.getByRole("dialog", { name: "前面" });
++      const initialFocus = document.activeElement;
++      view.rerender(<Layers front behind />);
++      expect(document.activeElement).toBe(initialFocus);
++      screen.getByRole("button", { name: "背面先頭" }).focus();
++      expect(front).toHaveFocus();
++      for (let index = 0; index < 5; index++) {
++        await user.tab();
++        expect(front).toContainElement(document.activeElement as HTMLElement);
++      }
++      const beforeBehindCloses = document.activeElement;
++      view.rerender(<Layers front behind={false} />);
++      expect(document.activeElement).toBe(beforeBehindCloses);
++      view.rerender(<Layers front behind />);
++      view.rerender(<Layers front={false} behind />);
++      expect(screen.getByRole("dialog", { name: "背面" })).toContainElement(
++        document.activeElement as HTMLElement,
++      );
++      await user.tab();
++      expect(screen.getByRole("button", { name: "背面先頭" })).toHaveFocus();
++    },
++  );
++
++  it("retains later registration priority for equal layers and restores the earlier control", () => {
++    function Layers({ second }: { second: boolean }) {
++      return (
++        <>
++          <LayerDialog name="先行" layer={100} />
++          {second && <LayerDialog name="後続" layer={100} />}
++        </>
++      );
++    }
++    const view = render(<Layers second={false} />);
++    const first = screen.getByRole("button", { name: "先行先頭" });
++    view.rerender(<Layers second />);
++    expect(screen.getByRole("button", { name: "後続先頭" })).toHaveFocus();
++    view.rerender(<Layers second={false} />);
++    expect(first).toHaveFocus();
++  });
++});
+diff --git a/src/hooks/useModalDialogBehavior.ts b/src/hooks/useModalDialogBehavior.ts
+index 51c00e8..79ab646 100644
+--- a/src/hooks/useModalDialogBehavior.ts
++++ b/src/hooks/useModalDialogBehavior.ts
+@@ -81,7 +81,7 @@ export const useModalDialogBehavior = <T extends HTMLElement = HTMLDivElement>({
+     const release = registerModalFocus(element, restore, containExternalFocus);
+     const initialFocus =
+       initialFocusRef?.current ?? getFocusableElements(element)[0] ?? element;
+-    initialFocus.focus({ preventScroll: true });
++    if (isTopModal(element)) initialFocus.focus({ preventScroll: true });
+     return release;
+   }, [containExternalFocus, fallbackFocusRef, initialFocusRef, isOpen]);
+ 
+diff --git a/src/utils/modalFocusBoundary.ts b/src/utils/modalFocusBoundary.ts
+index 1a9136e..82141f4 100644
+--- a/src/utils/modalFocusBoundary.ts
++++ b/src/utils/modalFocusBoundary.ts
+@@ -1,5 +1,78 @@
+ type ModalRestoreTarget = HTMLElement | null | (() => HTMLElement | null);
+-type ModalOwner = { element: HTMLElement; restore: ModalRestoreTarget };
++type ModalLayer = { element: HTMLElement; zIndex: number };
++type ModalOwner = {
++  element: HTMLElement;
++  restore: ModalRestoreTarget;
++  layers: ModalLayer[];
++};
++
++// Read styles only when opening a modal, never while handling focus or keys.
++function getModalLayers(element: HTMLElement): ModalLayer[] {
++  const layers: ModalLayer[] = [];
++  for (
++    let ancestor: HTMLElement | null = element;
++    ancestor;
++    ancestor = ancestor.parentElement
++  ) {
++    const style = getComputedStyle(ancestor);
++    const hasZIndex = style.zIndex !== "" && style.zIndex !== "auto";
++    const positioned = style.position !== "" && style.position !== "static";
++    const parentDisplay =
++      hasZIndex && !positioned && ancestor.parentElement
++        ? getComputedStyle(ancestor.parentElement).display
++        : "";
++    const nonDefault = (value: string) => Boolean(value) && value !== "none";
++    if (
++      ancestor === document.documentElement ||
++      style.position === "fixed" ||
++      style.position === "sticky" ||
++      (hasZIndex &&
++        (positioned || /^(inline-)?(flex|grid)$/.test(parentDisplay))) ||
++      [
++        style.transform,
++        style.translate,
++        style.rotate,
++        style.scale,
++        style.perspective,
++        style.filter,
++        style.backdropFilter,
++      ].some(nonDefault) ||
++      (style.opacity !== "" && Number(style.opacity) < 1) ||
++      style.isolation === "isolate" ||
++      (style.mixBlendMode !== "" && style.mixBlendMode !== "normal") ||
++      /\b(layout|paint|strict|content)\b/.test(style.contain) ||
++      /\b(transform|translate|rotate|scale|perspective|filter|opacity)\b/.test(
++        style.willChange,
++      )
++    )
++      layers.unshift({
++        element: ancestor,
++        zIndex: hasZIndex ? Number(style.zIndex) : 0,
++      });
++  }
++  return layers;
++}
++
++function compareModalLayers(first: ModalLayer[], second: ModalLayer[]) {
++  for (let index = 0; index < Math.max(first.length, second.length); index++) {
++    // A high inner z-index cannot escape its enclosing stacking context.
++    const firstLayer = first[index];
++    const secondLayer = second[index];
++    if (firstLayer?.element === secondLayer?.element) continue;
++    const difference = (firstLayer?.zIndex ?? 0) - (secondLayer?.zIndex ?? 0);
++    if (difference) return difference;
++    if (firstLayer && secondLayer) {
++      const position = firstLayer.element.compareDocumentPosition(
++        secondLayer.element,
++      );
++      if (position & Node.DOCUMENT_POSITION_DISCONNECTED) return 0;
++      if (position & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
++      if (position & Node.DOCUMENT_POSITION_PRECEDING) return 1;
++    }
++    return 0;
++  }
++  return 0;
++}
+ const owners: ModalOwner[] = [];
+ let deferredFocus: {
+   target: () => HTMLElement | null;
+@@ -30,12 +103,26 @@ export function registerModalFocus(
+   restore: ModalRestoreTarget,
+   containExternalFocus = false,
+ ) {
+-  const owner = { element, restore };
++  const owner = { element, restore, layers: getModalLayers(element) };
+   const getRestoreTarget = () => {
+-    const target = typeof restore === "function" ? restore() : restore;
++    const target =
++      typeof owner.restore === "function" ? owner.restore() : owner.restore;
+     return target?.isConnected ? target : null;
+   };
+-  owners.push(owner);
++  const index = owners.findIndex(
++    (entry) => compareModalLayers(entry.layers, owner.layers) > 0,
++  );
++  // The same stacking context retains later-registration priority.
++  owners.splice(index < 0 ? owners.length : index, 0, owner);
++  const coveringOwner = owners.at(-1);
++  const restoreTarget = getRestoreTarget();
++  if (
++    coveringOwner !== owner &&
++    restoreTarget &&
++    coveringOwner?.element.contains(restoreTarget)
++  )
++    // The lower dialog did not open the covering dialog; retain its real opener.
++    owner.restore = coveringOwner.restore;
+   const containFocus = (event: FocusEvent) => {
+     if (
+       !isTopModal(element) ||
+diff --git a/tests/browser/map-import-delayed-cancel.spec.ts b/tests/browser/map-import-delayed-cancel.spec.ts
+index 55bde8f..0e2438d 100644
+--- a/tests/browser/map-import-delayed-cancel.spec.ts
++++ b/tests/browser/map-import-delayed-cancel.spec.ts
+@@ -421,3 +421,104 @@ for (const route of [
+     });
+   });
+ }
++
++test("map import can resume after a pending import parser is replaced by a real Worker preview", async ({
++  page,
++}, testInfo) => {
++  const errors: string[] = [];
++  const alerts: string[] = [];
++  page.on("pageerror", (error) => errors.push(error.message));
++  page.on("dialog", async (dialog) => {
++    alerts.push(dialog.message());
++    await dialog.accept();
++  });
++  await page.addInitScript(() => {
++    const post = Worker.prototype.postMessage;
++    let heldRequestId: unknown;
++    const trace = {
++      heldImport: false,
++      cancelled: false,
++      sent: [] as Array<{ type: string; kind?: string }>,
++    };
++    Object.assign(window, { __mapParserSwitch: trace });
++    Worker.prototype.postMessage = function (
++      ...args: Parameters<Worker["postMessage"]>
++    ) {
++      const message = args[0] as {
++        type?: string;
++        kind?: string;
++        requestId?: unknown;
++      };
++      if (message?.type?.startsWith("XLSX_")) {
++        trace.sent.push({ type: message.type, kind: message.kind });
++        if (
++          message.type === "XLSX_IMPORT_REQUEST" &&
++          message.kind === "map-import" &&
++          !trace.heldImport
++        ) {
++          trace.heldImport = true;
++          heldRequestId = message.requestId;
++          return;
++        }
++        if (
++          message.type === "XLSX_CANCEL_REQUEST" &&
++          message.requestId === heldRequestId
++        )
++          trace.cancelled = true;
++      }
++      return post.apply(this, args);
++    };
++  });
++  await restore(page, false);
++  const before = await allStores(page);
++  const dialog = await selectMap(
++    page,
++    "parser-switch.xlsx",
++    await workbook("プレビュー後に取り込む"),
++  );
++  await dialog.getByRole("button", { name: "取り込む", exact: true }).click();
++  await page.waitForFunction(
++    () =>
++      (window as unknown as { __mapParserSwitch: { heldImport: boolean } })
++        .__mapParserSwitch.heldImport,
++  );
++  await expect(
++    dialog.getByRole("button", { name: "取り込み中...", exact: true }),
++  ).toBeDisabled();
++  await dialog
++    .getByRole("button", { name: /プレビュー（ブロック検出）/ })
++    .click();
++  await expect(dialog.getByText(/✅ 1ブロック検出/)).toBeVisible();
++  const retry = dialog.getByRole("button", { name: "取り込む", exact: true });
++  await expect(retry).toBeEnabled();
++  expect(await allStores(page)).toEqual(before);
++  await retry.click();
++  await expect(dialog).toBeHidden();
++  const after = await allStores(page);
++  expect(after.mapData).not.toEqual(before.mapData);
++  expect(after.eventLists).toEqual(before.eventLists);
++  const trace = await page.evaluate(
++    () =>
++      (window as unknown as { __mapParserSwitch: unknown }).__mapParserSwitch,
++  );
++  expect(trace).toMatchObject({ heldImport: true, cancelled: true });
++  await page.reload();
++  const reloaded = await allStores(page);
++  expect(reloaded.mapData).toEqual(after.mapData);
++  expect(reloaded.eventLists).toEqual(before.eventLists);
++  expect(errors).toEqual([]);
++  expect(alerts).toEqual([]);
++  await testInfo.attach("real-worker-parser-switch", {
++    body: Buffer.from(
++      JSON.stringify({
++        trace,
++        durablePreviewUnchanged: true,
++        retryPersisted: true,
++        errors,
++        alerts,
++      }),
++      "utf8",
++    ),
++    contentType: "application/json",
++  });
++});

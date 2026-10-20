@@ -1,3 +1,6 @@
+import { getMaplessKey } from "../../../types/map";
+import { getCommittedEditorHalls } from "./hallOperations";
+import { encodeHallRef } from "../../consistency/domain/projection";
 import { describe, expect, it } from "vitest";
 import type { HallDefinition } from "../../../types/map";
 import type { ShoppingItem } from "../../../types/item";
@@ -232,3 +235,60 @@ it.each(["west:priority", "west:highest", "west:priority:highest"])(
     ).toBe(1);
   },
 );
+
+it("returns committed detailed and simple halls in their distinct display ID namespaces", () => {
+  const same = { id: "same", name: "確定済み", vertices: [] };
+  const definitions = {
+    event: {
+      map: [same],
+      [getMaplessKey("1日目")]: [{ ...same, blockNames: ["A"] }],
+      [getMaplessKey("2日目")]: [{ ...same, name: "別日" }],
+    },
+  };
+  const session = {
+    sessionId: "owner",
+    eventName: "event",
+    eventGeneration: 1,
+    day: "1日目",
+    mapKey: "map",
+    editorKind: "hall-definition" as const,
+  };
+  expect(
+    getCommittedEditorHalls(definitions, session).map((hall) => hall.id),
+  ).toEqual([
+    encodeHallRef({ kind: "map", mapKey: "map", hallId: "same" }),
+    encodeHallRef({ kind: "simple", dayKey: "1日目", hallId: "same" }),
+  ]);
+  expect(
+    getCommittedEditorHalls(definitions, {
+      ...session,
+      editorKind: "simple-hall-definition",
+    }),
+  ).toEqual([
+    {
+      ...same,
+      blockNames: ["A"],
+      id: encodeHallRef({ kind: "simple", dayKey: "1日目", hallId: "same" }),
+    },
+  ]);
+});
+
+it("preserves the committed simple hall reference spelling for an existing normalized day alias", () => {
+  const hall = { id: "simple", name: "簡易", vertices: [], blockNames: ["A"] };
+  const session = {
+    sessionId: "owner",
+    eventName: "event",
+    eventGeneration: 1,
+    day: "1日目",
+    mapKey: "unused",
+    editorKind: "simple-hall-definition" as const,
+  };
+  expect(
+    getCommittedEditorHalls(
+      { event: { [getMaplessKey(" 1日目　")]: [hall] } },
+      session,
+    )[0].id,
+  ).toBe(
+    encodeHallRef({ kind: "simple", dayKey: " 1日目　", hallId: "simple" }),
+  );
+});

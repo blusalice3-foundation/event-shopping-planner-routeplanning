@@ -1,0 +1,245 @@
+
+[WebServer] (node:27360) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 224 tests using 2 workers
+
+(node:5736) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+(node:30928) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/224] [chromium] › tests\browser\a11y-flows.spec.ts:505:1 › @layout focus keeps the complete space header pinned across map, layout, and display zoom changes
+[2/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:213:1 › legacy JSON restores atomically and target-day long press persists exactly once
+[3/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:238:1 › search brings an initially unmounted item into view and repeats after another search
+[4/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:448:3 › event-list navigation waits for the visit transition answer: 保存して確定
+[5/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:448:3 › event-list navigation waits for the visit transition answer: キャンセル（破棄）
+[6/224] [chromium] › tests\browser\a11y-flows.spec.ts:626:1 › @a11y representative list, focus, map, and dialog flows have no moderate-or-higher violations
+[7/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:502:3 › map selection waits for the visit transition answer: 保存して確定
+[8/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:502:3 › map selection waits for the visit transition answer: キャンセル（破棄）
+[9/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:560:1 › a migrated database starts when legacy localStorage reads fail
+[10/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:601:1 › split legacy visit lists restore and remain separate after reorder and reload
+[11/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:662:1 › a stale edit asks before replacing another tab's memo and reconfirms further changes
+[12/224] [chromium] › tests\browser\persistence-terminal-stop.spec.ts:5:1 › a real persistence Worker dying after DB commit stops retries and exports without a new writer
+[13/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:726:1 › long press confirms settings-only duplicate days before changing the displayed day
+[14/224] [chromium] › tests\browser\persistence-terminal-stop.spec.ts:213:1 › the real confirmation host contains busy keyboard focus and defers a late failed-input focus request
+[15/224] [chromium] › tests\browser\priority-cell-popup-edit.spec.ts:238:1 › direct mouse click opens the real limited editor without changing or saving visits
+[16/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:758:1 › a failed long-press save keeps the current day and persisted modes
+[17/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:783:1 › hall-order save preserves mixed legacy metadata on split lists and reload
+[18/224] [chromium] › tests\browser\priority-cell-popup-edit.spec.ts:248:1 › direct mouse click preserves an unregistered item without adding or saving visits
+[19/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:857:1 › item editor shows location ambiguity separately and cancellation preserves items
+[20/224] [chromium] › tests\browser\priority-cell-popup-edit.spec.ts:258:1 › direct mouse entry saves the real detail edit once and retains limited quantities and visits on reload
+[21/224] [chromium] › tests\browser\priority-cell-popup-edit.spec.ts:304:1 › keyboard Enter opens the same limited editor without changing or saving visits
+[22/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:891:1 › block definition waits for renewed approval after another tab changes priority
+[23/224] [chromium] › tests\browser\priority-cell-popup-edit.spec.ts:317:1 › holding the child edit button does not trigger the row long-press menu
+[24/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:982:3 › visit panel priority change preserves newer purchases after saving and reload
+[25/224] [chromium] › tests\browser\priority-cell-popup-edit.spec.ts:327:1 › row long press still opens the legacy entry and then the real limited editor
+[26/224] [chromium] › tests\browser\priority-cell-popup-edit.spec.ts:341:1 › ordinary row mouse clicks still remove and add visits without changing the limited item
+[27/224] [chromium] › tests\browser\priority-cell-popup-edit.spec.ts:366:3 › mobile touch › touch tap opens the real limited editor without changing or saving visits
+[28/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:982:3 › map item edit priority change preserves newer purchases after saving and reload
+[29/224] [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: pc
+[30/224] [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: smartphone
+[31/224] [chromium] › tests\browser\priority-dialog-interaction.spec.ts:180:1 › keyboard day changes discard popup input while retaining the map canvas
+[32/224] [chromium] › tests\browser\retained-viewport.spec.ts:101:3 › retained viewport preserves offscreen navigation, native values and saving: pc
+[33/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1109:3 › visit panel priority change retains the purchase accepted while its save is pending
+[34/224] [chromium] › tests\browser\retained-viewport.spec.ts:101:3 › retained viewport preserves offscreen navigation, native values and saving: smartphone
+[35/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1109:3 › map item edit priority change retains the purchase accepted while its save is pending
+[36/224] [chromium] › tests\browser\retained-viewport.spec.ts:202:1 › a large single space defers cards inside the group
+[37/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1240:3 › renaming a detailed hall preserves mixed order in every map and after reload
+[38/224] [chromium] › tests\browser\retained-viewport.spec.ts:227:1 › focus map remains correct after quantity, purchase and visibility changes
+[39/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1240:3 › renaming a simple hall preserves mixed order in every map and after reload
+[40/224] [chromium] › tests\browser\retained-viewport.spec.ts:287:1 › keyboard focus reaches the native controls of a pending PC row
+[41/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1336:5 › spreadsheet and save-conflict connections › spreadsheet items-only opens review after CSV success and persists the reviewed update
+[42/224] [chromium] › tests\browser\retained-viewport.spec.ts:308:1 › focus mode defers a large visit with the map shown and hidden
+[43/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1336:5 › spreadsheet and save-conflict connections › spreadsheet source-switch opens review after CSV success and persists the reviewed update
+[44/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1486:5 › spreadsheet and save-conflict connections › confirming a long press preserves the target mode when source-day merge cancel occurs
+[45/224] [chromium] › tests\browser\retained-viewport.spec.ts:327:1 › focus retains an edited offscreen item until the dialog closes
+[46/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1486:5 › spreadsheet and save-conflict connections › confirming a long press preserves the target mode when source-day merge abort occurs
+[47/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: direct › items-only 150: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[48/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: direct › source-switch 150: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[49/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1551:9 › spreadsheet and save-conflict connections › failed hall-order save keeps DB, screen and JSON unchanged: abort, retry, settings
+[50/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: direct › items-only 500: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[51/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1551:9 › spreadsheet and save-conflict connections › failed hall-order save keeps DB, screen and JSON unchanged: abort, retry, reorder
+[52/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1551:9 › spreadsheet and save-conflict connections › failed hall-order save keeps DB, screen and JSON unchanged: abort, discard, settings
+[53/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: direct › source-switch 500: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[54/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1551:9 › spreadsheet and save-conflict connections › failed hall-order save keeps DB, screen and JSON unchanged: abort, discard, reorder
+[55/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:229:5 › sheet import and optional URL: direct › new URL import excludes incomplete rows, saves no-URL items and keeps zero-result input
+[56/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1551:9 › spreadsheet and save-conflict connections › failed hall-order save keeps DB, screen and JSON unchanged: conflicts, retry, settings
+[57/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:276:5 › sheet import and optional URL: direct › seven-column repaste keeps blank-row URLs aligned through save and reload
+[58/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1551:9 › spreadsheet and save-conflict connections › failed hall-order save keeps DB, screen and JSON unchanged: conflicts, retry, reorder
+[59/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:333:7 › sheet import and optional URL: direct › edit: adds a no-URL item and persists it across reload
+[60/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1551:9 › spreadsheet and save-conflict connections › failed hall-order save keeps DB, screen and JSON unchanged: conflicts, discard, settings
+[61/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:333:7 › sheet import and optional URL: direct › execute: adds a no-URL item and persists it across reload
+[62/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1551:9 › spreadsheet and save-conflict connections › failed hall-order save keeps DB, screen and JSON unchanged: conflicts, discard, reorder
+[63/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:333:7 › sheet import and optional URL: direct › focus: adds a no-URL item and persists it across reload
+[64/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:388:5 › sheet import and optional URL: direct › map cell: adds a no-URL item with its selected location and persists it across reload
+[65/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1718:3 › spreadsheet and save-conflict connections › failed visit discard keeps event navigation, undo history and cancel baseline pending
+[66/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:426:5 › sheet import and optional URL: direct › removes an existing URL through the guarded editor and persists its absence
+[67/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1757:5 › spreadsheet and save-conflict connections › save conflicts retains accepted purchase, JSON backup and explicit retry
+[68/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: worker › items-only 150: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[69/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1757:5 › spreadsheet and save-conflict connections › save conflicts retains accepted purchase, JSON backup and explicit discard
+[70/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: worker › source-switch 150: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[71/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: worker › items-only 500: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[72/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1757:5 › spreadsheet and save-conflict connections › save abort retains accepted purchase, JSON backup and explicit retry
+[73/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:149:9 › sheet import and optional URL: worker › source-switch 500: ordinary exclusions survive the real event-list review, cancellation and save/reload
+[74/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1757:5 › spreadsheet and save-conflict connections › save abort retains accepted purchase, JSON backup and explicit discard
+[75/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:229:5 › sheet import and optional URL: worker › new URL import excludes incomplete rows, saves no-URL items and keeps zero-result input
+[76/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1853:5 › spreadsheet and save-conflict connections › failed purchase survives a subsequent rename and its current values are confirmed
+[77/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:276:5 › sheet import and optional URL: worker › seven-column repaste keeps blank-row URLs aligned through save and reload
+[78/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:1853:5 › spreadsheet and save-conflict connections › failed purchase survives a subsequent restore and its current values are confirmed
+[79/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:333:7 › sheet import and optional URL: worker › edit: adds a no-URL item and persists it across reload
+[80/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2003:1 › day merge choices change the adopted order, mode, map and destination and survive reload
+[81/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:333:7 › sheet import and optional URL: worker › execute: adds a no-URL item and persists it across reload
+[82/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:333:7 › sheet import and optional URL: worker › focus: adds a no-URL item and persists it across reload
+[83/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2076:1 › priority text inside a hall ID keeps the hall name in the map order dialog
+[84/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:388:5 › sheet import and optional URL: worker › map cell: adds a no-URL item with its selected location and persists it across reload
+[85/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2104:1 › focus map shows mixed execution counts separately from candidates and the current marker
+[86/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:426:5 › sheet import and optional URL: worker › removes an existing URL through the guarded editor and persists its absence
+[87/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2163:1 › a standalone execute reorder writes only its changed payload and survives reload
+[88/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2205:1 › full Excel keeps undated mapless legacy halls through Worker export and restore
+[89/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:480:1 › OP06: edited planned quantity survives limited status and real save/reload
+[90/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2285:1 › map reimport saves the chosen actual map and displays it after reload
+[91/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:539:1 › OP11: failed URL update reopens with submitted URL and empty sheet name
+[92/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:569:1 › OP10: CSV read failure is reported and same file selection retries
+[93/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2421:1 › item edits require a map selection before saving and preserve both maps on cancellation
+[94/224] [chromium] › tests\browser\sheet-import-optional-url.spec.ts:626:1 › OP07: late JSON cannot reopen after newer candidate cancellation
+[95/224] [chromium] › tests\browser\shopping-item-rendering.spec.ts:61:3 › native card choices keep their values and save across day changes: pc
+[96/224] [chromium] › tests\browser\shopping-item-rendering.spec.ts:61:3 › native card choices keep their values and save across day changes: smartphone
+[97/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2509:3 › mode review is renewed after another tab resolves duplicate dates and can cancel
+
+(node:3092) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[98/224] [chromium] › tests\browser\ordinary-persistence-io.spec.ts:5:1 › ordinary purchase, planned quantity and memo retain the same physical persistence boundary
+[99/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:777:3 › execution group boundary and durable order: native
+[100/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2509:3 › mode review is renewed after another tab resolves duplicate dates and can save
+[101/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:809:5 › candidate null keeps existing save and reload rules: native
+[102/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:809:5 › candidate asc keeps existing save and reload rules: native
+[103/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2564:1 › confirmation disables cancellation, choices and repeated saving during its durable read
+[104/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:809:5 › candidate desc keeps existing save and reload rules: native
+[105/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2660:3 › visit opening reviews execution duplicate day keys before creating history
+[106/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:777:3 › execution group boundary and durable order: touch
+[107/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2660:3 › visit opening reviews modes duplicate day keys before creating history
+[108/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:809:5 › candidate null keeps existing save and reload rules: touch
+[109/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2660:3 › visit opening reviews contexts duplicate day keys before creating history
+[110/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:809:5 › candidate asc keeps existing save and reload rules: touch
+[111/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:809:5 › candidate desc keeps existing save and reload rules: touch
+[112/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2841:3 › visit reorder reviews settings-only duplicates introduced while open
+[113/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:919:5 › mixed insertion and multiple durable merges: native grouping true
+[114/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2841:3 › visit discard reviews settings-only duplicates introduced while open
+[115/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:949:5 › offscreen merge follows its own destination: native grouping true
+[116/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2841:3 › visit save reviews settings-only duplicates introduced while open
+[117/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:919:5 › mixed insertion and multiple durable merges: native grouping false
+[118/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2912:3 › visit opening merge abort preserves the previous data and can be retried
+[119/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:949:5 › offscreen merge follows its own destination: native grouping false
+[120/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:919:5 › mixed insertion and multiple durable merges: touch grouping true
+[121/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2912:3 › visit reorder merge abort preserves the previous data and can be retried
+[122/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:949:5 › offscreen merge follows its own destination: touch grouping true
+[123/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:2983:1 › visit reorder renews duplicate-day review after the saved modes change
+[124/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:919:5 › mixed insertion and multiple durable merges: touch grouping false
+[125/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3018:1 › legacy shared-map empty visits are retained for review after restore and reload
+[126/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3096:1 › legacy mixed hall order keeps the saved simple sequence in the editor after reload
+[127/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:949:5 › offscreen merge follows its own destination: touch grouping false
+[128/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3167:5 › stale block edit never recreates maps removed by another tab's replacement: before apply, all maps
+[129/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:982:3 › impossible OFF boundary rejects a mixed drop atomically: native
+[130/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:982:3 › impossible OFF boundary rejects a mixed drop atomically: touch
+[131/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3167:5 › stale block edit never recreates maps removed by another tab's replacement: before apply, edited map
+[132/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1005:3 › OFF selection rejects reversed hall buckets before drop: native
+[133/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1005:3 › OFF selection rejects reversed hall buckets before drop: touch
+[134/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3167:5 › stale block edit never recreates maps removed by another tab's replacement: confirmation, all maps
+[135/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1039:3 › actual Chromium native leave clears shared guides before release: grouping true
+[136/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1039:3 › actual Chromium native leave clears shared guides before release: grouping false
+[137/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1074:1 › actual Chromium native drag uses the shared column owner
+[138/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3167:5 › stale block edit never recreates maps removed by another tab's replacement: confirmation, edited map
+[139/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1096:1 › actual Chromium touch drag resolves the target column
+[140/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1144:5 › empty execute accepts a scoped native drop
+[141/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3270:5 › ordinary reorder reviews mode-only duplicate dates and handles cancel atomically
+[142/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1144:5 › empty candidate accepts a scoped native drop
+[143/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3270:5 › ordinary reorder reviews mode-only duplicate dates and handles save atomically
+[144/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1144:5 › empty execute accepts a scoped touch drop
+[145/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1144:5 › empty candidate accepts a scoped touch drop
+[146/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3270:5 › ordinary reorder reviews mode-only duplicate dates and handles abort atomically
+[147/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1211:3 › collapsed destination uses its complete header boundary: native
+[148/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3270:5 › ordinary item edit reviews mode-only duplicate dates and handles cancel atomically
+[149/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1211:3 › collapsed destination uses its complete header boundary: touch
+[150/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1277:3 › candidate filter keeps a hidden selected visit out of the native drag
+[151/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3270:5 › ordinary item edit reviews mode-only duplicate dates and handles save atomically
+[152/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1277:3 › candidate filter keeps a hidden selected visit out of the touch drag
+[153/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3270:5 › ordinary item edit reviews mode-only duplicate dates and handles abort atomically
+[154/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1307:3 › candidate lower-half hover preserves the existing next-row insertion: native
+[155/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1307:3 › candidate lower-half hover preserves the existing next-row insertion: touch
+[156/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1348:3 › collapsed source group moves every frozen member: native
+[157/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3392:1 › map reimport skips impact review and preserves another selected map day
+[158/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1348:3 › collapsed source group moves every frozen member: touch
+[159/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3504:1 › ordinary item edit carries its chosen simple hall through a selectable day merge
+[160/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1387:3 › same-column candidate drag keeps its start selection: native
+[161/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3566:3 › ordinary mode change saves its confirmed default mode after a day merge and reload
+[162/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1387:3 › same-column candidate drag keeps its start selection: touch
+[163/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3566:3 › ordinary mode change saves its confirmed edit mode after a day merge and reload
+[164/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1420:1 › touch leaving the viewport cancels its last valid cross-column target
+[165/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3566:3 › ordinary mode change saves its confirmed execute mode after a day merge and reload
+[166/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1453:5 › actual-map membership determines the durable merge endpoint: native existing pair true
+[167/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3566:3 › ordinary mode change saves its confirmed focus mode after a day merge and reload
+[168/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1453:5 › actual-map membership determines the durable merge endpoint: native existing pair false
+[169/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1453:5 › actual-map membership determines the durable merge endpoint: touch existing pair true
+[170/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3619:3 › a focused standalone merge shows its saved mode and handles save without losing records
+[171/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1453:5 › actual-map membership determines the durable merge endpoint: touch existing pair false
+[172/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3619:3 › a focused standalone merge shows its saved mode and handles cancel without losing records
+[173/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1557:3 › collapsed candidate header preserves the first-member anchor: native
+[174/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3619:3 › a focused standalone merge shows its saved mode and handles abort without losing records
+[175/224] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1557:3 › collapsed candidate header preserves the first-member anchor: touch
+[176/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3703:1 › a day-tab long press can confirm focus mode through a day merge and reload
+[177/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3726:3 › item move renews approval after another tab changes its hidden source assignment: save
+[178/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3726:3 › item move renews approval after another tab changes its hidden source assignment: cancel
+[179/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3866:3 › another-tab equal replacement expires the old visit cancel and reopens from the restored baseline
+[180/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3866:3 › another-tab equal replacement expires the old visit undo and reopens from the restored baseline
+[181/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3866:3 › another-tab equal replacement expires the old visit reorder and reopens from the restored baseline
+[182/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3866:3 › another-tab equal replacement expires the old visit save and reopens from the restored baseline
+[183/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3866:3 › another-tab equal replacement expires the old visit discard transition and reopens from the restored baseline
+[184/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3936:3 › JSON restore reviews duplicate day destination and mode before one atomic save
+[185/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3936:3 › JSON restore reviews duplicate day destination and mode before one atomic cancel
+[186/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:3936:3 › JSON restore reviews duplicate day destination and mode before one atomic abort
+[187/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4024:3 › visit long press commits source visits and a different target mode with scoped commands: 保存して確定
+[188/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4024:3 › visit long press commits source visits and a different target mode with scoped commands: キャンセル（破棄）
+[189/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4115:1 › 300 by 500 cell map supports hall selection and routing @additional-consistency
+[190/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4166:3 › single limited input preserves the event generation, replaced=false @additional-consistency
+[191/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4166:3 › single limited input preserves the event generation, replaced=true @additional-consistency
+[192/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4258:3 › header-like first CSV item requires format selection and survives save/reload: legacy @additional-consistency @csv-header
+[193/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4258:3 › header-like first CSV item requires format selection and survives save/reload: google @additional-consistency @csv-header
+[194/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4354:3 › legacy JSON restores and reloads the literal event name constructor @n1-n17
+[195/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4354:3 › legacy JSON restores and reloads the literal event name toString @n1-n17
+[196/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4354:3 › legacy JSON restores and reloads the literal event name hasOwnProperty @n1-n17
+[197/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4354:3 › legacy JSON restores and reloads the literal event name __proto__ @n1-n17
+[198/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4394:7 › sheet source changes at the save boundary › items-only rejects reviewed sheet values after only spreadsheetUrl changes @n1-n17
+[199/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4394:7 › sheet source changes at the save boundary › items-only rejects reviewed sheet values after only spreadsheetSheetName changes @n1-n17
+[200/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4394:7 › sheet source changes at the save boundary › source-switch rejects reviewed sheet values after only spreadsheetUrl changes @n1-n17
+[201/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4394:7 › sheet source changes at the save boundary › source-switch rejects reviewed sheet values after only spreadsheetSheetName changes @n1-n17
+[202/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4569:5 › editable item URLs are not sheet identity › items-only automatically matches URL edits and preserves quantities on save/reload @n1-url
+[203/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4569:5 › editable item URLs are not sheet identity › same-source automatically matches URL edits and preserves quantities on save/reload @n1-url
+[204/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4569:5 › editable item URLs are not sheet identity › source-switch automatically matches URL edits and preserves quantities on save/reload @n1-url
+[205/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4761:5 › Excel identity provenance and decorated metadata › current Excel automatically matches inferred prices and preserves quantities and layout @n1-n13-xlsx @n13-layout
+[206/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:4761:5 › Excel identity provenance and decorated metadata › legacy Excel automatically matches inferred prices and preserves quantities and layout @n1-n13-xlsx @n13-layout
+[207/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5052:3 › OP01 block selection preserves its draft on rejected navigation and ends before accepted day navigation
+[208/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5052:3 › OP01 hall selection preserves its draft on rejected navigation and ends before accepted day navigation
+[209/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5107:3 › OP01 map discard and visit-list 保存して確定 only finish the editor after transition succeeds
+[210/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5130:3 › OP01 a failed visit-list 保存して確定 retains map selection and permits retry
+[211/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5107:3 › OP01 map discard and visit-list キャンセル（破棄） only finish the editor after transition succeeds
+[212/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5130:3 › OP01 a failed visit-list キャンセル（破棄） retains map selection and permits retry
+[213/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5172:1 › OP08 visit-list swap exchanges unequal visits, persists Undo/Redo and survives reload
+[214/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5224:1 › OP01 map file replacement retains its editor until the visit-list save succeeds
+[215/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5289:1 › OP02 edited hall sync saves source and target, keeps its panel and uses committed IDs for a second sync
+[216/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5438:3 › OP09: deleting the last postponed target reaches late in the real App
+[217/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5438:3 › OP09: deleting the last postponed target reaches completion in the real App
+[218/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5487:1 › OP09: resumed phase synchronizes replacement postponed targets before recovering an empty old phase
+[219/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5559:5 › OP06 normalized planned draft matches visible select and durable quantity: 3 None
+[220/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5559:5 › OP06 normalized planned draft matches visible select and durable quantity: 3 Purchased
+[221/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5559:5 › OP06 normalized planned draft matches visible select and durable quantity: 03 None
+[222/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5559:5 › OP06 normalized planned draft matches visible select and durable quantity: 03 Purchased
+[223/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5676:3 › OP05 late purchase failure keeps focus inside the focus-mode add dialog
+[224/224] [chromium] › tests\browser\cross-feature-consistency.spec.ts:5676:3 › OP05 late purchase failure keeps focus inside the focus-mode phase dialog
+  Slow test file: [chromium] › tests\browser\cross-feature-consistency.spec.ts (5.4m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  224 passed (5.5m)

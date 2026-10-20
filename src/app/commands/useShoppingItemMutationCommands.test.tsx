@@ -1,5 +1,12 @@
+import {
+  buildShoppingDragLayout,
+  resolveShoppingDragPlacement,
+  type ShoppingDragMoveContext,
+} from "../../features/shopping-list/drag/shoppingDrag";
+import { projectItemsToExecutionVisits } from "../../utils/visitProjection";
 // @vitest-environment jsdom
 
+import { emptyApplicationSnapshot as emptyApplicationSnapshotForImport } from "../state/useApplicationSnapshot";
 import { rememberItemUpdateBaseline } from "../../utils/itemUpdateBaseline";
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -11,6 +18,7 @@ import type {
 } from "../../types/item";
 import { getItemKey } from "../../utils/itemComparison";
 import type { PendingDuplicateEventImport } from "../state/appOverlayTypes";
+import { createEventUpdateOperationRegistry } from "./eventUpdateOperation";
 import {
   useShoppingItemMutationCommands,
   type BulkAddItemInput,
@@ -284,6 +292,268 @@ const createHarness = (options: HarnessOptions = {}) => {
 };
 
 describe("useShoppingItemMutationCommands", () => {
+  it("freezes an exact same-column candidate selection without expanding its peers", () => {
+    const a = item("a", { number: "1a" }),
+      x1 = item("x1", { number: "2a" }),
+      x2 = item("x2", { number: "2a2" }),
+      y = item("y", { number: "3a" });
+    const harness = createHarness({
+      eventLists: { [EVENT]: [a, x1, x2, y] },
+      selectedItemIds: new Set(["x1", "x2"]),
+      executeModeItems: { [EVENT]: { [DAY]: ["a"] } },
+    });
+    const context: ShoppingDragMoveContext = {
+      token: Symbol(),
+      eventName: EVENT,
+      day: DAY,
+      generation: 0,
+      sourceColumn: "candidate",
+      targetColumn: "candidate",
+      requestedIds: ["x1", "y"],
+      effectiveIds: ["x1", "y"],
+      sourceVisits: projectItemsToExecutionVisits([x1, x2, y]).map((visit) => ({
+        key: visit.key,
+        ids: visit.itemIds,
+      })),
+      operation: "selection",
+      isCurrent: () => true,
+    };
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+    act(() =>
+      result.current.moveItem(
+        "x1",
+        "__END_OF_LIST__",
+        "candidate",
+        "candidate",
+        context,
+      ),
+    );
+    expect(
+      harness.stores.eventLists[EVENT].filter((item) => item.id !== "a").map(
+        (item) => item.id,
+      ),
+    ).toEqual(["x2", "x1", "y"]);
+  });
+  it("freezes the original execution groups for a same-column drag", () => {
+    const a1 = item("a1", { number: "1a" }),
+      a2 = item("a2", { number: "1a2" }),
+      b = item("b", { number: "2a" }),
+      c = item("c", { number: "3a" });
+    const harness = createHarness({
+      eventLists: { [EVENT]: [a1, b, a2, c] },
+      selectedItemIds: new Set(["a1", "c"]),
+      executeModeItems: { [EVENT]: { [DAY]: ["a1", "b", "a2", "c"] } },
+    });
+    const context: ShoppingDragMoveContext = {
+      token: Symbol(),
+      eventName: EVENT,
+      day: DAY,
+      generation: 0,
+      sourceColumn: "execute",
+      targetColumn: "execute",
+      requestedIds: ["a1", "b"],
+      effectiveIds: ["a1", "b", "a2"],
+      sourceVisits: projectItemsToExecutionVisits([a1, b, a2]).map((visit) => ({
+        key: visit.key,
+        ids: visit.itemIds,
+      })),
+      operation: "selection",
+      isCurrent: () => true,
+    };
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+    act(() =>
+      result.current.moveItem(
+        "a1",
+        "__END_OF_LIST__",
+        "execute",
+        "execute",
+        context,
+      ),
+    );
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "c",
+      "a1",
+      "b",
+      "a2",
+    ]);
+  });
+  it("refuses a candidate anchor whose column membership changed before drop", () => {
+    const a = item("a", { number: "1a" }),
+      target = item("target", { number: "2a" });
+    const harness = createHarness({
+      eventLists: { [EVENT]: [a, target] },
+      executeModeItems: { [EVENT]: { [DAY]: ["a"] } },
+    });
+    const context: ShoppingDragMoveContext = {
+      token: Symbol(),
+      eventName: EVENT,
+      day: DAY,
+      generation: 0,
+      sourceColumn: "execute",
+      targetColumn: "candidate",
+      requestedIds: ["a"],
+      effectiveIds: ["a"],
+      sourceVisits: projectItemsToExecutionVisits([a]).map((visit) => ({
+        key: visit.key,
+        ids: visit.itemIds,
+      })),
+      operation: "single",
+      isCurrent: () => true,
+    };
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+    harness.refs.executeModeItemsRef.current = {
+      [EVENT]: { [DAY]: ["a", "target"] },
+    };
+    act(() =>
+      result.current.moveItem("a", "target", "candidate", "execute", context),
+    );
+    expect(harness.spies.clearRangeSelection).not.toHaveBeenCalled();
+    expect(harness.spies.setSortState).not.toHaveBeenCalled();
+    expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+  });
+  it("uses the frozen drag selection instead of a later live selection", () => {
+    const a = item("a", { number: "1a" }),
+      x = item("x", { number: "2a" }),
+      sibling = item("sibling", { number: "2a2" }),
+      other = item("other", { number: "3a" });
+    const live = new Set(["other"]);
+    const harness = createHarness({
+      eventLists: { [EVENT]: [a, x, sibling, other] },
+      selectedItemIds: live,
+      executeModeItems: { [EVENT]: { [DAY]: ["a"] } },
+    });
+    const layout = buildShoppingDragLayout([a], {
+      spaceGroups: true,
+      hallGroups: false,
+      halls: [],
+      hallOrder: [],
+      map: null,
+    });
+    const context: ShoppingDragMoveContext = {
+      token: Symbol(),
+      eventName: EVENT,
+      day: DAY,
+      generation: 0,
+      sourceColumn: "candidate",
+      targetColumn: "execute",
+      requestedIds: ["x"],
+      effectiveIds: ["x", "sibling"],
+      sourceVisits: projectItemsToExecutionVisits([x, sibling]).map(
+        (visit) => ({ key: visit.key, ids: visit.itemIds }),
+      ),
+      operation: "single",
+      isCurrent: () => true,
+      placement: resolveShoppingDragPlacement(
+        layout,
+        [x, sibling],
+        "a",
+        "after",
+      )!,
+    };
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+    act(() =>
+      result.current.moveItem(
+        "x",
+        "__END_OF_LIST__",
+        "execute",
+        "candidate",
+        context,
+      ),
+    );
+    expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "a",
+      "x",
+      "sibling",
+    ]);
+    expect(
+      harness.stores.eventLists[EVENT].find((item) => item.id === "other"),
+    ).toBe(other);
+  });
+  it("does not clear range or sort when a drag owner or generation is invalid", () => {
+    const x = item("x", { number: "2a" });
+    const harness = createHarness({
+      eventLists: { [EVENT]: [x] },
+      selectedItemIds: new Set(["x"]),
+    });
+    harness.ports.state.getEventGeneration = () => 2;
+    const context: ShoppingDragMoveContext = {
+      token: Symbol(),
+      eventName: EVENT,
+      day: DAY,
+      generation: 1,
+      sourceColumn: "candidate",
+      targetColumn: "execute",
+      requestedIds: ["x"],
+      effectiveIds: ["x"],
+      sourceVisits: projectItemsToExecutionVisits([x]).map((visit) => ({
+        key: visit.key,
+        ids: visit.itemIds,
+      })),
+      operation: "single",
+      isCurrent: () => true,
+    };
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+    act(() =>
+      result.current.moveItem(
+        "x",
+        "__END_OF_LIST__",
+        "execute",
+        "candidate",
+        context,
+      ),
+    );
+    expect(harness.spies.clearRangeSelection).not.toHaveBeenCalled();
+    expect(harness.spies.setSortState).not.toHaveBeenCalled();
+    expect(harness.spies.setEventLists).not.toHaveBeenCalled();
+    expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+  });
+  it("does not change sort or selection after a same-visit source member arrives during drag", () => {
+    const x = item("x", { number: "2a" }),
+      late = item("late", { number: "2a2" });
+    const harness = createHarness({ eventLists: { [EVENT]: [x] } });
+    const context: ShoppingDragMoveContext = {
+      token: Symbol(),
+      eventName: EVENT,
+      day: DAY,
+      generation: 0,
+      sourceColumn: "candidate",
+      targetColumn: "execute",
+      requestedIds: ["x"],
+      effectiveIds: ["x"],
+      sourceVisits: projectItemsToExecutionVisits([x]).map((visit) => ({
+        key: visit.key,
+        ids: visit.itemIds,
+      })),
+      operation: "single",
+      isCurrent: () => true,
+    };
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(harness.ports),
+    );
+    harness.refs.eventListsRef.current = { [EVENT]: [x, late] };
+    act(() =>
+      result.current.moveItem(
+        "x",
+        "__END_OF_LIST__",
+        "execute",
+        "candidate",
+        context,
+      ),
+    );
+    expect(harness.spies.clearRangeSelection).not.toHaveBeenCalled();
+    expect(harness.spies.setSortState).not.toHaveBeenCalled();
+    expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+  });
   it("commits a new bulk event through all related stores before navigation", async () => {
     const harness = createHarness({
       activeEventName: null,
@@ -1145,4 +1415,172 @@ it("returns the actual saved count after deduplicating a new import", async () =
   expect(harness.spies.notify).toHaveBeenCalledWith(
     "1 items imported into a new event.",
   );
+});
+
+it("[ID 9] captures duplicate ownership and its displayed request before choosing a resolution", async () => {
+  const h = createHarness();
+  const registry = createEventUpdateOperationRegistry();
+  Object.assign(h.ports.state, {
+    eventUpdateOperationsRef: { current: registry },
+  });
+  let inputCurrent = true;
+  h.ports.actions.openDuplicateEvent = vi.fn((pending) => {
+    expect(registry.current?.id).toBe(pending.updateOperationId);
+    h.stores.pendingDuplicateEvent = pending;
+    return "duplicate-owned";
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  let completion!: Promise<import("../../types/import").BulkImportResult>;
+  act(() => {
+    completion = result.current.handleBulkAdd(EVENT, [bulkItem("incoming")], {
+      source: "spreadsheet",
+      request: { id: "input", isCurrent: () => inputCurrent },
+    });
+  });
+  const owner = registry.current!;
+  expect(owner.requestId).toBe("duplicate-owned");
+  inputCurrent = false;
+  expect(owner.isCurrentInput?.()).toBe(false);
+  act(() => registry.finish(owner.id, { status: "invalidated" }));
+  await expect(completion).resolves.toEqual({ status: "invalidated" });
+});
+
+it("[ID 8] rejects a new import while preserving the submitted update and completion", async () => {
+  const h = createHarness();
+  const registry = createEventUpdateOperationRegistry();
+  Object.assign(h.ports.state, {
+    eventUpdateOperationsRef: { current: registry },
+  });
+  const complete = vi.fn();
+  const owner = registry.start({ eventName: EVENT, complete })!;
+  registry.changePhase(owner, "saving");
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  let outcome: import("../../types/import").BulkImportResult | undefined;
+  await act(async () => {
+    outcome = await result.current.handleBulkAdd(
+      EVENT,
+      [bulkItem("incoming")],
+      { source: "spreadsheet" },
+    );
+  });
+  expect(outcome).toEqual({ status: "invalidated" });
+  expect(registry.current).toBe(owner);
+  expect(complete).not.toHaveBeenCalled();
+  expect(h.spies.openDuplicateEvent).not.toHaveBeenCalled();
+  expect(h.refs.eventUpdatePreviewEpochRef.current).toBe(0);
+});
+
+it("[ID 9] replacing a duplicate selection resolves only the earlier waiting import", async () => {
+  const h = createHarness();
+  const registry = createEventUpdateOperationRegistry();
+  Object.assign(h.ports.state, {
+    eventUpdateOperationsRef: { current: registry },
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  let first!: Promise<import("../../types/import").BulkImportResult>;
+  let second!: Promise<import("../../types/import").BulkImportResult>;
+  act(() => {
+    first = result.current.handleBulkAdd(EVENT, [bulkItem("first")], {
+      source: "spreadsheet",
+    });
+    second = result.current.handleBulkAdd(EVENT, [bulkItem("second")], {
+      source: "spreadsheet",
+    });
+  });
+  await expect(first).resolves.toEqual({ status: "invalidated" });
+  const owner = registry.current!;
+  expect(h.stores.pendingDuplicateEvent?.updateOperationId).toBe(owner.id);
+  act(() => registry.finish(owner.id, { status: "cancelled" }));
+  await expect(second).resolves.toEqual({ status: "cancelled" });
+});
+
+it("[ID 3] rechecks the captured import input in the queued save guard", async () => {
+  const h = createHarness();
+  let current = true;
+  let queued!: import("./ApplicationSnapshotCommitPort").ApplicationSnapshotGuard;
+  let continueSave!: () => void;
+  const proceed = new Promise<void>((resolve) => {
+    continueSave = resolve;
+  });
+  h.ports.persistence.commitApplicationSnapshotPatch = vi.fn(
+    async (_patch, _settings, _context, guard) => {
+      queued = guard!;
+      await proceed;
+      queued({
+        ...emptyApplicationSnapshotForImport(),
+        eventLists: h.stores.eventLists,
+      });
+    },
+  );
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  let saving!: Promise<import("../../types/import").BulkImportResult>;
+  act(() => {
+    saving = result.current.applyBulkAdd(EVENT, [bulkItem("incoming")], {
+      request: { id: "input", isCurrent: () => current },
+    });
+  });
+  expect(queued).toBeTypeOf("function");
+  current = false;
+  let outcome: import("../../types/import").BulkImportResult | undefined;
+  await act(async () => {
+    continueSave();
+    outcome = await saving;
+  });
+  expect(outcome).toEqual({ status: "invalidated" });
+  expect(h.stores.eventLists[EVENT]).toHaveLength(1);
+  expect(h.spies.notify).not.toHaveBeenCalled();
+});
+
+it("[ID 9] a reentrant later import keeps its ownership when an earlier import is replaced", async () => {
+  const h = createHarness();
+  const registry = createEventUpdateOperationRegistry();
+  Object.assign(h.ports.state, {
+    eventUpdateOperationsRef: { current: registry },
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  let later!: Promise<import("../../types/import").BulkImportResult>;
+  registry.start({
+    eventName: EVENT,
+    complete: () => {
+      later = result.current.handleBulkAdd(EVENT, [bulkItem("later")], {
+        source: "spreadsheet",
+      });
+    },
+  });
+  let outcome: import("../../types/import").BulkImportResult | undefined;
+  await act(async () => {
+    outcome = await result.current.handleBulkAdd(EVENT, [bulkItem("outer")], {
+      source: "spreadsheet",
+    });
+  });
+  expect(outcome).toEqual({ status: "invalidated" });
+  expect(h.stores.pendingDuplicateEvent?.analysis.incomingItems[0].circle).toBe(
+    "later",
+  );
+  const owner = registry.current!;
+  act(() => registry.finish(owner.id, { status: "cancelled" }));
+  await expect(later).resolves.toEqual({ status: "cancelled" });
+});
+
+it("[ID 9] a stale incoming import cannot invalidate a later selection owner", async () => {
+  const h = createHarness();
+  const registry = createEventUpdateOperationRegistry();
+  Object.assign(h.ports.state, {
+    eventUpdateOperationsRef: { current: registry },
+  });
+  const complete = vi.fn();
+  const owner = registry.start({ eventName: EVENT, complete })!;
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  let outcome: import("../../types/import").BulkImportResult | undefined;
+  await act(async () => {
+    outcome = await result.current.handleBulkAdd(EVENT, [bulkItem("stale")], {
+      source: "spreadsheet",
+      request: { id: "stale", isCurrent: () => false },
+    });
+  });
+  expect(outcome).toEqual({ status: "invalidated" });
+  expect(registry.current).toBe(owner);
+  expect(complete).not.toHaveBeenCalled();
+  expect(h.refs.eventUpdatePreviewEpochRef.current).toBe(0);
+  expect(h.spies.openDuplicateEvent).not.toHaveBeenCalled();
 });

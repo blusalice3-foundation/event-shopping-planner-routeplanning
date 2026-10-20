@@ -1,0 +1,449 @@
+[
+  {
+    "path": "src/App.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 2753,
+    "replacement": 0,
+    "questionDelta": 1,
+    "sha256": "25C2B0320612225FF0B81D4168A7F9E2F7B4858F82FC00869AE31D22A8DAFA4B",
+    "representativeLines": [
+      "      alert(\"参加日がないため処理を停止しました。\");"
+    ]
+  },
+  {
+    "path": "src/app/commands/useEventLifecycleCommands.test.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 253,
+    "replacement": 0,
+    "questionDelta": 1,
+    "sha256": "0FD5394B0E8D2152A848A808D7132CF1C0FFCB873E2F891AD511B742E420E4FF",
+    "representativeLines": [
+      "      \"参加日がないため処理を停止しました。\","
+    ]
+  },
+  {
+    "path": "src/app/commands/useEventLifecycleCommands.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 229,
+    "replacement": 0,
+    "questionDelta": 1,
+    "sha256": "9FC95F242DCC7BD6F65C53E639A2D25038F90BC565179EAF96DD9D0C3CCA315C",
+    "representativeLines": [
+      "          notify(\"参加日がないため処理を停止しました。\");"
+    ]
+  },
+  {
+    "path": "src/app/state/useMapWorkspaceState.test.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 112,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "B728AFBE92A930A8F76FC058B9FCD20E2A2059BF3C41EEFC9DE6DFD17B5A1264",
+    "representativeLines": []
+  },
+  {
+    "path": "src/components/FocusMode.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 3736,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "A0C05C26F84FCA0DB51F5023CD35B5BB60077EDF23628860F2ED4268FC542B25",
+    "representativeLines": [
+      "      setNotification(\"価格と限数の実購入数を入力してください\", \"warning\");",
+      "        \"限数未入力があります。実購入数を入力してください\","
+    ]
+  },
+  {
+    "path": "src/components/ImportScreen.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 1178,
+    "replacement": 0,
+    "questionDelta": 3,
+    "sha256": "4C1E5893C838E570A2B7BE20DCFA0F5F92ED0D451A842FDCCCEDAB19DB8A8851",
+    "representativeLines": [
+      "      // 各参加日タブ中でサークル名が重複するアイテムのURL転記処理",
+      "                  参加日"
+    ]
+  },
+  {
+    "path": "src/components/ItemEditDialog.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 779,
+    "replacement": 0,
+    "questionDelta": 2,
+    "sha256": "A796B41213CDA3B7150532CB8A9FA2000C4AFD01E8CDC7EEFF0092141535D8DC",
+    "representativeLines": [
+      "  if (error === \"actual_required\") return \"実購入数を入力してください\";",
+      "  if (error === \"actual_not_integer\") return \"実購入数は整数で入力してください\";"
+    ]
+  },
+  {
+    "path": "src/components/LimitedPurchaseConfirmDialog.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 125,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "F8F76E25AA2634FC0C219EF23B359EBA096AF6BA67A8CCFDEB31B4172E35C1BC",
+    "representativeLines": []
+  },
+  {
+    "path": "src/components/LimitedPurchaseDialog.test.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 430,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "6B840A0B081D18BDEB8D39FDF744E43A6C069F6674869E958888F1A0A1DF7DE9",
+    "representativeLines": [
+      "      within(dialog).getByText(\"実購入数を入力してください\"),",
+      "      within(dialog).getByText(\"実購入数は整数で入力してください\"),"
+    ]
+  },
+  {
+    "path": "src/components/LimitedPurchaseDialog.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 406,
+    "replacement": 0,
+    "questionDelta": -1,
+    "sha256": "371258F96318CC93BBADB0D67C09BC161FF31A89368419E74BFF061E8F298AE1",
+    "representativeLines": [
+      "  if (error === \"actual_required\") return \"実購入数を入力してください\";",
+      "  if (error === \"actual_not_integer\") return \"実購入数は整数で入力してください\";"
+    ]
+  },
+  {
+    "path": "src/components/ShoppingItemCard.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 1948,
+    "replacement": 0,
+    "questionDelta": -1,
+    "sha256": "5718BEC909685024E41746876A97760EE16B0F55347FFEEDA1FF88C775E72B5F",
+    "representativeLines": [
+      "        onNotify?.(\"対象のイベントまたは参加日が変更されました。\");"
+    ]
+  },
+  {
+    "path": "src/components/SingleQuantityLimitedPurchaseChoiceDialog.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 149,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "DEDD0C98791721D16C8CF50B70999E5E6D0CD2BD9318F7D676E30E5D74384A02",
+    "representativeLines": []
+  },
+  {
+    "path": "src/components/additionalConsistency.test.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 367,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "A3122BADCA6D61F915C76DAFF6C0060E210A26CD3909DBB6A97F8B8D9823E86D",
+    "representativeLines": []
+  },
+  {
+    "path": "src/components/map/CellItemsPopup.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 1496,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "A3FCC7804DAB0A4758AFE4698FA81C8C7B9A7990513F44EF6B14060F2EB15873",
+    "representativeLines": [
+      "                      <dt>実購入数</dt>",
+      "                      限数の実購入数と予定数量は実行モードまたは詳細編集で変更してください"
+    ]
+  },
+  {
+    "path": "src/components/map/MapView.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 2131,
+    "replacement": 0,
+    "questionDelta": 18,
+    "sha256": "FD6473BBC361145FB4285725CF247718687BD63A7FD031D86C92DB8F571A8308",
+    "representativeLines": []
+  },
+  {
+    "path": "src/components/map/MapView.visitProjection.integration.test.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 618,
+    "replacement": 0,
+    "questionDelta": 17,
+    "sha256": "64EA5E974D2ABF2CF325C773B7E41DBC430AB2DBD006E1284A0D311F78B0BED8",
+    "representativeLines": []
+  },
+  {
+    "path": "src/features/app-shell/components/AppMainContent.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 996,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "56E27E32D167C8F433BB456A6A01E852B0744956E869C68348B04D796EC2CEE4",
+    "representativeLines": []
+  },
+  {
+    "path": "src/features/app-shell/components/AppOverlayLayer.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 934,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "0AB3FB474DF0F9FD857808520809278E85BD0F8187C78C20135A0DA7975ACDDD",
+    "representativeLines": []
+  },
+  {
+    "path": "src/hooks/useDisableLimitedPurchaseQuantityCheck.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 37,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "80E6B005428F7AA88DB6320C284B80241F35C83105B163936257B3158B2C3A4E",
+    "representativeLines": []
+  },
+  {
+    "path": "src/hooks/useDisablePriceUndefinedCheck.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 32,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "E046879E74C975365DAA8946EC892831024F76B9261DC56717243BF522A157D1",
+    "representativeLines": []
+  },
+  {
+    "path": "src/hooks/useNumberCellOutlineStyle.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 37,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "F6A708C1D32B44F2DCD371ACE894FDE421C52E48959A5A0ADA81A45FA087631D",
+    "representativeLines": []
+  },
+  {
+    "path": "src/hooks/useThemeMode.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 47,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "410020179CD6FFE2DB5DEB5B081A43032BB714781736FFE64C824FA3FF395BBB",
+    "representativeLines": []
+  },
+  {
+    "path": "src/hooks/useUIVisibilitySettings.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 162,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "92199A62F7759A60ED9CE8D8B23152D953334CF31672EAA42DF8D5B112773B10",
+    "representativeLines": []
+  },
+  {
+    "path": "src/components/FocusMode.limitedInteraction.integration.test.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 193,
+    "replacement": 0,
+    "questionDelta": 7,
+    "sha256": "45D9FBE3FFB0864680B2EAFAD46CC45AB6B47FBE33EC0A2E2682CD74FF0E1BFA",
+    "representativeLines": [
+      "        name: \"実購入数\",",
+      "        name: \"実購入数\","
+    ]
+  },
+  {
+    "path": "src/components/ManualItemDate.persistence.integration.test.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 382,
+    "replacement": 0,
+    "questionDelta": 15,
+    "sha256": "BD627F51275AF24BE399AC4D202AC302FA070F0A746BEEC876897695977D70C0",
+    "representativeLines": [
+      "  remarks: \"ユーザー登録\",",
+      "    const control = screen.getByLabelText(\"参加日\");"
+    ]
+  },
+  {
+    "path": "src/components/ShoppingItemCard.limitedInteraction.integration.test.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 160,
+    "replacement": 0,
+    "questionDelta": 1,
+    "sha256": "3A12DA6473A2FF67740F97187A601B217CD87C3341EBC3EB12E39324C452F4DC",
+    "representativeLines": [
+      "      const actual = within(dialog).getByRole(\"textbox\", { name: \"実購入数\" });",
+      "    const actual = screen.getByRole(\"textbox\", { name: \"実購入数\" });"
+    ]
+  },
+  {
+    "path": "src/components/map/MapView.popupRelay.integration.test.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 362,
+    "replacement": 0,
+    "questionDelta": 11,
+    "sha256": "3BE21F7B1FDB47FEBCF7739936999BA58040A867851F64536E789E3C9B26D0AD",
+    "representativeLines": []
+  },
+  {
+    "path": "src/features/app-shell/components/AppOverlayLayer.eventCancellation.integration.test.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 129,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "8F84FC3AEB3F34BF5125FD19616D56A71521D54418EC550A0E8D5DF773DC8212",
+    "representativeLines": []
+  },
+  {
+    "path": "src/features/map/hooks/useMapPopupSession.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 56,
+    "replacement": 0,
+    "questionDelta": 3,
+    "sha256": "9C4707650F5120DC9CCB651DBDBBCBA4A2F9FD76C67D4F8FFE597194A2CB64DE",
+    "representativeLines": []
+  },
+  {
+    "path": "src/hooks/preferencePersistenceFailure.test.tsx",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 181,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "58FAC598B0C8156C111B03BF8DFDBC6A235D01A22194C5011464FB56E7DFE73A",
+    "representativeLines": []
+  },
+  {
+    "path": "tests/browser/priority-dialog-interaction.spec.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 230,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "2FCA98C4EC97E566EDCFAF96E6A5F1B4B5F47ED3C9044700CA172DFA0DD7CC93",
+    "representativeLines": [
+      "  remarks: \"ユーザー登録\",",
+      "    const actual = main.getByRole(\"textbox\", { name: \"実購入数\", exact: true });"
+    ]
+  },
+  {
+    "path": "tests/browser/priority-event-overlay.spec.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 188,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "8BC3FD137ACFB19B7CFA444F6A3CDF8CE6362E9DCBB3C46F71D22F847A0BC182",
+    "representativeLines": [
+      "          remarks: \"ユーザー登録\",",
+      "  expect(rows.join(\"\\n\")).toContain(\"ユーザー登録\");"
+    ]
+  },
+  {
+    "path": "tests/browser/priority-manual-item-consistency.spec.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 379,
+    "replacement": 0,
+    "questionDelta": 18,
+    "sha256": "2F1C2B23284BEA871B602AF2BE34E597CE05A78092867950425222979BE2544C",
+    "representativeLines": [
+      "                  remarks: \"ユーザー登録\",",
+      "    await page.getByLabel(\"参加日\", { exact: true }).selectOption(\"__custom__\");"
+    ]
+  },
+  {
+    "path": "tests/browser/priority-operation-diagnostics.spec.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 491,
+    "replacement": 0,
+    "questionDelta": 8,
+    "sha256": "E455FB4AE65E5CA5F55B45C8AD675210648E3E228125F255B5454E66D891F497",
+    "representativeLines": [
+      "    remarks: \"ユーザー登録\",",
+      "          name: \"実購入数\","
+    ]
+  },
+  {
+    "path": "tests/browser/priority-preference-consistency.spec.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 262,
+    "replacement": 0,
+    "questionDelta": 0,
+    "sha256": "C55C3EA311ED252667D86E383958AAA29C6C897924CD6597BD318203FDB88A8C",
+    "representativeLines": [
+      "  circle: \"ユーザー登録\","
+    ]
+  },
+  {
+    "path": "tests/browser/priority-relay-diagnostics.spec.ts",
+    "encoding": "UTF-8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 665,
+    "replacement": 0,
+    "questionDelta": 40,
+    "sha256": "83EF33E69D44170626120F4C9CC12B564F1BA5D380CE8F217B01AB30C6EB6AC0",
+    "representativeLines": [
+      "    remarks: \"ユーザー登録\","
+    ]
+  }
+]

@@ -1,0 +1,151 @@
+{
+  "sourceSha": "e51d24e62d8697fb06e61e7bd40072dd4ee1f534",
+  "srcTree": "e56af9e023bc073f4bf0bcae7ab5a45c2eeb3ca3",
+  "trackedWorkingTreeClean": true,
+  "managedFilesByteIdentical": 1077,
+  "vitest": {
+    "skipped": 88,
+    "passed": 3255,
+    "failed": 0
+  },
+  "browser": {
+    "startTime": "2026-10-19T23:57:07.507Z",
+    "duration": 331833.975,
+    "expected": 248,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "performance": {
+    "generatedAt": "2026-10-20T09:24:06.0021108+09:00",
+    "protocol": {
+      "selfChecksPassed": true,
+      "p95": "nearest rank",
+      "p95LimitMs": 100.0,
+      "rawSamplesNeverPooledAcrossProfilesOrAttempts": true,
+      "medianLimitMs": 55.0,
+      "median": "average of two middle values (same value twice for odd N)",
+      "minimumSamples": 20
+    },
+    "reports": {
+      "browser": {
+        "stats": {
+          "startTime": "2026-10-19T23:57:07.507Z",
+          "duration": 331833.975,
+          "expected": 248,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        },
+        "errors": [],
+        "retriedAttempts": 0
+      },
+      "shopping": {
+        "stats": {
+          "startTime": "2026-10-20T00:02:39.953Z",
+          "duration": 1101856.7449999999,
+          "expected": 24,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        },
+        "errors": [],
+        "retriedAttempts": 0
+      },
+      "drag": {
+        "stats": {
+          "startTime": "2026-10-20T00:21:02.486Z",
+          "duration": 145626.27599999998,
+          "expected": 8,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        },
+        "errors": [],
+        "retriedAttempts": 0
+      }
+    },
+    "shopping": {
+      "maximumMedianMs": 48.400000005960464,
+      "categories": 144,
+      "required150And500Categories": 96,
+      "maximumP95Ms": 57.29999999701977,
+      "profiles": 24,
+      "legacy1500Categories": 48,
+      "failedCategories": []
+    },
+    "drag": {
+      "profiles": 8,
+      "guideObservations": 1920.0,
+      "pointerMutationRequests": 0.0,
+      "maximumRecomputedGuideOffsetPx": 0.0,
+      "pointerCompletedTransactions": 0.0,
+      "maximumP95Ms": 72.1000000089407,
+      "reportedOnlyOffsetObservations": 480.0,
+      "unrelatedRenderUpdates": 0.0,
+      "failedCategories": [],
+      "independentlyRecomputedRectangles": 1440.0,
+      "actualBoundarySwitches": 160.0,
+      "categories": 60,
+      "maximumReportedGuideOffsetPx": 0.0,
+      "maximumMedianMs": 52.94999999552965
+    },
+    "ordinaryIo": {
+      "timingIsObservationOnly": true,
+      "unchangedOperations": 3,
+      "operations": 3
+    },
+    "baselineStartEndComparison": {
+      "profiles": 8,
+      "acceptance": "Separate descriptive comparison; no new start/end threshold and no substituted pre-implementation cross-column UI timings",
+      "baselineLabel": "c4e981bdcf9c00cda7887faf212964ef53b4478a comprehensive strict report"
+    },
+    "notes": [
+      "Response acceptance excludes separately recorded save completion times.",
+      "Guide offsets are checked for every observed guide. Full owner/guide rectangles are independently recomputed where emitted; auto-scroll currently emits a browser-measured offset without both complete rectangles.",
+      "Boundary switches are independently counted from observed insert-guide edges, with the test-verified before setup as predecessor, and checked against the emitted transition records.",
+      "Historical evidence is read-only. No samples from failed or retried attempts are silently discarded or combined."
+    ],
+    "passed": true,
+    "failures": []
+  },
+  "apiPassed": 21,
+  "quality": {
+    "dbCompatibility": 0,
+    "releaseTypecheck": 0,
+    "typecheck": 0,
+    "membership": 0,
+    "encoding": 0,
+    "standardReleaseBuild": 0,
+    "diffCheck": 0,
+    "eslintFinal": 0,
+    "prettierFinal": 0,
+    "architecture": 0
+  },
+  "qualityLogs": [
+    "encoding-integrated-final.log",
+    "typecheck-final.log",
+    "releaseTypecheck.log",
+    "architecture.log",
+    "membership.log",
+    "dbCompatibility.log",
+    "eslint-final.log",
+    "prettier-final.log",
+    "build-final-verified.log"
+  ],
+  "historicalFiles": [
+    {
+      "path": "docs/user-operation-consistency-remediation-plan-20261018.md",
+      "sha256": "D466D6C3F20824C3ADA9E38A7904D828D4F5014C9B82082B1709B884BC73584A",
+      "unchanged": true
+    },
+    {
+      "path": "artifacts/consistency-independent-audit-20261020-024614/review-report.txt",
+      "sha256": "D1C28CE802622BDB8021A7C3A7B806D25EE647D26D973C25C50C34125A74C750",
+      "unchanged": true
+    }
+  ],
+  "preexistingUntrackedEntriesPreserved": 25,
+  "resultDocument": "docs/user-operation-consistency-remaining-fixes-results-20261020.md",
+  "scopeNote": "Final authority is vitest-final.json, browser.json, shopping-performance.json, drag-performance.json and independent-analysis/summary.json. Earlier attempts remain separately preserved."
+}

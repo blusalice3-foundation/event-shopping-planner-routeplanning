@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useModalFocusBoundary } from "../../hooks/useModalFocusBoundary";
+import { useEffect, useRef, useState } from "react";
 import type {
   MapReimportOptions,
   MapReimportPlan,
@@ -6,6 +7,8 @@ import type {
 
 export interface MapReimportConfirmationDialogProps {
   isOpen: boolean;
+  requestPending?: boolean;
+  canCancel?: boolean;
   plan: MapReimportPlan | null;
   onCancel: () => void;
   onConfirm: (options: MapReimportOptions) => void | Promise<void>;
@@ -19,12 +22,17 @@ export default function MapReimportConfirmationDialog({
   plan,
   onCancel,
   onConfirm,
+  requestPending = false,
+  canCancel = true,
 }: MapReimportConfirmationDialogProps) {
+  const dialogRef = useRef<HTMLElement>(null);
+  useModalFocusBoundary({ isOpen: isOpen && plan !== null, dialogRef });
   const [preserveMaplessHalls, setPreserveMaplessHalls] = useState(true);
   const [targetMapKeys, setTargetMapKeys] = useState<Record<string, string>>(
     {},
   );
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -39,11 +47,14 @@ export default function MapReimportConfirmationDialog({
   const { impact } = plan;
   const confirmationDisabled =
     busy ||
+    requestPending ||
     plan.targets.some(
       (target) =>
         target.targetChoiceRequired && !targetMapKeys[target.eventDate],
     );
   const confirmImport = (skipImpactConfirmation = false) => {
+    if (busyRef.current || requestPending) return;
+    busyRef.current = true;
     setBusy(true);
     void Promise.resolve(
       onConfirm({
@@ -51,7 +62,10 @@ export default function MapReimportConfirmationDialog({
         targetMapKeys,
         ...(skipImpactConfirmation ? { skipImpactConfirmation: true } : {}),
       }),
-    ).finally(() => setBusy(false));
+    ).finally(() => {
+      busyRef.current = false;
+      setBusy(false);
+    });
   };
 
   return (
@@ -59,10 +73,11 @@ export default function MapReimportConfirmationDialog({
       role="presentation"
       className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/[0.55] p-4"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !busy) onCancel();
+        if (event.target === event.currentTarget && canCancel) onCancel();
       }}
     >
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="map-reimport-confirmation-title"
@@ -89,7 +104,7 @@ export default function MapReimportConfirmationDialog({
                     更新先のマップ
                     <select
                       aria-label={`${target.eventDate}の更新先マップ`}
-                      disabled={busy}
+                      disabled={busy || requestPending}
                       value={targetMapKeys[target.eventDate] ?? ""}
                       onChange={(event) =>
                         setTargetMapKeys((current) => ({
@@ -143,7 +158,7 @@ export default function MapReimportConfirmationDialog({
           <input
             type="checkbox"
             checked={preserveMaplessHalls}
-            disabled={busy}
+            disabled={busy || requestPending}
             onChange={(event) =>
               setPreserveMaplessHalls(event.currentTarget.checked)
             }
@@ -170,7 +185,13 @@ export default function MapReimportConfirmationDialog({
         )}
 
         <div className="flex flex-wrap justify-end gap-2">
-          <button type="button" disabled={busy} onClick={onCancel}>
+          <button
+            type="button"
+            disabled={!canCancel}
+            onClick={() => {
+              if (canCancel) onCancel();
+            }}
+          >
             キャンセル
           </button>
           <button

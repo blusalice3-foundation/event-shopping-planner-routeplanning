@@ -13,6 +13,7 @@ import { getSpaceKey } from "../utils/spaceGrouping";
 import { parseGroupId, groupItemsByHallOrder } from "../utils/hallGrouping";
 import { acquireBodyScrollLock } from "../utils/bodyScrollLock";
 import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
+import { swapVisitItems } from "../utils/swapVisitItems";
 import GripVerticalIcon from "./icons/GripVerticalIcon";
 
 // 優先度レベルの型
@@ -167,7 +168,7 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
   // 2つ選択して入れ替えモード
   const [swapMode, setSwapMode] = useState(false);
   const [swapFirstHallId, setSwapFirstHallId] = useState<string | null>(null);
-  const [swapFirstIndex, setSwapFirstIndex] = useState<number | null>(null);
+  const [swapFirstItemId, setSwapFirstItemId] = useState<string | null>(null);
 
   // 優先度メニュー用のstate（クリックで表示）
   const [menuItem, setMenuItem] = useState<ShoppingItem | null>(null);
@@ -467,12 +468,35 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
 
   // グループ内で2つのアイテムを入れ替え（異スペース間はスペースグループ丸ごと入れ替え）
   const swapItemsInHall = useCallback(
-    (groupId: string | null, index1: number, index2: number) => {
-      if (index1 === index2) return;
-      // moveItemInHallと同じロジックで処理（スペースグループ入れ替え対応）
-      moveItemInHall(groupId, index1, index2);
+    (groupId: string | null, firstId: string, secondId: string) => {
+      const group = groupedItems.find(
+        (candidate) => candidate.groupId === groupId,
+      );
+      if (!group) return;
+      const swapped = swapVisitItems(
+        group.items.map((entry) => entry.item),
+        firstId,
+        secondId,
+      );
+      if (!swapped) return;
+      const entries = new Map(
+        group.items.map((entry) => [entry.item.id, entry]),
+      );
+      const nextGroups = groupedItems.map((candidate) =>
+        candidate === group
+          ? {
+              ...candidate,
+              items: swapped.map((item, hallIndex) => ({
+                ...entries.get(item.id)!,
+                hallIndex,
+              })),
+            }
+          : candidate,
+      );
+      const next = rebuildItemsFromGroups(nextGroups);
+      void applyHistoryOrder(next, () => pushHistory(next));
     },
-    [moveItemInHall],
+    [groupedItems, rebuildItemsFromGroups, applyHistoryOrder, pushHistory],
   );
 
   // グループ内で区間反転
@@ -567,21 +591,28 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
   const handleItemClick = useCallback(
     (groupId: string | null, hallIndex: number) => {
       if (swapMode) {
-        if (swapFirstIndex === null) {
+        if (swapFirstItemId === null) {
           // 1つ目を選択
           setSwapFirstHallId(groupId);
-          setSwapFirstIndex(hallIndex);
+          setSwapFirstItemId(
+            groupedItems.find((group) => group.groupId === groupId)?.items[
+              hallIndex
+            ]?.item.id ?? null,
+          );
         } else {
           // 2つ目を選択
           if (swapFirstHallId === groupId) {
             // 同一グループ内なので入れ替え実行
-            swapItemsInHall(groupId, swapFirstIndex, hallIndex);
+            const secondId = groupedItems.find(
+              (group) => group.groupId === groupId,
+            )?.items[hallIndex]?.item.id;
+            if (secondId) swapItemsInHall(groupId, swapFirstItemId, secondId);
           } else {
             // 異なるグループなので警告
             alert("異なるグループのアイテム同士は入れ替えできません");
           }
           setSwapFirstHallId(null);
-          setSwapFirstIndex(null);
+          setSwapFirstItemId(null);
           setSwapMode(false);
         }
       } else if (rangeSelectionMode) {
@@ -606,9 +637,10 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
       }
     },
     [
+      groupedItems,
       swapMode,
       swapFirstHallId,
-      swapFirstIndex,
+      swapFirstItemId,
       rangeSelectionMode,
       rangeStartHallId,
       rangeStartIndex,
@@ -1090,7 +1122,7 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
               onClick={() => {
                 setSwapMode(!swapMode);
                 setSwapFirstHallId(null);
-                setSwapFirstIndex(null);
+                setSwapFirstItemId(null);
                 setRangeSelectionMode(false);
                 setRangeStartHallId(null);
                 setRangeStartIndex(null);
@@ -1109,7 +1141,7 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
                 setRangeEndIndex(null);
                 setSwapMode(false);
                 setSwapFirstHallId(null);
-                setSwapFirstIndex(null);
+                setSwapFirstItemId(null);
               }}
               className={`px-3 py-1.5 text-sm rounded-md ${rangeSelectionMode ? "bg-purple-600 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"}`}
             >
@@ -1145,12 +1177,12 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
                   終了点を選択
                 </span>
               )}
-            {swapMode && swapFirstIndex === null && (
+            {swapMode && swapFirstItemId === null && (
               <span className="text-xs text-blue-600 dark:text-blue-400 ml-2">
                 1つ目を選択
               </span>
             )}
-            {swapMode && swapFirstIndex !== null && (
+            {swapMode && swapFirstItemId !== null && (
               <span className="text-xs text-green-600 dark:text-green-400 ml-2">
                 2つ目を選択（同一グループ内）
               </span>
@@ -1244,7 +1276,7 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
                             : ""
                         } ${
                           swapFirstHallId === group.groupId &&
-                          swapFirstIndex === hallIndex
+                          swapFirstItemId === item.id
                             ? "bg-green-100 dark:bg-green-900/30"
                             : ""
                         } ${
@@ -1513,7 +1545,7 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
           onClick={() => {
             setSwapMode(!swapMode);
             setSwapFirstHallId(null);
-            setSwapFirstIndex(null);
+            setSwapFirstItemId(null);
             setRangeSelectionMode(false);
             setRangeStartHallId(null);
             setRangeStartIndex(null);
@@ -1532,7 +1564,7 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
             setRangeEndIndex(null);
             setSwapMode(false);
             setSwapFirstHallId(null);
-            setSwapFirstIndex(null);
+            setSwapFirstItemId(null);
           }}
           className={`px-3 py-1.5 text-sm rounded-md transition-colors ${rangeSelectionMode ? "bg-purple-600 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"}`}
         >
@@ -1558,12 +1590,12 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
 
         {/* 操作ヒント */}
         <div className="flex-1 text-right">
-          {swapMode && swapFirstIndex === null && (
+          {swapMode && swapFirstItemId === null && (
             <span className="text-xs text-slate-500 dark:text-slate-400">
               1つ目を選択してください
             </span>
           )}
-          {swapMode && swapFirstIndex !== null && (
+          {swapMode && swapFirstItemId !== null && (
             <span className="text-xs text-green-600 dark:text-green-400">
               2つ目を選択してください（同一グループ内）
             </span>
@@ -1670,7 +1702,7 @@ const VisitListPanel: React.FC<VisitListPanelProps> = ({
                         : ""
                     } ${
                       swapFirstHallId === group.groupId &&
-                      swapFirstIndex === hallIndex
+                      swapFirstItemId === item.id
                         ? "bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500"
                         : ""
                     } ${

@@ -115,7 +115,7 @@ it.each(["items-only", "source-switch"] as const)(
         actions: {
           applyBulkAdd: vi.fn(async () => ({ status: "failed" as const })),
           commitEventUpdateState: commit,
-          openEventUpdate: setPending,
+          openEventUpdate: (next) => setPending(next),
           openUrlUpdate: vi.fn(),
           closeEventOverlay: () => setPending(null),
           confirmEventOverlay: () => setPending(null),
@@ -134,7 +134,10 @@ it.each(["items-only", "source-switch"] as const)(
           : selectAppOverlayReadModel(createInitialAppOverlayState()),
         overlayCommands: { item: {}, event: {}, mapEditor: {} },
         model: {
-          item: { items: [] },
+          item: {
+            items: [],
+            isEventUpdateSaving: commands.isEventUpdateSaving,
+          },
           event: {
             activeEventName: EVENT,
             eventMetadata: eventMetadataRef.current,
@@ -201,6 +204,36 @@ it.each(["items-only", "source-switch"] as const)(
     ).toBe(4);
     expect(durable.current.eventLists[EVENT]).toBe(items);
 
+    expect(
+      screen.getByRole("checkbox", {
+        name: /スプレッドシートの予定数量へ変更する/,
+      }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("checkbox", {
+        name: /スプレッドシートの予定数量へ変更する/,
+      }),
+    ).toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: confirmName }));
+    expect(commit).toHaveBeenCalledOnce();
+    await act(async () => {
+      failFirstSave(
+        Object.assign(new Error("容量不足"), { name: "QuotaExceededError" }),
+      );
+    });
+    expect(durable.current.eventLists[EVENT]).toBe(items);
+    expect(notify).toHaveBeenCalledWith(
+      "イベントを保存できませんでした。確認内容を保持しています。もう一度更新してください。",
+    );
+    expect(
+      screen.getByRole("region", { name: "シート取込結果" }),
+    ).toHaveTextContent("必須項目不足による除外: 1行");
+
+    expect(
+      screen.getByRole("checkbox", {
+        name: /スプレッドシートの予定数量へ変更する/,
+      }),
+    ).toBeEnabled();
     fireEvent.click(
       screen.getByRole("checkbox", {
         name: /スプレッドシートの予定数量へ変更する/,
@@ -211,21 +244,6 @@ it.each(["items-only", "source-switch"] as const)(
         name: /スプレッドシートの予定数量へ変更する/,
       }),
     ).not.toBeChecked();
-    fireEvent.click(screen.getByRole("button", { name: confirmName }));
-    expect(commit).toHaveBeenCalledOnce();
-    await act(async () => {
-      failFirstSave(
-        Object.assign(new Error("容量不足"), { name: "QuotaExceededError" }),
-      );
-    });
-    expect(durable.current.eventLists[EVENT]).toBe(items);
-    expect(notify).toHaveBeenCalledWith(
-      "イベントを保存できませんでした。表示内容は変更されていません。",
-    );
-    expect(
-      screen.getByRole("region", { name: "シート取込結果" }),
-    ).toHaveTextContent("必須項目不足による除外: 1行");
-
     fireEvent.click(screen.getByRole("button", { name: confirmName }));
     await waitFor(() => expect(commit).toHaveBeenCalledTimes(2));
     expect(

@@ -9,6 +9,7 @@ type VisitGroup = {
 
 interface UseAutoSkipEmptyVisitArgs {
   paused?: boolean;
+  finishPhase: () => void;
   isCompleted: boolean;
   allVisitsLength: number;
   currentVisitDisplayItemsLength: number;
@@ -30,6 +31,7 @@ interface UseAutoSkipEmptyVisitArgs {
 
 export function useAutoSkipEmptyVisit({
   paused = false,
+  finishPhase,
   isCompleted,
   allVisitsLength,
   currentVisitDisplayItemsLength,
@@ -48,37 +50,32 @@ export function useAutoSkipEmptyVisit({
   setCurrentPhaseIndex,
   setIsCompleted,
 }: UseAutoSkipEmptyVisitArgs) {
-  const autoAdvanceProcessedRef = useRef(false);
+  const autoAdvanceProcessedRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (paused) {
-      autoAdvanceProcessedRef.current = false;
+      autoAdvanceProcessedRef.current = null;
       return;
     }
 
     if (isResumeChoiceOpen) {
-      autoAdvanceProcessedRef.current = false;
+      autoAdvanceProcessedRef.current = null;
       return;
     }
 
     if (isCompleted || allVisitsLength === 0) {
-      autoAdvanceProcessedRef.current = false;
+      autoAdvanceProcessedRef.current = null;
       return;
     }
 
     if (currentVisitDisplayItemsLength > 0) {
-      autoAdvanceProcessedRef.current = false;
+      autoAdvanceProcessedRef.current = null;
       return;
     }
 
-    if (autoAdvanceProcessedRef.current) return;
-
-    if (currentPhaseVisits.length === 0) {
-      autoAdvanceProcessedRef.current = false;
-      return;
-    }
-
-    autoAdvanceProcessedRef.current = true;
+    const position = `${currentPhase}:${currentPhaseIndex}`;
+    if (autoAdvanceProcessedRef.current === position) return;
+    autoAdvanceProcessedRef.current = position;
 
     for (let i = currentPhaseIndex + 1; i < currentPhaseVisits.length; i++) {
       const visit = currentPhaseVisits[i];
@@ -99,54 +96,9 @@ export function useAutoSkipEmptyVisit({
     }
 
     clearAutoAdvanceTimer();
-
-    if (currentPhase === "normal") {
-      const postponedIds = new Set(
-        executeItems
-          .filter((item) => item.purchaseStatus === "Postpone")
-          .map((item) => item.id),
-      );
-      const lateIds = new Set(
-        executeItems
-          .filter((item) => item.purchaseStatus === "Late")
-          .map((item) => item.id),
-      );
-
-      if (postponedIds.size > 0) {
-        setPostponedPhaseItemIds(postponedIds);
-        setLatePhaseItemIds(lateIds);
-        setNotification("後回しアイテムの巡回を開始します");
-        setCurrentPhase("postponed");
-        setCurrentPhaseIndex(0);
-      } else if (lateIds.size > 0) {
-        setPostponedPhaseItemIds(postponedIds);
-        setLatePhaseItemIds(lateIds);
-        setNotification("遅参アイテムの巡回を開始します");
-        setCurrentPhase("late");
-        setCurrentPhaseIndex(0);
-      } else {
-        setIsCompleted(true);
-      }
-    } else if (currentPhase === "postponed") {
-      const currentLateIds = new Set(latePhaseItemIds);
-      executeItems.forEach((item) => {
-        if (item.purchaseStatus === "Late") {
-          currentLateIds.add(item.id);
-        }
-      });
-
-      if (currentLateIds.size > 0) {
-        setLatePhaseItemIds(currentLateIds);
-        setNotification("遅参アイテムの巡回を開始します");
-        setCurrentPhase("late");
-        setCurrentPhaseIndex(0);
-      } else {
-        setIsCompleted(true);
-      }
-    } else {
-      setIsCompleted(true);
-    }
+    finishPhase();
   }, [
+    finishPhase,
     paused,
     isCompleted,
     allVisitsLength,
@@ -173,15 +125,13 @@ export function useAutoSkipEmptyVisit({
       !isResumeChoiceOpen &&
       !isCompleted &&
       allVisitsLength > 0 &&
-      currentVisitDisplayItemsLength === 0 &&
-      currentPhaseVisits.length > 0,
+      currentVisitDisplayItemsLength === 0,
     [
       paused,
       isResumeChoiceOpen,
       isCompleted,
       allVisitsLength,
       currentVisitDisplayItemsLength,
-      currentPhaseVisits.length,
     ],
   );
 }

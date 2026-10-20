@@ -1,0 +1,42 @@
+[
+  {
+    "path": "artifacts/consistency-audit-20261019-1230/browser-output/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+    "length": 45
+  },
+  {
+    "path": "artifacts/consistency-audit-20261019-1230/browser-report.json",
+    "sha256": "27D9A55C9A49EF84A6976157654038366C4080879D4F01F645292156DABC98D8",
+    "length": 370500
+  },
+  {
+    "path": "artifacts/playwright-review-20261018/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+    "length": 45
+  },
+  {
+    "path": "artifacts/playwright-review-storage-outcome-20261018/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+    "length": 45
+  },
+  {
+    "path": "artifacts/playwright-review-u01u02-20261018/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+    "length": 45
+  },
+  {
+    "path": "artifacts/playwright-review-u03u04-20261018/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+    "length": 45
+  },
+  {
+    "path": "artifacts/playwright-review-u06u07-20261018/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+    "length": 45
+  },
+  {
+    "path": "docs/user-operation-consistency-remediation-plan-20261018.md",
+    "sha256": "D466D6C3F20824C3ADA9E38A7904D828D4F5014C9B82082B1709B884BC73584A",
+    "length": 98757
+  }
+]

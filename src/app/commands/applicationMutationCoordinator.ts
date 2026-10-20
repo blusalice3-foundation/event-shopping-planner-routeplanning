@@ -1,3 +1,7 @@
+import {
+  isPersistenceWriteStopReason,
+  type PersistenceWriteStopReason,
+} from "../ports/PersistenceCommandPort";
 import { registerItemGuardGenerations } from "../../utils/itemContentGuard";
 import { dayMutationScope } from "../../features/consistency/domain/dayScope";
 import { scopeDaySnapshot } from "../../features/consistency/domain/dayMutation";
@@ -138,8 +142,9 @@ export interface MutationCoordinatorPorts {
     invalidatedEvents?: readonly string[],
   ): Promise<void>;
   apply(snapshot: PersistenceSnapshot, invalidatedEvents: string[]): void;
-  onApplyFailure?(error: CommittedStateApplyError): void;
+  onApplyFailure?(error: PersistenceWriteStopReason): void;
   onExpired?(operationIds: string[]): void;
+  onPendingStateChanged?(operationId: string): void;
 }
 function clearedConfirmation(
   previous: MutationConfirmation,
@@ -192,7 +197,26 @@ export function createApplicationMutationCoordinator(
 ) {
   let tail: Promise<unknown> = Promise.resolve();
   let sequence = 0;
-  let stopped = false;
+  let stopped: PersistenceWriteStopReason | undefined;
+  function notifyPendingStateChanged(id: string): void {
+    try {
+      ports.onPendingStateChanged?.(id);
+    } catch (error) {
+      // Read-model observers cannot change a persistence result or skip apply.
+      console.error("Mutation pending-state notification failed.", error);
+    }
+  }
+  function stopWrites(reason: PersistenceWriteStopReason) {
+    if (stopped) return;
+    stopped = reason;
+    try {
+      ports.onApplyFailure?.(reason);
+    } finally {
+      const ids = [...pending.keys()];
+      pending.clear();
+      for (const id of ids) notifyPendingStateChanged(id);
+    }
+  }
   const generations = new Map<string, number>();
   let durableGenerations: Readonly<Record<string, number>> = {};
   const durableGeneration = (
@@ -211,6 +235,20 @@ export function createApplicationMutationCoordinator(
       committing?: boolean;
     }
   >();
+  function deletePending(id: string): boolean {
+    const removed = pending.delete(id);
+    if (removed) notifyPendingStateChanged(id);
+    return removed;
+  }
+  function setCommitting(
+    operation: NonNullable<ReturnType<typeof pending.get>>,
+    committing: boolean,
+  ): void {
+    if (operation.committing === committing) return;
+    operation.committing = committing;
+    if (pending.get(operation.intent.id) === operation)
+      notifyPendingStateChanged(operation.intent.id);
+  }
   const completed = new Set<string>();
   let openItemBatch: {
     ids: string[];
@@ -225,10 +263,15 @@ export function createApplicationMutationCoordinator(
     );
   function enqueue<T>(task: () => Promise<T> | T): Promise<T> {
     openItemBatch = null;
-    const result = tail.then(() => {
-      if (stopped) throw new Error("保存済み状態を再読み込みしてください。");
-      return task();
-    });
+    const result = tail
+      .then(() => {
+        if (stopped) throw stopped;
+        return task();
+      })
+      .catch((error) => {
+        if (isPersistenceWriteStopReason(error)) stopWrites(error);
+        throw stopped ?? error;
+      });
     tail = result.catch(() => undefined);
     return result;
   }
@@ -242,7 +285,7 @@ export function createApplicationMutationCoordinator(
         ([, value]) => value.generation !== generation(value.intent.events),
       )
       .map(([operationId]) => operationId);
-    for (const operationId of expired) pending.delete(operationId);
+    for (const operationId of expired) deletePending(operationId);
     if (expired.length) ports.onExpired?.(expired);
   }
   async function execute(
@@ -256,12 +299,13 @@ export function createApplicationMutationCoordinator(
       !operation ||
       operation.generation !== generation(operation.intent.events)
     ) {
-      pending.delete(id);
+      deletePending(id);
       return { status: "expired" };
     }
     if (confirmation && operation.token !== confirmation)
       return { status: "expired" };
     const validity = (): MutationResult | undefined => {
+      if (stopped) throw stopped;
       if (pending.get(id) !== operation) return { status: "cancelled" };
       if (
         operation.generation !== generation(operation.intent.events) ||
@@ -282,7 +326,7 @@ export function createApplicationMutationCoordinator(
       !confirmation &&
       !ports.hasPendingAcceptedChanges?.(id)
     ) {
-      operation.committing = true;
+      setCommitting(operation, true);
       try {
         const result = await ports.commitDayMutation(
           operation.intent.dayMutation,
@@ -304,21 +348,20 @@ export function createApplicationMutationCoordinator(
           );
           durableGenerations = { ...nextGenerations };
           completed.add(id);
-          pending.delete(id);
+          deletePending(id);
           invalidate(invalidated);
           try {
             ports.apply(result.read.snapshot, invalidated);
           } catch (error) {
-            stopped = true;
             const failure = new CommittedStateApplyError(error);
-            ports.onApplyFailure?.(failure);
+            stopWrites(failure);
             throw failure;
           }
           expirePending();
           return { status: "committed", snapshot: result.read.snapshot };
         }
       } finally {
-        operation.committing = false;
+        setCommitting(operation, false);
       }
       const afterCommand = validity();
       if (afterCommand) return afterCommand;
@@ -355,9 +398,8 @@ export function createApplicationMutationCoordinator(
             externallyInvalidated,
           );
         } catch (error) {
-          stopped = true;
           const failure = new CommittedStateApplyError(error);
-          ports.onApplyFailure?.(failure);
+          stopWrites(failure);
           throw failure;
         }
       }
@@ -392,7 +434,7 @@ export function createApplicationMutationCoordinator(
         if (error instanceof MutationTargetMissingError) {
           // The other tab's removal is durable. End stale sessions and adopt
           // that snapshot without writing any part of this proposed edit.
-          pending.delete(id);
+          deletePending(id);
           invalidate(operation.intent.events);
           expirePending();
           ports.apply(
@@ -420,6 +462,7 @@ export function createApplicationMutationCoordinator(
           };
           operation.token = token;
           operation.confirmation = review;
+          notifyPendingStateChanged(id);
           return {
             status: "confirmation-required",
             token,
@@ -428,7 +471,7 @@ export function createApplicationMutationCoordinator(
         }
       }
       if (plan.skipCommit) {
-        pending.delete(id);
+        deletePending(id);
         return { status: "expired" };
       }
       if (ports.hasPendingAcceptedChanges?.(id))
@@ -436,7 +479,7 @@ export function createApplicationMutationCoordinator(
       const beforeCommit = validity();
       if (beforeCommit) return beforeCommit;
       try {
-        operation.committing = true;
+        setCommitting(operation, true);
         if (scopedOperation) {
           const committed = await ports.commitDaySnapshot!(
             plan.snapshot,
@@ -452,14 +495,13 @@ export function createApplicationMutationCoordinator(
             plan.invalidatedEvents,
           );
       } catch (error) {
-        operation.committing = false;
-        const afterFailure = validity();
-        if (afterFailure) return afterFailure;
-        if (error instanceof CommittedStateApplyError) {
-          stopped = true;
-          ports.onApplyFailure?.(error);
+        setCommitting(operation, false);
+        if (isPersistenceWriteStopReason(error)) {
+          stopWrites(error);
           throw error;
         }
+        const afterFailure = validity();
+        if (afterFailure) return afterFailure;
         if (
           error instanceof Error &&
           (error.name === "PersistenceConflict" ||
@@ -481,13 +523,12 @@ export function createApplicationMutationCoordinator(
         snapshot: plan.snapshot,
       };
       completed.add(id);
-      pending.delete(id);
+      deletePending(id);
       try {
         ports.apply(plan.snapshot, plan.invalidatedEvents ?? []);
       } catch (error) {
-        stopped = true;
         const failure = new CommittedStateApplyError(error);
-        ports.onApplyFailure?.(failure);
+        stopWrites(failure);
         throw failure;
       }
       expirePending();
@@ -500,6 +541,7 @@ export function createApplicationMutationCoordinator(
     const ids = batch.ids.filter((id) => pending.has(id) && !completed.has(id));
     try {
       await ports.drain();
+      if (stopped) throw stopped;
       const operations = ids.map((id) => pending.get(id)!);
       if (!operations.length) return;
       if (
@@ -513,7 +555,7 @@ export function createApplicationMutationCoordinator(
           batch.resolvers.get(id)?.resolve(await execute(id));
         return;
       }
-      for (const operation of operations) operation.committing = true;
+      for (const operation of operations) setCommitting(operation, true);
       const result = await ports.commitItemContentEdits!(
         operations.flatMap(
           (operation) => operation.intent.itemContentEdits ?? [],
@@ -522,7 +564,7 @@ export function createApplicationMutationCoordinator(
         durableGenerations,
       );
       if (result.status === "review-required") {
-        for (const operation of operations) operation.committing = false;
+        for (const operation of operations) setCommitting(operation, false);
         for (const id of ids)
           batch.resolvers.get(id)?.resolve(await execute(id));
         return;
@@ -530,14 +572,13 @@ export function createApplicationMutationCoordinator(
       durableGenerations = { ...result.read.eventGenerations };
       for (const id of ids) {
         completed.add(id);
-        pending.delete(id);
+        deletePending(id);
       }
       try {
         ports.apply(result.read.snapshot, []);
       } catch (error) {
-        stopped = true;
         const failure = new CommittedStateApplyError(error);
-        ports.onApplyFailure?.(failure);
+        stopWrites(failure);
         throw failure;
       }
       for (const id of ids)
@@ -545,10 +586,11 @@ export function createApplicationMutationCoordinator(
           .get(id)
           ?.resolve({ status: "committed", snapshot: result.read.snapshot });
     } catch (error) {
+      if (isPersistenceWriteStopReason(error)) stopWrites(error);
       for (const id of ids) {
         const operation = pending.get(id);
-        if (operation) operation.committing = false;
-        batch.resolvers.get(id)?.reject(error);
+        if (operation) setCommitting(operation, false);
+        batch.resolvers.get(id)?.reject(stopped ?? error);
       }
     } finally {
       for (const id of batch.ids) {
@@ -559,7 +601,18 @@ export function createApplicationMutationCoordinator(
   }
   return {
     enqueue,
+    stopWrites,
+    getWriteStopReason: () => stopped,
+    getPendingState(id: string) {
+      const operation = pending.get(id);
+      return {
+        requestPending: !!operation,
+        canCancel: !!operation && !operation.committing && !stopped,
+        confirmationPending: !!operation?.confirmation,
+      };
+    },
     request(intent: MutationIntent): Promise<MutationResult> {
+      if (stopped) return Promise.reject(stopped);
       if (completed.has(intent.id))
         return Promise.resolve({
           status: "committed",
@@ -580,6 +633,7 @@ export function createApplicationMutationCoordinator(
           choices: {},
           generation: generation(intent.events),
         });
+      notifyPendingStateChanged(intent.id);
       if (
         intent.itemContentEdits &&
         ports.commitItemContentEdits &&
@@ -617,7 +671,7 @@ export function createApplicationMutationCoordinator(
     },
     discard(operationId: string): boolean {
       if (pending.get(operationId)?.committing) return false;
-      return pending.delete(operationId);
+      return deletePending(operationId);
     },
     choose(
       token: ConfirmationToken,
@@ -658,7 +712,7 @@ export function createApplicationMutationCoordinator(
     cancel(token: ConfirmationToken): boolean {
       const operation = pending.get(token.operationId);
       if (operation?.token !== token || operation.committing) return false;
-      return pending.delete(token.operationId);
+      return deletePending(token.operationId);
     },
     initializeEventGenerations(read: ApplicationSnapshotRead): void {
       durableGenerations = { ...read.eventGenerations };
@@ -672,7 +726,8 @@ export function createApplicationMutationCoordinator(
     createBackupFile: async (): Promise<ApplicationBackupFile> => {
       if (!ports.createBackupFile)
         throw new Error("Backup worker is unavailable.");
-      const captured = await enqueue(() => ({
+      openItemBatch = null;
+      const captured = await tail.then(() => ({
         base: ports.readCurrent(),
         accepted: (ports.readExportCurrent ?? ports.readCurrent)(),
       }));

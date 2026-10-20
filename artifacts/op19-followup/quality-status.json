@@ -1,0 +1,76 @@
+{
+  "Date": "2026-10-19",
+  "BaseCommit": "f59e07ee4738eb95e9de1dcd6bc17a386f67d53c",
+  "TestedBundleSHA256": "729425339A9C9796D505C73B79A8CEC837A8A904162512C6D841678DB6FDC8FD",
+  "RequiredChecks": {
+    "Vitest": {
+      "Passed": 3159,
+      "Skipped": 88,
+      "Failed": 0
+    },
+    "FunctionalChromium": {
+      "Passed": 224,
+      "Skipped": 0,
+      "Failed": 0,
+      "Flaky": 0
+    },
+    "API": {
+      "Passed": 21,
+      "Failed": 0
+    },
+    "Typecheck": "passed (app and release tools)",
+    "Architecture": "passed (354 production files, 1730 edges, 0 exceptions)",
+    "TestProjectMembership": "passed (262 files)",
+    "DbCompatibility": "passed local contract; remote unobserved",
+    "Encoding": "passed (1113 text files)",
+    "ChangedTypeScriptPrettier": "passed",
+    "ChangedTypeScriptEslint": "passed",
+    "ProductBuild": "passed standard build:app",
+    "PerformancePolicy": "passed",
+    "Performance": [
+      {
+        "Scope": "Required150500",
+        "Metrics": 96,
+        "Samples": 2120.0,
+        "MinimumSamples": 20.0,
+        "MaximumMedianMs": 32.5,
+        "MaximumP95Ms": 37.800000000046566,
+        "Passed": true
+      },
+      {
+        "Scope": "Existing1500",
+        "Metrics": 48,
+        "Samples": 1060.0,
+        "MinimumSamples": 20.0,
+        "MaximumMedianMs": 47.4000000001397,
+        "MaximumP95Ms": 50.300000000046566,
+        "Passed": true
+      },
+      {
+        "Scope": "Drag",
+        "Metrics": 60,
+        "Samples": 1200.0,
+        "MinimumSamples": 20.0,
+        "MaximumMedianMs": 50.199999999953434,
+        "MaximumP95Ms": 59.800000000046566,
+        "Passed": true
+      }
+    ],
+    "OrdinaryPersistenceIO": "all three operations match baseline structure"
+  },
+  "AdditionalReleaseVerifier": {
+    "Result": "expected rejection for dirty source",
+    "Reason": "Production verifier requires clean or provider-immutable sourceState. Editable checkouts with uncommitted changes are dirty.",
+    "SameOnUnmodifiedF59e07e": true,
+    "LegacyCleanupCapability": "forced-off",
+    "ProductSourceChangedToBypassGate": false
+  },
+  "FinalAcceptedPerformance": {
+    "Workers": 1,
+    "PointerMutationRequests": 0,
+    "HeavyTestsConcurrent": false,
+    "UnrelatedRemounts": 0,
+    "PointerReadwriteTransactions": 0,
+    "UnrelatedUpdates": 0
+  }
+}

@@ -29,6 +29,8 @@ export type PendingEventUpdate =
       diff: EventUpdateDiff;
       baseSource: SpreadsheetSource | null;
       eventGeneration?: number;
+      updateOperationId?: string;
+      reviewedSource?: SpreadsheetSource;
       onImportComplete?: (result: BulkImportResult) => void;
     }
   | {
@@ -37,6 +39,8 @@ export type PendingEventUpdate =
       diff: EventUpdateDiff;
       baseSource: SpreadsheetSource | null;
       eventGeneration?: number;
+      updateOperationId?: string;
+      reviewedSource?: SpreadsheetSource;
       onImportComplete?: (result: BulkImportResult) => void;
       nextSource: SpreadsheetSource;
     };
@@ -192,19 +196,21 @@ export function applyPendingEventUpdate({
         ),
       }
     : state.executeModeItems;
-  const nextEventMetadata =
-    pending.kind === "source-switch"
-      ? {
-          ...state.eventMetadata,
-          [pending.eventName]: {
-            spreadsheetUrl: pending.nextSource.url,
-            spreadsheetSheetName: pending.nextSource.sheetName,
-            lastImportDate:
-              recordEntry(state.eventMetadata, pending.eventName)
-                ?.lastImportDate || "",
-          },
-        }
-      : state.eventMetadata;
+  const reviewedSource =
+    pending.reviewedSource ??
+    (pending.kind === "source-switch" ? pending.nextSource : undefined);
+  const nextEventMetadata = reviewedSource
+    ? {
+        ...state.eventMetadata,
+        [pending.eventName]: {
+          spreadsheetUrl: reviewedSource.url,
+          spreadsheetSheetName: reviewedSource.sheetName,
+          lastImportDate:
+            recordEntry(state.eventMetadata, pending.eventName)
+              ?.lastImportDate || "",
+        },
+      }
+    : state.eventMetadata;
 
   return {
     eventLists: {
@@ -225,7 +231,7 @@ export function resolveSpreadsheetSource(
 
   return {
     url,
-    sheetName: urlOverride?.sheetName || metadata?.spreadsheetSheetName || "",
+    sheetName: urlOverride?.sheetName ?? metadata?.spreadsheetSheetName ?? "",
   };
 }
 

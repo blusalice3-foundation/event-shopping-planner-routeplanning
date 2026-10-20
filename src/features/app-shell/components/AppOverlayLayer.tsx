@@ -1,8 +1,9 @@
+import { useModalDialogBehavior } from "../../../hooks/useModalDialogBehavior";
 import { recordEntry } from "../../../utils/ownRecord";
 import type { HallSelectionIntent } from "../../../types/consistency";
 import type { ItemMembershipPreview } from "../../consistency/domain/itemEdit";
 import { applyChangedFields } from "../../consistency/domain/mutations";
-import React from "react";
+import React, { useId } from "react";
 import DeleteConfirmationModal from "../../../components/DeleteConfirmationModal";
 import { ItemEditDialog } from "../../../components/ItemEditDialog";
 import UpdateConfirmationModal from "../../../components/UpdateConfirmationModal";
@@ -48,7 +49,6 @@ type DeleteConfirmationModalProps = React.ComponentProps<
 type UpdateConfirmationModalProps = React.ComponentProps<
   typeof UpdateConfirmationModal
 >;
-type UrlUpdateDialogProps = React.ComponentProps<typeof UrlUpdateDialog>;
 type EventRenameDialogProps = React.ComponentProps<typeof EventRenameDialog>;
 type ExportOptionsDialogProps = React.ComponentProps<
   typeof ExportOptionsDialog
@@ -68,6 +68,7 @@ type MapImportDialogProps = React.ComponentProps<typeof MapImportDialog>;
 
 type AppOverlayLayerFields = {
   items: ShoppingItem[];
+  isEventUpdateSaving?: boolean;
   saveItemEdit?: (
     baseline: ShoppingItem,
     edited: ShoppingItem,
@@ -87,9 +88,21 @@ type AppOverlayLayerFields = {
   ) => void;
   handleConfirmDelete: DeleteConfirmationModalProps["onConfirm"];
   handleConfirmUpdate: UpdateConfirmationModalProps["onConfirm"];
-  handleCancelUpdate: UpdateConfirmationModalProps["onCancel"];
+  handleCancelUpdate: (updateOperationId?: string) => void;
   eventMetadata: Record<string, EventMetadata>;
-  handleUrlUpdate: UrlUpdateDialogProps["onConfirm"];
+  updateOperationId?: string;
+  updateUrlDraft?: {
+    readonly operationId: string;
+    readonly eventName: string;
+    readonly url: string;
+    readonly sheetName: string;
+  };
+  handleUrlUpdate: (
+    url: string,
+    sheetName: string,
+    updateOperationId?: string,
+  ) => void;
+  handleUrlUpdateCancel?: (updateOperationId?: string) => boolean | void;
   onShowEventList: () => void;
   handleConfirmRename: EventRenameDialogProps["onConfirm"];
   handleConfirmExport: ExportOptionsDialogProps["onExport"];
@@ -147,6 +160,8 @@ type AppOverlayLayerFields = {
   handleMapFileChange: (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => void | Promise<void>;
+  mapImportRequestPending?: boolean;
+  canCancelMapImport?: boolean;
   mapImportSavedSettings: MapImportDialogProps["savedSettings"];
   handleMapImportConfirm: MapImportDialogProps["onImport"];
   handleMapImportClose: MapImportDialogProps["onClose"];
@@ -175,10 +190,15 @@ type AppOverlayLayerFields = {
 };
 
 export type AppOverlayLayerModel = {
-  readonly item: Pick<AppOverlayLayerFields, "items">;
+  readonly item: Pick<AppOverlayLayerFields, "items" | "isEventUpdateSaving">;
   readonly event: Pick<
     AppOverlayLayerFields,
-    "activeEventDate" | "activeEventName" | "eventDates" | "eventMetadata"
+    | "activeEventDate"
+    | "activeEventName"
+    | "eventDates"
+    | "eventMetadata"
+    | "updateOperationId"
+    | "updateUrlDraft"
   >;
   readonly mapEditor: Pick<
     AppOverlayLayerFields,
@@ -203,7 +223,11 @@ export type AppOverlayLayerModel = {
   >;
   readonly imports: Pick<
     AppOverlayLayerFields,
-    "exportFileInputRef" | "mapFileInputRef" | "mapImportSavedSettings"
+    | "exportFileInputRef"
+    | "mapFileInputRef"
+    | "mapImportSavedSettings"
+    | "mapImportRequestPending"
+    | "canCancelMapImport"
   >;
   readonly list: Pick<
     AppOverlayLayerFields,
@@ -238,6 +262,7 @@ export type AppOverlayLayerActions = {
     | "previewEventExport"
     | "handleConfirmRename"
     | "handleUrlUpdate"
+    | "handleUrlUpdateCancel"
     | "onShowEventList"
   >;
   readonly mapEditor: Pick<
@@ -301,8 +326,15 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
   actions,
 }) => {
   const {
-    item: { items },
-    event: { activeEventDate, activeEventName, eventDates, eventMetadata },
+    item: { items, isEventUpdateSaving },
+    event: {
+      activeEventDate,
+      activeEventName,
+      eventDates,
+      eventMetadata,
+      updateOperationId,
+      updateUrlDraft,
+    },
     mapEditor: {
       allBlocksForHallDefinition,
       currentHalls,
@@ -322,7 +354,13 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       visitListItems,
       visitListHistoryVersion,
     },
-    imports: { exportFileInputRef, mapFileInputRef, mapImportSavedSettings },
+    imports: {
+      exportFileInputRef,
+      mapFileInputRef,
+      mapImportSavedSettings,
+      mapImportRequestPending,
+      canCancelMapImport,
+    },
     list: {
       candidateMovePlan,
       currentMode,
@@ -351,6 +389,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       previewEventExport,
       handleConfirmRename,
       handleUrlUpdate,
+      handleUrlUpdateCancel,
       onShowEventList,
     },
     mapEditor: {
@@ -428,6 +467,17 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
     event: eventOverlayCommands,
     mapEditor: mapEditorOverlayCommands,
   } = overlayCommands;
+  const visitListConfirmTitleId = useId();
+  const {
+    dialogRef: visitListConfirmRef,
+    onDialogKeyDown: onVisitListConfirmKeyDown,
+  } = useModalDialogBehavior({
+    isOpen: showVisitListConfirmDialog,
+    containExternalFocus: true,
+    onEscape: () => {
+      // Discarding the visit draft requires the explicit discard button.
+    },
+  });
 
   return (
     <>
@@ -475,6 +525,12 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
 
       {pendingEventUpdate && (
         <UpdateConfirmationModal
+          key={
+            pendingEventUpdate.updateOperationId ?? pendingEventUpdate.eventName
+          }
+          eventName={pendingEventUpdate.eventName}
+          isSaving={isEventUpdateSaving}
+          duplicateItemCount={pendingEventUpdate.diff.duplicateItemCount}
           matching={pendingEventUpdate.diff.matching}
           csvReview={pendingEventUpdate.diff.csvReview}
           sheetImport={pendingEventUpdate.diff.sheetImport}
@@ -499,22 +555,41 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
               : undefined
           }
           onConfirm={handleConfirmUpdate}
-          onCancel={handleCancelUpdate}
+          onCancel={() =>
+            handleCancelUpdate(pendingEventUpdate.updateOperationId)
+          }
         />
       )}
 
       {showUrlUpdateDialog && (
         <UrlUpdateDialog
+          key={updateOperationId ?? pendingUpdateEventName ?? "url-update"}
           currentUrl={
-            pendingUpdateEventName
-              ? recordEntry(eventMetadata, pendingUpdateEventName)
-                  ?.spreadsheetUrl || ""
-              : ""
+            updateUrlDraft?.operationId === updateOperationId &&
+            updateUrlDraft?.eventName === pendingUpdateEventName
+              ? updateUrlDraft.url
+              : pendingUpdateEventName
+                ? recordEntry(eventMetadata, pendingUpdateEventName)
+                    ?.spreadsheetUrl || ""
+                : ""
           }
-          onConfirm={handleUrlUpdate}
+          currentSheetName={
+            updateUrlDraft?.operationId === updateOperationId &&
+            updateUrlDraft?.eventName === pendingUpdateEventName
+              ? updateUrlDraft.sheetName
+              : pendingUpdateEventName
+                ? recordEntry(eventMetadata, pendingUpdateEventName)
+                    ?.spreadsheetSheetName || ""
+                : ""
+          }
+          onConfirm={(url, sheetName) =>
+            handleUrlUpdate(url, sheetName, updateOperationId)
+          }
           onCancel={() => {
-            eventOverlayCommands.close();
-            onShowEventList();
+            const cancelled = handleUrlUpdateCancel
+              ? handleUrlUpdateCancel(updateOperationId)
+              : handleCancelUpdate(updateOperationId);
+            if (cancelled !== false) onShowEventList();
           }}
         />
       )}
@@ -523,14 +598,14 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
         <EventRenameDialog
           currentName={eventToRename}
           onConfirm={handleConfirmRename}
-          onCancel={eventOverlayCommands.close}
+          onCancel={() => eventOverlayCommands.close()}
         />
       )}
 
       {showExportOptions && exportEventName && (
         <ExportOptionsDialog
           isOpen={showExportOptions}
-          onClose={eventOverlayCommands.close}
+          onClose={() => eventOverlayCommands.close()}
           onExport={handleConfirmExport}
           previewManifest={previewEventExport}
           hasMapData={
@@ -545,6 +620,8 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
 
       {blockDefinitionMode && currentMapData && (
         <BlockDefinitionPanel
+          key={overlay.mapEditorSession?.sessionId}
+          session={overlay.mapEditorSession ?? undefined}
           isOpen={blockDefinitionMode}
           onClose={mapEditorOverlayCommands.close}
           mapData={currentMapData}
@@ -621,6 +698,8 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
 
       {simpleHallDefinitionMode && (
         <SimpleHallDefinitionPanel
+          key={overlay.mapEditorSession?.sessionId}
+          session={overlay.mapEditorSession ?? undefined}
           isOpen={simpleHallDefinitionMode}
           onClose={mapEditorOverlayCommands.close}
           halls={currentMaplessHalls}
@@ -646,6 +725,8 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
 
       {hallDefinitionMode && currentMapData && (
         <HallDefinitionPanel
+          key={overlay.mapEditorSession?.sessionId}
+          session={overlay.mapEditorSession ?? undefined}
           isOpen={hallDefinitionMode}
           onClose={mapEditorOverlayCommands.close}
           mapData={currentMapData}
@@ -690,8 +771,19 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
 
       {showVisitListConfirmDialog && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3">
+          <div
+            ref={visitListConfirmRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={visitListConfirmTitleId}
+            tabIndex={-1}
+            onKeyDown={onVisitListConfirmKeyDown}
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
+          >
+            <h3
+              id={visitListConfirmTitleId}
+              className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3"
+            >
               変更を保存しますか？
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
@@ -811,6 +903,8 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       />
 
       <MapImportDialog
+        requestPending={mapImportRequestPending}
+        canCancel={canCancelMapImport}
         isOpen={mapImportDialogOpen}
         file={mapImportPendingFile}
         eventName={mapImportPendingEventName}

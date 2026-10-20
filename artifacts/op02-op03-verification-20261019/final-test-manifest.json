@@ -1,0 +1,22 @@
+[
+  {
+    "Path": "src/app/commands/applicationMutationCoordinator.test.ts",
+    "SHA256": "688B7B62209D25207956830E28EA25A4DE42B4280E0AACA3E5B9BE171C5BD30E"
+  },
+  {
+    "Path": "src/app/state/useApplicationSnapshot.persistence.integration.test.tsx",
+    "SHA256": "01F5A4942D6825C04C591742A84AA5D6374DD48221F3C0171B6901DB1116C562"
+  },
+  {
+    "Path": "src/app/state/routeApplyFailure.integration.test.tsx",
+    "SHA256": "971716438BB510BFCB31CA7F121DCC2B393A4AB07F39F7A277A405EB29AA63C3"
+  },
+  {
+    "Path": "tests/browser/hall-sync-worker-atomicity.spec.ts",
+    "SHA256": "5F91AC5E3CB84ED674711AB495A6DF75D1EE69DC6C73AF57770B06F35E2EEF8E"
+  },
+  {
+    "Path": "tests/browser/map-import-delayed-cancel.spec.ts",
+    "SHA256": "918E1FBFFB5EE77D3468C7C71D9946DFF4CFE262E78BA69AF46DEAD58279B9B3"
+  }
+]

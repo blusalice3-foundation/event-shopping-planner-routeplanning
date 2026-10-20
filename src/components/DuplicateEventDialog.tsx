@@ -1,3 +1,4 @@
+import { useModalFocusBoundary } from "../hooks/useModalFocusBoundary";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   buildDifferentSourceResolution,
@@ -26,6 +27,8 @@ const DuplicateEventDialog: React.FC<DuplicateEventDialogProps> = ({
   onResolve,
   onCancel,
 }) => {
+  const dialogRef = React.useRef<HTMLElement>(null);
+  useModalFocusBoundary({ isOpen: true, dialogRef });
   const defaultAliasName = useMemo(
     () => createUniqueAliasEventName(analysis.eventName, existingEventNames),
     [analysis.eventName, existingEventNames],
@@ -94,6 +97,7 @@ const DuplicateEventDialog: React.FC<DuplicateEventDialogProps> = ({
       }}
     >
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="duplicate-event-title"

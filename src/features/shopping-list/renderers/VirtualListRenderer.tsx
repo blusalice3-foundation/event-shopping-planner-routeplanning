@@ -46,6 +46,10 @@ interface VirtualListRuntimeRendererProps extends VirtualListRendererBaseProps {
   readonly beforeContent?: React.ReactNode;
   readonly rootRef?: React.Ref<HTMLDivElement>;
   readonly onDragLeave?: React.DragEventHandler<HTMLDivElement>;
+  readonly rootProps?: Omit<
+    React.HTMLAttributes<HTMLDivElement>,
+    "children" | "role" | "aria-label"
+  >;
   readonly focusedRowKey?: string | null;
   readonly scrollRequest?: ListScrollRequest | null;
   readonly onFocusedRowKeyChange?: (rowKey: string | null) => void;
@@ -170,6 +174,7 @@ const RuntimeVirtualListRenderer = ({
   beforeContent,
   rootRef: suppliedRootRef,
   onDragLeave,
+  rootProps,
   focusedRowKey: suppliedFocusedRowKey,
   scrollRequest,
   onFocusedRowKeyChange,
@@ -406,6 +411,7 @@ const RuntimeVirtualListRenderer = ({
       ref={setRootRef}
       role="list"
       aria-label={accessibleLabel}
+      {...rootProps}
       data-list-renderer="virtual"
       data-list-renderer-reason="virtual-eligible"
       data-list-row-count={model.rows.length}

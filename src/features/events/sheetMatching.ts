@@ -14,7 +14,17 @@ type SheetMatchGroup = { current: ShoppingItem[]; rows: number[] };
 const signature = (item: SheetItem) =>
   JSON.stringify([item.catalogPrice, item.sheetRemarks]);
 
-/** Prefer unchanged titles and verified sheet values, then pair remaining rows in order. */
+// Keep whitespace rescue local to updates; persisted identity/location values stay intact.
+const trimmedKey = (item: ShoppingItem | SheetItem, includeTitle: boolean) =>
+  JSON.stringify([
+    item.circle.trim(),
+    item.eventDate.trim(),
+    item.block.trim(),
+    item.number.trim(),
+    ...(includeTitle ? [item.title.trim()] : []),
+  ]);
+
+/** Preserve raw title/base matches globally before rescuing unmatched whitespace. */
 export function matchSheetItems(
   current: ShoppingItem[],
   incoming: SheetItem[],
@@ -94,6 +104,19 @@ export function matchSheetItems(
   for (const group of collectGroups(getItemKey).values()) matchGroup(group);
   for (const group of collectGroups(getItemKeyWithoutTitle).values())
     matchGroup(group);
+
+  if (used.size < current.length && matches.size < incoming.length) {
+    for (const group of collectGroups((item) =>
+      trimmedKey(item, true),
+    ).values())
+      matchGroup(group);
+  }
+  if (used.size < current.length && matches.size < incoming.length) {
+    for (const group of collectGroups((item) =>
+      trimmedKey(item, false),
+    ).values())
+      matchGroup(group);
+  }
 
   return {
     matches,

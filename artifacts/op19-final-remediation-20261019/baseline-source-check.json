@@ -1,0 +1,170 @@
+[
+  {
+    "path": "src/app/commands/useEventTransferCommands.test.tsx",
+    "expected": "568329544B231AFB7CB777EB8A31FD99FCF7D081CCE3A388A1DCE0D54160DB81",
+    "actual": "568329544B231AFB7CB777EB8A31FD99FCF7D081CCE3A388A1DCE0D54160DB81",
+    "matches": true
+  },
+  {
+    "path": "src/components/DeleteConfirmationModal.tsx",
+    "expected": "EE7540CDB758E2D9BF4CD98FE15FEEED2DFF768B270DE2B0091202A0F416E852",
+    "actual": "EE7540CDB758E2D9BF4CD98FE15FEEED2DFF768B270DE2B0091202A0F416E852",
+    "matches": true
+  },
+  {
+    "path": "src/components/DuplicateEventDialog.tsx",
+    "expected": "81AA5B5992C29AEA627113263FDE27223657A369C799D66D309C2B4AD2FB1304",
+    "actual": "81AA5B5992C29AEA627113263FDE27223657A369C799D66D309C2B4AD2FB1304",
+    "matches": true
+  },
+  {
+    "path": "src/components/focus/FocusModeDialogs.tsx",
+    "expected": "A3F867ACD18B6D1B665CFADFFEF97DEA38BF71CA97FC50588EB360ED702CE93D",
+    "actual": "A3F867ACD18B6D1B665CFADFFEF97DEA38BF71CA97FC50588EB360ED702CE93D",
+    "matches": true
+  },
+  {
+    "path": "src/components/focus/FocusModeStateViews.tsx",
+    "expected": "D0934F86E103CB6393DA2D7495C4EF5DB562F58E611F7083688C8E7463BF6CA1",
+    "actual": "D0934F86E103CB6393DA2D7495C4EF5DB562F58E611F7083688C8E7463BF6CA1",
+    "matches": true
+  },
+  {
+    "path": "src/components/ItemEditDialog.accessibility.test.tsx",
+    "expected": "FE4CC58145A098C0B7DF57C6E07B5A0F0CD87272A7403757F1D537CDDECC29A9",
+    "actual": "FE4CC58145A098C0B7DF57C6E07B5A0F0CD87272A7403757F1D537CDDECC29A9",
+    "matches": true
+  },
+  {
+    "path": "src/components/ItemEditDialog.tsx",
+    "expected": "D9A1E1001431D67CC23B053789C6A298B861689E37D0E3732D597B6D996B74E1",
+    "actual": "D9A1E1001431D67CC23B053789C6A298B861689E37D0E3732D597B6D996B74E1",
+    "matches": true
+  },
+  {
+    "path": "src/components/LegacyConsistencyReview.tsx",
+    "expected": "B7BE787C467EA6166EA7C614AEC5A456A45284BBA639B5D99DE4FCD3B88D9465",
+    "actual": "B7BE787C467EA6166EA7C614AEC5A456A45284BBA639B5D99DE4FCD3B88D9465",
+    "matches": true
+  },
+  {
+    "path": "src/components/LimitedPurchaseConfirmDialog.tsx",
+    "expected": "61E4AA38ABF9C2F9B6757BFDF39F107DDA5988CBA895FE411C50717991C1E1F6",
+    "actual": "61E4AA38ABF9C2F9B6757BFDF39F107DDA5988CBA895FE411C50717991C1E1F6",
+    "matches": true
+  },
+  {
+    "path": "src/components/map/InsertPositionDialog.tsx",
+    "expected": "069A35538A293A639C6E65247686567A3FACA6BEDB884DF1A2D6E7E0A13FD9EE",
+    "actual": "069A35538A293A639C6E65247686567A3FACA6BEDB884DF1A2D6E7E0A13FD9EE",
+    "matches": true
+  },
+  {
+    "path": "src/components/map/MapReimportConfirmationDialog.tsx",
+    "expected": "E41215F6D2586A70F20962E94454561707EBF8E6910D53AA12D0D6C23C4825A6",
+    "actual": "E41215F6D2586A70F20962E94454561707EBF8E6910D53AA12D0D6C23C4825A6",
+    "matches": true
+  },
+  {
+    "path": "src/components/modalFailureFocus.integration.test.tsx",
+    "expected": "F4A6F5ACBEBB4CC777F5B19C7F4C97F0F93CE90FC8855AC8E61B2D3DCFBCA8A7",
+    "actual": "F4A6F5ACBEBB4CC777F5B19C7F4C97F0F93CE90FC8855AC8E61B2D3DCFBCA8A7",
+    "matches": true
+  },
+  {
+    "path": "src/components/PostEventDistributionCheckDialog.tsx",
+    "expected": "1CA844A872D161E0D5206579595A884A6D7A239D0A83C0770BAEE2DFE44D84EC",
+    "actual": "1CA844A872D161E0D5206579595A884A6D7A239D0A83C0770BAEE2DFE44D84EC",
+    "matches": true
+  },
+  {
+    "path": "src/components/ShoppingList.tsx",
+    "expected": "2FC440B5BD65D293526F9BDFAF0ED227BB592A051EC9C1403F9BDC38159DB637",
+    "actual": "2FC440B5BD65D293526F9BDFAF0ED227BB592A051EC9C1403F9BDC38159DB637",
+    "matches": true
+  },
+  {
+    "path": "src/components/SingleQuantityLimitedPurchaseChoiceDialog.test.tsx",
+    "expected": "2D3C910AC4E91CC7EF2605BB8DE8CACF46B87E32E6113ED837867D07435D22A8",
+    "actual": "2D3C910AC4E91CC7EF2605BB8DE8CACF46B87E32E6113ED837867D07435D22A8",
+    "matches": true
+  },
+  {
+    "path": "src/components/SingleQuantityLimitedPurchaseChoiceDialog.tsx",
+    "expected": "CB22D7587883FF9B7168D416A885A906751E2B3ADEDD3539ED72C187988BEC53",
+    "actual": "CB22D7587883FF9B7168D416A885A906751E2B3ADEDD3539ED72C187988BEC53",
+    "matches": true
+  },
+  {
+    "path": "src/features/shopping-list/drag/shoppingDrag.test.ts",
+    "expected": "A39C601C26EE5D86D09E01DFADD3A7E62E729375F5E7D1A933C9D8C5D6468D62",
+    "actual": "A39C601C26EE5D86D09E01DFADD3A7E62E729375F5E7D1A933C9D8C5D6468D62",
+    "matches": true
+  },
+  {
+    "path": "src/features/shopping-list/drag/shoppingDrag.ts",
+    "expected": "8647F84E9EE88DAEDD58A24378926F6333907B444EFC7290B01A98C7C20C363C",
+    "actual": "8647F84E9EE88DAEDD58A24378926F6333907B444EFC7290B01A98C7C20C363C",
+    "matches": true
+  },
+  {
+    "path": "src/features/shopping-list/drag/ShoppingDragWorkspace.integration.test.tsx",
+    "expected": "2BC37461387865B1E91A8E4A45B69D5C2F73B5E3BAA986CB720DBDE9655F1C6B",
+    "actual": "2BC37461387865B1E91A8E4A45B69D5C2F73B5E3BAA986CB720DBDE9655F1C6B",
+    "matches": true
+  },
+  {
+    "path": "src/features/shopping-list/renderers/RetainedViewportListRenderer.integration.test.tsx",
+    "expected": "16B5A45867D11975AE9D0931D8BB0792F72C11C57DEFC29BB84D996B68533E08",
+    "actual": "16B5A45867D11975AE9D0931D8BB0792F72C11C57DEFC29BB84D996B68533E08",
+    "matches": true
+  },
+  {
+    "path": "src/features/shopping-list/renderers/ViewportContent.tsx",
+    "expected": "71C07B582F5AD28F90CCB7E402E687304A7003540BB134750C1A1AB541AA93AB",
+    "actual": "71C07B582F5AD28F90CCB7E402E687304A7003540BB134750C1A1AB541AA93AB",
+    "matches": true
+  },
+  {
+    "path": "src/features/space-navigation/components/SpaceNavigatorActionDialog.tsx",
+    "expected": "3EEAD977CAC71750BDE438579DFD73639AD74992184E2912411AFF8E1E59AF41",
+    "actual": "3EEAD977CAC71750BDE438579DFD73639AD74992184E2912411AFF8E1E59AF41",
+    "matches": true
+  },
+  {
+    "path": "src/features/space-navigation/components/SpaceNavigatorPicker.tsx",
+    "expected": "74E9D0048337D9F2C6BB2DC3BBCAD8A519D5CF5867D0B9AE4E27D24CC72B9A83",
+    "actual": "74E9D0048337D9F2C6BB2DC3BBCAD8A519D5CF5867D0B9AE4E27D24CC72B9A83",
+    "matches": true
+  },
+  {
+    "path": "src/features/space-navigation/domain/visitIdentity.test.ts",
+    "expected": "2262A9C8AB85DE36C3689EFB46DD868749BE1CD71B563681CE7233F1D61146B3",
+    "actual": "2262A9C8AB85DE36C3689EFB46DD868749BE1CD71B563681CE7233F1D61146B3",
+    "matches": true
+  },
+  {
+    "path": "src/features/space-navigation/domain/visitIdentity.ts",
+    "expected": "359E7D41F7A4C06B7F51E8BB53F331820C91251F9B408971A12485DE12856EB1",
+    "actual": "359E7D41F7A4C06B7F51E8BB53F331820C91251F9B408971A12485DE12856EB1",
+    "matches": true
+  },
+  {
+    "path": "src/hooks/useModalFocusBoundary.ts",
+    "expected": "7BAB89871BEF4FD2B431D0DF7879B1DC7910D3C2653BB3345F8018F4DA38EC51",
+    "actual": "7BAB89871BEF4FD2B431D0DF7879B1DC7910D3C2653BB3345F8018F4DA38EC51",
+    "matches": true
+  },
+  {
+    "path": "tests/browser/cross-feature-consistency.spec.ts",
+    "expected": "ECFC4E7B3EBA103FAFFABDB19895CF418DB801D09A8790798D10E91B03652BFD",
+    "actual": "ECFC4E7B3EBA103FAFFABDB19895CF418DB801D09A8790798D10E91B03652BFD",
+    "matches": true
+  },
+  {
+    "path": "tests/browser/shopping-cross-column-drag.spec.ts",
+    "expected": "CD295BE3821697C217F7096D94B7AB341F63936735F23917C0670816D952CFFE",
+    "actual": "CD295BE3821697C217F7096D94B7AB341F63936735F23917C0670816D952CFFE",
+    "matches": true
+  }
+]

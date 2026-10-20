@@ -1,0 +1,36 @@
+{
+  "DateJst": "2026-10-19",
+  "Head": "53e05faae59ed8972c0e574a027f137275131f77",
+  "ProductionCodeChanged": false,
+  "AddedVitestTests": 9,
+  "AddedBrowserTests": 5,
+  "Vitest": {
+    "Passed": 3204,
+    "Skipped": 88,
+    "Failed": 0
+  },
+  "Chromium": {
+    "startTime": "2026-10-19T11:36:31.089Z",
+    "duration": 332313.81299999997,
+    "expected": 241,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "API": {
+    "Failed": 0,
+    "Passed": 21
+  },
+  "TypecheckPassed": true,
+  "BrowserTypecheckPassed": true,
+  "ArchitecturePassed": true,
+  "DbCompatibilityPassed": true,
+  "TestMembershipPassed": true,
+  "ChangedTargetEslintPassed": true,
+  "ChangedTargetPrettierPassed": true,
+  "EncodingPassed": true,
+  "CleanProductionBuildPassed": true,
+  "NewPerformanceMeasurements": false,
+  "ExistingMeasuredProductHashesMatched": 377,
+  "RemainingReviewGaps": []
+}

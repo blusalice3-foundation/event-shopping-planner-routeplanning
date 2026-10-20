@@ -1,0 +1,638 @@
+[
+  {
+    "condition": "150-native-off",
+    "operations": [
+      {
+        "operation": "same-boundary",
+        "count": 20,
+        "median": 13.5,
+        "p95": 14.800000004470348,
+        "pass": true
+      },
+      {
+        "operation": "boundary-switch",
+        "count": 20,
+        "median": 13.300000004470348,
+        "p95": 14.199999995529652,
+        "pass": true
+      },
+      {
+        "operation": "multiple-merges",
+        "count": 20,
+        "median": 13,
+        "p95": 14.399999998509884,
+        "pass": true
+      },
+      {
+        "operation": "mixed",
+        "count": 20,
+        "median": 12.799999997019768,
+        "p95": 13.899999998509884,
+        "pass": true
+      },
+      {
+        "operation": "offscreen-merge",
+        "count": 20,
+        "median": 12.900000005960464,
+        "p95": 14.899999998509884,
+        "pass": true
+      },
+      {
+        "operation": "auto-scroll",
+        "count": 20,
+        "median": 11.300000004470348,
+        "p95": 13.899999998509884,
+        "pass": true
+      },
+      {
+        "operation": "rejected",
+        "count": 20,
+        "median": 13.400000005960464,
+        "p95": 14.100000001490116,
+        "pass": true
+      },
+      {
+        "operation": "drop",
+        "count": 20,
+        "median": 33.29999999701977,
+        "p95": 35.80000000447035,
+        "pass": true
+      }
+    ],
+    "baseStart": {
+      "n": 20,
+      "median": 17,
+      "p95": 17.700000002980232
+    },
+    "postStart": {
+      "n": 20,
+      "median": 16.799999997019768,
+      "p95": 17.400000005960464
+    },
+    "baseEnd": {
+      "n": 20,
+      "median": 12.5,
+      "p95": 13.600000001490116
+    },
+    "postEnd": {
+      "n": 20,
+      "median": 13.100000001490116,
+      "p95": 14.5
+    },
+    "mutationRequests": 0,
+    "physicalWrites": 0
+  },
+  {
+    "condition": "150-native-on",
+    "operations": [
+      {
+        "operation": "same-boundary",
+        "count": 20,
+        "median": 13.399999998509884,
+        "p95": 15.299999997019768,
+        "pass": true
+      },
+      {
+        "operation": "boundary-switch",
+        "count": 20,
+        "median": 13.899999998509884,
+        "p95": 14.799999997019768,
+        "pass": true
+      },
+      {
+        "operation": "multiple-merges",
+        "count": 20,
+        "median": 13.299999997019768,
+        "p95": 14.700000002980232,
+        "pass": true
+      },
+      {
+        "operation": "mixed",
+        "count": 20,
+        "median": 12.599999994039536,
+        "p95": 13.900000005960464,
+        "pass": true
+      },
+      {
+        "operation": "offscreen-merge",
+        "count": 20,
+        "median": 13.100000001490116,
+        "p95": 14.600000001490116,
+        "pass": true
+      },
+      {
+        "operation": "auto-scroll",
+        "count": 20,
+        "median": 10.700000002980232,
+        "p95": 13.600000001490116,
+        "pass": true
+      },
+      {
+        "operation": "drop",
+        "count": 20,
+        "median": 35.69999999552965,
+        "p95": 43.399999998509884,
+        "pass": true
+      }
+    ],
+    "baseStart": {
+      "n": 20,
+      "median": 17.100000001490116,
+      "p95": 18.299999997019768
+    },
+    "postStart": {
+      "n": 20,
+      "median": 17.100000001490116,
+      "p95": 18.399999998509884
+    },
+    "baseEnd": {
+      "n": 20,
+      "median": 12.299999997019768,
+      "p95": 13.100000001490116
+    },
+    "postEnd": {
+      "n": 20,
+      "median": 12.5,
+      "p95": 14.100000001490116
+    },
+    "mutationRequests": 0,
+    "physicalWrites": 0
+  },
+  {
+    "condition": "150-touch-off",
+    "operations": [
+      {
+        "operation": "same-boundary",
+        "count": 20,
+        "median": 13.599999994039536,
+        "p95": 14.200000002980232,
+        "pass": true
+      },
+      {
+        "operation": "boundary-switch",
+        "count": 20,
+        "median": 13.600000001490116,
+        "p95": 14.600000001490116,
+        "pass": true
+      },
+      {
+        "operation": "multiple-merges",
+        "count": 20,
+        "median": 13,
+        "p95": 14.200000002980232,
+        "pass": true
+      },
+      {
+        "operation": "mixed",
+        "count": 20,
+        "median": 12.799999997019768,
+        "p95": 13.600000001490116,
+        "pass": true
+      },
+      {
+        "operation": "offscreen-merge",
+        "count": 20,
+        "median": 13.100000001490116,
+        "p95": 13.899999998509884,
+        "pass": true
+      },
+      {
+        "operation": "auto-scroll",
+        "count": 20,
+        "median": 27.80000000447035,
+        "p95": 31.19999999552965,
+        "pass": true
+      },
+      {
+        "operation": "rejected",
+        "count": 20,
+        "median": 13.700000002980232,
+        "p95": 15.200000002980232,
+        "pass": true
+      },
+      {
+        "operation": "drop",
+        "count": 20,
+        "median": 33.79999999701977,
+        "p95": 40.30000000447035,
+        "pass": true
+      }
+    ],
+    "baseStart": {
+      "n": 20,
+      "median": 18.100000001490116,
+      "p95": 23.30000000447035
+    },
+    "postStart": {
+      "n": 20,
+      "median": 16.700000002980232,
+      "p95": 24.200000002980232
+    },
+    "baseEnd": {
+      "n": 20,
+      "median": 11.200000002980232,
+      "p95": 17
+    },
+    "postEnd": {
+      "n": 20,
+      "median": 10.200000002980232,
+      "p95": 17.899999998509884
+    },
+    "mutationRequests": 0,
+    "physicalWrites": 0
+  },
+  {
+    "condition": "150-touch-on",
+    "operations": [
+      {
+        "operation": "same-boundary",
+        "count": 20,
+        "median": 13.600000001490116,
+        "p95": 14.700000002980232,
+        "pass": true
+      },
+      {
+        "operation": "boundary-switch",
+        "count": 20,
+        "median": 13.399999998509884,
+        "p95": 14.700000002980232,
+        "pass": true
+      },
+      {
+        "operation": "multiple-merges",
+        "count": 20,
+        "median": 12.899999998509884,
+        "p95": 14.099999994039536,
+        "pass": true
+      },
+      {
+        "operation": "mixed",
+        "count": 20,
+        "median": 12.599999994039536,
+        "p95": 13.799999997019768,
+        "pass": true
+      },
+      {
+        "operation": "offscreen-merge",
+        "count": 20,
+        "median": 12.899999998509884,
+        "p95": 14.399999998509884,
+        "pass": true
+      },
+      {
+        "operation": "auto-scroll",
+        "count": 20,
+        "median": 27.600000001490116,
+        "p95": 30.100000001490116,
+        "pass": true
+      },
+      {
+        "operation": "drop",
+        "count": 20,
+        "median": 38.29999999701977,
+        "p95": 46.79999999701977,
+        "pass": true
+      }
+    ],
+    "baseStart": {
+      "n": 20,
+      "median": 15.199999995529652,
+      "p95": 23
+    },
+    "postStart": {
+      "n": 20,
+      "median": 16.600000001490116,
+      "p95": 23.600000001490116
+    },
+    "baseEnd": {
+      "n": 20,
+      "median": 12,
+      "p95": 18.799999997019768
+    },
+    "postEnd": {
+      "n": 20,
+      "median": 9.5,
+      "p95": 19.599999994039536
+    },
+    "mutationRequests": 0,
+    "physicalWrites": 0
+  },
+  {
+    "condition": "500-native-off",
+    "operations": [
+      {
+        "operation": "same-boundary",
+        "count": 20,
+        "median": 13,
+        "p95": 14.800000004470348,
+        "pass": true
+      },
+      {
+        "operation": "boundary-switch",
+        "count": 20,
+        "median": 13.799999997019768,
+        "p95": 14.600000001490116,
+        "pass": true
+      },
+      {
+        "operation": "multiple-merges",
+        "count": 20,
+        "median": 13.100000001490116,
+        "p95": 14.5,
+        "pass": true
+      },
+      {
+        "operation": "mixed",
+        "count": 20,
+        "median": 12.399999998509884,
+        "p95": 14.299999997019768,
+        "pass": true
+      },
+      {
+        "operation": "offscreen-merge",
+        "count": 20,
+        "median": 12.799999997019768,
+        "p95": 15.100000001490116,
+        "pass": true
+      },
+      {
+        "operation": "auto-scroll",
+        "count": 20,
+        "median": 11.399999998509884,
+        "p95": 15.200000002980232,
+        "pass": true
+      },
+      {
+        "operation": "rejected",
+        "count": 20,
+        "median": 13.5,
+        "p95": 14.399999998509884,
+        "pass": true
+      },
+      {
+        "operation": "drop",
+        "count": 20,
+        "median": 59.899999998509884,
+        "p95": 80.39999999850988,
+        "pass": false
+      }
+    ],
+    "baseStart": {
+      "n": 20,
+      "median": 17.80000000447035,
+      "p95": 19.299999997019768
+    },
+    "postStart": {
+      "n": 20,
+      "median": 17.799999997019768,
+      "p95": 19.100000001490116
+    },
+    "baseEnd": {
+      "n": 20,
+      "median": 11.899999998509884,
+      "p95": 13.300000004470348
+    },
+    "postEnd": {
+      "n": 20,
+      "median": 12.300000004470348,
+      "p95": 14.5
+    },
+    "mutationRequests": 0,
+    "physicalWrites": 0
+  },
+  {
+    "condition": "500-native-on",
+    "operations": [
+      {
+        "operation": "same-boundary",
+        "count": 20,
+        "median": 13.200000002980232,
+        "p95": 15.600000001490116,
+        "pass": true
+      },
+      {
+        "operation": "boundary-switch",
+        "count": 20,
+        "median": 13.600000001490116,
+        "p95": 15.600000001490116,
+        "pass": true
+      },
+      {
+        "operation": "multiple-merges",
+        "count": 20,
+        "median": 12.900000005960464,
+        "p95": 13.899999998509884,
+        "pass": true
+      },
+      {
+        "operation": "mixed",
+        "count": 20,
+        "median": 13,
+        "p95": 14.100000001490116,
+        "pass": true
+      },
+      {
+        "operation": "offscreen-merge",
+        "count": 20,
+        "median": 13.100000001490116,
+        "p95": 15.299999997019768,
+        "pass": true
+      },
+      {
+        "operation": "auto-scroll",
+        "count": 20,
+        "median": 11.200000002980232,
+        "p95": 14.600000001490116,
+        "pass": true
+      },
+      {
+        "operation": "drop",
+        "count": 20,
+        "median": 71.39999999850988,
+        "p95": 85.60000000149012,
+        "pass": false
+      }
+    ],
+    "baseStart": {
+      "n": 20,
+      "median": 18.399999998509884,
+      "p95": 19.600000001490116
+    },
+    "postStart": {
+      "n": 20,
+      "median": 18.400000005960464,
+      "p95": 19.600000001490116
+    },
+    "baseEnd": {
+      "n": 20,
+      "median": 11.699999995529652,
+      "p95": 13.100000001490116
+    },
+    "postEnd": {
+      "n": 20,
+      "median": 12.199999995529652,
+      "p95": 13.899999998509884
+    },
+    "mutationRequests": 0,
+    "physicalWrites": 0
+  },
+  {
+    "condition": "500-touch-off",
+    "operations": [
+      {
+        "operation": "same-boundary",
+        "count": 20,
+        "median": 13.299999997019768,
+        "p95": 14.100000001490116,
+        "pass": true
+      },
+      {
+        "operation": "boundary-switch",
+        "count": 20,
+        "median": 13.399999998509884,
+        "p95": 14,
+        "pass": true
+      },
+      {
+        "operation": "multiple-merges",
+        "count": 20,
+        "median": 12.600000001490116,
+        "p95": 14,
+        "pass": true
+      },
+      {
+        "operation": "mixed",
+        "count": 20,
+        "median": 12.100000001490116,
+        "p95": 14.100000001490116,
+        "pass": true
+      },
+      {
+        "operation": "offscreen-merge",
+        "count": 20,
+        "median": 12.5,
+        "p95": 14.299999997019768,
+        "pass": true
+      },
+      {
+        "operation": "auto-scroll",
+        "count": 20,
+        "median": 27.299999997019768,
+        "p95": 32.5,
+        "pass": true
+      },
+      {
+        "operation": "rejected",
+        "count": 20,
+        "median": 13.299999997019768,
+        "p95": 13.700000002980232,
+        "pass": true
+      },
+      {
+        "operation": "drop",
+        "count": 20,
+        "median": 61.900000005960464,
+        "p95": 77.89999999850988,
+        "pass": false
+      }
+    ],
+    "baseStart": {
+      "n": 20,
+      "median": 17,
+      "p95": 25.100000001490116
+    },
+    "postStart": {
+      "n": 20,
+      "median": 21.400000005960464,
+      "p95": 26.5
+    },
+    "baseEnd": {
+      "n": 20,
+      "median": 9.199999995529652,
+      "p95": 16.899999998509884
+    },
+    "postEnd": {
+      "n": 20,
+      "median": 8.399999998509884,
+      "p95": 16.400000005960464
+    },
+    "mutationRequests": 0,
+    "physicalWrites": 0
+  },
+  {
+    "condition": "500-touch-on",
+    "operations": [
+      {
+        "operation": "same-boundary",
+        "count": 20,
+        "median": 13.100000001490116,
+        "p95": 14.399999998509884,
+        "pass": true
+      },
+      {
+        "operation": "boundary-switch",
+        "count": 20,
+        "median": 12.900000005960464,
+        "p95": 14.599999994039536,
+        "pass": true
+      },
+      {
+        "operation": "multiple-merges",
+        "count": 20,
+        "median": 12.899999998509884,
+        "p95": 14.700000002980232,
+        "pass": true
+      },
+      {
+        "operation": "mixed",
+        "count": 20,
+        "median": 12.399999998509884,
+        "p95": 14.100000001490116,
+        "pass": true
+      },
+      {
+        "operation": "offscreen-merge",
+        "count": 20,
+        "median": 12.799999997019768,
+        "p95": 14.5,
+        "pass": true
+      },
+      {
+        "operation": "auto-scroll",
+        "count": 20,
+        "median": 27.700000002980232,
+        "p95": 39.399999998509884,
+        "pass": true
+      },
+      {
+        "operation": "drop",
+        "count": 20,
+        "median": 73,
+        "p95": 83.39999999850988,
+        "pass": false
+      }
+    ],
+    "baseStart": {
+      "n": 20,
+      "median": 17,
+      "p95": 24.799999997019768
+    },
+    "postStart": {
+      "n": 20,
+      "median": 19.200000002980232,
+      "p95": 26.899999998509884
+    },
+    "baseEnd": {
+      "n": 20,
+      "median": 11.399999998509884,
+      "p95": 17.200000002980232
+    },
+    "postEnd": {
+      "n": 20,
+      "median": 11.800000004470348,
+      "p95": 17.30000000447035
+    },
+    "mutationRequests": 0,
+    "physicalWrites": 0
+  }
+]

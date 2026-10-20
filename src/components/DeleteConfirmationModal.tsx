@@ -1,3 +1,4 @@
+import { useModalFocusBoundary } from "../hooks/useModalFocusBoundary";
 import React from "react";
 import { ShoppingItem } from "../types/item";
 
@@ -12,9 +13,12 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  useModalFocusBoundary({ isOpen: true, dialogRef });
   return (
     <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 animate-fade-in"
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby="delete-modal-title"

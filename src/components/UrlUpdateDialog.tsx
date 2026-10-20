@@ -1,18 +1,27 @@
-import React, { useState } from "react";
+import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
+import React, { useId, useState } from "react";
 
 interface UrlUpdateDialogProps {
   currentUrl: string;
+  currentSheetName?: string;
   onConfirm: (url: string, sheetName: string) => void;
   onCancel: () => void;
 }
 
 const UrlUpdateDialog: React.FC<UrlUpdateDialogProps> = ({
   currentUrl,
+  currentSheetName = "",
   onConfirm,
   onCancel,
 }) => {
+  const titleId = useId();
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen: true,
+    containExternalFocus: true,
+    onEscape: onCancel,
+  });
   const [url, setUrl] = useState(currentUrl);
-  const [sheetName, setSheetName] = useState("");
+  const [sheetName, setSheetName] = useState(currentSheetName);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,9 +32,20 @@ const UrlUpdateDialog: React.FC<UrlUpdateDialogProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={onDialogKeyDown}
+        className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4"
+      >
         <div className="p-6">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+          <h2
+            id={titleId}
+            className="text-xl font-bold text-slate-900 dark:text-white mb-4"
+          >
             スプレッドシートURLを更新
           </h2>
 
@@ -63,6 +83,9 @@ const UrlUpdateDialog: React.FC<UrlUpdateDialogProps> = ({
                 className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="シート1"
               />
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                名前を指定すると名称を優先します。空欄の場合はURLのgid、gidもなければ先頭シートを使用します。
+              </p>
             </div>
 
             <div className="flex justify-end space-x-3 pt-4">

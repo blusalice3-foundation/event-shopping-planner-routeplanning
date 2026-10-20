@@ -1,0 +1,27 @@
+
+ RUN  v4.1.10 D:/esp-op18
+
+ ❯ |integration| src/features/shopping-list/renderers/RetainedViewportListRenderer.integration.test.tsx (43 tests | 1 failed) 34053ms
+   × bounds new row visibility measurements when replacing all 1500 IDs in the same parent 18735ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |integration| src/features/shopping-list/renderers/RetainedViewportListRenderer.integration.test.tsx > bounds new row visibility measurements when replacing all 1500 IDs in the same parent
+Error: Test timed out in 15000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/features/shopping-list/renderers/RetainedViewportListRenderer.integration.test.tsx:1121:21
+    1119| });
+    1120|
+    1121| it.each([500, 1500])(
+       |                     ^
+    1122|   "bounds new row visibility measurements when replacing all %i IDs in…
+    1123|   async (count) => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 259 passed | 1 skipped (261)
+      Tests  1 failed | 3086 passed | 88 skipped (3175)
+   Start at  02:37:46
+   Duration  58.32s (transform 50.70s, setup 214.23s, import 141.04s, tests 263.87s, environment 409.20s)
+

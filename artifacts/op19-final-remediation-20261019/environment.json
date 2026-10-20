@@ -1,0 +1,28 @@
+{
+  "Date": "2026-10-19",
+  "BaseCommit": "3e79088242fa4fcb5ca73c391775a598b04ab4c6",
+  "Node": "v24.19.0",
+  "Npm": "11.19.0",
+  "Playwright": "Version 1.62.1",
+  "Build": "npm run build:app",
+  "AppBundleSHA256": "EDF8F7F27438478068BEE21FA6D540F528ACC0AEDB68358635CF02C73F018E43",
+  "PersistenceWorkerSHA256": "0CA19937B5F9123BD47AAE53F39C2260388743C215A5472E6AFAEE1BB7C37B59",
+  "RuntimeSourceEdits": [
+    "src/app/commands/ApplicationSnapshotCommitPort.ts",
+    "src/app/commands/useMapEditorCommands.ts",
+    "src/components/EventListScreen.tsx",
+    "src/components/EventRenameDialog.tsx",
+    "src/components/ExportOptionsDialog.tsx",
+    "src/components/UpdateConfirmationModal.tsx",
+    "src/components/UrlUpdateDialog.tsx",
+    "src/components/map/BlockDefinitionPanel.tsx",
+    "src/components/map/MapImportDialog.tsx",
+    "src/features/app-shell/components/AppOverlayLayer.tsx",
+    "src/features/consistency/domain/mutations.ts",
+    "src/hooks/useModalDialogBehavior.ts"
+  ],
+  "PackageLockUnchanged": true,
+  "ExistingPerformanceBaseline": "artifacts/op19-followup/shopping-performance-report.json",
+  "ExistingBaselineManifestChecked": 28,
+  "Chromium": "151.0.7922.34"
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "Check": "test:encoding",
+    "ExitCode": 0
+  },
+  {
+    "Check": "verify:architecture",
+    "ExitCode": 0
+  },
+  {
+    "Check": "verify:db-compatibility",
+    "ExitCode": 0
+  },
+  {
+    "Check": "verify:test-project-membership",
+    "ExitCode": 0
+  },
+  {
+    "Check": "test:api",
+    "ExitCode": 0
+  }
+]

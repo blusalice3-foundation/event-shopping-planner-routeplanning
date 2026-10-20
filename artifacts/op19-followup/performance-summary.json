@@ -1,0 +1,4256 @@
+{
+  "Date": "2026-10-19",
+  "Criteria": {
+    "P95MaxMs": 100,
+    "MinimumSamples": 20,
+    "MedianMaxMs": 55
+  },
+  "EarlierBaseline": "Previously measured f59e07e-equivalent source; 92 hashes verified, not newly measured",
+  "Summary": [
+    {
+      "Scope": "Required150500",
+      "Metrics": 96,
+      "Samples": 2120.0,
+      "MinimumSamples": 20.0,
+      "MaximumMedianMs": 32.5,
+      "MaximumP95Ms": 37.800000000046566,
+      "Passed": true
+    },
+    {
+      "Scope": "Existing1500",
+      "Metrics": 48,
+      "Samples": 1060.0,
+      "MinimumSamples": 20.0,
+      "MaximumMedianMs": 47.4000000001397,
+      "MaximumP95Ms": 50.300000000046566,
+      "Passed": true
+    },
+    {
+      "Scope": "Drag",
+      "Metrics": 60,
+      "Samples": 1200.0,
+      "MinimumSamples": 20.0,
+      "MaximumMedianMs": 50.199999999953434,
+      "MaximumP95Ms": 59.800000000046566,
+      "Passed": true
+    }
+  ],
+  "PointerMutationRequests": 0,
+  "PointerReadwriteTransactions": 0,
+  "UnrelatedUpdates": 0,
+  "UnrelatedRemounts": 0,
+  "ShoppingRows": [
+    {
+      "Profile": "150-False-False-pc",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 12.70000000006985,
+      "P95Ms": 15.300000000046566,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-False-False-pc",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 10.699999999953434,
+      "P95Ms": 11.599999999976717,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-False-False-pc",
+      "Operation": "focus",
+      "Samples": 22,
+      "MedianMs": 12.900000000023283,
+      "P95Ms": 14.5,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-False-False-pc",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 11.099999999976717,
+      "P95Ms": 12.5,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-False-False-pc",
+      "Operation": "next",
+      "Samples": 41,
+      "MedianMs": 12.199999999953434,
+      "P95Ms": 13.5,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-False-False-pc",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 13.099999999976717,
+      "P95Ms": 14.599999999976717,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-False-False-smartphone",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 13.300000000046566,
+      "P95Ms": 14.900000000023283,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-False-False-smartphone",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 10.900000000023283,
+      "P95Ms": 13,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-False-False-smartphone",
+      "Operation": "focus",
+      "Samples": 22,
+      "MedianMs": 12.199999999953434,
+      "P95Ms": 13.099999999976717,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-False-False-smartphone",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 9.900000000023283,
+      "P95Ms": 11,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-False-False-smartphone",
+      "Operation": "next",
+      "Samples": 41,
+      "MedianMs": 10.79999999993015,
+      "P95Ms": 13.899999999906868,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-False-False-smartphone",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 11.29999999993015,
+      "P95Ms": 14.699999999953434,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-False-True-pc",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 14.699999999953434,
+      "P95Ms": 18.900000000023283,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-False-True-pc",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 9.900000000023283,
+      "P95Ms": 11.800000000046566,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-False-True-pc",
+      "Operation": "focus",
+      "Samples": 22,
+      "MedianMs": 15.200000000186265,
+      "P95Ms": 17.5,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-False-True-pc",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 11.900000000139698,
+      "P95Ms": 13.5,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-False-True-pc",
+      "Operation": "next",
+      "Samples": 41,
+      "MedianMs": 16.800000000046566,
+      "P95Ms": 18.9000000001397,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-False-True-pc",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 16.699999999953434,
+      "P95Ms": 20,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-False-True-smartphone",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 14.200000000186265,
+      "P95Ms": 16.100000000093132,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-False-True-smartphone",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 10.100000000093132,
+      "P95Ms": 11.600000000093132,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-False-True-smartphone",
+      "Operation": "focus",
+      "Samples": 22,
+      "MedianMs": 13.699999999953434,
+      "P95Ms": 15.899999999906868,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-False-True-smartphone",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 11.300000000046566,
+      "P95Ms": 12.5,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-False-True-smartphone",
+      "Operation": "next",
+      "Samples": 41,
+      "MedianMs": 15.300000000046566,
+      "P95Ms": 19.399999999906868,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-False-True-smartphone",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 14.799999999813735,
+      "P95Ms": 18.5,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-True-False-pc",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 11.600000000093132,
+      "P95Ms": 13.400000000139698,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-True-False-pc",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 9.400000000139698,
+      "P95Ms": 11.300000000046566,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-True-False-pc",
+      "Operation": "focus",
+      "Samples": 21,
+      "MedianMs": 12.5,
+      "P95Ms": 13.800000000046566,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-True-False-pc",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 10,
+      "P95Ms": 11.5,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-True-False-pc",
+      "Operation": "next",
+      "Samples": 21,
+      "MedianMs": 12.100000000093132,
+      "P95Ms": 13,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-True-False-pc",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 16.0999999998603,
+      "P95Ms": 17.199999999953434,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-True-False-smartphone",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 11.899999999906868,
+      "P95Ms": 13.300000000046566,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-True-False-smartphone",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 9.5,
+      "P95Ms": 10.799999999813735,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-True-False-smartphone",
+      "Operation": "focus",
+      "Samples": 21,
+      "MedianMs": 11.5,
+      "P95Ms": 13.300000000046566,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-True-False-smartphone",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 10.199999999953434,
+      "P95Ms": 11.600000000093132,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-True-False-smartphone",
+      "Operation": "next",
+      "Samples": 21,
+      "MedianMs": 13.800000000046566,
+      "P95Ms": 15.600000000093132,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-True-False-smartphone",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 13.899999999906868,
+      "P95Ms": 20.5,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-True-True-pc",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 11.5,
+      "P95Ms": 15.700000000186265,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-True-True-pc",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 9.400000000139698,
+      "P95Ms": 10.799999999813735,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-True-True-pc",
+      "Operation": "focus",
+      "Samples": 21,
+      "MedianMs": 13.800000000046566,
+      "P95Ms": 15.799999999813735,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-True-True-pc",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 11.799999999813735,
+      "P95Ms": 13.300000000046566,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-True-True-pc",
+      "Operation": "next",
+      "Samples": 21,
+      "MedianMs": 21.199999999953434,
+      "P95Ms": 24.600000000093132,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-True-True-pc",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 17.399999999906868,
+      "P95Ms": 18.5,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "150-True-True-smartphone",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 11.899999999906868,
+      "P95Ms": 13.699999999953434,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-True-True-smartphone",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 9.400000000139698,
+      "P95Ms": 10.299999999813735,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-True-True-smartphone",
+      "Operation": "focus",
+      "Samples": 21,
+      "MedianMs": 13.300000000046566,
+      "P95Ms": 15.100000000093132,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-True-True-smartphone",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 11.099999999860302,
+      "P95Ms": 12.699999999953434,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-True-True-smartphone",
+      "Operation": "next",
+      "Samples": 21,
+      "MedianMs": 19.5999999998603,
+      "P95Ms": 23.600000000093132,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "150-True-True-smartphone",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 12.800000000046566,
+      "P95Ms": 19.0999999998603,
+      "Passed": true,
+      "Count": 150,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-False-False-pc",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 17.399999999906868,
+      "P95Ms": 22.399999999906868,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-False-False-pc",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 13.299999999813735,
+      "P95Ms": 14.800000000046566,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-False-False-pc",
+      "Operation": "focus",
+      "Samples": 22,
+      "MedianMs": 12.799999999813735,
+      "P95Ms": 15.199999999953434,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-False-False-pc",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 10.699999999953434,
+      "P95Ms": 11.900000000139698,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-False-False-pc",
+      "Operation": "next",
+      "Samples": 41,
+      "MedianMs": 12.600000000093132,
+      "P95Ms": 14.400000000139698,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-False-False-pc",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 13,
+      "P95Ms": 15.100000000093132,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-False-False-smartphone",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 17.5999999998603,
+      "P95Ms": 19.600000000093132,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-False-False-smartphone",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 14,
+      "P95Ms": 16.100000000093132,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-False-False-smartphone",
+      "Operation": "focus",
+      "Samples": 22,
+      "MedianMs": 13.399999999906868,
+      "P95Ms": 14.5,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-False-False-smartphone",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 9.800000000046566,
+      "P95Ms": 11.800000000046566,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-False-False-smartphone",
+      "Operation": "next",
+      "Samples": 41,
+      "MedianMs": 10.700000000186265,
+      "P95Ms": 15.699999999953434,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-False-False-smartphone",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 11,
+      "P95Ms": 12.699999999953434,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-False-True-pc",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 16.9000000001397,
+      "P95Ms": 20.5,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-False-True-pc",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 13.899999999906868,
+      "P95Ms": 15.299999999813735,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-False-True-pc",
+      "Operation": "focus",
+      "Samples": 22,
+      "MedianMs": 16.699999999953434,
+      "P95Ms": 18.399999999906868,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-False-True-pc",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 12.399999999906868,
+      "P95Ms": 13.5,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-False-True-pc",
+      "Operation": "next",
+      "Samples": 41,
+      "MedianMs": 19.4000000001397,
+      "P95Ms": 23.800000000046566,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-False-True-pc",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 18.699999999953434,
+      "P95Ms": 23.399999999906868,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-False-True-smartphone",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 17.5,
+      "P95Ms": 21,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-False-True-smartphone",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 13.800000000046566,
+      "P95Ms": 15.300000000046566,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-False-True-smartphone",
+      "Operation": "focus",
+      "Samples": 22,
+      "MedianMs": 14.699999999953434,
+      "P95Ms": 16.199999999953434,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-False-True-smartphone",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 11.5,
+      "P95Ms": 12.600000000093132,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-False-True-smartphone",
+      "Operation": "next",
+      "Samples": 41,
+      "MedianMs": 17.300000000046566,
+      "P95Ms": 20.5,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-False-True-smartphone",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 16.199999999953434,
+      "P95Ms": 19.399999999906868,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-True-False-pc",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 14.699999999953434,
+      "P95Ms": 16.100000000093132,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-True-False-pc",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 13.5,
+      "P95Ms": 15.600000000093132,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-True-False-pc",
+      "Operation": "focus",
+      "Samples": 21,
+      "MedianMs": 13,
+      "P95Ms": 14.699999999953434,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-True-False-pc",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 10.699999999953434,
+      "P95Ms": 11.399999999906868,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-True-False-pc",
+      "Operation": "next",
+      "Samples": 21,
+      "MedianMs": 12.600000000093132,
+      "P95Ms": 14.300000000046566,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-True-False-pc",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 20.800000000046566,
+      "P95Ms": 22.800000000046566,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-True-False-smartphone",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 15.800000000046566,
+      "P95Ms": 19.5,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-True-False-smartphone",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 15.300000000046566,
+      "P95Ms": 16.5,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-True-False-smartphone",
+      "Operation": "focus",
+      "Samples": 21,
+      "MedianMs": 13,
+      "P95Ms": 14.300000000046566,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-True-False-smartphone",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 10.300000000046566,
+      "P95Ms": 11,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-True-False-smartphone",
+      "Operation": "next",
+      "Samples": 21,
+      "MedianMs": 10.899999999906868,
+      "P95Ms": 17.5,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-True-False-smartphone",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 16.100000000093132,
+      "P95Ms": 26.199999999953434,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-True-True-pc",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 14.899999999906868,
+      "P95Ms": 17.699999999953434,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-True-True-pc",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 13.699999999953434,
+      "P95Ms": 15.100000000093132,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-True-True-pc",
+      "Operation": "focus",
+      "Samples": 21,
+      "MedianMs": 14.899999999906868,
+      "P95Ms": 17.300000000046566,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-True-True-pc",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 13,
+      "P95Ms": 14.099999999860302,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-True-True-pc",
+      "Operation": "next",
+      "Samples": 21,
+      "MedianMs": 32.5,
+      "P95Ms": 37.800000000046566,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-True-True-pc",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 22.5999999998603,
+      "P95Ms": 26.199999999953434,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "500-True-True-smartphone",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 16.100000000093132,
+      "P95Ms": 18.699999999953434,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-True-True-smartphone",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 14.100000000093132,
+      "P95Ms": 16,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-True-True-smartphone",
+      "Operation": "focus",
+      "Samples": 21,
+      "MedianMs": 14.800000000046566,
+      "P95Ms": 16.699999999953434,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-True-True-smartphone",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 12.5,
+      "P95Ms": 13.699999999953434,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-True-True-smartphone",
+      "Operation": "next",
+      "Samples": 21,
+      "MedianMs": 20.600000000093132,
+      "P95Ms": 24.5,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "500-True-True-smartphone",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 23.600000000093132,
+      "P95Ms": 25.200000000186265,
+      "Passed": true,
+      "Count": 500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-False-False-pc",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 36.60000000009313,
+      "P95Ms": 50,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-False-False-pc",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 28.800000000046566,
+      "P95Ms": 31.5,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-False-False-pc",
+      "Operation": "focus",
+      "Samples": 22,
+      "MedianMs": 14.800000000046566,
+      "P95Ms": 16.800000000046566,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-False-False-pc",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 12.800000000046566,
+      "P95Ms": 14.400000000139698,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-False-False-pc",
+      "Operation": "next",
+      "Samples": 41,
+      "MedianMs": 14.800000000046566,
+      "P95Ms": 18.899999999906868,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-False-False-pc",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 14.599999999860302,
+      "P95Ms": 16.699999999953434,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-False-False-smartphone",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 34.300000000046566,
+      "P95Ms": 40,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-False-False-smartphone",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 26,
+      "P95Ms": 29.5999999998603,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-False-False-smartphone",
+      "Operation": "focus",
+      "Samples": 22,
+      "MedianMs": 13.399999999906868,
+      "P95Ms": 16.5999999998603,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-False-False-smartphone",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 10.600000000093132,
+      "P95Ms": 12,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-False-False-smartphone",
+      "Operation": "next",
+      "Samples": 41,
+      "MedianMs": 15.400000000139698,
+      "P95Ms": 19.199999999953434,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-False-False-smartphone",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 13.599999999860302,
+      "P95Ms": 17,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-False-True-pc",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 35.89999999990687,
+      "P95Ms": 44.5,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-False-True-pc",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 29.699999999953434,
+      "P95Ms": 34,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-False-True-pc",
+      "Operation": "focus",
+      "Samples": 22,
+      "MedianMs": 20,
+      "P95Ms": 25.299999999813735,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-False-True-pc",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 15.099999999860302,
+      "P95Ms": 16.5,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-False-True-pc",
+      "Operation": "next",
+      "Samples": 41,
+      "MedianMs": 25.399999999906868,
+      "P95Ms": 29.9000000001397,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-False-True-pc",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 24.5,
+      "P95Ms": 26.4000000001397,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-False-True-smartphone",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 34.0999999998603,
+      "P95Ms": 38.39999999990687,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-False-True-smartphone",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 27.600000000093132,
+      "P95Ms": 31.800000000046566,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-False-True-smartphone",
+      "Operation": "focus",
+      "Samples": 22,
+      "MedianMs": 17.399999999906868,
+      "P95Ms": 19.199999999953434,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-False-True-smartphone",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 14.5,
+      "P95Ms": 15.900000000139698,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-False-True-smartphone",
+      "Operation": "next",
+      "Samples": 41,
+      "MedianMs": 21,
+      "P95Ms": 24.800000000046566,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-False-True-smartphone",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 20.700000000186265,
+      "P95Ms": 24.4000000001397,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": false,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-True-False-pc",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 31.100000000093132,
+      "P95Ms": 45.800000000046566,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-True-False-pc",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 28.4000000001397,
+      "P95Ms": 32.199999999953434,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-True-False-pc",
+      "Operation": "focus",
+      "Samples": 21,
+      "MedianMs": 17.899999999906868,
+      "P95Ms": 21.199999999953434,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-True-False-pc",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 16.199999999953434,
+      "P95Ms": 17.199999999953434,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-True-False-pc",
+      "Operation": "next",
+      "Samples": 21,
+      "MedianMs": 16.199999999953434,
+      "P95Ms": 17.5,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-True-False-pc",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 37.199999999953434,
+      "P95Ms": 39,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-True-False-smartphone",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 33.800000000046566,
+      "P95Ms": 39,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-True-False-smartphone",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 29.199999999953434,
+      "P95Ms": 34.700000000186265,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-True-False-smartphone",
+      "Operation": "focus",
+      "Samples": 21,
+      "MedianMs": 19.0999999998603,
+      "P95Ms": 21.600000000093132,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-True-False-smartphone",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 16,
+      "P95Ms": 19.5999999998603,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-True-False-smartphone",
+      "Operation": "next",
+      "Samples": 21,
+      "MedianMs": 17,
+      "P95Ms": 20.5999999998603,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-True-False-smartphone",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 37.89999999990687,
+      "P95Ms": 46.10000000009313,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": false,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-True-True-pc",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 33.300000000046566,
+      "P95Ms": 38.5999999998603,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-True-True-pc",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 30.199999999953434,
+      "P95Ms": 32.5,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-True-True-pc",
+      "Operation": "focus",
+      "Samples": 21,
+      "MedianMs": 22,
+      "P95Ms": 25.199999999953434,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-True-True-pc",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 20.399999999906868,
+      "P95Ms": 24.800000000046566,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-True-True-pc",
+      "Operation": "next",
+      "Samples": 21,
+      "MedianMs": 27.300000000046566,
+      "P95Ms": 29.800000000046566,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-True-True-pc",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 47.4000000001397,
+      "P95Ms": 50.300000000046566,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "pc"
+    },
+    {
+      "Profile": "1500-True-True-smartphone",
+      "Operation": "execute",
+      "Samples": 20,
+      "MedianMs": 33.5,
+      "P95Ms": 36.5,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-True-True-smartphone",
+      "Operation": "executeRecord",
+      "Samples": 20,
+      "MedianMs": 29.5,
+      "P95Ms": 40.10000000009313,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-True-True-smartphone",
+      "Operation": "focus",
+      "Samples": 21,
+      "MedianMs": 19.800000000046566,
+      "P95Ms": 22.4000000001397,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-True-True-smartphone",
+      "Operation": "record",
+      "Samples": 20,
+      "MedianMs": 18.299999999813735,
+      "P95Ms": 20.200000000186265,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-True-True-smartphone",
+      "Operation": "next",
+      "Samples": 21,
+      "MedianMs": 22.9000000001397,
+      "P95Ms": 26.399999999906868,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    },
+    {
+      "Profile": "1500-True-True-smartphone",
+      "Operation": "back",
+      "Samples": 20,
+      "MedianMs": 42.9000000001397,
+      "P95Ms": 49.5,
+      "Passed": true,
+      "Count": 1500,
+      "Concentrated": true,
+      "MapVisible": true,
+      "Layout": "smartphone"
+    }
+  ],
+  "ShoppingPairs": [
+    {
+      "Profile": "150-False-False-pc",
+      "Operation": "execute",
+      "EarlierMedianMs": 13.300000004470348,
+      "CurrentMedianMs": 12.70000000006985,
+      "MedianDeltaMs": -0.6000000044004992,
+      "EarlierP95Ms": 15.600000001490116,
+      "CurrentP95Ms": 15.300000000046566
+    },
+    {
+      "Profile": "150-False-False-pc",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 9.700000002980232,
+      "CurrentMedianMs": 10.699999999953434,
+      "MedianDeltaMs": 0.9999999969732016,
+      "EarlierP95Ms": 10.699999995529652,
+      "CurrentP95Ms": 11.599999999976717
+    },
+    {
+      "Profile": "150-False-False-pc",
+      "Operation": "focus",
+      "EarlierMedianMs": 12.5,
+      "CurrentMedianMs": 12.900000000023283,
+      "MedianDeltaMs": 0.40000000002328306,
+      "EarlierP95Ms": 14.100000001490116,
+      "CurrentP95Ms": 14.5
+    },
+    {
+      "Profile": "150-False-False-pc",
+      "Operation": "record",
+      "EarlierMedianMs": 10.5,
+      "CurrentMedianMs": 11.099999999976717,
+      "MedianDeltaMs": 0.5999999999767169,
+      "EarlierP95Ms": 11.700000002980232,
+      "CurrentP95Ms": 12.5
+    },
+    {
+      "Profile": "150-False-False-pc",
+      "Operation": "next",
+      "EarlierMedianMs": 11.799999997019768,
+      "CurrentMedianMs": 12.199999999953434,
+      "MedianDeltaMs": 0.4000000029336661,
+      "EarlierP95Ms": 13,
+      "CurrentP95Ms": 13.5
+    },
+    {
+      "Profile": "150-False-False-pc",
+      "Operation": "back",
+      "EarlierMedianMs": 12.599999994039536,
+      "CurrentMedianMs": 13.099999999976717,
+      "MedianDeltaMs": 0.5000000059371814,
+      "EarlierP95Ms": 13.300000004470348,
+      "CurrentP95Ms": 14.599999999976717
+    },
+    {
+      "Profile": "150-False-False-smartphone",
+      "Operation": "execute",
+      "EarlierMedianMs": 13.600000001490116,
+      "CurrentMedianMs": 13.300000000046566,
+      "MedianDeltaMs": -0.30000000144355,
+      "EarlierP95Ms": 15.399999998509884,
+      "CurrentP95Ms": 14.900000000023283
+    },
+    {
+      "Profile": "150-False-False-smartphone",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 10.300000004470348,
+      "CurrentMedianMs": 10.900000000023283,
+      "MedianDeltaMs": 0.5999999955529347,
+      "EarlierP95Ms": 11.5,
+      "CurrentP95Ms": 13
+    },
+    {
+      "Profile": "150-False-False-smartphone",
+      "Operation": "focus",
+      "EarlierMedianMs": 13.099999994039536,
+      "CurrentMedianMs": 12.199999999953434,
+      "MedianDeltaMs": -0.8999999940861017,
+      "EarlierP95Ms": 13.800000004470348,
+      "CurrentP95Ms": 13.099999999976717
+    },
+    {
+      "Profile": "150-False-False-smartphone",
+      "Operation": "record",
+      "EarlierMedianMs": 10.899999998509884,
+      "CurrentMedianMs": 9.900000000023283,
+      "MedianDeltaMs": -0.9999999984866008,
+      "EarlierP95Ms": 12.199999995529652,
+      "CurrentP95Ms": 11
+    },
+    {
+      "Profile": "150-False-False-smartphone",
+      "Operation": "next",
+      "EarlierMedianMs": 10.5,
+      "CurrentMedianMs": 10.79999999993015,
+      "MedianDeltaMs": 0.2999999999301508,
+      "EarlierP95Ms": 12.100000001490116,
+      "CurrentP95Ms": 13.899999999906868
+    },
+    {
+      "Profile": "150-False-False-smartphone",
+      "Operation": "back",
+      "EarlierMedianMs": 10.899999998509884,
+      "CurrentMedianMs": 11.29999999993015,
+      "MedianDeltaMs": 0.4000000014202669,
+      "EarlierP95Ms": 12.899999998509884,
+      "CurrentP95Ms": 14.699999999953434
+    },
+    {
+      "Profile": "150-False-True-pc",
+      "Operation": "execute",
+      "EarlierMedianMs": 13.700000002980232,
+      "CurrentMedianMs": 14.699999999953434,
+      "MedianDeltaMs": 0.9999999969732016,
+      "EarlierP95Ms": 16.100000001490116,
+      "CurrentP95Ms": 18.900000000023283
+    },
+    {
+      "Profile": "150-False-True-pc",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 9.799999997019768,
+      "CurrentMedianMs": 9.900000000023283,
+      "MedianDeltaMs": 0.1000000030035153,
+      "EarlierP95Ms": 11.199999995529652,
+      "CurrentP95Ms": 11.800000000046566
+    },
+    {
+      "Profile": "150-False-True-pc",
+      "Operation": "focus",
+      "EarlierMedianMs": 15.800000004470348,
+      "CurrentMedianMs": 15.200000000186265,
+      "MedianDeltaMs": -0.6000000042840838,
+      "EarlierP95Ms": 18,
+      "CurrentP95Ms": 17.5
+    },
+    {
+      "Profile": "150-False-True-pc",
+      "Operation": "record",
+      "EarlierMedianMs": 12.600000001490116,
+      "CurrentMedianMs": 11.900000000139698,
+      "MedianDeltaMs": -0.7000000013504177,
+      "EarlierP95Ms": 13.5,
+      "CurrentP95Ms": 13.5
+    },
+    {
+      "Profile": "150-False-True-pc",
+      "Operation": "next",
+      "EarlierMedianMs": 16.80000000447035,
+      "CurrentMedianMs": 16.800000000046566,
+      "MedianDeltaMs": -4.423782229423523E-09,
+      "EarlierP95Ms": 18.399999998509884,
+      "CurrentP95Ms": 18.9000000001397
+    },
+    {
+      "Profile": "150-False-True-pc",
+      "Operation": "back",
+      "EarlierMedianMs": 15.899999998509884,
+      "CurrentMedianMs": 16.699999999953434,
+      "MedianDeltaMs": 0.80000000144355,
+      "EarlierP95Ms": 18.30000000447035,
+      "CurrentP95Ms": 20
+    },
+    {
+      "Profile": "150-False-True-smartphone",
+      "Operation": "execute",
+      "EarlierMedianMs": 14,
+      "CurrentMedianMs": 14.200000000186265,
+      "MedianDeltaMs": 0.20000000018626451,
+      "EarlierP95Ms": 16.299999997019768,
+      "CurrentP95Ms": 16.100000000093132
+    },
+    {
+      "Profile": "150-False-True-smartphone",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 10,
+      "CurrentMedianMs": 10.100000000093132,
+      "MedianDeltaMs": 0.10000000009313226,
+      "EarlierP95Ms": 11.100000001490116,
+      "CurrentP95Ms": 11.600000000093132
+    },
+    {
+      "Profile": "150-False-True-smartphone",
+      "Operation": "focus",
+      "EarlierMedianMs": 14.100000001490116,
+      "CurrentMedianMs": 13.699999999953434,
+      "MedianDeltaMs": -0.40000000153668225,
+      "EarlierP95Ms": 15.200000002980232,
+      "CurrentP95Ms": 15.899999999906868
+    },
+    {
+      "Profile": "150-False-True-smartphone",
+      "Operation": "record",
+      "EarlierMedianMs": 11,
+      "CurrentMedianMs": 11.300000000046566,
+      "MedianDeltaMs": 0.30000000004656613,
+      "EarlierP95Ms": 13.200000002980232,
+      "CurrentP95Ms": 12.5
+    },
+    {
+      "Profile": "150-False-True-smartphone",
+      "Operation": "next",
+      "EarlierMedianMs": 13,
+      "CurrentMedianMs": 15.300000000046566,
+      "MedianDeltaMs": 2.300000000046566,
+      "EarlierP95Ms": 16.100000001490116,
+      "CurrentP95Ms": 19.399999999906868
+    },
+    {
+      "Profile": "150-False-True-smartphone",
+      "Operation": "back",
+      "EarlierMedianMs": 12.899999998509884,
+      "CurrentMedianMs": 14.799999999813735,
+      "MedianDeltaMs": 1.9000000013038516,
+      "EarlierP95Ms": 18.30000000447035,
+      "CurrentP95Ms": 18.5
+    },
+    {
+      "Profile": "150-True-False-pc",
+      "Operation": "execute",
+      "EarlierMedianMs": 11.800000004470348,
+      "CurrentMedianMs": 11.600000000093132,
+      "MedianDeltaMs": -0.2000000043772161,
+      "EarlierP95Ms": 13.799999997019768,
+      "CurrentP95Ms": 13.400000000139698
+    },
+    {
+      "Profile": "150-True-False-pc",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 9.600000001490116,
+      "CurrentMedianMs": 9.400000000139698,
+      "MedianDeltaMs": -0.20000000135041773,
+      "EarlierP95Ms": 11,
+      "CurrentP95Ms": 11.300000000046566
+    },
+    {
+      "Profile": "150-True-False-pc",
+      "Operation": "focus",
+      "EarlierMedianMs": 12.100000001490116,
+      "CurrentMedianMs": 12.5,
+      "MedianDeltaMs": 0.3999999985098839,
+      "EarlierP95Ms": 14.100000001490116,
+      "CurrentP95Ms": 13.800000000046566
+    },
+    {
+      "Profile": "150-True-False-pc",
+      "Operation": "record",
+      "EarlierMedianMs": 9.299999997019768,
+      "CurrentMedianMs": 10,
+      "MedianDeltaMs": 0.7000000029802322,
+      "EarlierP95Ms": 10.899999998509884,
+      "CurrentP95Ms": 11.5
+    },
+    {
+      "Profile": "150-True-False-pc",
+      "Operation": "next",
+      "EarlierMedianMs": 11.700000002980232,
+      "CurrentMedianMs": 12.100000000093132,
+      "MedianDeltaMs": 0.3999999971129,
+      "EarlierP95Ms": 13.199999995529652,
+      "CurrentP95Ms": 13
+    },
+    {
+      "Profile": "150-True-False-pc",
+      "Operation": "back",
+      "EarlierMedianMs": 15.700000002980232,
+      "CurrentMedianMs": 16.0999999998603,
+      "MedianDeltaMs": 0.3999999968800694,
+      "EarlierP95Ms": 17.30000000447035,
+      "CurrentP95Ms": 17.199999999953434
+    },
+    {
+      "Profile": "150-True-False-smartphone",
+      "Operation": "execute",
+      "EarlierMedianMs": 12.5,
+      "CurrentMedianMs": 11.899999999906868,
+      "MedianDeltaMs": -0.6000000000931323,
+      "EarlierP95Ms": 14.399999998509884,
+      "CurrentP95Ms": 13.300000000046566
+    },
+    {
+      "Profile": "150-True-False-smartphone",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 9.399999998509884,
+      "CurrentMedianMs": 9.5,
+      "MedianDeltaMs": 0.10000000149011612,
+      "EarlierP95Ms": 10.5,
+      "CurrentP95Ms": 10.799999999813735
+    },
+    {
+      "Profile": "150-True-False-smartphone",
+      "Operation": "focus",
+      "EarlierMedianMs": 11.399999998509884,
+      "CurrentMedianMs": 11.5,
+      "MedianDeltaMs": 0.10000000149011612,
+      "EarlierP95Ms": 13,
+      "CurrentP95Ms": 13.300000000046566
+    },
+    {
+      "Profile": "150-True-False-smartphone",
+      "Operation": "record",
+      "EarlierMedianMs": 9.5,
+      "CurrentMedianMs": 10.199999999953434,
+      "MedianDeltaMs": 0.6999999999534339,
+      "EarlierP95Ms": 11.199999995529652,
+      "CurrentP95Ms": 11.600000000093132
+    },
+    {
+      "Profile": "150-True-False-smartphone",
+      "Operation": "next",
+      "EarlierMedianMs": 13.700000002980232,
+      "CurrentMedianMs": 13.800000000046566,
+      "MedianDeltaMs": 0.09999999706633389,
+      "EarlierP95Ms": 14.299999997019768,
+      "CurrentP95Ms": 15.600000000093132
+    },
+    {
+      "Profile": "150-True-False-smartphone",
+      "Operation": "back",
+      "EarlierMedianMs": 14.199999995529652,
+      "CurrentMedianMs": 13.899999999906868,
+      "MedianDeltaMs": -0.2999999956227839,
+      "EarlierP95Ms": 16,
+      "CurrentP95Ms": 20.5
+    },
+    {
+      "Profile": "150-True-True-pc",
+      "Operation": "execute",
+      "EarlierMedianMs": 12,
+      "CurrentMedianMs": 11.5,
+      "MedianDeltaMs": -0.5,
+      "EarlierP95Ms": 14.100000001490116,
+      "CurrentP95Ms": 15.700000000186265
+    },
+    {
+      "Profile": "150-True-True-pc",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 9.899999998509884,
+      "CurrentMedianMs": 9.400000000139698,
+      "MedianDeltaMs": -0.4999999983701855,
+      "EarlierP95Ms": 10.799999997019768,
+      "CurrentP95Ms": 10.799999999813735
+    },
+    {
+      "Profile": "150-True-True-pc",
+      "Operation": "focus",
+      "EarlierMedianMs": 13.600000001490116,
+      "CurrentMedianMs": 13.800000000046566,
+      "MedianDeltaMs": 0.19999999855645,
+      "EarlierP95Ms": 14.700000002980232,
+      "CurrentP95Ms": 15.799999999813735
+    },
+    {
+      "Profile": "150-True-True-pc",
+      "Operation": "record",
+      "EarlierMedianMs": 11.399999998509884,
+      "CurrentMedianMs": 11.799999999813735,
+      "MedianDeltaMs": 0.4000000013038516,
+      "EarlierP95Ms": 12.800000004470348,
+      "CurrentP95Ms": 13.300000000046566
+    },
+    {
+      "Profile": "150-True-True-pc",
+      "Operation": "next",
+      "EarlierMedianMs": 20.80000000447035,
+      "CurrentMedianMs": 21.199999999953434,
+      "MedianDeltaMs": 0.3999999954830855,
+      "EarlierP95Ms": 23.100000001490116,
+      "CurrentP95Ms": 24.600000000093132
+    },
+    {
+      "Profile": "150-True-True-pc",
+      "Operation": "back",
+      "EarlierMedianMs": 16.80000000447035,
+      "CurrentMedianMs": 17.399999999906868,
+      "MedianDeltaMs": 0.5999999954365194,
+      "EarlierP95Ms": 18.200000002980232,
+      "CurrentP95Ms": 18.5
+    },
+    {
+      "Profile": "150-True-True-smartphone",
+      "Operation": "execute",
+      "EarlierMedianMs": 12.600000001490116,
+      "CurrentMedianMs": 11.899999999906868,
+      "MedianDeltaMs": -0.7000000015832484,
+      "EarlierP95Ms": 14.5,
+      "CurrentP95Ms": 13.699999999953434
+    },
+    {
+      "Profile": "150-True-True-smartphone",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 9.299999997019768,
+      "CurrentMedianMs": 9.400000000139698,
+      "MedianDeltaMs": 0.10000000311993062,
+      "EarlierP95Ms": 11.300000004470348,
+      "CurrentP95Ms": 10.299999999813735
+    },
+    {
+      "Profile": "150-True-True-smartphone",
+      "Operation": "focus",
+      "EarlierMedianMs": 13.400000005960464,
+      "CurrentMedianMs": 13.300000000046566,
+      "MedianDeltaMs": -0.10000000591389835,
+      "EarlierP95Ms": 14.100000001490116,
+      "CurrentP95Ms": 15.100000000093132
+    },
+    {
+      "Profile": "150-True-True-smartphone",
+      "Operation": "record",
+      "EarlierMedianMs": 11.200000002980232,
+      "CurrentMedianMs": 11.099999999860302,
+      "MedianDeltaMs": -0.10000000311993062,
+      "EarlierP95Ms": 12.899999998509884,
+      "CurrentP95Ms": 12.699999999953434
+    },
+    {
+      "Profile": "150-True-True-smartphone",
+      "Operation": "next",
+      "EarlierMedianMs": 18.399999998509884,
+      "CurrentMedianMs": 19.5999999998603,
+      "MedianDeltaMs": 1.2000000013504177,
+      "EarlierP95Ms": 25,
+      "CurrentP95Ms": 23.600000000093132
+    },
+    {
+      "Profile": "150-True-True-smartphone",
+      "Operation": "back",
+      "EarlierMedianMs": 13.299999997019768,
+      "CurrentMedianMs": 12.800000000046566,
+      "MedianDeltaMs": -0.49999999697320163,
+      "EarlierP95Ms": 19.19999999552965,
+      "CurrentP95Ms": 19.0999999998603
+    },
+    {
+      "Profile": "500-False-False-pc",
+      "Operation": "execute",
+      "EarlierMedianMs": 18.399999998509884,
+      "CurrentMedianMs": 17.399999999906868,
+      "MedianDeltaMs": -0.9999999986030161,
+      "EarlierP95Ms": 21.30000000447035,
+      "CurrentP95Ms": 22.399999999906868
+    },
+    {
+      "Profile": "500-False-False-pc",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 13.5,
+      "CurrentMedianMs": 13.299999999813735,
+      "MedianDeltaMs": -0.20000000018626451,
+      "EarlierP95Ms": 16.19999999552965,
+      "CurrentP95Ms": 14.800000000046566
+    },
+    {
+      "Profile": "500-False-False-pc",
+      "Operation": "focus",
+      "EarlierMedianMs": 12.800000004470348,
+      "CurrentMedianMs": 12.799999999813735,
+      "MedianDeltaMs": -4.6566128730773926E-09,
+      "EarlierP95Ms": 14.399999998509884,
+      "CurrentP95Ms": 15.199999999953434
+    },
+    {
+      "Profile": "500-False-False-pc",
+      "Operation": "record",
+      "EarlierMedianMs": 10.599999994039536,
+      "CurrentMedianMs": 10.699999999953434,
+      "MedianDeltaMs": 0.10000000591389835,
+      "EarlierP95Ms": 12.199999995529652,
+      "CurrentP95Ms": 11.900000000139698
+    },
+    {
+      "Profile": "500-False-False-pc",
+      "Operation": "next",
+      "EarlierMedianMs": 12.199999995529652,
+      "CurrentMedianMs": 12.600000000093132,
+      "MedianDeltaMs": 0.4000000045634806,
+      "EarlierP95Ms": 13.899999998509884,
+      "CurrentP95Ms": 14.400000000139698
+    },
+    {
+      "Profile": "500-False-False-pc",
+      "Operation": "back",
+      "EarlierMedianMs": 13.100000001490116,
+      "CurrentMedianMs": 13,
+      "MedianDeltaMs": -0.10000000149011612,
+      "EarlierP95Ms": 14.900000005960464,
+      "CurrentP95Ms": 15.100000000093132
+    },
+    {
+      "Profile": "500-False-False-smartphone",
+      "Operation": "execute",
+      "EarlierMedianMs": 17.899999998509884,
+      "CurrentMedianMs": 17.5999999998603,
+      "MedianDeltaMs": -0.29999999864958227,
+      "EarlierP95Ms": 24.5,
+      "CurrentP95Ms": 19.600000000093132
+    },
+    {
+      "Profile": "500-False-False-smartphone",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 13.5,
+      "CurrentMedianMs": 14,
+      "MedianDeltaMs": 0.5,
+      "EarlierP95Ms": 16.69999999552965,
+      "CurrentP95Ms": 16.100000000093132
+    },
+    {
+      "Profile": "500-False-False-smartphone",
+      "Operation": "focus",
+      "EarlierMedianMs": 12.300000004470348,
+      "CurrentMedianMs": 13.399999999906868,
+      "MedianDeltaMs": 1.0999999954365194,
+      "EarlierP95Ms": 14.5,
+      "CurrentP95Ms": 14.5
+    },
+    {
+      "Profile": "500-False-False-smartphone",
+      "Operation": "record",
+      "EarlierMedianMs": 10.399999998509884,
+      "CurrentMedianMs": 9.800000000046566,
+      "MedianDeltaMs": -0.5999999984633178,
+      "EarlierP95Ms": 11.399999998509884,
+      "CurrentP95Ms": 11.800000000046566
+    },
+    {
+      "Profile": "500-False-False-smartphone",
+      "Operation": "next",
+      "EarlierMedianMs": 11,
+      "CurrentMedianMs": 10.700000000186265,
+      "MedianDeltaMs": -0.2999999998137355,
+      "EarlierP95Ms": 12.600000001490116,
+      "CurrentP95Ms": 15.699999999953434
+    },
+    {
+      "Profile": "500-False-False-smartphone",
+      "Operation": "back",
+      "EarlierMedianMs": 10.5,
+      "CurrentMedianMs": 11,
+      "MedianDeltaMs": 0.5,
+      "EarlierP95Ms": 11.899999998509884,
+      "CurrentP95Ms": 12.699999999953434
+    },
+    {
+      "Profile": "500-False-True-pc",
+      "Operation": "execute",
+      "EarlierMedianMs": 17.900000005960464,
+      "CurrentMedianMs": 16.9000000001397,
+      "MedianDeltaMs": -1.000000005820766,
+      "EarlierP95Ms": 20.100000001490116,
+      "CurrentP95Ms": 20.5
+    },
+    {
+      "Profile": "500-False-True-pc",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 13.799999997019768,
+      "CurrentMedianMs": 13.899999999906868,
+      "MedianDeltaMs": 0.10000000288709998,
+      "EarlierP95Ms": 15,
+      "CurrentP95Ms": 15.299999999813735
+    },
+    {
+      "Profile": "500-False-True-pc",
+      "Operation": "focus",
+      "EarlierMedianMs": 16.5,
+      "CurrentMedianMs": 16.699999999953434,
+      "MedianDeltaMs": 0.19999999995343387,
+      "EarlierP95Ms": 18.5,
+      "CurrentP95Ms": 18.399999999906868
+    },
+    {
+      "Profile": "500-False-True-pc",
+      "Operation": "record",
+      "EarlierMedianMs": 11.700000002980232,
+      "CurrentMedianMs": 12.399999999906868,
+      "MedianDeltaMs": 0.6999999969266355,
+      "EarlierP95Ms": 12.5,
+      "CurrentP95Ms": 13.5
+    },
+    {
+      "Profile": "500-False-True-pc",
+      "Operation": "next",
+      "EarlierMedianMs": 19,
+      "CurrentMedianMs": 19.4000000001397,
+      "MedianDeltaMs": 0.4000000001396984,
+      "EarlierP95Ms": 21.80000000447035,
+      "CurrentP95Ms": 23.800000000046566
+    },
+    {
+      "Profile": "500-False-True-pc",
+      "Operation": "back",
+      "EarlierMedianMs": 19,
+      "CurrentMedianMs": 18.699999999953434,
+      "MedianDeltaMs": -0.30000000004656613,
+      "EarlierP95Ms": 20.100000001490116,
+      "CurrentP95Ms": 23.399999999906868
+    },
+    {
+      "Profile": "500-False-True-smartphone",
+      "Operation": "execute",
+      "EarlierMedianMs": 17.600000001490116,
+      "CurrentMedianMs": 17.5,
+      "MedianDeltaMs": -0.10000000149011612,
+      "EarlierP95Ms": 19.5,
+      "CurrentP95Ms": 21
+    },
+    {
+      "Profile": "500-False-True-smartphone",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 13,
+      "CurrentMedianMs": 13.800000000046566,
+      "MedianDeltaMs": 0.8000000000465661,
+      "EarlierP95Ms": 14.799999997019768,
+      "CurrentP95Ms": 15.300000000046566
+    },
+    {
+      "Profile": "500-False-True-smartphone",
+      "Operation": "focus",
+      "EarlierMedianMs": 14.799999997019768,
+      "CurrentMedianMs": 14.699999999953434,
+      "MedianDeltaMs": -0.09999999706633389,
+      "EarlierP95Ms": 16.299999997019768,
+      "CurrentP95Ms": 16.199999999953434
+    },
+    {
+      "Profile": "500-False-True-smartphone",
+      "Operation": "record",
+      "EarlierMedianMs": 12.099999994039536,
+      "CurrentMedianMs": 11.5,
+      "MedianDeltaMs": -0.5999999940395355,
+      "EarlierP95Ms": 12.899999998509884,
+      "CurrentP95Ms": 12.600000000093132
+    },
+    {
+      "Profile": "500-False-True-smartphone",
+      "Operation": "next",
+      "EarlierMedianMs": 16.600000001490116,
+      "CurrentMedianMs": 17.300000000046566,
+      "MedianDeltaMs": 0.69999999855645,
+      "EarlierP95Ms": 20.299999997019768,
+      "CurrentP95Ms": 20.5
+    },
+    {
+      "Profile": "500-False-True-smartphone",
+      "Operation": "back",
+      "EarlierMedianMs": 16.399999998509884,
+      "CurrentMedianMs": 16.199999999953434,
+      "MedianDeltaMs": -0.19999999855645,
+      "EarlierP95Ms": 17.899999998509884,
+      "CurrentP95Ms": 19.399999999906868
+    },
+    {
+      "Profile": "500-True-False-pc",
+      "Operation": "execute",
+      "EarlierMedianMs": 15.200000002980232,
+      "CurrentMedianMs": 14.699999999953434,
+      "MedianDeltaMs": -0.5000000030267984,
+      "EarlierP95Ms": 20.099999994039536,
+      "CurrentP95Ms": 16.100000000093132
+    },
+    {
+      "Profile": "500-True-False-pc",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 13.600000001490116,
+      "CurrentMedianMs": 13.5,
+      "MedianDeltaMs": -0.10000000149011612,
+      "EarlierP95Ms": 15.099999994039536,
+      "CurrentP95Ms": 15.600000000093132
+    },
+    {
+      "Profile": "500-True-False-pc",
+      "Operation": "focus",
+      "EarlierMedianMs": 13.100000001490116,
+      "CurrentMedianMs": 13,
+      "MedianDeltaMs": -0.10000000149011612,
+      "EarlierP95Ms": 14.799999997019768,
+      "CurrentP95Ms": 14.699999999953434
+    },
+    {
+      "Profile": "500-True-False-pc",
+      "Operation": "record",
+      "EarlierMedianMs": 10,
+      "CurrentMedianMs": 10.699999999953434,
+      "MedianDeltaMs": 0.6999999999534339,
+      "EarlierP95Ms": 11.600000001490116,
+      "CurrentP95Ms": 11.399999999906868
+    },
+    {
+      "Profile": "500-True-False-pc",
+      "Operation": "next",
+      "EarlierMedianMs": 12.399999998509884,
+      "CurrentMedianMs": 12.600000000093132,
+      "MedianDeltaMs": 0.20000000158324838,
+      "EarlierP95Ms": 14.200000002980232,
+      "CurrentP95Ms": 14.300000000046566
+    },
+    {
+      "Profile": "500-True-False-pc",
+      "Operation": "back",
+      "EarlierMedianMs": 21,
+      "CurrentMedianMs": 20.800000000046566,
+      "MedianDeltaMs": -0.19999999995343387,
+      "EarlierP95Ms": 22.399999998509884,
+      "CurrentP95Ms": 22.800000000046566
+    },
+    {
+      "Profile": "500-True-False-smartphone",
+      "Operation": "execute",
+      "EarlierMedianMs": 14.799999997019768,
+      "CurrentMedianMs": 15.800000000046566,
+      "MedianDeltaMs": 1.0000000030267984,
+      "EarlierP95Ms": 18.700000002980232,
+      "CurrentP95Ms": 19.5
+    },
+    {
+      "Profile": "500-True-False-smartphone",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 14,
+      "CurrentMedianMs": 15.300000000046566,
+      "MedianDeltaMs": 1.3000000000465661,
+      "EarlierP95Ms": 17.400000005960464,
+      "CurrentP95Ms": 16.5
+    },
+    {
+      "Profile": "500-True-False-smartphone",
+      "Operation": "focus",
+      "EarlierMedianMs": 12.200000002980232,
+      "CurrentMedianMs": 13,
+      "MedianDeltaMs": 0.7999999970197678,
+      "EarlierP95Ms": 14.099999994039536,
+      "CurrentP95Ms": 14.300000000046566
+    },
+    {
+      "Profile": "500-True-False-smartphone",
+      "Operation": "record",
+      "EarlierMedianMs": 10.300000004470348,
+      "CurrentMedianMs": 10.300000000046566,
+      "MedianDeltaMs": -4.423782229423523E-09,
+      "EarlierP95Ms": 11.300000004470348,
+      "CurrentP95Ms": 11
+    },
+    {
+      "Profile": "500-True-False-smartphone",
+      "Operation": "next",
+      "EarlierMedianMs": 10.900000005960464,
+      "CurrentMedianMs": 10.899999999906868,
+      "MedianDeltaMs": -6.05359673500061E-09,
+      "EarlierP95Ms": 15,
+      "CurrentP95Ms": 17.5
+    },
+    {
+      "Profile": "500-True-False-smartphone",
+      "Operation": "back",
+      "EarlierMedianMs": 15.799999997019768,
+      "CurrentMedianMs": 16.100000000093132,
+      "MedianDeltaMs": 0.3000000030733645,
+      "EarlierP95Ms": 22.700000002980232,
+      "CurrentP95Ms": 26.199999999953434
+    },
+    {
+      "Profile": "500-True-True-pc",
+      "Operation": "execute",
+      "EarlierMedianMs": 15.699999995529652,
+      "CurrentMedianMs": 14.899999999906868,
+      "MedianDeltaMs": -0.7999999956227839,
+      "EarlierP95Ms": 18.400000005960464,
+      "CurrentP95Ms": 17.699999999953434
+    },
+    {
+      "Profile": "500-True-True-pc",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 14.200000002980232,
+      "CurrentMedianMs": 13.699999999953434,
+      "MedianDeltaMs": -0.5000000030267984,
+      "EarlierP95Ms": 16.600000001490116,
+      "CurrentP95Ms": 15.100000000093132
+    },
+    {
+      "Profile": "500-True-True-pc",
+      "Operation": "focus",
+      "EarlierMedianMs": 15.899999998509884,
+      "CurrentMedianMs": 14.899999999906868,
+      "MedianDeltaMs": -0.9999999986030161,
+      "EarlierP95Ms": 16.899999998509884,
+      "CurrentP95Ms": 17.300000000046566
+    },
+    {
+      "Profile": "500-True-True-pc",
+      "Operation": "record",
+      "EarlierMedianMs": 12.800000004470348,
+      "CurrentMedianMs": 13,
+      "MedianDeltaMs": 0.19999999552965164,
+      "EarlierP95Ms": 15.399999998509884,
+      "CurrentP95Ms": 14.099999999860302
+    },
+    {
+      "Profile": "500-True-True-pc",
+      "Operation": "next",
+      "EarlierMedianMs": 33,
+      "CurrentMedianMs": 32.5,
+      "MedianDeltaMs": -0.5,
+      "EarlierP95Ms": 41.100000001490116,
+      "CurrentP95Ms": 37.800000000046566
+    },
+    {
+      "Profile": "500-True-True-pc",
+      "Operation": "back",
+      "EarlierMedianMs": 22.30000000447035,
+      "CurrentMedianMs": 22.5999999998603,
+      "MedianDeltaMs": 0.29999999538995326,
+      "EarlierP95Ms": 26.599999994039536,
+      "CurrentP95Ms": 26.199999999953434
+    },
+    {
+      "Profile": "500-True-True-smartphone",
+      "Operation": "execute",
+      "EarlierMedianMs": 14.300000004470348,
+      "CurrentMedianMs": 16.100000000093132,
+      "MedianDeltaMs": 1.799999995622784,
+      "EarlierP95Ms": 15.5,
+      "CurrentP95Ms": 18.699999999953434
+    },
+    {
+      "Profile": "500-True-True-smartphone",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 14.300000004470348,
+      "CurrentMedianMs": 14.100000000093132,
+      "MedianDeltaMs": -0.2000000043772161,
+      "EarlierP95Ms": 16.600000001490116,
+      "CurrentP95Ms": 16
+    },
+    {
+      "Profile": "500-True-True-smartphone",
+      "Operation": "focus",
+      "EarlierMedianMs": 13.899999998509884,
+      "CurrentMedianMs": 14.800000000046566,
+      "MedianDeltaMs": 0.9000000015366822,
+      "EarlierP95Ms": 16.5,
+      "CurrentP95Ms": 16.699999999953434
+    },
+    {
+      "Profile": "500-True-True-smartphone",
+      "Operation": "record",
+      "EarlierMedianMs": 11.299999997019768,
+      "CurrentMedianMs": 12.5,
+      "MedianDeltaMs": 1.2000000029802322,
+      "EarlierP95Ms": 12.100000001490116,
+      "CurrentP95Ms": 13.699999999953434
+    },
+    {
+      "Profile": "500-True-True-smartphone",
+      "Operation": "next",
+      "EarlierMedianMs": 20.900000005960464,
+      "CurrentMedianMs": 20.600000000093132,
+      "MedianDeltaMs": -0.3000000058673322,
+      "EarlierP95Ms": 22.5,
+      "CurrentP95Ms": 24.5
+    },
+    {
+      "Profile": "500-True-True-smartphone",
+      "Operation": "back",
+      "EarlierMedianMs": 23.299999997019768,
+      "CurrentMedianMs": 23.600000000093132,
+      "MedianDeltaMs": 0.3000000030733645,
+      "EarlierP95Ms": 26.700000002980232,
+      "CurrentP95Ms": 25.200000000186265
+    },
+    {
+      "Profile": "1500-False-False-pc",
+      "Operation": "execute",
+      "EarlierMedianMs": 40.19999999552965,
+      "CurrentMedianMs": 36.60000000009313,
+      "MedianDeltaMs": -3.5999999954365194,
+      "EarlierP95Ms": 49.29999999701977,
+      "CurrentP95Ms": 50
+    },
+    {
+      "Profile": "1500-False-False-pc",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 29.299999997019768,
+      "CurrentMedianMs": 28.800000000046566,
+      "MedianDeltaMs": -0.49999999697320163,
+      "EarlierP95Ms": 31.30000000447035,
+      "CurrentP95Ms": 31.5
+    },
+    {
+      "Profile": "1500-False-False-pc",
+      "Operation": "focus",
+      "EarlierMedianMs": 15,
+      "CurrentMedianMs": 14.800000000046566,
+      "MedianDeltaMs": -0.19999999995343387,
+      "EarlierP95Ms": 17.100000001490116,
+      "CurrentP95Ms": 16.800000000046566
+    },
+    {
+      "Profile": "1500-False-False-pc",
+      "Operation": "record",
+      "EarlierMedianMs": 12.100000001490116,
+      "CurrentMedianMs": 12.800000000046566,
+      "MedianDeltaMs": 0.69999999855645,
+      "EarlierP95Ms": 14.099999994039536,
+      "CurrentP95Ms": 14.400000000139698
+    },
+    {
+      "Profile": "1500-False-False-pc",
+      "Operation": "next",
+      "EarlierMedianMs": 15.5,
+      "CurrentMedianMs": 14.800000000046566,
+      "MedianDeltaMs": -0.6999999999534339,
+      "EarlierP95Ms": 17.5,
+      "CurrentP95Ms": 18.899999999906868
+    },
+    {
+      "Profile": "1500-False-False-pc",
+      "Operation": "back",
+      "EarlierMedianMs": 15.899999998509884,
+      "CurrentMedianMs": 14.599999999860302,
+      "MedianDeltaMs": -1.2999999986495823,
+      "EarlierP95Ms": 17.5,
+      "CurrentP95Ms": 16.699999999953434
+    },
+    {
+      "Profile": "1500-False-False-smartphone",
+      "Operation": "execute",
+      "EarlierMedianMs": 35.5,
+      "CurrentMedianMs": 34.300000000046566,
+      "MedianDeltaMs": -1.1999999999534339,
+      "EarlierP95Ms": 45.100000001490116,
+      "CurrentP95Ms": 40
+    },
+    {
+      "Profile": "1500-False-False-smartphone",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 27.5,
+      "CurrentMedianMs": 26,
+      "MedianDeltaMs": -1.5,
+      "EarlierP95Ms": 30.80000000447035,
+      "CurrentP95Ms": 29.5999999998603
+    },
+    {
+      "Profile": "1500-False-False-smartphone",
+      "Operation": "focus",
+      "EarlierMedianMs": 13.600000001490116,
+      "CurrentMedianMs": 13.399999999906868,
+      "MedianDeltaMs": -0.20000000158324838,
+      "EarlierP95Ms": 16.899999998509884,
+      "CurrentP95Ms": 16.5999999998603
+    },
+    {
+      "Profile": "1500-False-False-smartphone",
+      "Operation": "record",
+      "EarlierMedianMs": 11.899999998509884,
+      "CurrentMedianMs": 10.600000000093132,
+      "MedianDeltaMs": -1.2999999984167516,
+      "EarlierP95Ms": 13.300000004470348,
+      "CurrentP95Ms": 12
+    },
+    {
+      "Profile": "1500-False-False-smartphone",
+      "Operation": "next",
+      "EarlierMedianMs": 14.899999998509884,
+      "CurrentMedianMs": 15.400000000139698,
+      "MedianDeltaMs": 0.5000000016298145,
+      "EarlierP95Ms": 17.5,
+      "CurrentP95Ms": 19.199999999953434
+    },
+    {
+      "Profile": "1500-False-False-smartphone",
+      "Operation": "back",
+      "EarlierMedianMs": 15.399999998509884,
+      "CurrentMedianMs": 13.599999999860302,
+      "MedianDeltaMs": -1.7999999986495823,
+      "EarlierP95Ms": 19.30000000447035,
+      "CurrentP95Ms": 17
+    },
+    {
+      "Profile": "1500-False-True-pc",
+      "Operation": "execute",
+      "EarlierMedianMs": 37.899999998509884,
+      "CurrentMedianMs": 35.89999999990687,
+      "MedianDeltaMs": -1.9999999986030161,
+      "EarlierP95Ms": 40.29999999701977,
+      "CurrentP95Ms": 44.5
+    },
+    {
+      "Profile": "1500-False-True-pc",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 29.100000001490116,
+      "CurrentMedianMs": 29.699999999953434,
+      "MedianDeltaMs": 0.5999999984633178,
+      "EarlierP95Ms": 33.100000001490116,
+      "CurrentP95Ms": 34
+    },
+    {
+      "Profile": "1500-False-True-pc",
+      "Operation": "focus",
+      "EarlierMedianMs": 20.100000001490116,
+      "CurrentMedianMs": 20,
+      "MedianDeltaMs": -0.10000000149011612,
+      "EarlierP95Ms": 21.69999999552965,
+      "CurrentP95Ms": 25.299999999813735
+    },
+    {
+      "Profile": "1500-False-True-pc",
+      "Operation": "record",
+      "EarlierMedianMs": 15.100000001490116,
+      "CurrentMedianMs": 15.099999999860302,
+      "MedianDeltaMs": -1.6298145055770874E-09,
+      "EarlierP95Ms": 17,
+      "CurrentP95Ms": 16.5
+    },
+    {
+      "Profile": "1500-False-True-pc",
+      "Operation": "next",
+      "EarlierMedianMs": 25.099999994039536,
+      "CurrentMedianMs": 25.399999999906868,
+      "MedianDeltaMs": 0.3000000058673322,
+      "EarlierP95Ms": 28,
+      "CurrentP95Ms": 29.9000000001397
+    },
+    {
+      "Profile": "1500-False-True-pc",
+      "Operation": "back",
+      "EarlierMedianMs": 24,
+      "CurrentMedianMs": 24.5,
+      "MedianDeltaMs": 0.5,
+      "EarlierP95Ms": 26.600000001490116,
+      "CurrentP95Ms": 26.4000000001397
+    },
+    {
+      "Profile": "1500-False-True-smartphone",
+      "Operation": "execute",
+      "EarlierMedianMs": 37.399999998509884,
+      "CurrentMedianMs": 34.0999999998603,
+      "MedianDeltaMs": -3.2999999986495823,
+      "EarlierP95Ms": 42.70000000298023,
+      "CurrentP95Ms": 38.39999999990687
+    },
+    {
+      "Profile": "1500-False-True-smartphone",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 29.100000001490116,
+      "CurrentMedianMs": 27.600000000093132,
+      "MedianDeltaMs": -1.5000000013969839,
+      "EarlierP95Ms": 33.79999999701977,
+      "CurrentP95Ms": 31.800000000046566
+    },
+    {
+      "Profile": "1500-False-True-smartphone",
+      "Operation": "focus",
+      "EarlierMedianMs": 16.80000000447035,
+      "CurrentMedianMs": 17.399999999906868,
+      "MedianDeltaMs": 0.5999999954365194,
+      "EarlierP95Ms": 18.5,
+      "CurrentP95Ms": 19.199999999953434
+    },
+    {
+      "Profile": "1500-False-True-smartphone",
+      "Operation": "record",
+      "EarlierMedianMs": 13.899999998509884,
+      "CurrentMedianMs": 14.5,
+      "MedianDeltaMs": 0.6000000014901161,
+      "EarlierP95Ms": 14.899999998509884,
+      "CurrentP95Ms": 15.900000000139698
+    },
+    {
+      "Profile": "1500-False-True-smartphone",
+      "Operation": "next",
+      "EarlierMedianMs": 19.799999997019768,
+      "CurrentMedianMs": 21,
+      "MedianDeltaMs": 1.2000000029802322,
+      "EarlierP95Ms": 23.100000001490116,
+      "CurrentP95Ms": 24.800000000046566
+    },
+    {
+      "Profile": "1500-False-True-smartphone",
+      "Operation": "back",
+      "EarlierMedianMs": 20,
+      "CurrentMedianMs": 20.700000000186265,
+      "MedianDeltaMs": 0.7000000001862645,
+      "EarlierP95Ms": 22.899999998509884,
+      "CurrentP95Ms": 24.4000000001397
+    },
+    {
+      "Profile": "1500-True-False-pc",
+      "Operation": "execute",
+      "EarlierMedianMs": 34.5,
+      "CurrentMedianMs": 31.100000000093132,
+      "MedianDeltaMs": -3.3999999999068677,
+      "EarlierP95Ms": 43.400000005960464,
+      "CurrentP95Ms": 45.800000000046566
+    },
+    {
+      "Profile": "1500-True-False-pc",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 31.899999998509884,
+      "CurrentMedianMs": 28.4000000001397,
+      "MedianDeltaMs": -3.4999999983701855,
+      "EarlierP95Ms": 36.5,
+      "CurrentP95Ms": 32.199999999953434
+    },
+    {
+      "Profile": "1500-True-False-pc",
+      "Operation": "focus",
+      "EarlierMedianMs": 18,
+      "CurrentMedianMs": 17.899999999906868,
+      "MedianDeltaMs": -0.10000000009313226,
+      "EarlierP95Ms": 21.600000001490116,
+      "CurrentP95Ms": 21.199999999953434
+    },
+    {
+      "Profile": "1500-True-False-pc",
+      "Operation": "record",
+      "EarlierMedianMs": 15.100000001490116,
+      "CurrentMedianMs": 16.199999999953434,
+      "MedianDeltaMs": 1.0999999984633178,
+      "EarlierP95Ms": 15.899999998509884,
+      "CurrentP95Ms": 17.199999999953434
+    },
+    {
+      "Profile": "1500-True-False-pc",
+      "Operation": "next",
+      "EarlierMedianMs": 17,
+      "CurrentMedianMs": 16.199999999953434,
+      "MedianDeltaMs": -0.8000000000465661,
+      "EarlierP95Ms": 18.19999999552965,
+      "CurrentP95Ms": 17.5
+    },
+    {
+      "Profile": "1500-True-False-pc",
+      "Operation": "back",
+      "EarlierMedianMs": 37.400000005960464,
+      "CurrentMedianMs": 37.199999999953434,
+      "MedianDeltaMs": -0.2000000060070306,
+      "EarlierP95Ms": 40,
+      "CurrentP95Ms": 39
+    },
+    {
+      "Profile": "1500-True-False-smartphone",
+      "Operation": "execute",
+      "EarlierMedianMs": 35,
+      "CurrentMedianMs": 33.800000000046566,
+      "MedianDeltaMs": -1.1999999999534339,
+      "EarlierP95Ms": 40.29999999701977,
+      "CurrentP95Ms": 39
+    },
+    {
+      "Profile": "1500-True-False-smartphone",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 32.600000001490116,
+      "CurrentMedianMs": 29.199999999953434,
+      "MedianDeltaMs": -3.4000000015366822,
+      "EarlierP95Ms": 40.600000001490116,
+      "CurrentP95Ms": 34.700000000186265
+    },
+    {
+      "Profile": "1500-True-False-smartphone",
+      "Operation": "focus",
+      "EarlierMedianMs": 19,
+      "CurrentMedianMs": 19.0999999998603,
+      "MedianDeltaMs": 0.09999999986030161,
+      "EarlierP95Ms": 21.19999999552965,
+      "CurrentP95Ms": 21.600000000093132
+    },
+    {
+      "Profile": "1500-True-False-smartphone",
+      "Operation": "record",
+      "EarlierMedianMs": 16.799999997019768,
+      "CurrentMedianMs": 16,
+      "MedianDeltaMs": -0.7999999970197678,
+      "EarlierP95Ms": 18.100000001490116,
+      "CurrentP95Ms": 19.5999999998603
+    },
+    {
+      "Profile": "1500-True-False-smartphone",
+      "Operation": "next",
+      "EarlierMedianMs": 17.5,
+      "CurrentMedianMs": 17,
+      "MedianDeltaMs": -0.5,
+      "EarlierP95Ms": 21.100000001490116,
+      "CurrentP95Ms": 20.5999999998603
+    },
+    {
+      "Profile": "1500-True-False-smartphone",
+      "Operation": "back",
+      "EarlierMedianMs": 36,
+      "CurrentMedianMs": 37.89999999990687,
+      "MedianDeltaMs": 1.8999999999068677,
+      "EarlierP95Ms": 44.80000000447035,
+      "CurrentP95Ms": 46.10000000009313
+    },
+    {
+      "Profile": "1500-True-True-pc",
+      "Operation": "execute",
+      "EarlierMedianMs": 33.5,
+      "CurrentMedianMs": 33.300000000046566,
+      "MedianDeltaMs": -0.19999999995343387,
+      "EarlierP95Ms": 45.29999999701977,
+      "CurrentP95Ms": 38.5999999998603
+    },
+    {
+      "Profile": "1500-True-True-pc",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 29.600000001490116,
+      "CurrentMedianMs": 30.199999999953434,
+      "MedianDeltaMs": 0.5999999984633178,
+      "EarlierP95Ms": 35.399999998509884,
+      "CurrentP95Ms": 32.5
+    },
+    {
+      "Profile": "1500-True-True-pc",
+      "Operation": "focus",
+      "EarlierMedianMs": 23.299999997019768,
+      "CurrentMedianMs": 22,
+      "MedianDeltaMs": -1.2999999970197678,
+      "EarlierP95Ms": 27.19999999552965,
+      "CurrentP95Ms": 25.199999999953434
+    },
+    {
+      "Profile": "1500-True-True-pc",
+      "Operation": "record",
+      "EarlierMedianMs": 20.5,
+      "CurrentMedianMs": 20.399999999906868,
+      "MedianDeltaMs": -0.10000000009313226,
+      "EarlierP95Ms": 23,
+      "CurrentP95Ms": 24.800000000046566
+    },
+    {
+      "Profile": "1500-True-True-pc",
+      "Operation": "next",
+      "EarlierMedianMs": 27.80000000447035,
+      "CurrentMedianMs": 27.300000000046566,
+      "MedianDeltaMs": -0.5000000044237822,
+      "EarlierP95Ms": 30.30000000447035,
+      "CurrentP95Ms": 29.800000000046566
+    },
+    {
+      "Profile": "1500-True-True-pc",
+      "Operation": "back",
+      "EarlierMedianMs": 48.19999999552965,
+      "CurrentMedianMs": 47.4000000001397,
+      "MedianDeltaMs": -0.7999999953899533,
+      "EarlierP95Ms": 52.79999999701977,
+      "CurrentP95Ms": 50.300000000046566
+    },
+    {
+      "Profile": "1500-True-True-smartphone",
+      "Operation": "execute",
+      "EarlierMedianMs": 33.399999998509884,
+      "CurrentMedianMs": 33.5,
+      "MedianDeltaMs": 0.10000000149011612,
+      "EarlierP95Ms": 40.19999999552965,
+      "CurrentP95Ms": 36.5
+    },
+    {
+      "Profile": "1500-True-True-smartphone",
+      "Operation": "executeRecord",
+      "EarlierMedianMs": 33.899999998509884,
+      "CurrentMedianMs": 29.5,
+      "MedianDeltaMs": -4.399999998509884,
+      "EarlierP95Ms": 36,
+      "CurrentP95Ms": 40.10000000009313
+    },
+    {
+      "Profile": "1500-True-True-smartphone",
+      "Operation": "focus",
+      "EarlierMedianMs": 20.099999994039536,
+      "CurrentMedianMs": 19.800000000046566,
+      "MedianDeltaMs": -0.2999999939929694,
+      "EarlierP95Ms": 23.399999998509884,
+      "CurrentP95Ms": 22.4000000001397
+    },
+    {
+      "Profile": "1500-True-True-smartphone",
+      "Operation": "record",
+      "EarlierMedianMs": 17.80000000447035,
+      "CurrentMedianMs": 18.299999999813735,
+      "MedianDeltaMs": 0.4999999953433871,
+      "EarlierP95Ms": 19.100000001490116,
+      "CurrentP95Ms": 20.200000000186265
+    },
+    {
+      "Profile": "1500-True-True-smartphone",
+      "Operation": "next",
+      "EarlierMedianMs": 20.799999997019768,
+      "CurrentMedianMs": 22.9000000001397,
+      "MedianDeltaMs": 2.1000000031199306,
+      "EarlierP95Ms": 24.600000001490116,
+      "CurrentP95Ms": 26.399999999906868
+    },
+    {
+      "Profile": "1500-True-True-smartphone",
+      "Operation": "back",
+      "EarlierMedianMs": 41.5,
+      "CurrentMedianMs": 42.9000000001397,
+      "MedianDeltaMs": 1.4000000001396984,
+      "EarlierP95Ms": 50.29999999701977,
+      "CurrentP95Ms": 49.5
+    }
+  ],
+  "DragRows": [
+    {
+      "Profile": "150-native-True",
+      "Operation": "same-boundary",
+      "Samples": 20,
+      "MedianMs": 13.599999999976717,
+      "P95Ms": 15.599999999976717,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-True",
+      "Operation": "boundary-switch",
+      "Samples": 20,
+      "MedianMs": 13.900000000023283,
+      "P95Ms": 15,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-True",
+      "Operation": "multiple-merges",
+      "Samples": 20,
+      "MedianMs": 13.20000000006985,
+      "P95Ms": 14.199999999953434,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-True",
+      "Operation": "mixed",
+      "Samples": 20,
+      "MedianMs": 12.599999999976717,
+      "P95Ms": 14.099999999976717,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-True",
+      "Operation": "offscreen-merge",
+      "Samples": 20,
+      "MedianMs": 13,
+      "P95Ms": 14.79999999993015,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-True",
+      "Operation": "auto-scroll",
+      "Samples": 20,
+      "MedianMs": 11.900000000023283,
+      "P95Ms": 14.5,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-True",
+      "Operation": "drop",
+      "Samples": 20,
+      "MedianMs": 29.29999999993015,
+      "P95Ms": 32.199999999953434,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "same-boundary",
+      "Samples": 20,
+      "MedianMs": 14,
+      "P95Ms": 15.5,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "boundary-switch",
+      "Samples": 20,
+      "MedianMs": 13.70000000006985,
+      "P95Ms": 15.20000000006985,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "multiple-merges",
+      "Samples": 20,
+      "MedianMs": 13.5,
+      "P95Ms": 14.70000000006985,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "mixed",
+      "Samples": 20,
+      "MedianMs": 12.899999999906868,
+      "P95Ms": 13.899999999906868,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "offscreen-merge",
+      "Samples": 20,
+      "MedianMs": 12.899999999906868,
+      "P95Ms": 14.79999999993015,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "auto-scroll",
+      "Samples": 20,
+      "MedianMs": 11.900000000023283,
+      "P95Ms": 14.099999999976717,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "rejected",
+      "Samples": 20,
+      "MedianMs": 13.70000000006985,
+      "P95Ms": 15.099999999976717,
+      "Passed": true
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "drop",
+      "Samples": 20,
+      "MedianMs": 28.100000000093132,
+      "P95Ms": 29.800000000046566,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "same-boundary",
+      "Samples": 20,
+      "MedianMs": 14,
+      "P95Ms": 14.900000000023283,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "boundary-switch",
+      "Samples": 20,
+      "MedianMs": 14,
+      "P95Ms": 14.699999999953434,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "multiple-merges",
+      "Samples": 20,
+      "MedianMs": 12.900000000023283,
+      "P95Ms": 15,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "mixed",
+      "Samples": 20,
+      "MedianMs": 13,
+      "P95Ms": 13.699999999953434,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "offscreen-merge",
+      "Samples": 20,
+      "MedianMs": 13.400000000023283,
+      "P95Ms": 14.600000000093132,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "auto-scroll",
+      "Samples": 20,
+      "MedianMs": 28.099999999976717,
+      "P95Ms": 30.70000000006985,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "drop",
+      "Samples": 20,
+      "MedianMs": 31.699999999953434,
+      "P95Ms": 34.59999999997672,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "same-boundary",
+      "Samples": 20,
+      "MedianMs": 13.800000000046566,
+      "P95Ms": 14.599999999976717,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "boundary-switch",
+      "Samples": 20,
+      "MedianMs": 14,
+      "P95Ms": 14.699999999953434,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "multiple-merges",
+      "Samples": 20,
+      "MedianMs": 13.400000000023283,
+      "P95Ms": 14.099999999976717,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "mixed",
+      "Samples": 20,
+      "MedianMs": 13.199999999953434,
+      "P95Ms": 13.70000000006985,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "offscreen-merge",
+      "Samples": 20,
+      "MedianMs": 13.5,
+      "P95Ms": 14.599999999976717,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "auto-scroll",
+      "Samples": 20,
+      "MedianMs": 28.400000000023283,
+      "P95Ms": 30.199999999953434,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "rejected",
+      "Samples": 20,
+      "MedianMs": 13.79999999993015,
+      "P95Ms": 15.199999999953434,
+      "Passed": true
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "drop",
+      "Samples": 20,
+      "MedianMs": 28.899999999906868,
+      "P95Ms": 30.300000000046566,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "same-boundary",
+      "Samples": 20,
+      "MedianMs": 13.79999999993015,
+      "P95Ms": 14.800000000046566,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "boundary-switch",
+      "Samples": 20,
+      "MedianMs": 13.5,
+      "P95Ms": 15,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "multiple-merges",
+      "Samples": 20,
+      "MedianMs": 13.300000000046566,
+      "P95Ms": 14.199999999953434,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "mixed",
+      "Samples": 20,
+      "MedianMs": 13,
+      "P95Ms": 14.300000000046566,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "offscreen-merge",
+      "Samples": 20,
+      "MedianMs": 13.5,
+      "P95Ms": 14.400000000023283,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "auto-scroll",
+      "Samples": 20,
+      "MedianMs": 12,
+      "P95Ms": 14.900000000023283,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "drop",
+      "Samples": 20,
+      "MedianMs": 50.199999999953434,
+      "P95Ms": 59.800000000046566,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "same-boundary",
+      "Samples": 20,
+      "MedianMs": 13.800000000046566,
+      "P95Ms": 15.100000000093132,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "boundary-switch",
+      "Samples": 20,
+      "MedianMs": 13.699999999953434,
+      "P95Ms": 15.099999999976717,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "multiple-merges",
+      "Samples": 20,
+      "MedianMs": 13.5,
+      "P95Ms": 14.70000000006985,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "mixed",
+      "Samples": 20,
+      "MedianMs": 12.599999999976717,
+      "P95Ms": 14.599999999976717,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "offscreen-merge",
+      "Samples": 20,
+      "MedianMs": 13.400000000023283,
+      "P95Ms": 14.300000000046566,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "auto-scroll",
+      "Samples": 20,
+      "MedianMs": 11.29999999993015,
+      "P95Ms": 14.29999999993015,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "rejected",
+      "Samples": 20,
+      "MedianMs": 14.099999999976717,
+      "P95Ms": 15.300000000046566,
+      "Passed": true
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "drop",
+      "Samples": 20,
+      "MedianMs": 43.90000000002328,
+      "P95Ms": 55.20000000006985,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "same-boundary",
+      "Samples": 20,
+      "MedianMs": 13.699999999953434,
+      "P95Ms": 15.199999999953434,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "boundary-switch",
+      "Samples": 20,
+      "MedianMs": 13.800000000046566,
+      "P95Ms": 15.099999999976717,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "multiple-merges",
+      "Samples": 20,
+      "MedianMs": 13.400000000023283,
+      "P95Ms": 14.199999999953434,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "mixed",
+      "Samples": 20,
+      "MedianMs": 12.70000000006985,
+      "P95Ms": 14.400000000023283,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "offscreen-merge",
+      "Samples": 20,
+      "MedianMs": 13.20000000006985,
+      "P95Ms": 14.400000000023283,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "auto-scroll",
+      "Samples": 20,
+      "MedianMs": 28.300000000046566,
+      "P95Ms": 34.199999999953434,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "drop",
+      "Samples": 20,
+      "MedianMs": 50,
+      "P95Ms": 54.60000000009313,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "same-boundary",
+      "Samples": 20,
+      "MedianMs": 14,
+      "P95Ms": 15.5,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "boundary-switch",
+      "Samples": 20,
+      "MedianMs": 14.099999999976717,
+      "P95Ms": 14.900000000023283,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "multiple-merges",
+      "Samples": 20,
+      "MedianMs": 13.5,
+      "P95Ms": 14.800000000046566,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "mixed",
+      "Samples": 20,
+      "MedianMs": 12.900000000023283,
+      "P95Ms": 15.199999999953434,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "offscreen-merge",
+      "Samples": 20,
+      "MedianMs": 13.599999999976717,
+      "P95Ms": 14.300000000046566,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "auto-scroll",
+      "Samples": 20,
+      "MedianMs": 28.5,
+      "P95Ms": 30.79999999993015,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "rejected",
+      "Samples": 20,
+      "MedianMs": 13.899999999906868,
+      "P95Ms": 15.199999999953434,
+      "Passed": true
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "drop",
+      "Samples": 20,
+      "MedianMs": 42.5,
+      "P95Ms": 51.09999999997672,
+      "Passed": true
+    }
+  ],
+  "DragPairs": [
+    {
+      "Profile": "150-native-True",
+      "Operation": "same-boundary",
+      "EarlierMedianMs": 13.400000005960464,
+      "CurrentMedianMs": 13.599999999976717,
+      "MedianDeltaMs": 0.19999999401625246,
+      "EarlierP95Ms": 15.200000002980232,
+      "CurrentP95Ms": 15.599999999976717
+    },
+    {
+      "Profile": "150-native-True",
+      "Operation": "boundary-switch",
+      "EarlierMedianMs": 13.5,
+      "CurrentMedianMs": 13.900000000023283,
+      "MedianDeltaMs": 0.40000000002328306,
+      "EarlierP95Ms": 14.899999998509884,
+      "CurrentP95Ms": 15
+    },
+    {
+      "Profile": "150-native-True",
+      "Operation": "multiple-merges",
+      "EarlierMedianMs": 13.200000002980232,
+      "CurrentMedianMs": 13.20000000006985,
+      "MedianDeltaMs": -2.9103830456733704E-09,
+      "EarlierP95Ms": 14.299999997019768,
+      "CurrentP95Ms": 14.199999999953434
+    },
+    {
+      "Profile": "150-native-True",
+      "Operation": "mixed",
+      "EarlierMedianMs": 12.799999997019768,
+      "CurrentMedianMs": 12.599999999976717,
+      "MedianDeltaMs": -0.19999999704305083,
+      "EarlierP95Ms": 13.600000001490116,
+      "CurrentP95Ms": 14.099999999976717
+    },
+    {
+      "Profile": "150-native-True",
+      "Operation": "offscreen-merge",
+      "EarlierMedianMs": 13,
+      "CurrentMedianMs": 13,
+      "MedianDeltaMs": 0,
+      "EarlierP95Ms": 14.199999995529652,
+      "CurrentP95Ms": 14.79999999993015
+    },
+    {
+      "Profile": "150-native-True",
+      "Operation": "auto-scroll",
+      "EarlierMedianMs": 12,
+      "CurrentMedianMs": 11.900000000023283,
+      "MedianDeltaMs": -0.09999999997671694,
+      "EarlierP95Ms": 14.200000002980232,
+      "CurrentP95Ms": 14.5
+    },
+    {
+      "Profile": "150-native-True",
+      "Operation": "drop",
+      "EarlierMedianMs": 30.100000001490116,
+      "CurrentMedianMs": 29.29999999993015,
+      "MedianDeltaMs": -0.8000000015599653,
+      "EarlierP95Ms": 33.70000000298023,
+      "CurrentP95Ms": 32.199999999953434
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "same-boundary",
+      "EarlierMedianMs": 13.899999998509884,
+      "CurrentMedianMs": 14,
+      "MedianDeltaMs": 0.10000000149011612,
+      "EarlierP95Ms": 15.799999997019768,
+      "CurrentP95Ms": 15.5
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "boundary-switch",
+      "EarlierMedianMs": 13.5,
+      "CurrentMedianMs": 13.70000000006985,
+      "MedianDeltaMs": 0.2000000000698492,
+      "EarlierP95Ms": 14.399999998509884,
+      "CurrentP95Ms": 15.20000000006985
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "multiple-merges",
+      "EarlierMedianMs": 13,
+      "CurrentMedianMs": 13.5,
+      "MedianDeltaMs": 0.5,
+      "EarlierP95Ms": 14.100000001490116,
+      "CurrentP95Ms": 14.70000000006985
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "mixed",
+      "EarlierMedianMs": 12.800000004470348,
+      "CurrentMedianMs": 12.899999999906868,
+      "MedianDeltaMs": 0.09999999543651938,
+      "EarlierP95Ms": 14.199999995529652,
+      "CurrentP95Ms": 13.899999999906868
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "offscreen-merge",
+      "EarlierMedianMs": 12.800000004470348,
+      "CurrentMedianMs": 12.899999999906868,
+      "MedianDeltaMs": 0.09999999543651938,
+      "EarlierP95Ms": 14.200000002980232,
+      "CurrentP95Ms": 14.79999999993015
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "auto-scroll",
+      "EarlierMedianMs": 11.700000002980232,
+      "CurrentMedianMs": 11.900000000023283,
+      "MedianDeltaMs": 0.19999999704305083,
+      "EarlierP95Ms": 15.399999998509884,
+      "CurrentP95Ms": 14.099999999976717
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "rejected",
+      "EarlierMedianMs": 13.100000001490116,
+      "CurrentMedianMs": 13.70000000006985,
+      "MedianDeltaMs": 0.5999999985797331,
+      "EarlierP95Ms": 14.200000002980232,
+      "CurrentP95Ms": 15.099999999976717
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "drop",
+      "EarlierMedianMs": 27.5,
+      "CurrentMedianMs": 28.100000000093132,
+      "MedianDeltaMs": 0.6000000000931323,
+      "EarlierP95Ms": 29.5,
+      "CurrentP95Ms": 29.800000000046566
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "same-boundary",
+      "EarlierMedianMs": 13.700000002980232,
+      "CurrentMedianMs": 14,
+      "MedianDeltaMs": 0.29999999701976776,
+      "EarlierP95Ms": 14.799999997019768,
+      "CurrentP95Ms": 14.900000000023283
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "boundary-switch",
+      "EarlierMedianMs": 13.600000001490116,
+      "CurrentMedianMs": 14,
+      "MedianDeltaMs": 0.3999999985098839,
+      "EarlierP95Ms": 14.699999995529652,
+      "CurrentP95Ms": 14.699999999953434
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "multiple-merges",
+      "EarlierMedianMs": 12.899999998509884,
+      "CurrentMedianMs": 12.900000000023283,
+      "MedianDeltaMs": 1.5133991837501526E-09,
+      "EarlierP95Ms": 14.100000001490116,
+      "CurrentP95Ms": 15
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "mixed",
+      "EarlierMedianMs": 12.600000001490116,
+      "CurrentMedianMs": 13,
+      "MedianDeltaMs": 0.3999999985098839,
+      "EarlierP95Ms": 14,
+      "CurrentP95Ms": 13.699999999953434
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "offscreen-merge",
+      "EarlierMedianMs": 12.699999995529652,
+      "CurrentMedianMs": 13.400000000023283,
+      "MedianDeltaMs": 0.7000000044936314,
+      "EarlierP95Ms": 14.100000001490116,
+      "CurrentP95Ms": 14.600000000093132
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "auto-scroll",
+      "EarlierMedianMs": 28.100000001490116,
+      "CurrentMedianMs": 28.099999999976717,
+      "MedianDeltaMs": -1.5133991837501526E-09,
+      "EarlierP95Ms": 31.80000000447035,
+      "CurrentP95Ms": 30.70000000006985
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "drop",
+      "EarlierMedianMs": 30.899999998509884,
+      "CurrentMedianMs": 31.699999999953434,
+      "MedianDeltaMs": 0.80000000144355,
+      "EarlierP95Ms": 34.29999999701977,
+      "CurrentP95Ms": 34.59999999997672
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "same-boundary",
+      "EarlierMedianMs": 14.099999994039536,
+      "CurrentMedianMs": 13.800000000046566,
+      "MedianDeltaMs": -0.2999999939929694,
+      "EarlierP95Ms": 14.5,
+      "CurrentP95Ms": 14.599999999976717
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "boundary-switch",
+      "EarlierMedianMs": 14,
+      "CurrentMedianMs": 14,
+      "MedianDeltaMs": 0,
+      "EarlierP95Ms": 14.5,
+      "CurrentP95Ms": 14.699999999953434
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "multiple-merges",
+      "EarlierMedianMs": 13.399999998509884,
+      "CurrentMedianMs": 13.400000000023283,
+      "MedianDeltaMs": 1.5133991837501526E-09,
+      "EarlierP95Ms": 15,
+      "CurrentP95Ms": 14.099999999976717
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "mixed",
+      "EarlierMedianMs": 13.199999995529652,
+      "CurrentMedianMs": 13.199999999953434,
+      "MedianDeltaMs": 4.423782229423523E-09,
+      "EarlierP95Ms": 13.899999998509884,
+      "CurrentP95Ms": 13.70000000006985
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "offscreen-merge",
+      "EarlierMedianMs": 13.799999997019768,
+      "CurrentMedianMs": 13.5,
+      "MedianDeltaMs": -0.29999999701976776,
+      "EarlierP95Ms": 14.899999998509884,
+      "CurrentP95Ms": 14.599999999976717
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "auto-scroll",
+      "EarlierMedianMs": 28.600000001490116,
+      "CurrentMedianMs": 28.400000000023283,
+      "MedianDeltaMs": -0.20000000146683306,
+      "EarlierP95Ms": 30.19999999552965,
+      "CurrentP95Ms": 30.199999999953434
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "rejected",
+      "EarlierMedianMs": 13.700000002980232,
+      "CurrentMedianMs": 13.79999999993015,
+      "MedianDeltaMs": 0.09999999694991857,
+      "EarlierP95Ms": 14.5,
+      "CurrentP95Ms": 15.199999999953434
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "drop",
+      "EarlierMedianMs": 28.5,
+      "CurrentMedianMs": 28.899999999906868,
+      "MedianDeltaMs": 0.39999999990686774,
+      "EarlierP95Ms": 33.5,
+      "CurrentP95Ms": 30.300000000046566
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "same-boundary",
+      "EarlierMedianMs": 13.800000004470348,
+      "CurrentMedianMs": 13.79999999993015,
+      "MedianDeltaMs": -4.540197551250458E-09,
+      "EarlierP95Ms": 15.399999998509884,
+      "CurrentP95Ms": 14.800000000046566
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "boundary-switch",
+      "EarlierMedianMs": 13.699999995529652,
+      "CurrentMedianMs": 13.5,
+      "MedianDeltaMs": -0.19999999552965164,
+      "EarlierP95Ms": 15,
+      "CurrentP95Ms": 15
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "multiple-merges",
+      "EarlierMedianMs": 13.300000004470348,
+      "CurrentMedianMs": 13.300000000046566,
+      "MedianDeltaMs": -4.423782229423523E-09,
+      "EarlierP95Ms": 14.5,
+      "CurrentP95Ms": 14.199999999953434
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "mixed",
+      "EarlierMedianMs": 13.100000001490116,
+      "CurrentMedianMs": 13,
+      "MedianDeltaMs": -0.10000000149011612,
+      "EarlierP95Ms": 14.199999995529652,
+      "CurrentP95Ms": 14.300000000046566
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "offscreen-merge",
+      "EarlierMedianMs": 13.599999994039536,
+      "CurrentMedianMs": 13.5,
+      "MedianDeltaMs": -0.09999999403953552,
+      "EarlierP95Ms": 14.699999995529652,
+      "CurrentP95Ms": 14.400000000023283
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "auto-scroll",
+      "EarlierMedianMs": 11.899999998509884,
+      "CurrentMedianMs": 12,
+      "MedianDeltaMs": 0.10000000149011612,
+      "EarlierP95Ms": 14.899999998509884,
+      "CurrentP95Ms": 14.900000000023283
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "drop",
+      "EarlierMedianMs": 52.29999999701977,
+      "CurrentMedianMs": 50.199999999953434,
+      "MedianDeltaMs": -2.099999997066334,
+      "EarlierP95Ms": 60.5,
+      "CurrentP95Ms": 59.800000000046566
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "same-boundary",
+      "EarlierMedianMs": 14,
+      "CurrentMedianMs": 13.800000000046566,
+      "MedianDeltaMs": -0.19999999995343387,
+      "EarlierP95Ms": 15.5,
+      "CurrentP95Ms": 15.100000000093132
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "boundary-switch",
+      "EarlierMedianMs": 13.800000004470348,
+      "CurrentMedianMs": 13.699999999953434,
+      "MedianDeltaMs": -0.10000000451691449,
+      "EarlierP95Ms": 14.700000002980232,
+      "CurrentP95Ms": 15.099999999976717
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "multiple-merges",
+      "EarlierMedianMs": 13.400000005960464,
+      "CurrentMedianMs": 13.5,
+      "MedianDeltaMs": 0.09999999403953552,
+      "EarlierP95Ms": 14.100000001490116,
+      "CurrentP95Ms": 14.70000000006985
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "mixed",
+      "EarlierMedianMs": 12.799999997019768,
+      "CurrentMedianMs": 12.599999999976717,
+      "MedianDeltaMs": -0.19999999704305083,
+      "EarlierP95Ms": 13.899999998509884,
+      "CurrentP95Ms": 14.599999999976717
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "offscreen-merge",
+      "EarlierMedianMs": 13.5,
+      "CurrentMedianMs": 13.400000000023283,
+      "MedianDeltaMs": -0.09999999997671694,
+      "EarlierP95Ms": 15.300000004470348,
+      "CurrentP95Ms": 14.300000000046566
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "auto-scroll",
+      "EarlierMedianMs": 12.399999998509884,
+      "CurrentMedianMs": 11.29999999993015,
+      "MedianDeltaMs": -1.099999998579733,
+      "EarlierP95Ms": 14.200000002980232,
+      "CurrentP95Ms": 14.29999999993015
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "rejected",
+      "EarlierMedianMs": 13.599999994039536,
+      "CurrentMedianMs": 14.099999999976717,
+      "MedianDeltaMs": 0.5000000059371814,
+      "EarlierP95Ms": 15,
+      "CurrentP95Ms": 15.300000000046566
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "drop",
+      "EarlierMedianMs": 45.5,
+      "CurrentMedianMs": 43.90000000002328,
+      "MedianDeltaMs": -1.599999999976717,
+      "EarlierP95Ms": 51.100000001490116,
+      "CurrentP95Ms": 55.20000000006985
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "same-boundary",
+      "EarlierMedianMs": 13.899999998509884,
+      "CurrentMedianMs": 13.699999999953434,
+      "MedianDeltaMs": -0.19999999855645,
+      "EarlierP95Ms": 15.299999997019768,
+      "CurrentP95Ms": 15.199999999953434
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "boundary-switch",
+      "EarlierMedianMs": 13.900000005960464,
+      "CurrentMedianMs": 13.800000000046566,
+      "MedianDeltaMs": -0.10000000591389835,
+      "EarlierP95Ms": 15.399999998509884,
+      "CurrentP95Ms": 15.099999999976717
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "multiple-merges",
+      "EarlierMedianMs": 13.399999998509884,
+      "CurrentMedianMs": 13.400000000023283,
+      "MedianDeltaMs": 1.5133991837501526E-09,
+      "EarlierP95Ms": 14.799999997019768,
+      "CurrentP95Ms": 14.199999999953434
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "mixed",
+      "EarlierMedianMs": 13.5,
+      "CurrentMedianMs": 12.70000000006985,
+      "MedianDeltaMs": -0.7999999999301508,
+      "EarlierP95Ms": 14.199999995529652,
+      "CurrentP95Ms": 14.400000000023283
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "offscreen-merge",
+      "EarlierMedianMs": 13.5,
+      "CurrentMedianMs": 13.20000000006985,
+      "MedianDeltaMs": -0.2999999999301508,
+      "EarlierP95Ms": 14.5,
+      "CurrentP95Ms": 14.400000000023283
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "auto-scroll",
+      "EarlierMedianMs": 28.399999998509884,
+      "CurrentMedianMs": 28.300000000046566,
+      "MedianDeltaMs": -0.09999999846331775,
+      "EarlierP95Ms": 31.700000002980232,
+      "CurrentP95Ms": 34.199999999953434
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "drop",
+      "EarlierMedianMs": 52.5,
+      "CurrentMedianMs": 50,
+      "MedianDeltaMs": -2.5,
+      "EarlierP95Ms": 55.79999999701977,
+      "CurrentP95Ms": 54.60000000009313
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "same-boundary",
+      "EarlierMedianMs": 13.899999998509884,
+      "CurrentMedianMs": 14,
+      "MedianDeltaMs": 0.10000000149011612,
+      "EarlierP95Ms": 15,
+      "CurrentP95Ms": 15.5
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "boundary-switch",
+      "EarlierMedianMs": 13.800000004470348,
+      "CurrentMedianMs": 14.099999999976717,
+      "MedianDeltaMs": 0.2999999955063686,
+      "EarlierP95Ms": 15.199999995529652,
+      "CurrentP95Ms": 14.900000000023283
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "multiple-merges",
+      "EarlierMedianMs": 13.600000001490116,
+      "CurrentMedianMs": 13.5,
+      "MedianDeltaMs": -0.10000000149011612,
+      "EarlierP95Ms": 14.800000004470348,
+      "CurrentP95Ms": 14.800000000046566
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "mixed",
+      "EarlierMedianMs": 13.200000002980232,
+      "CurrentMedianMs": 12.900000000023283,
+      "MedianDeltaMs": -0.3000000029569492,
+      "EarlierP95Ms": 14.399999998509884,
+      "CurrentP95Ms": 15.199999999953434
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "offscreen-merge",
+      "EarlierMedianMs": 13,
+      "CurrentMedianMs": 13.599999999976717,
+      "MedianDeltaMs": 0.5999999999767169,
+      "EarlierP95Ms": 14.699999995529652,
+      "CurrentP95Ms": 14.300000000046566
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "auto-scroll",
+      "EarlierMedianMs": 29,
+      "CurrentMedianMs": 28.5,
+      "MedianDeltaMs": -0.5,
+      "EarlierP95Ms": 32,
+      "CurrentP95Ms": 30.79999999993015
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "rejected",
+      "EarlierMedianMs": 13.299999997019768,
+      "CurrentMedianMs": 13.899999999906868,
+      "MedianDeltaMs": 0.6000000028871,
+      "EarlierP95Ms": 13.900000005960464,
+      "CurrentP95Ms": 15.199999999953434
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "drop",
+      "EarlierMedianMs": 45.19999999552965,
+      "CurrentMedianMs": 42.5,
+      "MedianDeltaMs": -2.6999999955296516,
+      "EarlierP95Ms": 49.80000000447035,
+      "CurrentP95Ms": 51.09999999997672
+    }
+  ],
+  "DragLifecyclePairs": [
+    {
+      "Profile": "150-native-True",
+      "Operation": "start-fallback",
+      "Samples": 20,
+      "EarlierMedianMs": 16.899999998509884,
+      "CurrentMedianMs": 16.599999999976717,
+      "MedianDeltaMs": -0.29999999853316694,
+      "EarlierP95Ms": 18,
+      "CurrentP95Ms": 18.5
+    },
+    {
+      "Profile": "150-native-True",
+      "Operation": "end",
+      "Samples": 20,
+      "EarlierMedianMs": 12.699999995529652,
+      "CurrentMedianMs": 12.699999999953434,
+      "MedianDeltaMs": 4.423782229423523E-09,
+      "EarlierP95Ms": 13.200000002980232,
+      "CurrentP95Ms": 14.300000000046566
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "start-fallback",
+      "Samples": 20,
+      "EarlierMedianMs": 16.700000002980232,
+      "CurrentMedianMs": 16.300000000046566,
+      "MedianDeltaMs": -0.4000000029336661,
+      "EarlierP95Ms": 17.400000005960464,
+      "CurrentP95Ms": 17.100000000093132
+    },
+    {
+      "Profile": "150-native-False",
+      "Operation": "end",
+      "Samples": 20,
+      "EarlierMedianMs": 12.600000001490116,
+      "CurrentMedianMs": 13.5,
+      "MedianDeltaMs": 0.8999999985098839,
+      "EarlierP95Ms": 13.299999997019768,
+      "CurrentP95Ms": 14.20000000006985
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "start-fallback",
+      "Samples": 20,
+      "EarlierMedianMs": 16.100000001490116,
+      "CurrentMedianMs": 14.900000000023283,
+      "MedianDeltaMs": -1.200000001466833,
+      "EarlierP95Ms": 23.600000001490116,
+      "CurrentP95Ms": 22.099999999976717
+    },
+    {
+      "Profile": "150-touch-True",
+      "Operation": "end",
+      "Samples": 20,
+      "EarlierMedianMs": 9.799999997019768,
+      "CurrentMedianMs": 9.29999999993015,
+      "MedianDeltaMs": -0.49999999708961695,
+      "EarlierP95Ms": 17.299999997019768,
+      "CurrentP95Ms": 17.900000000023283
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "start-fallback",
+      "Samples": 20,
+      "EarlierMedianMs": 12.899999998509884,
+      "CurrentMedianMs": 13.20000000006985,
+      "MedianDeltaMs": 0.3000000015599653,
+      "EarlierP95Ms": 21.100000001490116,
+      "CurrentP95Ms": 21.79999999993015
+    },
+    {
+      "Profile": "150-touch-False",
+      "Operation": "end",
+      "Samples": 20,
+      "EarlierMedianMs": 7.5,
+      "CurrentMedianMs": 7.600000000093132,
+      "MedianDeltaMs": 0.10000000009313226,
+      "EarlierP95Ms": 16.100000001490116,
+      "CurrentP95Ms": 16.099999999976717
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "start-fallback",
+      "Samples": 20,
+      "EarlierMedianMs": 18.30000000447035,
+      "CurrentMedianMs": 18.20000000006985,
+      "MedianDeltaMs": -0.10000000440049917,
+      "EarlierP95Ms": 19.600000001490116,
+      "CurrentP95Ms": 19.599999999976717
+    },
+    {
+      "Profile": "500-native-True",
+      "Operation": "end",
+      "Samples": 20,
+      "EarlierMedianMs": 12.5,
+      "CurrentMedianMs": 12.400000000023283,
+      "MedianDeltaMs": -0.09999999997671694,
+      "EarlierP95Ms": 13.600000001490116,
+      "CurrentP95Ms": 13.099999999976717
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "start-fallback",
+      "Samples": 20,
+      "EarlierMedianMs": 17.899999998509884,
+      "CurrentMedianMs": 17.79999999993015,
+      "MedianDeltaMs": -0.09999999857973307,
+      "EarlierP95Ms": 18.80000000447035,
+      "CurrentP95Ms": 18.70000000006985
+    },
+    {
+      "Profile": "500-native-False",
+      "Operation": "end",
+      "Samples": 20,
+      "EarlierMedianMs": 12.899999998509884,
+      "CurrentMedianMs": 13.20000000006985,
+      "MedianDeltaMs": 0.3000000015599653,
+      "EarlierP95Ms": 13.899999998509884,
+      "CurrentP95Ms": 14
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "start-fallback",
+      "Samples": 20,
+      "EarlierMedianMs": 19.400000005960464,
+      "CurrentMedianMs": 17.099999999976717,
+      "MedianDeltaMs": -2.3000000059837475,
+      "EarlierP95Ms": 23.700000002980232,
+      "CurrentP95Ms": 24.70000000006985
+    },
+    {
+      "Profile": "500-touch-True",
+      "Operation": "end",
+      "Samples": 20,
+      "EarlierMedianMs": 10.200000002980232,
+      "CurrentMedianMs": 11.099999999976717,
+      "MedianDeltaMs": 0.8999999969964847,
+      "EarlierP95Ms": 18.700000002980232,
+      "CurrentP95Ms": 17.100000000093132
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "start-fallback",
+      "Samples": 20,
+      "EarlierMedianMs": 17.80000000447035,
+      "CurrentMedianMs": 17.400000000023283,
+      "MedianDeltaMs": -0.4000000044470653,
+      "EarlierP95Ms": 25.100000001490116,
+      "CurrentP95Ms": 25.599999999976717
+    },
+    {
+      "Profile": "500-touch-False",
+      "Operation": "end",
+      "Samples": 20,
+      "EarlierMedianMs": 8.100000001490116,
+      "CurrentMedianMs": 9.800000000046566,
+      "MedianDeltaMs": 1.69999999855645,
+      "EarlierP95Ms": 14.599999994039536,
+      "CurrentP95Ms": 15.5
+    }
+  ]
+}

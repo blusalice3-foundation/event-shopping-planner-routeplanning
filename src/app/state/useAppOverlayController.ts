@@ -1,3 +1,4 @@
+import type { MapEditorSession } from "../../features/map/domain/mapEditorSession";
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import {
   AppOverlayInvariantError,
@@ -58,27 +59,41 @@ export interface AppOverlayItemCommands {
   confirm(): void;
 }
 
+export interface AppOverlayOpenReceipt {
+  readonly requestId: string;
+  readonly accepted: boolean;
+}
+
+export type AppOverlayOpenReceiptCallback = (
+  receipt: AppOverlayOpenReceipt,
+) => void;
+
 export interface AppOverlayEventCommands {
   openUpdate(
     pending: Extract<ActiveEventOverlay, { kind: "update" }>["pending"],
+    onReceipt?: AppOverlayOpenReceiptCallback,
   ): string;
   openDuplicate(
     pending: Extract<ActiveEventOverlay, { kind: "duplicate" }>["pending"],
   ): string;
-  openUrlUpdate(eventName: string): string;
+  openUrlUpdate(
+    eventName: string,
+    onReceipt?: AppOverlayOpenReceiptCallback,
+  ): string;
   openRename(eventName: string): string;
   openExport(eventName: string): string;
-  close(): void;
-  confirm(): void;
+  close(requestId?: string): void;
+  confirm(requestId?: string): void;
 }
 
 export interface AppOverlayBackupCommands {
   openRestore(
     backup: RestoreOverlay["backup"],
     xlsxCompletion: RestoreOverlay["xlsxCompletion"],
+    onReceipt?: AppOverlayOpenReceiptCallback,
   ): string;
-  close(): void;
-  confirm(): void;
+  close(requestId?: string): void;
+  confirm(requestId?: string): void;
 }
 
 export interface AppOverlayMapImportCommands {
@@ -92,11 +107,13 @@ export interface AppOverlayMapImportCommands {
 export interface AppOverlayMapEditorCommands {
   openBlockDefinition(
     pendingSelection: BlockDefinitionOverlay["pendingSelection"],
+    session?: MapEditorSession,
   ): string;
-  openSimpleHallDefinition(): string;
+  openSimpleHallDefinition(session?: MapEditorSession): string;
   openGlobalHallOrder(): string;
   openHallDefinition(
     pendingSelection: HallDefinitionOverlay["pendingSelection"],
+    session?: MapEditorSession,
   ): string;
   startCellSelection(selection: CellSelectionOverlay["selection"]): void;
   clearPendingCellSelection(): void;
@@ -185,6 +202,85 @@ export const reduceAppOverlayControllerState = (
   }
 };
 
+type AppOverlayControllerReducerState = Readonly<{
+  overlays: AppOverlayState;
+  openReceipts: readonly AppOverlayOpenReceipt[];
+}>;
+
+type AppOverlayControllerAction =
+  | AppOverlayAction
+  | Readonly<{
+      type: "controller/consume-open-receipts";
+      requestIds: readonly string[];
+    }>
+  | Readonly<{
+      type: "controller/close-event";
+      requestId: string;
+    }>
+  | Readonly<{
+      type: "controller/confirm-event";
+      requestId: string;
+    }>;
+
+/** Keep receipt decisions in the same pure transition that applies each open. */
+const reduceControllerWithReceipts = (
+  state: AppOverlayControllerReducerState,
+  action: AppOverlayControllerAction,
+): AppOverlayControllerReducerState => {
+  if (action.type === "controller/consume-open-receipts") {
+    const consumed = new Set(action.requestIds);
+    const openReceipts = state.openReceipts.filter(
+      (receipt) => !consumed.has(receipt.requestId),
+    );
+    return openReceipts.length === state.openReceipts.length
+      ? state
+      : { ...state, openReceipts };
+  }
+  if (
+    action.type === "controller/close-event" ||
+    action.type === "controller/confirm-event"
+  ) {
+    const current = state.overlays.event;
+    if (current.kind === "inactive" || current.requestId !== action.requestId) {
+      return state;
+    }
+    return {
+      ...state,
+      overlays: reduceAppOverlayControllerState(state.overlays, {
+        type:
+          action.type === "controller/close-event"
+            ? "event/close"
+            : "event/confirm",
+        requestId: action.requestId,
+        expectedKind: current.kind,
+      }),
+    };
+  }
+  const overlays = reduceAppOverlayControllerState(state.overlays, action);
+  if (
+    action.type === "event/open-update" ||
+    action.type === "event/open-url-update" ||
+    action.type === "backup/open-restore"
+  ) {
+    const expectedKind =
+      action.type === "event/open-update" ? "update" : "url-update";
+    const accepted =
+      action.type === "backup/open-restore"
+        ? overlays.backup.kind === "restore" &&
+          overlays.backup.requestId === action.requestId
+        : overlays.event.kind === expectedKind &&
+          overlays.event.requestId === action.requestId;
+    return {
+      overlays,
+      openReceipts: [
+        ...state.openReceipts,
+        { requestId: action.requestId, accepted },
+      ],
+    };
+  }
+  return overlays === state.overlays ? state : { ...state, overlays };
+};
+
 const requireGeneratedRequestId = (requestId: unknown): string => {
   if (typeof requestId !== "string" || requestId.trim().length === 0) {
     throw new AppOverlayInvariantError(
@@ -200,15 +296,34 @@ export const useAppOverlayController = (
 ): AppOverlayController => {
   const { createRequestId, initialState } = options;
   const localRequestSequence = useRef(0);
-  const [state, dispatch] = useReducer(
-    reduceAppOverlayControllerState,
+  const receiptCallbacks = useRef(
+    new Map<string, AppOverlayOpenReceiptCallback>(),
+  );
+  const [controllerState, dispatch] = useReducer(
+    reduceControllerWithReceipts,
     initialState,
-    (seed): AppOverlayState => {
+    (seed): AppOverlayControllerReducerState => {
       const selected = seed ?? createInitialAppOverlayState();
       assertAppOverlayState(selected);
-      return selected;
+      return { overlays: selected, openReceipts: [] };
     },
   );
+  const state = controllerState.overlays;
+
+  useEffect(() => {
+    const receipts = controllerState.openReceipts;
+    if (receipts.length === 0) return;
+    dispatch({
+      type: "controller/consume-open-receipts",
+      requestIds: receipts.map((receipt) => receipt.requestId),
+    });
+    for (const receipt of receipts) {
+      const callback = receiptCallbacks.current.get(receipt.requestId);
+      // Delete before delivery: StrictMode and reentrant commands cannot replay it.
+      receiptCallbacks.current.delete(receipt.requestId);
+      callback?.(receipt);
+    }
+  }, [controllerState.openReceipts]);
 
   useEffect(() => {
     const toast = state.concurrentStatus.smartInsertToast;
@@ -263,8 +378,9 @@ export const useAppOverlayController = (
 
   const eventCommands = useMemo<AppOverlayEventCommands>(
     () => ({
-      openUpdate: (pending) => {
+      openUpdate: (pending, onReceipt) => {
         const requestId = nextRequestId();
+        if (onReceipt) receiptCallbacks.current.set(requestId, onReceipt);
         dispatch({ type: "event/open-update", requestId, pending });
         return requestId;
       },
@@ -273,8 +389,9 @@ export const useAppOverlayController = (
         dispatch({ type: "event/open-duplicate", requestId, pending });
         return requestId;
       },
-      openUrlUpdate: (eventName) => {
+      openUrlUpdate: (eventName, onReceipt) => {
         const requestId = nextRequestId();
+        if (onReceipt) receiptCallbacks.current.set(requestId, onReceipt);
         dispatch({ type: "event/open-url-update", requestId, eventName });
         return requestId;
       },
@@ -288,7 +405,11 @@ export const useAppOverlayController = (
         dispatch({ type: "event/open-export", requestId, eventName });
         return requestId;
       },
-      close: () => {
+      close: (requestId) => {
+        if (requestId !== undefined) {
+          dispatch({ type: "controller/close-event", requestId });
+          return;
+        }
         if (state.event.kind === "inactive") return;
         dispatch({
           type: "event/close",
@@ -296,7 +417,11 @@ export const useAppOverlayController = (
           expectedKind: state.event.kind,
         });
       },
-      confirm: () => {
+      confirm: (requestId) => {
+        if (requestId !== undefined) {
+          dispatch({ type: "controller/confirm-event", requestId });
+          return;
+        }
         if (state.event.kind === "inactive") return;
         dispatch({
           type: "event/confirm",
@@ -310,8 +435,9 @@ export const useAppOverlayController = (
 
   const backupCommands = useMemo<AppOverlayBackupCommands>(
     () => ({
-      openRestore: (backup, xlsxCompletion) => {
+      openRestore: (backup, xlsxCompletion, onReceipt) => {
         const requestId = nextRequestId();
+        if (onReceipt) receiptCallbacks.current.set(requestId, onReceipt);
         dispatch({
           type: "backup/open-restore",
           requestId,
@@ -320,12 +446,20 @@ export const useAppOverlayController = (
         });
         return requestId;
       },
-      close: () => {
-        if (state.backup.kind !== "restore") return;
+      close: (requestId) => {
+        if (
+          state.backup.kind !== "restore" ||
+          (requestId !== undefined && state.backup.requestId !== requestId)
+        )
+          return;
         dispatch({ type: "backup/close", requestId: state.backup.requestId });
       },
-      confirm: () => {
-        if (state.backup.kind !== "restore") return;
+      confirm: (requestId) => {
+        if (
+          state.backup.kind !== "restore" ||
+          (requestId !== undefined && state.backup.requestId !== requestId)
+        )
+          return;
         dispatch({ type: "backup/confirm", requestId: state.backup.requestId });
       },
     }),
@@ -374,19 +508,21 @@ export const useAppOverlayController = (
 
   const mapEditorCommands = useMemo<AppOverlayMapEditorCommands>(
     () => ({
-      openBlockDefinition: (pendingSelection) => {
+      openBlockDefinition: (pendingSelection, session) => {
         const requestId = nextRequestId();
         dispatch({
           type: "map-editor/open-block-definition",
+          ...(session ? { session } : {}),
           requestId,
           pendingSelection,
         });
         return requestId;
       },
-      openSimpleHallDefinition: () => {
+      openSimpleHallDefinition: (session) => {
         const requestId = nextRequestId();
         dispatch({
           type: "map-editor/open-simple-hall-definition",
+          ...(session ? { session } : {}),
           requestId,
         });
         return requestId;
@@ -396,10 +532,11 @@ export const useAppOverlayController = (
         dispatch({ type: "map-editor/open-global-hall-order", requestId });
         return requestId;
       },
-      openHallDefinition: (pendingSelection) => {
+      openHallDefinition: (pendingSelection, session) => {
         const requestId = nextRequestId();
         dispatch({
           type: "map-editor/open-hall-definition",
+          ...(session ? { session } : {}),
           requestId,
           pendingSelection,
         });

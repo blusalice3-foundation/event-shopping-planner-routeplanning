@@ -63,6 +63,7 @@ const initialReadModel = (
   mapImportPendingFile: null,
   mapImportPendingEventName: "",
   pendingMapReimport: null,
+  mapEditorSession: null,
   blockDefinitionMode: false,
   pendingCellSelection: null,
   cellSelectionMode: null,

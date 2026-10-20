@@ -178,3 +178,76 @@ describe("useEventLifecycleCommands", () => {
     },
   );
 });
+
+it("opens a truly empty event for adding items without changing retained day or map settings", () => {
+  const ports = createPorts({
+    eventLists: { イベントA: [] },
+    dayModes: { イベントA: { "2日目": "execute" } },
+    executeModeItems: { イベントA: { "2日目": [] } },
+    mapData: {
+      イベントA: {
+        "2日目マップ": {
+          cells: [],
+          mergedCells: [],
+          blocks: [],
+          maxRow: 6,
+          maxCol: 6,
+        },
+      },
+    },
+    hallDefinitions: {
+      イベントA: {
+        "2日目マップ": [{ id: "hall", name: "残す会場", vertices: [] }],
+      },
+    },
+    mapRotationSettings: {
+      イベントA: {
+        "2日目": { initialAngle: 0, mapTabAngle: 90, focusModeAngle: 0 },
+      },
+    },
+  });
+  const before = structuredClone({
+    eventLists: ports.eventLists,
+    dayModes: ports.dayModes,
+    executeModeItems: ports.executeModeItems,
+    mapRotationSettings: ports.mapRotationSettings,
+    mapData: ports.mapData,
+    routeSettings: ports.routeSettings,
+    hallDefinitions: ports.hallDefinitions,
+    hallRouteSettings: ports.hallRouteSettings,
+    mapViewportSettings: ports.mapViewportSettings,
+  });
+  const { result } = renderHook(() => useEventLifecycleCommands(ports));
+  act(() => result.current.selectEvent("イベントA"));
+  expect(ports.navigation.showImport).toHaveBeenCalledWith("イベントA");
+  expect(ports.navigation.openEvent).not.toHaveBeenCalled();
+  expect(ports.clearSelection).toHaveBeenCalledOnce();
+  expect(ports.setSelectedBlockFilters).toHaveBeenCalledWith(new Set());
+  expect(ports.notify).not.toHaveBeenCalled();
+  expect(ports.requestMutation).not.toHaveBeenCalled();
+  for (const key of Object.keys(before) as Array<keyof typeof before>) {
+    expect(ports[key]).toEqual(before[key]);
+  }
+  expect(ports.setDayModes).not.toHaveBeenCalled();
+  expect(ports.setMapData).not.toHaveBeenCalled();
+});
+
+it.each(["missing", "constructor", "invalid-day"])(
+  "does not open the addition screen for %s",
+  (kind) => {
+    const ports = createPorts({
+      eventLists: { イベントA: [{ ...eventItem, eventDate: "　 " }] },
+    });
+    const { result } = renderHook(() => useEventLifecycleCommands(ports));
+    act(() =>
+      result.current.selectEvent(kind === "invalid-day" ? "イベントA" : kind),
+    );
+    expect(ports.navigation.showImport).not.toHaveBeenCalled();
+    expect(ports.navigation.openEvent).not.toHaveBeenCalled();
+    expect(ports.notify).toHaveBeenCalledWith(
+      "参加日がないため処理を停止しました。",
+    );
+    expect(ports.clearSelection).not.toHaveBeenCalled();
+    expect(ports.setSelectedBlockFilters).not.toHaveBeenCalled();
+  },
+);

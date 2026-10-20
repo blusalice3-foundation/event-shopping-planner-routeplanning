@@ -1,0 +1,67 @@
+{
+  "findingsResolved": [
+    "OP04 visible offscreen-merge notice",
+    "OP05-related live fallback focus restoration"
+  ],
+  "vitest": {
+    "skipped": 88,
+    "passed": 3219,
+    "failed": 0
+  },
+  "browser": {
+    "retries": 0,
+    "skipped": 54,
+    "passed": 308,
+    "failed": 0
+  },
+  "api": {
+    "failed": 0,
+    "passed": 21
+  },
+  "performance": {
+    "policy": "Two additional full runs fixed before collection; all initial and additional samples included; original failed judgments retained.",
+    "dragAllBatchesPassed": false,
+    "timingOnlyFailedBatches": 2,
+    "all204SampleGatesPassed": true,
+    "dragPooled": {
+      "Categories": 60,
+      "ExpectedCategories": 60,
+      "MinimumN": 60.0,
+      "MaximumMedianMs": 54.80000000074506,
+      "MaximumP95Ms": 66.39999999850988,
+      "Failures": [],
+      "Pass": true
+    },
+    "existing1500": {
+      "Categories": 48,
+      "ExpectedCategories": 48,
+      "MinimumN": 20.0,
+      "MaximumMedianMs": 50.90000000037253,
+      "MaximumP95Ms": 68.89999999850988,
+      "Failures": [],
+      "Pass": true
+    },
+    "dragPooledAcceptance": true,
+    "required150500": {
+      "Categories": 96,
+      "ExpectedCategories": 96,
+      "MinimumN": 20.0,
+      "MaximumMedianMs": 32.899999998509884,
+      "MaximumP95Ms": 41.399999998509884,
+      "Failures": [],
+      "Pass": true
+    }
+  },
+  "quality": {
+    "changedPrettier": true,
+    "encoding": true,
+    "architecture": true,
+    "standardBuild": true,
+    "testMembership": true,
+    "typecheck": true,
+    "changedEslint": true,
+    "dbContract": true
+  },
+  "preservation": "final-verification.json: 51 existing user files, 1024 measured source files, 32 build files match",
+  "resultsDocument": "docs/user-operation-consistency-op04-focus-results-20261019.md"
+}

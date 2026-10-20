@@ -1,0 +1,282 @@
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+
+ ❯ |integration| src/components/FocusMode.limitedInteraction.integration.test.tsx (6 tests | 1 failed) 3456ms
+   × does not resume a gesture cancelled inside a dialog after the dialog closes 188ms
+ ❯ |integration| src/components/map/MapView.visitProjection.integration.test.tsx (13 tests | 2 failed) 6649ms
+   × preserves real-popup baseline field intent across failure, invalidation and retry: direct 715ms
+   × preserves real-popup baseline field intent across failure, invalidation and retry: worker 5012ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |integration| src/components/FocusMode.limitedInteraction.integration.test.tsx > does not resume a gesture cancelled inside a dialog after the dialog closes
+TestingLibraryElementError: Unable to find an element with the text: A-01A. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mclass[39m=[32m"esp-body-scroll-lock esp-body-overscroll-lock"[39m
+[36m>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"esp-layout-height relative min-h-0 overflow-y-auto overscroll-contain pb-20"[39m
+      [33mdata-layout-height[39m=[32m"calc((100dvh - 57px - var(--app-header-height) - var(--app-main-content-padding)) / 1)"[39m
+      [33mdata-testid[39m=[32m"focus-mode-scroll-region"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"sticky top-0 z-40 flex-shrink-0 overflow-hidden text-white rounded-lg shadow-lg px-2 py-1 mb-1 mx-2"[39m
+        [33mdata-testid[39m=[32m"focus-mode-header"[39m
+      [36m>[39m
+        [36m<svg[39m
+          [33maria-hidden[39m=[32m"true"[39m
+          [33mclass[39m=[32m"absolute inset-0 h-full w-full pointer-events-none"[39m
+          [33mpreserveAspectRatio[39m=[32m"none"[39m
+          [33mshape-rendering[39m=[32m"crispEdges"[39m
+          [33mviewBox[39m=[32m"0 0 100 100"[39m
+        [36m>[39m
+          [36m<rect[39m
+            [33mdata-header-status[39m=[32m"unvisited"[39m
+            [33mfill[39m=[32m"#64748b"[39m
+            [33mheight[39m=[32m"100"[39m
+            [33mwidth[39m=[32m"100"[39m
+            [33mx[39m=[32m"0"[39m
+          [36m/>[39m
+          [36m<rect[39m
+            [33mdata-header-overlay[39m=[32m"true"[39m
+            [33mfill[39m=[32m"rgba(15, 23, 42, 0.60)"[39m
+            [33mheight[39m=[32m"100"[39m
+            [33mwidth[39m=[32m"100"[39m
+          [36m/>[39m
+        [36m</svg>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-[minmax(0,1fr)_auto] gap-2"[39m
+            [33mdata-testid[39m=[32m"focus-header-smartphone-main"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"min-w-0"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"truncate text-lg font-bold leading-tight"[39m
+                [33mtitle[39m=[32m"A-02A"[39m
+              [36m>[39m
+                [0mA-02A[0m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"mt-0.5 flex min-w-0 items-center gap-1.5"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"min-w-0 flex-1 truncate text-xs leading-snug"[39m
+                  [33mtitle[39m=[32m"サークル1"[39m
+                [36m>[39m
+                  [0mサークル1[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"inline-flex flex-shrink-0 rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums"[39m
+                [36m>[39m
+                  [0m0[0m
+                  [0m/[0m
+                  [0m1[0m
+                [36m</span>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-right min-w-[6.75rem]"[39m
+            [36m>[39m
+              [36m<select[39m
+                [33maria-label[39m=[32m"phase"[39m
+                [33mclass[39m=[32m"focus-mode-phase-select h-8 w-full max-w-[6.75rem] rounded-md bg-white/20 py-0.5 pl-2 pr-6 text-sm font-bold text-white appearance-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-white/50 transition-colors"[39m
+              [36m>[39m
+                [36m<option[39m
+                  [33mclass[39m=[32m"text-slate-900"[39m
+                  [33mvalue[39m=[32m"normal"[39m
+                [36m>[39m
+                  [0m通常[0m
+                [36m</option>[39m
+                [36m<option[39m
+                  [33mclass[39m=[32m"text-slate-900"[39m
+                  [33mvalue[39m=[32m"postponed"[39m
+                [36m>[39m
+                  [0m後回し[0m
+                [36m</option>[39m
+                [36m<option[39m
+                  [33mclass[39m=[32m"text-slate-900"[39m
+                  [33mvalue[39m=[32m"late"[39m
+                [36m>[39m
+                  [0m遅参[0m
+                [36m</option>[39m
+              [36m</select>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"mt-0.5 max-w-[8rem] truncate text-[10px] opacity-80"[39m
+                [33mdata-testid[39m=[32m"focus-header-next-visit"[39m
+                [33mtitle[39m=[32m"最終"[39m
+              [36m>[39m
+                [0m次: [0m
+                [0m最終[0m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 border-t border-white/20 pt-0.5"[39m
+            [33mdata-testid[39m=[32m"focus-header-smartphone-payment"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"text-[10px] leading-none opacity-80"[39m
+            [36m>[39m
+              [0m支払額[0m
+            [36m</span>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"text-lg font-bold leading-none tabular-nums"[39m
+            [36m>[39m
+              [0m¥[0m
+              [0m0[0m
+            [36m</span>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"text-[10px] font-semibold leading-none opacity-85"[39m
+            [36m>[39m
+              [0m予定額 ¥[0m
+              [0m1,000[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"-mx-1 mt-px overflow-x-auto overflow-y-hidden px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"[39m
+            [33mdata-testid[39m=[32m"focus-header-bulk-scroll"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"ml-auto flex w-max max-w-none flex-nowrap justify-end gap-1.5"[39m
+              [33mdata-testid[39m=[32m"focus-header-bulk-row"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33maria-pressed[39m=[32m"false"[39m
+                [33mclass[39m=[32m"inline-flex h-auto min-h-0 flex-shrink-0 items-center whitespace-nowrap rounded px-1.5 py-px text-[10px] font-medium leading-none transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/70 bg-white/10 text-white hover:bg-white/20"[39m
+                [33mtitle[39m=[32m"全購入に一括変更"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0m全購入[0m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-pressed[39m=[32m"false"[39m
+                [33mclass[39m=[32m"inline-flex h-auto min-h-0 flex-shrink-0 items-center whitespace-nowrap rounded px-1.5 py-px text-[10px] font-medium leading-none transition-colors focus-vis...
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/components/FocusMode.limitedInteraction.integration.test.tsx:190:17
+    188|     changedTouches: [{ identifier: 1, clientX: 30, clientY: 80 }],
+    189|   });
+    190|   expect(screen.getByText("A-01A")).toBeInTheDocument();
+       |                 ^
+    191|   swipe(region);
+    192|   expect(await screen.findByText("A-02A")).toBeInTheDocument();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  |integration| src/components/map/MapView.visitProjection.integration.test.tsx > preserves real-popup baseline field intent across failure, invalidation and retry: direct
+Error: The property "commitItemContentEdits" is not defined on the object.
+ ❯ src/components/map/MapView.visitProjection.integration.test.tsx:497:8
+    495|       },
+    496|     );
+    497|     vi.spyOn(commands, "commitItemContentEdits").mockRejectedValueOnce(
+       |        ^
+    498|       new DOMException("injected", "AbortError"),
+    499|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  |integration| src/components/map/MapView.visitProjection.integration.test.tsx > preserves real-popup baseline field intent across failure, invalidation and retry: worker
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/components/map/MapView.visitProjection.integration.test.tsx:379:3
+    377|
+    378| for (const mode of ["direct", "worker"]) {
+    379|   it(`preserves real-popup baseline field intent across failure, inval…
+       |   ^
+    380|     fresh();
+    381|     const initial = sheetSnapshot(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  2 failed | 6 passed (8)
+      Tests  3 failed | 86 passed (89)
+   Start at  18:15:48
+   Duration  12.49s (transform 4.19s, setup 6.11s, import 8.12s, tests 17.22s, environment 12.81s)
+
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+
+ ❯ |integration| src/components/map/MapView.visitProjection.integration.test.tsx (13 tests | 2 failed) 2383ms
+   × preserves real-popup baseline field intent across failure, invalidation and retry: direct 772ms
+   × preserves real-popup baseline field intent across failure, invalidation and retry: worker 692ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |integration| src/components/map/MapView.visitProjection.integration.test.tsx > preserves real-popup baseline field intent across failure, invalidation and retry: direct
+ FAIL  |integration| src/components/map/MapView.visitProjection.integration.test.tsx > preserves real-popup baseline field intent across failure, invalidation and retry: worker
+AssertionError: expected { Object (id, circle, ...) } to match object { title: '明示したタイトル', …(3) }
+(11 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "purchaseStatus": "Purchased",
+    "quantity": 4,
+    "remarks": "保存待ちのメモ",
+-   "title": "明示したタイトル",
++   "title": "新刊0",
+  }
+
+ ❯ src/components/map/MapView.visitProjection.integration.test.tsx:517:59
+    515|     expect(accepted[0][1]).toEqual(initial.eventLists[SHEET_EVENT][0]);
+    516|     expect(updateThroughMutation.mock.calls[0][1]).toBe(accepted[0][1]…
+    517|     expect(application.values.eventLists[SHEET_EVENT][0]).toMatchObjec…
+       |                                                           ^
+    518|       title: "明示したタイトル",
+    519|       purchaseStatus: "Purchased",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 17 passed (19)
+   Start at  18:16:49
+   Duration  6.87s (transform 2.34s, setup 614ms, import 4.69s, tests 5.59s, environment 2.33s)
+
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  18:17:17
+   Duration  6.63s (transform 1.38s, setup 319ms, import 2.62s, tests 2.37s, environment 1.11s)
+
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+
+
+ Test Files  11 passed (11)
+      Tests  123 passed (123)
+   Start at  18:17:39
+   Duration  11.17s (transform 5.76s, setup 7.00s, import 12.21s, tests 20.85s, environment 21.53s)
+
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  18:18:23
+   Duration  2.47s (transform 209ms, setup 298ms, import 408ms, tests 482ms, environment 1.08s)
+
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+
+
+ Test Files  5 passed (5)
+      Tests  64 passed (64)
+   Start at  18:20:09
+   Duration  9.48s (transform 3.79s, setup 2.49s, import 7.98s, tests 14.52s, environment 7.02s)
+

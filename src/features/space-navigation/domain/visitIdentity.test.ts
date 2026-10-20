@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   buildSpaceKey,
   buildVisitId,
@@ -81,4 +81,98 @@ describe("visitIdentity", () => {
       ),
     ).toBe(false);
   });
+});
+
+describe("normalization reuse", () => {
+  it("retains the original Unicode normalization rules for cold and repeated inputs", () => {
+    const inputs = [
+      "",
+      " ",
+      "\u3000\t\n",
+      "\uFEFFＡ\u2000西 ",
+      "A",
+      "a",
+      " Ａ  西 ",
+      "東\t\n甲",
+      "01a",
+      "０１Ａ２",
+      " 01 a3 ",
+      "01Ab12",
+      "012",
+      "12",
+      "001",
+      "1-2a3",
+      "1あ2",
+      "①Ａ２",
+      "ﬀ",
+      "İ",
+      "E\u0301",
+      "É",
+      "😀１２Ａ３",
+      'A\\"',
+    ];
+    for (const input of inputs) {
+      const block = input.normalize("NFKC").trim().replace(/\s+/g, " ");
+      const normalizedNumber = input
+        .normalize("NFKC")
+        .trim()
+        .replace(/\s+/g, "")
+        .toLowerCase();
+      const matched = /^(\d+[a-z]+)\d*$/i.exec(normalizedNumber);
+      const number = matched ? matched[1] : normalizedNumber;
+
+      expect(normalizeBaseSpaceNumber(input)).toBe(number);
+      expect(normalizeSpaceBlock(input)).toBe(block);
+      expect(normalizeBaseSpaceNumber(input)).toBe(number);
+      expect(normalizeSpaceBlock(input)).toBe(block);
+    }
+  });
+
+  it("resolves current item strings independently of prior aliases and other items", () => {
+    const original = { block: " Ａ ", number: "０１Ａ２" };
+    const copy = { ...original };
+    expect(buildSpaceKey(original.block, original.number)).toBe("A-01a");
+    expect(buildVisitId(original)).toBe("A-01a:none");
+
+    original.block = "B";
+    original.number = "02b";
+    expect(buildSpaceKey(original.block, original.number)).toBe("B-02b");
+    expect(buildVisitId(original)).toBe("B-02b:none");
+    expect(buildVisitId(copy)).toBe("A-01a:none");
+
+    copy.block = "a";
+    copy.number = "001";
+    expect(buildVisitId(copy)).toBe("a-001:none");
+    original.block = " Ａ ";
+    original.number = "０１Ａ２";
+    expect(buildVisitId(original)).toBe("A-01a:none");
+  });
+
+  it.each([
+    ["number", normalizeBaseSpaceNumber],
+    ["block", normalizeSpaceBlock],
+  ] as const)(
+    "bounds retained %s inputs and recomputes an evicted value",
+    (kind, normalize) => {
+      const normalization = vi.spyOn(String.prototype, "normalize");
+      const raw = ` eviction ${kind} Ａ０１ `;
+      try {
+        const expected = normalize(raw);
+        expect(normalization).toHaveBeenCalledTimes(1);
+        expect(normalize(raw)).toBe(expected);
+        expect(normalization).toHaveBeenCalledTimes(1);
+
+        for (let index = 0; index < 5000; index++) {
+          normalize(`eviction-${kind}-${index}`);
+        }
+        const before = normalization.mock.calls.length;
+        expect(normalize(raw)).toBe(expected);
+        expect(normalization).toHaveBeenCalledTimes(before + 1);
+        expect(normalize(raw)).toBe(expected);
+        expect(normalization).toHaveBeenCalledTimes(before + 1);
+      } finally {
+        normalization.mockRestore();
+      }
+    },
+  );
 });

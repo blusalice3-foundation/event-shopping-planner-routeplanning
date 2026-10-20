@@ -1,0 +1,50 @@
+
+[WebServer] (node:26548) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 8 tests using 1 worker
+
+
+(node:36436) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/8] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2060:7 › @shopping-performance @shopping-drag-performance 150 native grouping on
+[2/8] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2060:7 › @shopping-performance @shopping-drag-performance 150 native grouping off
+[3/8] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2060:7 › @shopping-performance @shopping-drag-performance 150 touch grouping on
+[4/8] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2060:7 › @shopping-performance @shopping-drag-performance 150 touch grouping off
+[5/8] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2060:7 › @shopping-performance @shopping-drag-performance 500 native grouping on
+[6/8] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2060:7 › @shopping-performance @shopping-drag-performance 500 native grouping off
+[7/8] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2060:7 › @shopping-performance @shopping-drag-performance 500 touch grouping on
+  1) [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2060:7 › @shopping-performance @shopping-drag-performance 500 touch grouping on 
+
+    Error: drop
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 55
+    Received:    55.399999998509884
+
+      2581 |         for (const [operation, value] of Object.entries(records)) {
+      2582 |           expect(value.samples.length, operation).toBeGreaterThanOrEqual(20);
+    > 2583 |           expect(value.medianMs, operation).toBeLessThanOrEqual(55);
+           |                                             ^
+      2584 |           expect(value.p95Ms, operation).toBeLessThanOrEqual(100);
+      2585 |         }
+      2586 |       });
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\shopping-cross-column-drag.spec.ts:2583:45
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\op04-focus-remediation-20261019\drag-replication-2-output\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\op04-focus-remediation-20261019\drag-replication-2-output\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\error-context.md
+
+
+
+(node:43168) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[8/8] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2060:7 › @shopping-performance @shopping-drag-performance 500 touch grouping off
+  1 failed
+    [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2060:7 › @shopping-performance @shopping-drag-performance 500 touch grouping on 
+  7 passed (2.5m)

@@ -358,16 +358,25 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
   }, [isOpen, onClose, longPressItem, editingItem, addDialogOpen]);
 
   const clearLongPressTimer = useCallback(() => {
-    if (longPressTimeout.current) {
+    if (longPressTimeout.current !== null) {
       clearTimeout(longPressTimeout.current);
       longPressTimeout.current = null;
     }
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) clearLongPressTimer();
+    return clearLongPressTimer;
+  }, [isOpen, clearLongPressTimer]);
+
   const handleItemPointerDown = (
     e: React.PointerEvent<HTMLDivElement>,
     item: ShoppingItem,
   ) => {
+    // 子ボタンは行の捕捉・長押しから除外し、クリック先を維持する。
+    if (e.target instanceof Element && e.target.closest("button")) {
+      return;
+    }
     isLongPress.current = false;
     suppressNextClick.current = false;
     try {
@@ -707,8 +716,8 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
                             e.stopPropagation();
                             clearLongPressTimer();
                             setLongPressItem(null);
-                            onClose();
                             onEditRequest(item);
+                            onClose();
                           }}
                           className="rounded bg-orange-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-800"
                         >
@@ -842,8 +851,8 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
                       type="button"
                       onClick={() => {
                         setEditingItem(null);
-                        onClose();
                         onEditRequest?.(editingItem);
+                        onClose();
                       }}
                       className="mt-3 rounded bg-orange-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-800"
                     >

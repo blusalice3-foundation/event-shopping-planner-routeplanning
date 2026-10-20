@@ -1,0 +1,2574 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: shopping-cross-column-drag.spec.ts >> actual Chromium native leave clears shared guides before release: grouping true
+- Location: tests\browser\shopping-cross-column-drag.spec.ts:1039:3
+
+# Error details
+
+```
+Error: expect(locator).toHaveCount(expected) failed
+
+Locator:  locator('[data-shopping-drag-status]')
+Expected: 0
+Received: 1
+Timeout:  5000ms
+
+Call log:
+  - Expect "toHaveCount" with timeout 5000ms
+  - waiting for locator('[data-shopping-drag-status]')
+    14 × locator resolved to 1 element
+       - unexpected value "1"
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e7]:
+      - heading "列間ドラッグ検証" [level=1] [ref=e8]
+      - button "候補ブロックを番号で並べ替え" [ref=e9] [cursor=pointer]
+      - button "ホール定義（ブロック割当）" [ref=e12] [cursor=pointer]
+      - button "ホール間移動順序" [ref=e15] [cursor=pointer]
+      - button "表示項目の設定" [ref=e19] [cursor=pointer]
+      - generic [ref=e20]:
+        - button "📝" [ref=e21] [cursor=pointer]
+        - button "🏃‍♂️" [ref=e22] [cursor=pointer]
+        - button "🔍" [ref=e23] [cursor=pointer]
+    - generic [ref=e25]:
+      - button "イベント一覧" [ref=e26] [cursor=pointer]
+      - button "1日目150" [ref=e27] [cursor=pointer]
+      - button "アイテム追加" [ref=e28] [cursor=pointer]
+      - generic [ref=e29]:
+        - textbox "検索..." [ref=e30]
+        - button "次を検索" [disabled] [ref=e31]
+  - main [ref=e32]:
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - heading "実行リストアイテム" [level=2] [ref=e38]
+            - generic [ref=e39]:
+              - button "スペース別" [ref=e40] [cursor=pointer]
+              - button "全て折りたたむ" [ref=e41] [cursor=pointer]
+          - paragraph [ref=e42]: 実行対象として選択中のアイテムを管理します。
+        - list "買い物リスト" [ref=e43]:
+          - listitem "A-01a 2件" [ref=e45]:
+            - generic [ref=e46]:
+              - generic [ref=e47]:
+                - generic [ref=e50]: ホール未定義
+                - generic [ref=e51]: 3件
+              - generic [ref=e52]:
+                - generic [ref=e53] [cursor=pointer]:
+                  - generic [ref=e55]:
+                    - generic [ref=e56]:
+                      - generic [ref=e57]: ▶
+                      - generic [ref=e58]: A-01a
+                      - generic "a1 & a2" [ref=e59]
+                    - generic [ref=e60]: 2件
+                  - button "このスペースにアイテムを追加" [ref=e62]
+                - list "A-01aの項目" [ref=e65]:
+                  - listitem "A01a a1 ユーザー登録" [ref=e67]:
+                    - generic [ref=e69]:
+                      - generic [ref=e70]:
+                        - checkbox "Select item a1 - ユーザー登録" [ref=e71]
+                        - button "上に移動" [disabled] [ref=e72]
+                        - button "下に移動" [ref=e82] [cursor=pointer]
+                        - button "保護なし" [ref=e85] [cursor=pointer]: 🔓
+                      - generic [ref=e86]:
+                        - generic [ref=e87]:
+                          - generic [ref=e88]: 1日目
+                          - generic [ref=e89]: A-01a
+                          - button "a1" [ref=e90] [cursor=pointer]
+                        - button "ユーザー登録" [ref=e93] [cursor=pointer]
+                        - textbox "利用者メモ" [ref=e97]: エラーが発生しました
+                      - generic [ref=e98]:
+                        - 'button "Current status: 未購入. Click to change." [ref=e99] [cursor=pointer]':
+                          - generic [ref=e102]: 未購入
+                        - generic [ref=e103]:
+                          - generic [ref=e104]: 数量
+                          - combobox "購入予定数量" [ref=e105]:
+                            - option "1" [selected]
+                            - option "2"
+                            - option "3"
+                            - option "4"
+                            - option "5"
+                            - option "6"
+                            - option "7"
+                            - option "8"
+                            - option "9"
+                            - option "10"
+                            - option "11"
+                            - option "12"
+                            - option "13"
+                            - option "14"
+                            - option "15"
+                            - option "16"
+                            - option "17"
+                            - option "18"
+                            - option "19"
+                            - option "20"
+                        - generic [ref=e106]:
+                          - generic [ref=e107]: 購入金額
+                          - generic [ref=e108]: ¥
+                          - combobox "購入金額" [ref=e109]:
+                            - option "価格未定"
+                            - option "0"
+                            - option "100"
+                            - option "200"
+                            - option "300"
+                            - option "400"
+                            - option "500" [selected]
+                            - option "600"
+                            - option "700"
+                            - option "800"
+                            - option "900"
+                            - option "1,000"
+                            - option "1,100"
+                            - option "1,200"
+                            - option "1,300"
+                            - option "1,400"
+                            - option "1,500"
+                            - option "1,600"
+                            - option "1,700"
+                            - option "1,800"
+                            - option "1,900"
+                            - option "2,000"
+                            - option "2,100"
+                            - option "2,200"
+                            - option "2,300"
+                            - option "2,400"
+                            - option "2,500"
+                            - option "2,600"
+                            - option "2,700"
+                            - option "2,800"
+                            - option "2,900"
+                            - option "3,000"
+                            - option "3,100"
+                            - option "3,200"
+                            - option "3,300"
+                            - option "3,400"
+                            - option "3,500"
+                            - option "3,600"
+                            - option "3,700"
+                            - option "3,800"
+                            - option "3,900"
+                            - option "4,000"
+                            - option "4,100"
+                            - option "4,200"
+                            - option "4,300"
+                            - option "4,400"
+                            - option "4,500"
+                            - option "4,600"
+                            - option "4,700"
+                            - option "4,800"
+                            - option "4,900"
+                            - option "5,000"
+                            - option "5,100"
+                            - option "5,200"
+                            - option "5,300"
+                            - option "5,400"
+                            - option "5,500"
+                            - option "5,600"
+                            - option "5,700"
+                            - option "5,800"
+                            - option "5,900"
+                            - option "6,000"
+                            - option "6,100"
+                            - option "6,200"
+                            - option "6,300"
+                            - option "6,400"
+                            - option "6,500"
+                            - option "6,600"
+                            - option "6,700"
+                            - option "6,800"
+                            - option "6,900"
+                            - option "7,000"
+                            - option "7,100"
+                            - option "7,200"
+                            - option "7,300"
+                            - option "7,400"
+                            - option "7,500"
+                            - option "7,600"
+                            - option "7,700"
+                            - option "7,800"
+                            - option "7,900"
+                            - option "8,000"
+                            - option "8,100"
+                            - option "8,200"
+                            - option "8,300"
+                            - option "8,400"
+                            - option "8,500"
+                            - option "8,600"
+                            - option "8,700"
+                            - option "8,800"
+                            - option "8,900"
+                            - option "9,000"
+                            - option "9,100"
+                            - option "9,200"
+                            - option "9,300"
+                            - option "9,400"
+                            - option "9,500"
+                            - option "9,600"
+                            - option "9,700"
+                            - option "9,800"
+                            - option "9,900"
+                            - option "10,000"
+                  - listitem "A01a2 a2 ユーザー登録" [ref=e111]:
+                    - generic [ref=e113]:
+                      - generic [ref=e114]:
+                        - checkbox "Select item a2 - ユーザー登録" [ref=e115]
+                        - button "上に移動" [ref=e116] [cursor=pointer]
+                        - button "下に移動" [ref=e126] [cursor=pointer]
+                        - button "保護なし" [ref=e129] [cursor=pointer]: 🔓
+                      - generic [ref=e130]:
+                        - generic [ref=e131]:
+                          - generic [ref=e132]: 1日目
+                          - generic [ref=e133]: A-01a2
+                          - button "a2" [ref=e134] [cursor=pointer]
+                        - button "ユーザー登録" [ref=e137] [cursor=pointer]
+                        - textbox "利用者メモ" [ref=e141]: エラーが発生しました
+                      - generic [ref=e142]:
+                        - 'button "Current status: 未購入. Click to change." [ref=e143] [cursor=pointer]':
+                          - generic [ref=e146]: 未購入
+                        - generic [ref=e147]:
+                          - generic [ref=e148]: 数量
+                          - combobox "購入予定数量" [ref=e149]:
+                            - option "1" [selected]
+                            - option "2"
+                            - option "3"
+                            - option "4"
+                            - option "5"
+                            - option "6"
+                            - option "7"
+                            - option "8"
+                            - option "9"
+                            - option "10"
+                            - option "11"
+                            - option "12"
+                            - option "13"
+                            - option "14"
+                            - option "15"
+                            - option "16"
+                            - option "17"
+                            - option "18"
+                            - option "19"
+                            - option "20"
+                        - generic [ref=e150]:
+                          - generic [ref=e151]: 購入金額
+                          - generic [ref=e152]: ¥
+                          - combobox "購入金額" [ref=e153]:
+                            - option "価格未定"
+                            - option "0"
+                            - option "100"
+                            - option "200"
+                            - option "300"
+                            - option "400"
+                            - option "500" [selected]
+                            - option "600"
+                            - option "700"
+                            - option "800"
+                            - option "900"
+                            - option "1,000"
+                            - option "1,100"
+                            - option "1,200"
+                            - option "1,300"
+                            - option "1,400"
+                            - option "1,500"
+                            - option "1,600"
+                            - option "1,700"
+                            - option "1,800"
+                            - option "1,900"
+                            - option "2,000"
+                            - option "2,100"
+                            - option "2,200"
+                            - option "2,300"
+                            - option "2,400"
+                            - option "2,500"
+                            - option "2,600"
+                            - option "2,700"
+                            - option "2,800"
+                            - option "2,900"
+                            - option "3,000"
+                            - option "3,100"
+                            - option "3,200"
+                            - option "3,300"
+                            - option "3,400"
+                            - option "3,500"
+                            - option "3,600"
+                            - option "3,700"
+                            - option "3,800"
+                            - option "3,900"
+                            - option "4,000"
+                            - option "4,100"
+                            - option "4,200"
+                            - option "4,300"
+                            - option "4,400"
+                            - option "4,500"
+                            - option "4,600"
+                            - option "4,700"
+                            - option "4,800"
+                            - option "4,900"
+                            - option "5,000"
+                            - option "5,100"
+                            - option "5,200"
+                            - option "5,300"
+                            - option "5,400"
+                            - option "5,500"
+                            - option "5,600"
+                            - option "5,700"
+                            - option "5,800"
+                            - option "5,900"
+                            - option "6,000"
+                            - option "6,100"
+                            - option "6,200"
+                            - option "6,300"
+                            - option "6,400"
+                            - option "6,500"
+                            - option "6,600"
+                            - option "6,700"
+                            - option "6,800"
+                            - option "6,900"
+                            - option "7,000"
+                            - option "7,100"
+                            - option "7,200"
+                            - option "7,300"
+                            - option "7,400"
+                            - option "7,500"
+                            - option "7,600"
+                            - option "7,700"
+                            - option "7,800"
+                            - option "7,900"
+                            - option "8,000"
+                            - option "8,100"
+                            - option "8,200"
+                            - option "8,300"
+                            - option "8,400"
+                            - option "8,500"
+                            - option "8,600"
+                            - option "8,700"
+                            - option "8,800"
+                            - option "8,900"
+                            - option "9,000"
+                            - option "9,100"
+                            - option "9,200"
+                            - option "9,300"
+                            - option "9,400"
+                            - option "9,500"
+                            - option "9,600"
+                            - option "9,700"
+                            - option "9,800"
+                            - option "9,900"
+                            - option "10,000"
+          - listitem "A-02a 1件" [ref=e155]:
+            - generic [ref=e157]:
+              - generic [ref=e158] [cursor=pointer]:
+                - generic [ref=e160]:
+                  - generic [ref=e161]:
+                    - generic [ref=e162]: ▶
+                    - generic [ref=e163]: A-02a
+                    - generic "b1" [ref=e164]
+                  - generic [ref=e165]: 1件
+                - button "このスペースにアイテムを追加" [ref=e167]
+              - list "A-02aの項目" [ref=e170]:
+                - listitem "A02a b1 ユーザー登録" [ref=e172]:
+                  - generic [ref=e174]:
+                    - generic [ref=e175]:
+                      - checkbox "Select item b1 - ユーザー登録" [ref=e176]
+                      - button "上に移動" [ref=e177] [cursor=pointer]
+                      - button "下に移動" [ref=e187] [cursor=pointer]
+                      - button "保護なし" [ref=e190] [cursor=pointer]: 🔓
+                    - generic [ref=e191]:
+                      - generic [ref=e192]:
+                        - generic [ref=e193]: 1日目
+                        - generic [ref=e194]: A-02a
+                        - button "b1" [ref=e195] [cursor=pointer]
+                      - button "ユーザー登録" [ref=e198] [cursor=pointer]
+                      - textbox "利用者メモ" [ref=e202]: エラーが発生しました
+                    - generic [ref=e203]:
+                      - 'button "Current status: 未購入. Click to change." [ref=e204] [cursor=pointer]':
+                        - generic [ref=e207]: 未購入
+                      - generic [ref=e208]:
+                        - generic [ref=e209]: 数量
+                        - combobox "購入予定数量" [ref=e210]:
+                          - option "1" [selected]
+                          - option "2"
+                          - option "3"
+                          - option "4"
+                          - option "5"
+                          - option "6"
+                          - option "7"
+                          - option "8"
+                          - option "9"
+                          - option "10"
+                          - option "11"
+                          - option "12"
+                          - option "13"
+                          - option "14"
+                          - option "15"
+                          - option "16"
+                          - option "17"
+                          - option "18"
+                          - option "19"
+                          - option "20"
+                      - generic [ref=e211]:
+                        - generic [ref=e212]: 購入金額
+                        - generic [ref=e213]: ¥
+                        - combobox "購入金額" [ref=e214]:
+                          - option "価格未定"
+                          - option "0"
+                          - option "100"
+                          - option "200"
+                          - option "300"
+                          - option "400"
+                          - option "500" [selected]
+                          - option "600"
+                          - option "700"
+                          - option "800"
+                          - option "900"
+                          - option "1,000"
+                          - option "1,100"
+                          - option "1,200"
+                          - option "1,300"
+                          - option "1,400"
+                          - option "1,500"
+                          - option "1,600"
+                          - option "1,700"
+                          - option "1,800"
+                          - option "1,900"
+                          - option "2,000"
+                          - option "2,100"
+                          - option "2,200"
+                          - option "2,300"
+                          - option "2,400"
+                          - option "2,500"
+                          - option "2,600"
+                          - option "2,700"
+                          - option "2,800"
+                          - option "2,900"
+                          - option "3,000"
+                          - option "3,100"
+                          - option "3,200"
+                          - option "3,300"
+                          - option "3,400"
+                          - option "3,500"
+                          - option "3,600"
+                          - option "3,700"
+                          - option "3,800"
+                          - option "3,900"
+                          - option "4,000"
+                          - option "4,100"
+                          - option "4,200"
+                          - option "4,300"
+                          - option "4,400"
+                          - option "4,500"
+                          - option "4,600"
+                          - option "4,700"
+                          - option "4,800"
+                          - option "4,900"
+                          - option "5,000"
+                          - option "5,100"
+                          - option "5,200"
+                          - option "5,300"
+                          - option "5,400"
+                          - option "5,500"
+                          - option "5,600"
+                          - option "5,700"
+                          - option "5,800"
+                          - option "5,900"
+                          - option "6,000"
+                          - option "6,100"
+                          - option "6,200"
+                          - option "6,300"
+                          - option "6,400"
+                          - option "6,500"
+                          - option "6,600"
+                          - option "6,700"
+                          - option "6,800"
+                          - option "6,900"
+                          - option "7,000"
+                          - option "7,100"
+                          - option "7,200"
+                          - option "7,300"
+                          - option "7,400"
+                          - option "7,500"
+                          - option "7,600"
+                          - option "7,700"
+                          - option "7,800"
+                          - option "7,900"
+                          - option "8,000"
+                          - option "8,100"
+                          - option "8,200"
+                          - option "8,300"
+                          - option "8,400"
+                          - option "8,500"
+                          - option "8,600"
+                          - option "8,700"
+                          - option "8,800"
+                          - option "8,900"
+                          - option "9,000"
+                          - option "9,100"
+                          - option "9,200"
+                          - option "9,300"
+                          - option "9,400"
+                          - option "9,500"
+                          - option "9,600"
+                          - option "9,700"
+                          - option "9,800"
+                          - option "9,900"
+                          - option "10,000"
+          - listitem "A-03a 1件" [ref=e216]:
+            - generic [ref=e217]:
+              - generic [ref=e218]:
+                - generic [ref=e221]: ホール未定義優先
+                - generic [ref=e222]: 2件
+              - generic [ref=e223]:
+                - generic [ref=e224] [cursor=pointer]:
+                  - generic [ref=e226]:
+                    - generic [ref=e227]:
+                      - generic [ref=e228]: ▶
+                      - generic [ref=e229]: A-03a
+                      - generic "priority" [ref=e230]
+                    - generic [ref=e231]: 1件
+                  - button "このスペースにアイテムを追加" [ref=e233]
+                - list "A-03aの項目" [ref=e236]:
+                  - listitem "A03a priority ユーザー登録" [ref=e238]:
+                    - generic [ref=e240]:
+                      - generic [ref=e241]:
+                        - checkbox "Select item priority - ユーザー登録" [ref=e242]
+                        - button "上に移動" [ref=e243] [cursor=pointer]
+                        - button "下に移動" [ref=e253] [cursor=pointer]
+                        - button "保護なし" [ref=e256] [cursor=pointer]: 🔓
+                      - generic [ref=e257]:
+                        - generic [ref=e258]:
+                          - generic [ref=e259]: 1日目
+                          - generic [ref=e260]: A-03a
+                          - button "priority" [ref=e261] [cursor=pointer]
+                        - button "ユーザー登録" [ref=e264] [cursor=pointer]
+                        - textbox "利用者メモ" [ref=e268]: エラーが発生しました
+                      - generic [ref=e269]:
+                        - 'button "Current status: 未購入. Click to change." [ref=e270] [cursor=pointer]':
+                          - generic [ref=e273]: 未購入
+                        - generic [ref=e274]:
+                          - generic [ref=e275]: 数量
+                          - combobox "購入予定数量" [ref=e276]:
+                            - option "1" [selected]
+                            - option "2"
+                            - option "3"
+                            - option "4"
+                            - option "5"
+                            - option "6"
+                            - option "7"
+                            - option "8"
+                            - option "9"
+                            - option "10"
+                            - option "11"
+                            - option "12"
+                            - option "13"
+                            - option "14"
+                            - option "15"
+                            - option "16"
+                            - option "17"
+                            - option "18"
+                            - option "19"
+                            - option "20"
+                        - generic [ref=e277]:
+                          - generic [ref=e278]: 購入金額
+                          - generic [ref=e279]: ¥
+                          - combobox "購入金額" [ref=e280]:
+                            - option "価格未定"
+                            - option "0"
+                            - option "100"
+                            - option "200"
+                            - option "300"
+                            - option "400"
+                            - option "500" [selected]
+                            - option "600"
+                            - option "700"
+                            - option "800"
+                            - option "900"
+                            - option "1,000"
+                            - option "1,100"
+                            - option "1,200"
+                            - option "1,300"
+                            - option "1,400"
+                            - option "1,500"
+                            - option "1,600"
+                            - option "1,700"
+                            - option "1,800"
+                            - option "1,900"
+                            - option "2,000"
+                            - option "2,100"
+                            - option "2,200"
+                            - option "2,300"
+                            - option "2,400"
+                            - option "2,500"
+                            - option "2,600"
+                            - option "2,700"
+                            - option "2,800"
+                            - option "2,900"
+                            - option "3,000"
+                            - option "3,100"
+                            - option "3,200"
+                            - option "3,300"
+                            - option "3,400"
+                            - option "3,500"
+                            - option "3,600"
+                            - option "3,700"
+                            - option "3,800"
+                            - option "3,900"
+                            - option "4,000"
+                            - option "4,100"
+                            - option "4,200"
+                            - option "4,300"
+                            - option "4,400"
+                            - option "4,500"
+                            - option "4,600"
+                            - option "4,700"
+                            - option "4,800"
+                            - option "4,900"
+                            - option "5,000"
+                            - option "5,100"
+                            - option "5,200"
+                            - option "5,300"
+                            - option "5,400"
+                            - option "5,500"
+                            - option "5,600"
+                            - option "5,700"
+                            - option "5,800"
+                            - option "5,900"
+                            - option "6,000"
+                            - option "6,100"
+                            - option "6,200"
+                            - option "6,300"
+                            - option "6,400"
+                            - option "6,500"
+                            - option "6,600"
+                            - option "6,700"
+                            - option "6,800"
+                            - option "6,900"
+                            - option "7,000"
+                            - option "7,100"
+                            - option "7,200"
+                            - option "7,300"
+                            - option "7,400"
+                            - option "7,500"
+                            - option "7,600"
+                            - option "7,700"
+                            - option "7,800"
+                            - option "7,900"
+                            - option "8,000"
+                            - option "8,100"
+                            - option "8,200"
+                            - option "8,300"
+                            - option "8,400"
+                            - option "8,500"
+                            - option "8,600"
+                            - option "8,700"
+                            - option "8,800"
+                            - option "8,900"
+                            - option "9,000"
+                            - option "9,100"
+                            - option "9,200"
+                            - option "9,300"
+                            - option "9,400"
+                            - option "9,500"
+                            - option "9,600"
+                            - option "9,700"
+                            - option "9,800"
+                            - option "9,900"
+                            - option "10,000"
+          - listitem "B-10 1件" [ref=e282]:
+            - generic [ref=e284]:
+              - generic [ref=e285] [cursor=pointer]:
+                - generic [ref=e287]:
+                  - generic [ref=e288]:
+                    - generic [ref=e289]: ▶
+                    - generic [ref=e290]: B-10
+                    - generic "execute-0" [ref=e291]
+                  - generic [ref=e292]: 1件
+                - button "このスペースにアイテムを追加" [ref=e294]
+              - list "B-10の項目" [ref=e297]:
+                - listitem "B10 execute-0 ユーザー登録" [ref=e299]:
+                  - generic [ref=e301]:
+                    - generic [ref=e302]:
+                      - checkbox "Select item execute-0 - ユーザー登録" [ref=e303]
+                      - button "上に移動" [ref=e304] [cursor=pointer]
+                      - button "下に移動" [ref=e314] [cursor=pointer]
+                      - button "保護なし" [ref=e317] [cursor=pointer]: 🔓
+                    - generic [ref=e318]:
+                      - generic [ref=e319]:
+                        - generic [ref=e320]: 1日目
+                        - generic [ref=e321]: B-10
+                        - button "execute-0" [ref=e322] [cursor=pointer]
+                      - button "ユーザー登録" [ref=e325] [cursor=pointer]
+                      - textbox "利用者メモ" [ref=e329]: エラーが発生しました
+                    - generic [ref=e330]:
+                      - 'button "Current status: 未購入. Click to change." [ref=e331] [cursor=pointer]':
+                        - generic [ref=e334]: 未購入
+                      - generic [ref=e335]:
+                        - generic [ref=e336]: 数量
+                        - combobox "購入予定数量" [ref=e337]:
+                          - option "1" [selected]
+                          - option "2"
+                          - option "3"
+                          - option "4"
+                          - option "5"
+                          - option "6"
+                          - option "7"
+                          - option "8"
+                          - option "9"
+                          - option "10"
+                          - option "11"
+                          - option "12"
+                          - option "13"
+                          - option "14"
+                          - option "15"
+                          - option "16"
+                          - option "17"
+                          - option "18"
+                          - option "19"
+                          - option "20"
+                      - generic [ref=e338]:
+                        - generic [ref=e339]: 購入金額
+                        - generic [ref=e340]: ¥
+                        - combobox "購入金額" [ref=e341]:
+                          - option "価格未定"
+                          - option "0"
+                          - option "100"
+                          - option "200"
+                          - option "300"
+                          - option "400"
+                          - option "500" [selected]
+                          - option "600"
+                          - option "700"
+                          - option "800"
+                          - option "900"
+                          - option "1,000"
+                          - option "1,100"
+                          - option "1,200"
+                          - option "1,300"
+                          - option "1,400"
+                          - option "1,500"
+                          - option "1,600"
+                          - option "1,700"
+                          - option "1,800"
+                          - option "1,900"
+                          - option "2,000"
+                          - option "2,100"
+                          - option "2,200"
+                          - option "2,300"
+                          - option "2,400"
+                          - option "2,500"
+                          - option "2,600"
+                          - option "2,700"
+                          - option "2,800"
+                          - option "2,900"
+                          - option "3,000"
+                          - option "3,100"
+                          - option "3,200"
+                          - option "3,300"
+                          - option "3,400"
+                          - option "3,500"
+                          - option "3,600"
+                          - option "3,700"
+                          - option "3,800"
+                          - option "3,900"
+                          - option "4,000"
+                          - option "4,100"
+                          - option "4,200"
+                          - option "4,300"
+                          - option "4,400"
+                          - option "4,500"
+                          - option "4,600"
+                          - option "4,700"
+                          - option "4,800"
+                          - option "4,900"
+                          - option "5,000"
+                          - option "5,100"
+                          - option "5,200"
+                          - option "5,300"
+                          - option "5,400"
+                          - option "5,500"
+                          - option "5,600"
+                          - option "5,700"
+                          - option "5,800"
+                          - option "5,900"
+                          - option "6,000"
+                          - option "6,100"
+                          - option "6,200"
+                          - option "6,300"
+                          - option "6,400"
+                          - option "6,500"
+                          - option "6,600"
+                          - option "6,700"
+                          - option "6,800"
+                          - option "6,900"
+                          - option "7,000"
+                          - option "7,100"
+                          - option "7,200"
+                          - option "7,300"
+                          - option "7,400"
+                          - option "7,500"
+                          - option "7,600"
+                          - option "7,700"
+                          - option "7,800"
+                          - option "7,900"
+                          - option "8,000"
+                          - option "8,100"
+                          - option "8,200"
+                          - option "8,300"
+                          - option "8,400"
+                          - option "8,500"
+                          - option "8,600"
+                          - option "8,700"
+                          - option "8,800"
+                          - option "8,900"
+                          - option "9,000"
+                          - option "9,100"
+                          - option "9,200"
+                          - option "9,300"
+                          - option "9,400"
+                          - option "9,500"
+                          - option "9,600"
+                          - option "9,700"
+                          - option "9,800"
+                          - option "9,900"
+                          - option "10,000"
+          - listitem "A-11 1件" [ref=e343]:
+            - generic [ref=e344]:
+              - generic [ref=e345]:
+                - generic [ref=e348]: ホール未定義
+                - generic [ref=e349]: 6件
+              - generic [ref=e350]:
+                - generic [ref=e351] [cursor=pointer]:
+                  - generic [ref=e353]:
+                    - generic [ref=e354]:
+                      - generic [ref=e355]: ▶
+                      - generic [ref=e356]: A-11
+                      - generic "execute-1" [ref=e357]
+                    - generic [ref=e358]: 1件
+                  - button "このスペースにアイテムを追加" [ref=e360]
+                - list "A-11の項目" [ref=e363]:
+                  - listitem "A11 execute-1 ユーザー登録" [ref=e365]:
+                    - generic: A11 execute-1 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-12 1件" [ref=e367]:
+            - list "A-12の項目" [ref=e369]:
+              - listitem "A12 execute-2 ユーザー登録" [ref=e370]:
+                - generic: A12 execute-2 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-13 1件" [ref=e372]:
+            - list "A-13の項目" [ref=e374]:
+              - listitem "A13 execute-3 ユーザー登録" [ref=e375]:
+                - generic: A13 execute-3 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-14 1件" [ref=e377]:
+            - list "A-14の項目" [ref=e379]:
+              - listitem "A14 execute-4 ユーザー登録" [ref=e380]:
+                - generic: A14 execute-4 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-15 1件" [ref=e382]:
+            - list "B-15の項目" [ref=e384]:
+              - listitem "B15 execute-5 ユーザー登録" [ref=e385]:
+                - generic: B15 execute-5 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-16 1件" [ref=e387]:
+            - list "A-16の項目" [ref=e389]:
+              - listitem "A16 execute-6 ユーザー登録" [ref=e390]:
+                - generic: A16 execute-6 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-17 1件" [ref=e392]:
+            - list "A-17の項目" [ref=e394]:
+              - listitem "A17 execute-7 ユーザー登録" [ref=e395]:
+                - generic: A17 execute-7 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-18 1件" [ref=e397]:
+            - list "A-18の項目" [ref=e399]:
+              - listitem "A18 execute-8 ユーザー登録" [ref=e400]:
+                - generic: A18 execute-8 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-19 1件" [ref=e402]:
+            - list "A-19の項目" [ref=e404]:
+              - listitem "A19 execute-9 ユーザー登録" [ref=e405]:
+                - generic: A19 execute-9 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-20 1件" [ref=e407]:
+            - list "B-20の項目" [ref=e409]:
+              - listitem "B20 execute-10 ユーザー登録" [ref=e410]:
+                - generic: B20 execute-10 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-21 1件" [ref=e412]:
+            - list "A-21の項目" [ref=e414]:
+              - listitem "A21 execute-11 ユーザー登録" [ref=e415]:
+                - generic: A21 execute-11 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-22 1件" [ref=e417]:
+            - list "A-22の項目" [ref=e419]:
+              - listitem "A22 execute-12 ユーザー登録" [ref=e420]:
+                - generic: A22 execute-12 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-23 1件" [ref=e422]:
+            - list "A-23の項目" [ref=e424]:
+              - listitem "A23 execute-13 ユーザー登録" [ref=e425]:
+                - generic: A23 execute-13 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-24 1件" [ref=e427]:
+            - list "A-24の項目" [ref=e429]:
+              - listitem "A24 execute-14 ユーザー登録" [ref=e430]:
+                - generic: A24 execute-14 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-25 1件" [ref=e432]:
+            - list "B-25の項目" [ref=e434]:
+              - listitem "B25 execute-15 ユーザー登録" [ref=e435]:
+                - generic: B25 execute-15 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-26 1件" [ref=e437]:
+            - list "A-26の項目" [ref=e439]:
+              - listitem "A26 execute-16 ユーザー登録" [ref=e440]:
+                - generic: A26 execute-16 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-27 1件" [ref=e442]:
+            - list "A-27の項目" [ref=e444]:
+              - listitem "A27 execute-17 ユーザー登録" [ref=e445]:
+                - generic: A27 execute-17 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-28 1件" [ref=e447]:
+            - list "A-28の項目" [ref=e449]:
+              - listitem "A28 execute-18 ユーザー登録" [ref=e450]:
+                - generic: A28 execute-18 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-29 1件" [ref=e452]:
+            - list "A-29の項目" [ref=e454]:
+              - listitem "A29 execute-19 ユーザー登録" [ref=e455]:
+                - generic: A29 execute-19 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-30 1件" [ref=e457]:
+            - list "B-30の項目" [ref=e459]:
+              - listitem "B30 execute-20 ユーザー登録" [ref=e460]:
+                - generic: B30 execute-20 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-31 1件" [ref=e462]:
+            - list "A-31の項目" [ref=e464]:
+              - listitem "A31 execute-21 ユーザー登録" [ref=e465]:
+                - generic: A31 execute-21 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-32 1件" [ref=e467]:
+            - list "A-32の項目" [ref=e469]:
+              - listitem "A32 execute-22 ユーザー登録" [ref=e470]:
+                - generic: A32 execute-22 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-33 1件" [ref=e472]:
+            - list "A-33の項目" [ref=e474]:
+              - listitem "A33 execute-23 ユーザー登録" [ref=e475]:
+                - generic: A33 execute-23 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-34 1件" [ref=e477]:
+            - list "A-34の項目" [ref=e479]:
+              - listitem "A34 execute-24 ユーザー登録" [ref=e480]:
+                - generic: A34 execute-24 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-35 1件" [ref=e482]:
+            - list "B-35の項目" [ref=e484]:
+              - listitem "B35 execute-25 ユーザー登録" [ref=e485]:
+                - generic: B35 execute-25 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-36 1件" [ref=e487]:
+            - list "A-36の項目" [ref=e489]:
+              - listitem "A36 execute-26 ユーザー登録" [ref=e490]:
+                - generic: A36 execute-26 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-37 1件" [ref=e492]:
+            - list "A-37の項目" [ref=e494]:
+              - listitem "A37 execute-27 ユーザー登録" [ref=e495]:
+                - generic: A37 execute-27 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-38 1件" [ref=e497]:
+            - list "A-38の項目" [ref=e499]:
+              - listitem "A38 execute-28 ユーザー登録" [ref=e500]:
+                - generic: A38 execute-28 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-39 1件" [ref=e502]:
+            - list "A-39の項目" [ref=e504]:
+              - listitem "A39 execute-29 ユーザー登録" [ref=e505]:
+                - generic: A39 execute-29 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-40 1件" [ref=e507]:
+            - list "B-40の項目" [ref=e509]:
+              - listitem "B40 execute-30 ユーザー登録" [ref=e510]:
+                - generic: B40 execute-30 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-41 1件" [ref=e512]:
+            - list "A-41の項目" [ref=e514]:
+              - listitem "A41 execute-31 ユーザー登録" [ref=e515]:
+                - generic: A41 execute-31 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-42 1件" [ref=e517]:
+            - list "A-42の項目" [ref=e519]:
+              - listitem "A42 execute-32 ユーザー登録" [ref=e520]:
+                - generic: A42 execute-32 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-43 1件" [ref=e522]:
+            - list "A-43の項目" [ref=e524]:
+              - listitem "A43 execute-33 ユーザー登録" [ref=e525]:
+                - generic: A43 execute-33 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-44 1件" [ref=e527]:
+            - list "A-44の項目" [ref=e529]:
+              - listitem "A44 execute-34 ユーザー登録" [ref=e530]:
+                - generic: A44 execute-34 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-45 1件" [ref=e532]:
+            - list "B-45の項目" [ref=e534]:
+              - listitem "B45 execute-35 ユーザー登録" [ref=e535]:
+                - generic: B45 execute-35 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-46 1件" [ref=e537]:
+            - list "A-46の項目" [ref=e539]:
+              - listitem "A46 execute-36 ユーザー登録" [ref=e540]:
+                - generic: A46 execute-36 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-47 1件" [ref=e542]:
+            - list "A-47の項目" [ref=e544]:
+              - listitem "A47 execute-37 ユーザー登録" [ref=e545]:
+                - generic: A47 execute-37 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-48 1件" [ref=e547]:
+            - list "A-48の項目" [ref=e549]:
+              - listitem "A48 execute-38 ユーザー登録" [ref=e550]:
+                - generic: A48 execute-38 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-49 1件" [ref=e552]:
+            - list "A-49の項目" [ref=e554]:
+              - listitem "A49 execute-39 ユーザー登録" [ref=e555]:
+                - generic: A49 execute-39 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-50 1件" [ref=e557]:
+            - list "B-50の項目" [ref=e559]:
+              - listitem "B50 execute-40 ユーザー登録" [ref=e560]:
+                - generic: B50 execute-40 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-51 1件" [ref=e562]:
+            - list "A-51の項目" [ref=e564]:
+              - listitem "A51 execute-41 ユーザー登録" [ref=e565]:
+                - generic: A51 execute-41 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-52 1件" [ref=e567]:
+            - list "A-52の項目" [ref=e569]:
+              - listitem "A52 execute-42 ユーザー登録" [ref=e570]:
+                - generic: A52 execute-42 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-53 1件" [ref=e572]:
+            - list "A-53の項目" [ref=e574]:
+              - listitem "A53 execute-43 ユーザー登録" [ref=e575]:
+                - generic: A53 execute-43 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-54 1件" [ref=e577]:
+            - list "A-54の項目" [ref=e579]:
+              - listitem "A54 execute-44 ユーザー登録" [ref=e580]:
+                - generic: A54 execute-44 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-55 1件" [ref=e582]:
+            - list "B-55の項目" [ref=e584]:
+              - listitem "B55 execute-45 ユーザー登録" [ref=e585]:
+                - generic: B55 execute-45 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-56 1件" [ref=e587]:
+            - list "A-56の項目" [ref=e589]:
+              - listitem "A56 execute-46 ユーザー登録" [ref=e590]:
+                - generic: A56 execute-46 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-57 1件" [ref=e592]:
+            - list "A-57の項目" [ref=e594]:
+              - listitem "A57 execute-47 ユーザー登録" [ref=e595]:
+                - generic: A57 execute-47 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-58 1件" [ref=e597]:
+            - list "A-58の項目" [ref=e599]:
+              - listitem "A58 execute-48 ユーザー登録" [ref=e600]:
+                - generic: A58 execute-48 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-59 1件" [ref=e602]:
+            - list "A-59の項目" [ref=e604]:
+              - listitem "A59 execute-49 ユーザー登録" [ref=e605]:
+                - generic: A59 execute-49 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-60 1件" [ref=e607]:
+            - list "B-60の項目" [ref=e609]:
+              - listitem "B60 execute-50 ユーザー登録" [ref=e610]:
+                - generic: B60 execute-50 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-61 1件" [ref=e612]:
+            - list "A-61の項目" [ref=e614]:
+              - listitem "A61 execute-51 ユーザー登録" [ref=e615]:
+                - generic: A61 execute-51 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-62 1件" [ref=e617]:
+            - list "A-62の項目" [ref=e619]:
+              - listitem "A62 execute-52 ユーザー登録" [ref=e620]:
+                - generic: A62 execute-52 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-63 1件" [ref=e622]:
+            - list "A-63の項目" [ref=e624]:
+              - listitem "A63 execute-53 ユーザー登録" [ref=e625]:
+                - generic: A63 execute-53 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-64 1件" [ref=e627]:
+            - list "A-64の項目" [ref=e629]:
+              - listitem "A64 execute-54 ユーザー登録" [ref=e630]:
+                - generic: A64 execute-54 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-65 1件" [ref=e632]:
+            - list "B-65の項目" [ref=e634]:
+              - listitem "B65 execute-55 ユーザー登録" [ref=e635]:
+                - generic: B65 execute-55 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-66 1件" [ref=e637]:
+            - list "A-66の項目" [ref=e639]:
+              - listitem "A66 execute-56 ユーザー登録" [ref=e640]:
+                - generic: A66 execute-56 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-67 1件" [ref=e642]:
+            - list "A-67の項目" [ref=e644]:
+              - listitem "A67 execute-57 ユーザー登録" [ref=e645]:
+                - generic: A67 execute-57 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-68 1件" [ref=e647]:
+            - list "A-68の項目" [ref=e649]:
+              - listitem "A68 execute-58 ユーザー登録" [ref=e650]:
+                - generic: A68 execute-58 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-69 1件" [ref=e652]:
+            - list "A-69の項目" [ref=e654]:
+              - listitem "A69 execute-59 ユーザー登録" [ref=e655]:
+                - generic: A69 execute-59 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-70 1件" [ref=e657]:
+            - list "B-70の項目" [ref=e659]:
+              - listitem "B70 execute-60 ユーザー登録" [ref=e660]:
+                - generic: B70 execute-60 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-71 1件" [ref=e662]:
+            - list "A-71の項目" [ref=e664]:
+              - listitem "A71 execute-61 ユーザー登録" [ref=e665]:
+                - generic: A71 execute-61 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-72 1件" [ref=e667]:
+            - list "A-72の項目" [ref=e669]:
+              - listitem "A72 execute-62 ユーザー登録" [ref=e670]:
+                - generic: A72 execute-62 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-73 1件" [ref=e672]:
+            - list "A-73の項目" [ref=e674]:
+              - listitem "A73 execute-63 ユーザー登録" [ref=e675]:
+                - generic: A73 execute-63 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-74 1件" [ref=e677]:
+            - list "A-74の項目" [ref=e679]:
+              - listitem "A74 execute-64 ユーザー登録" [ref=e680]:
+                - generic: A74 execute-64 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-75 1件" [ref=e682]:
+            - list "B-75の項目" [ref=e684]:
+              - listitem "B75 execute-65 ユーザー登録" [ref=e685]:
+                - generic: B75 execute-65 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-76 1件" [ref=e687]:
+            - list "A-76の項目" [ref=e689]:
+              - listitem "A76 execute-66 ユーザー登録" [ref=e690]:
+                - generic: A76 execute-66 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-77 1件" [ref=e692]:
+            - list "A-77の項目" [ref=e694]:
+              - listitem "A77 execute-67 ユーザー登録" [ref=e695]:
+                - generic: A77 execute-67 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-78 1件" [ref=e697]:
+            - list "A-78の項目" [ref=e699]:
+              - listitem "A78 execute-68 ユーザー登録" [ref=e700]:
+                - generic: A78 execute-68 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-79 1件" [ref=e702]:
+            - list "A-79の項目" [ref=e704]:
+              - listitem "A79 execute-69 ユーザー登録" [ref=e705]:
+                - generic: A79 execute-69 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-999a 1件" [ref=e707]:
+            - list "B-999aの項目" [ref=e709]:
+              - listitem "B999a offscreen ユーザー登録" [ref=e710]:
+                - generic: B999a offscreen ユーザー登録 エラーが発生しました 500 1
+      - generic [ref=e711]:
+        - generic [ref=e712]:
+          - heading "候補アイテム" [level=2] [ref=e713]
+          - paragraph [ref=e714]: このリストから選択したアイテムを実行リストへ移動します。
+          - generic [ref=e715]:
+            - generic [ref=e716]: "ブロックでフィルタ:"
+            - generic [ref=e718]:
+              - button "A" [ref=e719] [cursor=pointer]
+              - button "B" [ref=e720] [cursor=pointer]
+        - list "買い物リスト" [ref=e721]:
+          - listitem "A-01a 1件" [ref=e723]:
+            - generic [ref=e725]:
+              - generic [ref=e726] [cursor=pointer]:
+                - generic [ref=e728]:
+                  - generic [ref=e729]:
+                    - generic [ref=e730]: ▶
+                    - generic [ref=e731]: A-01a
+                    - generic "merge-a" [ref=e732]
+                  - generic [ref=e733]: 1件
+                - button "このスペースにアイテムを追加" [ref=e735]
+              - list "A-01aの項目" [ref=e738]:
+                - listitem "A01a3 merge-a ユーザー登録" [ref=e740]:
+                  - generic [ref=e742]:
+                    - generic [ref=e743]:
+                      - checkbox "Select item merge-a - ユーザー登録" [ref=e744]
+                      - button "上に移動" [disabled] [ref=e745]
+                      - button "下に移動" [ref=e755] [cursor=pointer]
+                      - button "保護なし" [ref=e758] [cursor=pointer]: 🔓
+                    - generic [ref=e759]:
+                      - generic [ref=e760]:
+                        - generic [ref=e761]: 1日目
+                        - generic [ref=e762]: A-01a3
+                        - button "merge-a" [ref=e763] [cursor=pointer]
+                      - button "ユーザー登録" [ref=e766] [cursor=pointer]
+                      - textbox "利用者メモ" [ref=e770]: エラーが発生しました
+                    - generic [ref=e771]:
+                      - 'button "Current status: 未購入. Click to change." [ref=e772] [cursor=pointer]':
+                        - generic [ref=e775]: 未購入
+                      - generic [ref=e776]:
+                        - generic [ref=e777]: 数量
+                        - combobox "購入予定数量" [ref=e778]:
+                          - option "1" [selected]
+                          - option "2"
+                          - option "3"
+                          - option "4"
+                          - option "5"
+                          - option "6"
+                          - option "7"
+                          - option "8"
+                          - option "9"
+                          - option "10"
+                          - option "11"
+                          - option "12"
+                          - option "13"
+                          - option "14"
+                          - option "15"
+                          - option "16"
+                          - option "17"
+                          - option "18"
+                          - option "19"
+                          - option "20"
+                      - generic [ref=e779]:
+                        - generic [ref=e780]: 購入金額
+                        - generic [ref=e781]: ¥
+                        - combobox "購入金額" [ref=e782]:
+                          - option "価格未定"
+                          - option "0"
+                          - option "100"
+                          - option "200"
+                          - option "300"
+                          - option "400"
+                          - option "500" [selected]
+                          - option "600"
+                          - option "700"
+                          - option "800"
+                          - option "900"
+                          - option "1,000"
+                          - option "1,100"
+                          - option "1,200"
+                          - option "1,300"
+                          - option "1,400"
+                          - option "1,500"
+                          - option "1,600"
+                          - option "1,700"
+                          - option "1,800"
+                          - option "1,900"
+                          - option "2,000"
+                          - option "2,100"
+                          - option "2,200"
+                          - option "2,300"
+                          - option "2,400"
+                          - option "2,500"
+                          - option "2,600"
+                          - option "2,700"
+                          - option "2,800"
+                          - option "2,900"
+                          - option "3,000"
+                          - option "3,100"
+                          - option "3,200"
+                          - option "3,300"
+                          - option "3,400"
+                          - option "3,500"
+                          - option "3,600"
+                          - option "3,700"
+                          - option "3,800"
+                          - option "3,900"
+                          - option "4,000"
+                          - option "4,100"
+                          - option "4,200"
+                          - option "4,300"
+                          - option "4,400"
+                          - option "4,500"
+                          - option "4,600"
+                          - option "4,700"
+                          - option "4,800"
+                          - option "4,900"
+                          - option "5,000"
+                          - option "5,100"
+                          - option "5,200"
+                          - option "5,300"
+                          - option "5,400"
+                          - option "5,500"
+                          - option "5,600"
+                          - option "5,700"
+                          - option "5,800"
+                          - option "5,900"
+                          - option "6,000"
+                          - option "6,100"
+                          - option "6,200"
+                          - option "6,300"
+                          - option "6,400"
+                          - option "6,500"
+                          - option "6,600"
+                          - option "6,700"
+                          - option "6,800"
+                          - option "6,900"
+                          - option "7,000"
+                          - option "7,100"
+                          - option "7,200"
+                          - option "7,300"
+                          - option "7,400"
+                          - option "7,500"
+                          - option "7,600"
+                          - option "7,700"
+                          - option "7,800"
+                          - option "7,900"
+                          - option "8,000"
+                          - option "8,100"
+                          - option "8,200"
+                          - option "8,300"
+                          - option "8,400"
+                          - option "8,500"
+                          - option "8,600"
+                          - option "8,700"
+                          - option "8,800"
+                          - option "8,900"
+                          - option "9,000"
+                          - option "9,100"
+                          - option "9,200"
+                          - option "9,300"
+                          - option "9,400"
+                          - option "9,500"
+                          - option "9,600"
+                          - option "9,700"
+                          - option "9,800"
+                          - option "9,900"
+                          - option "10,000"
+          - listitem "A-02a 1件" [ref=e784]:
+            - generic [ref=e786]:
+              - generic [ref=e787] [cursor=pointer]:
+                - generic [ref=e789]:
+                  - generic [ref=e790]:
+                    - generic [ref=e791]: ▶
+                    - generic [ref=e792]: A-02a
+                    - generic "merge-b" [ref=e793]
+                  - generic [ref=e794]: 1件
+                - button "このスペースにアイテムを追加" [ref=e796]
+              - list "A-02aの項目" [ref=e799]:
+                - listitem "A02a2 merge-b ユーザー登録" [ref=e801]:
+                  - generic [ref=e803]:
+                    - generic [ref=e804]:
+                      - checkbox "Select item merge-b - ユーザー登録" [ref=e805]
+                      - button "上に移動" [ref=e806] [cursor=pointer]
+                      - button "下に移動" [ref=e816] [cursor=pointer]
+                      - button "保護なし" [ref=e819] [cursor=pointer]: 🔓
+                    - generic [ref=e820]:
+                      - generic [ref=e821]:
+                        - generic [ref=e822]: 1日目
+                        - generic [ref=e823]: A-02a2
+                        - button "merge-b" [ref=e824] [cursor=pointer]
+                      - button "ユーザー登録" [ref=e827] [cursor=pointer]
+                      - textbox "利用者メモ" [ref=e831]: エラーが発生しました
+                    - generic [ref=e832]:
+                      - 'button "Current status: 未購入. Click to change." [ref=e833] [cursor=pointer]':
+                        - generic [ref=e836]: 未購入
+                      - generic [ref=e837]:
+                        - generic [ref=e838]: 数量
+                        - combobox "購入予定数量" [ref=e839]:
+                          - option "1" [selected]
+                          - option "2"
+                          - option "3"
+                          - option "4"
+                          - option "5"
+                          - option "6"
+                          - option "7"
+                          - option "8"
+                          - option "9"
+                          - option "10"
+                          - option "11"
+                          - option "12"
+                          - option "13"
+                          - option "14"
+                          - option "15"
+                          - option "16"
+                          - option "17"
+                          - option "18"
+                          - option "19"
+                          - option "20"
+                      - generic [ref=e840]:
+                        - generic [ref=e841]: 購入金額
+                        - generic [ref=e842]: ¥
+                        - combobox "購入金額" [ref=e843]:
+                          - option "価格未定"
+                          - option "0"
+                          - option "100"
+                          - option "200"
+                          - option "300"
+                          - option "400"
+                          - option "500" [selected]
+                          - option "600"
+                          - option "700"
+                          - option "800"
+                          - option "900"
+                          - option "1,000"
+                          - option "1,100"
+                          - option "1,200"
+                          - option "1,300"
+                          - option "1,400"
+                          - option "1,500"
+                          - option "1,600"
+                          - option "1,700"
+                          - option "1,800"
+                          - option "1,900"
+                          - option "2,000"
+                          - option "2,100"
+                          - option "2,200"
+                          - option "2,300"
+                          - option "2,400"
+                          - option "2,500"
+                          - option "2,600"
+                          - option "2,700"
+                          - option "2,800"
+                          - option "2,900"
+                          - option "3,000"
+                          - option "3,100"
+                          - option "3,200"
+                          - option "3,300"
+                          - option "3,400"
+                          - option "3,500"
+                          - option "3,600"
+                          - option "3,700"
+                          - option "3,800"
+                          - option "3,900"
+                          - option "4,000"
+                          - option "4,100"
+                          - option "4,200"
+                          - option "4,300"
+                          - option "4,400"
+                          - option "4,500"
+                          - option "4,600"
+                          - option "4,700"
+                          - option "4,800"
+                          - option "4,900"
+                          - option "5,000"
+                          - option "5,100"
+                          - option "5,200"
+                          - option "5,300"
+                          - option "5,400"
+                          - option "5,500"
+                          - option "5,600"
+                          - option "5,700"
+                          - option "5,800"
+                          - option "5,900"
+                          - option "6,000"
+                          - option "6,100"
+                          - option "6,200"
+                          - option "6,300"
+                          - option "6,400"
+                          - option "6,500"
+                          - option "6,600"
+                          - option "6,700"
+                          - option "6,800"
+                          - option "6,900"
+                          - option "7,000"
+                          - option "7,100"
+                          - option "7,200"
+                          - option "7,300"
+                          - option "7,400"
+                          - option "7,500"
+                          - option "7,600"
+                          - option "7,700"
+                          - option "7,800"
+                          - option "7,900"
+                          - option "8,000"
+                          - option "8,100"
+                          - option "8,200"
+                          - option "8,300"
+                          - option "8,400"
+                          - option "8,500"
+                          - option "8,600"
+                          - option "8,700"
+                          - option "8,800"
+                          - option "8,900"
+                          - option "9,000"
+                          - option "9,100"
+                          - option "9,200"
+                          - option "9,300"
+                          - option "9,400"
+                          - option "9,500"
+                          - option "9,600"
+                          - option "9,700"
+                          - option "9,800"
+                          - option "9,900"
+                          - option "10,000"
+          - listitem "A-04a 1件" [ref=e845]:
+            - generic [ref=e847]:
+              - generic [ref=e848] [cursor=pointer]:
+                - generic [ref=e850]:
+                  - generic [ref=e851]:
+                    - generic [ref=e852]: ▶
+                    - generic [ref=e853]: A-04a
+                    - generic "new-x" [ref=e854]
+                  - generic [ref=e855]: 1件
+                - button "このスペースにアイテムを追加" [ref=e857]
+              - list "A-04aの項目" [ref=e860]:
+                - listitem "A04a new-x ユーザー登録" [ref=e862]:
+                  - generic [ref=e864]:
+                    - generic [ref=e865]:
+                      - checkbox "Select item new-x - ユーザー登録" [ref=e866]
+                      - button "上に移動" [ref=e867] [cursor=pointer]
+                      - button "下に移動" [ref=e877] [cursor=pointer]
+                      - button "保護なし" [ref=e880] [cursor=pointer]: 🔓
+                    - generic [ref=e881]:
+                      - generic [ref=e882]:
+                        - generic [ref=e883]: 1日目
+                        - generic [ref=e884]: A-04a
+                        - button "new-x" [ref=e885] [cursor=pointer]
+                      - button "ユーザー登録" [ref=e888] [cursor=pointer]
+                      - textbox "利用者メモ" [ref=e892]: エラーが発生しました
+                    - generic [ref=e893]:
+                      - 'button "Current status: 未購入. Click to change." [ref=e894] [cursor=pointer]':
+                        - generic [ref=e897]: 未購入
+                      - generic [ref=e898]:
+                        - generic [ref=e899]: 数量
+                        - combobox "購入予定数量" [ref=e900]:
+                          - option "1" [selected]
+                          - option "2"
+                          - option "3"
+                          - option "4"
+                          - option "5"
+                          - option "6"
+                          - option "7"
+                          - option "8"
+                          - option "9"
+                          - option "10"
+                          - option "11"
+                          - option "12"
+                          - option "13"
+                          - option "14"
+                          - option "15"
+                          - option "16"
+                          - option "17"
+                          - option "18"
+                          - option "19"
+                          - option "20"
+                      - generic [ref=e901]:
+                        - generic [ref=e902]: 購入金額
+                        - generic [ref=e903]: ¥
+                        - combobox "購入金額" [ref=e904]:
+                          - option "価格未定"
+                          - option "0"
+                          - option "100"
+                          - option "200"
+                          - option "300"
+                          - option "400"
+                          - option "500" [selected]
+                          - option "600"
+                          - option "700"
+                          - option "800"
+                          - option "900"
+                          - option "1,000"
+                          - option "1,100"
+                          - option "1,200"
+                          - option "1,300"
+                          - option "1,400"
+                          - option "1,500"
+                          - option "1,600"
+                          - option "1,700"
+                          - option "1,800"
+                          - option "1,900"
+                          - option "2,000"
+                          - option "2,100"
+                          - option "2,200"
+                          - option "2,300"
+                          - option "2,400"
+                          - option "2,500"
+                          - option "2,600"
+                          - option "2,700"
+                          - option "2,800"
+                          - option "2,900"
+                          - option "3,000"
+                          - option "3,100"
+                          - option "3,200"
+                          - option "3,300"
+                          - option "3,400"
+                          - option "3,500"
+                          - option "3,600"
+                          - option "3,700"
+                          - option "3,800"
+                          - option "3,900"
+                          - option "4,000"
+                          - option "4,100"
+                          - option "4,200"
+                          - option "4,300"
+                          - option "4,400"
+                          - option "4,500"
+                          - option "4,600"
+                          - option "4,700"
+                          - option "4,800"
+                          - option "4,900"
+                          - option "5,000"
+                          - option "5,100"
+                          - option "5,200"
+                          - option "5,300"
+                          - option "5,400"
+                          - option "5,500"
+                          - option "5,600"
+                          - option "5,700"
+                          - option "5,800"
+                          - option "5,900"
+                          - option "6,000"
+                          - option "6,100"
+                          - option "6,200"
+                          - option "6,300"
+                          - option "6,400"
+                          - option "6,500"
+                          - option "6,600"
+                          - option "6,700"
+                          - option "6,800"
+                          - option "6,900"
+                          - option "7,000"
+                          - option "7,100"
+                          - option "7,200"
+                          - option "7,300"
+                          - option "7,400"
+                          - option "7,500"
+                          - option "7,600"
+                          - option "7,700"
+                          - option "7,800"
+                          - option "7,900"
+                          - option "8,000"
+                          - option "8,100"
+                          - option "8,200"
+                          - option "8,300"
+                          - option "8,400"
+                          - option "8,500"
+                          - option "8,600"
+                          - option "8,700"
+                          - option "8,800"
+                          - option "8,900"
+                          - option "9,000"
+                          - option "9,100"
+                          - option "9,200"
+                          - option "9,300"
+                          - option "9,400"
+                          - option "9,500"
+                          - option "9,600"
+                          - option "9,700"
+                          - option "9,800"
+                          - option "9,900"
+                          - option "10,000"
+          - listitem "A-05a 1件" [ref=e906]:
+            - generic [ref=e908]:
+              - generic [ref=e909] [cursor=pointer]:
+                - generic [ref=e911]:
+                  - generic [ref=e912]:
+                    - generic [ref=e913]: ▶
+                    - generic [ref=e914]: A-05a
+                    - generic "bad-priority" [ref=e915]
+                  - generic [ref=e916]: 1件
+                - button "このスペースにアイテムを追加" [ref=e918]
+              - list "A-05aの項目" [ref=e921]:
+                - listitem "A05a bad-priority ユーザー登録" [ref=e923]:
+                  - generic [ref=e925]:
+                    - generic [ref=e926]:
+                      - checkbox "Select item bad-priority - ユーザー登録" [ref=e927]
+                      - button "上に移動" [ref=e928] [cursor=pointer]
+                      - button "下に移動" [ref=e938] [cursor=pointer]
+                      - button "保護なし" [ref=e941] [cursor=pointer]: 🔓
+                    - generic [ref=e942]:
+                      - generic [ref=e943]:
+                        - generic [ref=e944]: 1日目
+                        - generic [ref=e945]: A-05a
+                        - button "bad-priority" [ref=e946] [cursor=pointer]
+                      - button "ユーザー登録" [ref=e949] [cursor=pointer]
+                      - textbox "利用者メモ" [ref=e953]: エラーが発生しました
+                    - generic [ref=e954]:
+                      - 'button "Current status: 未購入. Click to change." [ref=e955] [cursor=pointer]':
+                        - generic [ref=e958]: 未購入
+                      - generic [ref=e959]:
+                        - generic [ref=e960]: 数量
+                        - combobox "購入予定数量" [ref=e961]:
+                          - option "1" [selected]
+                          - option "2"
+                          - option "3"
+                          - option "4"
+                          - option "5"
+                          - option "6"
+                          - option "7"
+                          - option "8"
+                          - option "9"
+                          - option "10"
+                          - option "11"
+                          - option "12"
+                          - option "13"
+                          - option "14"
+                          - option "15"
+                          - option "16"
+                          - option "17"
+                          - option "18"
+                          - option "19"
+                          - option "20"
+                      - generic [ref=e962]:
+                        - generic [ref=e963]: 購入金額
+                        - generic [ref=e964]: ¥
+                        - combobox "購入金額" [ref=e965]:
+                          - option "価格未定"
+                          - option "0"
+                          - option "100"
+                          - option "200"
+                          - option "300"
+                          - option "400"
+                          - option "500" [selected]
+                          - option "600"
+                          - option "700"
+                          - option "800"
+                          - option "900"
+                          - option "1,000"
+                          - option "1,100"
+                          - option "1,200"
+                          - option "1,300"
+                          - option "1,400"
+                          - option "1,500"
+                          - option "1,600"
+                          - option "1,700"
+                          - option "1,800"
+                          - option "1,900"
+                          - option "2,000"
+                          - option "2,100"
+                          - option "2,200"
+                          - option "2,300"
+                          - option "2,400"
+                          - option "2,500"
+                          - option "2,600"
+                          - option "2,700"
+                          - option "2,800"
+                          - option "2,900"
+                          - option "3,000"
+                          - option "3,100"
+                          - option "3,200"
+                          - option "3,300"
+                          - option "3,400"
+                          - option "3,500"
+                          - option "3,600"
+                          - option "3,700"
+                          - option "3,800"
+                          - option "3,900"
+                          - option "4,000"
+                          - option "4,100"
+                          - option "4,200"
+                          - option "4,300"
+                          - option "4,400"
+                          - option "4,500"
+                          - option "4,600"
+                          - option "4,700"
+                          - option "4,800"
+                          - option "4,900"
+                          - option "5,000"
+                          - option "5,100"
+                          - option "5,200"
+                          - option "5,300"
+                          - option "5,400"
+                          - option "5,500"
+                          - option "5,600"
+                          - option "5,700"
+                          - option "5,800"
+                          - option "5,900"
+                          - option "6,000"
+                          - option "6,100"
+                          - option "6,200"
+                          - option "6,300"
+                          - option "6,400"
+                          - option "6,500"
+                          - option "6,600"
+                          - option "6,700"
+                          - option "6,800"
+                          - option "6,900"
+                          - option "7,000"
+                          - option "7,100"
+                          - option "7,200"
+                          - option "7,300"
+                          - option "7,400"
+                          - option "7,500"
+                          - option "7,600"
+                          - option "7,700"
+                          - option "7,800"
+                          - option "7,900"
+                          - option "8,000"
+                          - option "8,100"
+                          - option "8,200"
+                          - option "8,300"
+                          - option "8,400"
+                          - option "8,500"
+                          - option "8,600"
+                          - option "8,700"
+                          - option "8,800"
+                          - option "8,900"
+                          - option "9,000"
+                          - option "9,100"
+                          - option "9,200"
+                          - option "9,300"
+                          - option "9,400"
+                          - option "9,500"
+                          - option "9,600"
+                          - option "9,700"
+                          - option "9,800"
+                          - option "9,900"
+                          - option "10,000"
+          - listitem "A-1000 1件" [ref=e967]:
+            - generic [ref=e969]:
+              - generic [ref=e970] [cursor=pointer]:
+                - generic [ref=e972]:
+                  - generic [ref=e973]:
+                    - generic [ref=e974]: ▶
+                    - generic [ref=e975]: A-1000
+                    - generic "new-0" [ref=e976]
+                  - generic [ref=e977]: 1件
+                - button "このスペースにアイテムを追加" [ref=e979]
+              - list "A-1000の項目" [ref=e982]:
+                - listitem "A1000 new-0 ユーザー登録" [ref=e984]:
+                  - generic [ref=e986]:
+                    - generic [ref=e987]:
+                      - checkbox "Select item new-0 - ユーザー登録" [ref=e988]
+                      - button "上に移動" [ref=e989] [cursor=pointer]
+                      - button "下に移動" [ref=e999] [cursor=pointer]
+                      - button "保護なし" [ref=e1002] [cursor=pointer]: 🔓
+                    - generic [ref=e1003]:
+                      - generic [ref=e1004]:
+                        - generic [ref=e1005]: 1日目
+                        - generic [ref=e1006]: A-1000
+                        - button "new-0" [ref=e1007] [cursor=pointer]
+                      - button "ユーザー登録" [ref=e1010] [cursor=pointer]
+                      - textbox "利用者メモ" [ref=e1014]: エラーが発生しました
+                    - generic [ref=e1015]:
+                      - 'button "Current status: 未購入. Click to change." [ref=e1016] [cursor=pointer]':
+                        - generic [ref=e1019]: 未購入
+                      - generic [ref=e1020]:
+                        - generic [ref=e1021]: 数量
+                        - combobox "購入予定数量" [ref=e1022]:
+                          - option "1" [selected]
+                          - option "2"
+                          - option "3"
+                          - option "4"
+                          - option "5"
+                          - option "6"
+                          - option "7"
+                          - option "8"
+                          - option "9"
+                          - option "10"
+                          - option "11"
+                          - option "12"
+                          - option "13"
+                          - option "14"
+                          - option "15"
+                          - option "16"
+                          - option "17"
+                          - option "18"
+                          - option "19"
+                          - option "20"
+                      - generic [ref=e1023]:
+                        - generic [ref=e1024]: 購入金額
+                        - generic [ref=e1025]: ¥
+                        - combobox "購入金額" [ref=e1026]:
+                          - option "価格未定"
+                          - option "0"
+                          - option "100"
+                          - option "200"
+                          - option "300"
+                          - option "400"
+                          - option "500" [selected]
+                          - option "600"
+                          - option "700"
+                          - option "800"
+                          - option "900"
+                          - option "1,000"
+                          - option "1,100"
+                          - option "1,200"
+                          - option "1,300"
+                          - option "1,400"
+                          - option "1,500"
+                          - option "1,600"
+                          - option "1,700"
+                          - option "1,800"
+                          - option "1,900"
+                          - option "2,000"
+                          - option "2,100"
+                          - option "2,200"
+                          - option "2,300"
+                          - option "2,400"
+                          - option "2,500"
+                          - option "2,600"
+                          - option "2,700"
+                          - option "2,800"
+                          - option "2,900"
+                          - option "3,000"
+                          - option "3,100"
+                          - option "3,200"
+                          - option "3,300"
+                          - option "3,400"
+                          - option "3,500"
+                          - option "3,600"
+                          - option "3,700"
+                          - option "3,800"
+                          - option "3,900"
+                          - option "4,000"
+                          - option "4,100"
+                          - option "4,200"
+                          - option "4,300"
+                          - option "4,400"
+                          - option "4,500"
+                          - option "4,600"
+                          - option "4,700"
+                          - option "4,800"
+                          - option "4,900"
+                          - option "5,000"
+                          - option "5,100"
+                          - option "5,200"
+                          - option "5,300"
+                          - option "5,400"
+                          - option "5,500"
+                          - option "5,600"
+                          - option "5,700"
+                          - option "5,800"
+                          - option "5,900"
+                          - option "6,000"
+                          - option "6,100"
+                          - option "6,200"
+                          - option "6,300"
+                          - option "6,400"
+                          - option "6,500"
+                          - option "6,600"
+                          - option "6,700"
+                          - option "6,800"
+                          - option "6,900"
+                          - option "7,000"
+                          - option "7,100"
+                          - option "7,200"
+                          - option "7,300"
+                          - option "7,400"
+                          - option "7,500"
+                          - option "7,600"
+                          - option "7,700"
+                          - option "7,800"
+                          - option "7,900"
+                          - option "8,000"
+                          - option "8,100"
+                          - option "8,200"
+                          - option "8,300"
+                          - option "8,400"
+                          - option "8,500"
+                          - option "8,600"
+                          - option "8,700"
+                          - option "8,800"
+                          - option "8,900"
+                          - option "9,000"
+                          - option "9,100"
+                          - option "9,200"
+                          - option "9,300"
+                          - option "9,400"
+                          - option "9,500"
+                          - option "9,600"
+                          - option "9,700"
+                          - option "9,800"
+                          - option "9,900"
+                          - option "10,000"
+          - listitem "A-1001 1件" [ref=e1028]:
+            - generic [ref=e1030]:
+              - generic [ref=e1031] [cursor=pointer]:
+                - generic [ref=e1033]:
+                  - generic [ref=e1034]:
+                    - generic [ref=e1035]: ▶
+                    - generic [ref=e1036]: A-1001
+                    - generic "new-1" [ref=e1037]
+                  - generic [ref=e1038]: 1件
+                - button "このスペースにアイテムを追加" [ref=e1040]
+              - list "A-1001の項目" [ref=e1043]:
+                - listitem "A1001 new-1 ユーザー登録" [ref=e1045]:
+                  - generic [ref=e1047]:
+                    - generic [ref=e1048]:
+                      - checkbox "Select item new-1 - ユーザー登録" [ref=e1049]
+                      - button "上に移動" [ref=e1050] [cursor=pointer]
+                      - button "下に移動" [ref=e1060] [cursor=pointer]
+                      - button "保護なし" [ref=e1063] [cursor=pointer]: 🔓
+                    - generic [ref=e1064]:
+                      - generic [ref=e1065]:
+                        - generic [ref=e1066]: 1日目
+                        - generic [ref=e1067]: A-1001
+                        - button "new-1" [ref=e1068] [cursor=pointer]
+                      - button "ユーザー登録" [ref=e1071] [cursor=pointer]
+                      - textbox "利用者メモ" [ref=e1075]: エラーが発生しました
+                    - generic [ref=e1076]:
+                      - 'button "Current status: 未購入. Click to change." [ref=e1077] [cursor=pointer]':
+                        - generic [ref=e1080]: 未購入
+                      - generic [ref=e1081]:
+                        - generic [ref=e1082]: 数量
+                        - combobox "購入予定数量" [ref=e1083]:
+                          - option "1" [selected]
+                          - option "2"
+                          - option "3"
+                          - option "4"
+                          - option "5"
+                          - option "6"
+                          - option "7"
+                          - option "8"
+                          - option "9"
+                          - option "10"
+                          - option "11"
+                          - option "12"
+                          - option "13"
+                          - option "14"
+                          - option "15"
+                          - option "16"
+                          - option "17"
+                          - option "18"
+                          - option "19"
+                          - option "20"
+                      - generic [ref=e1084]:
+                        - generic [ref=e1085]: 購入金額
+                        - generic [ref=e1086]: ¥
+                        - combobox "購入金額" [ref=e1087]:
+                          - option "価格未定"
+                          - option "0"
+                          - option "100"
+                          - option "200"
+                          - option "300"
+                          - option "400"
+                          - option "500" [selected]
+                          - option "600"
+                          - option "700"
+                          - option "800"
+                          - option "900"
+                          - option "1,000"
+                          - option "1,100"
+                          - option "1,200"
+                          - option "1,300"
+                          - option "1,400"
+                          - option "1,500"
+                          - option "1,600"
+                          - option "1,700"
+                          - option "1,800"
+                          - option "1,900"
+                          - option "2,000"
+                          - option "2,100"
+                          - option "2,200"
+                          - option "2,300"
+                          - option "2,400"
+                          - option "2,500"
+                          - option "2,600"
+                          - option "2,700"
+                          - option "2,800"
+                          - option "2,900"
+                          - option "3,000"
+                          - option "3,100"
+                          - option "3,200"
+                          - option "3,300"
+                          - option "3,400"
+                          - option "3,500"
+                          - option "3,600"
+                          - option "3,700"
+                          - option "3,800"
+                          - option "3,900"
+                          - option "4,000"
+                          - option "4,100"
+                          - option "4,200"
+                          - option "4,300"
+                          - option "4,400"
+                          - option "4,500"
+                          - option "4,600"
+                          - option "4,700"
+                          - option "4,800"
+                          - option "4,900"
+                          - option "5,000"
+                          - option "5,100"
+                          - option "5,200"
+                          - option "5,300"
+                          - option "5,400"
+                          - option "5,500"
+                          - option "5,600"
+                          - option "5,700"
+                          - option "5,800"
+                          - option "5,900"
+                          - option "6,000"
+                          - option "6,100"
+                          - option "6,200"
+                          - option "6,300"
+                          - option "6,400"
+                          - option "6,500"
+                          - option "6,600"
+                          - option "6,700"
+                          - option "6,800"
+                          - option "6,900"
+                          - option "7,000"
+                          - option "7,100"
+                          - option "7,200"
+                          - option "7,300"
+                          - option "7,400"
+                          - option "7,500"
+                          - option "7,600"
+                          - option "7,700"
+                          - option "7,800"
+                          - option "7,900"
+                          - option "8,000"
+                          - option "8,100"
+                          - option "8,200"
+                          - option "8,300"
+                          - option "8,400"
+                          - option "8,500"
+                          - option "8,600"
+                          - option "8,700"
+                          - option "8,800"
+                          - option "8,900"
+                          - option "9,000"
+                          - option "9,100"
+                          - option "9,200"
+                          - option "9,300"
+                          - option "9,400"
+                          - option "9,500"
+                          - option "9,600"
+                          - option "9,700"
+                          - option "9,800"
+                          - option "9,900"
+                          - option "10,000"
+          - listitem "A-1002 1件" [ref=e1089]:
+            - list "A-1002の項目" [ref=e1091]:
+              - listitem "A1002 new-2 ユーザー登録" [ref=e1092]:
+                - generic: A1002 new-2 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1003 1件" [ref=e1094]:
+            - list "A-1003の項目" [ref=e1096]:
+              - listitem "A1003 new-3 ユーザー登録" [ref=e1097]:
+                - generic: A1003 new-3 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1004 1件" [ref=e1099]:
+            - list "A-1004の項目" [ref=e1101]:
+              - listitem "A1004 new-4 ユーザー登録" [ref=e1102]:
+                - generic: A1004 new-4 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1005 1件" [ref=e1104]:
+            - list "A-1005の項目" [ref=e1106]:
+              - listitem "A1005 new-5 ユーザー登録" [ref=e1107]:
+                - generic: A1005 new-5 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1006 1件" [ref=e1109]:
+            - list "A-1006の項目" [ref=e1111]:
+              - listitem "A1006 new-6 ユーザー登録" [ref=e1112]:
+                - generic: A1006 new-6 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1007 1件" [ref=e1114]:
+            - list "A-1007の項目" [ref=e1116]:
+              - listitem "A1007 new-7 ユーザー登録" [ref=e1117]:
+                - generic: A1007 new-7 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1008 1件" [ref=e1119]:
+            - list "A-1008の項目" [ref=e1121]:
+              - listitem "A1008 new-8 ユーザー登録" [ref=e1122]:
+                - generic: A1008 new-8 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1009 1件" [ref=e1124]:
+            - list "A-1009の項目" [ref=e1126]:
+              - listitem "A1009 new-9 ユーザー登録" [ref=e1127]:
+                - generic: A1009 new-9 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1010 1件" [ref=e1129]:
+            - list "A-1010の項目" [ref=e1131]:
+              - listitem "A1010 new-10 ユーザー登録" [ref=e1132]:
+                - generic: A1010 new-10 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1011 1件" [ref=e1134]:
+            - list "A-1011の項目" [ref=e1136]:
+              - listitem "A1011 new-11 ユーザー登録" [ref=e1137]:
+                - generic: A1011 new-11 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1012 1件" [ref=e1139]:
+            - list "A-1012の項目" [ref=e1141]:
+              - listitem "A1012 new-12 ユーザー登録" [ref=e1142]:
+                - generic: A1012 new-12 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1013 1件" [ref=e1144]:
+            - list "A-1013の項目" [ref=e1146]:
+              - listitem "A1013 new-13 ユーザー登録" [ref=e1147]:
+                - generic: A1013 new-13 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1014 1件" [ref=e1149]:
+            - list "A-1014の項目" [ref=e1151]:
+              - listitem "A1014 new-14 ユーザー登録" [ref=e1152]:
+                - generic: A1014 new-14 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1015 1件" [ref=e1154]:
+            - list "A-1015の項目" [ref=e1156]:
+              - listitem "A1015 new-15 ユーザー登録" [ref=e1157]:
+                - generic: A1015 new-15 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1016 1件" [ref=e1159]:
+            - list "A-1016の項目" [ref=e1161]:
+              - listitem "A1016 new-16 ユーザー登録" [ref=e1162]:
+                - generic: A1016 new-16 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1017 1件" [ref=e1164]:
+            - list "A-1017の項目" [ref=e1166]:
+              - listitem "A1017 new-17 ユーザー登録" [ref=e1167]:
+                - generic: A1017 new-17 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1018 1件" [ref=e1169]:
+            - list "A-1018の項目" [ref=e1171]:
+              - listitem "A1018 new-18 ユーザー登録" [ref=e1172]:
+                - generic: A1018 new-18 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1019 1件" [ref=e1174]:
+            - list "A-1019の項目" [ref=e1176]:
+              - listitem "A1019 new-19 ユーザー登録" [ref=e1177]:
+                - generic: A1019 new-19 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1020 1件" [ref=e1179]:
+            - list "A-1020の項目" [ref=e1181]:
+              - listitem "A1020 new-20 ユーザー登録" [ref=e1182]:
+                - generic: A1020 new-20 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1021 1件" [ref=e1184]:
+            - list "A-1021の項目" [ref=e1186]:
+              - listitem "A1021 new-21 ユーザー登録" [ref=e1187]:
+                - generic: A1021 new-21 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1022 1件" [ref=e1189]:
+            - list "A-1022の項目" [ref=e1191]:
+              - listitem "A1022 new-22 ユーザー登録" [ref=e1192]:
+                - generic: A1022 new-22 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1023 1件" [ref=e1194]:
+            - list "A-1023の項目" [ref=e1196]:
+              - listitem "A1023 new-23 ユーザー登録" [ref=e1197]:
+                - generic: A1023 new-23 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1024 1件" [ref=e1199]:
+            - list "A-1024の項目" [ref=e1201]:
+              - listitem "A1024 new-24 ユーザー登録" [ref=e1202]:
+                - generic: A1024 new-24 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1025 1件" [ref=e1204]:
+            - list "A-1025の項目" [ref=e1206]:
+              - listitem "A1025 new-25 ユーザー登録" [ref=e1207]:
+                - generic: A1025 new-25 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1026 1件" [ref=e1209]:
+            - list "A-1026の項目" [ref=e1211]:
+              - listitem "A1026 new-26 ユーザー登録" [ref=e1212]:
+                - generic: A1026 new-26 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1027 1件" [ref=e1214]:
+            - list "A-1027の項目" [ref=e1216]:
+              - listitem "A1027 new-27 ユーザー登録" [ref=e1217]:
+                - generic: A1027 new-27 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1028 1件" [ref=e1219]:
+            - list "A-1028の項目" [ref=e1221]:
+              - listitem "A1028 new-28 ユーザー登録" [ref=e1222]:
+                - generic: A1028 new-28 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1029 1件" [ref=e1224]:
+            - list "A-1029の項目" [ref=e1226]:
+              - listitem "A1029 new-29 ユーザー登録" [ref=e1227]:
+                - generic: A1029 new-29 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1030 1件" [ref=e1229]:
+            - list "A-1030の項目" [ref=e1231]:
+              - listitem "A1030 new-30 ユーザー登録" [ref=e1232]:
+                - generic: A1030 new-30 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1031 1件" [ref=e1234]:
+            - list "A-1031の項目" [ref=e1236]:
+              - listitem "A1031 new-31 ユーザー登録" [ref=e1237]:
+                - generic: A1031 new-31 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1032 1件" [ref=e1239]:
+            - list "A-1032の項目" [ref=e1241]:
+              - listitem "A1032 new-32 ユーザー登録" [ref=e1242]:
+                - generic: A1032 new-32 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1033 1件" [ref=e1244]:
+            - list "A-1033の項目" [ref=e1246]:
+              - listitem "A1033 new-33 ユーザー登録" [ref=e1247]:
+                - generic: A1033 new-33 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1034 1件" [ref=e1249]:
+            - list "A-1034の項目" [ref=e1251]:
+              - listitem "A1034 new-34 ユーザー登録" [ref=e1252]:
+                - generic: A1034 new-34 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1035 1件" [ref=e1254]:
+            - list "A-1035の項目" [ref=e1256]:
+              - listitem "A1035 new-35 ユーザー登録" [ref=e1257]:
+                - generic: A1035 new-35 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1036 1件" [ref=e1259]:
+            - list "A-1036の項目" [ref=e1261]:
+              - listitem "A1036 new-36 ユーザー登録" [ref=e1262]:
+                - generic: A1036 new-36 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1037 1件" [ref=e1264]:
+            - list "A-1037の項目" [ref=e1266]:
+              - listitem "A1037 new-37 ユーザー登録" [ref=e1267]:
+                - generic: A1037 new-37 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1038 1件" [ref=e1269]:
+            - list "A-1038の項目" [ref=e1271]:
+              - listitem "A1038 new-38 ユーザー登録" [ref=e1272]:
+                - generic: A1038 new-38 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1039 1件" [ref=e1274]:
+            - list "A-1039の項目" [ref=e1276]:
+              - listitem "A1039 new-39 ユーザー登録" [ref=e1277]:
+                - generic: A1039 new-39 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1040 1件" [ref=e1279]:
+            - list "A-1040の項目" [ref=e1281]:
+              - listitem "A1040 new-40 ユーザー登録" [ref=e1282]:
+                - generic: A1040 new-40 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1041 1件" [ref=e1284]:
+            - list "A-1041の項目" [ref=e1286]:
+              - listitem "A1041 new-41 ユーザー登録" [ref=e1287]:
+                - generic: A1041 new-41 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1042 1件" [ref=e1289]:
+            - list "A-1042の項目" [ref=e1291]:
+              - listitem "A1042 new-42 ユーザー登録" [ref=e1292]:
+                - generic: A1042 new-42 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1043 1件" [ref=e1294]:
+            - list "A-1043の項目" [ref=e1296]:
+              - listitem "A1043 new-43 ユーザー登録" [ref=e1297]:
+                - generic: A1043 new-43 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1044 1件" [ref=e1299]:
+            - list "A-1044の項目" [ref=e1301]:
+              - listitem "A1044 new-44 ユーザー登録" [ref=e1302]:
+                - generic: A1044 new-44 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1045 1件" [ref=e1304]:
+            - list "A-1045の項目" [ref=e1306]:
+              - listitem "A1045 new-45 ユーザー登録" [ref=e1307]:
+                - generic: A1045 new-45 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1046 1件" [ref=e1309]:
+            - list "A-1046の項目" [ref=e1311]:
+              - listitem "A1046 new-46 ユーザー登録" [ref=e1312]:
+                - generic: A1046 new-46 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1047 1件" [ref=e1314]:
+            - list "A-1047の項目" [ref=e1316]:
+              - listitem "A1047 new-47 ユーザー登録" [ref=e1317]:
+                - generic: A1047 new-47 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1048 1件" [ref=e1319]:
+            - list "A-1048の項目" [ref=e1321]:
+              - listitem "A1048 new-48 ユーザー登録" [ref=e1322]:
+                - generic: A1048 new-48 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1049 1件" [ref=e1324]:
+            - list "A-1049の項目" [ref=e1326]:
+              - listitem "A1049 new-49 ユーザー登録" [ref=e1327]:
+                - generic: A1049 new-49 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1050 1件" [ref=e1329]:
+            - list "A-1050の項目" [ref=e1331]:
+              - listitem "A1050 new-50 ユーザー登録" [ref=e1332]:
+                - generic: A1050 new-50 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1051 1件" [ref=e1334]:
+            - list "A-1051の項目" [ref=e1336]:
+              - listitem "A1051 new-51 ユーザー登録" [ref=e1337]:
+                - generic: A1051 new-51 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1052 1件" [ref=e1339]:
+            - list "A-1052の項目" [ref=e1341]:
+              - listitem "A1052 new-52 ユーザー登録" [ref=e1342]:
+                - generic: A1052 new-52 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1053 1件" [ref=e1344]:
+            - list "A-1053の項目" [ref=e1346]:
+              - listitem "A1053 new-53 ユーザー登録" [ref=e1347]:
+                - generic: A1053 new-53 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1054 1件" [ref=e1349]:
+            - list "A-1054の項目" [ref=e1351]:
+              - listitem "A1054 new-54 ユーザー登録" [ref=e1352]:
+                - generic: A1054 new-54 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1055 1件" [ref=e1354]:
+            - list "A-1055の項目" [ref=e1356]:
+              - listitem "A1055 new-55 ユーザー登録" [ref=e1357]:
+                - generic: A1055 new-55 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1056 1件" [ref=e1359]:
+            - list "A-1056の項目" [ref=e1361]:
+              - listitem "A1056 new-56 ユーザー登録" [ref=e1362]:
+                - generic: A1056 new-56 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1057 1件" [ref=e1364]:
+            - list "A-1057の項目" [ref=e1366]:
+              - listitem "A1057 new-57 ユーザー登録" [ref=e1367]:
+                - generic: A1057 new-57 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1058 1件" [ref=e1369]:
+            - list "A-1058の項目" [ref=e1371]:
+              - listitem "A1058 new-58 ユーザー登録" [ref=e1372]:
+                - generic: A1058 new-58 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1059 1件" [ref=e1374]:
+            - list "A-1059の項目" [ref=e1376]:
+              - listitem "A1059 new-59 ユーザー登録" [ref=e1377]:
+                - generic: A1059 new-59 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1060 1件" [ref=e1379]:
+            - list "A-1060の項目" [ref=e1381]:
+              - listitem "A1060 new-60 ユーザー登録" [ref=e1382]:
+                - generic: A1060 new-60 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1061 1件" [ref=e1384]:
+            - list "A-1061の項目" [ref=e1386]:
+              - listitem "A1061 new-61 ユーザー登録" [ref=e1387]:
+                - generic: A1061 new-61 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1062 1件" [ref=e1389]:
+            - list "A-1062の項目" [ref=e1391]:
+              - listitem "A1062 new-62 ユーザー登録" [ref=e1392]:
+                - generic: A1062 new-62 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1063 1件" [ref=e1394]:
+            - list "A-1063の項目" [ref=e1396]:
+              - listitem "A1063 new-63 ユーザー登録" [ref=e1397]:
+                - generic: A1063 new-63 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1064 1件" [ref=e1399]:
+            - list "A-1064の項目" [ref=e1401]:
+              - listitem "A1064 new-64 ユーザー登録" [ref=e1402]:
+                - generic: A1064 new-64 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1065 1件" [ref=e1404]:
+            - list "A-1065の項目" [ref=e1406]:
+              - listitem "A1065 new-65 ユーザー登録" [ref=e1407]:
+                - generic: A1065 new-65 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1066 1件" [ref=e1409]:
+            - list "A-1066の項目" [ref=e1411]:
+              - listitem "A1066 new-66 ユーザー登録" [ref=e1412]:
+                - generic: A1066 new-66 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1067 1件" [ref=e1414]:
+            - list "A-1067の項目" [ref=e1416]:
+              - listitem "A1067 new-67 ユーザー登録" [ref=e1417]:
+                - generic: A1067 new-67 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1068 1件" [ref=e1419]:
+            - list "A-1068の項目" [ref=e1421]:
+              - listitem "A1068 new-68 ユーザー登録" [ref=e1422]:
+                - generic: A1068 new-68 ユーザー登録 エラーが発生しました 500 1
+          - listitem "A-1069 1件" [ref=e1424]:
+            - list "A-1069の項目" [ref=e1426]:
+              - listitem "A1069 new-69 ユーザー登録" [ref=e1427]:
+                - generic: A1069 new-69 ユーザー登録 エラーが発生しました 500 1
+          - listitem "B-999a 1件" [ref=e1429]:
+            - list "B-999aの項目" [ref=e1431]:
+              - listitem "B999a2 merge-offscreen ユーザー登録" [ref=e1432]:
+                - generic: B999a2 merge-offscreen ユーザー登録 エラーが発生しました 500 1
+  - status "保存済み"
+```
+
+# Test source
+
+```ts
+  967  |           (
+  968  |             (await stored(page, "executeModeItems"))[eventName] as Record<
+  969  |               string,
+  970  |               string[]
+  971  |             >
+  972  |           )[day].at(-1),
+  973  |         )
+  974  |         .toBe("merge-offscreen");
+  975  |       await reopen(page);
+  976  |       await expect
+  977  |         .poll(() => ids(page, "candidate"))
+  978  |         .not.toContain("merge-offscreen");
+  979  |     });
+  980  |   }
+  981  | for (const input of ["native", "touch"] as const)
+  982  |   test(`impossible OFF boundary rejects a mixed drop atomically: ${input}`, async ({
+  983  |     page,
+  984  |   }) => {
+  985  |     await restore(page, fixture());
+  986  |     await grouping(page, false);
+  987  |     const before = (await stored(page, "executeModeItems"))[eventName];
+  988  |     await select(page, ["merge-a", "bad-priority"]);
+  989  |     await start(page, input, "merge-a");
+  990  |     const result = await hover(page, input, "a1", "after", false);
+  991  |     expect(result.status).toBe("rejected");
+  992  |     expect(result.guides).toHaveLength(0);
+  993  |     await finish(page, input, true);
+  994  |     expect((await stored(page, "executeModeItems"))[eventName]).toEqual(before);
+  995  |     expect(await ids(page, "candidate")).toContain("merge-a");
+  996  |     expect(await ids(page, "candidate")).toContain("bad-priority");
+  997  |     await expect(
+  998  |       page.locator(rowSelector("merge-a")).getByRole("checkbox"),
+  999  |     ).toBeChecked();
+  1000 |     await expect(
+  1001 |       page.locator(rowSelector("bad-priority")).getByRole("checkbox"),
+  1002 |     ).toBeChecked();
+  1003 |   });
+  1004 | for (const input of ["native", "touch"] as const)
+  1005 |   test(`OFF selection rejects reversed hall buckets before drop: ${input}`, async ({
+  1006 |     page,
+  1007 |   }) => {
+  1008 |     const backup = fixture(4);
+  1009 |     backup.data.eventLists[eventName] = [
+  1010 |       makeItem("a1", "01", "A"),
+  1011 |       makeItem("b1", "02", "B"),
+  1012 |       makeItem("x", "03", "B"),
+  1013 |       makeItem("y", "04", "A"),
+  1014 |     ];
+  1015 |     backup.data.executeModeItems[eventName][day] = ["a1", "b1"];
+  1016 |     await restore(page, backup);
+  1017 |     await grouping(page, false);
+  1018 |     await select(page, ["x", "y"]);
+  1019 |     await start(page, input, "x");
+  1020 |     const guide = await hover(page, input, "a1", "after", false);
+  1021 |     expect(guide.status).toBe("rejected");
+  1022 |     expect(guide.guides).toHaveLength(0);
+  1023 |     await finish(page, input, true);
+  1024 |     expect(
+  1025 |       (
+  1026 |         (await stored(page, "executeModeItems"))[eventName] as Record<
+  1027 |           string,
+  1028 |           string[]
+  1029 |         >
+  1030 |       )[day],
+  1031 |     ).toEqual(["a1", "b1"]);
+  1032 |     expect(await ids(page, "candidate")).toEqual(["y", "x"]);
+  1033 |     for (const id of ["x", "y"])
+  1034 |       await expect(
+  1035 |         page.locator(rowSelector(id)).getByRole("checkbox"),
+  1036 |       ).toBeChecked();
+  1037 |   });
+  1038 | for (const grouped of [true, false])
+  1039 |   test(`actual Chromium native leave clears shared guides before release: grouping ${grouped}`, async ({
+  1040 |     page,
+  1041 |   }) => {
+  1042 |     await restore(page, fixture());
+  1043 |     await grouping(page, grouped);
+  1044 |     const before = (await stored(page, "executeModeItems"))[eventName];
+  1045 |     const source = await page.locator(rowSelector("new-x")).boundingBox();
+  1046 |     const target = await page.locator(rowSelector("a1")).boundingBox();
+  1047 |     expect(source).not.toBeNull();
+  1048 |     expect(target).not.toBeNull();
+  1049 |     await page.mouse.move(source!.x + 4, source!.y + 40);
+  1050 |     await page.mouse.down();
+  1051 |     try {
+  1052 |       await page.mouse.move(target!.x + 4, target!.y + 30, { steps: 12 });
+  1053 |       await page.mouse.move(target!.x + 6, target!.y + 32);
+  1054 |       await expect(
+  1055 |         page.locator('[data-shopping-drag-status="accepted"]'),
+  1056 |       ).toBeVisible();
+  1057 |       await expect(
+  1058 |         page.locator('[data-shopping-drag-guide="insert"]'),
+  1059 |       ).toBeVisible();
+  1060 |       const header = await page
+  1061 |         .getByRole("heading", { name: eventName, exact: true })
+  1062 |         .boundingBox();
+  1063 |       expect(header).not.toBeNull();
+  1064 |       await page.mouse.move(header!.x + 6, header!.y + header!.height / 2, {
+  1065 |         steps: 12,
+  1066 |       });
+> 1067 |       await expect(page.locator("[data-shopping-drag-status]")).toHaveCount(0);
+       |                                                                 ^ Error: expect(locator).toHaveCount(expected) failed
+  1068 |       await expect(page.locator("[data-shopping-drag-guide]")).toHaveCount(0);
+  1069 |     } finally {
+  1070 |       await page.mouse.up();
+  1071 |     }
+  1072 |     expect((await stored(page, "executeModeItems"))[eventName]).toEqual(before);
+  1073 |   });
+  1074 | test("actual Chromium native drag uses the shared column owner", async ({
+  1075 |   page,
+  1076 | }) => {
+  1077 |   await restore(page, fixture());
+  1078 |   await grouping(page, true);
+  1079 |   const source = page.locator(rowSelector("new-x")),
+  1080 |     target = page.locator(rowSelector("a1"));
+  1081 |   await source.dragTo(target, {
+  1082 |     sourcePosition: { x: 4, y: 40 },
+  1083 |     targetPosition: { x: 4, y: 30 },
+  1084 |   });
+  1085 |   await expect
+  1086 |     .poll(async () =>
+  1087 |       (
+  1088 |         (await stored(page, "executeModeItems"))[eventName] as Record<
+  1089 |           string,
+  1090 |           string[]
+  1091 |         >
+  1092 |       )[day].slice(0, 3),
+  1093 |     )
+  1094 |     .toEqual(["new-x", "a1", "a2"]);
+  1095 | });
+  1096 | test("actual Chromium touch drag resolves the target column", async ({
+  1097 |   page,
+  1098 |   context,
+  1099 | }) => {
+  1100 |   await restore(page, fixture());
+  1101 |   await grouping(page, true);
+  1102 |   const session = await context.newCDPSession(page);
+  1103 |   try {
+  1104 |     await session.send("Emulation.setTouchEmulationEnabled", {
+  1105 |       enabled: true,
+  1106 |       maxTouchPoints: 1,
+  1107 |     });
+  1108 |     const source = await page.locator(rowSelector("new-x")).boundingBox();
+  1109 |     expect(source).not.toBeNull();
+  1110 |     await session.send("Input.dispatchTouchEvent", {
+  1111 |       type: "touchStart",
+  1112 |       touchPoints: [{ x: source!.x + 4, y: source!.y + 40, id: 1 }],
+  1113 |     });
+  1114 |     await expect(page.locator(".esp-shopping-touch-clone")).toBeVisible();
+  1115 |     const target = await page.locator(rowSelector("a1")).boundingBox();
+  1116 |     expect(target).not.toBeNull();
+  1117 |     await session.send("Input.dispatchTouchEvent", {
+  1118 |       type: "touchMove",
+  1119 |       touchPoints: [{ x: target!.x + 4, y: target!.y + 30, id: 1 }],
+  1120 |     });
+  1121 |     await expect(
+  1122 |       page.locator('[data-shopping-drag-guide="insert"]'),
+  1123 |     ).toBeVisible();
+  1124 |     await session.send("Input.dispatchTouchEvent", {
+  1125 |       type: "touchEnd",
+  1126 |       touchPoints: [],
+  1127 |     });
+  1128 |     await expect
+  1129 |       .poll(async () =>
+  1130 |         (
+  1131 |           (await stored(page, "executeModeItems"))[eventName] as Record<
+  1132 |             string,
+  1133 |             string[]
+  1134 |           >
+  1135 |         )[day].slice(0, 3),
+  1136 |       )
+  1137 |       .toEqual(["new-x", "a1", "a2"]);
+  1138 |   } finally {
+  1139 |     await session.detach();
+  1140 |   }
+  1141 | });
+  1142 | for (const input of ["native", "touch"] as const)
+  1143 |   for (const column of ["execute", "candidate"] as const)
+  1144 |     test(`empty ${column} accepts a scoped ${input} drop`, async ({ page }) => {
+  1145 |       const backup = fixture(3, true);
+  1146 |       backup.data.executeModeItems[eventName][day] =
+  1147 |         column === "execute" ? [] : ["one", "three", "two"];
+  1148 |       await restore(page, backup);
+  1149 |       await grouping(page, false);
+  1150 |       const sourceId = column === "execute" ? "one" : "two";
+  1151 |       await start(page, input, sourceId);
+  1152 |       await page.locator(`[data-shopping-drag-column="${column}"]`).evaluate(
+  1153 |         (root, { input, sourceId }) => {
+  1154 |           const rect = root.getBoundingClientRect();
+  1155 |           const x = rect.left + 20,
+  1156 |             y = rect.top + Math.min(100, rect.height / 2);
+  1157 |           const state = window as unknown as { __dragTransfer: DataTransfer };
+  1158 |           if (input === "native")
+  1159 |             root.dispatchEvent(
+  1160 |               new DragEvent("dragover", {
+  1161 |                 bubbles: true,
+  1162 |                 cancelable: true,
+  1163 |                 dataTransfer: state.__dragTransfer,
+  1164 |                 clientX: x,
+  1165 |                 clientY: y,
+  1166 |               }),
+  1167 |             );
+```

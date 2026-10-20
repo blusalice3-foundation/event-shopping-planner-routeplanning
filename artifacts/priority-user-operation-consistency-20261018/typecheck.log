@@ -1,0 +1,36 @@
+
+> event-shopping-planner@1.0.0 typecheck
+> tsc --noEmit && tsc -p tsconfig.release-tools.json
+
+src/components/ManualItemDate.persistence.integration.test.tsx(285,36): error TS18046: 'item' is of type 'unknown'.
+src/components/ManualItemDate.persistence.integration.test.tsx(287,16): error TS18046: 'savedItem' is of type 'unknown'.
+src/components/ManualItemDate.persistence.integration.test.tsx(297,34): error TS2345: Argument of type 'unknown[]' is not assignable to parameter of type 'ShoppingItem[]'.
+  Type 'unknown' is not assignable to type 'ShoppingItem'.
+src/components/ManualItemDate.persistence.integration.test.tsx(298,43): error TS2345: Argument of type 'unknown[]' is not assignable to parameter of type 'readonly ShoppingItem[]'.
+  Type 'unknown' is not assignable to type 'ShoppingItem'.
+src/components/ManualItemDate.persistence.integration.test.tsx(310,47): error TS18046: 'savedItem' is of type 'unknown'.
+src/components/map/MapView.visitProjection.integration.test.tsx(492,51): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(role: ByRoleMatcher, options?: ByRoleOptions | undefined): HTMLElement', gave the following error.
+    Object literal may only specify known properties, and 'exact' does not exist in type 'ByRoleOptions'.
+  Overload 2 of 2, '(role: ByRoleMatcher, options?: ByRoleOptions | undefined): HTMLElement', gave the following error.
+    Object literal may only specify known properties, and 'exact' does not exist in type 'ByRoleOptions'.
+src/features/app-shell/components/AppOverlayLayer.eventCancellation.integration.test.tsx(80,62): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(role: ByRoleMatcher, options?: ByRoleOptions | undefined): HTMLElement', gave the following error.
+    Object literal may only specify known properties, and 'exact' does not exist in type 'ByRoleOptions'.
+  Overload 2 of 2, '(role: ByRoleMatcher, options?: ByRoleOptions | undefined): HTMLElement', gave the following error.
+    Object literal may only specify known properties, and 'exact' does not exist in type 'ByRoleOptions'.
+src/features/app-shell/components/AppOverlayLayer.eventCancellation.integration.test.tsx(88,62): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(role: ByRoleMatcher, options?: ByRoleOptions | undefined): HTMLElement', gave the following error.
+    Object literal may only specify known properties, and 'exact' does not exist in type 'ByRoleOptions'.
+  Overload 2 of 2, '(role: ByRoleMatcher, options?: ByRoleOptions | undefined): HTMLElement', gave the following error.
+    Object literal may only specify known properties, and 'exact' does not exist in type 'ByRoleOptions'.
+src/features/app-shell/components/AppOverlayLayer.eventCancellation.integration.test.tsx(107,60): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(role: ByRoleMatcher, options?: ByRoleOptions | undefined): HTMLElement', gave the following error.
+    Object literal may only specify known properties, and 'exact' does not exist in type 'ByRoleOptions'.
+  Overload 2 of 2, '(role: ByRoleMatcher, options?: ByRoleOptions | undefined): HTMLElement', gave the following error.
+    Object literal may only specify known properties, and 'exact' does not exist in type 'ByRoleOptions'.
+src/features/app-shell/components/AppOverlayLayer.eventCancellation.integration.test.tsx(112,66): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(role: ByRoleMatcher, options?: ByRoleOptions | undefined): HTMLElement', gave the following error.
+    Object literal may only specify known properties, and 'exact' does not exist in type 'ByRoleOptions'.
+  Overload 2 of 2, '(role: ByRoleMatcher, options?: ByRoleOptions | undefined): HTMLElement', gave the following error.
+    Object literal may only specify known properties, and 'exact' does not exist in type 'ByRoleOptions'.

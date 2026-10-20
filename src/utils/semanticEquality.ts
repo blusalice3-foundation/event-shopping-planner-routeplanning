@@ -149,6 +149,7 @@ export function reuseEqualReferences<T>(previous: T, next: T): T {
 export function reuseEqualItemLists<T extends Record<string, unknown[]>>(
   previous: T,
   next: T,
+  canReuse?: (previous: unknown, next: unknown) => boolean,
 ): T {
   if (previous === next) return previous;
   const result: Record<string, unknown[]> = { ...next };
@@ -161,7 +162,10 @@ export function reuseEqualItemLists<T extends Record<string, unknown[]>>(
     }
     if (before === items) continue;
     const shared = items.map((item, index) =>
-      semanticEqual(before[index], item) ? before[index] : item,
+      semanticEqual(before[index], item) &&
+      (!canReuse || canReuse(before[index], item))
+        ? before[index]
+        : item,
     );
     const changed = shared.flatMap((item, index) =>
       item === before[index] ? [] : [index],

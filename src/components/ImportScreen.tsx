@@ -21,6 +21,7 @@ import {
 import { normalizeSheetItemsUrls } from "../features/events/updateDiff";
 
 import SheetImportSummary from "./SheetImportSummary";
+import { normalizeExecutionVisitDay } from "../utils/visitProjection";
 import {
   createSheetRowExclusionSummary,
   missingRequiredSheetFields,
@@ -145,9 +146,22 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
   const [singleRemarks, setSingleRemarks] = useState("");
   const [singleUrl, setSingleUrl] = useState("");
   const [isCustomEventDate, setIsCustomEventDate] = useState(false);
+  const [singleEventDateError, setSingleEventDateError] = useState(false);
+  const singleEventDateInputRef = useRef<HTMLInputElement>(null);
 
   const isEditing = itemToEdit !== null;
   const isCreatingNew = activeEventName === null;
+
+  useEffect(() => {
+    setSingleEventDateError(false);
+  }, [activeEventName, itemToEdit?.id, newItemDefaults]);
+
+  const validateSingleEventDate = () => {
+    if (normalizeExecutionVisitDay(singleEventDate)) return true;
+    setSingleEventDateError(true);
+    singleEventDateInputRef.current?.focus();
+    return false;
+  };
 
   useEffect(() => {
     if (isEditing) {
@@ -322,10 +336,22 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
       return true;
     });
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || importInFlight.current) return;
-    const generation = inputGeneration.current;
-    const text = await file.text();
+    const input = e.currentTarget;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file || importInFlight.current || importRequiresReload) return;
+    const generation = ++inputGeneration.current;
+    setFileText(null);
+    let text: string;
+    try {
+      text = await file.text();
+    } catch {
+      if (generation === inputGeneration.current)
+        alert(
+          "CSVファイルを読み取れませんでした。同じファイルを選び直して再試行してください。",
+        );
+      return;
+    }
     if (generation !== inputGeneration.current) return;
     setFileText(text);
     await importFileText(text);
@@ -393,6 +419,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
   };
 
   const resetSingleForm = () => {
+    setSingleEventDateError(false);
     setSingleCircle("");
     setSingleEventDate("1日目");
     setSingleBlock("");
@@ -409,6 +436,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
     e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     const value = e.target.value;
+    setSingleEventDateError(false);
     if (value === "__custom__") {
       setIsCustomEventDate(true);
       setSingleEventDate("");
@@ -422,6 +450,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const value = e.target.value;
+    setSingleEventDateError(false);
     setSingleEventDate(value);
   };
 
@@ -439,6 +468,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
     e.preventDefault();
 
     if (isEditing) {
+      if (!validateSingleEventDate()) return;
       if (!singleCircle.trim() && !singleTitle.trim()) {
         alert("サークル名かタイトルを入力してください。");
         return;
@@ -642,6 +672,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
       }
     } else {
       // Adding single item to existing list
+      if (!validateSingleEventDate()) return;
       if (!singleCircle.trim() && !singleTitle.trim()) {
         alert("サークル名かタイトルを入力してください。");
         return;
@@ -976,7 +1007,12 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
                   <input
                     type="text"
                     id="singleEventDate"
+                    ref={singleEventDateInputRef}
                     value={singleEventDate}
+                    aria-invalid={singleEventDateError || undefined}
+                    aria-describedby={
+                      singleEventDateError ? "singleEventDateError" : undefined
+                    }
                     onChange={handleEventDateInputChange}
                     onBlur={handleEventDateInputBlur}
                     className={formInputClass}
@@ -995,6 +1031,15 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
                     <option value="4日目">4日目</option>
                     <option value="__custom__">任意の値を入力</option>
                   </select>
+                )}
+                {singleEventDateError && (
+                  <p
+                    id="singleEventDateError"
+                    role="alert"
+                    className="text-sm text-red-600 dark:text-red-400 mt-1"
+                  >
+                    参加日を入力してください。
+                  </p>
                 )}
               </div>
               <div>

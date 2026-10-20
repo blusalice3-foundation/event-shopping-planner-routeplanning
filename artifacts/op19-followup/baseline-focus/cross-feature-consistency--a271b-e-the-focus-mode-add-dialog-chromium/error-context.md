@@ -1,0 +1,435 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: cross-feature-consistency.spec.ts >> OP05 late purchase failure keeps focus inside the focus-mode add dialog
+- Location: tests\browser\cross-feature-consistency.spec.ts:5676:3
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: locator.click: Test timeout of 30000ms exceeded.
+Call log:
+  - waiting for getByRole('button', { name: '新規アイテム追加', exact: true })
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e7]:
+        - heading "整合性検証" [level=1] [ref=e8]
+        - button "ホール定義（ブロック割当）" [ref=e9] [cursor=pointer]
+        - button "表示項目の設定" [ref=e13] [cursor=pointer]
+        - generic [ref=e14]:
+          - button "📝" [ref=e15] [cursor=pointer]
+          - button "🏃‍♂️" [ref=e16] [cursor=pointer]
+          - button "🔍" [ref=e17] [cursor=pointer]
+      - generic [ref=e19]:
+        - button "イベント一覧" [ref=e20] [cursor=pointer]
+        - button "1日目2" [ref=e21] [cursor=pointer]
+        - button "アイテム追加" [ref=e22] [cursor=pointer]
+        - generic [ref=e23]:
+          - textbox "検索..." [ref=e24]
+          - button "次を検索" [disabled] [ref=e25]
+    - main [ref=e26]:
+      - generic [ref=e28]:
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]:
+              - generic [ref=e33]: 訪問先
+              - generic [ref=e34]: A-1
+              - generic [ref=e35]:
+                - generic [ref=e36]: サークル1
+                - generic [ref=e37]: 1/1
+            - generic [ref=e39]:
+              - generic [ref=e40]: この訪問の支払額
+              - generic [ref=e41]: ¥500
+            - generic [ref=e43]:
+              - generic [ref=e44]: フェーズ
+              - combobox "phase" [ref=e45] [cursor=pointer]:
+                - option "通常" [selected]
+                - option "後回し"
+                - option "遅参"
+              - generic [ref=e46]: "次: A-2 サークル2"
+          - generic [ref=e47]:
+            - button "全購入" [pressed] [ref=e48] [cursor=pointer]
+            - button "全売切" [ref=e49] [cursor=pointer]
+            - button "全欠席" [ref=e50] [cursor=pointer]
+            - button "全後回" [ref=e51] [cursor=pointer]
+            - button "全遅参" [ref=e52] [cursor=pointer]
+            - button "全限数" [ref=e53] [cursor=pointer]
+        - generic [ref=e54]:
+          - list "現在のスペースの品目" [ref=e55]:
+            - listitem "A1 サークル1 新刊1" [ref=e59]:
+              - generic [ref=e60]:
+                - generic [ref=e61]:
+                  - checkbox "Select item サークル1 - 新刊1" [ref=e62]
+                  - button "削除のみ許可" [ref=e70] [cursor=pointer]: 🔒
+                - generic [ref=e71]:
+                  - generic [ref=e72]:
+                    - generic [ref=e73]: 1日目
+                    - generic [ref=e74]: A-1
+                    - button "サークル1" [ref=e75] [cursor=pointer]
+                  - button "新刊1" [ref=e78] [cursor=pointer]
+                  - textbox "利用者メモ" [ref=e82]: ユーザー登録
+                - generic [ref=e83]:
+                  - 'button "Current status: 購入済. Click to change." [active] [ref=e84] [cursor=pointer]':
+                    - generic [ref=e87]: 購入済
+                  - generic [ref=e88]:
+                    - generic [ref=e89]: 数量
+                    - combobox "購入予定数量" [ref=e90]:
+                      - option "1" [selected]
+                      - option "2"
+                      - option "3"
+                      - option "4"
+                      - option "5"
+                      - option "6"
+                      - option "7"
+                      - option "8"
+                      - option "9"
+                      - option "10"
+                      - option "11"
+                      - option "12"
+                      - option "13"
+                      - option "14"
+                      - option "15"
+                      - option "16"
+                      - option "17"
+                      - option "18"
+                      - option "19"
+                      - option "20"
+                  - generic [ref=e91]:
+                    - generic [ref=e92]: 購入金額
+                    - generic [ref=e93]: ¥
+                    - combobox "購入金額" [ref=e94]:
+                      - option "価格未定"
+                      - option "0"
+                      - option "100"
+                      - option "200"
+                      - option "300"
+                      - option "400"
+                      - option "500" [selected]
+                      - option "600"
+                      - option "700"
+                      - option "800"
+                      - option "900"
+                      - option "1,000"
+                      - option "1,100"
+                      - option "1,200"
+                      - option "1,300"
+                      - option "1,400"
+                      - option "1,500"
+                      - option "1,600"
+                      - option "1,700"
+                      - option "1,800"
+                      - option "1,900"
+                      - option "2,000"
+                      - option "2,100"
+                      - option "2,200"
+                      - option "2,300"
+                      - option "2,400"
+                      - option "2,500"
+                      - option "2,600"
+                      - option "2,700"
+                      - option "2,800"
+                      - option "2,900"
+                      - option "3,000"
+                      - option "3,100"
+                      - option "3,200"
+                      - option "3,300"
+                      - option "3,400"
+                      - option "3,500"
+                      - option "3,600"
+                      - option "3,700"
+                      - option "3,800"
+                      - option "3,900"
+                      - option "4,000"
+                      - option "4,100"
+                      - option "4,200"
+                      - option "4,300"
+                      - option "4,400"
+                      - option "4,500"
+                      - option "4,600"
+                      - option "4,700"
+                      - option "4,800"
+                      - option "4,900"
+                      - option "5,000"
+                      - option "5,100"
+                      - option "5,200"
+                      - option "5,300"
+                      - option "5,400"
+                      - option "5,500"
+                      - option "5,600"
+                      - option "5,700"
+                      - option "5,800"
+                      - option "5,900"
+                      - option "6,000"
+                      - option "6,100"
+                      - option "6,200"
+                      - option "6,300"
+                      - option "6,400"
+                      - option "6,500"
+                      - option "6,600"
+                      - option "6,700"
+                      - option "6,800"
+                      - option "6,900"
+                      - option "7,000"
+                      - option "7,100"
+                      - option "7,200"
+                      - option "7,300"
+                      - option "7,400"
+                      - option "7,500"
+                      - option "7,600"
+                      - option "7,700"
+                      - option "7,800"
+                      - option "7,900"
+                      - option "8,000"
+                      - option "8,100"
+                      - option "8,200"
+                      - option "8,300"
+                      - option "8,400"
+                      - option "8,500"
+                      - option "8,600"
+                      - option "8,700"
+                      - option "8,800"
+                      - option "8,900"
+                      - option "9,000"
+                      - option "9,100"
+                      - option "9,200"
+                      - option "9,300"
+                      - option "9,400"
+                      - option "9,500"
+                      - option "9,600"
+                      - option "9,700"
+                      - option "9,800"
+                      - option "9,900"
+                      - option "10,000"
+          - button "+" [ref=e96] [cursor=pointer]
+        - button "前の訪問先へ移動" [ref=e97] [cursor=pointer]: ◀
+        - button "次の訪問先へ移動" [ref=e98] [cursor=pointer]: ▶
+    - status "保存中…"
+  - contentinfo "集中モード操作" [ref=e99]:
+    - generic [ref=e101]:
+      - generic [ref=e102]:
+        - generic [ref=e103]: "通常: 1/2"
+        - generic [ref=e104]: (1/3)
+      - generic [ref=e105]:
+        - button "スペース一覧を開く" [ref=e106] [cursor=pointer]:
+          - generic [ref=e107]: ▥
+          - generic [ref=e108]: スペース一覧
+        - generic [ref=e109]: 1 / 2 件購入済み
+        - generic [ref=e110]:
+          - generic [ref=e111]: "残りの合計:"
+          - generic [ref=e112]: ¥500
+        - button "スマートフォンモードに切替" [ref=e113] [cursor=pointer]
+  - navigation "スペースナビゲーション" [ref=e116]:
+    - slider "スペースナビ" [ref=e117]:
+      - generic:
+        - generic "A-1":
+          - generic "正式な現在地"
+        - generic "A-2"
+        - generic "A-2"
+```
+
+# Test source
+
+```ts
+  5606 |       await page.getByText(eventName, { exact: true }).click();
+  5607 |       await editMemo(page, "数量の往復入力を保持");
+  5608 |       await expect(
+  5609 |         editor.getByRole("combobox", { name: "数量", exact: true }),
+  5610 |       ).toHaveValue("3");
+  5611 |       expect(await stored(page, "eventLists")).toMatchObject({
+  5612 |         [eventName]: [expect.objectContaining(expected)],
+  5613 |       });
+  5614 |       await editor
+  5615 |         .getByRole("button", { name: "キャンセル", exact: true })
+  5616 |         .click();
+  5617 |     });
+  5618 |   }
+  5619 | }
+  5620 | 
+  5621 | async function gateNextPurchaseReadAndAbort(page: Page) {
+  5622 |   await persistenceRealm(page).evaluate(() => {
+  5623 |     const descriptor = Object.getOwnPropertyDescriptor(
+  5624 |       IDBTransaction.prototype,
+  5625 |       "oncomplete",
+  5626 |     )!;
+  5627 |     const originalPut = IDBObjectStore.prototype.put;
+  5628 |     const gate = { ready: false, calls: [] as string[], release: () => {} };
+  5629 |     Object.assign(globalThis, { __modalPurchaseGate: gate });
+  5630 |     globalThis.addEventListener(
+  5631 |       "message",
+  5632 |       (event: MessageEvent<{ method?: string }>) => {
+  5633 |         if (event.data.method) gate.calls.push(event.data.method);
+  5634 |       },
+  5635 |     );
+  5636 |     let intercepted = false;
+  5637 |     Object.defineProperty(IDBTransaction.prototype, "oncomplete", {
+  5638 |       ...descriptor,
+  5639 |       set(this: IDBTransaction, handler: IDBTransaction["oncomplete"]) {
+  5640 |         if (
+  5641 |           !intercepted &&
+  5642 |           this.mode === "readonly" &&
+  5643 |           this.objectStoreNames.contains("syncQueue")
+  5644 |         ) {
+  5645 |           intercepted = true;
+  5646 |           descriptor.set!.call(this, (event: Event) => {
+  5647 |             gate.ready = true;
+  5648 |             gate.release = () => {
+  5649 |               Object.defineProperty(
+  5650 |                 IDBTransaction.prototype,
+  5651 |                 "oncomplete",
+  5652 |                 descriptor,
+  5653 |               );
+  5654 |               handler?.call(this, event);
+  5655 |             };
+  5656 |           });
+  5657 |         } else descriptor.set!.call(this, handler);
+  5658 |       },
+  5659 |     });
+  5660 |     IDBObjectStore.prototype.put = function (
+  5661 |       ...args: Parameters<typeof originalPut>
+  5662 |     ) {
+  5663 |       if (
+  5664 |         this.transaction.mode === "readwrite" &&
+  5665 |         this.transaction.objectStoreNames.contains("eventConsistency")
+  5666 |       ) {
+  5667 |         IDBObjectStore.prototype.put = originalPut;
+  5668 |         throw new DOMException("ダイアログ中の購入保存失敗", "AbortError");
+  5669 |       }
+  5670 |       return originalPut.apply(this, args);
+  5671 |     };
+  5672 |   });
+  5673 | }
+  5674 | 
+  5675 | for (const kind of ["add", "phase"] as const) {
+  5676 |   test(`OP05 late purchase failure keeps focus inside the focus-mode ${kind} dialog`, async ({
+  5677 |     page,
+  5678 |   }) => {
+  5679 |     const source = backup([
+  5680 |       item("1"),
+  5681 |       { ...item("2"), purchaseStatus: "Postpone" },
+  5682 |     ]);
+  5683 |     await restore(page, source);
+  5684 |     await page.getByTitle("集中モード", { exact: true }).click();
+  5685 |     await expect(page.locator("#focus-mode-footer")).toBeVisible();
+  5686 |     await gateNextPurchaseReadAndAbort(page);
+  5687 |     await page
+  5688 |       .locator('[data-item-id="1"]')
+  5689 |       .getByRole("button", { name: /Current status:/ })
+  5690 |       .click();
+  5691 |     await expect
+  5692 |       .poll(() =>
+  5693 |         persistenceRealm(page).evaluate(
+  5694 |           () =>
+  5695 |             (
+  5696 |               globalThis as typeof globalThis & {
+  5697 |                 __modalPurchaseGate: { ready: boolean };
+  5698 |               }
+  5699 |             ).__modalPurchaseGate.ready,
+  5700 |         ),
+  5701 |       )
+  5702 |       .toBe(true);
+  5703 |     if (kind === "add")
+  5704 |       await page
+  5705 |         .getByRole("button", { name: "新規アイテム追加", exact: true })
+> 5706 |         .click();
+       |          ^ Error: locator.click: Test timeout of 30000ms exceeded.
+  5707 |     else
+  5708 |       await page.getByLabel("phase", { exact: true }).selectOption("postponed");
+  5709 |     const dialog = page.getByRole("dialog", {
+  5710 |       name: kind === "add" ? "新規アイテム追加" : "フェーズを切り替えますか？",
+  5711 |       exact: true,
+  5712 |     });
+  5713 |     await expect(dialog).toBeVisible();
+  5714 |     await persistenceRealm(page).evaluate(() =>
+  5715 |       (
+  5716 |         globalThis as typeof globalThis & {
+  5717 |           __modalPurchaseGate: { release(): void };
+  5718 |         }
+  5719 |       ).__modalPurchaseGate.release(),
+  5720 |     );
+  5721 |     const pending = page
+  5722 |       .getByRole("alert")
+  5723 |       .filter({ hasText: "件の操作を未保存のまま保留しています" });
+  5724 |     await expect(pending).toBeVisible();
+  5725 |     await expect
+  5726 |       .poll(() =>
+  5727 |         dialog.evaluate((element) => element.contains(document.activeElement)),
+  5728 |       )
+  5729 |       .toBe(true);
+  5730 |     const before = await persistenceRealm(page).evaluate(
+  5731 |       () =>
+  5732 |         (
+  5733 |           globalThis as typeof globalThis & {
+  5734 |             __modalPurchaseGate: { calls: string[] };
+  5735 |           }
+  5736 |         ).__modalPurchaseGate.calls.length,
+  5737 |     );
+  5738 |     for (let index = 0; index < 12; index++) {
+  5739 |       await page.keyboard.press(index % 2 ? "Shift+Tab" : "Tab");
+  5740 |       expect(
+  5741 |         await dialog.evaluate((element) =>
+  5742 |           element.contains(document.activeElement),
+  5743 |         ),
+  5744 |       ).toBe(true);
+  5745 |     }
+  5746 |     await dialog.evaluate((element: HTMLElement) => {
+  5747 |       element.tabIndex = -1;
+  5748 |       element.focus();
+  5749 |     });
+  5750 |     await page.keyboard.press("Enter");
+  5751 |     await page.evaluate(
+  5752 |       () =>
+  5753 |         new Promise<void>((resolve) =>
+  5754 |           requestAnimationFrame(() => setTimeout(resolve, 0)),
+  5755 |         ),
+  5756 |     );
+  5757 |     expect(
+  5758 |       await persistenceRealm(page).evaluate(
+  5759 |         () =>
+  5760 |           (
+  5761 |             globalThis as typeof globalThis & {
+  5762 |               __modalPurchaseGate: { calls: string[] };
+  5763 |             }
+  5764 |           ).__modalPurchaseGate.calls.length,
+  5765 |       ),
+  5766 |     ).toBe(before);
+  5767 |     await expect(dialog).toBeVisible();
+  5768 |     await page.keyboard.press("Escape");
+  5769 |     await expect(dialog).toBeHidden();
+  5770 |     await expect(
+  5771 |       pending.getByRole("button", {
+  5772 |         name: "保留中の保存を再試行",
+  5773 |         exact: true,
+  5774 |       }),
+  5775 |     ).toBeFocused();
+  5776 |     await pending
+  5777 |       .getByRole("button", { name: "保留中の保存を再試行", exact: true })
+  5778 |       .click();
+  5779 |     await expect(pending).toBeHidden();
+  5780 |     await expect
+  5781 |       .poll(() => stored(page, "eventLists"))
+  5782 |       .toMatchObject({
+  5783 |         [eventName]: [
+  5784 |           expect.objectContaining({ id: "1", purchaseStatus: "Purchased" }),
+  5785 |           expect.objectContaining({ id: "2", purchaseStatus: "Postpone" }),
+  5786 |         ],
+  5787 |       });
+  5788 |   });
+  5789 | }
+  5790 | 
+```

@@ -1,0 +1,8 @@
+{
+  "date": "2026-10-18",
+  "gitHead": "a3ca5cb33d4de7ed4f7f32e21addd29acb8f1e0d",
+  "productionFile": "src/components/map/CellItemsPopup.tsx",
+  "productionSHA256": "a3fcc7804dab0a4758afe4698fa81c8c7b9a7990513f44ef6b14060f2eb15873",
+  "distIndexSHA256": "38bcab4c2955308d33bbe6a59e69f84f336a35331975da730b026b59c20348a0",
+  "note": "Baseline build before production fix; only regression tests were added. New unit regression fails two visited states; previous click-only test passes."
+}

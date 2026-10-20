@@ -1,3 +1,4 @@
+import { useModalFocusBoundary } from "../../../hooks/useModalFocusBoundary";
 import React, {
   useEffect,
   useLayoutEffect,
@@ -65,6 +66,7 @@ export function SpaceNavigatorPicker({
   onClose,
 }: SpaceNavigatorPickerProps) {
   const sheetRef = useRef<HTMLElement>(null);
+  useModalFocusBoundary({ isOpen: true, dialogRef: sheetRef });
   const listRef = useRef<HTMLDivElement>(null);
   const selectedRowRef = useRef<HTMLButtonElement>(null);
   const dragRef = useRef<{

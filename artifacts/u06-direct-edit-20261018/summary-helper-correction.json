@@ -1,0 +1,13 @@
+{
+  "recordedAtJst": "2026-10-18T20:17:14.5190601+09:00",
+  "scope": "postmeasurement evidence helper only; no product source or test changes",
+  "file": "artifacts/u06-direct-edit-20261018/summarize-evidence.ps1",
+  "beforeSha256": "8565C8E65FB1C77C240DF2CA5CA9A73A19B9BE7B4551B5AE51AF7E568577EB71",
+  "afterSha256": "8C6F123EBA1AB26DE9C06FFEC5DD5BCED83098F8A077830EA58B06B45C119255",
+  "reason": "Absent child suite was wrapped as a one-element null array and recursively visited; added a null-suite early return.",
+  "firstSummaryAttempt": "Interrupted after no progress while recursing absent child suites; no performance remeasurement or selective sample omission.",
+  "sourceStabilityRecord": "source-stability-final.json was successfully saved before modifying this helper",
+  "parseErrors": 0,
+  "encoding": "UTF-8 no BOM; LF; U+FFFD zero",
+  "japaneseIntact": true
+}

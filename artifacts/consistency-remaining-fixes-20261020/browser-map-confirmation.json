@@ -1,0 +1,162 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\esp-remain-261020\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/map-import-delayed-cancel.spec.ts",
+      "--grep",
+      "pending import parser",
+      "--workers=1",
+      "--retries=0",
+      "--reporter=line,json",
+      "--output=artifacts/consistency-remaining-fixes-20261020/browser-map-confirmation-output"
+    ],
+    "configFile": "D:\\esp-remain-261020\\playwright.config.ts",
+    "rootDir": "D:/esp-remain-261020/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/esp-remain-261020/artifacts/consistency-remaining-fixes-20261020/browser-map-confirmation-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/esp-remain-261020/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "map-import-delayed-cancel.spec.ts",
+      "file": "map-import-delayed-cancel.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "map import can resume after a pending import parser is replaced by a real Worker preview",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1448,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   \"1件のマップを取り込みました。\",\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   \"1件のマップを取り込みました。\",\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at D:\\esp-remain-261020\\tests\\browser\\map-import-delayed-cancel.spec.ts:519:18",
+                    "location": {
+                      "file": "D:\\esp-remain-261020\\tests\\browser\\map-import-delayed-cancel.spec.ts",
+                      "column": 18,
+                      "line": 519
+                    },
+                    "snippet": "  517 |   expect(reloaded.eventLists).toEqual(before.eventLists);\n  518 |   expect(errors).toEqual([]);\n> 519 |   expect(alerts).toEqual([]);\n      |                  ^\n  520 |   await testInfo.attach(\"real-worker-parser-switch\", {\n  521 |     body: Buffer.from(\n  522 |       JSON.stringify({"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-remain-261020\\tests\\browser\\map-import-delayed-cancel.spec.ts",
+                        "column": 18,
+                        "line": 519
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   \"1件のマップを取り込みました。\",\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  517 |   expect(reloaded.eventLists).toEqual(before.eventLists);\n  518 |   expect(errors).toEqual([]);\n> 519 |   expect(alerts).toEqual([]);\n      |                  ^\n  520 |   await testInfo.attach(\"real-worker-parser-switch\", {\n  521 |     body: Buffer.from(\n  522 |       JSON.stringify({\n    at D:\\esp-remain-261020\\tests\\browser\\map-import-delayed-cancel.spec.ts:519:18"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T23:55:09.806Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-remain-261020\\artifacts\\consistency-remaining-fixes-20261020\\browser-map-confirmation-output\\map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\esp-remain-261020\\artifacts\\consistency-remaining-fixes-20261020\\browser-map-confirmation-output\\map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-remain-261020\\artifacts\\consistency-remaining-fixes-20261020\\browser-map-confirmation-output\\map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-remain-261020\\tests\\browser\\map-import-delayed-cancel.spec.ts",
+                    "column": 18,
+                    "line": 519
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "21962e0999de5bf91a9c-2f4e3e2fdb8f268d2b97",
+          "file": "map-import-delayed-cancel.spec.ts",
+          "line": 425,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-19T23:55:08.268Z",
+    "duration": 3194.076,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

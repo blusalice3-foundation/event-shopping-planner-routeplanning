@@ -1,0 +1,310 @@
+[
+  {
+    "Path": "src/App.tsx",
+    "SHA256": "8146628478F1A7D34ADE9ABF332A9BDD9C8F802387336353499B42A880F68AA7"
+  },
+  {
+    "Path": "src/app/commands/applicationMutationCoordinator.test.ts",
+    "SHA256": "B4AC5F57F0DF37B9074BFA248A9DAF4DF5BF1BF596FF9E1E0E2DAF2EFD0CEF4D"
+  },
+  {
+    "Path": "src/app/commands/applicationMutationCoordinator.ts",
+    "SHA256": "0C25B8C3D54798B898DD175EE883F8FD64AC14F7D8FF6E8D07A47B79DF4CB49C"
+  },
+  {
+    "Path": "src/app/commands/ApplicationSnapshotCommitPort.ts",
+    "SHA256": "FE3291F71F26558DDDF038F7CF277092E271C017E63ECD4F927E926B74B523E4"
+  },
+  {
+    "Path": "src/app/commands/eventUpdateOperation.test.ts",
+    "SHA256": "2B2AC72E85EB182DA8B24FDB030B4A8A278250253E3B55054817D1E63204C5F0"
+  },
+  {
+    "Path": "src/app/commands/eventUpdateOperation.ts",
+    "SHA256": "857263179E53D14507BB013916F29ACE391A5814DAD7C7B36B6B941BF6ADC151"
+  },
+  {
+    "Path": "src/app/commands/useEventTransferCommands.test.tsx",
+    "SHA256": "79BF2A38B13E08AD16367DCE67BBD1C100D62411895475CF2A6B8C9359B36741"
+  },
+  {
+    "Path": "src/app/commands/useEventTransferCommands.ts",
+    "SHA256": "B472DC6A402BDB031BD38E314F0EF22A7B7F251FD6DCA0E672E4FDDD02186B05"
+  },
+  {
+    "Path": "src/app/commands/useEventUpdateCommands.test.tsx",
+    "SHA256": "9D2CD601CF00EC96D29479CE41A6165E08C463DB93A9D7CBFCF8E1C82FF6565E"
+  },
+  {
+    "Path": "src/app/commands/useEventUpdateCommands.ts",
+    "SHA256": "BBC60B7FE4A1EF83C169B6A2C92AC86999DF7BB50B2DDFCBCE2D9D17D15AD308"
+  },
+  {
+    "Path": "src/app/commands/useMapEditorCommands.integration.test.tsx",
+    "SHA256": "AEDE0D6EF178A4F37A6C72C79E4B6A3097121A6D047620D74F82E38638F122B5"
+  },
+  {
+    "Path": "src/app/commands/useMapEditorCommands.test.tsx",
+    "SHA256": "2061257A86B97996B74C4827BC8DC85206CD407ABDAF9C3654A59914A5182F6B"
+  },
+  {
+    "Path": "src/app/commands/useMapEditorCommands.ts",
+    "SHA256": "A911646FEB206AAB77084C08340593A558D34762C82CB22A6AF3D4FA16066348"
+  },
+  {
+    "Path": "src/app/commands/useMapImportCommands.integration.test.tsx",
+    "SHA256": "936809D2E4B0A0D63A0CD22A5265F60806DDE25415EA9805C4BE0DB59C9FEFFD"
+  },
+  {
+    "Path": "src/app/commands/useMapImportCommands.test.tsx",
+    "SHA256": "ABFDDC57B3340AE11C19D0DDD0EA67B6339551C08A7F57D8AE1498BA71C4433C"
+  },
+  {
+    "Path": "src/app/commands/useMapImportCommands.ts",
+    "SHA256": "72E07D507AAA130C8DC648C8EC93F5B32952F7F228C5AA189928E4CDA30110DB"
+  },
+  {
+    "Path": "src/app/commands/useShoppingItemMutationCommands.test.tsx",
+    "SHA256": "696022AF1878B5ED580483151DAD2C1A2129E9AB9B510241BFC6E423E14D1EA4"
+  },
+  {
+    "Path": "src/app/commands/useShoppingItemMutationCommands.ts",
+    "SHA256": "9ED68A98E198E3184EE3C771C3159EC55CA006F11BBEB6EA7CF40C81FC28AD6B"
+  },
+  {
+    "Path": "src/app/ports/HallEditorCommandPort.ts",
+    "SHA256": "B78269D0CCCA6A297DC2248F264AF7BB5811CEC5EE4ECBA69F9F44AF0C38093E"
+  },
+  {
+    "Path": "src/app/ports/PersistenceCommandPort.ts",
+    "SHA256": "50ECE3D3D6D08C4EBA04E839AE1AF90904BB954DE7A43F3DEEF104C418A1BDDA"
+  },
+  {
+    "Path": "src/app/state/appOverlayState.test.ts",
+    "SHA256": "F8BE1AD1776E09EC03E98835EEF4823993DC17EE6F043491C91B899E32E4D2D7"
+  },
+  {
+    "Path": "src/app/state/appOverlayState.ts",
+    "SHA256": "F3CB4DDBA4FACA9CE5D2F27C0086AFB68AAC9E7ABADECEC937F5ACEEF680878E"
+  },
+  {
+    "Path": "src/app/state/useApplicationSnapshot.persistence.integration.test.tsx",
+    "SHA256": "DC9361007A05FCFC79AE00FA0731B4CE2E38C5E0472AEF7D2DEEAC28DAE72417"
+  },
+  {
+    "Path": "src/app/state/useApplicationSnapshot.test.tsx",
+    "SHA256": "A308CC6D751B39AEE65FBB42B7CEE5B92D8A303AE8FA37321F36AE169183DB2E"
+  },
+  {
+    "Path": "src/app/state/useApplicationSnapshot.ts",
+    "SHA256": "27D20D171113E5BA42C82292BABBE6754CDDEB74F7EF6B6F0EF5B79592949A3F"
+  },
+  {
+    "Path": "src/app/state/useAppOverlayController.ts",
+    "SHA256": "0AF17774C2F13E5568A8A95D5E99AC44FB2C36DFF315CB4478C97EDC4FD15745"
+  },
+  {
+    "Path": "src/components/BackupRestoreDialog.test.tsx",
+    "SHA256": "A282D051A78C244AEDF8DAE71ABE2D439591EE6B79AB2CB60FED05D466E0B91E"
+  },
+  {
+    "Path": "src/components/BackupRestoreDialog.tsx",
+    "SHA256": "A72BAA821BF87DFB7357C35A7799E1E1299C1E71185866442E7C5902CCF4D78B"
+  },
+  {
+    "Path": "src/components/focus/FocusModeDialogs.tsx",
+    "SHA256": "EAD7C1A52647AD25BCA18B21B9165940C545B47FD921180CE931E9AF19243820"
+  },
+  {
+    "Path": "src/components/focus/hooks/useAutoSkipEmptyVisit.ts",
+    "SHA256": "021591C84F469D4A17B017AF4D2A0C64AD252222740C30385D49AA758FA23209"
+  },
+  {
+    "Path": "src/components/focus/phaseEndPlan.test.ts",
+    "SHA256": "4AF6D8C4720596876FE2491EEB143C45168FD69795D247454E7C0E4BE3BCC466"
+  },
+  {
+    "Path": "src/components/focus/phaseEndPlan.ts",
+    "SHA256": "F50678269E3513CA083DA479ADD0E242D89008FA46280132F39B0174EAC7242F"
+  },
+  {
+    "Path": "src/components/FocusMode.ticket05.test.tsx",
+    "SHA256": "68D5D82FBA2027021D6071D4407661E0B31CA5D8A09248DC855D58DB879CB687"
+  },
+  {
+    "Path": "src/components/FocusMode.tsx",
+    "SHA256": "6499836BCA9173F4B3194CC3A0C22BDAECA6B68DE0917C358A7E55B9FC8638F0"
+  },
+  {
+    "Path": "src/components/ImportScreen.sheetImport.integration.test.tsx",
+    "SHA256": "F71D48BEE055A0B2D9C0D0C0A158D829428CCDB33A02D86E7BF6041D26FBEE2E"
+  },
+  {
+    "Path": "src/components/ImportScreen.tsx",
+    "SHA256": "60955229C37F8F208CFCE31DE6F320BFCAA86E7A61ACC44AFD6EEA109F03D281"
+  },
+  {
+    "Path": "src/components/ItemEditDialog.accessibility.test.tsx",
+    "SHA256": "1DD4C9049AFDBA1915D33377C51F27FA3D1CDD45C2B2074C9E5FA80BF163DF77"
+  },
+  {
+    "Path": "src/components/ItemEditDialog.tsx",
+    "SHA256": "90F4EAE7646EF322D3B431354A1337A0503CAB28668D8E8B75FD587DB84591EB"
+  },
+  {
+    "Path": "src/components/map/BlockDefinitionPanel.tsx",
+    "SHA256": "44E7951FCA557A55B0FC6182C4A590A1C9ED065BCE3C6FA28B91832CC6AA5D9E"
+  },
+  {
+    "Path": "src/components/map/HallDefinitionPanel.tsx",
+    "SHA256": "EB0E29FCD55180F3F964AE969622A55F418AC13C4584B9B95E06DAB94A1143A3"
+  },
+  {
+    "Path": "src/components/map/HallEditor.save.test.tsx",
+    "SHA256": "54C1D4500F902B42840D6B6ED9933EEA8C4F993B6E06C903D4EB23BCE78F65FD"
+  },
+  {
+    "Path": "src/components/map/MapImportDialog.previewRace.test.tsx",
+    "SHA256": "4D900FE8BD76ADDF07B0C4D7123915027DA070D482D863CC6A6F304213AAD69A"
+  },
+  {
+    "Path": "src/components/map/MapImportDialog.tsx",
+    "SHA256": "359CA7EBB71173FDA509389BB95E3C7B7E5EB3761C6E6C5DCA14692D641B0AD2"
+  },
+  {
+    "Path": "src/components/map/MapReimportConfirmationDialog.tsx",
+    "SHA256": "D3599FE40996FF9B332F39C39EB7AE71B1838A9BCA7AC28FB7409C5E5AE621A5"
+  },
+  {
+    "Path": "src/components/map/SimpleHallDefinitionPanel.tsx",
+    "SHA256": "CC5B2102965431DC83EDA74DD58CE256329A54BAF25E4A763481FD78EB93D7EA"
+  },
+  {
+    "Path": "src/components/map/useHallEditorWrite.ts",
+    "SHA256": "CC928AE4EFC1E208D4B35ECB68DBAB7988950013436F50F44B2F830524A60711"
+  },
+  {
+    "Path": "src/components/ShoppingList.tsx",
+    "SHA256": "0D5BBDD385D6FB15D88EB785A3418AB106685459582D54B36555D85EC65C223D"
+  },
+  {
+    "Path": "src/components/UserOperationConsistency.integration.test.tsx",
+    "SHA256": "F351FBC5A32D9B9ECAA429D72B38211711972AECDD782D999DFA1D0EEDDAD8F7"
+  },
+  {
+    "Path": "src/components/VisitListPanel.tsx",
+    "SHA256": "A4F590EDD980703795979DC34EB5C07675E9CFE23ECCB72C44D3C5C8594B425E"
+  },
+  {
+    "Path": "src/features/app-shell/components/AppMainContent.tsx",
+    "SHA256": "B5AF6B14E61FAF1D98ABDD5D4C730D213F9A4923C4708DBE081202B11A358366"
+  },
+  {
+    "Path": "src/features/app-shell/components/AppOverlayLayer.tsx",
+    "SHA256": "5B95247141ADF41F8F897FF705BCFCF59F677336EE7C39B8784C8959464FDA10"
+  },
+  {
+    "Path": "src/features/app-shell/components/MutationConfirmationDialog.integration.test.tsx",
+    "SHA256": "9C81A61FA73A3D5FFE4F34265FBED3164B7DEE44368C405E7A0CE115EF70B7D1"
+  },
+  {
+    "Path": "src/features/app-shell/components/MutationConfirmationDialog.tsx",
+    "SHA256": "EE55D40451F8E47E44F97B2A0D84E471A8ACC63F44641EDDA273E400074DCF8B"
+  },
+  {
+    "Path": "src/features/app-shell/types.ts",
+    "SHA256": "73B72092B168DD620F24EFDF19A45AC1A83F5C7810210A732DF59FF93B780DCB"
+  },
+  {
+    "Path": "src/features/consistency/domain/mutations.ts",
+    "SHA256": "BDA6800AC7B6807204B37F7F9FDFCBEC29CCEB63754E2EAFCC61EA17889EA1A9"
+  },
+  {
+    "Path": "src/features/events/itemOps/move.ts",
+    "SHA256": "EE0A437EC90E1C56AEFECCC6868B5D4FEF1A8CA6F67EDE7D3090784FC89E51D1"
+  },
+  {
+    "Path": "src/features/map/domain/hallOperations.test.ts",
+    "SHA256": "135BAB7FC4B5E3FCA83CB28C195759D97303F47A6E94E001D5D638C90BBEDC13"
+  },
+  {
+    "Path": "src/features/map/domain/hallOperations.ts",
+    "SHA256": "8D40E324670D61FE7BE184D889AC3EF8A67FC3976650DA9388D803148F23B492"
+  },
+  {
+    "Path": "src/features/map/domain/mapEditorSession.ts",
+    "SHA256": "138C1B3C2B54F3A987F247CA72898D327C1FBD5157A73D329CEC20F01FEBE8EC"
+  },
+  {
+    "Path": "src/features/shopping-list/drag/shoppingDrag.test.ts",
+    "SHA256": "C98E68901352F131EF38088AE927FC33FD8DF244AA16F2D15926A9178C4817DA"
+  },
+  {
+    "Path": "src/features/shopping-list/drag/shoppingDrag.ts",
+    "SHA256": "6A2BC47C18A923CE5F780132A97FA8B13D982ED537994D815838BBA1BFF37522"
+  },
+  {
+    "Path": "src/features/shopping-list/drag/ShoppingDragWorkspace.integration.test.tsx",
+    "SHA256": "F90AD192C19D6C59745ED848AC78018341AF08DA914EBC4127B1F1017DFDA628"
+  },
+  {
+    "Path": "src/features/shopping-list/drag/ShoppingDragWorkspace.tsx",
+    "SHA256": "BA9ED2A3B1E55F14F90450CF2C9422CBCDC41AB5B0F499A7702210F381B47614"
+  },
+  {
+    "Path": "src/features/shopping-list/renderers/VirtualListRenderer.tsx",
+    "SHA256": "6BED8A599B61691D1F2E1E271C4CCF78B468E5FA93D6F225FFE457E62898627E"
+  },
+  {
+    "Path": "src/hooks/useIndexedDbPersistence.test.tsx",
+    "SHA256": "54355A65CB29B17ED4E05DFA02D85E16C17A2FA72B32DA98E65CD51CCA682397"
+  },
+  {
+    "Path": "src/hooks/useIndexedDbPersistence.ts",
+    "SHA256": "2D969E74146667446EF928CB92DED1E6475EDA7866378408EA640444754C2747"
+  },
+  {
+    "Path": "src/hooks/useModalDialogBehavior.ts",
+    "SHA256": "18D45073D00F7BC95918F328DC7B8427B948ADD16754488415C5A06BF703F054"
+  },
+  {
+    "Path": "src/persistence/adapters/indexedDbPersistenceCommandAdapter.test.ts",
+    "SHA256": "C729DC910A57899BF7DA70C6DF4484F2DFF94C1C309E31DF58C413AD02E450BD"
+  },
+  {
+    "Path": "src/persistence/adapters/indexedDbPersistenceCommandAdapter.ts",
+    "SHA256": "8AA3231799A6950AC67EFDDDB574EA5B00845D5F4F3A53E5DD79FAF1180AD491"
+  },
+  {
+    "Path": "src/persistence/adapters/workerPersistenceCommandAdapter.test.ts",
+    "SHA256": "3FEF7AD76008536544E0D38CF27AA8A655F5712C0DA0BD8BF00C9AD0E3307351"
+  },
+  {
+    "Path": "src/persistence/adapters/workerPersistenceCommandAdapter.ts",
+    "SHA256": "C338CB3623A323FD49538B65C447100D16291E67D3A9C6AA6D02179EF2732392"
+  },
+  {
+    "Path": "src/persistence/worker/persistence.worker.ts",
+    "SHA256": "02A3BA458E5F9897CBC470F4F1C9F9C184DF251F9A5E8B8FD0164D531E13F2D3"
+  },
+  {
+    "Path": "src/persistence/worker/persistenceWorkerServer.ts",
+    "SHA256": "A83C5517530051D64DEF7282C5279923411BEA29AE84F6A27BA3384CC0D90E0F"
+  },
+  {
+    "Path": "src/persistence/worker/persistenceWorkerServer.worker.test.ts",
+    "SHA256": "AAC174A1359D678B2D520D3FCEA121620A1563E607ABE0F65209E46F7099E20B"
+  },
+  {
+    "Path": "src/utils/modalFocusBoundary.ts",
+    "SHA256": "7D8A811BA974169C906DCF7C8CA8EF9937F65877A67149FC046B87052E24783D"
+  },
+  {
+    "Path": "src/utils/swapVisitItems.test.ts",
+    "SHA256": "A472376C86D354F5651BD00B57B660771CE8628D38C8F8A90BF6B0CC6086D033"
+  },
+  {
+    "Path": "src/utils/swapVisitItems.ts",
+    "SHA256": "2BA17026EA552EF86B5AA4280077761D35260506E0FD60510628C179A145ADB1"
+  }
+]

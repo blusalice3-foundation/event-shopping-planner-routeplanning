@@ -4,6 +4,7 @@ import type { EventUpdateDiff } from "./updateDiff";
 import {
   applyPendingEventUpdate,
   eventUpdateItemsMatch,
+  resolveSpreadsheetSource,
   type EventUpdateCommitState,
   type PendingEventUpdate,
 } from "./updateFlow";
@@ -337,4 +338,61 @@ it("ignores unknown object key order without ignoring nested own undefined value
       eventUpdateItemsMatch([withFuture(base)], [withFuture(current)]),
     ).toBe(false);
   }
+});
+
+describe("reviewed source and update correspondence are committed together", () => {
+  it("honors an explicitly empty sheet name rather than falling back to saved metadata", () => {
+    const metadata = createState([]).eventMetadata[EVENT_NAME];
+    expect(
+      resolveSpreadsheetSource(metadata, {
+        url: "https://example.com/new#gid=2",
+        sheetName: "",
+      }),
+    ).toEqual({ url: "https://example.com/new#gid=2", sheetName: "" });
+    expect(resolveSpreadsheetSource(metadata)?.sheetName).toBe("旧シート");
+  });
+
+  it.each(["items-only", "source-switch"] as const)(
+    "persists the actual reviewed source with %s items and execution state",
+    (kind) => {
+      const before = [
+        item("keep", "維持対象", { purchaseStatus: "Purchased", quantity: 3 }),
+      ];
+      const state = createState(before);
+      const baseSource = resolveSpreadsheetSource(
+        state.eventMetadata[EVENT_NAME],
+      );
+      const reviewedSource = {
+        url: "https://docs.google.com/spreadsheets/d/source#gid=2",
+        sheetName: "",
+      };
+      const pending: PendingEventUpdate = {
+        kind,
+        eventName: EVENT_NAME,
+        baseSource,
+        reviewedSource,
+        nextSource: { url: "https://example.com/ignored", sheetName: "以前" },
+        diff: diff({ itemsToUpdate: [{ ...before[0], title: "改題後" }] }),
+      };
+      const after = applyPendingEventUpdate({
+        state,
+        pending,
+        baseItems: before,
+        options: {},
+      });
+      expect(after?.eventLists[EVENT_NAME]).toEqual([
+        { ...before[0], title: "改題後" },
+      ]);
+      expect(after?.eventMetadata[EVENT_NAME]).toEqual({
+        spreadsheetUrl: reviewedSource.url,
+        spreadsheetSheetName: "",
+        lastImportDate: state.eventMetadata[EVENT_NAME].lastImportDate,
+      });
+      expect(after?.executeModeItems).toEqual(state.executeModeItems);
+      const reloaded = JSON.parse(
+        JSON.stringify(after),
+      ) as EventUpdateCommitState;
+      expect(reloaded).toEqual(after);
+    },
+  );
 });

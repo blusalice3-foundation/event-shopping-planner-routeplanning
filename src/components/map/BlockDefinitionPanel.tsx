@@ -1,5 +1,7 @@
+import { useModalDialogBehavior } from "../../hooks/useModalDialogBehavior";
+import type { MapEditorSession } from "../../features/map/domain/mapEditorSession";
 import { minimum, maximum } from "../../utils/numericExtrema";
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useId } from "react";
 import {
   DayMapData,
   BlockDefinition,
@@ -10,14 +12,19 @@ import {
 
 interface BlockDefinitionPanelProps {
   isOpen: boolean;
+  session?: MapEditorSession;
   onClose: () => void;
   mapData: DayMapData;
-  onUpdateBlocks: (blocks: BlockDefinition[]) => void;
+  onUpdateBlocks: (
+    blocks: BlockDefinition[],
+    session?: MapEditorSession,
+  ) => void;
   onStartCellSelection: (
     type: "corner" | "multiCorner" | "rangeStart" | "individual",
     editingData?: unknown,
   ) => void;
   pendingCellSelection?: {
+    session?: MapEditorSession;
     type: string;
     cells: { row: number; col: number }[];
     editingData?: unknown;
@@ -62,6 +69,7 @@ interface EditingBlockData {
 
 const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
   isOpen,
+  session,
   onClose,
   mapData,
   onUpdateBlocks,
@@ -122,7 +130,12 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
 
   // セル選択結果を受け取った時の処理
   useEffect(() => {
-    if (!pendingCellSelection || !isOpen) return;
+    if (
+      !pendingCellSelection ||
+      !isOpen ||
+      (session && pendingCellSelection.session?.sessionId !== session.sessionId)
+    )
+      return;
 
     const { type, cells, editingData } = pendingCellSelection;
     const data = editingData as EditingBlockData | undefined;
@@ -197,6 +210,7 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
     }
   }, [
     pendingCellSelection,
+    session,
     isOpen,
     detectNumberCells,
     onClearPendingCellSelection,
@@ -543,20 +557,39 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
     }
   }, []);
 
+  const titleId = useId();
+  const handleClose = () => {
+    setBlocks(mapData.blocks);
+    onClose();
+  };
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen,
+    containExternalFocus: true,
+    onEscape: handleClose,
+  });
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={onDialogKeyDown}
+        className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+      >
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+          <h2
+            id={titleId}
+            className="text-lg font-bold text-slate-900 dark:text-white"
+          >
             ブロック定義
           </h2>
           <button
-            onClick={() => {
-              setBlocks(mapData.blocks);
-              onClose();
-            }}
+            onClick={handleClose}
             className="text-2xl text-slate-500 hover:text-slate-700"
           >
             ✕
@@ -996,17 +1029,14 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
 
         <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4 dark:border-slate-700">
           <button
-            onClick={() => {
-              setBlocks(mapData.blocks);
-              onClose();
-            }}
+            onClick={handleClose}
             className="rounded bg-slate-200 px-4 py-2 text-sm text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
           >
             キャンセル
           </button>
           <button
             onClick={() => {
-              onUpdateBlocks(blocks);
+              onUpdateBlocks(blocks, session);
               onClose();
             }}
             className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"

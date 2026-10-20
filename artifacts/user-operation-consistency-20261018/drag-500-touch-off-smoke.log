@@ -1,0 +1,37 @@
+
+Running 1 test using 1 worker
+
+(node:15336) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1607:7 › @shopping-performance @shopping-drag-performance 500 touch grouping off (12.7s)
+
+
+  1) [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1607:7 › @shopping-performance @shopping-drag-performance 500 touch grouping off 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Object {}
+    + Object {
+    +   "item:execute-2": 1,
+    + }
+
+      1854 |           ).toEqual([]);
+      1855 |           if (scenario.name !== "auto-scroll")
+    > 1856 |             expect(render.mounts).toEqual({});
+           |                                   ^
+      1857 |           if (grouped)
+      1858 |             expect(
+      1859 |               render.known.filter((key) => key.startsWith("group:")).length,
+        at D:\esp-op18\tests\browser\shopping-cross-column-drag.spec.ts:1856:35
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\playwright-drag-500-touch-off-smoke\shopping-cross-column-drag-9069d-ance-500-touch-grouping-off-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\playwright-drag-500-touch-off-smoke\shopping-cross-column-drag-9069d-ance-500-touch-grouping-off-chromium\error-context.md
+
+  1 failed
+    [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1607:7 › @shopping-performance @shopping-drag-performance 500 touch grouping off 

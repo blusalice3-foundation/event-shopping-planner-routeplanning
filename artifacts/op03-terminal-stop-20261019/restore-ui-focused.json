@@ -1,0 +1,128 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\esp-op03-final\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/restore-committed-ui-failure.spec.ts",
+      "--project=chromium",
+      "--workers=1",
+      "--reporter=json",
+      "--output=D:\\esp-op03-evidence\\restore-ui-focused"
+    ],
+    "configFile": "D:\\esp-op03-final\\playwright.config.ts",
+    "rootDir": "D:/esp-op03-final/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/esp-op03-evidence/restore-ui-focused",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/esp-op03-final/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": {
+      "command": "node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173",
+      "url": "http://127.0.0.1:4173",
+      "reuseExistingServer": false,
+      "timeout": 30000
+    }
+  },
+  "suites": [
+    {
+      "title": "restore-committed-ui-failure.spec.ts",
+      "file": "restore-committed-ui-failure.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "a real XLSX restore stops every later write after its committed completion alert throws",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4463,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T09:48:55.670Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "restore-committed-ui-failure",
+                      "contentType": "application/json",
+                      "body": "eyJjb21wbGV0aW9uTWVzc2FnZSI6IuW+qeWFg1VJ56K65a6a44Kk44OZ44Oz44OI44KS5L2c5oiQ44GX44G+44GX44Gf44CCXG4x5Lu2IiwiaW5qZWN0ZWRGYWlsdXJlcyI6MSwiYmVmb3JlUmV0cmllcyI6eyJzdGFydGVkIjoxLCJjb21wbGV0ZWQiOjEsInN0b3JlcyI6W1siZGF5TW9kZXMiLCJldmVudENvbnNpc3RlbmN5IiwiZXZlbnRMaXN0cyIsImV2ZW50TWV0YWRhdGEiLCJleGVjdXRlTW9kZUl0ZW1zIiwiaGFsbERlZmluaXRpb25zIiwiaGFsbFJvdXRlU2V0dGluZ3MiLCJtYXBEYXRhIiwibWFwUm90YXRpb25TZXR0aW5ncyIsIm1hcFZpZXdwb3J0U2V0dGluZ3MiLCJyb3V0ZVNldHRpbmdzIiwic3luY1F1ZXVlIl1dfSwiYWZ0ZXJSZXRyaWVzIjp7InN0YXJ0ZWQiOjEsImNvbXBsZXRlZCI6MSwic3RvcmVzIjpbWyJkYXlNb2RlcyIsImV2ZW50Q29uc2lzdGVuY3kiLCJldmVudExpc3RzIiwiZXZlbnRNZXRhZGF0YSIsImV4ZWN1dGVNb2RlSXRlbXMiLCJoYWxsRGVmaW5pdGlvbnMiLCJoYWxsUm91dGVTZXR0aW5ncyIsIm1hcERhdGEiLCJtYXBSb3RhdGlvblNldHRpbmdzIiwibWFwVmlld3BvcnRTZXR0aW5ncyIsInJvdXRlU2V0dGluZ3MiLCJzeW5jUXVldWUiXV19LCJycGMiOnsid29ya2VycyI6MSwid3JpdGVNZXRob2RzIjpbImNvbW1pdCJdfSwicmVzdG9yZWRFdmVudCI6IuW+qeWFg1VJ56K65a6a44Kk44OZ44Oz44OIIiwib3JpZ2luYWxFdmVudFVuY2hhbmdlZCI6dHJ1ZSwiY29tbWl0dGVkU25hcHNob3RFeHBvcnRlZCI6dHJ1ZX0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e722348520b1362452e9-50f43a78f4ed89f269c5",
+          "file": "restore-committed-ui-failure.spec.ts",
+          "line": 29,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-19T09:48:54.133Z",
+    "duration": 6539.8730000000005,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

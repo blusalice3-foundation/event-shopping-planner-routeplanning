@@ -1,3 +1,7 @@
+import {
+  PersistenceOutcomeUnknownError,
+  isPersistenceWriteStopReason,
+} from "../../app/ports/PersistenceCommandPort";
 import { reuseEqualReferences } from "../../utils/semanticEquality";
 import { adoptScopedDaySnapshot } from "../../features/consistency/domain/dayMutation";
 import type {
@@ -39,6 +43,9 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
       resolve(value: unknown): void;
       reject(error: unknown): void;
       storage: Map<string, string>;
+      method: string;
+      write: boolean;
+      sent: boolean;
     }
   >();
   const read = (value: WorkerSnapshotRead): ApplicationSnapshotRead => {
@@ -62,7 +69,19 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
       eventGenerations: value.eventGenerations,
     };
   };
+  const readCommitted = (value: WorkerSnapshotRead) => {
+    try {
+      return read(value);
+    } catch (error) {
+      throw new PersistenceOutcomeUnknownError(error);
+    }
+  };
   const call = (method: string, args: unknown[]): Promise<unknown> => {
+    const write =
+      ["commit", "commitDay", "day", "items"].includes(method) ||
+      method.startsWith("save");
+    const stopped = adapter.getWriteStopReason?.();
+    if (write && stopped) return Promise.reject(stopped);
     try {
       if (!worker) {
         worker = new Worker(
@@ -88,6 +107,8 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
                 : data.name === "MutationConflict"
                   ? new MutationConflictError()
                   : Object.assign(new Error(data.message), data);
+            if (isPersistenceWriteStopReason(error))
+              adapter.stopWrites?.(error);
             operation.reject(error);
             return;
           }
@@ -106,16 +127,27 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
           }
           operation.resolve(event.data.result);
         };
-        worker.onerror = () => {
-          const error = new Error(
+        const communicationFailed = () => {
+          const failure = new Error(
             "保存処理が停止しました。未保存の入力を再試行してください。",
           );
-          for (const operation of pending.values()) operation.reject(error);
+          const uncertain = [...pending.values()].some(
+            (operation) => operation.write && operation.sent,
+          )
+            ? new PersistenceOutcomeUnknownError(failure)
+            : undefined;
+          if (uncertain) adapter.stopWrites?.(uncertain);
+          for (const operation of pending.values())
+            operation.reject(
+              operation.write && operation.sent ? uncertain! : failure,
+            );
           pending.clear();
           worker?.terminate();
           worker = undefined;
-          // Retain the accepted mirror so a restarted worker can return only the target day.
+          // Retain the accepted mirror; terminal writes cannot recreate this worker.
         };
+        worker.onerror = communicationFailed;
+        worker.onmessageerror = communicationFailed;
       }
       const storage = new Map<string, string>();
       for (let index = 0; index < localStorage.length; index++) {
@@ -131,9 +163,18 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
       }
       const id = ++sequence;
       return new Promise((resolve, reject) => {
-        pending.set(id, { resolve, reject, storage });
+        const operation = {
+          resolve,
+          reject,
+          storage,
+          method,
+          write,
+          sent: false,
+        };
+        pending.set(id, operation);
         try {
           worker!.postMessage({ id, method, args, storage: [...storage] });
+          operation.sent = true;
         } catch (error) {
           pending.delete(id);
           reject(error);
@@ -167,7 +208,7 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
     readDayApplicationSnapshot: async (target) =>
       read((await call("readDay", [target])) as WorkerSnapshotRead),
     commitDayApplicationSnapshot: async (snapshot, expectedRoots, target) =>
-      read(
+      readCommitted(
         (await call("commitDay", [
           snapshot,
           (expectedRoots as { workerObservation: number }).workerObservation,
@@ -183,7 +224,7 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
         | { status: "review-required" }
         | { status: "committed"; read: WorkerSnapshotRead };
       return result.status === "committed"
-        ? { ...result, read: read(result.read) }
+        ? { ...result, read: readCommitted(result.read) }
         : result;
     },
     commitItemContentEdits: async (
@@ -199,7 +240,7 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
         | { status: "review-required" }
         | { status: "committed"; read: WorkerSnapshotRead };
       return result.status === "committed"
-        ? { ...result, read: read(result.read) }
+        ? { ...result, read: readCommitted(result.read) }
         : result;
     },
   };

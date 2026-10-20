@@ -1,0 +1,56 @@
+
+> event-shopping-planner@1.0.0 build:release-a
+> npm run build:app && node scripts/verify-release-a-build.mjs
+
+
+> event-shopping-planner@1.0.0 build:app
+> tsc --noEmit && node scripts/build-release-vite.mjs
+
+vite v8.2.0 building client environment for release-a...
+[2K
+transforming...✓ 334 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/release-capabilities.b24e6e888e7a9b66c38956b7fdd5ce5ee9f909b8.json      0.29 kB │ gzip:   0.19 kB
+dist/release-capabilities.json                                               0.29 kB │ gzip:   0.19 kB
+dist/manifest.webmanifest                                                    0.58 kB
+dist/outer-agent-graph.json                                                  1.72 kB │ gzip:   0.44 kB
+dist/index.html                                                              1.82 kB │ gzip:   0.84 kB
+dist/assets/route.worker-vkpwhvUq.js                                        19.92 kB
+dist/assets/outer-recovery-agent.js                                         19.93 kB
+dist/release-role-graph.json                                                97.49 kB │ gzip:   8.97 kB
+dist/assets/backup.worker-B4-i-GNU.js                                      256.61 kB
+dist/assets/persistence.worker-CGz_MH2S.js                                 322.05 kB
+dist/assets/xlsx.worker-DA2gqYv7.js                                      1,589.34 kB
+dist/assets/app-DgMOSewd.css                                                91.76 kB │ gzip:  17.14 kB
+dist/assets/ImportScreen-CmWNa8bN.js                                        20.55 kB │ gzip:   6.61 kB
+dist/assets/FocusModeContainer-4fE5aPrX.js                                 156.09 kB │ gzip:  47.29 kB
+dist/assets/release-role.js                                              1,366.31 kB │ gzip: 398.39 kB
+
+✓ built in 2.94s
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+PWA v1.3.0
+Building src/sw.ts service worker ("es" format)...
+vite v8.2.0 building client environment for release-a...
+
+ WARN  inlineDynamicImports option is deprecated, please use codeSplitting: false instead.
+
+[2K
+transforming...✓ 3 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/sw.mjs  4.03 kB │ gzip: 1.69 kB
+
+✓ built in 19ms
+PWA v1.3.0
+mode      injectManifest
+format:   es
+precache  27 entries (4917.59 KiB)
+files generated
+  dist/sw.js
+Built production standard release b24e6e888e7a9b66c38956b7fdd5ce5ee9f909b8/830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611; identity cab39479fd477c85cbf70c596067b19fec928b227a740c2327eb932655f62c72; source clean.
+Release A artifact b24e6e888e7a9b66c38956b7fdd5ce5ee9f909b8 verified: exact source; cleanup forced OFF; PWA artifacts and /sw.js headers present.

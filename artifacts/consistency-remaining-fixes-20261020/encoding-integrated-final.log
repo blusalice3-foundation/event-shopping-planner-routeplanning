@@ -1,0 +1,1 @@
+PASS encoding verification: 1125 text files; UTF-8 without BOM; U+FFFD/mojibake/suspicious '?' absent; newlines: LF=1120, CRLF=3, none=2; question marks reviewed=15384; representative strings: ユーザー登録=162, エラーが発生しました=61

@@ -310,4 +310,219 @@ describe("MapImportDialog preview input race", () => {
     expect(importWorkbookMock).toHaveBeenCalledTimes(1);
     expect(onImport.mock.calls[0][0]).toBe(previewData);
   });
+  it.each(["success", "error", "rejection"] as const)(
+    "allows import after an in-flight import parser is replaced by a preview with %s",
+    async (previewOutcome) => {
+      const staleImport = createDeferred<ParseMapFileResult>();
+      const replacementPreview = createDeferred<ParseMapFileResult>();
+      const currentData = createMapData("切替後ブロック");
+      importWorkbookMock
+        .mockReturnValueOnce(
+          staleImport.promise.then((value) =>
+            mapWorkerResult("map-import", value),
+          ),
+        )
+        .mockReturnValueOnce(
+          replacementPreview.promise.then((value) =>
+            mapWorkerResult("map-preview", value),
+          ),
+        )
+        .mockResolvedValueOnce(
+          mapWorkerResult("map-import", successfulResult(currentData)),
+        );
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const { onImport } = renderDialog(new File(["map"], "switch.xlsx"));
+
+      fireEvent.click(screen.getByRole("button", { name: "取り込む" }));
+      await waitFor(() => expect(importWorkbookMock).toHaveBeenCalledTimes(1));
+      fireEvent.click(
+        screen.getByRole("button", { name: /プレビュー（ブロック検出）/ }),
+      );
+      await waitFor(() => expect(importWorkbookMock).toHaveBeenCalledTimes(2));
+      expect(importWorkbookMock.mock.calls[0][1]?.aborted).toBe(true);
+      expect(screen.getByRole("button", { name: "取り込む" })).toBeEnabled();
+
+      await act(async () => {
+        if (previewOutcome === "success") {
+          replacementPreview.resolve(successfulResult(currentData));
+        } else if (previewOutcome === "error") {
+          replacementPreview.resolve({
+            data: null,
+            skippedSheets: [],
+            error: "プレビュー解析エラー",
+          });
+        } else {
+          replacementPreview.reject(new Error("preview parser rejected"));
+        }
+      });
+      expect(screen.getByRole("button", { name: "取り込む" })).toBeEnabled();
+      if (previewOutcome === "success") {
+        expect(screen.getByText("切替後ブロック")).toBeInTheDocument();
+      } else {
+        expect(screen.queryByText("切替後ブロック")).not.toBeInTheDocument();
+      }
+
+      await act(async () => {
+        staleImport.resolve({
+          ...successfulResult(createMapData("失効した取込ブロック")),
+          skippedSheets: ["失効したシート"],
+        });
+      });
+      expect(onImport).not.toHaveBeenCalled();
+      expect(alert).toHaveBeenCalledTimes(previewOutcome === "success" ? 0 : 1);
+      expect(
+        screen.queryByText("失効した取込ブロック"),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "取り込む" })).toBeEnabled();
+
+      fireEvent.click(screen.getByRole("button", { name: "取り込む" }));
+      await waitFor(() => expect(onImport).toHaveBeenCalledOnce());
+      expect(onImport.mock.calls[0][0]).toBe(currentData);
+      expect(importWorkbookMock).toHaveBeenCalledTimes(
+        previewOutcome === "success" ? 2 : 3,
+      );
+    },
+  );
+
+  it("keeps a replacement import busy when both superseded parsers finish", async () => {
+    const staleImport = createDeferred<ParseMapFileResult>();
+    const stalePreview = createDeferred<ParseMapFileResult>();
+    const currentImport = createDeferred<ParseMapFileResult>();
+    const save = createDeferred<void>();
+    importWorkbookMock
+      .mockReturnValueOnce(
+        staleImport.promise.then((value) =>
+          mapWorkerResult("map-import", value),
+        ),
+      )
+      .mockReturnValueOnce(
+        stalePreview.promise.then((value) =>
+          mapWorkerResult("map-preview", value),
+        ),
+      )
+      .mockReturnValueOnce(
+        currentImport.promise.then((value) =>
+          mapWorkerResult("map-import", value),
+        ),
+      );
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const onImport = vi.fn<(data: Record<string, DayMapData>) => Promise<void>>(
+      () => save.promise,
+    );
+    renderDialog(new File(["map"], "replace-parser.xlsx"), onImport);
+
+    fireEvent.click(screen.getByRole("button", { name: "取り込む" }));
+    await waitFor(() => expect(importWorkbookMock).toHaveBeenCalledTimes(1));
+    fireEvent.click(
+      screen.getByRole("button", { name: /プレビュー（ブロック検出）/ }),
+    );
+    await waitFor(() => expect(importWorkbookMock).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole("button", { name: "取り込む" }));
+    await waitFor(() => expect(importWorkbookMock).toHaveBeenCalledTimes(3));
+    expect(importWorkbookMock.mock.calls[0][1]?.aborted).toBe(true);
+    expect(importWorkbookMock.mock.calls[1][1]?.aborted).toBe(true);
+    expect(importWorkbookMock.mock.calls[2][1]?.aborted).toBe(false);
+
+    await act(async () => {
+      staleImport.resolve({
+        data: null,
+        skippedSheets: [],
+        error: "旧取込エラー",
+      });
+      stalePreview.reject(new Error("superseded preview rejected"));
+    });
+    expect(onImport).not.toHaveBeenCalled();
+    expect(alert).not.toHaveBeenCalled();
+    expect(console.error).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", { name: "取り込み中..." }),
+    ).toBeDisabled();
+
+    const currentData = createMapData("現在の取込ブロック");
+    await act(async () => currentImport.resolve(successfulResult(currentData)));
+    await waitFor(() => expect(onImport).toHaveBeenCalledOnce());
+    expect(onImport.mock.calls[0][0]).toBe(currentData);
+    expect(
+      screen.getByRole("button", { name: "取り込み中..." }),
+    ).toBeDisabled();
+    expect(importWorkbookMock.mock.calls[2][1]?.aborted).toBe(false);
+
+    await act(async () => save.resolve());
+    expect(screen.getByRole("button", { name: "取り込む" })).toBeEnabled();
+  });
+
+  it("keeps save busy through settings and props invalidation and captures immutable settings and angles", async () => {
+    const data = createMapData("保存待ち");
+    importWorkbookMock.mockResolvedValueOnce(
+      mapWorkerResult("map-preview", successfulResult(data)),
+    );
+    const save = createDeferred<void>();
+    const onImport = vi.fn<
+      (
+        data: Record<string, DayMapData>,
+        settings: BlockDetectionSettings,
+        angles: Record<string, number>,
+      ) => Promise<void>
+    >(() => save.promise);
+    const onClose = vi.fn();
+    const file = new File(["map"], "pending.xlsx");
+    const props = {
+      isOpen: true,
+      file,
+      eventName: "対象イベント",
+      savedSettings: cloneDefaultSettings(),
+      onImport,
+      onClose,
+      xlsxExecutionPort,
+    };
+    const view = render(<MapImportDialog {...props} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /ブロック自動検出の詳細設定/ }),
+    );
+    const lengthInput = view.container.querySelector<HTMLInputElement>(
+      'input[type="range"][min="1"][max="10"]',
+    )!;
+    fireEvent.change(lengthInput, { target: { value: "6" } });
+    fireEvent.click(
+      screen.getByRole("button", { name: /プレビュー（ブロック検出）/ }),
+    );
+    await screen.findByText("保存待ち");
+    const angle = view.container.querySelector<HTMLInputElement>(
+      'input[type="number"][max="359"]',
+    )!;
+    fireEvent.change(angle, { target: { value: "45" } });
+    fireEvent.click(screen.getByRole("button", { name: "取り込む" }));
+    await waitFor(() => expect(onImport).toHaveBeenCalledOnce());
+    expect(lengthInput).toBeDisabled();
+    expect(angle).toBeDisabled();
+    fireEvent.change(lengthInput, { target: { value: "8" } });
+    fireEvent.change(angle, { target: { value: "90" } });
+    fireEvent.click(screen.getByRole("button", { name: /初期値に戻す/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /プレビュー（ブロック検出）/ }),
+    );
+    view.rerender(
+      <MapImportDialog
+        {...props}
+        savedSettings={{ ...props.savedSettings, maxBlockNameLength: 9 }}
+        requestPending
+        canCancel={false}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "取り込み中..." }),
+    ).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "取り込み中..." }));
+    fireEvent.click(screen.getByRole("button", { name: "キャンセル" }));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(onImport).toHaveBeenCalledOnce();
+    expect(onImport.mock.calls[0][1]).toMatchObject({ maxBlockNameLength: 6 });
+    expect(onImport.mock.calls[0][2]).toEqual({ "1日目マップ": 45 });
+    expect(importWorkbookMock).toHaveBeenCalledOnce();
+    await act(async () => save.resolve());
+    view.rerender(
+      <MapImportDialog {...props} requestPending={false} canCancel />,
+    );
+    expect(screen.getByRole("button", { name: "取り込む" })).toBeEnabled();
+  });
 });

@@ -60,6 +60,29 @@ import {
 import { duplicateEventDays } from "./dayMerge";
 import type { MutationChoices } from "../../../app/commands/applicationMutationCoordinator";
 
+/** Replace one map's polygon slots without borrowing another day's simple refs. */
+function replaceMapHallEntries<T>(
+  previous: readonly T[],
+  incoming: readonly T[],
+  mapKey: string,
+  hallFor: (entry: T) => HallRef | null,
+): T[] {
+  const belongs = (entry: T) => {
+    const hall = hallFor(entry);
+    return hall?.kind === "map" && hall.mapKey === mapKey;
+  };
+  const replacement = incoming.filter(belongs);
+  const result: T[] = [];
+  let inserted = false;
+  for (const entry of previous) {
+    if (belongs(entry)) {
+      if (!inserted) result.push(...replacement);
+      inserted = true;
+    } else result.push(entry);
+  }
+  if (!inserted) result.push(...replacement);
+  return result;
+}
 const equal = semanticEqual;
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
@@ -705,6 +728,12 @@ function planProjectedMutationAfterMerge(
         const mapKey = key.startsWith(`${MAPLESS_HALL_KEY}:`) ? null : key;
         const target = ensureVisitContext(targetDay, mapKey);
         const settings = raw as HallRouteSettings;
+        const sharesSourceMap =
+          !!input.polygonHallSyncTargetDays?.[eventName]?.[key]?.includes(day);
+        const polygonSync =
+          mapKey !== null &&
+          (sharesSourceMap ||
+            !!input.polygonHallSyncTargets?.[eventName]?.includes(key));
         const decodeGroup = (id: string) => {
           const decoded = decodeHallGroup(id);
           if (decoded) return decoded;
@@ -715,17 +744,26 @@ function planProjectedMutationAfterMerge(
                 string,
                 HallDefinition[]
               >,
-              day,
+              sharesSourceMap ? input.day : day,
               mapKey,
             ),
           );
           return candidates.length === 1 ? candidates[0] : null;
         };
-        target.hallOrder = settings.hallOrder.map((id) => {
+        const previousOrder = target.hallOrder;
+        const nextOrder = settings.hallOrder.map((id) => {
           const group = decodeGroup(id);
           if (!group) throw new Error("巡回先の保存元を確認してください。");
           return group;
         });
+        target.hallOrder = polygonSync
+          ? replaceMapHallEntries(
+              previousOrder,
+              nextOrder,
+              mapKey!,
+              (group) => group.hall,
+            )
+          : nextOrder;
         const previousLists = target.hallVisitLists;
         const decodedLists = settings.hallVisitLists.map((list) => {
           const group = decodeGroup(list.hallId);
@@ -763,6 +801,13 @@ function planProjectedMutationAfterMerge(
               : {}),
           };
         });
+        if (polygonSync)
+          target.hallVisitLists = replaceMapHallEntries(
+            previousLists,
+            target.hallVisitLists,
+            mapKey!,
+            (list) => list.group.hall,
+          );
       }
     }
     if (patch.hallRouteSettings) {
@@ -1209,14 +1254,16 @@ function planProjectedMutationAfterMerge(
         hall: resolve(item).hall,
         priority: item.priorityLevel ?? "none",
       });
-      for (const list of context.hallVisitLists)
+      for (const list of context.hallVisitLists) {
+        const memberIds = new Set(list.itemIds);
         list.itemIds = ordered
           .filter(
             (item) =>
-              list.itemIds.includes(item.id) &&
+              memberIds.has(item.id) &&
               hallGroupKey(groupFor(item)) === hallGroupKey(list.group),
           )
           .map((item) => item.id);
+      }
       const listed = new Set(
         context.hallVisitLists.flatMap((list) => list.itemIds),
       );
@@ -1238,14 +1285,16 @@ function planProjectedMutationAfterMerge(
         }
         list.itemIds.push(item.id);
       }
-      for (const list of context.hallVisitLists)
+      for (const list of context.hallVisitLists) {
+        const memberIds = new Set(list.itemIds);
         list.itemIds = ordered
           .filter(
             (item) =>
-              list.itemIds.includes(item.id) &&
+              memberIds.has(item.id) &&
               hallGroupKey(groupFor(item)) === hallGroupKey(list.group),
           )
           .map((item) => item.id);
+      }
       // Visibility-only route edits retain the saved path. Membership/order edits
       // rebuild from the current day and the full mixed hall order.
       const rebuildRoute =

@@ -1,4 +1,5 @@
-import React, { useEffect, useId, useMemo, useRef } from "react";
+import React, { useEffect, useId, useMemo } from "react";
+import { useModalDialogBehavior } from "../../hooks/useModalDialogBehavior";
 import { ShoppingItem } from "../../types/item";
 import { acquireBodyScrollLock } from "../../utils/bodyScrollLock";
 
@@ -34,18 +35,6 @@ const extractNumeric = (number: string): number => {
 };
 
 const indexToLetter = (i: number): string => String.fromCharCode(65 + i);
-
-const FOCUSABLE_SELECTOR = [
-  "button:not([disabled])",
-  "[href]",
-  "input:not([disabled])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
-  '[tabindex]:not([tabindex="-1"])',
-].join(", ");
-
-const getFocusableElements = (container: HTMLElement): HTMLElement[] =>
-  Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
 
 const InsertMarker: React.FC<{
   letter: string;
@@ -206,75 +195,16 @@ const InsertPositionDialog: React.FC<InsertPositionDialogProps> = ({
   const idPrefix = useId();
   const titleId = `${idPrefix}-title`;
   const descriptionId = `${idPrefix}-description`;
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const openerRef = useRef<HTMLElement | null>(null);
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen,
+    onEscape: onCancel,
+    containExternalFocus: true,
+  });
 
   useEffect(() => {
     if (!isOpen) return;
-
-    openerRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    const releaseBodyScrollLock = acquireBodyScrollLock({
-      lockOverscroll: true,
-      lockTouchAction: true,
-    });
-    const dialog = dialogRef.current;
-    const initialFocusTarget = dialog
-      ? (getFocusableElements(dialog)[0] ?? dialog)
-      : null;
-    initialFocusTarget?.focus();
-
-    return () => {
-      releaseBodyScrollLock();
-      const opener = openerRef.current;
-      openerRef.current = null;
-      if (opener?.isConnected) opener.focus();
-    };
+    return acquireBodyScrollLock({ lockTouchAction: true });
   }, [isOpen]);
-
-  const handleDialogKeyDown = (
-    event: React.KeyboardEvent<HTMLDivElement>,
-  ): void => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      onCancel();
-      return;
-    }
-
-    if (event.key !== "Tab") return;
-
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    const focusableElements = getFocusableElements(dialog);
-    if (focusableElements.length === 0) {
-      event.preventDefault();
-      dialog.focus();
-      return;
-    }
-
-    const firstFocusable = focusableElements[0];
-    const lastFocusable = focusableElements[focusableElements.length - 1];
-    const activeElement = document.activeElement;
-    const activeElementIndex = focusableElements.findIndex(
-      (element) => element === activeElement,
-    );
-
-    if (event.shiftKey) {
-      if (activeElementIndex <= 0) {
-        event.preventDefault();
-        lastFocusable.focus();
-      }
-      return;
-    }
-
-    if (activeElementIndex === -1 || activeElement === lastFocusable) {
-      event.preventDefault();
-      firstFocusable.focus();
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -292,7 +222,7 @@ const InsertPositionDialog: React.FC<InsertPositionDialogProps> = ({
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
         tabIndex={-1}
-        onKeyDown={handleDialogKeyDown}
+        onKeyDown={onDialogKeyDown}
         className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-[340px] max-h-[80vh] flex flex-col overflow-hidden"
       >
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3">

@@ -1,0 +1,6 @@
+
+D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-manual-item-consistency.spec.ts
+  188:9  error  'savedHeading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (1 error, 0 warnings)
+

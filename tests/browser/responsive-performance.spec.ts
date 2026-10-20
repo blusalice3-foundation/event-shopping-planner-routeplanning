@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
+import { summarizePerformanceSamples } from "./performance-summary";
 
 // Keep response timings free from video and trace capture on every attempt.
 test.use({ video: "off", trace: "off" });
@@ -976,17 +977,10 @@ for (const count of [150, 500, 1500])
       }
       const diagnostic = await diagnostics("read");
       const summary = Object.fromEntries(
-        Object.entries(timings).map(([operation, values]) => {
-          values.sort((a, b) => a - b);
-          return [
-            operation,
-            {
-              count: values.length,
-              medianMs: values[Math.ceil(values.length * 0.5) - 1],
-              p95Ms: values[Math.ceil(values.length * 0.95) - 1],
-            },
-          ];
-        }),
+        Object.entries(timings).map(([operation, values]) => [
+          operation,
+          summarizePerformanceSamples(values),
+        ]),
       );
       await writeFile(
         testInfo.outputPath("shopping-operation-timings.json"),

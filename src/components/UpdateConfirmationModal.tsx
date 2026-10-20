@@ -1,5 +1,6 @@
+import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
 import type { EventUpdateDiff } from "../features/events/updateDiff";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useState } from "react";
 import type { EventUpdateApplyOptions } from "../features/events/updateApply";
 import type { SpreadsheetSource } from "../features/events/updateFlow";
 import type {
@@ -14,6 +15,9 @@ import type { ShoppingItem } from "../types/item";
 import SheetImportSummary from "./SheetImportSummary";
 
 interface UpdateConfirmationModalProps {
+  eventName?: string;
+  isSaving?: boolean;
+  duplicateItemCount?: number;
   sheetImport?: EventUpdateDiff["sheetImport"];
   matching?: EventUpdateDiff["matching"];
   csvReview?: EventUpdateDiff["csvReview"];
@@ -32,6 +36,9 @@ interface UpdateConfirmationModalProps {
 }
 
 const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
+  eventName,
+  isSaving = false,
+  duplicateItemCount = 0,
   itemsToDelete,
   itemsToUpdate,
   itemsToAdd,
@@ -46,6 +53,14 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const titleId = useId();
+  const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
+    isOpen: true,
+    containExternalFocus: true,
+    onEscape: () => {
+      if (!isSaving) onCancel();
+    },
+  });
   const purchasedQuantityConfirmationKey = JSON.stringify(
     pendingPurchasedQuantityChanges.map((change) => [
       change.itemId,
@@ -74,13 +89,40 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={onDialogKeyDown}
+        className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+      >
         <div className="p-6">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+          <h2
+            id={titleId}
+            className="text-xl font-bold text-slate-900 dark:text-white mb-4"
+          >
             アイテム更新の確認
           </h2>
 
+          {eventName && (
+            <p className="mb-3 text-sm text-slate-700 dark:text-slate-300">
+              対象イベント: {eventName}
+            </p>
+          )}
+          {isSaving && (
+            <p
+              role="status"
+              className="mb-3 text-sm text-blue-700 dark:text-blue-300"
+            >
+              保存中です。確認内容を固定しています。保存の再試行・取消は保存案内から操作できます。
+            </p>
+          )}
           <div className="space-y-4 mb-6">
+            {duplicateItemCount > 0 && (
+              <p>完全重複による追加除外: {duplicateItemCount}行</p>
+            )}
             {nextSource && (
               <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-700">
                 <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
@@ -261,7 +303,8 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
                 </h3>
                 <p className="text-sm text-amber-700 dark:text-amber-300 mb-2">
                   誤って購入記録を変えないよう、予定数量は確認するまで変更しません。
-                  実際に購入した数量は、この確認にかかわらず維持されます。
+                  購入済みの数量変更は、実際に購入した数量と支出集計にも反映されます。
+                  限数購入は予定数量だけを変更し、実際に購入した数量は維持します。
                 </p>
                 <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1 mb-3">
                   {pendingPurchasedQuantityChanges.slice(0, 5).map((change) => (
@@ -281,6 +324,7 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
                     type="checkbox"
                     className="mt-0.5"
                     checked={applyPurchasedQuantityChanges}
+                    disabled={isSaving}
                     onChange={(event) =>
                       setConfirmedPurchasedQuantityKey(
                         event.target.checked
@@ -297,12 +341,14 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
 
           <div className="flex justify-end space-x-3">
             <button
+              disabled={isSaving}
               onClick={onCancel}
               className="px-4 py-2 text-sm font-medium rounded-md text-slate-700 bg-slate-200 hover:bg-slate-300 dark:text-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors"
             >
               キャンセル
             </button>
             <button
+              disabled={isSaving}
               onClick={() =>
                 onConfirm({
                   applyPurchasedQuantityChanges,

@@ -1,7 +1,14 @@
 import type { HallSelectionIntent } from "../types/consistency";
 import type { ItemMembershipPreview } from "../features/consistency/domain/itemEdit";
 import { decodeHallRef } from "../features/consistency/domain/projection";
-import React, { useState, useCallback, useId, useMemo } from "react";
+import React, {
+  useState,
+  useCallback,
+  useId,
+  useMemo,
+  useRef,
+  useEffect,
+} from "react";
 import type { ShoppingItem, PurchaseStatus } from "../types/item";
 import type { HallDefinition } from "../types/map";
 import { findHallsByBlockName } from "../utils/hallFallback";
@@ -15,13 +22,13 @@ import {
   applyPurchasedFromLimitedInput,
   clearLimitedPurchase,
   getActualPurchasedQuantity,
-  getPlannedQuantity,
   parseDecimalIntegerInput,
   validateLimitedPurchasePlannedQuantity,
   validateLimitedPurchaseQuantities,
   type LimitedPurchaseValidationError,
 } from "../utils/purchaseQuantity";
 import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
+import { normalizeExecutionVisitDay } from "../utils/visitProjection";
 
 interface ItemEditDialogProps {
   item: ShoppingItem;
@@ -105,12 +112,7 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
     manualHallId: item.manualHallId || "",
   });
   const [limitedActualText, setLimitedActualText] = useState(
-    item.purchaseStatus === "LimitedPurchase"
-      ? String(getActualPurchasedQuantity(item) ?? "")
-      : "",
-  );
-  const [limitedPlannedText, setLimitedPlannedText] = useState(
-    String(getPlannedQuantity(item)),
+    String(getActualPurchasedQuantity(item) ?? ""),
   );
   const [limitedError, setLimitedError] = useState<string | null>(null);
   const [excessConfirm, setExcessConfirm] = useState<{
@@ -127,6 +129,17 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
   });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [eventDateError, setEventDateError] = useState(false);
+  const eventDateInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    setEventDateError(false);
+  }, [item.id]);
+  const validateEventDate = useCallback((eventDate: string) => {
+    if (normalizeExecutionVisitDay(eventDate)) return true;
+    setEventDateError(true);
+    eventDateInputRef.current?.focus();
+    return false;
+  }, []);
   const preview = useMemo(
     () =>
       previewMembership?.(
@@ -156,7 +169,12 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
   const mapSelectionRequired = preview?.mapSelectionRequired ?? false;
   const save = useCallback(
     (updated: ShoppingItem) => {
-      if (saving || mapSelectionRequired) return;
+      if (
+        saving ||
+        mapSelectionRequired ||
+        !validateEventDate(updated.eventDate)
+      )
+        return;
       setSaving(true);
       setSaveError(null);
       void Promise.resolve(onSave(updated, selectionIntent))
@@ -167,7 +185,7 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
         })
         .finally(() => setSaving(false));
     },
-    [onSave, selectionIntent, saving, mapSelectionRequired],
+    [onSave, selectionIntent, saving, mapSelectionRequired, validateEventDate],
   );
   const formInputClass =
     "w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white";
@@ -181,10 +199,20 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
     }
     return options;
   }, []);
-  const quantityOptions = useMemo(
-    () => buildQuantityOptions(form.quantity),
-    [form.quantity],
-  );
+  const { quantityOptions, quantitySelectValue, needsQuantityDraftOption } =
+    useMemo(() => {
+      const planned = parseDecimalIntegerInput(form.quantity);
+      const options = buildQuantityOptions(planned);
+      const value =
+        planned !== undefined && Number.isFinite(planned)
+          ? String(planned)
+          : form.quantity;
+      return {
+        quantityOptions: options,
+        quantitySelectValue: value,
+        needsQuantityDraftOption: !options.some((num) => String(num) === value),
+      };
+    }, [form.quantity]);
 
   const handlePriceInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -202,6 +230,7 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
   );
 
   const handleSave = useCallback(() => {
+    if (!validateEventDate(form.eventDate)) return;
     if (!form.circle.trim()) return;
     const price = form.price === "" ? null : parseInt(form.price, 10) || 0;
     const baseItem: ShoppingItem = {
@@ -219,15 +248,14 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
       manualHallId: form.manualHallId || undefined,
     };
 
+    const planned = parseDecimalIntegerInput(form.quantity);
+    const plannedValidation = validateLimitedPurchasePlannedQuantity(planned);
+    if (!plannedValidation.ok) {
+      setLimitedError(toLimitedPurchaseMessage(plannedValidation.error));
+      return;
+    }
     if (form.purchaseStatus === "LimitedPurchase") {
-      const planned = parseDecimalIntegerInput(limitedPlannedText);
       if (limitedActualText.trim() === "") {
-        const plannedValidation =
-          validateLimitedPurchasePlannedQuantity(planned);
-        if (!plannedValidation.ok) {
-          setLimitedError(toLimitedPurchaseMessage(plannedValidation.error));
-          return;
-        }
         save(applyLimitedPurchase(baseItem, { planned: planned! }));
         return;
       }
@@ -271,13 +299,13 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
 
     const updatedItem: ShoppingItem = clearLimitedPurchase({
       ...baseItem,
-      quantity: parseInt(form.quantity, 10) || 1,
+      quantity: planned!,
       purchaseStatus: form.purchaseStatus as PurchaseStatus,
     });
     save(updatedItem);
     // priority 変更の反映は onSave 経由（handleUpdateItem + hallOrder 更新を App 側で統合）に一本化。
     // 旧 onPriorityChange による二重 setEventLists は race condition の原因だったため廃止。
-  }, [form, item, limitedActualText, limitedPlannedText, save]);
+  }, [form, item, limitedActualText, save, validateEventDate]);
 
   const circleSuggestions = useMemo(
     () => [...new Set(allItems.map((i) => i.circle).filter(Boolean))],
@@ -361,13 +389,28 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
               </label>
               <input
                 id={fieldIds.eventDate}
+                ref={eventDateInputRef}
                 type="text"
                 value={form.eventDate}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, eventDate: e.target.value }))
+                aria-invalid={eventDateError || undefined}
+                aria-describedby={
+                  eventDateError ? `${fieldIds.eventDate}-error` : undefined
                 }
+                onChange={(e) => {
+                  setEventDateError(false);
+                  setForm((prev) => ({ ...prev, eventDate: e.target.value }));
+                }}
                 className={formInputClass}
               />
+              {eventDateError && (
+                <p
+                  id={`${fieldIds.eventDate}-error`}
+                  role="alert"
+                  className="text-sm text-red-600 dark:text-red-400 mt-1"
+                >
+                  参加日を入力してください。
+                </p>
+              )}
             </div>
             <div>
               <label htmlFor={fieldIds.block} className={labelClass}>
@@ -486,9 +529,12 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
                   </label>
                   <input
                     id={fieldIds.limitedPlanned}
-                    value={limitedPlannedText}
+                    value={form.quantity}
                     onChange={(e) => {
-                      setLimitedPlannedText(e.target.value);
+                      setForm((prev) => ({
+                        ...prev,
+                        quantity: e.target.value,
+                      }));
                       setLimitedError(null);
                     }}
                     className={formInputClass}
@@ -503,13 +549,20 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
                 </label>
                 <select
                   id={fieldIds.quantity}
-                  value={form.quantity}
+                  value={quantitySelectValue}
                   aria-label="数量"
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, quantity: e.target.value }))
                   }
                   className={formInputClass}
                 >
+                  {needsQuantityDraftOption && (
+                    <option value={quantitySelectValue}>
+                      {form.quantity.trim() === ""
+                        ? "購入予定量を入力してください"
+                        : `${form.quantity}（現在の入力）`}
+                    </option>
+                  )}
                   {quantityOptions.map((num) => (
                     <option key={num} value={num}>
                       {isStandardQuantityOption(num) ? num : `${num}（現在値）`}
@@ -532,10 +585,6 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
                     purchaseStatus: nextStatus,
                   }));
                   if (nextStatus === "LimitedPurchase") {
-                    setLimitedPlannedText(String(getPlannedQuantity(item)));
-                    setLimitedActualText(
-                      String(getActualPurchasedQuantity(item) ?? ""),
-                    );
                     setLimitedError(null);
                   }
                 }}

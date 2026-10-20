@@ -1,0 +1,6 @@
+
+> event-shopping-planner@1.0.0 build:app
+> tsc --noEmit && node scripts/build-release-vite.mjs
+
+src/features/shopping-list/renderers/RetainedViewportListRenderer.integration.test.tsx(637,11): error TS2352: Conversion of type '{ target: HTMLElement; contentRect: DOMRect; }' to type 'ResizeObserverEntry' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ target: HTMLElement; contentRect: DOMRect; }' is missing the following properties from type 'ResizeObserverEntry': borderBoxSize, contentBoxSize, devicePixelContentBoxSize

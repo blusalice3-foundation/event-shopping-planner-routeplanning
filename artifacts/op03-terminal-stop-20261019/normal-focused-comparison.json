@@ -1,0 +1,2412 @@
+{
+  "method": "All six raw timing arrays retained per matching profile, including all original cold samples. Nearest-rank median ceil(n*0.50), p95 ceil(n*0.95), 1-based; stored summaries ignored.",
+  "thresholds": {
+    "medianMs": 55,
+    "p95Ms": 100,
+    "minimumSamples": 20
+  },
+  "authority": "Current full24 report is preserved unchanged as the authoritative full operation run. Focused runs diagnose one historically slower profile; they do not replace full-run evidence.",
+  "causalLimit": "Comparison reports differences only. Identical fixture/driver settings and sequential runs do not prove the cause of a timing change.",
+  "utility": {
+    "path": "D:\\esp-op03-evidence\\compare-normal-focused.ps1",
+    "sha256": "c602dd56b1aabea2a32c94f7c88dce9ef16c6599a3e70676228d238a4e830117"
+  },
+  "fixtureAllFourEqual": true,
+  "sourceEvidence": {
+    "baselineRoot": "D:\\esp-op03-base",
+    "note": "Source hashes inspected at aggregation time, not independent build attestation",
+    "files": [
+      {
+        "path": "tests/browser/responsive-performance.spec.ts",
+        "baselineSha256": "4f5ac824a820ba3a58c325e316c9f3545e14404bb060d150374585d41e98f84f",
+        "currentSha256": "4f5ac824a820ba3a58c325e316c9f3545e14404bb060d150374585d41e98f84f",
+        "identical": true
+      },
+      {
+        "path": "src/persistence/db/atomicRestoreTransaction.ts",
+        "baselineSha256": "662d3e9cafa81dfc4feeb83b376f7be50758aedbf50b4a7389c81fd76ec74658",
+        "currentSha256": "4dfdd23c1951d419125e86121399fa3b203b01ccef79f3c39e0ecfa1f2c9512d",
+        "identical": false
+      },
+      {
+        "path": "package-lock.json",
+        "baselineSha256": "9b2b7ec709c74f80295265a33e9faf6969d130c428e3d475d3df7acc19e42234",
+        "currentSha256": "9b2b7ec709c74f80295265a33e9faf6969d130c428e3d475d3df7acc19e42234",
+        "identical": true
+      },
+      {
+        "path": "vite.config.ts",
+        "baselineSha256": "53b09f11dc915268e1c48b352f01dd58a2431f52e3e92d71c532b6fac613f4c3",
+        "currentSha256": "53b09f11dc915268e1c48b352f01dd58a2431f52e3e92d71c532b6fac613f4c3",
+        "identical": true
+      }
+    ],
+    "currentRoot": "D:\\esp-op03-final"
+  },
+  "historical": {
+    "reportPath": "D:\\esp-op03-final\\artifacts\\op19-final-remediation-20261019\\shopping-performance.json",
+    "reportSha256": "34d8edfb0415a481a91c403eb5230ce7e325fb3726b8ea524bcbbc7730603087",
+    "testTitle": "local shopping operations: 1500 items, concentrated=false, mapVisible=true, layout=pc @shopping-performance",
+    "status": "passed",
+    "retry": 0,
+    "resultStartedAt": "2026-10-19T07:41:13.506Z",
+    "resultDurationMs": 68025,
+    "reportStats": {
+      "startTime": "2026-10-19T07:29:16.362Z",
+      "duration": 1063183.911,
+      "expected": 24,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "runner": {
+      "projectId": "chromium",
+      "version": "1.62.1",
+      "metadata": {
+        "actualWorkers": 1
+      },
+      "parallelIndex": 0,
+      "configuredWorkers": 1,
+      "projectName": "chromium",
+      "workerIndex": 0
+    },
+    "fixture": {
+      "concentrated": false,
+      "mapVisible": true,
+      "count": 1500,
+      "layout": "pc",
+      "visitedCount": 1500
+    },
+    "browserIdentityLimitation": "Shopping operation attachments do not capture userAgent/browser binary version; project and runner metadata are retained. Source driver hashes and fixture flags supplement, but do not replace, run attestation.",
+    "operations": {
+      "back": {
+        "operation": "back",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 23.40000000037253,
+          "p25Ms": 23.899999998509884,
+          "medianMs": 24.299999998882413,
+          "p75Ms": 25.09999999962747,
+          "p95Ms": 26.0,
+          "maximumMs": 31.09999999962747,
+          "meanMs": 24.84499999973923
+        },
+        "pass": true,
+        "rawSamples": [
+          23.40000000037253,
+          23.59999999962747,
+          23.700000001117587,
+          23.799999998882413,
+          23.899999998509884,
+          24,
+          24.09999999962747,
+          24.199999999254942,
+          24.299999998882413,
+          24.299999998882413,
+          24.5,
+          25,
+          25,
+          25,
+          25.09999999962747,
+          25.199999999254942,
+          25.300000000745058,
+          25.40000000037253,
+          26,
+          31.09999999962747
+        ]
+      },
+      "execute": {
+        "operation": "execute",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 33.19999999925494,
+          "p25Ms": 34.59999999962747,
+          "medianMs": 35.59999999962747,
+          "p75Ms": 39.19999999925494,
+          "p95Ms": 41.09999999962747,
+          "maximumMs": 48.69999999925494,
+          "meanMs": 37.24499999983236
+        },
+        "pass": true,
+        "rawSamples": [
+          33.19999999925494,
+          33.59999999962747,
+          34,
+          34.09999999962747,
+          34.59999999962747,
+          34.79999999888241,
+          34.80000000074506,
+          34.90000000037253,
+          35.09999999962747,
+          35.59999999962747,
+          38,
+          38.09999999962747,
+          38.30000000074506,
+          38.59999999962747,
+          39.19999999925494,
+          39.30000000074506,
+          39.40000000037253,
+          39.5,
+          41.09999999962747,
+          48.69999999925494
+        ]
+      },
+      "executeRecord": {
+        "operation": "executeRecord",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 24.300000000745058,
+          "p25Ms": 27.0,
+          "medianMs": 30.700000001117587,
+          "p75Ms": 32.19999999925494,
+          "p95Ms": 32.90000000037253,
+          "maximumMs": 35.0,
+          "meanMs": 29.86000000005588
+        },
+        "pass": true,
+        "rawSamples": [
+          24.300000000745058,
+          24.5,
+          26.199999999254942,
+          26.90000000037253,
+          27,
+          27,
+          27.199999999254942,
+          27.699999999254942,
+          30.40000000037253,
+          30.700000001117587,
+          30.90000000037253,
+          32,
+          32,
+          32.09999999962747,
+          32.19999999925494,
+          32.5,
+          32.80000000074506,
+          32.90000000037253,
+          32.90000000037253,
+          35
+        ]
+      },
+      "focus": {
+        "operation": "focus",
+        "stats": {
+          "samples": 22,
+          "minimumMs": 17.899999998509884,
+          "p25Ms": 19.199999999254942,
+          "medianMs": 19.59999999962747,
+          "p75Ms": 20.800000000745058,
+          "p95Ms": 22.700000001117587,
+          "maximumMs": 23.699999999254942,
+          "meanMs": 20.131818181496453
+        },
+        "pass": true,
+        "rawSamples": [
+          17.899999998509884,
+          18.300000000745058,
+          18.399999998509884,
+          18.700000001117587,
+          19,
+          19.199999999254942,
+          19.399999998509884,
+          19.399999998509884,
+          19.40000000037253,
+          19.5,
+          19.59999999962747,
+          20,
+          20.199999999254942,
+          20.299999998882413,
+          20.5,
+          20.699999999254942,
+          20.800000000745058,
+          21.40000000037253,
+          21.799999998882413,
+          22,
+          22.700000001117587,
+          23.699999999254942
+        ]
+      },
+      "next": {
+        "operation": "next",
+        "stats": {
+          "samples": 41,
+          "minimumMs": 23.300000000745058,
+          "p25Ms": 24.299999998882413,
+          "medianMs": 25.40000000037253,
+          "p75Ms": 27.90000000037253,
+          "p95Ms": 29.59999999962747,
+          "maximumMs": 32.40000000037253,
+          "meanMs": 25.99024390247537
+        },
+        "pass": true,
+        "rawSamples": [
+          23.300000000745058,
+          23.5,
+          23.699999999254942,
+          23.700000001117587,
+          23.700000001117587,
+          23.800000000745058,
+          23.800000000745058,
+          24.09999999962747,
+          24.09999999962747,
+          24.09999999962747,
+          24.299999998882413,
+          24.300000000745058,
+          24.40000000037253,
+          24.5,
+          24.5,
+          24.699999999254942,
+          24.799999998882413,
+          25.09999999962747,
+          25.09999999962747,
+          25.199999999254942,
+          25.40000000037253,
+          25.40000000037253,
+          25.5,
+          25.800000000745058,
+          25.90000000037253,
+          26,
+          26,
+          26.200000001117587,
+          27.09999999962747,
+          27.40000000037253,
+          27.90000000037253,
+          27.90000000037253,
+          28,
+          28,
+          28.59999999962747,
+          28.799999998882413,
+          29.299999998882413,
+          29.40000000037253,
+          29.59999999962747,
+          30.300000000745058,
+          32.40000000037253
+        ]
+      },
+      "record": {
+        "operation": "record",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 14.199999999254942,
+          "p25Ms": 15.5,
+          "medianMs": 16.0,
+          "p75Ms": 17.59999999962747,
+          "p95Ms": 18.09999999962747,
+          "maximumMs": 19.09999999962747,
+          "meanMs": 16.424999999813735
+        },
+        "pass": true,
+        "rawSamples": [
+          14.199999999254942,
+          14.200000001117587,
+          14.200000001117587,
+          14.599999999627471,
+          15.5,
+          15.599999999627471,
+          15.699999999254942,
+          15.900000000372529,
+          15.900000000372529,
+          16,
+          16.5,
+          17.09999999962747,
+          17.5,
+          17.5,
+          17.59999999962747,
+          17.59999999962747,
+          17.799999998882413,
+          17.899999998509884,
+          18.09999999962747,
+          19.09999999962747
+        ]
+      }
+    },
+    "phaseDiagnostics": {
+      "diagnostic|item-command:input": {
+        "stats": {
+          "samples": 156,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.0,
+          "p75Ms": 0.09999999962747097,
+          "p95Ms": 0.10000000149011612,
+          "maximumMs": 0.2000000011175871,
+          "meanMs": 0.041025641039969064
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|item-command:paint": {
+        "stats": {
+          "samples": 156,
+          "minimumMs": 7.699999999254942,
+          "p25Ms": 10.400000000372529,
+          "medianMs": 12.5,
+          "p75Ms": 15.099999999627471,
+          "p95Ms": 20.40000000037253,
+          "maximumMs": 23.40000000037253,
+          "meanMs": 13.296153846113251
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|focus-next:input": {
+        "stats": {
+          "samples": 41,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.0,
+          "p75Ms": 0.09999999962747097,
+          "p95Ms": 0.09999999962747097,
+          "maximumMs": 0.10000000149011612,
+          "meanMs": 0.041463414570543825
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|focus-next:paint": {
+        "stats": {
+          "samples": 41,
+          "minimumMs": 23.199999999254942,
+          "p25Ms": 24.199999999254942,
+          "medianMs": 25.300000000745058,
+          "p75Ms": 27.700000001117587,
+          "p95Ms": 29.40000000037253,
+          "maximumMs": 32.20000000111759,
+          "meanMs": 25.87073170743519
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|item-command:save": {
+        "stats": {
+          "samples": 61,
+          "minimumMs": 285.3999999985099,
+          "p25Ms": 409.5,
+          "medianMs": 498.2999999988824,
+          "p75Ms": 589.7000000011176,
+          "p95Ms": 691.1999999992549,
+          "maximumMs": 820.5999999996275,
+          "meanMs": 503.65245901637513
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionDiagnostic|item-command:input": {
+        "stats": {
+          "samples": 20,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.09999999962747097,
+          "p75Ms": 0.09999999962747097,
+          "p95Ms": 0.10000000149011612,
+          "maximumMs": 0.900000000372529,
+          "meanMs": 0.09999999990686774
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionDiagnostic|item-command:paint": {
+        "stats": {
+          "samples": 20,
+          "minimumMs": 33.0,
+          "p25Ms": 34.30000000074506,
+          "medianMs": 35.40000000037253,
+          "p75Ms": 38.90000000037253,
+          "p95Ms": 40.69999999925494,
+          "maximumMs": 47.40000000037253,
+          "meanMs": 36.919999999925494
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionDiagnostic|item-command:save": {
+        "stats": {
+          "samples": 20,
+          "minimumMs": 370.09999999962747,
+          "p25Ms": 452.30000000074506,
+          "medianMs": 578.2000000011176,
+          "p75Ms": 689.5,
+          "p95Ms": 808.2000000011176,
+          "maximumMs": 809.2999999988824,
+          "meanMs": 591.195000000298
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionRecordDiagnostic|item-command:input": {
+        "stats": {
+          "samples": 135,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.0,
+          "p75Ms": 0.09999999962747097,
+          "p95Ms": 0.10000000149011612,
+          "maximumMs": 0.2000000011175871,
+          "meanMs": 0.0362962962852584
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionRecordDiagnostic|item-command:paint": {
+        "stats": {
+          "samples": 135,
+          "minimumMs": 18.90000000037253,
+          "p25Ms": 19.90000000037253,
+          "medianMs": 20.300000000745058,
+          "p75Ms": 21.799999998882413,
+          "p95Ms": 31.90000000037253,
+          "maximumMs": 46.90000000037253,
+          "meanMs": 22.124444444380977
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionRecordDiagnostic|item-command:save": {
+        "stats": {
+          "samples": 35,
+          "minimumMs": 277.40000000037253,
+          "p25Ms": 374.0,
+          "medianMs": 492.59999999962747,
+          "p75Ms": 570.9000000003725,
+          "p95Ms": 706.2000000011176,
+          "maximumMs": 781.6000000014901,
+          "meanMs": 488.23142857152436
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      }
+    },
+    "gate": {
+      "maximumP95Ms": 41.09999999962747,
+      "failures": [],
+      "minimumSamples": 20,
+      "maximumMedianMs": 35.59999999962747,
+      "playwrightPass": true,
+      "rawSampleGatePass": true,
+      "pass": true,
+      "categories": 6,
+      "expectedCategories": 6
+    },
+    "errors": []
+  },
+  "currentFull24": {
+    "reportPath": "D:\\esp-op03-evidence\\shopping-performance.json",
+    "reportSha256": "213403aeed1fce0e6ea3f50040cabfcdd731ea8b441d057fcc8b60e6d514ed34",
+    "testTitle": "local shopping operations: 1500 items, concentrated=false, mapVisible=true, layout=pc @shopping-performance",
+    "status": "passed",
+    "retry": 0,
+    "resultStartedAt": "2026-10-19T10:08:44.074Z",
+    "resultDurationMs": 74737,
+    "reportStats": {
+      "startTime": "2026-10-19T09:56:22.837Z",
+      "duration": 1115764.151,
+      "expected": 24,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "runner": {
+      "projectId": "chromium",
+      "version": "1.62.1",
+      "metadata": {
+        "actualWorkers": 1
+      },
+      "parallelIndex": 0,
+      "configuredWorkers": 1,
+      "projectName": "chromium",
+      "workerIndex": 0
+    },
+    "fixture": {
+      "concentrated": false,
+      "mapVisible": true,
+      "count": 1500,
+      "layout": "pc",
+      "visitedCount": 1500
+    },
+    "browserIdentityLimitation": "Shopping operation attachments do not capture userAgent/browser binary version; project and runner metadata are retained. Source driver hashes and fixture flags supplement, but do not replace, run attestation.",
+    "operations": {
+      "back": {
+        "operation": "back",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 36.30000000074506,
+          "p25Ms": 43.399999998509884,
+          "medianMs": 49.5,
+          "p75Ms": 55.19999999925494,
+          "p95Ms": 64.60000000149012,
+          "maximumMs": 65.30000000074506,
+          "meanMs": 50.330000000074506
+        },
+        "pass": true,
+        "rawSamples": [
+          36.30000000074506,
+          36.30000000074506,
+          41,
+          42.100000001490116,
+          43.399999998509884,
+          43.400000002235174,
+          46.29999999701977,
+          48.600000001490116,
+          49,
+          49.5,
+          50.79999999701977,
+          50.80000000074506,
+          52.80000000074506,
+          54.899999998509884,
+          55.19999999925494,
+          56,
+          57.69999999925494,
+          62.600000001490116,
+          64.60000000149012,
+          65.30000000074506
+        ]
+      },
+      "execute": {
+        "operation": "execute",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 32.600000001490116,
+          "p25Ms": 36.0,
+          "medianMs": 41.399999998509884,
+          "p75Ms": 44.80000000074506,
+          "p95Ms": 53.600000001490116,
+          "maximumMs": 56.099999997764826,
+          "meanMs": 42.12500000037253
+        },
+        "pass": true,
+        "rawSamples": [
+          32.600000001490116,
+          34.5,
+          35,
+          35.900000002235174,
+          36,
+          37.100000001490116,
+          37.5,
+          39.30000000074506,
+          40.600000001490116,
+          41.399999998509884,
+          41.69999999925494,
+          42.69999999925494,
+          42.70000000298023,
+          42.80000000074506,
+          44.80000000074506,
+          47.900000002235174,
+          49.29999999701977,
+          51,
+          53.600000001490116,
+          56.099999997764826
+        ]
+      },
+      "executeRecord": {
+        "operation": "executeRecord",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 23.699999999254942,
+          "p25Ms": 28.699999999254942,
+          "medianMs": 31.199999999254942,
+          "p75Ms": 38.5,
+          "p95Ms": 60.69999999925494,
+          "maximumMs": 60.79999999701977,
+          "meanMs": 36.264999999664724
+        },
+        "pass": true,
+        "rawSamples": [
+          23.699999999254942,
+          25,
+          25.899999998509884,
+          28.5,
+          28.699999999254942,
+          29.5,
+          29.899999998509884,
+          30.300000000745058,
+          31,
+          31.199999999254942,
+          31.699999999254942,
+          33.099999997764826,
+          34.5,
+          36.19999999925494,
+          38.5,
+          41.30000000074506,
+          49.400000002235174,
+          55.400000002235174,
+          60.69999999925494,
+          60.79999999701977
+        ]
+      },
+      "focus": {
+        "operation": "focus",
+        "stats": {
+          "samples": 22,
+          "minimumMs": 18.800000000745058,
+          "p25Ms": 26.0,
+          "medianMs": 29.400000002235174,
+          "p75Ms": 33.30000000074506,
+          "p95Ms": 44.099999997764826,
+          "maximumMs": 45.5,
+          "meanMs": 30.31818181835115
+        },
+        "pass": true,
+        "rawSamples": [
+          18.800000000745058,
+          21,
+          22.699999999254942,
+          22.800000000745058,
+          24.900000002235174,
+          26,
+          26.700000002980232,
+          27,
+          28.199999999254942,
+          28.600000001490116,
+          29.400000002235174,
+          30.599999997764826,
+          31.699999999254942,
+          31.900000002235174,
+          32.5,
+          32.599999997764826,
+          33.30000000074506,
+          33.899999998509884,
+          36.80000000074506,
+          38,
+          44.099999997764826,
+          45.5
+        ]
+      },
+      "next": {
+        "operation": "next",
+        "stats": {
+          "samples": 41,
+          "minimumMs": 30.600000001490116,
+          "p25Ms": 37.5,
+          "medianMs": 45.79999999701977,
+          "p75Ms": 54.400000002235174,
+          "p95Ms": 62.099999997764826,
+          "maximumMs": 63.80000000074506,
+          "meanMs": 46.24146341432522
+        },
+        "pass": true,
+        "rawSamples": [
+          30.600000001490116,
+          32.30000000074506,
+          33.80000000074506,
+          34.099999997764826,
+          35.20000000298023,
+          35.69999999925494,
+          36,
+          36.29999999701977,
+          37.100000001490116,
+          37.19999999925494,
+          37.5,
+          37.79999999701977,
+          38.100000001490116,
+          38.19999999925494,
+          38.29999999701977,
+          40.599999997764826,
+          41.899999998509884,
+          42.400000002235174,
+          44.099999997764826,
+          45.399999998509884,
+          45.79999999701977,
+          46.19999999925494,
+          47.69999999925494,
+          48.5,
+          49.19999999925494,
+          49.600000001490116,
+          51.30000000074506,
+          51.899999998509884,
+          52,
+          52.600000001490116,
+          54.400000002235174,
+          54.899999998509884,
+          55.100000001490116,
+          56.899999998509884,
+          58.5,
+          59.100000001490116,
+          59.599999997764826,
+          60.600000001490116,
+          62.099999997764826,
+          63.5,
+          63.80000000074506
+        ]
+      },
+      "record": {
+        "operation": "record",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 18.0,
+          "p25Ms": 23.0,
+          "medianMs": 27.0,
+          "p75Ms": 28.700000002980232,
+          "p95Ms": 32.70000000298023,
+          "maximumMs": 35.30000000074506,
+          "meanMs": 26.675
+        },
+        "pass": true,
+        "rawSamples": [
+          18,
+          18.600000001490116,
+          21.399999998509884,
+          22.899999998509884,
+          23,
+          23.199999999254942,
+          25.300000000745058,
+          26.199999999254942,
+          27,
+          27,
+          27.100000001490116,
+          27.399999998509884,
+          27.899999998509884,
+          28.600000001490116,
+          28.700000002980232,
+          30.599999997764826,
+          31,
+          31.599999997764826,
+          32.70000000298023,
+          35.30000000074506
+        ]
+      }
+    },
+    "phaseDiagnostics": {
+      "diagnostic|item-command:input": {
+        "stats": {
+          "samples": 156,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.09999999776482582,
+          "p75Ms": 0.10000000149011612,
+          "p95Ms": 0.20000000298023224,
+          "maximumMs": 0.30000000074505806,
+          "meanMs": 0.07307692311513118
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|item-command:paint": {
+        "stats": {
+          "samples": 156,
+          "minimumMs": 10.700000002980232,
+          "p25Ms": 14.400000002235174,
+          "medianMs": 19.0,
+          "p75Ms": 21.0,
+          "p95Ms": 32.5,
+          "maximumMs": 44.80000000074506,
+          "meanMs": 19.56217948717471
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|focus-next:input": {
+        "stats": {
+          "samples": 41,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.09999999776482582,
+          "p75Ms": 0.10000000149011612,
+          "p95Ms": 0.10000000149011612,
+          "maximumMs": 0.19999999925494194,
+          "meanMs": 0.06341463391010355
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|focus-next:paint": {
+        "stats": {
+          "samples": 41,
+          "minimumMs": 30.399999998509884,
+          "p25Ms": 37.30000000074506,
+          "medianMs": 45.69999999925494,
+          "p75Ms": 54.099999997764826,
+          "p95Ms": 61.899999998509884,
+          "maximumMs": 63.600000001490116,
+          "meanMs": 46.03658536567194
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|item-command:save": {
+        "stats": {
+          "samples": 61,
+          "minimumMs": 424.80000000074506,
+          "p25Ms": 642.6999999992549,
+          "medianMs": 808.6000000014901,
+          "p75Ms": 944.8999999985099,
+          "p95Ms": 1268.1000000014901,
+          "maximumMs": 1371.199999999255,
+          "meanMs": 827.1819672131392
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionDiagnostic|item-command:input": {
+        "stats": {
+          "samples": 20,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.10000000149011612,
+          "p75Ms": 0.10000000149011612,
+          "p95Ms": 0.19999999925494194,
+          "maximumMs": 0.6000000014901161,
+          "meanMs": 0.11999999992549419
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionDiagnostic|item-command:paint": {
+        "stats": {
+          "samples": 20,
+          "minimumMs": 32.399999998509884,
+          "p25Ms": 35.80000000074506,
+          "medianMs": 41.0,
+          "p75Ms": 44.5,
+          "p95Ms": 53.400000002235174,
+          "maximumMs": 54.69999999925494,
+          "meanMs": 41.81000000014901
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionDiagnostic|item-command:save": {
+        "stats": {
+          "samples": 18,
+          "minimumMs": 507.0,
+          "p25Ms": 536.0,
+          "medianMs": 681.3999999985099,
+          "p75Ms": 817.5,
+          "p95Ms": 911.3000000007451,
+          "maximumMs": 911.3000000007451,
+          "meanMs": 693.5222222225534
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionRecordDiagnostic|item-command:input": {
+        "stats": {
+          "samples": 135,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.0,
+          "p75Ms": 0.09999999776482582,
+          "p95Ms": 0.10000000149011612,
+          "maximumMs": 0.30000000074505806,
+          "meanMs": 0.04518518508584411
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionRecordDiagnostic|item-command:paint": {
+        "stats": {
+          "samples": 135,
+          "minimumMs": 20.399999998509884,
+          "p25Ms": 23.699999999254942,
+          "medianMs": 26.600000001490116,
+          "p75Ms": 32.80000000074506,
+          "p95Ms": 40.0,
+          "maximumMs": 60.5,
+          "meanMs": 29.122962963056786
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionRecordDiagnostic|item-command:save": {
+        "stats": {
+          "samples": 37,
+          "minimumMs": 309.30000000074506,
+          "p25Ms": 477.1000000014901,
+          "medianMs": 598.1000000014901,
+          "p75Ms": 691.7000000029802,
+          "p95Ms": 943.8999999985099,
+          "maximumMs": 955.0,
+          "meanMs": 592.9891891895315
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      }
+    },
+    "gate": {
+      "maximumP95Ms": 64.60000000149012,
+      "failures": [],
+      "minimumSamples": 20,
+      "maximumMedianMs": 49.5,
+      "playwrightPass": true,
+      "rawSampleGatePass": true,
+      "pass": true,
+      "categories": 6,
+      "expectedCategories": 6
+    },
+    "errors": []
+  },
+  "freshBaseline": {
+    "reportPath": "D:\\esp-op03-evidence\\normal-focused-baseline.json",
+    "reportSha256": "f45ec1a06881957c7cf7ebe0d3764c4c3053ee20d5ea58719a4681a0d0046979",
+    "testTitle": "local shopping operations: 1500 items, concentrated=false, mapVisible=true, layout=pc @shopping-performance",
+    "status": "passed",
+    "retry": 0,
+    "resultStartedAt": "2026-10-19T10:27:58.163Z",
+    "resultDurationMs": 71020,
+    "reportStats": {
+      "startTime": "2026-10-19T10:27:56.455Z",
+      "duration": 73291.18800000001,
+      "expected": 1,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "runner": {
+      "projectId": "chromium",
+      "version": "1.62.1",
+      "metadata": {
+        "actualWorkers": 1
+      },
+      "parallelIndex": 0,
+      "configuredWorkers": 1,
+      "projectName": "chromium",
+      "workerIndex": 0
+    },
+    "fixture": {
+      "concentrated": false,
+      "mapVisible": true,
+      "count": 1500,
+      "layout": "pc",
+      "visitedCount": 1500
+    },
+    "browserIdentityLimitation": "Shopping operation attachments do not capture userAgent/browser binary version; project and runner metadata are retained. Source driver hashes and fixture flags supplement, but do not replace, run attestation.",
+    "operations": {
+      "back": {
+        "operation": "back",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 23.600000001490116,
+          "p25Ms": 24.899999998509884,
+          "medianMs": 25.600000001490116,
+          "p75Ms": 27.199999999254942,
+          "p95Ms": 34.900000002235174,
+          "maximumMs": 37.5,
+          "meanMs": 27.06000000052154
+        },
+        "pass": true,
+        "rawSamples": [
+          23.600000001490116,
+          24.199999999254942,
+          24.399999998509884,
+          24.5,
+          24.899999998509884,
+          24.900000002235174,
+          24.900000002235174,
+          24.900000002235174,
+          25,
+          25.600000001490116,
+          25.699999999254942,
+          26,
+          26.200000002980232,
+          27,
+          27.199999999254942,
+          27.300000000745058,
+          30.600000001490116,
+          31.899999998509884,
+          34.900000002235174,
+          37.5
+        ]
+      },
+      "execute": {
+        "operation": "execute",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 32.80000000074506,
+          "p25Ms": 36.599999997764826,
+          "medianMs": 42.099999997764826,
+          "p75Ms": 45.900000002235174,
+          "p95Ms": 48.80000000074506,
+          "maximumMs": 56.5,
+          "meanMs": 42.10499999988824
+        },
+        "pass": true,
+        "rawSamples": [
+          32.80000000074506,
+          34.600000001490116,
+          34.69999999925494,
+          34.69999999925494,
+          36.599999997764826,
+          37.30000000074506,
+          37.69999999925494,
+          41,
+          41.899999998509884,
+          42.099999997764826,
+          42.899999998509884,
+          43.099999997764826,
+          45.600000001490116,
+          45.80000000074506,
+          45.900000002235174,
+          46,
+          46.80000000074506,
+          47.30000000074506,
+          48.80000000074506,
+          56.5
+        ]
+      },
+      "executeRecord": {
+        "operation": "executeRecord",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 24.899999998509884,
+          "p25Ms": 27.100000001490116,
+          "medianMs": 31.0,
+          "p75Ms": 35.899999998509884,
+          "p95Ms": 37.69999999925494,
+          "maximumMs": 38.30000000074506,
+          "meanMs": 31.584999999590217
+        },
+        "pass": true,
+        "rawSamples": [
+          24.899999998509884,
+          25.600000001490116,
+          26.399999998509884,
+          27.099999997764826,
+          27.100000001490116,
+          27.199999999254942,
+          27.699999999254942,
+          29.400000002235174,
+          30.5,
+          31,
+          31.199999999254942,
+          33.29999999701977,
+          33.599999997764826,
+          34.19999999925494,
+          35.899999998509884,
+          36,
+          37,
+          37.600000001490116,
+          37.69999999925494,
+          38.30000000074506
+        ]
+      },
+      "focus": {
+        "operation": "focus",
+        "stats": {
+          "samples": 22,
+          "minimumMs": 18.0,
+          "p25Ms": 18.900000002235174,
+          "medianMs": 20.900000002235174,
+          "p75Ms": 22.800000000745058,
+          "p95Ms": 25.400000002235174,
+          "maximumMs": 26.0,
+          "meanMs": 21.18636363643137
+        },
+        "pass": true,
+        "rawSamples": [
+          18,
+          18,
+          18.399999998509884,
+          18.399999998509884,
+          18.600000001490116,
+          18.900000002235174,
+          19,
+          19.099999997764826,
+          19.400000002235174,
+          20.899999998509884,
+          20.900000002235174,
+          21,
+          21.399999998509884,
+          21.5,
+          22,
+          22.699999999254942,
+          22.800000000745058,
+          24.399999998509884,
+          24.399999998509884,
+          24.900000002235174,
+          25.400000002235174,
+          26
+        ]
+      },
+      "next": {
+        "operation": "next",
+        "stats": {
+          "samples": 41,
+          "minimumMs": 23.699999999254942,
+          "p25Ms": 25.0,
+          "medianMs": 27.100000001490116,
+          "p75Ms": 30.300000000745058,
+          "p95Ms": 33.69999999925494,
+          "maximumMs": 34.600000001490116,
+          "meanMs": 27.787804877976093
+        },
+        "pass": true,
+        "rawSamples": [
+          23.699999999254942,
+          23.799999997019768,
+          23.899999998509884,
+          24,
+          24,
+          24.099999997764826,
+          24.200000002980232,
+          24.300000000745058,
+          24.800000000745058,
+          24.899999998509884,
+          25,
+          25.400000002235174,
+          25.5,
+          25.799999997019768,
+          25.800000000745058,
+          26,
+          26,
+          26.100000001490116,
+          26.699999999254942,
+          26.699999999254942,
+          27.100000001490116,
+          27.199999999254942,
+          27.299999997019768,
+          28,
+          28.199999999254942,
+          28.5,
+          28.799999997019768,
+          29.400000002235174,
+          29.800000000745058,
+          30.199999999254942,
+          30.300000000745058,
+          30.5,
+          30.800000000745058,
+          30.899999998509884,
+          31.300000000745058,
+          32.400000002235174,
+          32.5,
+          32.900000002235174,
+          33.69999999925494,
+          34.19999999925494,
+          34.600000001490116
+        ]
+      },
+      "record": {
+        "operation": "record",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 14.399999998509884,
+          "p25Ms": 15.300000000745058,
+          "medianMs": 17.099999997764826,
+          "p75Ms": 19.900000002235174,
+          "p95Ms": 20.400000002235174,
+          "maximumMs": 20.600000001490116,
+          "meanMs": 17.53500000014901
+        },
+        "pass": true,
+        "rawSamples": [
+          14.399999998509884,
+          14.400000002235174,
+          14.600000001490116,
+          15.099999997764826,
+          15.300000000745058,
+          15.399999998509884,
+          15.5,
+          15.699999999254942,
+          17.099999997764826,
+          17.099999997764826,
+          17.199999999254942,
+          18.800000000745058,
+          19.100000001490116,
+          19.300000000745058,
+          19.900000002235174,
+          20.199999999254942,
+          20.200000002980232,
+          20.399999998509884,
+          20.400000002235174,
+          20.600000001490116
+        ]
+      }
+    },
+    "phaseDiagnostics": {
+      "diagnostic|item-command:input": {
+        "stats": {
+          "samples": 156,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.0,
+          "p75Ms": 0.10000000149011612,
+          "p95Ms": 0.10000000149011612,
+          "maximumMs": 0.19999999925494194,
+          "meanMs": 0.04487179489567494
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|item-command:paint": {
+        "stats": {
+          "samples": 156,
+          "minimumMs": 7.300000000745058,
+          "p25Ms": 9.5,
+          "medianMs": 10.899999998509884,
+          "p75Ms": 18.300000000745058,
+          "p95Ms": 21.700000002980232,
+          "maximumMs": 25.699999999254942,
+          "meanMs": 13.676923076813228
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|focus-next:input": {
+        "stats": {
+          "samples": 41,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.0,
+          "p75Ms": 0.09999999776482582,
+          "p95Ms": 0.10000000149011612,
+          "maximumMs": 0.10000000149011612,
+          "meanMs": 0.02926829275561542
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|focus-next:paint": {
+        "stats": {
+          "samples": 41,
+          "minimumMs": 23.600000001490116,
+          "p25Ms": 24.799999997019768,
+          "medianMs": 27.0,
+          "p75Ms": 30.199999999254942,
+          "p95Ms": 33.5,
+          "maximumMs": 34.5,
+          "meanMs": 27.678048780142532
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|item-command:save": {
+        "stats": {
+          "samples": 61,
+          "minimumMs": 314.80000000074506,
+          "p25Ms": 503.20000000298023,
+          "medianMs": 624.5999999977648,
+          "p75Ms": 726.8000000007451,
+          "p95Ms": 880.5,
+          "maximumMs": 937.8000000007451,
+          "meanMs": 621.0491803280521
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionDiagnostic|item-command:input": {
+        "stats": {
+          "samples": 20,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.09999999776482582,
+          "p75Ms": 0.10000000149011612,
+          "p95Ms": 0.19999999925494194,
+          "maximumMs": 0.6999999992549419,
+          "meanMs": 0.10499999970197678
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionDiagnostic|item-command:paint": {
+        "stats": {
+          "samples": 20,
+          "minimumMs": 32.599999997764826,
+          "p25Ms": 36.29999999701977,
+          "medianMs": 41.899999998509884,
+          "p75Ms": 45.600000001490116,
+          "p95Ms": 48.399999998509884,
+          "maximumMs": 54.80000000074506,
+          "meanMs": 41.7449999993667
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionDiagnostic|item-command:save": {
+        "stats": {
+          "samples": 20,
+          "minimumMs": 444.3999999985099,
+          "p25Ms": 527.0999999977648,
+          "medianMs": 649.2000000029802,
+          "p75Ms": 788.0,
+          "p95Ms": 928.2999999970198,
+          "maximumMs": 980.1000000014901,
+          "meanMs": 674.239999999851
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionRecordDiagnostic|item-command:input": {
+        "stats": {
+          "samples": 135,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.0,
+          "p75Ms": 0.10000000149011612,
+          "p95Ms": 0.10000000149011612,
+          "maximumMs": 0.20000000298023224,
+          "meanMs": 0.040740740933903945
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionRecordDiagnostic|item-command:paint": {
+        "stats": {
+          "samples": 135,
+          "minimumMs": 18.700000002980232,
+          "p25Ms": 22.300000000745058,
+          "medianMs": 23.900000002235174,
+          "p75Ms": 26.199999999254942,
+          "p95Ms": 35.5,
+          "maximumMs": 46.0,
+          "meanMs": 25.060740741149143
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionRecordDiagnostic|item-command:save": {
+        "stats": {
+          "samples": 33,
+          "minimumMs": 310.5999999977648,
+          "p25Ms": 455.20000000298023,
+          "medianMs": 574.8999999985099,
+          "p75Ms": 684.6999999992549,
+          "p95Ms": 813.3999999985099,
+          "maximumMs": 843.1000000014901,
+          "meanMs": 579.3393939390327
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      }
+    },
+    "gate": {
+      "maximumP95Ms": 48.80000000074506,
+      "failures": [],
+      "minimumSamples": 20,
+      "maximumMedianMs": 42.099999997764826,
+      "playwrightPass": true,
+      "rawSampleGatePass": true,
+      "pass": true,
+      "categories": 6,
+      "expectedCategories": 6
+    },
+    "errors": []
+  },
+  "freshFinal": {
+    "reportPath": "D:\\esp-op03-evidence\\normal-focused-final.json",
+    "reportSha256": "cba70335bca55b9506a95f62a8a7d8200b1662879558d22bb7801e9e2ee5de52",
+    "testTitle": "local shopping operations: 1500 items, concentrated=false, mapVisible=true, layout=pc @shopping-performance",
+    "status": "passed",
+    "retry": 0,
+    "resultStartedAt": "2026-10-19T10:29:31.703Z",
+    "resultDurationMs": 69567,
+    "reportStats": {
+      "startTime": "2026-10-19T10:29:30.255Z",
+      "duration": 71575.624,
+      "expected": 1,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "runner": {
+      "projectId": "chromium",
+      "version": "1.62.1",
+      "metadata": {
+        "actualWorkers": 1
+      },
+      "parallelIndex": 0,
+      "configuredWorkers": 1,
+      "projectName": "chromium",
+      "workerIndex": 0
+    },
+    "fixture": {
+      "concentrated": false,
+      "mapVisible": true,
+      "count": 1500,
+      "layout": "pc",
+      "visitedCount": 1500
+    },
+    "browserIdentityLimitation": "Shopping operation attachments do not capture userAgent/browser binary version; project and runner metadata are retained. Source driver hashes and fixture flags supplement, but do not replace, run attestation.",
+    "operations": {
+      "back": {
+        "operation": "back",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 24.0,
+          "p25Ms": 24.5,
+          "medianMs": 24.699999999254942,
+          "p75Ms": 25.700000002980232,
+          "p95Ms": 31.899999998509884,
+          "maximumMs": 32.0,
+          "meanMs": 25.679999999888242
+        },
+        "pass": true,
+        "rawSamples": [
+          24,
+          24.099999997764826,
+          24.100000001490116,
+          24.400000002235174,
+          24.5,
+          24.599999997764826,
+          24.599999997764826,
+          24.600000001490116,
+          24.600000001490116,
+          24.699999999254942,
+          24.899999998509884,
+          24.899999998509884,
+          25,
+          25.100000001490116,
+          25.700000002980232,
+          25.800000000745058,
+          26.099999997764826,
+          28,
+          31.899999998509884,
+          32
+        ]
+      },
+      "execute": {
+        "operation": "execute",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 35.5,
+          "p25Ms": 41.0,
+          "medianMs": 44.30000000074506,
+          "p75Ms": 48.399999998509884,
+          "p95Ms": 55.399999998509884,
+          "maximumMs": 67.10000000149012,
+          "meanMs": 45.56499999947846
+        },
+        "pass": true,
+        "rawSamples": [
+          35.5,
+          36.399999998509884,
+          37,
+          38.5,
+          41,
+          41.80000000074506,
+          43.399999998509884,
+          43.69999999925494,
+          43.899999998509884,
+          44.30000000074506,
+          45,
+          45.30000000074506,
+          45.899999998509884,
+          46.30000000074506,
+          48.399999998509884,
+          48.5,
+          51.099999997764826,
+          52.79999999701977,
+          55.399999998509884,
+          67.10000000149012
+        ]
+      },
+      "executeRecord": {
+        "operation": "executeRecord",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 25.100000001490116,
+          "p25Ms": 27.699999999254942,
+          "medianMs": 29.699999999254942,
+          "p75Ms": 34.900000002235174,
+          "p95Ms": 42.19999999925494,
+          "maximumMs": 42.900000002235174,
+          "meanMs": 32.10000000037253
+        },
+        "pass": true,
+        "rawSamples": [
+          25.100000001490116,
+          25.200000002980232,
+          26.199999999254942,
+          27.100000001490116,
+          27.699999999254942,
+          27.800000000745058,
+          28.100000001490116,
+          28.199999999254942,
+          29.400000002235174,
+          29.699999999254942,
+          30.600000001490116,
+          31.699999999254942,
+          33,
+          33.399999998509884,
+          34.900000002235174,
+          37.099999997764826,
+          40.5,
+          41.19999999925494,
+          42.19999999925494,
+          42.900000002235174
+        ]
+      },
+      "focus": {
+        "operation": "focus",
+        "stats": {
+          "samples": 22,
+          "minimumMs": 17.199999999254942,
+          "p25Ms": 18.800000000745058,
+          "medianMs": 20.400000002235174,
+          "p75Ms": 23.299999997019768,
+          "p95Ms": 25.199999999254942,
+          "maximumMs": 26.900000002235174,
+          "meanMs": 21.140909090807494
+        },
+        "pass": true,
+        "rawSamples": [
+          17.199999999254942,
+          18,
+          18.399999998509884,
+          18.399999998509884,
+          18.600000001490116,
+          18.800000000745058,
+          19.399999998509884,
+          19.700000002980232,
+          19.799999997019768,
+          20.299999997019768,
+          20.400000002235174,
+          21.100000001490116,
+          21.200000002980232,
+          21.899999998509884,
+          22.299999997019768,
+          22.800000000745058,
+          23.299999997019768,
+          23.300000000745058,
+          23.5,
+          24.600000001490116,
+          25.199999999254942,
+          26.900000002235174
+        ]
+      },
+      "next": {
+        "operation": "next",
+        "stats": {
+          "samples": 41,
+          "minimumMs": 23.600000001490116,
+          "p25Ms": 24.199999999254942,
+          "medianMs": 25.900000002235174,
+          "p75Ms": 30.0,
+          "p95Ms": 34.30000000074506,
+          "maximumMs": 35.099999997764826,
+          "meanMs": 27.47804878061501
+        },
+        "pass": true,
+        "rawSamples": [
+          23.600000001490116,
+          23.800000000745058,
+          23.800000000745058,
+          23.900000002235174,
+          23.900000002235174,
+          24,
+          24,
+          24.099999997764826,
+          24.100000001490116,
+          24.100000001490116,
+          24.199999999254942,
+          24.5,
+          24.600000001490116,
+          24.699999999254942,
+          25.300000000745058,
+          25.5,
+          25.599999997764826,
+          25.600000001490116,
+          25.600000001490116,
+          25.800000000745058,
+          25.900000002235174,
+          26.199999999254942,
+          26.800000000745058,
+          27,
+          27.199999999254942,
+          27.900000002235174,
+          28,
+          28.5,
+          28.899999998509884,
+          29.699999999254942,
+          30,
+          30,
+          30.5,
+          31.899999998509884,
+          32.899999998509884,
+          33,
+          33.100000001490116,
+          34.19999999925494,
+          34.30000000074506,
+          34.79999999701977,
+          35.099999997764826
+        ]
+      },
+      "record": {
+        "operation": "record",
+        "stats": {
+          "samples": 20,
+          "minimumMs": 13.699999999254942,
+          "p25Ms": 14.699999999254942,
+          "medianMs": 16.300000000745058,
+          "p75Ms": 17.800000000745058,
+          "p95Ms": 20.399999998509884,
+          "maximumMs": 20.700000002980232,
+          "meanMs": 16.554999999701977
+        },
+        "pass": true,
+        "rawSamples": [
+          13.699999999254942,
+          13.699999999254942,
+          14.100000001490116,
+          14.5,
+          14.699999999254942,
+          15.200000002980232,
+          15.399999998509884,
+          15.399999998509884,
+          16.199999999254942,
+          16.300000000745058,
+          16.399999998509884,
+          16.5,
+          17,
+          17.399999998509884,
+          17.800000000745058,
+          18.099999997764826,
+          18.599999997764826,
+          19,
+          20.399999998509884,
+          20.700000002980232
+        ]
+      }
+    },
+    "phaseDiagnostics": {
+      "diagnostic|item-command:input": {
+        "stats": {
+          "samples": 156,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.0,
+          "p75Ms": 0.10000000149011612,
+          "p95Ms": 0.10000000149011612,
+          "maximumMs": 0.30000000074505806,
+          "meanMs": 0.047435897474105544
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|item-command:paint": {
+        "stats": {
+          "samples": 156,
+          "minimumMs": 7.900000002235174,
+          "p25Ms": 9.399999998509884,
+          "medianMs": 10.100000001490116,
+          "p75Ms": 15.899999998509884,
+          "p95Ms": 22.099999997764826,
+          "maximumMs": 26.700000002980232,
+          "meanMs": 12.553205128448704
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|focus-next:input": {
+        "stats": {
+          "samples": 41,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.0,
+          "p75Ms": 0.10000000149011612,
+          "p95Ms": 0.10000000149011612,
+          "maximumMs": 0.19999999925494194,
+          "meanMs": 0.051219512322326986
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|focus-next:paint": {
+        "stats": {
+          "samples": 41,
+          "minimumMs": 23.5,
+          "p25Ms": 24.100000001490116,
+          "medianMs": 25.699999999254942,
+          "p75Ms": 29.900000002235174,
+          "p95Ms": 34.100000001490116,
+          "maximumMs": 35.0,
+          "meanMs": 27.36585365880917
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "diagnostic|item-command:save": {
+        "stats": {
+          "samples": 61,
+          "minimumMs": 297.5999999977648,
+          "p25Ms": 504.1000000014901,
+          "medianMs": 573.6999999992549,
+          "p75Ms": 704.3999999985099,
+          "p95Ms": 814.7999999970198,
+          "maximumMs": 877.3999999985099,
+          "meanMs": 591.7557377049425
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionDiagnostic|item-command:input": {
+        "stats": {
+          "samples": 20,
+          "minimumMs": 0.0,
+          "p25Ms": 0.09999999776482582,
+          "medianMs": 0.10000000149011612,
+          "p75Ms": 0.10000000149011612,
+          "p95Ms": 0.19999999925494194,
+          "maximumMs": 0.7999999970197678,
+          "meanMs": 0.1450000001117587
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionDiagnostic|item-command:paint": {
+        "stats": {
+          "samples": 20,
+          "minimumMs": 35.100000001490116,
+          "p25Ms": 40.400000002235174,
+          "medianMs": 44.0,
+          "p75Ms": 48.099999997764826,
+          "p95Ms": 55.099999997764826,
+          "maximumMs": 65.39999999850988,
+          "meanMs": 45.19499999955296
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionDiagnostic|item-command:save": {
+        "stats": {
+          "samples": 20,
+          "minimumMs": 439.1000000014901,
+          "p25Ms": 525.8999999985099,
+          "medianMs": 670.7999999970198,
+          "p75Ms": 785.5,
+          "p95Ms": 905.3999999985099,
+          "maximumMs": 969.3000000007451,
+          "meanMs": 680.779999999702
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionRecordDiagnostic|item-command:input": {
+        "stats": {
+          "samples": 135,
+          "minimumMs": 0.0,
+          "p25Ms": 0.0,
+          "medianMs": 0.0,
+          "p75Ms": 0.09999999776482582,
+          "p95Ms": 0.10000000149011612,
+          "maximumMs": 0.30000000074505806,
+          "meanMs": 0.039259259154399234
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionRecordDiagnostic|item-command:paint": {
+        "stats": {
+          "samples": 135,
+          "minimumMs": 21.5,
+          "p25Ms": 23.400000002235174,
+          "medianMs": 25.299999997019768,
+          "p75Ms": 27.399999998509884,
+          "p95Ms": 34.399999998509884,
+          "maximumMs": 63.69999999925494,
+          "meanMs": 26.13185185174699
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      },
+      "executionRecordDiagnostic|item-command:save": {
+        "stats": {
+          "samples": 35,
+          "minimumMs": 324.19999999925494,
+          "p25Ms": 483.9000000022352,
+          "medianMs": 604.1999999992549,
+          "p75Ms": 746.6999999992549,
+          "p95Ms": 928.5,
+          "maximumMs": 953.1000000014901,
+          "meanMs": 614.7371428572706
+        },
+        "note": "Diagnostic phases, including save completion, are outside operation-response gates"
+      }
+    },
+    "gate": {
+      "maximumP95Ms": 55.399999998509884,
+      "failures": [],
+      "minimumSamples": 20,
+      "maximumMedianMs": 44.30000000074506,
+      "playwrightPass": true,
+      "rawSampleGatePass": true,
+      "pass": true,
+      "categories": 6,
+      "expectedCategories": 6
+    },
+    "errors": []
+  },
+  "comparison": {
+    "currentFullVersusHistorical": {
+      "categories": 6,
+      "maximumMedianIncreaseMs": 25.200000001117587,
+      "maximumP95IncreaseMs": 38.600000001490116,
+      "rows": [
+        {
+          "operation": "back",
+          "left": {
+            "samples": 20,
+            "minimumMs": 36.30000000074506,
+            "p25Ms": 43.399999998509884,
+            "medianMs": 49.5,
+            "p75Ms": 55.19999999925494,
+            "p95Ms": 64.60000000149012,
+            "maximumMs": 65.30000000074506,
+            "meanMs": 50.330000000074506
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 23.40000000037253,
+            "p25Ms": 23.899999998509884,
+            "medianMs": 24.299999998882413,
+            "p75Ms": 25.09999999962747,
+            "p95Ms": 26.0,
+            "maximumMs": 31.09999999962747,
+            "meanMs": 24.84499999973923
+          },
+          "medianDeltaMs": 25.200000001117587,
+          "p95DeltaMs": 38.600000001490116
+        },
+        {
+          "operation": "execute",
+          "left": {
+            "samples": 20,
+            "minimumMs": 32.600000001490116,
+            "p25Ms": 36.0,
+            "medianMs": 41.399999998509884,
+            "p75Ms": 44.80000000074506,
+            "p95Ms": 53.600000001490116,
+            "maximumMs": 56.099999997764826,
+            "meanMs": 42.12500000037253
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 33.19999999925494,
+            "p25Ms": 34.59999999962747,
+            "medianMs": 35.59999999962747,
+            "p75Ms": 39.19999999925494,
+            "p95Ms": 41.09999999962747,
+            "maximumMs": 48.69999999925494,
+            "meanMs": 37.24499999983236
+          },
+          "medianDeltaMs": 5.799999998882413,
+          "p95DeltaMs": 12.500000001862645
+        },
+        {
+          "operation": "executeRecord",
+          "left": {
+            "samples": 20,
+            "minimumMs": 23.699999999254942,
+            "p25Ms": 28.699999999254942,
+            "medianMs": 31.199999999254942,
+            "p75Ms": 38.5,
+            "p95Ms": 60.69999999925494,
+            "maximumMs": 60.79999999701977,
+            "meanMs": 36.264999999664724
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 24.300000000745058,
+            "p25Ms": 27.0,
+            "medianMs": 30.700000001117587,
+            "p75Ms": 32.19999999925494,
+            "p95Ms": 32.90000000037253,
+            "maximumMs": 35.0,
+            "meanMs": 29.86000000005588
+          },
+          "medianDeltaMs": 0.49999999813735485,
+          "p95DeltaMs": 27.799999998882413
+        },
+        {
+          "operation": "focus",
+          "left": {
+            "samples": 22,
+            "minimumMs": 18.800000000745058,
+            "p25Ms": 26.0,
+            "medianMs": 29.400000002235174,
+            "p75Ms": 33.30000000074506,
+            "p95Ms": 44.099999997764826,
+            "maximumMs": 45.5,
+            "meanMs": 30.31818181835115
+          },
+          "right": {
+            "samples": 22,
+            "minimumMs": 17.899999998509884,
+            "p25Ms": 19.199999999254942,
+            "medianMs": 19.59999999962747,
+            "p75Ms": 20.800000000745058,
+            "p95Ms": 22.700000001117587,
+            "maximumMs": 23.699999999254942,
+            "meanMs": 20.131818181496453
+          },
+          "medianDeltaMs": 9.800000002607703,
+          "p95DeltaMs": 21.39999999664724
+        },
+        {
+          "operation": "next",
+          "left": {
+            "samples": 41,
+            "minimumMs": 30.600000001490116,
+            "p25Ms": 37.5,
+            "medianMs": 45.79999999701977,
+            "p75Ms": 54.400000002235174,
+            "p95Ms": 62.099999997764826,
+            "maximumMs": 63.80000000074506,
+            "meanMs": 46.24146341432522
+          },
+          "right": {
+            "samples": 41,
+            "minimumMs": 23.300000000745058,
+            "p25Ms": 24.299999998882413,
+            "medianMs": 25.40000000037253,
+            "p75Ms": 27.90000000037253,
+            "p95Ms": 29.59999999962747,
+            "maximumMs": 32.40000000037253,
+            "meanMs": 25.99024390247537
+          },
+          "medianDeltaMs": 20.39999999664724,
+          "p95DeltaMs": 32.499999998137355
+        },
+        {
+          "operation": "record",
+          "left": {
+            "samples": 20,
+            "minimumMs": 18.0,
+            "p25Ms": 23.0,
+            "medianMs": 27.0,
+            "p75Ms": 28.700000002980232,
+            "p95Ms": 32.70000000298023,
+            "maximumMs": 35.30000000074506,
+            "meanMs": 26.675
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 14.199999999254942,
+            "p25Ms": 15.5,
+            "medianMs": 16.0,
+            "p75Ms": 17.59999999962747,
+            "p95Ms": 18.09999999962747,
+            "maximumMs": 19.09999999962747,
+            "meanMs": 16.424999999813735
+          },
+          "medianDeltaMs": 11.0,
+          "p95DeltaMs": 14.600000003352761
+        }
+      ]
+    },
+    "freshFinalVersusFreshBaseline": {
+      "categories": 6,
+      "maximumMedianIncreaseMs": 2.2000000029802322,
+      "maximumP95IncreaseMs": 6.599999997764826,
+      "rows": [
+        {
+          "operation": "back",
+          "left": {
+            "samples": 20,
+            "minimumMs": 24.0,
+            "p25Ms": 24.5,
+            "medianMs": 24.699999999254942,
+            "p75Ms": 25.700000002980232,
+            "p95Ms": 31.899999998509884,
+            "maximumMs": 32.0,
+            "meanMs": 25.679999999888242
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 23.600000001490116,
+            "p25Ms": 24.899999998509884,
+            "medianMs": 25.600000001490116,
+            "p75Ms": 27.199999999254942,
+            "p95Ms": 34.900000002235174,
+            "maximumMs": 37.5,
+            "meanMs": 27.06000000052154
+          },
+          "medianDeltaMs": -0.9000000022351742,
+          "p95DeltaMs": -3.0000000037252903
+        },
+        {
+          "operation": "execute",
+          "left": {
+            "samples": 20,
+            "minimumMs": 35.5,
+            "p25Ms": 41.0,
+            "medianMs": 44.30000000074506,
+            "p75Ms": 48.399999998509884,
+            "p95Ms": 55.399999998509884,
+            "maximumMs": 67.10000000149012,
+            "meanMs": 45.56499999947846
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 32.80000000074506,
+            "p25Ms": 36.599999997764826,
+            "medianMs": 42.099999997764826,
+            "p75Ms": 45.900000002235174,
+            "p95Ms": 48.80000000074506,
+            "maximumMs": 56.5,
+            "meanMs": 42.10499999988824
+          },
+          "medianDeltaMs": 2.2000000029802322,
+          "p95DeltaMs": 6.599999997764826
+        },
+        {
+          "operation": "executeRecord",
+          "left": {
+            "samples": 20,
+            "minimumMs": 25.100000001490116,
+            "p25Ms": 27.699999999254942,
+            "medianMs": 29.699999999254942,
+            "p75Ms": 34.900000002235174,
+            "p95Ms": 42.19999999925494,
+            "maximumMs": 42.900000002235174,
+            "meanMs": 32.10000000037253
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 24.899999998509884,
+            "p25Ms": 27.100000001490116,
+            "medianMs": 31.0,
+            "p75Ms": 35.899999998509884,
+            "p95Ms": 37.69999999925494,
+            "maximumMs": 38.30000000074506,
+            "meanMs": 31.584999999590217
+          },
+          "medianDeltaMs": -1.300000000745058,
+          "p95DeltaMs": 4.5
+        },
+        {
+          "operation": "focus",
+          "left": {
+            "samples": 22,
+            "minimumMs": 17.199999999254942,
+            "p25Ms": 18.800000000745058,
+            "medianMs": 20.400000002235174,
+            "p75Ms": 23.299999997019768,
+            "p95Ms": 25.199999999254942,
+            "maximumMs": 26.900000002235174,
+            "meanMs": 21.140909090807494
+          },
+          "right": {
+            "samples": 22,
+            "minimumMs": 18.0,
+            "p25Ms": 18.900000002235174,
+            "medianMs": 20.900000002235174,
+            "p75Ms": 22.800000000745058,
+            "p95Ms": 25.400000002235174,
+            "maximumMs": 26.0,
+            "meanMs": 21.18636363643137
+          },
+          "medianDeltaMs": -0.5,
+          "p95DeltaMs": -0.20000000298023224
+        },
+        {
+          "operation": "next",
+          "left": {
+            "samples": 41,
+            "minimumMs": 23.600000001490116,
+            "p25Ms": 24.199999999254942,
+            "medianMs": 25.900000002235174,
+            "p75Ms": 30.0,
+            "p95Ms": 34.30000000074506,
+            "maximumMs": 35.099999997764826,
+            "meanMs": 27.47804878061501
+          },
+          "right": {
+            "samples": 41,
+            "minimumMs": 23.699999999254942,
+            "p25Ms": 25.0,
+            "medianMs": 27.100000001490116,
+            "p75Ms": 30.300000000745058,
+            "p95Ms": 33.69999999925494,
+            "maximumMs": 34.600000001490116,
+            "meanMs": 27.787804877976093
+          },
+          "medianDeltaMs": -1.199999999254942,
+          "p95DeltaMs": 0.6000000014901161
+        },
+        {
+          "operation": "record",
+          "left": {
+            "samples": 20,
+            "minimumMs": 13.699999999254942,
+            "p25Ms": 14.699999999254942,
+            "medianMs": 16.300000000745058,
+            "p75Ms": 17.800000000745058,
+            "p95Ms": 20.399999998509884,
+            "maximumMs": 20.700000002980232,
+            "meanMs": 16.554999999701977
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 14.399999998509884,
+            "p25Ms": 15.300000000745058,
+            "medianMs": 17.099999997764826,
+            "p75Ms": 19.900000002235174,
+            "p95Ms": 20.400000002235174,
+            "maximumMs": 20.600000001490116,
+            "meanMs": 17.53500000014901
+          },
+          "medianDeltaMs": -0.7999999970197678,
+          "p95DeltaMs": -3.725290298461914E-09
+        }
+      ]
+    },
+    "freshBaselineVersusHistorical": {
+      "categories": 6,
+      "maximumMedianIncreaseMs": 6.499999998137355,
+      "maximumP95IncreaseMs": 8.900000002235174,
+      "rows": [
+        {
+          "operation": "back",
+          "left": {
+            "samples": 20,
+            "minimumMs": 23.600000001490116,
+            "p25Ms": 24.899999998509884,
+            "medianMs": 25.600000001490116,
+            "p75Ms": 27.199999999254942,
+            "p95Ms": 34.900000002235174,
+            "maximumMs": 37.5,
+            "meanMs": 27.06000000052154
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 23.40000000037253,
+            "p25Ms": 23.899999998509884,
+            "medianMs": 24.299999998882413,
+            "p75Ms": 25.09999999962747,
+            "p95Ms": 26.0,
+            "maximumMs": 31.09999999962747,
+            "meanMs": 24.84499999973923
+          },
+          "medianDeltaMs": 1.3000000026077032,
+          "p95DeltaMs": 8.900000002235174
+        },
+        {
+          "operation": "execute",
+          "left": {
+            "samples": 20,
+            "minimumMs": 32.80000000074506,
+            "p25Ms": 36.599999997764826,
+            "medianMs": 42.099999997764826,
+            "p75Ms": 45.900000002235174,
+            "p95Ms": 48.80000000074506,
+            "maximumMs": 56.5,
+            "meanMs": 42.10499999988824
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 33.19999999925494,
+            "p25Ms": 34.59999999962747,
+            "medianMs": 35.59999999962747,
+            "p75Ms": 39.19999999925494,
+            "p95Ms": 41.09999999962747,
+            "maximumMs": 48.69999999925494,
+            "meanMs": 37.24499999983236
+          },
+          "medianDeltaMs": 6.499999998137355,
+          "p95DeltaMs": 7.700000001117587
+        },
+        {
+          "operation": "executeRecord",
+          "left": {
+            "samples": 20,
+            "minimumMs": 24.899999998509884,
+            "p25Ms": 27.100000001490116,
+            "medianMs": 31.0,
+            "p75Ms": 35.899999998509884,
+            "p95Ms": 37.69999999925494,
+            "maximumMs": 38.30000000074506,
+            "meanMs": 31.584999999590217
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 24.300000000745058,
+            "p25Ms": 27.0,
+            "medianMs": 30.700000001117587,
+            "p75Ms": 32.19999999925494,
+            "p95Ms": 32.90000000037253,
+            "maximumMs": 35.0,
+            "meanMs": 29.86000000005588
+          },
+          "medianDeltaMs": 0.2999999988824129,
+          "p95DeltaMs": 4.799999998882413
+        },
+        {
+          "operation": "focus",
+          "left": {
+            "samples": 22,
+            "minimumMs": 18.0,
+            "p25Ms": 18.900000002235174,
+            "medianMs": 20.900000002235174,
+            "p75Ms": 22.800000000745058,
+            "p95Ms": 25.400000002235174,
+            "maximumMs": 26.0,
+            "meanMs": 21.18636363643137
+          },
+          "right": {
+            "samples": 22,
+            "minimumMs": 17.899999998509884,
+            "p25Ms": 19.199999999254942,
+            "medianMs": 19.59999999962747,
+            "p75Ms": 20.800000000745058,
+            "p95Ms": 22.700000001117587,
+            "maximumMs": 23.699999999254942,
+            "meanMs": 20.131818181496453
+          },
+          "medianDeltaMs": 1.3000000026077032,
+          "p95DeltaMs": 2.700000001117587
+        },
+        {
+          "operation": "next",
+          "left": {
+            "samples": 41,
+            "minimumMs": 23.699999999254942,
+            "p25Ms": 25.0,
+            "medianMs": 27.100000001490116,
+            "p75Ms": 30.300000000745058,
+            "p95Ms": 33.69999999925494,
+            "maximumMs": 34.600000001490116,
+            "meanMs": 27.787804877976093
+          },
+          "right": {
+            "samples": 41,
+            "minimumMs": 23.300000000745058,
+            "p25Ms": 24.299999998882413,
+            "medianMs": 25.40000000037253,
+            "p75Ms": 27.90000000037253,
+            "p95Ms": 29.59999999962747,
+            "maximumMs": 32.40000000037253,
+            "meanMs": 25.99024390247537
+          },
+          "medianDeltaMs": 1.700000001117587,
+          "p95DeltaMs": 4.099999999627471
+        },
+        {
+          "operation": "record",
+          "left": {
+            "samples": 20,
+            "minimumMs": 14.399999998509884,
+            "p25Ms": 15.300000000745058,
+            "medianMs": 17.099999997764826,
+            "p75Ms": 19.900000002235174,
+            "p95Ms": 20.400000002235174,
+            "maximumMs": 20.600000001490116,
+            "meanMs": 17.53500000014901
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 14.199999999254942,
+            "p25Ms": 15.5,
+            "medianMs": 16.0,
+            "p75Ms": 17.59999999962747,
+            "p95Ms": 18.09999999962747,
+            "maximumMs": 19.09999999962747,
+            "meanMs": 16.424999999813735
+          },
+          "medianDeltaMs": 1.0999999977648258,
+          "p95DeltaMs": 2.300000002607703
+        }
+      ]
+    },
+    "freshFinalVersusCurrentFull": {
+      "categories": 6,
+      "maximumMedianIncreaseMs": 2.900000002235174,
+      "maximumP95IncreaseMs": 1.7999999970197678,
+      "rows": [
+        {
+          "operation": "back",
+          "left": {
+            "samples": 20,
+            "minimumMs": 24.0,
+            "p25Ms": 24.5,
+            "medianMs": 24.699999999254942,
+            "p75Ms": 25.700000002980232,
+            "p95Ms": 31.899999998509884,
+            "maximumMs": 32.0,
+            "meanMs": 25.679999999888242
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 36.30000000074506,
+            "p25Ms": 43.399999998509884,
+            "medianMs": 49.5,
+            "p75Ms": 55.19999999925494,
+            "p95Ms": 64.60000000149012,
+            "maximumMs": 65.30000000074506,
+            "meanMs": 50.330000000074506
+          },
+          "medianDeltaMs": -24.800000000745058,
+          "p95DeltaMs": -32.70000000298023
+        },
+        {
+          "operation": "execute",
+          "left": {
+            "samples": 20,
+            "minimumMs": 35.5,
+            "p25Ms": 41.0,
+            "medianMs": 44.30000000074506,
+            "p75Ms": 48.399999998509884,
+            "p95Ms": 55.399999998509884,
+            "maximumMs": 67.10000000149012,
+            "meanMs": 45.56499999947846
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 32.600000001490116,
+            "p25Ms": 36.0,
+            "medianMs": 41.399999998509884,
+            "p75Ms": 44.80000000074506,
+            "p95Ms": 53.600000001490116,
+            "maximumMs": 56.099999997764826,
+            "meanMs": 42.12500000037253
+          },
+          "medianDeltaMs": 2.900000002235174,
+          "p95DeltaMs": 1.7999999970197678
+        },
+        {
+          "operation": "executeRecord",
+          "left": {
+            "samples": 20,
+            "minimumMs": 25.100000001490116,
+            "p25Ms": 27.699999999254942,
+            "medianMs": 29.699999999254942,
+            "p75Ms": 34.900000002235174,
+            "p95Ms": 42.19999999925494,
+            "maximumMs": 42.900000002235174,
+            "meanMs": 32.10000000037253
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 23.699999999254942,
+            "p25Ms": 28.699999999254942,
+            "medianMs": 31.199999999254942,
+            "p75Ms": 38.5,
+            "p95Ms": 60.69999999925494,
+            "maximumMs": 60.79999999701977,
+            "meanMs": 36.264999999664724
+          },
+          "medianDeltaMs": -1.5,
+          "p95DeltaMs": -18.5
+        },
+        {
+          "operation": "focus",
+          "left": {
+            "samples": 22,
+            "minimumMs": 17.199999999254942,
+            "p25Ms": 18.800000000745058,
+            "medianMs": 20.400000002235174,
+            "p75Ms": 23.299999997019768,
+            "p95Ms": 25.199999999254942,
+            "maximumMs": 26.900000002235174,
+            "meanMs": 21.140909090807494
+          },
+          "right": {
+            "samples": 22,
+            "minimumMs": 18.800000000745058,
+            "p25Ms": 26.0,
+            "medianMs": 29.400000002235174,
+            "p75Ms": 33.30000000074506,
+            "p95Ms": 44.099999997764826,
+            "maximumMs": 45.5,
+            "meanMs": 30.31818181835115
+          },
+          "medianDeltaMs": -9.0,
+          "p95DeltaMs": -18.899999998509884
+        },
+        {
+          "operation": "next",
+          "left": {
+            "samples": 41,
+            "minimumMs": 23.600000001490116,
+            "p25Ms": 24.199999999254942,
+            "medianMs": 25.900000002235174,
+            "p75Ms": 30.0,
+            "p95Ms": 34.30000000074506,
+            "maximumMs": 35.099999997764826,
+            "meanMs": 27.47804878061501
+          },
+          "right": {
+            "samples": 41,
+            "minimumMs": 30.600000001490116,
+            "p25Ms": 37.5,
+            "medianMs": 45.79999999701977,
+            "p75Ms": 54.400000002235174,
+            "p95Ms": 62.099999997764826,
+            "maximumMs": 63.80000000074506,
+            "meanMs": 46.24146341432522
+          },
+          "medianDeltaMs": -19.899999994784594,
+          "p95DeltaMs": -27.799999997019768
+        },
+        {
+          "operation": "record",
+          "left": {
+            "samples": 20,
+            "minimumMs": 13.699999999254942,
+            "p25Ms": 14.699999999254942,
+            "medianMs": 16.300000000745058,
+            "p75Ms": 17.800000000745058,
+            "p95Ms": 20.399999998509884,
+            "maximumMs": 20.700000002980232,
+            "meanMs": 16.554999999701977
+          },
+          "right": {
+            "samples": 20,
+            "minimumMs": 18.0,
+            "p25Ms": 23.0,
+            "medianMs": 27.0,
+            "p75Ms": 28.700000002980232,
+            "p95Ms": 32.70000000298023,
+            "maximumMs": 35.30000000074506,
+            "meanMs": 26.675
+          },
+          "medianDeltaMs": -10.699999999254942,
+          "p95DeltaMs": -12.300000004470348
+        }
+      ]
+    }
+  }
+}

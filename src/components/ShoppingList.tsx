@@ -1,3 +1,8 @@
+import { useShoppingDragWorkspace } from "../features/shopping-list/drag/ShoppingDragWorkspace";
+import type {
+  ShoppingDragMoveContext,
+  ShoppingDragPresentation,
+} from "../features/shopping-list/drag/shoppingDrag";
 import { ItemGuardContext } from "../features/shopping-list/renderers/ViewportRowState";
 import type { ItemContentGuard } from "../app/ports/PersistenceCommandPort";
 import {
@@ -85,6 +90,7 @@ import {
   type ExecutionNavigationGuardFeedback,
 } from "../features/space-navigation/hooks/useExecutionSpaceNavigator";
 import { acquireBodyScrollLock } from "../utils/bodyScrollLock";
+import { useModalFocusBoundary } from "../hooks/useModalFocusBoundary";
 import { buildQuantityOptions } from "./quantityOptions";
 import {
   buildRangePresentation,
@@ -144,6 +150,8 @@ interface SpaceGroup {
 
 interface ShoppingListProps {
   items: ShoppingItem[];
+  dragSourceItems?: readonly ShoppingItem[];
+  dragExecuteOrder?: readonly string[];
   onUpdateItem: (
     item: ShoppingItem,
     baseline?: ShoppingItem,
@@ -154,6 +162,7 @@ interface ShoppingListProps {
     hoverId: string,
     targetColumn?: "execute" | "candidate",
     sourceColumn?: "execute" | "candidate",
+    context?: ShoppingDragMoveContext,
   ) => void;
   onEditRequest: (item: ShoppingItem) => void;
   onDeleteRequest: (item: ShoppingItem) => void;
@@ -167,6 +176,7 @@ interface ShoppingListProps {
   onRemoveFromColumn?: (itemIds: string[]) => void;
   columnType?: "execute" | "candidate";
   currentDay?: string;
+  candidateNumberSortDirection?: "asc" | "desc" | null;
   rangeScopeId?: string;
   onMoveItemUp?: (
     itemId: string,
@@ -490,6 +500,8 @@ const getExecutionVisitIdForItem = (item: ShoppingItem): string =>
 
 const ShoppingList: React.FC<ShoppingListProps> = ({
   items,
+  dragSourceItems = items,
+  dragExecuteOrder,
   onUpdateItem,
   onMoveItem,
   onEditRequest,
@@ -500,6 +512,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   onRemoveFromColumn: _onRemoveFromColumn,
   columnType,
   currentDay,
+  candidateNumberSortDirection = null,
   rangeScopeId = "",
   onMoveItemUp: onMoveItemUpProp,
   onMoveItemDown: onMoveItemDownProp,
@@ -570,6 +583,15 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const onActivateLateFilter = useStableOptionalCallback(
     onActivateLateFilterProp,
   );
+  const dragWorkspace = useShoppingDragWorkspace();
+  const dragToken = useRef<symbol | null>(null);
+  const dragGroupOwner = useRef(false);
+  const dragOpacityElements = useRef(new Set<Element>());
+  const markDragOpacity = useCallback((element: Element) => {
+    element.classList.add("opacity-40");
+    dragOpacityElements.current.add(element);
+  }, []);
+  const touchTargetColumn = useRef<"execute" | "candidate" | null>(null);
   const dragItem = useRef<string | null>(null);
   const dragSourceColumn = useRef<"execute" | "candidate" | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -668,10 +690,36 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const touchDragSpaceGroupIds = useRef<string[] | null>(null);
   const touchDragSourceEl = useRef<HTMLElement | null>(null); // ドラッグ元要素（draggable復元用）
   const releaseTouchBodyScrollLock = useRef<(() => void) | null>(null);
-  const [activeDropTarget, setActiveDropTarget] = useState<{
+  const activeDropTarget = useRef<{
     id: string;
     position: "top" | "bottom";
   } | null>(null);
+  const localDragGuide = useRef<HTMLElement | null>(null);
+  const setActiveDropTarget = useCallback(
+    (target: { id: string; position: "top" | "bottom" } | null) => {
+      if (
+        activeDropTarget.current?.id === target?.id &&
+        activeDropTarget.current?.position === target?.position &&
+        localDragGuide.current?.isConnected
+      )
+        return;
+      activeDropTarget.current = target;
+      localDragGuide.current?.remove();
+      localDragGuide.current = null;
+      if (!target) return;
+      const element = containerRef.current?.querySelector<HTMLElement>(
+        `[data-item-id=${JSON.stringify(target.id)}]`,
+      );
+      if (!element) return;
+      const line = document.createElement("div");
+      line.dataset.shoppingDragGuide = "same-column";
+      line.className = `absolute left-0 right-0 h-1.5 bg-blue-500 rounded-full z-30 pointer-events-none ${target.position === "top" ? "top-0" : "bottom-0"}`;
+      element.classList.add("relative");
+      element.append(line);
+      localDragGuide.current = line;
+    },
+    [],
+  );
   const [dragRuntimeActive, setDragRuntimeActive] = useState(false);
   const browserZoomPercent = useViewportZoomPercent();
   const viewportZoomPercent =
@@ -1363,6 +1411,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   });
   const addDialogBaseId = React.useId();
   const addDialogRef = useRef<HTMLDivElement>(null);
+  useModalFocusBoundary({
+    isOpen: addDialogOpen && !isInspecting,
+    dialogRef: addDialogRef,
+  });
   const addDialogInputRef = useRef<HTMLInputElement>(null);
   const addDialogReturnFocusRef = useRef<HTMLElement | null>(null);
   const addDialogIds = {
@@ -1850,7 +1902,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     zoomPercent: viewportZoomPercent,
     supportedZoomPercents: VIRTUAL_LIST_SUPPORTED_ZOOM_PERCENTS,
     dragActive:
-      dragRuntimeActive || activeDropTarget !== null || touchDragActive.current,
+      dragRuntimeActive ||
+      activeDropTarget.current !== null ||
+      touchDragActive.current,
     modalActive:
       addDialogOpen ||
       limitedBulkDialogContext !== null ||
@@ -2285,6 +2339,66 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     [],
   );
 
+  const dragPresentation = useMemo<ShoppingDragPresentation>(
+    () => ({
+      spaceGroups: showSpaceGroups,
+      hallGroups: showHallGroups,
+      halls: hallDefinitions,
+      hallOrder,
+      map: mapData,
+    }),
+    [showSpaceGroups, showHallGroups, hallDefinitions, hallOrder, mapData],
+  );
+  const handleDragMove = useStableCallback(onMoveItem);
+  const dragDisplayOrder = useStableCallback(() =>
+    listRowGroups
+      ? listRowGroups.flatMap((group) =>
+          group.collapsed
+            ? group.items.length > 0
+              ? [group.items[0].id]
+              : []
+            : group.items.map((item) => item.id),
+        )
+      : listReadModel.itemRows.map((row) => row.itemId),
+  );
+  useLayoutEffect(() => {
+    if (!columnType || !dragWorkspace || viewMode !== "edit") return;
+    return dragWorkspace.register(columnType, {
+      items,
+      sourceItems: dragSourceItems,
+      executeOrder: dragExecuteOrder,
+      displayOrder: dragDisplayOrder,
+      presentation: dragPresentation,
+      root: () => containerRef.current,
+      move: handleDragMove,
+      candidateNumberSort: candidateNumberSortDirection,
+    });
+  }, [
+    columnType,
+    dragWorkspace,
+    viewMode,
+    items,
+    dragPresentation,
+    dragSourceItems,
+    dragExecuteOrder,
+    dragDisplayOrder,
+    listRowGroups,
+    handleDragMove,
+    candidateNumberSortDirection,
+  ]);
+
+  useLayoutEffect(() => {
+    dragWorkspace?.refresh();
+  }, [dragWorkspace, listReadModel]);
+  useLayoutEffect(() => {
+    if (containerRef.current && columnType) {
+      containerRef.current.dataset.shoppingDragColumn = columnType;
+      containerRef.current.dataset.shoppingDragScope = JSON.stringify([
+        rangeScopeId,
+        currentDay,
+      ]);
+    }
+  });
   const handleDragStart = (
     e: React.DragEvent<HTMLDivElement>,
     item: ShoppingItem,
@@ -2292,17 +2406,28 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     setDragRuntimeActive(true);
     dragItem.current = item.id;
     dragSourceColumn.current = columnType || null;
+    if (columnType)
+      dragToken.current =
+        dragWorkspace?.start(
+          columnType,
+          item.id,
+          selectedItemIds.has(item.id)
+            ? Array.from(selectedItemIds)
+            : [item.id],
+          selectedItemIds.has(item.id) ? "selection" : "single",
+        ) ?? null;
     if (columnType) {
       e.dataTransfer.setData("sourceColumn", columnType);
     }
     const target = e.currentTarget;
     setTimeout(() => {
+      if (dragItem.current !== item.id) return;
       if (target) {
-        target.classList.add("opacity-40");
+        markDragOpacity(target);
       }
       if (selectedItemIds.has(item.id)) {
         document.querySelectorAll('[data-is-selected="true"]').forEach((el) => {
-          el.classList.add("opacity-40");
+          markDragOpacity(el);
         });
       }
     }, 0);
@@ -2322,6 +2447,12 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     } else if (clientY > windowHeight - BOTTOM_SCROLL_TRIGGER_PX) {
       window.scrollBy(0, SCROLL_SPEED);
     }
+
+    if (
+      columnType &&
+      dragWorkspace?.hover(columnType, item.id, e.clientY, e.clientX)
+    )
+      return;
 
     const isCrossColumn =
       dragSourceColumn.current !== null &&
@@ -2351,13 +2482,34 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const handleContainerDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    if (columnType)
+      dragWorkspace?.hover(columnType, undefined, e.clientY, e.clientX);
   };
 
+  const handleContainerDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    const nextTarget = e.relatedTarget;
+    if (nextTarget instanceof Node && e.currentTarget.contains(nextTarget))
+      return;
+    dragWorkspace?.leave();
+    setActiveDropTarget(null);
+  };
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const sourceColumn = e.dataTransfer.getData("sourceColumn") as
+    const sharedDrag = dragWorkspace?.active();
+    if (
+      columnType &&
+      sharedDrag &&
+      sharedDrag.context.sourceColumn !== columnType
+    ) {
+      dragWorkspace?.drop(columnType);
+      cleanUp();
+      return;
+    }
+
+    const sourceColumn = (sharedDrag?.context.sourceColumn ??
+      e.dataTransfer.getData("sourceColumn")) as
       | "execute"
       | "candidate"
       | undefined;
@@ -2367,8 +2519,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       return;
     }
 
+    const dragContext = dragWorkspace?.moveContext(columnType);
+
     if (sourceColumn && sourceColumn === columnType) {
-      if (!activeDropTarget) {
+      if (!activeDropTarget.current) {
         cleanUp();
         return;
       }
@@ -2379,13 +2533,14 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       return;
     }
 
-    if (!activeDropTarget) {
+    if (!activeDropTarget.current) {
       if (sourceColumn && sourceColumn !== columnType) {
         onMoveItem(
           dragItem.current,
           "__END_OF_LIST__",
           columnType,
           sourceColumn,
+          dragContext,
         );
         cleanUp();
         return;
@@ -2394,7 +2549,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       return;
     }
 
-    const { id: targetId, position } = activeDropTarget;
+    const { id: targetId, position } = activeDropTarget.current;
 
     if (dragItem.current === targetId && sourceColumn === columnType) {
       cleanUp();
@@ -2402,7 +2557,13 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     }
 
     if (position === "top") {
-      onMoveItem(dragItem.current, targetId, columnType, sourceColumn);
+      onMoveItem(
+        dragItem.current,
+        targetId,
+        columnType,
+        sourceColumn,
+        dragContext,
+      );
     } else {
       const targetIndex = items.findIndex((i) => i.id === targetId);
       if (targetIndex === -1) {
@@ -2416,10 +2577,17 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           "__END_OF_LIST__",
           columnType,
           sourceColumn,
+          dragContext,
         );
       } else {
         const nextItem = items[targetIndex + 1];
-        onMoveItem(dragItem.current, nextItem.id, columnType, sourceColumn);
+        onMoveItem(
+          dragItem.current,
+          nextItem.id,
+          columnType,
+          sourceColumn,
+          dragContext,
+        );
       }
     }
 
@@ -2427,14 +2595,22 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   };
 
   const cleanUp = useCallback(() => {
-    document
-      .querySelectorAll(".opacity-40")
-      .forEach((el) => el.classList.remove("opacity-40"));
+    dragOpacityElements.current.forEach((element) =>
+      element.classList.remove("opacity-40"),
+    );
+    dragOpacityElements.current.clear();
+    if (dragGroupOwner.current) {
+      onSetSpaceGroupDragItemIds?.(null);
+      dragGroupOwner.current = false;
+    }
+    if (dragToken.current) dragWorkspace?.clear(dragToken.current);
+    dragToken.current = null;
+    touchTargetColumn.current = null;
     dragItem.current = null;
     dragSourceColumn.current = null;
     setActiveDropTarget(null);
     setDragRuntimeActive(false);
-  }, []);
+  }, [dragWorkspace, setActiveDropTarget, onSetSpaceGroupDragItemIds]);
 
   // === タッチドラッグ&ドロップ ===
   const TOUCH_LONG_PRESS_MS = 200;
@@ -2469,6 +2645,14 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
   // クリーンアップ: コンポーネントアンマウント時
   useEffect(() => () => touchCleanUp(), [touchCleanUp]);
+  useLayoutEffect(
+    () =>
+      dragWorkspace?.subscribe((active) => {
+        setDragRuntimeActive(active);
+        if (!active && dragToken.current) touchCleanUp();
+      }),
+    [dragWorkspace, touchCleanUp],
+  );
 
   const createDragClone = useCallback(
     (sourceEl: HTMLElement, touchX: number, touchY: number) => {
@@ -2501,16 +2685,31 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       touchDragActive.current = true;
       dragItem.current = itemId;
       dragSourceColumn.current = columnType || null;
+      if (columnType)
+        dragToken.current =
+          dragWorkspace?.start(
+            columnType,
+            itemId,
+            spaceGroupItemIds ??
+              (selectedItemIds.has(itemId)
+                ? Array.from(selectedItemIds)
+                : [itemId]),
+            spaceGroupItemIds
+              ? "space-group"
+              : selectedItemIds.has(itemId)
+                ? "selection"
+                : "single",
+          ) ?? null;
 
       // ブラウザのネイティブドラッグゴーストを防止
       sourceEl.setAttribute("draggable", "false");
       touchDragSourceEl.current = sourceEl;
 
       // 元の要素を半透明に
-      sourceEl.classList.add("opacity-40");
+      markDragOpacity(sourceEl);
       if (selectedItemIds.has(itemId)) {
         document.querySelectorAll('[data-is-selected="true"]').forEach((el) => {
-          el.classList.add("opacity-40");
+          markDragOpacity(el);
         });
       }
 
@@ -2529,7 +2728,14 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       // 触覚フィードバック
       if (navigator.vibrate) navigator.vibrate(30);
     },
-    [columnType, selectedItemIds, createDragClone, onSetSpaceGroupDragItemIds],
+    [
+      columnType,
+      selectedItemIds,
+      createDragClone,
+      onSetSpaceGroupDragItemIds,
+      dragWorkspace,
+      markDragOpacity,
+    ],
   );
 
   const handleItemTouchStart = useCallback(
@@ -2599,6 +2805,47 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         "esp-shopping-touch-clone-hidden",
       );
 
+      if (!elementUnder) {
+        touchTargetColumn.current = null;
+        dragWorkspace?.leave();
+        setActiveDropTarget(null);
+        return;
+      }
+      if (dragWorkspace) {
+        const root = elementUnder.closest<HTMLElement>(
+          "[data-shopping-drag-column]",
+        );
+        const targetColumn = root?.dataset.shoppingDragColumn as
+          | "execute"
+          | "candidate"
+          | undefined;
+        if (!targetColumn) {
+          touchTargetColumn.current = null;
+          dragWorkspace.leave();
+          setActiveDropTarget(null);
+          return;
+        }
+        const reference = elementUnder.closest<HTMLElement>(
+          "[data-item-id], [data-shopping-drag-reference-id]",
+        );
+        const targetId =
+          reference?.dataset.itemId ??
+          reference?.dataset.shoppingDragReferenceId;
+        touchTargetColumn.current = targetColumn ?? null;
+        if (
+          targetColumn &&
+          dragWorkspace.hover(
+            targetColumn,
+            targetId,
+            touch.clientY,
+            touch.clientX,
+          )
+        ) {
+          setActiveDropTarget(null);
+          return;
+        }
+      }
+
       if (elementUnder) {
         const itemEl = elementUnder.closest(
           "[data-item-id]",
@@ -2610,14 +2857,14 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
             const relativeY = touch.clientY - rect.top;
             const position = relativeY < rect.height / 2 ? "top" : "bottom";
             setActiveDropTarget({ id: targetId, position });
-          }
+          } else setActiveDropTarget(null);
         } else {
           // アイテム上でない場合はドロップターゲットをクリア
           setActiveDropTarget(null);
         }
       }
     },
-    [],
+    [dragWorkspace, setActiveDropTarget],
   );
 
   const handleItemTouchEnd = useCallback(() => {
@@ -2628,10 +2875,22 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     }
 
     if (!touchDragActive.current) return;
+    if (
+      touchTargetColumn.current &&
+      touchTargetColumn.current !== columnType &&
+      dragWorkspace?.active()
+    ) {
+      dragWorkspace.drop(touchTargetColumn.current);
+      touchCleanUp();
+      return;
+    }
 
-    if (activeDropTarget && dragItem.current && columnType) {
+    const dragContext = columnType
+      ? dragWorkspace?.moveContext(columnType)
+      : undefined;
+    if (activeDropTarget.current && dragItem.current && columnType) {
       const sourceColumn = dragSourceColumn.current;
-      const { id: targetId, position } = activeDropTarget;
+      const { id: targetId, position } = activeDropTarget.current;
 
       if (dragItem.current !== targetId || sourceColumn !== columnType) {
         if (position === "top") {
@@ -2640,6 +2899,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
             targetId,
             columnType,
             sourceColumn || undefined,
+            dragContext,
           );
         } else {
           const targetIndex = items.findIndex((i) => i.id === targetId);
@@ -2650,6 +2910,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                 "__END_OF_LIST__",
                 columnType,
                 sourceColumn || undefined,
+                dragContext,
               );
             } else {
               const nextItem = items[targetIndex + 1];
@@ -2658,6 +2919,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                 nextItem.id,
                 columnType,
                 sourceColumn || undefined,
+                dragContext,
               );
             }
           }
@@ -2666,7 +2928,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     }
 
     touchCleanUp();
-  }, [activeDropTarget, columnType, items, onMoveItem, touchCleanUp]);
+  }, [columnType, items, onMoveItem, touchCleanUp, dragWorkspace]);
 
   const handleItemTouchCancel = useCallback(() => {
     touchCleanUp();
@@ -2775,6 +3037,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           onBlurCapture: handleFullListBlurCapture,
           onDragOver: !isInspecting ? handleContainerDragOver : undefined,
           onDrop: !isInspecting ? handleDrop : undefined,
+          onDragLeave: handleContainerDragLeave,
           onFocusCapture: handleFullListFocusCapture,
         }}
         beforeContent={limitedPurchaseOverlays}
@@ -2803,7 +3066,17 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     ) => {
       const firstItemId = group.items[0]?.id;
       if (!firstItemId) return;
+      setDragRuntimeActive(true);
+      dragGroupOwner.current = true;
       dragItem.current = firstItemId;
+      if (columnType)
+        dragToken.current =
+          dragWorkspace?.start(
+            columnType,
+            firstItemId,
+            getEffectiveDragIds(group),
+            "space-group",
+          ) ?? null;
       dragSourceColumn.current = columnType || null;
       if (columnType) {
         e.dataTransfer.setData("sourceColumn", columnType);
@@ -2813,7 +3086,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       }
       const target = e.currentTarget;
       setTimeout(() => {
-        if (target) target.classList.add("opacity-40");
+        if (dragItem.current === firstItemId && target) markDragOpacity(target);
       }, 0);
     };
 
@@ -2981,23 +3254,12 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         groupIndex === crossSpaceGroupRangeInfo.endGroupIndex;
       const isCrossMiddle = crossRangeInGroup && !isCrossStart && !isCrossEnd;
 
-      const showDropGuide =
-        group.isCollapsed &&
-        activeDropTarget?.id === group.items[0]?.id &&
-        activeDropTarget?.position === "top";
-
       return (
         <div className="space-y-1">
           {hallSectionHeader}
           <div className="mb-1 relative">
             {/* ドロップ位置ガイド */}
-            {showDropGuide && (
-              <div className="absolute -top-3 left-0 right-0 h-2 flex items-center justify-center z-30 pointer-events-none">
-                <div className="w-full h-1.5 bg-blue-500 rounded-full shadow-sm ring-2 ring-white dark:ring-slate-800 transform scale-x-95 transition-transform duration-75" />
-                <div className="absolute w-4 h-4 bg-blue-500 rounded-full -left-1 ring-2 ring-white dark:ring-slate-800" />
-                <div className="absolute w-4 h-4 bg-blue-500 rounded-full -right-1 ring-2 ring-white dark:ring-slate-800" />
-              </div>
-            )}
+
             {/* スペースグループヘッダー */}
             <div
               className={`sticky top-0 z-20 rounded-lg border-l-4 border-l-[#9CA3AF] select-none cursor-pointer ${
@@ -3011,6 +3273,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
               }`}
               onClick={() => onToggleSpaceCollapse?.(group.groupKey)}
               data-item-id={group.isCollapsed ? group.items[0]?.id : undefined}
+              data-shopping-drag-reference-id={group.items[0]?.id}
               data-space-group-key={group.groupKey}
               data-space-navigation-visit-id={
                 group.items[0]
@@ -3030,6 +3293,17 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                       e.preventDefault();
                       e.stopPropagation();
                       const firstItem = group.items[0];
+                      if (
+                        firstItem &&
+                        columnType &&
+                        dragWorkspace?.hover(
+                          columnType,
+                          firstItem.id,
+                          e.clientY,
+                          e.clientX,
+                        )
+                      )
+                        return;
                       if (firstItem) {
                         setActiveDropTarget({
                           id: firstItem.id,
@@ -3795,15 +4069,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                       className="transition-opacity duration-200 relative"
                       data-is-selected={selectedItemIds.has(item.id)}
                     >
-                      {activeDropTarget?.id === item.id &&
-                        activeDropTarget.position === "top" && (
-                          <div className="absolute -top-3 left-0 right-0 h-2 flex items-center justify-center z-30 pointer-events-none">
-                            <div className="w-full h-1.5 bg-blue-500 rounded-full shadow-sm ring-2 ring-white dark:ring-slate-800 transform scale-x-95 transition-transform duration-75" />
-                            <div className="absolute w-4 h-4 bg-blue-500 rounded-full -left-1 ring-2 ring-white dark:ring-slate-800" />
-                            <div className="absolute w-4 h-4 bg-blue-500 rounded-full -right-1 ring-2 ring-white dark:ring-slate-800" />
-                          </div>
-                        )}
-
                       <ShoppingItemCard
                         preferNativeOptions={preferNativeOptions}
                         item={item}
@@ -3846,15 +4111,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                         }
                         readOnly={isInspecting}
                       />
-
-                      {activeDropTarget?.id === item.id &&
-                        activeDropTarget.position === "bottom" && (
-                          <div className="absolute -bottom-3 left-0 right-0 h-2 flex items-center justify-center z-30 pointer-events-none">
-                            <div className="w-full h-1.5 bg-blue-500 rounded-full shadow-sm ring-2 ring-white dark:ring-slate-800 transform scale-x-95 transition-transform duration-75" />
-                            <div className="absolute w-4 h-4 bg-blue-500 rounded-full -left-1 ring-2 ring-white dark:ring-slate-800" />
-                            <div className="absolute w-4 h-4 bg-blue-500 rounded-full -right-1 ring-2 ring-white dark:ring-slate-800" />
-                          </div>
-                        )}
 
                       {/* チェーン範囲選択UI（スペースグループ内） */}
                       {!isInspecting && isInRange && onToggleRangeSelection && (
@@ -4118,7 +4374,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           onBlurCapture: handleFullListBlurCapture,
           onDragOver: !isInspecting ? handleContainerDragOver : undefined,
           onDrop: !isInspecting ? handleDrop : undefined,
-          onDragLeave: () => setActiveDropTarget(null),
+          onDragLeave: handleContainerDragLeave,
           onFocusCapture: handleFullListFocusCapture,
         }}
         beforeContent={
@@ -4137,6 +4393,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           </>
         }
         renderDependencies={[
+          dragWorkspace,
           layoutMode,
           viewMode,
           columnType,
@@ -4147,7 +4404,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           priceHighlightItemIds,
           limitedMissingHighlightItemIds,
           expandedRemarks,
-          activeDropTarget,
           rangeStart,
           rangeEnd,
           groupRangeInfo,
@@ -4624,15 +4880,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                   }`}
                   data-is-selected={selectedItemIds.has(item.id)}
                 >
-                  {activeDropTarget?.id === item.id &&
-                    activeDropTarget.position === "top" && (
-                      <div className="absolute -top-3 left-0 right-0 h-2 flex items-center justify-center z-30 pointer-events-none">
-                        <div className="w-full h-1.5 bg-blue-500 rounded-full shadow-sm ring-2 ring-white dark:ring-slate-800 transform scale-x-95 transition-transform duration-75" />
-                        <div className="absolute w-4 h-4 bg-blue-500 rounded-full -left-1 ring-2 ring-white dark:ring-slate-800" />
-                        <div className="absolute w-4 h-4 bg-blue-500 rounded-full -right-1 ring-2 ring-white dark:ring-slate-800" />
-                      </div>
-                    )}
-
                   <ShoppingItemCard
                     preferNativeOptions={preferNativeOptions}
                     item={item}
@@ -4670,15 +4917,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     }
                     readOnly={isInspecting}
                   />
-
-                  {activeDropTarget?.id === item.id &&
-                    activeDropTarget.position === "bottom" && (
-                      <div className="absolute -bottom-3 left-0 right-0 h-2 flex items-center justify-center z-30 pointer-events-none">
-                        <div className="w-full h-1.5 bg-blue-500 rounded-full shadow-sm ring-2 ring-white dark:ring-slate-800 transform scale-x-95 transition-transform duration-75" />
-                        <div className="absolute w-4 h-4 bg-blue-500 rounded-full -left-1 ring-2 ring-white dark:ring-slate-800" />
-                        <div className="absolute w-4 h-4 bg-blue-500 rounded-full -right-1 ring-2 ring-white dark:ring-slate-800" />
-                      </div>
-                    )}
 
                   {/* 範囲選択表示とチェーン選択UI（グループ内のみ） */}
                   {!isInspecting && isInRange && onToggleRangeSelection && (
@@ -4871,10 +5109,13 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         rootProps={{
           className: "relative space-y-2 pb-[var(--footer-height,96px)]",
           onBlurCapture: handleFullListBlurCapture,
-          onDragLeave: () => setActiveDropTarget(null),
+          onDragOver: !isInspecting ? handleContainerDragOver : undefined,
+          onDrop: !isInspecting ? handleDrop : undefined,
+          onDragLeave: handleContainerDragLeave,
           onFocusCapture: handleFullListFocusCapture,
         }}
         renderDependencies={[
+          dragWorkspace,
           layoutMode,
           viewMode,
           columnType,
@@ -4885,7 +5126,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           priceHighlightItemIds,
           limitedMissingHighlightItemIds,
           expandedRemarks,
-          activeDropTarget,
           rangeStart,
           rangeEnd,
           groupRangeInfo,
@@ -4954,15 +5194,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         className="transition-opacity duration-200 relative"
         data-is-selected={selectedItemIds.has(item.id)}
       >
-        {activeDropTarget?.id === item.id &&
-          activeDropTarget.position === "top" && (
-            <div className="absolute -top-3 left-0 right-0 h-2 flex items-center justify-center z-30 pointer-events-none">
-              <div className="w-full h-1.5 bg-blue-500 rounded-full shadow-sm ring-2 ring-white dark:ring-slate-800 transform scale-x-95 transition-transform duration-75" />
-              <div className="absolute w-4 h-4 bg-blue-500 rounded-full -left-1 ring-2 ring-white dark:ring-slate-800" />
-              <div className="absolute w-4 h-4 bg-blue-500 rounded-full -right-1 ring-2 ring-white dark:ring-slate-800" />
-            </div>
-          )}
-
         <ShoppingItemCard
           preferNativeOptions={preferNativeOptions}
           item={item}
@@ -4996,15 +5227,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           }
           readOnly={isInspecting}
         />
-
-        {activeDropTarget?.id === item.id &&
-          activeDropTarget.position === "bottom" && (
-            <div className="absolute -bottom-3 left-0 right-0 h-2 flex items-center justify-center z-30 pointer-events-none">
-              <div className="w-full h-1.5 bg-blue-500 rounded-full shadow-sm ring-2 ring-white dark:ring-slate-800 transform scale-x-95 transition-transform duration-75" />
-              <div className="absolute w-4 h-4 bg-blue-500 rounded-full -left-1 ring-2 ring-white dark:ring-slate-800" />
-              <div className="absolute w-4 h-4 bg-blue-500 rounded-full -right-1 ring-2 ring-white dark:ring-slate-800" />
-            </div>
-          )}
 
         {/* チェーンをアイテムの右側（左列: execute）または左側（右列: candidate）に表示 */}
         {!isInspecting && isInRange && onToggleRangeSelection && (
@@ -5290,7 +5512,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           onFocusCapture: handleFullListFocusCapture,
           onDragOver: !isInspecting ? handleContainerDragOver : undefined,
           onDrop: !isInspecting ? handleDrop : undefined,
-          onDragLeave: () => setActiveDropTarget(null),
+          onDragLeave: handleContainerDragLeave,
         }}
         beforeContent={limitedPurchaseOverlays}
         renderRow={(row, index) =>
@@ -5317,7 +5539,11 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         className="pb-[var(--footer-height,96px)]"
         beforeContent={limitedPurchaseOverlays}
         rootRef={containerRef}
-        onDragLeave={() => setActiveDropTarget(null)}
+        onDragLeave={handleContainerDragLeave}
+        rootProps={{
+          onDragOver: !isInspecting ? handleContainerDragOver : undefined,
+          onDrop: !isInspecting ? handleDrop : undefined,
+        }}
         renderRow={(row, index) =>
           row.kind === "item" ? renderUngroupedItemRow(row, index) : null
         }
@@ -5337,7 +5563,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           layoutMode === "smartphone" ? "space-y-2" : "space-y-4"
         } pb-[var(--footer-height,96px)]`,
         onBlurCapture: handleFullListBlurCapture,
-        onDragLeave: () => setActiveDropTarget(null),
+        onDragOver: !isInspecting ? handleContainerDragOver : undefined,
+        onDrop: !isInspecting ? handleDrop : undefined,
+        onDragLeave: handleContainerDragLeave,
         onFocusCapture: handleFullListFocusCapture,
       }}
       beforeContent={limitedPurchaseOverlays}

@@ -1,0 +1,8 @@
+{
+  "requiredForThisChange": false,
+  "command": "node scripts/verify-release-a-build.mjs",
+  "result": "Expected rejection of uncommitted dirty checkout",
+  "sourceState": "dirty",
+  "legacyLocalStorageCleanup": "forced-off",
+  "reason": "Verifier requires clean/provider-immutable source for a promotable release. This task changes local source without committing or publishing."
+}

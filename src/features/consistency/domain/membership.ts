@@ -251,9 +251,14 @@ export function createMembershipResolver(
     if (cached) return { ...cached, location };
     const members = groups.get(sharedKey) ?? [];
     const memberIds = [...new Set(members.map((member) => member.id))].sort();
+    // Normal members already contain this object; external edited objects still
+    // contribute their own candidate halls even when they carry an existing ID.
+    const candidateMembers = members.includes(item)
+      ? members
+      : [...members, item];
     const candidates = [
       ...new Map(
-        [...members, item]
+        candidateMembers
           .flatMap((member) =>
             membershipCandidates(member, map, halls, locationFor(member)),
           )

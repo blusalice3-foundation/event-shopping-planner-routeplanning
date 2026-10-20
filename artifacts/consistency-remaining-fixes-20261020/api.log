@@ -1,0 +1,29 @@
+✔ stores only closed CSP fields and server-owned identity (2.277ms)
+✔ accepts a bounded Reporting API batch (0.5266ms)
+✔ keeps the effective directive contract ordered and immutable (0.17ms)
+✔ normalizes a syntactically valid unknown directive before insertion (0.2418ms)
+✔ rejects an empty or malformed effective directive (0.2362ms)
+✔ separates method, media type, invalid, oversize, and config errors (0.3246ms)
+✔ maps upstream failure to 502 without reflecting details (0.2933ms)
+✔ blocked target classifier never returns a raw target (0.209ms)
+✔ resolves the requested tab and proxies its full-row CSV export (25.1988ms)
+✔ decodes escaped tab names and lets the saved sheet name override URL gid (0.925ms)
+✔ does not fall back to URL gid when the requested tab cannot be resolved (0.5463ms)
+✔ uses URL gid directly only when no sheet name is available (0.5258ms)
+✔ rejects method, media type, origin, shape, and configuration drift (0.4764ms)
+✔ rejects redirects outside the fixed Google CSV download host (2.1126ms)
+✔ bounds upstream responses and rejects non-CSV responses (4.9143ms)
+✔ unknown API returns the closed JSON 404 for GET (0.7922ms)
+✔ unknown API returns the closed JSON 404 for POST (0.1071ms)
+✔ unknown API returns the closed JSON 404 for PUT (0.0877ms)
+✔ unknown API returns the closed JSON 404 for PATCH (0.0975ms)
+✔ unknown API returns the closed JSON 404 for DELETE (0.8094ms)
+✔ unknown API returns the closed JSON 404 for OPTIONS (0.0965ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 153.1485

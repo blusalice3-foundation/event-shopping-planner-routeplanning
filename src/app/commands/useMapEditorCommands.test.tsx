@@ -388,6 +388,7 @@ const createHarness = (options: HarnessOptions = {}) => {
     persistence: {
       commitApplicationSnapshotPatch,
     },
+    readCommittedSnapshot: () => ({ hallDefinitions: stores.hallDefinitions }),
   });
 
   return {
@@ -672,9 +673,11 @@ describe("useMapEditorCommands", () => {
     const { result } = renderHook(() => useMapEditorCommands(ports));
 
     await act(() => result.current.handleUpdateItemPriority("a1", "highest"));
-    await act(() =>
-      result.current.handleUpdateHalls([polygonHall("replacement")]),
-    );
+    await act(async () => {
+      await expect(
+        result.current.handleUpdateHalls([polygonHall("replacement")]),
+      ).rejects.toThrow("transaction aborted");
+    });
 
     expect(harness.stores.eventLists).toEqual(beforeItems);
     expect(harness.stores.hallDefinitions).toEqual(beforeDefinitions);
@@ -936,3 +939,161 @@ describe("useMapEditorCommands", () => {
     );
   });
 });
+
+it("atomically saves the displayed draft and allocates one clone per actual destination", async () => {
+  const harness = createHarness();
+  const ports = harness.createPorts();
+  ports.selectors.getMapTabForDate = (date) =>
+    date === DAY ? MAP : "shared-target";
+  const { result } = renderHook(() => useMapEditorCommands(ports));
+  const draft = [
+    polygonHall("polygon", { name: "編集直後" }),
+    maplessHall("manual"),
+  ];
+  await act(async () => {
+    await result.current.handleSyncPolygonHallsToOtherDates(
+      [DAY, "2日目", "3日目"],
+      draft,
+    );
+  });
+  expect(harness.spies.commitApplicationSnapshotPatch).toHaveBeenCalledOnce();
+  const source = harness.stores.hallDefinitions[EVENT][MAP][0];
+  const target = harness.stores.hallDefinitions[EVENT]["shared-target"][0];
+  expect(source).toMatchObject({ id: "polygon", name: "編集直後" });
+  expect(target).toMatchObject({ name: "編集直後" });
+  expect(target.id).not.toBe(source.id);
+  expect(harness.stores.hallDefinitions[EVENT][getMaplessKey(DAY)]).toEqual([
+    maplessHall("manual"),
+  ]);
+  expect(harness.spies.commitApplicationSnapshotPatch.mock.calls[0][2]).toEqual(
+    {
+      routeDays: {
+        [EVENT]: {
+          [MAP]: [DAY],
+          [getMaplessKey(DAY)]: [DAY],
+          "shared-target": ["2日目", "3日目"],
+        },
+      },
+      polygonHallSyncTargets: { [EVENT]: ["shared-target"] },
+    },
+  );
+  expect(
+    harness.stores.hallRouteSettings[EVENT]["shared-target"].hallOrder,
+  ).toEqual([target.id]);
+});
+
+it("rejects stale block, cell and vertex results even after the same map key is reused", async () => {
+  const harness = createHarness();
+  const session = {
+    sessionId: "old-owner",
+    eventName: EVENT,
+    eventGeneration: 0,
+    day: DAY,
+    mapKey: MAP,
+    editorKind: "block-definition" as const,
+  };
+  let ports = harness.createPorts();
+  ports = {
+    ...ports,
+    state: {
+      ...ports.state,
+      editorSession: session,
+      cellSelectionMode: {
+        type: "corner",
+        clickedCells: [],
+        editingBlockData: { name: "保持" },
+        session,
+      },
+      vertexSelectionMode: {
+        clickedVertices: [],
+        editingData: { name: "保持" },
+        session,
+      },
+    },
+  };
+  const hook = renderHook(() => useMapEditorCommands(ports));
+  const old = hook.result.current;
+  ports = {
+    ...ports,
+    state: {
+      ...ports.state,
+      editorSession: { ...session, sessionId: "replacement-owner" },
+    },
+  };
+  hook.rerender();
+  act(() => {
+    old.handleUpdateBlocks([block("旧ブロック")], session);
+    old.handleConfirmCellSelection();
+    old.handleCancelCellSelection();
+    old.handleConfirmVertexSelection();
+    old.handleCancelVertexSelection();
+  });
+  expect(harness.spies.setMapData).not.toHaveBeenCalled();
+  expect(harness.stores.pendingCellSelection).toBeNull();
+  expect(harness.stores.pendingVertexSelection).toBeNull();
+  const status = await old.handleUpdateHalls([polygonHall("old")], {
+    ...session,
+    editorKind: "hall-definition",
+  });
+  expect(status).toEqual({ status: "cancelled" });
+  expect(harness.spies.commitApplicationSnapshotPatch).not.toHaveBeenCalled();
+});
+
+it("normalizes confirmation cancellation and exposes synchronous write ownership", async () => {
+  const harness = createHarness();
+  const ports = harness.createPorts();
+  let reject!: (error: Error) => void;
+  ports.persistence.commitApplicationSnapshotPatch = vi.fn(
+    () =>
+      new Promise<void>((_resolve, rejectPromise) => {
+        reject = rejectPromise;
+      }),
+  );
+  const { result } = renderHook(() => useMapEditorCommands(ports));
+  const write = result.current.handleUpdateHalls([polygonHall("draft")]);
+  expect(result.current.isEditorWritePending()).toBe(true);
+  await expect(
+    result.current.handleUpdateHalls([polygonHall("duplicate")]),
+  ).resolves.toEqual({ status: "cancelled" });
+  reject(Object.assign(new Error("取消"), { name: "MutationCancelled" }));
+  await expect(write).resolves.toEqual({ status: "cancelled" });
+  expect(result.current.isEditorWritePending()).toBe(false);
+  expect(
+    ports.persistence.commitApplicationSnapshotPatch,
+  ).toHaveBeenCalledOnce();
+});
+
+it.each([
+  { dates: [DAY], targetDays: [] },
+  { dates: [DAY, "１日目", "１日目"], targetDays: ["１日目"] },
+])(
+  "keeps source-map synchronization scoped to distinct destination days ($targetDays)",
+  async ({ dates, targetDays }) => {
+    const harness = createHarness();
+    const ports = harness.createPorts();
+    ports.selectors.getMapTabForDate = () => MAP;
+    const { result } = renderHook(() => useMapEditorCommands(ports));
+    const draft = [polygonHall("polygon"), maplessHall("manual")];
+    await act(async () => {
+      await result.current.handleSyncPolygonHallsToOtherDates(dates, draft);
+    });
+    expect(harness.spies.commitApplicationSnapshotPatch).toHaveBeenCalledOnce();
+    expect(harness.stores.hallDefinitions[EVENT][MAP]).toEqual([draft[0]]);
+    expect(harness.stores.hallDefinitions[EVENT][getMaplessKey(DAY)]).toEqual([
+      draft[1],
+    ]);
+    expect(
+      harness.spies.commitApplicationSnapshotPatch.mock.calls[0][2],
+    ).toEqual({
+      routeDays: {
+        [EVENT]: {
+          [MAP]: [DAY, ...targetDays],
+          [getMaplessKey(DAY)]: [DAY],
+        },
+      },
+      ...(targetDays.length
+        ? { polygonHallSyncTargetDays: { [EVENT]: { [MAP]: targetDays } } }
+        : {}),
+    });
+  },
+);

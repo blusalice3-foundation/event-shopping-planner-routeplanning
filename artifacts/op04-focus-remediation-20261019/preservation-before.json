@@ -1,0 +1,206 @@
+[
+  {
+    "path": "artifacts/consistency-audit-20261019-1230/browser-output/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "artifacts/consistency-audit-20261019-1230/browser-report.json",
+    "sha256": "27D9A55C9A49EF84A6976157654038366C4080879D4F01F645292156DABC98D8"
+  },
+  {
+    "path": "artifacts/consistency-audit-drag-repro-20261019-1628/offscreen-status.spec.ts",
+    "sha256": "EBE3386FB536118369B751270BBE8B97A053F80D44B848B8B7A37D718766EE11"
+  },
+  {
+    "path": "artifacts/consistency-audit-drag-repro-20261019-1628/playwright.audit.config.ts",
+    "sha256": "0FA1E760A326FE7CB636656CD95EA1DF329D22AEA8E963C60E1416859491EE9F"
+  },
+  {
+    "path": "artifacts/consistency-audit-drag-repro-20261019-1628/report.json",
+    "sha256": "01BC5CD70593410C1ACA1D972FF88A6478E2E00E0EF3ABB12BEEFE73319697BD"
+  },
+  {
+    "path": "artifacts/consistency-audit-drag-repro-20261019-1628/results/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "artifacts/consistency-audit-drag-repro-20261019-1628/results/offscreen-status-audit-off-2b4ba-iewport-touch-grouped-false/viewport.png",
+    "sha256": "153040870F00A4E70D86CB7EAEE30DE1BB7EED41D3AC5A1AB91687F00E97AA35"
+  },
+  {
+    "path": "artifacts/consistency-audit-drag-repro-20261019-1628/results/offscreen-status-audit-off-33935-viewport-touch-grouped-true/viewport.png",
+    "sha256": "A0B9BF65E422A159BD7D69264D3D98C5D45AF85651218DDF73ED38DE67FA539C"
+  },
+  {
+    "path": "artifacts/consistency-audit-drag-repro-20261019-1628/results/offscreen-status-audit-off-bfc8b-ewport-native-grouped-false/viewport.png",
+    "sha256": "3EE9A5F83338D377FC9A0D93D90AA19E3440D16AF33E5D34BC07D8DD54A02CE5"
+  },
+  {
+    "path": "artifacts/consistency-audit-drag-repro-20261019-1628/results/offscreen-status-audit-off-c6251-iewport-native-grouped-true/viewport.png",
+    "sha256": "A6B50A7F836A46AB8A0902D41EECBCA2870A13205FCDFF53838C7BC867319C28"
+  },
+  {
+    "path": "artifacts/consistency-audit-final-20261019-205544/browser-output/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "artifacts/consistency-audit-final-20261019-205544/browser.json",
+    "sha256": "04A0ED5E4E060023D1FEF27DB129B05FD60B7262A76620451130F03F703CA9E4"
+  },
+  {
+    "path": "artifacts/consistency-audit-focus-repro-20261019-2144/focus-repro.test.tsx",
+    "sha256": "93C2403C421B7EEE9BE743915243860B7469DFF8926FAD41DA8860BE6BB2DD7B"
+  },
+  {
+    "path": "artifacts/consistency-audit-focus-repro-20261019-2144/vitest.config.ts",
+    "sha256": "DC67C4FEEDE31644170CD232A545589F66F3A9D3C0DD1F089A427E456EA8316F"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/conventional-median-check.json",
+    "sha256": "C76D53126F65CE7A3A4CCD68EE7EB79099B657DD470323E3FE48803230034E1C"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/drag-output/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/drag.json",
+    "sha256": "9263EEFBB6FDFCBE87F093D91B035FDB22A025579D6BEF3C6E6D8E7BE2FE9DCB"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/independent-summary.json",
+    "sha256": "96CBA8FF72C49256AB05A72AF728D90C55A94CF683C3DDC63F0411E9CC09F1AF"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-037a3-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "EF5C3E4AD95CA4F67C1055DD672343C2D116E0D4EFA5DD808910E06C1EE6592B"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-06835-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "6AE1D65939013395B6AC817451F53602D32CFAFC17137AD3C3383D51239DEDBC"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-11b90-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "AF6E008C91F763E7DFF0142CB4C2153FB3D4E466450B5321EADCD28BF37CCF55"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-1c261-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "923C9F1C5267B85A9D3D61DC08639CA605E362291BF8FA9D6D9955F523E0D5E6"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-1fd1d-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "4FFA6E89AFC1C68AC20664604B84592BF99F96EFF631231D2EDAF384675F0770"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-290a0-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "2ABC2EAA1667823FC50A54EF30FAF858F8BCCD25D100DCE1744DE9DDB9071096"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-302a9-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "A22EBB8FB2BCBFA619159F3B31C5892AA1DE0DB6CFC0378F68741380E5B61B00"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-3ceed-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "3033344C77073066CE35A13657719EAA09A6847105BC33A89C7165B5EAF85830"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-44a37-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "774B5BDAA88C22FCE1CA2EEEFD1717FB3C56DA398133FA2A850D207FBF97EC93"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-456a7-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "382BAC5159B78E2600EC3A3759A422893AA9DCB16354D1111B1079BE57AF55C5"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-5005a-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "4E6FF09A071D12952452D2CC1FC78FA55A523AB1F79B59BDD7B7DD36924BBD6A"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-5b858-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "4629E7574D03A051662696FE2431D489DE2B208342812CAE78BE2B5F38B49612"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-65ffd-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "3E2FEDE323D10BA4B07E0FEBB41DE1C9DFDE2D05ED8DCB5232B8414F128D6447"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-76418-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "E74750A4CE21D2F4865DE73169B7A45F018CA7892DA014B01E4E4F2ECFC1D10C"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-8937c-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "F179557DA5406B3F76DBEF3E9ED3B78E2A4F6CF3C0EBD894AFBDBC3A5019A58C"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-a5908-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "6243606210C061C806FA8438F6CA17FF9E581E504F1EDB4811532F2940615200"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-a77e3-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "30E88FCDDBFD490BA1118342A51DEC2B07EEFC016527F6FA22551221B3DAAA00"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-c046c-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "6AD4670E9991C92123EA705F980CE8785F3AB184A27A6C7608719C2C79820758"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-c1ee7-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "D71E86553FF7B6A946BF37B108DBA5C02323818035F0C5A77AFB80DB28438A07"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-c6302-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "6D81C6DDF566D74E772C8F95BE76A096D05D9F112AE1A1A878D820810BA67EF2"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-c9f3f-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "98F92D9DFD5F8B931040C6D9922420A889E43CBB87ECF270EDED7E4347B0FF04"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-ddae0-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "68AA20F1691E08EE98FE513AD2C09E62A5B0B3CBA7AF040FE0260EE9FE617891"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-f6958-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "EDBD5F9BBB319FC1370C4FDD9A3A974A505F92AC1FBD690E10AD5EAB91B6F9D2"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping-output/responsive-performance-loc-f80a9-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "sha256": "172C4E51A9D1B753CC472537D04B8C15413B6786D47C9C98253B906F2585EC19"
+  },
+  {
+    "path": "artifacts/consistency-audit-performance-20261019-210156/shopping.json",
+    "sha256": "87485D635481ADFD5B69E83AEB7E2284CD2B2B07E304D779FF3BEF292BD53D42"
+  },
+  {
+    "path": "artifacts/consistency-review-20261019-run2/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "artifacts/playwright-review-20261018/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "artifacts/playwright-review-storage-outcome-20261018/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "artifacts/playwright-review-u01u02-20261018/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "artifacts/playwright-review-u03u04-20261018/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "artifacts/playwright-review-u06u07-20261018/.last-run.json",
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "docs/user-operation-consistency-remediation-plan-20261018.md",
+    "sha256": "D466D6C3F20824C3ADA9E38A7904D828D4F5014C9B82082B1709B884BC73584A"
+  }
+]

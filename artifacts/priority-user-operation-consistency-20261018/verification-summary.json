@@ -1,0 +1,486 @@
+{
+  "date": "2026-10-18T19:20:28.6693831+09:00",
+  "plan": "docs/priority-user-operation-consistency-fix-plan-20261018.md",
+  "result": "U01〜U07の製品実装・ローカル機能/性能/文字コード検証を完了。未コミット候補として保持し、公開・配布・リリース承認はしていない。",
+  "units": [
+    {
+      "id": "U01",
+      "status": "implemented and verified",
+      "change": "未保護の5設定hookだけでsavePreference例外を捕捉し、メモリ値・テーマ適用・system監視を維持。adapter/portの失敗契約は維持。",
+      "files": [
+        "src/hooks/useUIVisibilitySettings.ts",
+        "src/hooks/useThemeMode.ts",
+        "src/hooks/useNumberCellOutlineStyle.ts",
+        "src/hooks/useDisablePriceUndefinedCheck.ts",
+        "src/hooks/useDisableLimitedPurchaseQuantityCheck.ts"
+      ],
+      "acceptance": [
+        "T01",
+        "T02",
+        "T03"
+      ],
+      "evidence": [
+        "src/hooks/preferencePersistenceFailure.test.tsx",
+        "src/app/state/useMapWorkspaceState.test.tsx",
+        "tests/browser/priority-preference-consistency.spec.ts",
+        "settings-targeted.log",
+        "browser-functional-summary.json"
+      ]
+    },
+    {
+      "id": "U02",
+      "status": "implemented and verified",
+      "change": "名称変更取消・Excel出力閉鎖を引数なしラッパでcontrollerへ接続。既存request ID/kindによる旧callback拒否を維持。",
+      "files": [
+        "src/features/app-shell/components/AppOverlayLayer.tsx"
+      ],
+      "acceptance": [
+        "T04",
+        "T05"
+      ],
+      "evidence": [
+        "src/features/app-shell/components/AppOverlayLayer.eventCancellation.integration.test.tsx",
+        "tests/browser/priority-event-overlay.spec.ts",
+        "browser-regression.json"
+      ]
+    },
+    {
+      "id": "U03",
+      "status": "implemented and verified",
+      "change": "限数の主入力・確認・数量1選択で4種のtouch伝播を停止。FocusMode内のdialogに入った操作では既存gesture refを消去し、閉鎖後の遅れた訪問移動を防止。preventDefaultや通常swipeの判定変更は追加しない。",
+      "files": [
+        "src/components/LimitedPurchaseDialog.tsx",
+        "src/components/LimitedPurchaseConfirmDialog.tsx",
+        "src/components/SingleQuantityLimitedPurchaseChoiceDialog.tsx",
+        "src/components/FocusMode.tsx"
+      ],
+      "acceptance": [
+        "T06",
+        "T07"
+      ],
+      "evidence": [
+        "src/components/FocusMode.limitedInteraction.integration.test.tsx",
+        "tests/browser/priority-dialog-interaction.spec.ts",
+        "limited-targeted.log"
+      ]
+    },
+    {
+      "id": "U04",
+      "status": "implemented and verified",
+      "change": "既存modal hookで主入力のfocus/Tab/Escape/scrollを管理。対象変更・確認失効時に局所的にfocusを移譲。ラジアルから入力へ進む時の遅延復帰をやめ、最終閉鎖時は安定した購入状態ボタンへ戻す。",
+      "files": [
+        "src/components/LimitedPurchaseDialog.tsx",
+        "src/components/ShoppingItemCard.tsx"
+      ],
+      "acceptance": [
+        "T08",
+        "T09",
+        "T10",
+        "T20",
+        "T21",
+        "T22"
+      ],
+      "evidence": [
+        "src/components/LimitedPurchaseDialog.test.tsx",
+        "src/components/FocusMode.limitedInteraction.integration.test.tsx",
+        "src/components/ShoppingItemCard.limitedInteraction.integration.test.tsx",
+        "tests/browser/priority-dialog-interaction.spec.ts",
+        "diagnostic-comparison.json"
+      ]
+    },
+    {
+      "id": "U05",
+      "status": "implemented and verified",
+      "change": "追加・旧編集・詳細編集の手動保存前だけ、既存normalizeExecutionVisitDayで空日を拒否。半角/全角空白を拒否し、入力とfocusを保持。非空ラベルの原文・表取込の既存除外動作・通常差分保存は維持。",
+      "files": [
+        "src/components/ImportScreen.tsx",
+        "src/components/ItemEditDialog.tsx"
+      ],
+      "acceptance": [
+        "T11",
+        "T12",
+        "T13"
+      ],
+      "evidence": [
+        "src/components/ManualItemDate.persistence.integration.test.tsx",
+        "tests/browser/priority-manual-item-consistency.spec.ts",
+        "tests/browser/sheet-import-optional-url.spec.ts",
+        "days-targeted.log",
+        "full-vitest.log"
+      ]
+    },
+    {
+      "id": "U06",
+      "status": "implemented and verified",
+      "change": "イベント名・既存世代・参加日・map tabの固定4値scopeとsession ID/所有者でpopup/中継をガード。render時に旧表示を外し、commit時に一時state/refを破棄。旧callback・ABA・Worker旧応答を拒否し、受理済み保存は取消さない。onUpdateItemのbaseline第2引数と両編集ボタンの起動順序を保持。",
+      "files": [
+        "src/App.tsx",
+        "src/features/app-shell/components/AppMainContent.tsx",
+        "src/features/map/hooks/useMapPopupSession.ts",
+        "src/components/map/MapView.tsx",
+        "src/components/map/CellItemsPopup.tsx"
+      ],
+      "acceptance": [
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T23",
+        "T24",
+        "T25"
+      ],
+      "evidence": [
+        "src/components/map/MapView.popupRelay.integration.test.tsx",
+        "src/components/map/MapView.visitProjection.integration.test.tsx",
+        "tests/browser/priority-dialog-interaction.spec.ts",
+        "tests/browser/priority-relay-diagnostics.spec.ts",
+        "diagnostic-comparison.json"
+      ]
+    },
+    {
+      "id": "U07",
+      "status": "implemented and verified",
+      "change": "実在イベントの品目配列が厳密に0件の時だけ追加画面へ遷移。選択/フィルタを解除し、既存の日別map/hall/route設定を保持。不存在・無効日だけの非空は旧案内を維持。",
+      "files": [
+        "src/app/commands/useEventLifecycleCommands.ts"
+      ],
+      "acceptance": [
+        "T18",
+        "T19"
+      ],
+      "evidence": [
+        "src/app/commands/useEventLifecycleCommands.test.tsx",
+        "tests/browser/priority-manual-item-consistency.spec.ts",
+        "after-manual-attempt2.json"
+      ]
+    }
+  ],
+  "sourceIdentity": "candidate-source-identity.json",
+  "tests": {
+    "vitest": {
+      "passed": 2936,
+      "exit": 0,
+      "filesPassed": 250,
+      "log": "full-vitest.log",
+      "skipped": 88,
+      "command": "node node_modules/vitest/vitest.mjs run --maxWorkers=2",
+      "filesSkipped": 1
+    },
+    "api": {
+      "passed": 21,
+      "exit": 0,
+      "log": "api.log",
+      "command": "npm run test:api"
+    },
+    "browser": {
+      "policy": "Spec IDs include describe ancestry. Later successful rerun supersedes the earlier failed version of the same test; diagnostics and performance are counted separately.",
+      "report": "browser-functional-summary.json",
+      "uniquePassed": 176,
+      "uniqueFailed": 0,
+      "commands": [
+        "node node_modules/@playwright/test/cli.js test tests/browser/cross-feature-consistency.spec.ts tests/browser/sheet-import-optional-url.spec.ts tests/browser/retained-viewport.spec.ts tests/browser/shopping-item-rendering.spec.ts tests/browser/a11y-flows.spec.ts tests/browser/foundation.spec.ts tests/browser/csp-full-flows.spec.ts tests/browser/local-css-presentation.spec.ts tests/browser/performance-adapters.smoke.spec.ts tests/browser/priority-event-overlay.spec.ts --workers=2",
+        "Priority dialog/preference specifications: after-priority.json",
+        "Priority manual specification: after-manual-attempt2.json"
+      ]
+    },
+    "typecheck": {
+      "log": "typecheck-verified.log",
+      "exit": 0,
+      "command": "npm run typecheck"
+    },
+    "lintNormal": {
+      "errors": 26910,
+      "exit": 1,
+      "reason": "既存のローカル.tmp*コピーとtraceを対象に含めるため失敗。通常lint成功とは扱わない。",
+      "command": "npm run lint",
+      "log": "lint.log"
+    },
+    "lintScoped": {
+      "log": "lint-scoped-final.log",
+      "exit": 0,
+      "command": "node node_modules/eslint/bin/eslint.js . --ignore-pattern '.tmp*' --ignore-pattern '.tmp*/**' --max-warnings 0"
+    },
+    "formatting": {
+      "log": "format-final-reviewed.log",
+      "exit": 0,
+      "command": "node node_modules/prettier/bin/prettier.cjs --check [changed src/tests TS files]"
+    },
+    "architecture": {
+      "productionFiles": 344,
+      "exceptions": 0,
+      "edges": 1642,
+      "exit": 0,
+      "command": "npm run verify:architecture",
+      "log": "architecture-membership.log"
+    },
+    "membership": {
+      "integration": 49,
+      "worker": 10,
+      "unit": 192,
+      "log": "architecture-membership.log",
+      "exit": 0,
+      "command": "npm run verify:test-project-membership",
+      "files": 251
+    },
+    "build": {
+      "log": "build-after.log",
+      "exit": 0,
+      "command": "npm run build:app"
+    },
+    "releaseArtifact": {
+      "baselineLog": "baseline-artifact-check-verified.log",
+      "releaseApproved": false,
+      "candidateLog": "release-artifact-check.log",
+      "reason": "候補はsourceState=dirty。既存のclean source要件を満たさず拒否。エラー文はlegacy cleanup is not provably forced off。baseline/candidateともcleanup capabilityはforced-offであり、拒否を回避するpolicy変更はしていない。",
+      "candidateExit": 1,
+      "command": "node scripts/verify-release-a-build.mjs",
+      "baselineExit": 0
+    }
+  },
+  "performance": {
+    "criteria": {
+      "medianLimitMs": 55.0,
+      "p95LimitMs": 100.0,
+      "minimumSamples": 20
+    },
+    "environment": {
+      "concurrentTestsBuildsOrProfiles": false,
+      "configSha256": "7E04B0FDB3AB7D32E44A26A21C374E24EEF551350D69683D848D3A07805E08A9",
+      "os": "Windows 11",
+      "browser": "Playwright Chromium headless, Chromium build directory 1234",
+      "workers": 1,
+      "after": "after-environment.json",
+      "npm": "11.19.0",
+      "node": "v24.19.0",
+      "before": "before-environment.json",
+      "harnessSha256": "4F5AC824A820BA3A58C325E316C9F3545E14404BB060D150374585D41E98F84F"
+    },
+    "normal": {
+      "profiles": 24,
+      "items": [
+        150,
+        500,
+        1500
+      ],
+      "rawAfter": "after-performance-samples.json",
+      "rawBefore": "before-performance-samples.json",
+      "before": "before-performance.json",
+      "maximumMedianMs": 50.40000000037253,
+      "historical50MsEvidenceModified": false,
+      "minimumSamples": 20.0,
+      "comparison": "performance-comparison.json",
+      "groups": 144,
+      "after": "after-performance.json",
+      "meanPairedMedianDeltaMs": -0.19861111112145913,
+      "dimensions": "分散/集中 × mapあり/なし × PC/smartphone、各6操作",
+      "maximumP95Ms": 55.600000001490116,
+      "allPass": true
+    },
+    "additional": {
+      "relaySamples": 252,
+      "firstSamplePolicy": "First sample reported separately; following 20 samples define warm summary.",
+      "allPass": true,
+      "staleWrites": 0,
+      "comparison": "diagnostic-comparison.json",
+      "raw": "after-diagnostics-samples.json",
+      "completionMeasuredSeparately": true,
+      "staleCandidateSaves": 0,
+      "workerTimingPolicy": "Actual Worker replies were held and released to reproduce stale delivery. Worker compute and request-to-ready completion are separate diagnostic measurements, not UI response gates.",
+      "sameKeyDistinctOldAndNewRequestSamples": 42,
+      "maximumFirstMs": 21.199999999254942,
+      "stalePersistenceMethods": 0,
+      "observations": [
+        {
+          "items": 150,
+          "observation": "popupRetainedAfterDaySwitch",
+          "beforeTrue": 21,
+          "beforeTotal": 21,
+          "afterTrue": 0,
+          "afterTotal": 21
+        },
+        {
+          "items": 150,
+          "observation": "radialInputFocused",
+          "beforeTrue": 0,
+          "beforeTotal": 21,
+          "afterTrue": 21,
+          "afterTotal": 21
+        },
+        {
+          "items": 150,
+          "observation": "bulkNextInputFocused",
+          "beforeTrue": 0,
+          "beforeTotal": 21,
+          "afterTrue": 21,
+          "afterTotal": 21
+        },
+        {
+          "items": 150,
+          "observation": "invalidationInputFocused",
+          "beforeTrue": 0,
+          "beforeTotal": 21,
+          "afterTrue": 21,
+          "afterTotal": 21
+        },
+        {
+          "items": 500,
+          "observation": "popupRetainedAfterDaySwitch",
+          "beforeTrue": 21,
+          "beforeTotal": 21,
+          "afterTrue": 0,
+          "afterTotal": 21
+        },
+        {
+          "items": 500,
+          "observation": "radialInputFocused",
+          "beforeTrue": 0,
+          "beforeTotal": 21,
+          "afterTrue": 21,
+          "afterTotal": 21
+        },
+        {
+          "items": 500,
+          "observation": "bulkNextInputFocused",
+          "beforeTrue": 0,
+          "beforeTotal": 21,
+          "afterTrue": 21,
+          "afterTotal": 21
+        },
+        {
+          "items": 500,
+          "observation": "invalidationInputFocused",
+          "beforeTrue": 0,
+          "beforeTotal": 21,
+          "afterTrue": 21,
+          "afterTotal": 21
+        }
+      ],
+      "maximumWarmMedianMs": 18.699999999254942,
+      "rawReport": "after-diagnostics.json",
+      "maximumWarmP95Ms": 20.699999999254942,
+      "minimumWarmSamples": 20.0,
+      "groups": 66,
+      "profiles": 14
+    },
+    "followup": {
+      "beforePassed": 2,
+      "finding": "再測定のexecuteはPC 46.2→43.6ms、SP 47.8→42.5ms。原ビルド自体も初回より変動し、継続的な悪化は再現しなかった。",
+      "afterPassed": 2,
+      "comparison": "1500-concentrated-isolated-comparison.json",
+      "originalFullRunRetained": true,
+      "reason": "1500品目・集中・mapなしのexecute中央値が全24条件の比較でPC/SPとも+6.2msだったため、同じ保存済み原ビルドと無変更候補で2条件を単独再測定。",
+      "all12GroupsPass": true
+    },
+    "rendering": {
+      "unchanged": 184,
+      "pairedMetrics": 204,
+      "maximumIncrease": 5,
+      "increased": 8,
+      "details": "performance-comparison.json",
+      "decreased": 12,
+      "finding": "増加は小さい固定範囲。品目数に比例する全体再描画の増加は認めず、MapView/Canvas全体のkey/remount・全件clone・全件digest・Worker再計算契約は追加していない。"
+    },
+    "saving": {
+      "inputSequenceTotalIntervals": 72,
+      "unknownCompletedRequestIds": 0,
+      "decreasedCountIntervals": 11,
+      "increasedCountIntervals": 12,
+      "inputSequenceMatchedIntervals": 72,
+      "completionTimesSeparated": true,
+      "equalCountIntervals": 49,
+      "completedSequencePrefixMatches": 96,
+      "timings": "performance-comparison.json",
+      "analysis": "save-window-analysis.json",
+      "finding": "入力sequenceは前後一致。保存完了sequenceは既定の要求列のprefixで、計数差はread/reset境界までに完了した末尾位置の差。reset前の旧完了はgeneration不一致で破棄され、次区間へ加算されない。この指標は論理要求の完了数で物理DB保存回数ではない。"
+    }
+  },
+  "encoding": {
+    "log": "encoding-final.log",
+    "utf8Strict": true,
+    "representativeStrings": {
+      "ユーザー登録": 143,
+      "エラーが発生しました": 54
+    },
+    "japaneseRepresentativeLinesReviewed": true,
+    "productionUnchangedSinceMeasuredBuild": true,
+    "textFiles": 1091,
+    "originalPlanUnchanged": true,
+    "diffCheckExit": 0,
+    "manifest": "encoding-and-source-manifest-final.json",
+    "command": "npm run test:encoding",
+    "replacementCharacters": 0,
+    "suspiciousQuestionSequences": 0,
+    "changedTsFiles": 36,
+    "lineEndingChanged": false,
+    "exit": 0,
+    "bomChanged": false
+  },
+  "trials": [
+    {
+      "finding": "修正前の機能再現。初回selectorの誤りを補正してPC/SPの実focus欠落を再確認。追加診断で150/500ともfocus観測0/21、日付変更後popup残存21/21を取得。",
+      "files": [
+        "before-functional.json",
+        "before-dialog-corrected-selector.json"
+      ]
+    },
+    {
+      "finding": "最初のoperation診断2試行はfixture準備手順で失敗。手順補正後のattempt3は2条件・各13操作を完走。before-diagnosticsのrelay6条件は成功分を使用し、roundTrip6条件は別ファイルで完走。",
+      "files": [
+        "before-diagnostics.json",
+        "before-operation-diagnostics-attempt2.json",
+        "before-operation-diagnostics-attempt3.json"
+      ]
+    },
+    {
+      "finding": "最初の性能条件への準備作業重複の可能性を考慮し、同一artifactの最初の1条件を単独再確認。初回全24条件の記録も保持。",
+      "files": [
+        "before-performance.json",
+        "before-first-isolated.json"
+      ]
+    },
+    {
+      "finding": "新規試験の型エラーとFocusMode capture属性の重複を修正。最終typecheckと対応回帰を通過後に最終build/性能を実行。",
+      "files": [
+        "typecheck.log",
+        "typecheck-final.log",
+        "typecheck-verified.log"
+      ]
+    },
+    {
+      "finding": "名称変更試験は既存の変更画面起動・確認して保存の手順不足で初回失敗。製品コードを変えず試験手順を補正し、rename/exportを含む167回帰で通過。",
+      "files": [
+        "after-priority.json",
+        "browser-regression.json"
+      ]
+    },
+    {
+      "finding": "手動試験helperの二重確認と旧routeSettings参照を補正。canonical eventConsistencyから設定を検査し、3経路で追加・保存・JSON退避・再読込と設定保持を確認。",
+      "files": [
+        "after-manual.json",
+        "after-manual-attempt2.json"
+      ]
+    },
+    {
+      "finding": "baseline verifierの最初の作業root指定を補正して既存clean artifactを検証し通過。dirty候補の拒否とは分離して記録。",
+      "files": [
+        "baseline-artifact-check.log",
+        "baseline-artifact-check-verified.log"
+      ]
+    },
+    {
+      "finding": "中央値差の追加確認。background起動と停止をまとめた最初のコマンドは自動承認レビューで拒否（詳細理由の提示なし）。以後は管理されたPTYでpreviewを直接起動し、同sessionへCtrl+Cを送って終了。2条件ずつの測定は成功。",
+      "files": [
+        "before-1500-concentrated-isolated.json",
+        "after-1500-concentrated-isolated.json"
+      ]
+    }
+  ],
+  "limitsAndOutOfScope": [
+    "物理スマートフォン・実ソフトキーボードの操作確認は未実施。Chromiumのスマートフォンviewport/touch合成とPC keyboard操作で確認。",
+    "既存の空日付孤立品目の自動復旧は対象外。U05は新たな手動保存の予防であり、既存孤立品目の全復旧完了を意味しない。",
+    "監査⑦map表示位置、⑧選択hall持越し、⑩未保存hall定義同期は別課題として残る。MapView/Canvas全体を作り直して解消していない。",
+    "別タブ同時編集だけの数量競合は通常運用の必須修正対象外。同一画面の保存待ち・確認失効・保存失敗・再試行は結合試験で確認。",
+    "DB version・保存/backup形式・保存queue・依存ライブラリ・共通modal hook・route Worker signatureは変更していない。",
+    "単位別コミット化・クリーン確定ソースのartifact承認・公開/配布は未実施。現在は未コミット差分と検証証拠をレビュー可能な状態で保持。"
+  ]
+}

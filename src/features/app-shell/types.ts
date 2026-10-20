@@ -1,3 +1,4 @@
+import type { MapEditorSession } from "../map/domain/mapEditorSession";
 import type { ViewMode } from "../../types/item";
 import type { RangeEndpoint } from "../lists/domain/rangeSelection";
 
@@ -25,23 +26,27 @@ export type CellSelectionType =
   | "individual";
 
 export type CellSelectionMode = {
+  session?: MapEditorSession;
   type: CellSelectionType;
   clickedCells: CellPosition[];
   editingBlockData?: unknown;
 } | null;
 
 export type PendingCellSelection = {
+  session?: MapEditorSession;
   type: string;
   cells: CellPosition[];
   editingData?: unknown;
 } | null;
 
 export type VertexSelectionMode = {
+  session?: MapEditorSession;
   clickedVertices: CellPosition[];
   editingData?: unknown;
 } | null;
 
 export type PendingVertexSelection = {
+  session?: MapEditorSession;
   vertices: CellPosition[];
   editingData?: unknown;
 } | null;

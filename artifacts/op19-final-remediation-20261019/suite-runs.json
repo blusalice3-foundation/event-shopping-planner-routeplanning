@@ -1,0 +1,64 @@
+[
+  {
+    "name": "browser-clean",
+    "beganUtc": "2026-10-19T07:21:23.5788088Z",
+    "endedUtc": "2026-10-19T07:26:50.1520325Z",
+    "exitCode": 0,
+    "url": "http://127.0.0.1:4182",
+    "arguments": [
+      "tests/browser/cross-feature-consistency.spec.ts",
+      "tests/browser/priority-dialog-interaction.spec.ts",
+      "tests/browser/priority-cell-popup-edit.spec.ts",
+      "tests/browser/sheet-import-optional-url.spec.ts",
+      "tests/browser/retained-viewport.spec.ts",
+      "tests/browser/shopping-item-rendering.spec.ts",
+      "tests/browser/a11y-flows.spec.ts",
+      "tests/browser/shopping-cross-column-drag.spec.ts",
+      "tests/browser/persistence-terminal-stop.spec.ts",
+      "tests/browser/ordinary-persistence-io.spec.ts",
+      "tests/browser/modal-late-save-failure.spec.ts",
+      "--grep-invert",
+      "@shopping-performance",
+      "--workers=2"
+    ]
+  },
+  {
+    "name": "drag-baseline",
+    "beganUtc": "2026-10-19T07:26:50.1729612Z",
+    "endedUtc": "2026-10-19T07:29:14.9467489Z",
+    "exitCode": 0,
+    "url": "http://127.0.0.1:4180",
+    "arguments": [
+      "tests/browser/shopping-cross-column-drag.spec.ts",
+      "--grep",
+      "@shopping-drag-performance",
+      "--workers=1"
+    ]
+  },
+  {
+    "name": "shopping-performance",
+    "beganUtc": "2026-10-19T07:29:14.9485476Z",
+    "endedUtc": "2026-10-19T07:46:59.6207277Z",
+    "exitCode": 0,
+    "url": "http://127.0.0.1:4182",
+    "arguments": [
+      "tests/browser/responsive-performance.spec.ts",
+      "--grep",
+      "@shopping-performance",
+      "--workers=1"
+    ]
+  },
+  {
+    "name": "drag-performance",
+    "beganUtc": "2026-10-19T07:46:59.6221777Z",
+    "endedUtc": "2026-10-19T07:49:24.8688645Z",
+    "exitCode": 0,
+    "url": "http://127.0.0.1:4182",
+    "arguments": [
+      "tests/browser/shopping-cross-column-drag.spec.ts",
+      "--grep",
+      "@shopping-drag-performance",
+      "--workers=1"
+    ]
+  }
+]

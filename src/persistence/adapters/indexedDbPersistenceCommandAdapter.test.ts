@@ -1,7 +1,14 @@
 import { createEventConsistency } from "../../types/consistency";
 import { DEFAULT_BLOCK_DETECTION_SETTINGS } from "../../types/map";
-import { describe, expect, it, vi } from "vitest";
-import { type PersistenceSnapshot } from "../../app/ports/PersistenceCommandPort";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { IDBFactory, IDBKeyRange, IDBObjectStore } from "fake-indexeddb";
+import {
+  PersistenceOutcomeUnknownError,
+  type PersistenceSnapshot,
+} from "../../app/ports/PersistenceCommandPort";
+import { db } from "../facade/indexedDbPersistence";
+import { openDatabase, resetDatabaseConnection } from "../db/openDatabase";
+import { STORES } from "../db/constants";
 import type { BlockDetectionSettings } from "../../types/map";
 import type { StartupRecoveryCandidate } from "../../utils/persistenceResilience";
 import {
@@ -676,5 +683,326 @@ describe("IndexedDB persistence command adapter", () => {
       },
       { invalidatedEvents: ["legacy"] },
     );
+  });
+});
+
+it("shares one terminal stop with every non-worker write entry while allowing only a durable backup", async () => {
+  const delegate = createDelegate();
+  const port = createIndexedDbPersistenceCommandAdapter(delegate);
+  const reason = Object.assign(new Error("reload"), {
+    name: "CommittedStateApplyError",
+  });
+  const listener = vi.fn();
+  port.onWritesStopped!(listener);
+  port.stopWrites!(reason);
+  port.stopWrites!(reason);
+  expect(listener).toHaveBeenCalledExactlyOnceWith(reason);
+  await expect(port.saveEventLists({})).rejects.toBe(reason);
+  await expect(port.saveMapDataChanges({}, {})).rejects.toBe(reason);
+  await expect(
+    port.commitApplicationSnapshotAtomically(snapshot()),
+  ).rejects.toBe(reason);
+  await expect(port.restoreAppDataAtomically(snapshot())).rejects.toBe(reason);
+  await expect(
+    port.saveBlockDetectionSettings("event", DEFAULT_BLOCK_DETECTION_SETTINGS),
+  ).rejects.toBe(reason);
+  expect(delegate.saveEventLists).not.toHaveBeenCalled();
+  expect(delegate.commitApplicationSnapshotAtomically).not.toHaveBeenCalled();
+  const fallback = vi.fn(() => snapshot());
+  const file = await port.createBackupFile!([], fallback);
+  expect(file.blob.size).toBeGreaterThan(0);
+  expect(delegate.readApplicationSnapshot).toHaveBeenCalledOnce();
+  expect(fallback).not.toHaveBeenCalled();
+  vi.mocked(delegate.readApplicationSnapshot).mockRejectedValueOnce(
+    new Error("read failed"),
+  );
+  await expect(port.createBackupFile!([], fallback)).rejects.toBe(reason);
+  expect(fallback).not.toHaveBeenCalled();
+  expect(port.getWriteStopReason!()).toBe(reason);
+});
+
+it("rejects a pending worker snapshot fallback if writes stop after backup starts", async () => {
+  const delegate = createDelegate();
+  const port = createIndexedDbPersistenceCommandAdapter(delegate);
+  const fallback = vi.fn(() => snapshot());
+  const reason = new PersistenceOutcomeUnknownError(new Error("reload"));
+  class SnapshotWorker {
+    static instances: SnapshotWorker[] = [];
+    onmessage:
+      | ((event: MessageEvent<{ needsSnapshot: boolean }>) => void)
+      | null = null;
+    onerror: (() => void) | null = null;
+    postMessage = vi.fn();
+    terminate = vi.fn();
+    constructor() {
+      SnapshotWorker.instances.push(this);
+    }
+  }
+  try {
+    vi.stubGlobal("Worker", undefined);
+    const file = await port.createBackupFile!([], fallback);
+    expect(file.blob.size).toBeGreaterThan(0);
+    expect(fallback).toHaveBeenCalledOnce();
+    fallback.mockClear();
+
+    vi.stubGlobal("Worker", SnapshotWorker);
+    const pending = port.createBackupFile!([], fallback);
+    const rejected = expect(pending).rejects.toBe(reason);
+    const worker = SnapshotWorker.instances[0]!;
+    expect(worker).toBeDefined();
+    port.stopWrites!(reason);
+    worker.onmessage!({
+      data: { needsSnapshot: true },
+    } as MessageEvent<{ needsSnapshot: boolean }>);
+    await rejected;
+
+    expect(fallback).not.toHaveBeenCalled();
+    expect(delegate.readApplicationSnapshot).not.toHaveBeenCalled();
+    expect(worker.postMessage).toHaveBeenCalledExactlyOnceWith({
+      changes: [],
+      guardedItemEdits: [],
+    });
+    expect(worker.terminate).toHaveBeenCalledOnce();
+    expect(port.getWriteStopReason!()).toBe(reason);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+describe("non-worker adapter with real IndexedDB transactions", () => {
+  let failNextStorageLength: boolean;
+  const storageFailure = new DOMException("storage denied", "SecurityError");
+  beforeEach(() => {
+    resetDatabaseConnection();
+    vi.stubGlobal("indexedDB", new IDBFactory());
+    vi.stubGlobal("IDBKeyRange", IDBKeyRange);
+    vi.stubGlobal("Worker", undefined);
+    failNextStorageLength = false;
+    const storage = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      get length() {
+        if (failNextStorageLength) {
+          failNextStorageLength = false;
+          throw storageFailure;
+        }
+        return storage.size;
+      },
+      key: (index: number) => [...storage.keys()][index] ?? null,
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    });
+  });
+  afterEach(() => {
+    resetDatabaseConnection();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+  async function seed() {
+    const value = snapshot();
+    value.eventLists.event = [{ id: "item-1", quantity: 1 }];
+    value.eventConsistency.event = createEventConsistency();
+    const initial = await db.readApplicationSnapshot();
+    await db.commitApplicationSnapshotAtomically(value, {
+      expectedRoots: initial.expectedRoots,
+    });
+    return value;
+  }
+  it("stops every write with the same reason when storage access fails after DB commit", async () => {
+    await seed();
+    const optionalWrite = vi.fn(async () => {
+      throw new Error("a stopped delegate must not be invoked");
+    });
+    const auxiliary = createAuxiliaryDelegate();
+    const port = createIndexedDbPersistenceCommandAdapter(
+      {
+        ...db,
+        readDayApplicationSnapshot: () => db.readApplicationSnapshot(),
+        commitDayApplicationSnapshot: optionalWrite,
+        commitDayMutation: optionalWrite,
+        commitItemContentEdits: optionalWrite,
+      },
+      auxiliary,
+    );
+    const listener = vi.fn();
+    port.onWritesStopped!(listener);
+    const before = await port.readApplicationSnapshot();
+    const next = structuredClone(before.snapshot);
+    next.eventLists.event = [{ id: "item-1", quantity: 2 }];
+    const database = await openDatabase();
+    const original = database.transaction;
+    let startedWrites = 0;
+    let completedWrites = 0;
+    vi.spyOn(database, "transaction").mockImplementation(function (
+      this: IDBDatabase,
+      storeNames,
+      mode,
+      options,
+    ) {
+      const transaction = original.call(this, storeNames, mode, options);
+      if (mode === "readwrite") {
+        startedWrites++;
+        transaction.addEventListener("complete", () => {
+          completedWrites++;
+          failNextStorageLength = true;
+        });
+      }
+      return transaction;
+    });
+    const reason = await port
+      .commitApplicationSnapshotAtomically(next, {
+        expectedRoots: before.expectedRoots,
+      })
+      .catch((error: unknown) => error);
+    expect(reason).toBeInstanceOf(PersistenceOutcomeUnknownError);
+    expect(reason).toMatchObject({ cause: storageFailure });
+    expect(port.getWriteStopReason!()).toBe(reason);
+    expect(listener).toHaveBeenCalledExactlyOnceWith(reason);
+    expect(startedWrites).toBe(1);
+    expect(completedWrites).toBe(1);
+    expect(
+      (await port.readApplicationSnapshot()).snapshot.eventLists.event,
+    ).toEqual([{ id: "item-1", quantity: 2 }]);
+
+    const later = structuredClone(next);
+    later.eventLists.event = [{ id: "item-1", quantity: 3 }];
+    const target = { eventName: "event", day: "day-1" };
+    const writes = [
+      () => port.migrateFromLocalStorage(),
+      () => port.adoptRecoveryCandidate({} as StartupRecoveryCandidate),
+      () => port.saveEventLists(later.eventLists),
+      () => port.saveEventMetadata(later.eventMetadata),
+      () => port.saveExecuteModeItems(later.executeModeItems),
+      () => port.saveDayModes(later.dayModes),
+      () => port.saveMapDataChanges(next.mapData, later.mapData),
+      () => port.saveMapRotationSettings(later.mapRotationSettings),
+      () => port.saveRouteSettings(later.routeSettings),
+      () => port.saveHallDefinitions(later.hallDefinitions),
+      () => port.saveHallRouteSettings(later.hallRouteSettings),
+      () => port.saveMapViewportSettings(later.mapViewportSettings),
+      () => port.saveEventConsistency(later.eventConsistency),
+      () =>
+        port.saveBlockDetectionSettings(
+          "event",
+          DEFAULT_BLOCK_DETECTION_SETTINGS,
+        ),
+      () => port.commitApplicationSnapshotAtomically(later),
+      () =>
+        port.commitDayApplicationSnapshot!(later, before.expectedRoots, target),
+      () =>
+        port.commitDayMutation!(
+          { kind: "mode", ...target, mode: "focus" },
+          "later",
+          {},
+        ),
+      () => port.commitItemContentEdits!([], ["later"], {}),
+      () => port.restoreAppDataAtomically(later),
+      () => port.deleteEventAtomically(later, "event"),
+      () => port.renameEventAtomically(later, "event", "renamed"),
+      () => port.restoreAppDataWithBlockDetectionSettings(later, "event", null),
+    ];
+    for (const write of writes) await expect(write()).rejects.toBe(reason);
+    expect(() => port.savePreference("theme", "dark")).toThrow(reason);
+    expect(() => port.removeBlockDetectionSettingsForEvent("event")).toThrow(
+      reason,
+    );
+    expect(() =>
+      port.renameBlockDetectionSettingsForEvent("event", "renamed"),
+    ).toThrow(reason);
+    expect(optionalWrite).not.toHaveBeenCalled();
+    expect(auxiliary.savePreference).not.toHaveBeenCalled();
+    expect(startedWrites).toBe(1);
+    expect(completedWrites).toBe(1);
+    expect(
+      (await port.readApplicationSnapshot()).snapshot.eventLists.event,
+    ).toEqual([{ id: "item-1", quantity: 2 }]);
+    expect(listener).toHaveBeenCalledOnce();
+  });
+  it("stops writes when observing a committed snapshot cannot be cloned", async () => {
+    await seed();
+    const failure = new DOMException("snapshot clone failed", "DataCloneError");
+    const commit = vi.fn(
+      async (
+        ...args: Parameters<typeof db.commitApplicationSnapshotAtomically>
+      ) => {
+        await db.commitApplicationSnapshotAtomically(...args);
+        vi.spyOn(globalThis, "structuredClone").mockImplementationOnce(() => {
+          throw failure;
+        });
+      },
+    );
+    const saveEventLists = vi.fn(db.saveEventLists);
+    const port = createIndexedDbPersistenceCommandAdapter({
+      ...db,
+      commitApplicationSnapshotAtomically: commit,
+      saveEventLists,
+    });
+    const listener = vi.fn();
+    port.onWritesStopped!(listener);
+    const before = await port.readApplicationSnapshot();
+    const next = structuredClone(before.snapshot);
+    next.eventLists.event = [{ id: "item-1", quantity: 2 }];
+    const reason = await port
+      .commitApplicationSnapshotAtomically(next, {
+        expectedRoots: before.expectedRoots,
+      })
+      .catch((error: unknown) => error);
+    expect(reason).toBeInstanceOf(PersistenceOutcomeUnknownError);
+    expect(reason).toMatchObject({ cause: failure });
+    expect(port.getWriteStopReason!()).toBe(reason);
+    expect(listener).toHaveBeenCalledExactlyOnceWith(reason);
+    expect(
+      (await port.readApplicationSnapshot()).snapshot.eventLists.event,
+    ).toEqual([{ id: "item-1", quantity: 2 }]);
+
+    const later = structuredClone(next);
+    later.eventLists.event = [{ id: "item-1", quantity: 3 }];
+    await expect(port.commitApplicationSnapshotAtomically(later)).rejects.toBe(
+      reason,
+    );
+    await expect(port.saveEventLists(later.eventLists)).rejects.toBe(reason);
+    expect(commit).toHaveBeenCalledOnce();
+    expect(saveEventLists).not.toHaveBeenCalled();
+    expect(listener).toHaveBeenCalledOnce();
+    expect(
+      (await port.readApplicationSnapshot()).snapshot.eventLists.event,
+    ).toEqual([{ id: "item-1", quantity: 2 }]);
+  });
+  it("allows retry after an explicit transaction abort without stopping writes", async () => {
+    await seed();
+    const port = createIndexedDbPersistenceCommandAdapter();
+    const before = await port.readApplicationSnapshot();
+    const next = structuredClone(before.snapshot);
+    next.eventLists.event = [{ id: "item-1", quantity: 2 }];
+    const failure = new Error("explicit transaction abort");
+    const original = IDBObjectStore.prototype.put;
+    let abortNextWrite = true;
+    vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(function (
+      this: IDBObjectStore,
+      value,
+      key,
+    ) {
+      if (this.name === STORES.EVENT_LISTS && abortNextWrite) {
+        abortNextWrite = false;
+        throw failure;
+      }
+      return original.call(this, value, key);
+    });
+    await expect(
+      port.commitApplicationSnapshotAtomically(next, {
+        expectedRoots: before.expectedRoots,
+      }),
+    ).rejects.toBe(failure);
+    expect(port.getWriteStopReason!()).toBeUndefined();
+    expect(
+      (await port.readApplicationSnapshot()).snapshot.eventLists.event,
+    ).toEqual([{ id: "item-1", quantity: 1 }]);
+    await port.commitApplicationSnapshotAtomically(next, {
+      expectedRoots: before.expectedRoots,
+    });
+    expect(
+      (await port.readApplicationSnapshot()).snapshot.eventLists.event,
+    ).toEqual([{ id: "item-1", quantity: 2 }]);
+    expect(port.getWriteStopReason!()).toBeUndefined();
   });
 });

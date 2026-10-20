@@ -1,0 +1,1650 @@
+
+> event-shopping-planner@1.0.0 quality
+> npm run test:encoding && npm run format:check && npm run verify:baseline && npm run verify:foundation && npm run verify:external-prerequisites && npm run verify:artifact-control-store-drill-policy && npm run verify:release-state && npm run verify:phase-readiness && npm run verify:toolchain && npm run verify:dependency-usage && npm run test:dependency-usage && npm run verify:audit && npm run verify:db-compatibility && npm run verify:provider-policy && npm run verify:csp-policy && npm run verify:metrics-contract && npm run verify:metrics-retention && npm run verify:performance-policy && npm run typecheck && npm run lint && npm run verify:test-project-membership && npm run verify:architecture && npm run verify:coverage-policy && npm run test:coverage-policy && npm run test:foundation && npm run test:unit && npm run test:integration && npm run test:worker && npm run test:api && npm run test:coverage
+
+
+> event-shopping-planner@1.0.0 test:encoding
+> node scripts/verify-encoding.mjs
+
+PASS encoding verification: 1080 text files; UTF-8 without BOM; U+FFFD/mojibake/suspicious '?' absent; newlines: LF=1076, CRLF=3, none=1; question marks reviewed=14643; representative strings: ユーザー登録=138, エラーが発生しました=51
+
+> event-shopping-planner@1.0.0 format:check
+> prettier --check "**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,css,yml}"
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> event-shopping-planner@1.0.0 verify:baseline
+> node scripts/verify-foundation-baseline.mjs
+
+PASS foundation baseline: source 638dc0d2b05a09da9ea09e3f25e00bb36e1b2994; evidence a5997fe5fdbb9e410aa81ec37197092fcb717957a68ba9f31f4fc63431564aeb; 4 explicit external blocker(s)
+
+> event-shopping-planner@1.0.0 verify:foundation
+> node scripts/verify-foundation-policy.mjs
+
+PASS foundation policy: 47 JSON files; production activation blocked (44).
+
+> event-shopping-planner@1.0.0 verify:external-prerequisites
+> node scripts/verify-phase-exit-external-prerequisites.mjs
+
+PASS external phase-exit prerequisite policy 6d6e00079170b460db795b121c9730d28c2e915b811b99e8aef74a376ca7298e; activation unconfigured; blockers 12.
+
+> event-shopping-planner@1.0.0 verify:artifact-control-store-drill-policy
+> node scripts/provider/verify-artifact-control-store-drill-policy.mjs
+
+PASS artifact control-store drill policy: unconfigured; blockers 7
+
+> event-shopping-planner@1.0.0 verify:release-state
+> node scripts/verify-release-state.mjs
+
+PASS Release State static contract 358b67149f46065a4e495e014fc8e1bd0df0ad837b3a454d47dc1ff2a33cae89; migrations 427ed4454cc8422ca1321a4ef2a9b45de3cbf7a19608d530fd4c10480bd506be; store unconfigured.
+
+> event-shopping-planner@1.0.0 verify:phase-readiness
+> node scripts/verify-phase-exit-readiness.mjs
+
+REPORT phase exit readiness: 0/16; blocked; next P0-BASELINE
+
+> event-shopping-planner@1.0.0 verify:toolchain
+> node scripts/verify-toolchain.mjs
+
+PASS toolchain policy: 40 exact top-level packages; Node 24.19.0; npm 11.19.0
+
+> event-shopping-planner@1.0.0 verify:dependency-usage
+> node scripts/verify-direct-dependency-usage.mjs
+
+PASS direct dependency usage: 40 known, 0 unknown, 0 unused; production=336, release-tool=296, test=614, build=17
+
+> event-shopping-planner@1.0.0 test:dependency-usage
+> node --test scripts/verify-direct-dependency-usage.test.mjs
+
+✔ accepts reachable module and package-owned CLI evidence (90.5439ms)
+✔ fails closed when a direct dependency has no policy entry (109.0896ms)
+✔ rejects an import that exists only in an orphan file (92.3221ms)
+✔ rejects a CLI claim when the package does not own that binary (84.064ms)
+✔ rejects a direct dependency with empty evidence (87.7895ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 554.011
+
+> event-shopping-planner@1.0.0 verify:audit
+> node scripts/verify-audit.mjs
+
+PASS reachability-aware audit: all critical=0, high=0 (0 reviewed waiver); production critical=0, high=0; moderate=0
+
+> event-shopping-planner@1.0.0 verify:db-compatibility
+> node scripts/verify-db-compatibility-contract.mjs
+
+PASS DB compatibility contract 59cab323aedb35d8677e289545053591d34348970bfa268be3c4c437faf7c91f; remote unobserved.
+
+> event-shopping-planner@1.0.0 verify:provider-policy
+> node scripts/provider/verify-provider-policy.mjs
+
+PASS provider policy structure 52c7a7fa9eb30cb67b49bcfc7fd78cba6e071f244ad2a0fa51553a47b497d48d; binding unconfigured.
+
+> event-shopping-planner@1.0.0 verify:csp-policy
+> node scripts/verify-csp-policy.mjs
+
+PASS CSP policy: 14 directives and 5 provider headers match web-foundation-csp-v1; 348 production sources contain no inline runtime style mutation.
+
+> event-shopping-planner@1.0.0 verify:metrics-contract
+> node scripts/verify-metrics-contract.mjs
+
+PASS metrics characterization: 156 closed requests; contract ce824917c415374a86e57f24ea8413e86fb20b9833406c87bf6965ca7ad6b2ac.
+
+> event-shopping-planner@1.0.0 verify:metrics-retention
+> node scripts/verify-metrics-retention.mjs
+
+PASS metrics retention policy: raw 30d; CSP 7d; 5000x12.
+
+> event-shopping-planner@1.0.0 verify:performance-policy
+> node scripts/verify-performance-policy.mjs
+
+PASS performance policy: 17 canonical scenarios; 17 explicit pending scenario(s); production exits remain fail-closed
+
+> event-shopping-planner@1.0.0 typecheck
+> tsc --noEmit && tsc -p tsconfig.release-tools.json
+
+
+> event-shopping-planner@1.0.0 lint
+> eslint . --max-warnings 0
+
+
+> event-shopping-planner@1.0.0 verify:test-project-membership
+> node scripts/verify-test-project-membership.mjs
+
+PASS test project membership: 245 files; integration=44, unit=191, worker=10
+
+> event-shopping-planner@1.0.0 verify:architecture
+> node scripts/verify-architecture.mjs
+
+PASS architecture verification: 343 production files; 1637 import edges; 0 baseline exception(s); graph b562815d276ae28d85c1d74dc4cec5e8e7126c1b1e3f807ced21450b7a319efc
+
+> event-shopping-planner@1.0.0 verify:coverage-policy
+> node scripts/verify-coverage-policy.mjs
+
+PASS coverage policy: global 45% lines / 35% branches; 6 active subsystem floors; 0 exceptions/waivers/future placeholders
+
+> event-shopping-planner@1.0.0 test:coverage-policy
+> node --test scripts/coverage-policy/coverage-policy.test.mjs
+
+✔ parses and merges LCOV without double-counting repeated reports (2.2203ms)
+✔ maps zero-context diff hunks to executable changed lines and branches (1.0689ms)
+✔ reports scoped changed source that is absent from every coverage report (0.2425ms)
+✔ streams a diff larger than the former buffer without losing changed-code failures (1799.367ms)
+✔ retains zero-context changed lines for base, previous-commit, and working-tree comparisons (1585.2969ms)
+✔ rejects Git failures instead of returning an empty changed-code result (717.9054ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4211.0153
+
+> event-shopping-planner@1.0.0 pretest:foundation
+> node --test scripts/release-state/phaseExitAttestation.test.mjs scripts/release-state/managedDeviceReviewedStageSetAuthority.test.mjs scripts/release-state/p8FloorActivationClosure.test.mjs scripts/browser/managed-device-live-stage.test.mjs scripts/browser/managed-device-stage-authority.test.mjs
+
+✔ live stage parser exposes no stage or client result claims (2.9522ms)
+✔ PowerShell enrollment authority is hash-only in policy comparison and raw evidence (11.4817ms)
+✔ live finalizer exposes only exact internal file authorities (0.5007ms)
+✔ legacy sentinel preparer accepts only internal file authorities (0.2584ms)
+✔ unconfigured live stage rejects before policy, store, OIDC, or process (2.4234ms)
+✔ live PowerShell adapter rejects unconfigured policy before process resolution (0.566ms)
+✔ live PowerShell child environment is closed and omits workflow/database secrets (0.4947ms)
+✔ live PowerShell adapter reads only a canonical signed stage output (21.0962ms)
+✔ managed device stage summary is derived from two real client cycles (33.4731ms)
+✔ managed device stage rejects caller-like launch and raw claims (35.2981ms)
+✔ managed device multistage aggregator closes three reviewed A-B-A runs (1.9392ms)
+✔ managed device multistage aggregator rejects stale and tampered chains (1.7777ms)
+✔ stores a canonical closed set and derives order only from reviewed runs (3.6652ms)
+▶ rejects duplicate, current, future, and extra old run selectors
+  ✔ duplicate (0.5513ms)
+  ✔ current (0.2476ms)
+  ✔ future (0.2168ms)
+  ✔ extra old valid run (0.2183ms)
+✔ rejects duplicate, current, future, and extra old run selectors (1.84ms)
+▶ rejects tamper, cross-authority reuse, and reviewed selector substitution
+  ✔ tamper (0.4235ms)
+  ✔ cross authority (0.4627ms)
+  ✔ selector substitution (0.6172ms)
+✔ rejects tamper, cross-authority reuse, and reviewed selector substitution (2.0004ms)
+✔ stores and reads a canonical PWA reviewed formal closure from immutable predecessors (4.5591ms)
+✔ binds four reviewed publisher inputs to the P1 formal phase resolver (3.7806ms)
+▶ rejects unknown, missing, and substituted PWA closure identities
+  ✔ unknown field (0.8705ms)
+  ✔ missing field (0.8631ms)
+  ✔ strict authority substitution (1.1201ms)
+  ✔ stage set readback substitution (1.0029ms)
+✔ rejects unknown, missing, and substituted PWA closure identities (4.3062ms)
+▶ rejects non-predecessor and non-distinct composite workflow runs
+  ✔ duplicates a stage (0.5311ms)
+  ✔ follows the stages (0.4996ms)
+  ✔ is the current run (0.4968ms)
+  ✔ changes after composite publication (1.368ms)
+✔ rejects non-predecessor and non-distinct composite workflow runs (3.3087ms)
+▶ rejects strict reviewed artifact metadata and signed receipt failures
+  ✔ repository (0.5791ms)
+  ✔ source (0.3793ms)
+  ✔ workflow (0.7674ms)
+  ✔ artifact (0.8336ms)
+  ✔ file (0.7267ms)
+  ✔ media type (0.4466ms)
+  ✔ noncanonical signed receipt (5.052ms)
+  ✔ signature rejection (1.1998ms)
+  ✔ verification substitution (0.9151ms)
+✔ rejects strict reviewed artifact metadata and signed receipt failures (12.0344ms)
+▶ binds strict PWA evidence to stage source, device, deployment, controller, and time
+  ✔ source (1.2328ms)
+  ✔ device (1.0941ms)
+  ✔ deployment (0.9936ms)
+  ✔ controller (1.1879ms)
+  ✔ result (1.1678ms)
+  ✔ observation predecessor (1.1561ms)
+✔ binds strict PWA evidence to stage source, device, deployment, controller, and time (7.4966ms)
+✔ builds and rederives the P8 package, headers, state, and rollback closure (112.5213ms)
+✔ keeps normal QA and P8 floor closure selection distinct (5.7213ms)
+✔ derives the activation subject only from the P8 closure branch (6.0414ms)
+✔ rejects non-P8 live state before reading package evidence (4.2959ms)
+✔ rejects a non-P8 package and an unsafe style attribute header (31.0373ms)
+✔ rejects ineligible rollback inventory and re-signed receipt tampering (115.4208ms)
+✔ builds, stores, and reads one canonical closed phase exit attestation (4.8937ms)
+✔ rejects missing, extra, reordered, and cross-gate authority sets (1.2232ms)
+✔ validates historical subject heads and rejects history tampering (11.5798ms)
+✔ CAS-appends the complete 16-gate chain through semantic release history and P8 floor activation (140.0656ms)
+✔ P0-DATA binds distinct ancestor bootstrap and executor sources to exact initialization history (4.4161ms)
+✔ P0-PROMOTE rejects reconciliation, abort, and historical lifecycle substitution (0.7146ms)
+✔ append rederives the latest support and rejects a premature handcrafted attestation (3.0898ms)
+✔ release exit rejects rollback rewrapping of a historical acceptance (0.6856ms)
+▶ rejects forked source ancestry, time regression, and subject-head regression
+  ✔ forked source ancestry (1.0941ms)
+  ✔ time regression (1.0833ms)
+  ✔ subject predates supporting event (0.6676ms)
+✔ rejects forked source ancestry, time regression, and subject-head regression (3.3946ms)
+✔ readback rejects a wrong immutable media type (0.2473ms)
+✔ validates the exact pre-initialization chain and replays its seeded ledger (1.3727ms)
+✔ rejects unseeded, reordered, substituted, and tampered initialization history (1.6719ms)
+✔ CLI closes predecessor input at the pre-initialization gate boundary (0.315ms)
+ℹ tests 73
+ℹ suites 0
+ℹ pass 73
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 862.226
+
+> event-shopping-planner@1.0.0 test:foundation
+> node --test scripts/release-state/releaseDispatchRequest.test.mjs scripts/provider/artifact-control-store-drill.test.mjs scripts/provider/artifact-control-store-drill-bootstrap.test.mjs scripts/provider/backup-restore-rehearsal.test.mjs scripts/provider/artifact-control-store-drill-policy.test.mjs scripts/provider/artifact-control-store-drill-postgres.test.mjs scripts/provider/artifact-control-store-drill-provider.test.mjs scripts/browser/managed-device-authority.test.mjs scripts/browser/managed-device-collector.test.mjs scripts/browser/production-request-graph.test.mjs scripts/browser/deployed-csp-flow.test.mjs scripts/browser/csp-report-observation.test.mjs scripts/browser/csp-report-phase-authority.test.mjs scripts/build-performance-inherited-closure.test.mjs scripts/build-pwa-recovery-agent.test.mjs scripts/canonical-json.test.mjs scripts/collect-own-gate-performance-samples.test.mjs scripts/csp-delivery.test.mjs scripts/db/remote-db-observation.test.mjs scripts/deterministic-zip.test.mjs scripts/foundation-baseline-closure-authority.test.mjs scripts/lib/application-stylesheet-contract.test.mjs scripts/lib/artifact-build-runtime-authority.test.mjs scripts/foundation-control-verifiers.test.mjs scripts/npm-cli-argument-forwarding.test.mjs scripts/performance-evidence-identity.test.mjs scripts/performance-inherited-closure-authority.test.mjs scripts/performance-inherited-closure.test.mjs scripts/performance-policy.test.mjs scripts/performance-sample-collector.test.mjs scripts/performance/publicFoundationScenarioAdapters.test.mjs scripts/performance/publicListScenarioAdapters.test.mjs scripts/performance/publicXlsxScenarioAdapters.test.mjs scripts/phase-exit-external-authority.test.mjs scripts/phase-exit-external-prerequisites.test.mjs scripts/phase-exit-readiness.test.mjs scripts/produce-own-gate-performance-evidence.test.mjs scripts/produce-phase-exit-quality-run-source.test.mjs scripts/provider/archiveRecovery.test.mjs scripts/provider/archiveRecoveryExecution.test.mjs scripts/provider/archiveRecoveryWorkflow.test.mjs scripts/provider/collect-vercel-observation.test.mjs scripts/provider/foundation-external-bindings.test.mjs scripts/provider/foundation-bootstrap-recovery.test.mjs scripts/provider/deploymentBindingProducer.test.mjs scripts/provider/policy-activation-qa.test.mjs scripts/provider/prebuiltDeployment.test.mjs scripts/provider/preparedPromotion.test.mjs scripts/provider/produce-deployment-binding.test.mjs scripts/provider/produce-production-assignment-validation.test.mjs scripts/provider/productionAssignmentValidation.test.mjs scripts/provider/providerConfiguration.test.mjs scripts/provider/startup-waf-observation.test.mjs scripts/release-artifact.test.mjs scripts/release-policy.test.mjs scripts/release-state/acceptanceEvidenceInputProducerCli.test.mjs scripts/release-state/acceptanceEvidenceInputs.test.mjs scripts/release-state/administrativeTransitions.test.mjs scripts/release-state/administrativeTransitionsCli.test.mjs scripts/release-state/administrativeWorkflow.test.mjs scripts/release-state/artifactBuildAuthority.test.mjs scripts/release-state/authoritativeInputProducerCli.test.mjs scripts/release-state/authoritativeInputProducers.test.mjs scripts/release-state/executeReleaseLifecycleCli.test.mjs scripts/release-state/foundationBaselineClosureCli.test.mjs scripts/release-state/lifecycleExecution.test.mjs scripts/release-state/performanceAcceptanceWorkflow.test.mjs scripts/release-state/phaseExitAuthorityWorkflow.test.mjs scripts/release-state/phaseGates.test.mjs scripts/release-state/policyActivation.test.mjs scripts/release-state/policyActivationClosure.test.mjs scripts/release-state/policyActivationQaExecution.test.mjs scripts/release-state/policyActivationQaPackage.test.mjs scripts/release-state/policyActivationWorkflow.test.mjs scripts/release-state/prePromotionEvidence.test.mjs scripts/release-state/prePromotionEvidenceCollectorCli.test.mjs scripts/release-state/prePromotionEvidenceExecution.test.mjs scripts/release-state/prePromotionEvidenceWorkflow.test.mjs scripts/release-state/protectedReleaseCli.test.mjs scripts/release-state/protectedWorkflowCore.test.mjs scripts/release-state/releaseStateAdapters.test.mjs scripts/release-state/releaseStateReducer.test.mjs scripts/release-state/releaseStateSchema.test.mjs scripts/release-state/releaseWorkflowValidation.test.mjs scripts/release-state/reviewedWorkflowArtifactAuthority.test.mjs scripts/verify-release-a-browser.test.mjs scripts/rehearse-release-a-db-boundary.test.mjs scripts/verify-release-a-evidence-bundle.test.mjs scripts/verify-release-a-evidence.test.mjs
+
+✔ observes report-only header, scenarios, identity, and sink status (1767.2276ms)
+✔ rejects header drift and missing report route (2310.0286ms)
+✔ queries an exclusive source/deployment DB window read-only (1.0218ms)
+✔ classifies extension noise and rejects first-party/misclassified noise (2.9929ms)
+✔ rejects DB fingerprint/window drift, missing scenarios, and extra keys (2.1924ms)
+✔ immutably stores and rejects tamper/media/store mismatch (8.9891ms)
+✔ collector rejects old source and untrusted OIDC; CLI rejects caller claims (2.1619ms)
+✔ collector derives its result only from trusted browser and DB observations (84.4085ms)
+✔ raw media type is dedicated to CSP report observations (14.0718ms)
+✔ rejects a live P2B state with a pending operation (1.7211ms)
+✔ rejects a live P2B state without its current companion (1.2202ms)
+✔ requires both current standard and companion to remain report-only (1.0903ms)
+✔ derives exact active path, method, and rate semantics from live provider (1.5414ms)
+✔ observes all seven deployed CSP flows from a local browser fixture (2661.5838ms)
+✔ rejects an exact CSP response header drift (1058.1713ms)
+✔ rejects missing flows, browser violations, and extra raw fields (1763.2277ms)
+✔ stores, re-reads, and re-derives the immutable CSP trace (1410.7833ms)
+✔ collector rejects old sources and requires trusted OIDC authority (2.7153ms)
+✔ writes a create-only exact observation file (1283.0813ms)
+✔ resolves prompt-close drill mode as a closed forward-only contract (1.5865ms)
+✔ resolves rollback capability mode as a closed rollback-only contract (0.3319ms)
+✔ requires an explicit closed rollback activation mode (0.3352ms)
+✔ accepts only closed evidence that a legacy capability is absent (3.8192ms)
+✔ fails managed-device policy before any live adapter can start (3.7561ms)
+✔ pwa-multiclient-drill signs canonical raw evidence and derives its result (79.0269ms)
+✔ idb-device-compatibility signs canonical raw evidence and derives its result (36.7777ms)
+✔ rejects caller client/status/installed claims and incomplete PWA lifecycle (30.4265ms)
+✔ rejects incomplete or tampered per-profile prompt-close browser evidence (80.1265ms)
+✔ rejects IDB invalid/conflict, fingerprint, syncQueue, and cleanup drift (15.6957ms)
+✔ rejects an attestation key outside the configured fingerprint (6.6926ms)
+✔ managed-device argument parser accepts only the closed four-pair contract (2.903ms)
+✔ fixed collector entrypoints supply their authority and expose only three caller pairs (0.4584ms)
+✔ unconfigured managed-device policy rejects before policies, store, or executor (8.9169ms)
+✔ PowerShell adapter rejects unconfigured policy before platform and process resolution (15.0493ms)
+✔ PowerShell adapter projects a closed child environment without workflow or database secrets (86.0481ms)
+✔ strict PWA artifacts require canonical prompt-close identities bound to both deployments (230.4544ms)
+✔ raw collector uses each configured profile pair and rechecks strict PWA artifacts (27.9924ms)
+✔ PWA rollback materialization accepts exactly one distinct eligible standard (2.145ms)
+✔ observes a canonical same-origin graph from a local HTTP fixture (2038.8126ms)
+✔ rejects a navigation that redirects to a different origin (789.2308ms)
+✔ rejects runtime CSS writes observed in the browser (1672.6939ms)
+✔ allows element inline styles because P2A only blocks runtime stylesheets (1335.3103ms)
+✔ rejects CSSOM rule injection observed in the browser (1182.3749ms)
+✔ resolves only the exact current source and ignores old inventory bindings (2.8891ms)
+✔ requires assigned and validated events for a prepared production binding (1.5735ms)
+✔ stores, reads back, and re-summarizes the canonical raw graph (3.165ms)
+✔ rejects tampered stored bytes, mismatched receipts, and extra raw keys (1.112ms)
+✔ collector derives result from observation and never accepts caller result fields (4.4591ms)
+✔ OIDC authority is verified, immutably stored, and read back (1.619ms)
+✔ protected authority requires exact workflow and OIDC environments (138.0941ms)
+✔ writes output with create-only descriptor readback (32.7262ms)
+✔ parses only four distinct historical event hashes (3.0023ms)
+✔ builds only after authoritative store resolution and closes the store (6.0207ms)
+✔ closes the authoritative store when closure validation fails (0.9777ms)
+✔ builds a reproducible self-contained outer agent graph (1398.7482ms)
+✔ rejects outer agent byte and source-graph tampering (260.1618ms)
+✔ writes byte-identical canonical stable and versioned identities (42.9436ms)
+✔ rejects an immediate-activation worker (45.7208ms)
+✔ binds a non-target phase candidate into legacy identity bytes (19.5786ms)
+✔ marks a CLI-selected QA identity as nonpromotable (60.9378ms)
+✔ marks policy-activation identities as nonpromotable for either release role (100.2176ms)
+✔ marks artifact-drill identities as nonpromotable for either release role (89.8367ms)
+✔ rejects malformed hashes, roles, and QA purpose bindings (0.9775ms)
+✔ rejects dimensions, variants, and worker identity contract drift (57.8502ms)
+✔ rejects empty and non-file recovery agent output (14.5616ms)
+✔ builds the projected containment identity (31.9986ms)
+✔ uses RFC 8785-compatible key ordering and number serialization (2.5412ms)
+✔ rejects values outside the strict plain-JSON contract (0.7822ms)
+✔ rejects a BOM while accepting canonicalizable parsed JSON (1.1477ms)
+✔ derives collection authority from pending standard live objects (5.5142ms)
+✔ fails closed on state, archive, manifest, and physical binding drift (3.1486ms)
+✔ accepts only raw samples bound to authoritative source, artifact, environment, and 30 samples (14.5859ms)
+✔ CLI surface forbids caller gate, dimensions, artifact, target, adapter, and evidence identity (0.844ms)
+✔ requires the dedicated protected physical Windows runner binding (1.7525ms)
+✔ CLI internally supplies authoritative collector arguments and publishes one raw file after stable readback (66.3466ms)
+✔ CLI does not publish raw evidence when pending authority drifts after collection (153.3967ms)
+✔ dedicated workflow is a protected create-only physical collector with no caller authority (8.4951ms)
+✔ raw artifact has exactly one upload producer and release reviews its prior run and digest (24.8914ms)
+✔ renders exactly one active CSP header from the build mode (10.3264ms)
+✔ keeps vercel.json as the enforced target and renders phase variants (3.7265ms)
+✔ enables the report function and credentials only for active CSP modes (3.162ms)
+✔ remote DB observation authority is closed and explicitly configurable (4.7044ms)
+✔ shared remote DB assertion closes the existing 14-key evidence shape (12.3881ms)
+✔ collector uses a read-only repeatable snapshot and emits deterministic evidence (21.5705ms)
+✔ collector rolls back on missing schema, elevated observer, or CSP credential reachability (137.7168ms)
+✔ collector CLI binds TLS credentials, writes canonical bytes with wx, and logs no secret (13.2217ms)
+✔ collector CLI rejects host, database, role, and CA outside configured authority (2.9496ms)
+✔ collector CLI rejects malformed and aliasing arguments (0.3254ms)
+✔ stores canonical remote DB authority with exact media type and readback (3.9474ms)
+✔ binds an observation to its exact successful producer run (48.1887ms)
+✔ protected collector stores closed authority and emits only secret-safe references (17.9021ms)
+✔ protected collector rejects local environment spoof without trusted OIDC (1.9328ms)
+✔ protected collector rejects incomplete, duplicate, and aliased inputs (0.3081ms)
+✔ creates byte-identical archives from different roots and mtimes (189.6879ms)
+✔ rejects traversal, absolute, Windows, and ambiguous paths (1.8771ms)
+✔ rejects archive policy drift before reading build output (0.5277ms)
+✔ CLI output is byte-identical across process timezones (905.5969ms)
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+✔ closes P0A with an independent provider-bound bootstrap source before P0D (10968.5222ms)
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+✔ rejects arbitrary resolution objects and arbitrary immutable hashes (1768.4008ms)
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+✔ rejects recovery evidence whose source differs from bootstrap binding (1725.8379ms)
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+✔ rejects a deployment/package source that differs from the selected bootstrap source (1762.0731ms)
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+✔ rejects a raw-dist manifest that differs from the bootstrap package (1629.2049ms)
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+✔ rejects dirty closure source after its branded resolution (1479.8918ms)
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'foundation.txt', LF will be replaced by CRLF the next time Git touches it
+✔ readback rejects stale, wrong-source, extra-key, and tampered closure bytes (5102.5174ms)
+✔ configured P0A database binding rejects unconfigured authority without requiring P0D observation (0.5064ms)
+✔ approval policy fixes one human account across all operator roles (4.6998ms)
+✔ configured approval policy fixes exact roles, teams, and identity flags (2.3167ms)
+✔ foundation readiness includes baseline, retention, startup, and external prerequisite authorities (677.8996ms)
+✔ foundation production readiness rejects unresolved control authorities (686.4167ms)
+✔ accepts complete per-target retention evidence (392.626ms)
+✔ rejects stale CSP retention even when metrics retention is fresh (369.3654ms)
+✔ keeps external production controls fail-closed while unconfigured (1566.4442ms)
+✔ injects the exact static application stylesheet once (3.5618ms)
+✔ rejects missing, ambiguous, source, and duplicate stylesheet bindings (1.0211ms)
+✔ requires ID-specific static display suppression (0.2937ms)
+✔ re-reads the built index and linked stylesheet bytes (74.1334ms)
+✔ accepts exact active production and proposed nonpromotable authorities (25.6476ms)
+✔ rejects source, policy, DB, dimension, and reviewed hash drift (16.6897ms)
+✔ rejects proposed production and promotable Policy QA identities (9.7114ms)
+✔ uses one npm separator on Ubuntu workflows (28.8937ms)
+✔ keeps the second npm separator on the Windows performance runner (1.8748ms)
+✔ selects spawned npm separators from the host platform (2.796ms)
+✔ maps accepted gates to exact own evidence, P8 closure, or null (12.1496ms)
+✔ projects a formal four-key own-gate artifact to the verifier's closed three-key envelope (2.5027ms)
+✔ rejects a missing, extra, wrong-gate, or wrong-kind artifact (4.1373ms)
+✔ binds optional bytes and reviewed SHA as one pair (2.4446ms)
+✔ tracks a separate closed schema for formal own-gate artifacts (13.4449ms)
+✔ resolves closure inputs only from authoritative event and object reads (39.8831ms)
+✔ rejects a missing OIDC object and live archive tampering (10.0561ms)
+✔ rejects legacy own-gate envelopes and producer receipts bound to another archive (24.081ms)
+✔ rejects performance evidence produced after its accepted observation (15.868ms)
+✔ uses full authoritative replay by default (6.4248ms)
+✔ verifies a closed 4-gate, 17-scenario inherited closure (1111.5179ms)
+✔ rejects closure field, variant, archive, and raw-byte tampering (1169.6672ms)
+✔ rejects accepted operation IDs beyond the schema maximum at schema and runtime boundaries (1036.0236ms)
+✔ tracks a closed schema for every inherited closure object (1029.7927ms)
+✔ routes P8 verification to the inherited closure contract (1246.2456ms)
+✔ uses the fixed median and nearest-rank p95 method (3.1212ms)
+✔ validates canonical P0, XLSX Worker, and dual-list policy as pending (1497.7162ms)
+✔ fails P3 acceptance while samples, ceilings, and source bindings are pending (1010.1601ms)
+✔ fails P8 closure while any inherited P0, P3, or P5 evidence is pending (1142.055ms)
+✔ rejects removal of a mandatory cancel or renderer-selection scenario (9.0572ms)
+✔ rejects a temporary performance exception at every gate (6.5077ms)
+✔ binds the compressed-input and timeout scenarios to XLSX resource limits (1266.4222ms)
+✔ accepts a source-bound P3 evidence envelope with 30 recomputable samples (1741.812ms)
+✔ builds evidence only from a complete closed 30-sample input (1325.8618ms)
+✔ rejects evidence when a 30-sample series is truncated (904.7094ms)
+✔ performance contract hash excludes only the evidence envelope digest (5.8588ms)
+✔ keeps legacy and consistency-aware export setup storage contracts distinct (0.5324ms)
+✔ dispatches all 17 canonical scenarios and fixes the collector protocol (1376.5342ms)
+✔ rejects P8 inherited collection before opening a browser context (1058.7971ms)
+✔ uses one warmup then deterministic rotated 30-sample rounds (1.4641ms)
+✔ collects 30 measurements in fresh contexts and excludes warmup (1161.5224ms)
+✔ fails before sampling for an incomplete adapter or fixture drift (1060.9816ms)
+✔ fails closed for missing telemetry and a false functional assertion (1053.0169ms)
+✔ fails closed when a generated payload binding drifts after warmup (787.7418ms)
+✔ collector CLI requires explicit artifact, environment, target, and output (0.9355ms)
+✔ verifies every public artifact asset byte and fails closed on drift (1.0557ms)
+✔ exports only the four public foundation adapters without a target harness (42.6781ms)
+✔ measures cold clear/navigation and same-context prime/reload semantics (13.9193ms)
+✔ keeps fixture setup outside full-list and current IndexedDB measurements (15.0016ms)
+✔ fails closed for containment, dirty cold state, and caller telemetry drift (11.9625ms)
+✔ builds deterministic execute-mode backup bindings including anchor mutation (2371.3728ms)
+✔ list-long-full drives the public backup and DOM contract (799.5063ms)
+✔ list-long-virtual drives the public backup and DOM contract (651.9342ms)
+✔ rejects cross-scenario dispatch before touching the page (2.9099ms)
+✔ fails closed when the selected renderer reason is not the exact eligibility reason (607.7947ms)
+✔ checks every rendered row in the accessible-name parity window (409.3498ms)
+✔ fails closed when the full renderer does not preserve canonical group/item order (650.7823ms)
+✔ exports exactly the five Phase 5 public list scenarios (0.6015ms)
+✔ dispatches every XLSX scenario through a repo-owned public adapter (2.0558ms)
+✔ binds one exact public Worker asset to its artifact manifest (2.0063ms)
+✔ generates one deterministic source-bound workbook recipe (388.3709ms)
+✔ binds round-trip semantics to every exported item field (1.4743ms)
+✔ fault fixture hashes bind the exact tracked Worker bytes (10.4139ms)
+✔ executes the default benign XLSX adapter through the public file surface (84.6424ms)
+✔ round-trips the production UI export download through the public Worker (5991.3834ms)
+✔ keeps the XLSX adapter free of synthetic download and legacy target hooks (2.253ms)
+▶ stages initialized empty DB 9/10/11 roots while preserving their parent revisions
+  ✔ none (18.5396ms)
+  ✔ partitioned-empty (5.8824ms)
+  ✔ partitioned-empty-v11 (8.0824ms)
+  ✔ partitioned-stray (5.0299ms)
+  ✔ partitioned-digest (4.3322ms)
+  ✔ data (4.1006ms)
+  ✔ digest (3.5821ms)
+  ✔ checkpoint (2.9864ms)
+  ✔ partial (3.5849ms)
+  ✔ consistency-data (3.0171ms)
+  ✔ consistency-digest (4.7205ms)
+  ✔ timestamp (4.2339ms)
+✔ stages initialized empty DB 9/10/11 roots while preserving their parent revisions (73.4328ms)
+✔ closes reader selection over every implemented external authority (2.0855ms)
+✔ keeps one executable positive readback route for every reader branch (19.1625ms)
+✔ derives P0-BASELINE external bindings from a reviewed artifact and raw immutable authority (98.6287ms)
+✔ derives P0-DATA backup closure from a reviewed artifact and raw immutable authority (85.0073ms)
+✔ derives P0-DATA startup WAF closure from a reviewed artifact and raw immutable transcript (102.5415ms)
+✔ resolves the complete P0-DATA reviewed artifact and raw authority bundle (230.5639ms)
+✔ resolves the four legacy collector authorities from their formal chain (46.6179ms)
+✔ resolves P0 physical performance only at the P0-RELEASE exit (21.1526ms)
+✔ projects live deployment context separately and rejects historical or wrong-source bindings (13.7287ms)
+✔ projects a closed target-gate subject without leaking live production state (4.1513ms)
+✔ managed-device authorities derive evidence only from their reviewed formal authority (11.8973ms)
+✔ publishes only a prevalidated reviewed bundle and verifies immutable readback (36.6063ms)
+✔ publisher rejects an unreviewed evidence byte set before immutable writes (20.4818ms)
+▶ rejects arbitrary hashes, tamper, wrong media, extra keys, and generic substitution
+  ✔ arbitrary hash (25.7484ms)
+  ✔ tampered bytes (15.5914ms)
+  ✔ wrong media type (20.8956ms)
+  ✔ extra key (10.5565ms)
+  ✔ generic substitution (11.6276ms)
+  ✔ generic reviewed run substituted for DB production authority (27.4927ms)
+  ✔ same-run collector and DB producer (13.7209ms)
+✔ rejects arbitrary hashes, tamper, wrong media, extra keys, and generic substitution (129.6113ms)
+▶ rejects stale, future, wrong-source, wrong-gate, wrong-subject, duplicate, and semantic drift
+  ✔ stale (11.6675ms)
+  ✔ future (17.6288ms)
+  ✔ wrong source (9.0609ms)
+  ✔ wrong gate (12.7353ms)
+  ✔ wrong subject (11.4663ms)
+  ✔ duplicate authority (20.6839ms)
+  ✔ cross-gate subject kind (12.0155ms)
+  ✔ remote DB semantic drift (35.852ms)
+  ✔ retention collector run-attempt drift (14.4156ms)
+✔ rejects stale, future, wrong-source, wrong-gate, wrong-subject, duplicate, and semantic drift (151.6368ms)
+✔ closed policy fixes all three authority prerequisites without secrets (4.2109ms)
+✔ strictly bound future policy derives configured status (2.6076ms)
+✔ rejects unknown fields, values, and caller-supplied booleans (3.4726ms)
+✔ rejects placeholder external bindings (2.3739ms)
+✔ rejects duplicate JSON members and duplicate ordered inputs (2.6099ms)
+✔ rejects production restore targets and generic credential names (1.0646ms)
+✔ rejects invalid objectives, browser identity, attestation, and launch authority (4.1169ms)
+✔ rejects caller status and blocker assertions that differ from bindings (1.0511ms)
+✔ formal authority collector implementation status remains explicit (0.4608ms)
+✔ CLI verifies structure but cannot promote the closed policy (1859.8473ms)
+✔ keeps the 16 formal exits separate from the 11 release acceptance gates (3.5402ms)
+✔ reports the repository-only authority boundary as zero of sixteen (29524.8192ms)
+✔ rejects caller supplied hashes, blockers, and accepted gate (0.7697ms)
+✔ resolves live gate authorities only from a replayed store (22246.1441ms)
+✔ rejects a manifest sequence or authority drift (0.5866ms)
+✔ labels a blocked CLI snapshot as a report, never a pass (22147.6331ms)
+✔ derives P0 own evidence from P0-RELEASE without collapsing its performance gate (1.6496ms)
+✔ builds and verifies canonical own-gate evidence with provenance (22.849ms)
+✔ P8 inherited validation projects a formal four-key artifact before the closed verifier (11.1288ms)
+✔ rejects same-run, tampered, wrong-source, late, and noncanonical raw artifacts (8.6962ms)
+✔ rejects incomplete samples and false functional assertions through the canonical builder (30.2163ms)
+✔ rejects non-own acceptance gates and P8 inherited closure reuse (9.1499ms)
+✔ CLI has no caller gate, envelope, or file-only production mode (3.8535ms)
+✔ raw producer rejects stored collector OIDC drift in workflow, head, ref, and run (12.2757ms)
+✔ reviewed run authority rejects wrong workflow, head, ref, run, and conclusion (2.9304ms)
+✔ reviewed release run authority rejects wrong path, head, attempt, status, and conclusion (1.8378ms)
+✔ CLI replays authoritative requirements before and after building and writes a closed pair (13.4203ms)
+✔ CLI fails closed when Release State changes and without protected workflow authority (14.5836ms)
+✔ builds the closed exact-toolchain main-push quality source (12.3822ms)
+✔ rejects pull request substitution (0.6863ms)
+✔ rejects unprotected branch substitution (0.1999ms)
+✔ rejects wrong workflow substitution (0.1857ms)
+{"artifactName":"foundation-phase-exit-quality-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-1","fileName":"quality-run-source.json","sha256":"b375e5c88203f58f41f50d3dd9cc755684d4ac864ef717ca36b3cb634326092a","byteLength":539}
+✔ writes canonical bytes once and rejects argument or overwrite substitution (47.8863ms)
+✔ plans rollback and package redeploy only after live archive verification (5.6133ms)
+✔ plans containment activation and redeploy from a verified companion archive (1.768ms)
+✔ plans redeploy of the currently accepted standard before it enters rollback inventory (1.0078ms)
+✔ planner fails closed for unavailable bytes, wrong source, and wrong binding (4.8336ms)
+✔ strict recovery CLI writes only a dry-run plan and closes the store (2.8353ms)
+✔ materializes an exact source-hardened package from durable archive objects (125.5188ms)
+✔ materialization fails closed for missing pair, tamper, and wrong URI kind (57.7545ms)
+✔ builds authoritative subjects for all four archive recovery actions (16.4073ms)
+✔ rejects a package redeploy that changes immutable archive identity (2.9454ms)
+✔ stores approvals and CAS-appends a recovery pending operation (19.6624ms)
+✔ protected recovery CLI parses strict action shapes and materializes state-derived bindings (18.8002ms)
+✔ separates archive recovery subject production from reviewed mutation (1.8341ms)
+✔ downloads the exact prior subject artifact and rejects same-run review (2.0659ms)
+✔ materializes P0A raw dist internally and removes it after use (242.7788ms)
+✔ removes the temporary tree when materialization or validation fails (60.0145ms)
+✔ derives only the seven external binding blockers (27.2921ms)
+✔ configured bindings have no repository implementation blocker (5.3073ms)
+✔ rejects unknown or missing root and implementation fields (2.2828ms)
+✔ rejects legacy production-reader policy keys without fallback (1.7991ms)
+✔ rejects placeholder, duplicate, unsorted, and overlapping role bindings (5.1828ms)
+✔ rejects unknown, duplicate, unsorted, or forged blocker arrays (3.1346ms)
+✔ rejects disabling repository implementation capability flags (7.4848ms)
+✔ CLI passes structural verification and fails require-configured (8.3105ms)
+✔ accepts only the closed configured dedicated database authority (3.6993ms)
+✔ connection resolution requires all three separated credentials (1.2824ms)
+✔ connection resolution compares decoded credential bytes (0.5355ms)
+✔ legacy production-reader secret cannot satisfy the denied projection (0.3959ms)
+✔ refuses a production endpoint overlap before opening any pool (1.3468ms)
+✔ refuses production credential reuse before opening any pool (0.5696ms)
+✔ role inspection proves the closed set across every PostgreSQL role (0.6043ms)
+✔ derives CAS and denied-reader outcomes from raw PostgreSQL SQLSTATE (109.5169ms)
+✔ rejects a caller success value or a non-42501 database denial (2.6884ms)
+✔ receipt validator rejects boolean-only and role-tampered claims (2.1316ms)
+✔ disposable database success uses transactional semantic cleanup (34.0766ms)
+✔ partial pool creation closes every successfully opened pool (11.8782ms)
+✔ every post-provision failure removes schema and closes all pools (132.0278ms)
+✔ cleanup failure is aggregated with the original provision failure (137.3977ms)
+✔ normal cleanup failure remains fail-closed and closes all pools (39.0936ms)
+✔ accepts only the exact preview-only Vercel command shape (2.0597ms)
+✔ derives role-scoped aliases and denies every production overlap direction (1.4749ms)
+✔ deployment receipt rejects production target, domain, and provider drift (3.1432ms)
+✔ alias receipt binds the mutation and authoritative readback (1.2208ms)
+✔ redeploy and reconcile require a new deployment and exact two-domain mapping (35.4081ms)
+✔ build receipt retains and hashes the complete build authority document (2.9685ms)
+✔ provider cleanup deletes only tracked previews and proves idempotent 404 readback (12.4985ms)
+✔ provider cleanup rejects production aliases and foreign projects before DELETE (4.0125ms)
+✔ provider cleanup network or readback failure fails the collector (0.8575ms)
+✔ provider cleanup rejects undocumented or untyped deletion responses (2.5579ms)
+✔ live executor aggregates its primary failure with provider cleanup failure (29.9177ms)
+✔ derives an uncallable disposable namespace from workflow authority (4.0166ms)
+✔ validates and summarizes the complete artifact/provider/store drill (9.874ms)
+✔ provider cleanup raw responses and created-resource set are rederived (73.5088ms)
+✔ rejects production namespaces and production alias attempts (7.4089ms)
+✔ rejects archive, CAS, credential, route, redeploy, and reconcile failures (21.244ms)
+✔ rejects credential overreach and provider observation failure (4.3154ms)
+✔ stores, reads back, and rejects tamper/media/store mismatch (7.7437ms)
+✔ collector requires trusted OIDC and never resolves production Release State (32.5992ms)
+✔ CLI accepts only production namespace, source, and new output (0.6684ms)
+✔ default CLI reaches the closed binding gate before opening a database (579.6919ms)
+✔ external input failure waits for bootstrap and cleans temp authority and store (1.7326ms)
+✔ empty external input also cleans a completed bootstrap authority (0.5742ms)
+✔ uses a dedicated immutable transcript media type (0.1427ms)
+✔ captures a self-contained closure before disposable database cleanup (65.1953ms)
+✔ accepts only the official read/inspect/delete Supabase API contract (9.0923ms)
+✔ rejects non-integer backup IDs and invalid RFC 3339 timestamps (12.4038ms)
+✔ normalizes the official backup list and project response shapes (16.3562ms)
+✔ fails closed before DELETE for every unsafe restore-project identity (26.8791ms)
+✔ collects a new-project restore, compares DB authority, and confirms deletion (19.5608ms)
+✔ rechecks the exact restore identity immediately before DELETE (3.7756ms)
+✔ pins sanitized TLS URLs to the inspected Management API database hosts (18.4192ms)
+✔ rejects an overlapping database endpoint or decoded password before provider access (1.7065ms)
+✔ polls cleanup and always deletes an authorized target after DB failure (13.5096ms)
+✔ waits for both database observers to settle before deleting the restore project (13.9923ms)
+✔ requires function-only readers with distinct roles and migration head (1.4909ms)
+✔ tracked migrations contain no password and use core PostgreSQL SHA-256 (9.9797ms)
+✔ collects canonical Vercel API evidence without token or secret values (196.6537ms)
+✔ rejects stale provider Date headers (4.3722ms)
+✔ fails closed before fetching when provider binding is unconfigured (1.73ms)
+✔ rejects a tampered canonical response receipt (23.8355ms)
+✔ collector CLI rejects unknown, duplicate, and missing-value arguments (1.7805ms)
+✔ collector CLI rejects identical policy and output paths (0.4129ms)
+✔ collector output is create-only (86.7031ms)
+✔ collector rejects absent, short, oversized, and control-character tokens (6.9757ms)
+✔ collector does not propagate token-bearing fetch errors (5.0913ms)
+✔ observation evidence rejects unknown top-level properties (8.1982ms)
+✔ reruns production verification, probes immutable routes, and stores a closed binding chain (151.6186ms)
+✔ production deployment binding rejects a policy QA package index (47.1458ms)
+✔ fails closed for receipt tampering, stale evidence, and role mismatch (217.0825ms)
+✔ fails closed for partial routes, response aliases, secrets, and environment receipt gaps (318.8921ms)
+✔ rejects stale provider observation before verifier, fetch, or store (49.2899ms)
+✔ bootstrap seed parser and CLI reject caller selectors and wrong operation before authority I/O (3.9835ms)
+✔ bootstrap seed CLI requires pending policy and protected current workflow identity (70.2294ms)
+✔ bootstrap seed records, rereads, and reviews only its configured prior run and hashes (35.0228ms)
+✔ bootstrap seed rejects wrong source, run, and non-containment binding (4.7955ms)
+✔ collects and rederives build-less bootstrap recovery with an initialization-ready full binding (64.9394ms)
+✔ rejects caller authority and invalid cleanup or state projection semantics (64.9902ms)
+✔ readback rejects stale evidence, current-policy drift, and immutable receipt tamper (71.5572ms)
+✔ preview executor performs forward/recovery and always cleans a partial failure (180.304ms)
+✔ Vercel child environment excludes control-store, GitHub, OIDC, and database secrets (1.026ms)
+✔ bootstrap cleanup is idempotent and attempts every target before failing (48.7424ms)
+✔ CLI only accepts namespace/output and fails unconfigured before protected or external I/O (5.6048ms)
+✔ shared exact create-only writer rejects same-inode final-byte replacement (180.848ms)
+✔ closes configured P0A contracts while current repository policy remains fail-closed (37.6386ms)
+✔ collects provider, P0A database, uninitialized store, approval, and OIDC into immutable refs (31.174ms)
+✔ rejects caller authority, initialized namespace, non-read-only DB, stale and tampered raw (23.8046ms)
+✔ default P0A DB observer uses verify-full read-only identity query (2.2434ms)
+✔ external CLI forbids source/hash/status/url/bool and fails unconfigured before authority I/O (2.2504ms)
+✔ receipt validators reject caller status fields (1.2738ms)
+✔ parses only the closed Policy QA execute command (2.1177ms)
+✔ binds protected CLI flags to reviewed subject bytes before execution (3.3885ms)
+✔ rejects CLI identity drift and output overwrite before provider execution (1.2589ms)
+✔ deploys only the verified prebuilt command and writes a canonical receipt (221.9392ms)
+✔ production prebuilt deployment rejects a policy QA package index (77.9495ms)
+✔ replays an exact idempotency receipt after fresh provider resolution without redeploying (237.7971ms)
+✔ rejects content-addressed archive tampering before command execution (102.8543ms)
+✔ rejects path traversal in a content-addressed ZIP (141.532ms)
+✔ rejects selected role and manifest role mismatch (96.5372ms)
+✔ rejects ambiguous CLI URL output (191.2922ms)
+✔ rejects authoritative provider project/team mismatch (80.2194ms)
+✔ rejects stale authoritative provider Date evidence (104.4083ms)
+✔ rejects a token leaked by command output without echoing it (231.2546ms)
+✔ rejects control-bearing provider token before command or fetch (168.1544ms)
+✔ authoritative resolver keeps token in headers and records raw response evidence (77.4237ms)
+✔ CLI rejects unknown, duplicate, missing, unsafe values and path reuse (21.8812ms)
+✔ promotes one prepared standard target and writes canonical before/after evidence (151.2568ms)
+✔ treats an all-target observation as an idempotent replay (42.3776ms)
+✔ fails closed before mutation for partial or unknown assignments (58.4864ms)
+✔ rejects command output containing the provider token (13.2591ms)
+✔ refuses an existing receipt before provider observation or mutation (13.9801ms)
+✔ rejects full provider configuration drift before and after promotion (31.8131ms)
+✔ validates prepared event hash and the exact protected source/run (18.0581ms)
+✔ CLI rejects unknown/duplicate authority flags and path reuse (0.8136ms)
+✔ keeps adjacent unsafe Windows file identities distinct (9.8ms)
+✔ rejects descriptor swaps and nanosecond snapshot drift (39.9828ms)
+✔ parses only the closed deployment binding flag set (1.7336ms)
+✔ runs with verified real inputs and passes only fixed authority to the producer (24.5649ms)
+✔ writes a deployment binding exactly once without replacing it (84.5641ms)
+✔ rejects an output path swap after descriptor verification (49.9859ms)
+✔ rejects same-inode bytes changed by the final path metadata check (108.6276ms)
+✔ rejects hard-linked input aliases and output paths inside the package (73.3524ms)
+✔ parses only the closed production assignment validation command (3.1495ms)
+✔ runs against real inputs, fixed configuration, and a bound closing store (44.6891ms)
+✔ writes the staged assignment authority create-only before route validation (91.3089ms)
+✔ rejects an assignment authority path swap after descriptor verification (20.1404ms)
+✔ rejects same-inode authority bytes changed by the final path metadata check (39.914ms)
+✔ rejects same-inode pair bytes changed by a final path metadata check (89.2741ms)
+✔ writes both outputs create-only and never partially overwrites a pair (143.1393ms)
+✔ rejects hard links, path reuse, and realpath aliases (38.7399ms)
+✔ derives the CSP report assignment route from the artifact CSP mode (2.2321ms)
+✔ replays pending authority and produces closed domain-by-route validation evidence (84.0892ms)
+✔ integrates the real prepared-result validator, deployment evidence, and provider receipt chain (55.5558ms)
+✔ binds assignment authority to fresh raw provider bytes and preserves preflight evidence on failure (41.2862ms)
+✔ supports exact replay without renewing freshness and tolerates HTTP Date second precision (67.9698ms)
+✔ rejects receipt, replayed state, immutable route, and caller authority tampering before output (22.1154ms)
+✔ fails closed for partial, redirected, body, header, and stale production responses (153.3124ms)
+✔ rejects a protected secret in a production body and state drift during probing (68.807ms)
+✔ excludes only per-observation time and receipt evidence from configuration (3.3666ms)
+✔ binds every nonvolatile provider configuration field (2.4844ms)
+✔ rejects absent configuration input (2.3105ms)
+✔ collects bootstrap recovery probes and reaggregates immutable authority (99.5165ms)
+✔ resolves the initialized bootstrap binding after prior phase attestations (6.5806ms)
+✔ rejects a caller source and pending standard substitution (6.7686ms)
+✔ rejects bootstrap source substitution independently from the executor (6.2133ms)
+✔ rejects managed-production and bootstrap containment misuse (6.991ms)
+✔ rejects fresh provider drift from the live binding (10.6172ms)
+✔ rejects startup contract profile drift (4.3301ms)
+✔ rejects an over-limit probe with no 429 (12.3881ms)
+✔ rejects a normal-profile 429 as a false positive (14.1411ms)
+✔ rejects immutable tamper and media substitution (25.4548ms)
+✔ rejects a forged immutable-store receipt (8.9319ms)
+✔ rejects OIDC receipts with an extra property (11.3682ms)
+✔ rejects authority and transcript extra properties before aggregation (25.5064ms)
+✔ CLI accepts only namespace/source/output and emits reference-only canonical output (2.1658ms)
+✔ create-only output uses an exact descriptor and refuses overwrite (30.662ms)
+✔ legacy rejection evidence requires every database record to remain intact (6.2073ms)
+✔ isolated recovery verifies purchases and rejects modern or lossy backups (3.4184ms)
+✔ artifact transition releases all origin clients before a browser-owned update (1.6367ms)
+✔ artifact transition times out when the update never settles and detaches observation (26.0136ms)
+✔ artifact transition requires a new active worker rather than the cached baseline (40.9151ms)
+✔ artifact transition rejects ambiguous target workers (1.2279ms)
+✔ boundary polling also times out when the read itself never settles (33.6034ms)
+▶ build input closure binds stylesheet configuration and committed bytes
+  ✔ committed postcss.config.cjs changes the artifact binding (2339.1022ms)
+  ✔ committed postcss.config.mjs changes the artifact binding (1497.5446ms)
+  ✔ committed tailwind.config.cjs changes the artifact binding (1436.3684ms)
+  ✔ committed tailwind.config.mjs changes the artifact binding (1358.8736ms)
+  ✔ committed tailwind-legacy-theme.json changes the artifact binding (1372.0516ms)
+✔ build input closure binds stylesheet configuration and committed bytes (11453.493ms)
+✔ Vercel build launcher passes only closed build authority (0.6375ms)
+✔ requires byte-identical role-independent outer agents in a pair (7.5093ms)
+✔ verifies a deterministic source-hardened role pair (558.7537ms)
+✔ verifies bootstrap raw dist byte-for-byte and fixed staging inputs (341.0169ms)
+✔ policy activation QA artifact purpose is explicit and production-rejected (193.9554ms)
+✔ artifact drill package is P0-only, closed, and production-rejected (526.68ms)
+✔ rejects archive tampering independently of its manifest (303.3263ms)
+✔ accepts only the final remotely observed DB authority for production artifacts (1.792ms)
+✔ artifact drill context binds static DB and policy hashes without production DB authority (4.8137ms)
+✔ current external policy explicitly blocks production artifact context (1.2647ms)
+✔ rejects Python build triggers and non-Node Vercel functions (70.3358ms)
+✔ normalizes Vercel CSP headers and report function from dimensions (135.1944ms)
+✔ requires mode-aware CSP/Sheets API functions and exact emitted headers (130.9311ms)
+✔ independent build proof rejects output manifest drift (0.6478ms)
+✔ artifact contract rejects malformed manifests and role entry graphs (7.9548ms)
+✔ package index and content-addressed object guards reject ambiguity (20.8045ms)
+✔ forbids the removed bootstrap entry and keeps the outer agent closed (16.1091ms)
+✔ feature UI persistence is constrained to typed adapters (1.6869ms)
+✔ release phases change at most one behavior dimension and reach target (1.1618ms)
+✔ release phases bind minimum safety-floor activation to the policy target (1.5379ms)
+✔ nonproduction QA build purpose is CLI-bound and nonpromotable (3.7151ms)
+✔ nonproduction QA build purpose rejects containment (0.5241ms)
+✔ policy activation QA build purpose permits an exact role pair (1.8766ms)
+✔ artifact drill purpose permits only a closed nonpromotable role pair (1.5572ms)
+✔ variant IDs bind the exact canonical dimensions (1.0052ms)
+✔ prompt-close-all containment has no XLSX or list execution (1.4181ms)
+✔ canonical build input preserves an arbitrary phase candidate (4.6624ms)
+✔ canonical build input rejects CLI and environment conflicts (0.9226ms)
+✔ release workflow fails immediately after every native PowerShell command (13.5964ms)
+✔ parses only the closed acceptance collector command surfaces (2.4543ms)
+✔ collects initialize, append, and finalize through immutable prior-run receipts (53.8083ms)
+▶ rejects same-run, reviewed-hash, and unstored prior receipt drift
+  ✔ same protected run (1.1712ms)
+  ✔ reviewed source hash (0.7608ms)
+  ✔ unstored prior receipt (0.9599ms)
+✔ rejects same-run, reviewed-hash, and unstored prior receipt drift (5.4359ms)
+✔ accepts only the exact canonical input producer flags (0.5195ms)
+✔ rejects source hash drift before opening Release State (1.4603ms)
+✔ derives from replayed pending state and writes create-only evidence (1.4471ms)
+✔ produces and revalidates a store-backed all-domain probe chain (87.8518ms)
+✔ continuous evidence rejects a missing finalized-source workflow authority (53.8365ms)
+✔ rejects missing raw receipts and a non-authoritative v1 source (46.1833ms)
+▶ continuous collector rejects OIDC, provider, and HTTP transaction drift
+  ✔ OIDC source claim (0.7102ms)
+  ✔ OIDC workflow SHA (0.6662ms)
+  ✔ OIDC protected ref (0.7228ms)
+  ✔ OIDC run identity (0.8504ms)
+  ✔ provider alias (3.018ms)
+  ✔ provider project (2.1307ms)
+  ✔ provider deployment (2.0093ms)
+  ✔ provider status (1.7045ms)
+  ✔ provider redirect (2.1527ms)
+  ✔ public status (1.2394ms)
+  ✔ public redirect (1.8055ms)
+  ✔ public body (2.0941ms)
+  ✔ response URL (1.6613ms)
+✔ continuous collector rejects OIDC, provider, and HTTP transaction drift (23.5106ms)
+▶ continuous source rejects operation, binding, domain, and collector-run drift
+  ✔ operation (27.8807ms)
+  ✔ binding (21.5604ms)
+  ✔ domain set (26.7332ms)
+  ✔ reused protected run (17.7316ms)
+✔ continuous source rejects operation, binding, domain, and collector-run drift (95.3105ms)
+▶ Release A authority rejects media, bytes, path, assertion, and set drift
+  ✔ receipt media (14.237ms)
+  ✔ receipt bytes (57.4319ms)
+  ✔ evidence path (17.043ms)
+  ✔ assertion hash (34.0296ms)
+  ✔ missing receipt (105.0581ms)
+  ✔ extra receipt (53.5793ms)
+  ✔ missing raw source (33.3417ms)
+✔ Release A authority rejects media, bytes, path, assertion, and set drift (317.801ms)
+✔ produces and revalidates a Release State companion recovery chain (12.1632ms)
+▶ companion recovery rejects predecessor, order, target, probe, and terminal drift
+  ✔ recovery predecessor (4.3456ms)
+  ✔ standard-return order (13.8247ms)
+  ✔ standard-return predecessor (15.5442ms)
+  ✔ companion target (3.2998ms)
+  ✔ terminal event (7.1295ms)
+  ✔ terminal operation (4.1ms)
+  ✔ probe media (6.2837ms)
+  ✔ probe status (4.8197ms)
+✔ companion recovery rejects predecessor, order, target, probe, and terminal drift (65.4799ms)
+✔ rejects artifact-only recovery sources and missing terminal events (5.0526ms)
+✔ sample store timestamps remain the authoritative chain clock (27.5232ms)
+▶ continuous chain rejects duplicate samples and cycle aliases
+  ✔ duplicate immutable sample (26.2191ms)
+  ✔ cycle alias without a content-address fixed point (24.9008ms)
+✔ continuous chain rejects duplicate samples and cycle aliases (52.122ms)
+✔ memory acceptance chain rejects forks, replays idempotently, and rolls back (16.6616ms)
+✔ authority source and final evidence schemas reject unknown and missing fields (44.1739ms)
+✔ derives state initialization exclusively from an empty store and immutable evidence (68.8574ms)
+✔ derives DB activation only from a distinct reviewed producer authority (15.7489ms)
+✔ derives a forward DB transition and rejects stale or active-package-inexact contracts (16.705ms)
+✔ requires an immutable, exact, and fresh remote DB observation for activation (36.0409ms)
+✔ binds operation abort to a fresh all-domain pre-operation observation (5.2584ms)
+✔ provider observation verifier fails closed for missing, tampered, and stale receipts (5.1142ms)
+✔ executes DB activation once with two reviewed approvals and replays the same append (41.1993ms)
+✔ parses only the exact administrative command flag set (2.8033ms)
+✔ produces reviewed subject bytes with exclusive output and closes the store (3.6359ms)
+✔ rejects a same-run DB observation without trusting caller status (2.0673ms)
+✔ execute binds the reviewed identity and refuses input/output aliasing (2.4835ms)
+✔ execute rejects a reviewed subject whose operation differs from CLI authority (0.7648ms)
+✔ connects every administrative transition through a separate subject run (1.9609ms)
+✔ collects remote DB authority only in a protected producer run (0.5227ms)
+✔ downloads reviewed administrative bytes by an exact prior run id (0.4015ms)
+✔ production requirements bind every canonical predecessor/target gate (136.609ms)
+✔ production requirements authorize an exact distinct-source same-floor replacement (20.2149ms)
+✔ same-floor replacement rejects reused source, policy drift, regress, and missing gate (17.1785ms)
+✔ policy QA requirements bind the exact successor proposed/active policy triplet (8.3122ms)
+✔ caller dimensions, proposed production, skipped gates, and pending state fail closed (4.3285ms)
+✔ production accepts only an active policy and QA accepts only its exact successor (8.531ms)
+✔ P8 floor activation cannot authorize an artifact rebuild (11.919ms)
+✔ validation rejects state drift and a wrong checkout source (6.9126ms)
+✔ wrong namespace, absent references, and wrong evidence media fail closed (2.5126ms)
+✔ reviewed requirements and referenced policy media are re-read canonically (4.3985ms)
+✔ reviewed requirements SHA and closed object fields cannot be substituted (2.7696ms)
+✔ policy evidence constants stay distinct and exact (0.2229ms)
+✔ parses only the closed command-specific flag sets (5.3036ms)
+✔ writes a new canonical promotion subject with wx and no derived caller fields (4.292ms)
+✔ writes a reviewed pre-promotion evidence set with create-only semantics (1.1783ms)
+✔ writes a three-reference policy activation subject without caller authority (0.825ms)
+✔ builds a nonpromotable policy QA pair from four reviewed artifact files (1.4316ms)
+✔ builds policy closure from only the reviewed QA execution reference (0.7093ms)
+✔ selects the P8 floor closure without a caller QA result (0.4552ms)
+✔ writes production and Policy QA build requirements from authoritative state only (3.8638ms)
+✔ rejects production build requirements when executor and target sources differ (0.3933ms)
+✔ collects provider authority without accepting assignment or binding files (0.7492ms)
+✔ rejects namespace drift before opening the store (0.4906ms)
+✔ produces pre-promotion evidence only from reviewed stored references (182.619ms)
+✔ derives a canonical promotion subject only from replayed state and stored evidence (101.0981ms)
+✔ fails promotion subject production for noncanonical or absent evidence (172.5912ms)
+✔ collects every Vercel alias from the provider API with response bindings (2.9202ms)
+✔ stores provider API receipts and emits an observation accepted by reconcile (130.3468ms)
+✔ derives the initial post-promotion bootstrap recovery branch (81.8613ms)
+✔ fails provider production closed for partial, ambiguous, unknown, or caller assignments (156.0908ms)
+✔ accepts only strict lifecycle command flags (2.5169ms)
+✔ rejects an output path that aliases a lifecycle input (1.4669ms)
+✔ rejects acceptance bytes that differ from the reviewed hash before opening the store (1.8159ms)
+✔ record-promotion CLI binds protected environment and writes create-only output (4.1692ms)
+✔ record-assignment CLI persists provider mutation before route validation (1.5476ms)
+✔ record-promotion writes reconcile material while a recovery remains pending (2.463ms)
+✔ prepare-acceptance-bundle CLI writes the reviewed bundle closure (2.0754ms)
+✔ accept-standard CLI derives source/run and writes create-only output (1.2767ms)
+✔ describes acceptance requirements from the authoritative pending state (3.8453ms)
+✔ generic policy activation CLI binds the reviewed subject and derives authority (1.4367ms)
+✔ refuses an existing output before opening the Release State store (0.9136ms)
+✔ parser accepts only namespace/output and rejects caller run, hash, source, and input paths (3.7191ms)
+✔ discovery excludes the current run and selects the latest completed exact recovery artifact (10.8589ms)
+✔ discovery fails closed when only the current run can be observed (0.8793ms)
+✔ discovery follows bounded workflow-run pages before reviewing the exact artifact (5.5666ms)
+✔ protected CLI reviews a prior recovery artifact and embeds its authority in closure v2 (4.31ms)
+✔ protected CLI refuses to review its own current run (0.7581ms)
+✔ advances null-change P6 and P8 gates without collapsing equal floors (7.4489ms)
+✔ appends a ready reconcile plan once and replays the deterministic event (116.1874ms)
+✔ rejects a fresh target reconciliation terminal-type substitution before the first CAS (33.5304ms)
+✔ never appends a blocked reconcile decision (12.0069ms)
+✔ rejects a reconcile decision whose observation has the wrong immutable media type (14.8794ms)
+✔ reconciles a verified bootstrap emergency through assignment validation and a six-hour terminal (82.328ms)
+✔ reconciles rollback previous as a no-op abort and target as an atomic inventory swap (6997.3235ms)
+✔ records assignment, validation, and observation events and replays exactly (41.7017ms)
+✔ records containment recovery terminal only after assignment validation and preserves pending on terminal CAS failure (56.6516ms)
+✔ resumes an exact partial lifecycle after a CAS conflict (32.0646ms)
+▶ rejects tampered evidence and preserves only a verified assignment prefix
+  ✔ tampered target (4.8899ms)
+  ✔ stale receipt (5.1241ms)
+  ✔ duplicate domain (14.5584ms)
+  ✔ unknown authoritative receipt field (6.0243ms)
+  ✔ probe for a different deployment (13.2578ms)
+  ✔ duplicate probe domain (13.0611ms)
+✔ rejects tampered evidence and preserves only a verified assignment prefix (58.0794ms)
+✔ rejects a production probe without authoritative observedAt (13.1013ms)
+✔ rechecks provider freshness immediately before the first lifecycle CAS (9.0729ms)
+✔ rejects caller-supplied lifecycle state and authority fields (1267.377ms)
+✔ rejects acceptance bytes that differ from the reviewed evidence hash (1275.589ms)
+▶ requires an untampered acceptance-final bundle bound to the current candidate
+  ✔ missing bundle (1267.4993ms)
+  ✔ tampered immutable object (1292.108ms)
+  ✔ wrong standard binding (1752.1126ms)
+  ✔ wrong bundle source (1242.1953ms)
+✔ requires an untampered acceptance-final bundle bound to the current candidate (5554.7096ms)
+✔ accepts only fresh standard evidence with three derived roles and replays (1743.8741ms)
+✔ derives prompt-close-all floors and clears bootstrap only with a passing recovery drill (1760.6089ms)
+✔ accepts a fresh same-floor prompt standard from a distinct source and keeps its predecessor as the sole eligible rollback (4379.6494ms)
+▶ fails prompt-close-all bootstrap clearance without recovery PASS or an exact companion projection
+  ✔ missing recovery PASS (886.7226ms)
+  ✔ mismatched companion projection (879.3809ms)
+✔ fails prompt-close-all bootstrap clearance without recovery PASS or an exact companion projection (1766.5911ms)
+▶ rejects stale evidence, source tamper, and duplicate acceptance roles
+  ✔ less than 24 hours (1137.8707ms)
+  ✔ stale evidence (1145.7844ms)
+  ✔ source tamper (1125.7341ms)
+  ✔ duplicate role (838.8627ms)
+  ✔ minimum sample verifier failure (1116.9553ms)
+  ✔ authoritative performance verifier failure (1347.6753ms)
+✔ rejects stale evidence, source tamper, and duplicate acceptance roles (6714.1352ms)
+✔ fails acceptance closed on a CAS conflict and succeeds on exact retry (2025.9143ms)
+✔ marks rollback and package redeploy ineligible when the archive is unavailable (1572.5105ms)
+✔ rechecks OIDC authority before publishing the terminal bundle (1093.6422ms)
+✔ rejects candidate_gate outside the four candidate-aware operations (1.9395ms)
+✔ derives the accepted gate and performance requirement from Release State (1.5226ms)
+✔ requires a separately reviewed authoritative requirements artifact (0.3589ms)
+✔ rejects same-run and overlapping acceptance artifact producers (0.7359ms)
+✔ binds produced and reviewed terminal artifacts to candidate_gate (0.3026ms)
+✔ forbids dummy performance evidence for non-performance acceptance gates (0.3544ms)
+✔ binds reviewed performance bytes conditionally into preparation and acceptance (0.4816ms)
+✔ binds each acceptance collector continuation to reviewed run authority (0.2619ms)
+✔ builds the P8 inherited closure from four immutable accepted events (0.4374ms)
+✔ produces own-gate evidence only from reviewed raw samples and live requirements (0.7757ms)
+✔ release accepts only a closed three-input protected dispatch (6.3381ms)
+✔ rollback rehearsal fetches its pinned historical baseline (0.4911ms)
+✔ quality installs its pinned browser before foundation tests (0.3792ms)
+✔ quality keeps Supabase CLI state outside the clean build source (0.462ms)
+✔ every closed dispatch operation reaches an executable operation-scoped path (2.6735ms)
+✔ release guards and pins source before repository code and scopes secrets to steps (0.7493ms)
+✔ release never promotes a caller-supplied generic candidate (0.5939ms)
+✔ quality and retention bind fixed attempt-qualified canonical artifacts (0.3347ms)
+✔ P0 baseline collectors publish exact attempt-bound artifacts before state initialization (1.2737ms)
+✔ browser authorities pin toolchain and upload exact attempt-qualified files (1.8126ms)
+✔ managed device live and strict PWA collectors are the exact two protected job operations (2.5965ms)
+✔ P1 strict receipt environment is phase-scoped and producer-only (0.5999ms)
+✔ publisher binds every implemented collector through immutable reviewed authority (0.5653ms)
+✔ artifact authority verifies API digest, ZIP, exact entry, attempt, and readback (0.1926ms)
+✔ package CLI requires the exact target-gate collector set (2.7707ms)
+✔ workflow verifies every non-exempt predecessor before operation steps (0.7777ms)
+✔ foundation suite contains every formal collector contract (0.5091ms)
+✔ production phase gates have one canonical ordered contract (15.9761ms)
+✔ phase progression includes same-floor gates and rejects terminal advance (1.1866ms)
+✔ opens only the P8 floor branch against the formal P7 predecessor (1.2204ms)
+✔ routes acceptance candidates through advance or same-floor predecessors (0.7449ms)
+✔ fails closed on missing or surplus predecessor candidate gates (1.6585ms)
+✔ rejects P8 floor preparation until formal P7-IDB is attested (2.6055ms)
+✔ verifies same-floor acceptance against the previous formal gate (1.0882ms)
+✔ derives one exact proposed-to-active phase transition (14.9892ms)
+✔ keeps policy bytes fixed for the P8 minimum-floor variant (6.5781ms)
+✔ requires all five typed closure receipts and rejects a failed receipt (7.2918ms)
+✔ default policy activation collector retains all three approval roles (2.1627ms)
+✔ commits one three-approval CAS and idempotently replays it (17.3481ms)
+✔ fails closed when predecessor compatibility expires during approval (3.3667ms)
+✔ producer and executor reject caller authority and executor tamper (3.8922ms)
+✔ forbids auxiliary policy and package references at the closure boundary (6.2791ms)
+✔ requires the exact canonical QA execution evidence object set (2.0448ms)
+✔ accepts source-bound nonpromotable QA deployments through exact public routes (35.8855ms)
+✔ rejects a QA deployment with wrong status (5.7003ms)
+✔ rejects a QA deployment with wrong route (8.4486ms)
+✔ rejects a QA deployment with wrong content type (6.9176ms)
+✔ rejects a QA deployment with stale observation (4.474ms)
+✔ rejects a QA deployment with owned production deployment origin (3.4147ms)
+✔ rejects a QA deployment with production subdomain deployment origin (4.4588ms)
+✔ accepts a fresh hash-bound rollback drill with trusted OIDC authority (9.4746ms)
+✔ rejects drill evidence with untrusted issuer (2.4629ms)
+✔ rejects drill evidence with wrong executor source (2.4253ms)
+✔ rejects drill evidence with failed alias command (1.5392ms)
+✔ rejects drill evidence with failed public probe (3.1767ms)
+✔ rejects drill evidence with wrong response header (2.3108ms)
+✔ rejects drill evidence with tampered public body (2.2693ms)
+✔ rejects drill evidence with stale provider evidence (1.8574ms)
+✔ Policy QA passes only provider and operating-system bindings to Vercel (4.5998ms)
+✔ derives a deterministic operation-bound non-production alias (2.5218ms)
+✔ rejects preview origins on an owned production domain or subdomain (1.4457ms)
+✔ requires the exact authoritative Policy QA subject evidence set (4.8849ms)
+✔ runs setup, rollback, containment, and final restoration in exact order (1.2365ms)
+✔ restores the QA standard after a partial drill failure (0.4392ms)
+✔ reports an unverified cleanup when final restoration also fails (0.5374ms)
+✔ journals a successful preview when its deployment pair fails before alias mutation (4.9781ms)
+✔ rejects a falsely verified post-alias cleanup before immutable storage (0.8017ms)
+✔ requires an explicit recovery-required state when cleanup is unverified (0.5146ms)
+✔ stores canonical HTTP request/response evidence with exact body hashes (61.9412ms)
+✔ rejects provider responses that echo a secret before immutable storage (0.6988ms)
+✔ builds and revalidates a deterministic nonpromotable policy QA pair (510.0618ms)
+✔ rejects archive tamper before publishing a QA package index (185.3036ms)
+✔ rejects the P8 floor-only transition before reading or publishing QA artifacts (100.5741ms)
+✔ connects every policy gate through QA, closure, reviewed subject, and CAS (2.7177ms)
+✔ builds a nonpromotable pair and rejects it from the production package path (0.6859ms)
+✔ derives every source-hardened build from a distinct reviewed requirements run (0.3383ms)
+✔ runs Policy QA and closure from two distinct reviewed prior-run artifacts (0.3067ms)
+✔ routes the P8 floor-only chain through the formal predecessor verifier (0.3155ms)
+✔ downloads the exact prior reviewed subject before policy mutation (0.3348ms)
+✔ resolves exactly five source-bound pre-promotion receipts recursively (269.5835ms)
+✔ rejects missing, extra, wrong-media, arbitrary, and tampered receipts (70.9ms)
+✔ rejects binding, policy, DB, package, and variant drift (104.1198ms)
+✔ receipt builders reject duplicate builds and caller-forged command results (102.7164ms)
+✔ parses only the closed collector flag set and forbids execution JSON (3.2759ms)
+✔ validates canonical regular inputs before opening the store and writes with wx (150.4172ms)
+✔ rejects case-folded path alias, symlink input, noncanonical bytes, and hash drift before store access (72.7411ms)
+✔ executes two independent builds and exact verifier matrices before producing five receipts (603.6359ms)
+✔ fails before receipts when a fixed verifier command returns nonzero (206.8479ms)
+✔ rejects a second build whose archive bytes differ (173.7628ms)
+✔ rejects dirty checkout and credential-bearing command output (153.7094ms)
+✔ rejects forged OIDC identity and a build requirements path mismatch (128.4242ms)
+✔ keeps the protected release workflow valid YAML (47.6739ms)
+✔ requires exact reviewed authority from three distinct prior runs (0.954ms)
+✔ downloads exact reviewed requirements and both immutable deployment bindings (0.3446ms)
+✔ collects fresh provider state and runs only the protected collector CLI (0.4558ms)
+✔ publishes one source file for a separately reviewed producer run (0.4847ms)
+✔ accepts only the exact command flags and rejects snapshot or role injection (1.9695ms)
+✔ binds source, run, repository, workflow, protected ref, and namespace to environment (1.9468ms)
+✔ runs prepare-promotion with an injected store and no caller authority fields (3.0566ms)
+✔ writes a blocked read-only reconcile decision and then fails the command closed (3.5188ms)
+✔ executes the ready reconcile event plan before writing the protected result (0.9527ms)
+✔ rereads the head and replays immutable events instead of accepting a snapshot (143.7875ms)
+✔ stores authoritative approval receipts and derives exactly the two pre-promotion roles (5.0877ms)
+✔ appends promotion-prepared once and replays the deterministic operation retry (291.8641ms)
+✔ forbids caller-supplied snapshots, approval roles, and stale operation subjects (85.4186ms)
+✔ produces a read-only reconcile plan only for an exact all-domain target match (167.1465ms)
+✔ fails reconcile closed for partial, ambiguous, and unknown assignments (128.6775ms)
+✔ every release operation has a closed valid dispatch payload (95.2537ms)
+✔ dispatch payload rejects missing, extra, malformed, duplicate-run, and noncanonical input (1.6282ms)
+✔ closes P0 baseline collectors and pre-initialization attestation predecessors by gate (1.1121ms)
+✔ P1 requires a strict PWA receipt while P7 keeps only three stage selectors (2.7645ms)
+✔ strict PWA collector dispatch accepts only an empty request and known operation (0.4254ms)
+✔ acceptance performance evidence requires run, attempt, and hash together (2.1398ms)
+✔ candidate gate is required and limited to production release gates (1.4286ms)
+✔ policy closure selector distinguishes normal QA from P8 floor-only (0.972ms)
+✔ workflow dispatch has only three inputs and never interpolates raw request JSON (44.3128ms)
+{"archive_recovery_action":"rollback","archive_recovery_binding_id":"binding:1","archive_recovery_source_sha":"cccccccccccccccccccccccccccccccccccccccc"}
+✔ validator writes only normalized fields and builder uses create-only output (65.1473ms)
+✔ rejects Release State connection drift and a mismatched CA (11.8631ms)
+✔ derives approval role from exact authoritative workflow/team bindings (12.215ms)
+✔ rejects forged, expired, or signature-tampered OIDC evidence (4.5576ms)
+✔ projects one authoritative reviewer into every configured approval role (17.2915ms)
+✔ rejects approval receipt bytes changed after API verification (3.246ms)
+✔ requires exact role coverage and distinct role-bound approval IDs (1.3596ms)
+✔ validates immutable evidence input and receipt bindings (1.272ms)
+✔ appends the exact next formal phase exit after the pre-initialization seed (8.5744ms)
+✔ builds a source-hardened standard acceptance through the event chain (19.4533ms)
+✔ allows only a distinct source binding to replace an accepted standard at the exact same floor (39.2116ms)
+✔ accepts one reviewer filling both required promotion roles (4.2307ms)
+✔ rejects event tampering and a broken predecessor (2.3567ms)
+✔ rejects a prepared operation that does not bind the current head (1.9146ms)
+✔ rejects namespace changes while replaying one event chain (1.726ms)
+✔ applies policy and DB compatibility changes with reviewed inventory (4.7091ms)
+✔ activates bootstrap containment, source-hardened containment, and rollback (14.1679ms)
+✔ atomically swaps rollback inventory and rejects authority or eligibility tampering (33.8068ms)
+✔ rejects unauthorized or incomplete recovery terminal events (6.7035ms)
+✔ applies prepared standard and containment package redeploys (36.9338ms)
+✔ reconciles and aborts only the currently prepared operation (3.8093ms)
+✔ reconciles an already active previous accepted standard by aborting the no-op operation (9.134ms)
+✔ reconciles a source-hardened emergency only as prepared containment recovery (6.3951ms)
+✔ validates event construction and replay boundary inputs (0.7375ms)
+✔ updates DB compatibility with active production and prepares a generic operation (9.4406ms)
+✔ accepts a closed payload fixture for every release event type (44.7277ms)
+✔ closes incident, recovery, legacy observation, and rollback inventory snapshots (4.5016ms)
+✔ rejects unknown, missing, wrong-type, URI, hash, and time payload values (22.9083ms)
+✔ verify-release-state validates payload schemas and payload hashes (1608.7577ms)
+✔ enforces maxLength as Unicode code points on formal identifiers (33.6982ms)
+✔ enforces ordered prefixItems from the companion recovery contract (2.0258ms)
+✔ enforces boolean items false after the declared tuple prefix (0.3465ms)
+✔ resolves boolean schemas through local references fail-closed (0.3592ms)
+✔ verifies an archive, durable URI, and binding-specific availability receipt (7.0439ms)
+✔ fails closed for missing archive references and missing stored bytes (2.4323ms)
+✔ fails closed for content-addressed archive tampering (0.9239ms)
+✔ rejects availability receipts for the wrong source or binding (1.4195ms)
+✔ rejects an explicitly unavailable archive receipt (0.8141ms)
+✔ collects and rereads the exact reviewed workflow artifact chain (87.5841ms)
+✔ rejects wrong digest prefix (4.4086ms)
+✔ rejects non-hex digest (2.8408ms)
+✔ rejects bare arbitrary hash (3.7242ms)
+✔ rejects a duplicate fixed artifact name (8.9435ms)
+✔ rejects an archive with any additional entry (12.5325ms)
+✔ rejects archive tamper on immutable reread (7.4512ms)
+✔ rejects an extra receipt key and generic receipt substitution (16.8035ms)
+✔ rejects an arbitrary absent 64-hex reference (5.7477ms)
+✔ archive objects use the closed ZIP media type (0.8309ms)
+✔ Release A browser verifier is syntax-valid and Playwright-owned (248.5388ms)
+✔ active Service Worker evidence remains exact and narrowly scoped (0.3806ms)
+✔ forward transition waits for one target worker to activate naturally (1.6426ms)
+✔ historical rollback disables prompt UI while capable predecessors can require it (0.5352ms)
+✔ managed transition binds rollback and prompt modes to artifact lifecycles (0.2834ms)
+✔ activation tracker selects only the post-baseline installed version (20.5703ms)
+✔ activation tracker rejects a baseline waiting worker activation (0.3581ms)
+✔ activation tracker rejects two post-baseline versions (0.2736ms)
+✔ preflight and transition JSON contracts remain present (0.8042ms)
+✔ closed envelope keys stay identical to the frozen schema (10.5696ms)
+✔ rejects missing v1 evidence and unknown envelope fields (0.9358ms)
+✔ rejects an immutable object whose bytes differ from its reference (44.3099ms)
+✔ accepts a complete pre-promotion immutable hash chain (62.1461ms)
+✔ accepts a complete UNKNOWN audit only with treat-as-deployed safety evidence (33.139ms)
+✔ the distributed pending template is structurally parseable but cannot pass (25.5965ms)
+✔ rejects unknown and privacy-sensitive fields at every depth (5.596ms)
+✔ rejects duplicate JSON object keys before schema validation (1.7779ms)
+✔ loadEvidenceFile rejects BOM and malformed UTF-8 (45.7094ms)
+✔ CLI fails closed for pending evidence and invalid invocation (373.2448ms)
+✔ rejects a canary shorter than 24 hours or incomplete bucket coverage (3.3614ms)
+✔ rejects hourly coverage gaps, duplicate hours, zero samples, and wrong SHAs (9.7819ms)
+✔ rejects an untrimmed 25-row rolling view with a partial endpoint hour (2.2408ms)
+✔ rejects any observed legacy physical delete (2.0249ms)
+✔ rejects a canary metric regression beyond baseline thresholds (2.7351ms)
+✔ binds canary, dashboard, bucket, and baseline observations to commit SHAs (2.2489ms)
+✔ requires a prior non-overlapping baseline build and query window (1.8923ms)
+✔ pins every bucket to one approved global baseline aggregate (1.7342ms)
+✔ requires count-derived rates with adequate production-only samples (4.5859ms)
+✔ uses fixed zero-baseline absolute caps for conflict and save failure (4.0031ms)
+✔ computes startup p95 from telemetry buckets and permits no slower bucket (5.2929ms)
+✔ rejects future canary and approval timestamps beyond five-minute skew (5.2797ms)
+✔ rejects calendar-normalized impossible UTC dates (2.2161ms)
+✔ requires the exact automated encoding command (2.6384ms)
+✔ rejects missing actual installed-PWA target and build/SW SHA mismatch (2.8487ms)
+✔ does not allow UNKNOWN to masquerade as NOT_DEPLOYED (2.7078ms)
+✔ allows factual NOT_DEPLOYED only when every source is negative and complete (2.3095ms)
+✔ requires dedicated d2389a0 E2E PASS while allowing approval-role overlap (2.0678ms)
+✔ accepts one account across every human evidence and approval role (2.5311ms)
+✔ requires approvals after all gate evidence is complete (1.6321ms)
+✔ includes source-clean and cleanup-off checks in approval prerequisites (1.6355ms)
+ℹ tests 835
+ℹ suites 0
+ℹ pass 835
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 76435.2842
+
+> event-shopping-planner@1.0.0 test:unit
+> vitest run --project unit
+
+
+ RUN  v4.1.10 D:/ciuc-1018
+
+
+ Test Files  191 passed (191)
+      Tests  2051 passed (2051)
+   Start at  11:37:17
+   Duration  24.04s (transform 21.27s, setup 128.34s, import 56.14s, tests 51.83s, environment 203.77s)
+
+
+> event-shopping-planner@1.0.0 test:integration
+> vitest run --project integration
+
+
+ RUN  v4.1.10 D:/ciuc-1018
+
+
+ Test Files  43 passed | 1 skipped (44)
+      Tests  623 passed | 88 skipped (711)
+   Start at  11:37:42
+   Duration  16.16s (transform 22.24s, setup 30.93s, import 42.30s, tests 106.69s, environment 122.07s)
+
+
+> event-shopping-planner@1.0.0 test:worker
+> vitest run --project worker --passWithNoTests
+
+
+ RUN  v4.1.10 D:/ciuc-1018
+
+
+ Test Files  10 passed (10)
+      Tests  197 passed (197)
+   Start at  11:37:59
+   Duration  6.37s (transform 1.89s, setup 5.70s, import 4.13s, tests 12.03s, environment 1ms)
+
+
+> event-shopping-planner@1.0.0 test:api
+> node --test api/csp-report.test.mjs api/google-sheets-csv.test.mjs api/not-found.test.mjs
+
+✔ stores only closed CSP fields and server-owned identity (2.1165ms)
+✔ accepts a bounded Reporting API batch (0.5243ms)
+✔ keeps the effective directive contract ordered and immutable (0.1768ms)
+✔ normalizes a syntactically valid unknown directive before insertion (0.2339ms)
+✔ rejects an empty or malformed effective directive (0.2313ms)
+✔ separates method, media type, invalid, oversize, and config errors (0.3237ms)
+✔ maps upstream failure to 502 without reflecting details (0.2869ms)
+✔ blocked target classifier never returns a raw target (0.1854ms)
+✔ resolves the requested tab and proxies its full-row CSV export (31.0304ms)
+✔ decodes escaped tab names and lets the saved sheet name override URL gid (1.1121ms)
+✔ does not fall back to URL gid when the requested tab cannot be resolved (0.605ms)
+✔ uses URL gid directly only when no sheet name is available (0.6078ms)
+✔ rejects method, media type, origin, shape, and configuration drift (0.4933ms)
+✔ rejects redirects outside the fixed Google CSV download host (1.8487ms)
+✔ bounds upstream responses and rejects non-CSV responses (4.9636ms)
+✔ unknown API returns the closed JSON 404 for GET (1.0682ms)
+✔ unknown API returns the closed JSON 404 for POST (0.1433ms)
+✔ unknown API returns the closed JSON 404 for PUT (0.1057ms)
+✔ unknown API returns the closed JSON 404 for PATCH (0.1155ms)
+✔ unknown API returns the closed JSON 404 for DELETE (0.909ms)
+✔ unknown API returns the closed JSON 404 for OPTIONS (0.1161ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 167.0828
+
+> event-shopping-planner@1.0.0 test:coverage
+> node scripts/coverage-policy/run-coverage-policy.mjs
+
+
+=== Coverage policy contract ===
+PASS coverage policy: global 45% lines / 35% branches; 6 active subsystem floors; 0 exceptions/waivers/future placeholders
+
+=== Vitest complete project coverage ===
+
+ RUN  v4.1.10 D:/ciuc-1018
+      Coverage enabled with v8
+
+
+ Test Files  244 passed | 1 skipped (245)
+      Tests  2871 passed | 88 skipped (2959)
+   Start at  11:38:08
+   Duration  53.31s (transform 44.94s, setup 170.31s, import 103.12s, tests 242.88s, environment 296.81s)
+
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |    73.2 |    68.35 |   75.27 |   74.87 |                   
+ src               |   14.56 |    12.94 |   10.11 |   14.94 |                   
+  App.tsx          |       0 |        0 |       0 |       0 | 113-2718          
+  sw.ts            |   70.43 |     64.7 |   80.95 |   71.55 | ...63-264,268,316 
+ src/app/commands  |   83.16 |    73.02 |   90.27 |   86.14 |                   
+  ...oordinator.ts |   79.12 |     83.5 |   89.83 |   80.52 | ...33,669,673-679 
+  ...eOperation.ts |   97.22 |    94.11 |     100 |   97.05 | 101               
+  ...leCommands.ts |   71.92 |    54.16 |   66.66 |   73.21 | ...72,188-189,206 
+  ...erCommands.ts |    38.5 |    24.03 |   45.45 |   39.36 | ...45-446,469-635 
+  ...teCommands.ts |   89.69 |    86.86 |   95.83 |   91.94 | ...66,684-685,698 
+  ...orCommands.ts |   84.63 |    62.28 |   95.31 |   92.56 | ...1092,1135,1147 
+  ...rtCommands.ts |    87.5 |    77.08 |   94.44 |   86.84 | 188-207,299       
+  ...teCommands.ts |   97.53 |    83.33 |   90.47 |   98.59 | 265               
+  ...stCommands.ts |   88.74 |    74.38 |   97.05 |   93.33 | ...76,380,424,491 
+  ...onCommands.ts |   90.73 |    75.57 |   88.31 |    94.2 | ...8,882-888,1117 
+  ...onCommands.ts |   94.73 |    77.57 |     100 |   98.99 | 370,585           
+ ...app/navigation |   88.23 |    80.39 |    82.6 |   89.39 |                   
+  ...ionReducer.ts |   85.18 |    77.77 |     100 |      88 | 45,67,78          
+  screenState.ts   |      75 |      100 |       0 |      75 | 23                
+  ...Controller.ts |   86.95 |      100 |   72.72 |   86.95 | 47,54,59          
+ src/app/ports     |       0 |      100 |       0 |       0 |                   
+  ...ommandPort.ts |       0 |      100 |       0 |       0 | 18-21             
+ src/app/selectors |   85.62 |     67.6 |   85.71 |   88.96 |                   
+  ...wSelectors.ts |   87.82 |    63.15 |   91.48 |   92.14 | ...71,400-401,441 
+  ...wSelectors.ts |    89.1 |       80 |     100 |   92.39 | ...69,383-386,393 
+  ...ppListView.ts |   75.71 |       48 |   61.53 |   77.61 | 34,167-215        
+ src/app/state     |   86.59 |    81.59 |   83.11 |   88.37 |                   
+  ...erlayState.ts |   87.17 |    82.35 |   97.29 |   86.95 | ...1161,1183,1420 
+  ...ntentEdits.ts |   96.66 |    93.84 |     100 |     100 | 38,110,119,153    
+  ...ldMutation.ts |   96.49 |       90 |     100 |   98.14 | 74                
+  ...Controller.ts |   77.82 |    66.34 |   85.71 |   86.84 | ...81,624,643-651 
+  useAppUiState.ts |   45.83 |      100 |      35 |    40.9 | 68,70-71,74,76-88 
+  ...onSnapshot.ts |   89.97 |    81.29 |   85.61 |   90.47 | ...1255,1266,1311 
+  ...ittedState.ts |     100 |       50 |     100 |     100 | 38                
+  ...spaceState.ts |   65.85 |      100 |   55.55 |      65 | ...05-108,122-123 
+ src/components    |   56.95 |    54.41 |   61.32 |   58.41 |                   
+  ...oreDialog.tsx |   84.61 |    66.66 |      80 |      90 | ...19,128,168-183 
+  ...nControls.tsx |   57.14 |    33.33 |   33.33 |   66.66 | 19-21             
+  ...gradeGate.tsx |    87.8 |       75 |      90 |   91.89 | 69-72,85          
+  DayTabButton.tsx |     100 |    84.61 |     100 |     100 | 49-52             
+  ...tionModal.tsx |   33.33 |        0 |       0 |   33.33 | 15-24             
+  ...entDialog.tsx |   78.04 |    63.15 |   73.33 |   83.78 | 45,62,78,93-169   
+  ...istScreen.tsx |    41.3 |    46.87 |   33.33 |    41.3 | ...,91-95,194-313 
+  ...ameDialog.tsx |    8.33 |        0 |       0 |    8.33 | 14-49             
+  ...onsDialog.tsx |   58.33 |    55.55 |   36.36 |   60.86 | 41,61,138-235     
+  ....fixtures.tsx |     100 |    96.55 |      80 |     100 | 103               
+  FocusMode.tsx    |   74.08 |    65.06 |   79.06 |   75.29 | ...3103,3113,3247 
+  ...MapCanvas.tsx |     2.1 |     2.19 |    2.47 |     2.1 | ...3-246,284-2488 
+  ImportScreen.tsx |   72.35 |    54.66 |   73.97 |   72.33 | ...6-809,951-1119 
+  ...ditDialog.tsx |   42.55 |    45.76 |   40.81 |   46.61 | ...29-589,619-726 
+  ...ncyReview.tsx |       0 |        0 |       0 |       0 | 23-271            
+  ...irmDialog.tsx |    93.1 |    85.71 |     100 |     100 | 48-52,60          
+  ...aseDialog.tsx |   75.49 |    70.88 |   85.71 |   76.47 | ...20,338-339,354 
+  ...eryScreen.tsx |   87.25 |    81.08 |     100 |   89.89 | ...61,65,72,76-78 
+  ...eckDialog.tsx |   70.96 |    73.52 |      68 |   68.51 | ...79,153,168,224 
+  SearchBar.tsx    |   92.85 |    47.61 |     100 |   95.83 | 25                
+  ...gItemCard.tsx |   77.08 |    73.97 |   75.96 |    79.4 | ...1726,1903-1918 
+  ...ctOptions.tsx |     100 |    93.75 |     100 |     100 | 32                
+  ShoppingList.tsx |    71.6 |    62.27 |   67.74 |    73.6 | ...5293,5320,5340 
+  ...iceDialog.tsx |   95.23 |       85 |     100 |     100 | 57-64,75          
+  SummaryBar.tsx   |      90 |    78.57 |   71.42 |    93.1 | 62-68             
+  ...tionModal.tsx |     100 |    88.57 |     100 |     100 | ...64-269,292-296 
+  ...ateDialog.tsx |      90 |    66.66 |      75 |      90 | 46                
+  ...ListPanel.tsx |   32.56 |     31.8 |   21.81 |   34.29 | ...1607,1643-1810 
+  ...asurements.ts |     100 |    94.44 |     100 |     100 | 49                
+  ...ectOptions.ts |     100 |    96.87 |     100 |     100 | 112               
+ ...mponents/focus |   85.22 |    81.28 |   77.77 |   87.58 |                   
+  ...deDialogs.tsx |   83.93 |    81.15 |   67.24 |   88.69 | ...03,857,882-890 
+  ...terPortal.tsx |   79.16 |    66.66 |    87.5 |    82.6 | 156-160           
+  ...odePanels.tsx |    97.7 |    94.96 |    86.2 |   97.59 | 308,870           
+  ...tateViews.tsx |   89.36 |    69.56 |   81.48 |   88.09 | 48,66,108,387-393 
+  ...gListView.tsx |   66.66 |    53.06 |   84.21 |   69.01 | ...40-153,161,274 
+  resumeChoice.ts  |     100 |     91.3 |     100 |     100 | 50,62-64,74       
+ ...ts/focus/hooks |   70.22 |    74.03 |   79.41 |   70.05 |                   
+  ...EmptyVisit.ts |   23.18 |    38.46 |      30 |   24.24 | 74-147            
+  ...ssionState.ts |     100 |    94.73 |     100 |     100 | 38                
+  useResumeFlow.ts |     100 |    95.65 |     100 |     100 | 130-133           
+ ...mponents/icons |   84.61 |      100 |   69.23 |   84.61 |                   
+  ...nDownIcon.tsx |      50 |      100 |       0 |      50 | 4                 
+  ...ronUpIcon.tsx |      50 |      100 |       0 |      50 | 4                 
+  ...ndingIcon.tsx |      50 |      100 |       0 |      50 | 4                 
+  TrashIcon.tsx    |      50 |      100 |       0 |      50 | 4                 
+ ...components/map |   36.03 |    33.17 |   40.86 |   37.54 |                   
+  ...tionPanel.tsx |    0.68 |        0 |       0 |    0.79 | 72-1010           
+  ...temsPopup.tsx |   62.45 |    52.98 |   47.67 |   65.73 | ...1382,1414-1457 
+  ...tionPanel.tsx |   26.43 |    28.18 |   18.51 |   27.33 | ...26-536,562-737 
+  ...rderPanel.tsx |    82.1 |    73.68 |   79.16 |   86.25 | ...15,256,285-320 
+  ...ionDialog.tsx |   87.23 |    63.79 |   76.19 |   90.58 | ...88,253-255,285 
+  MapCanvas.tsx    |   22.95 |    24.07 |   37.68 |   23.13 | ...2812,2819-2821 
+  ...sentation.tsx |     100 |       50 |     100 |     100 | 28,32             
+  ...ortDialog.tsx |   58.85 |    44.76 |   60.31 |      61 | ...1053,1127-1132 
+  ...ionDialog.tsx |   89.65 |    73.91 |   92.85 |   96.15 | 62                
+  ...nControls.tsx |   85.36 |       80 |      75 |   88.88 | 44-45,90,157      
+  MapView.tsx      |   38.96 |    32.68 |   40.67 |   42.18 | ...1753,1785-1968 
+  ...ListPanel.tsx |    92.3 |    78.57 |      90 |   95.45 | 128               
+  ...csOverlay.tsx |     100 |       75 |     100 |     100 | 26-29,54-55       
+  ...tionPanel.tsx |    2.58 |        0 |       0 |    2.97 | 57-492            
+  ...lculations.ts |   94.82 |    84.61 |     100 |   96.49 | 48,94             
+ ...ell/components |   37.38 |    40.99 |   28.84 |   37.93 |                   
+  ...aderShell.tsx |   46.25 |    53.92 |   37.31 |   46.47 | ...1581,1673-1675 
+  ...inContent.tsx |       0 |        0 |       0 |       0 | 39-822            
+  ...rlayLayer.tsx |   33.33 |    39.83 |   22.72 |   35.48 | ...77,602-810,907 
+ ...istency/domain |   94.76 |    88.61 |   96.73 |   95.42 |                   
+  context.ts       |   94.68 |    94.44 |   96.87 |   94.11 | 39-43,52          
+  dayBuckets.ts    |   83.33 |       70 |     100 |   83.33 | 24,27             
+  dayMerge.ts      |   98.59 |     92.1 |     100 |   98.97 | 73,165            
+  ...geMutation.ts |     100 |    88.88 |     100 |     100 | 39,53-55,102,116  
+  dayMode.ts       |    90.9 |    88.88 |     100 |    90.9 | 18                
+  dayMutation.ts   |   88.88 |    76.85 |   77.27 |   91.45 | ...90,279,300-306 
+  ...tMutations.ts |   92.59 |     87.5 |     100 |    92.3 | 117,119           
+  itemEdit.ts      |   97.91 |    93.33 |     100 |   97.82 | 47                
+  ...Resolution.ts |   86.95 |    76.81 |   86.95 |    87.2 | ...72,187-188,193 
+  mapReimport.ts   |   92.06 |    79.59 |     100 |   91.37 | 36,80,82,114,146  
+  membership.ts    |   94.36 |    89.42 |     100 |   96.06 | 324-326,336,355   
+  migration.ts     |   90.15 |    85.35 |   86.27 |   90.55 | ...49,460,524-530 
+  mutations.ts     |   96.72 |    90.87 |     100 |   97.62 | ...1009-1011,1040 
+  projection.ts    |   98.55 |    95.23 |     100 |    98.5 | 40,47             
+  references.ts    |   90.47 |    88.13 |     100 |   91.25 | ...35,144,149,165 
+  visitHistory.ts  |     100 |    83.33 |     100 |     100 | 31-32             
+  ...elMutation.ts |   97.91 |    88.46 |     100 |     100 | 75-76,92,104,143  
+ ...eatures/events |   93.66 |    91.07 |   95.23 |   94.62 |                   
+  bulkAdd.ts       |   92.95 |    84.84 |     100 |   95.31 | 112,118,155       
+  ...icateEvent.ts |   91.13 |    89.47 |     100 |   93.24 | ...41,293,329,377 
+  fileImport.ts    |     100 |    78.57 |     100 |     100 | 57,76-86,141      
+  recordOps.ts     |   55.55 |       50 |   33.33 |   55.55 | 6-16              
+  sheetImport.ts   |   89.91 |    95.04 |   86.95 |   89.62 | ...78,255,274,284 
+  sheetMatching.ts |   98.55 |      100 |     100 |     100 |                   
+  ...hestration.ts |   72.72 |    57.14 |     100 |   73.68 | 18-21,35,38       
+  updateApply.ts   |   88.33 |    88.46 |   84.21 |   87.27 | 37,140,249-258    
+  updateDiff.ts    |     100 |    95.57 |     100 |     100 | ...59,367,407,479 
+  updateFlow.ts    |   94.23 |    87.32 |     100 |     100 | ...54,163-171,234 
+ ...events/itemOps |   65.52 |    59.54 |   67.32 |   66.53 |                   
+  crud.ts          |      98 |    88.88 |    90.9 |   97.87 | 117               
+  executeList.ts   |   91.59 |    76.95 |   93.33 |   92.64 | ...03,815,868,948 
+  move.ts          |   34.26 |    35.13 |   35.71 |   35.71 | ...16-631,641-761 
+  priority.ts      |   72.81 |     61.9 |     100 |   73.49 | ...56-167,174-175 
+ ...s/lists/domain |   95.29 |    91.08 |     100 |   98.01 |                   
+  movePlan.ts      |   97.95 |       92 |     100 |     100 | 101,150           
+  ...eSelection.ts |   94.21 |    90.78 |     100 |   97.11 | 224,382,447       
+ ...es/lists/hooks |   56.88 |    44.23 |      50 |   57.14 |                   
+  ...ctionState.ts |   56.88 |    44.23 |      50 |   57.14 | ...70-177,205-206 
+ ...res/map/canvas |   70.44 |    60.12 |   83.33 |   73.13 |                   
+  ...tureRaster.ts |   29.62 |    21.73 |   66.66 |   33.33 | 28,31-45,63,65-70 
+  ...wportIndex.ts |     100 |       92 |     100 |     100 | 57,74             
+  ...ngSnapshot.ts |     100 |    94.44 |     100 |     100 | 39                
+  ...asViewport.ts |   63.17 |    44.73 |   74.07 |   66.36 | ...39-377,385-405 
+ ...map/components |   92.07 |    64.15 |     100 |   98.92 |                   
+  ...Container.tsx |   92.07 |    64.15 |     100 |   98.92 | 320               
+ ...res/map/domain |   95.38 |    82.46 |   98.07 |   96.53 |                   
+  ...sCellState.ts |   96.77 |    83.33 |     100 |    97.9 | 191,209,215       
+  ...Operations.ts |   91.94 |    71.13 |   97.67 |   94.69 | ...75,385-386,416 
+  mapImportFlow.ts |   95.23 |       75 |      80 |   95.23 | 107               
+  mapReimport.ts   |   95.65 |    91.35 |     100 |   95.45 | ...20,129,145,163 
+  ...dHallState.ts |     100 |    90.24 |     100 |     100 | 39,46,59,90       
+ ...ures/map/hooks |   87.09 |    59.74 |    90.9 |   96.42 |                   
+  ...pSelectors.ts |   87.09 |    59.74 |    90.9 |   96.42 | 117-118           
+ ...es/map/routing |    88.4 |    88.13 |      90 |   87.69 |                   
+  ...alculation.ts |    88.4 |    88.13 |      90 |   87.69 | 116-125,133-134   
+ ...routing/worker |   51.02 |    53.12 |   66.66 |   53.48 |                   
+  route.worker.ts  |       0 |        0 |       0 |       0 | 4-23              
+  routeJob.ts      |    86.2 |    77.27 |      80 |   88.46 | 99,105-106        
+ ...ist/controller |   96.66 |    89.36 |     100 |   98.07 |                   
+  ...Controller.ts |   96.66 |    89.36 |     100 |   98.07 | 102               
+ ...ing-list/model |   92.22 |    89.47 |     100 |   95.18 |                   
+  buildListRows.ts |   92.22 |    89.47 |     100 |   95.18 | 225,227-228,250   
+ ...ist/preference |    92.1 |    83.87 |     100 |   97.14 |                   
+  ...nceAdapter.ts |   91.42 |    81.48 |     100 |   96.87 | 49                
+ ...list/renderers |   92.95 |    82.58 |   94.91 |   94.82 |                   
+  ...tRenderer.tsx |      92 |    82.14 |     100 |   93.61 | 77,90,118         
+  ...tRenderer.tsx |      88 |    82.95 |      96 |   91.11 | 160,258-263,271   
+  ...rtContent.tsx |   96.01 |    83.92 |   97.36 |   97.53 | 179-183           
+  ...tRowState.tsx |   92.85 |       50 |      80 |   92.85 | 40                
+  ...tRenderer.tsx |   89.18 |    72.35 |   91.89 |   92.53 | ...93,300-304,452 
+  ...ligibility.ts |   97.61 |    97.82 |     100 |   96.55 | 101               
+ ...ace-navigation |   79.27 |     70.4 |   86.36 |   82.29 |                   
+  ...orContext.tsx |   79.09 |     70.4 |   86.36 |   82.12 | ...61,482-486,573 
+ ...ion/components |   73.24 |    68.81 |   64.61 |   74.53 |                   
+  ...ionDialog.tsx |      50 |     62.5 |      40 |   55.55 | 58-102,113        
+  ...terButton.tsx |     100 |     90.9 |     100 |     100 | 28                
+  ...gatorHost.tsx |   74.02 |    84.37 |   66.66 |   72.85 | ...45-150,177-181 
+  ...torLegend.tsx |     100 |    66.66 |     100 |     100 | 29                
+  ...torPicker.tsx |   82.01 |     68.5 |   83.33 |   84.55 | ...20,281-303,310 
+  ...gatorRail.tsx |      50 |    44.73 |   44.44 |   53.65 | ...,96-99,107-126 
+  ...ingsPanel.tsx |      30 |    14.28 |   16.66 |   22.22 | 8-80              
+  ...ionBanner.tsx |   88.88 |    84.61 |   66.66 |   88.88 | 55                
+ ...igation/domain |    94.2 |    89.92 |     100 |   97.34 |                   
+  ...torEntries.ts |   97.87 |    93.54 |     100 |     100 | 76,139            
+  ...idateIndex.ts |   89.28 |       88 |     100 |   95.45 | 66                
+  ...ionAnchors.ts |   78.12 |    58.62 |     100 |   83.63 | 48-50,69-77       
+  ...sProjector.ts |   96.93 |     90.9 |     100 |     100 | ...,72,81,146,175 
+  ...Navigation.ts |   94.09 |    89.09 |     100 |   97.93 | 152,178,189,362   
+ ...vigation/hooks |   79.95 |    67.95 |   86.66 |   81.43 |                   
+  ...eNavigator.ts |   81.11 |     65.1 |   88.23 |   82.91 | ...44,822-823,862 
+  ...eNavigator.ts |   77.86 |    70.31 |   85.24 |    79.1 | ...1036,1097-1101 
+  ...orSettings.ts |    91.3 |       80 |    87.5 |   90.47 | 49,76             
+ src/hooks         |   83.18 |    75.07 |   81.19 |   84.72 |                   
+  ...finedCheck.ts |       0 |        0 |       0 |       0 | 4-24              
+  ...ersistence.ts |   90.17 |    79.16 |    90.9 |   91.62 | ...1160-1163,1272 
+  ...ogBehavior.ts |   93.87 |     82.5 |     100 |   97.77 | 83                
+  ...tlineStyle.ts |       0 |        0 |       0 |       0 | 5-28              
+  ...utionCheck.ts |       0 |        0 |       0 |       0 | 4-35              
+  useThemeMode.ts  |       0 |        0 |       0 |       0 | 7-42              
+  ...tySettings.ts |   88.37 |    54.54 |    90.9 |   88.09 | 64,124-128        
+ ...tence/adapters |   70.78 |    61.36 |   80.32 |   71.51 |                   
+  backupWorker.ts  |       0 |        0 |       0 |       0 | 16-68             
+  ...andAdapter.ts |   69.51 |    51.16 |   72.22 |   73.33 | ...43,168-170,221 
+ ...persistence/db |   92.19 |    87.26 |   92.57 |   93.14 |                   
+  ...ransaction.ts |    93.2 |    87.21 |   95.65 |   93.79 | ...1276,1401,1412 
+  ...ncyUpgrade.ts |   76.92 |    63.63 |   58.33 |   86.04 | 10-11,16-17,23-24 
+  ...ordStorage.ts |   95.26 |    91.54 |   96.29 |   95.54 | ...08,218,222,454 
+  openDatabase.ts  |   86.95 |       75 |    93.1 |   87.73 | ...69-173,176-177 
+  ...DayStorage.ts |   92.95 |    91.05 |   96.15 |   92.85 | ...98,317,338,362 
+  ...oordinator.ts |     100 |      100 |    90.9 |     100 |                   
+ ...istence/facade |   88.88 |      100 |      90 |   88.88 |                   
+  ...ersistence.ts |   88.88 |      100 |      90 |   88.88 | 206-224           
+ ...tence/internal |   87.39 |    82.05 |     100 |   89.03 |                   
+  ...stenceCore.ts |   87.34 |    81.85 |     100 |   88.98 | ...1337,1349-1353 
+ ...ence/migration |   87.57 |     81.7 |   90.68 |   88.32 |                   
+  ...yMigration.ts |   87.57 |     81.7 |   90.68 |   88.32 | ...3745-3750,3814 
+ ...tence/recovery |   86.29 |    79.11 |   87.93 |   86.22 |                   
+  ...ryAdoption.ts |   85.46 |    77.73 |   84.78 |   85.25 | ...1055,1080,1184 
+  ...ryEvidence.ts |   83.87 |    76.92 |     100 |   86.66 | 66,89,104-107     
+  ...ceEvidence.ts |   95.23 |       90 |     100 |   94.44 | 27                
+ ...e/repositories |   81.72 |    63.89 |   77.69 |   81.79 |                   
+  ...Repository.ts |   63.63 |    51.85 |   57.14 |   63.63 | ...54,173,185-190 
+  mapRepository.ts |   90.04 |    71.65 |   76.74 |   89.81 | ...74,701,728-729 
+  ...Repository.ts |   77.81 |    60.83 |   72.22 |   78.19 | ...1021,1030-1040 
+ ...istence/worker |   68.12 |     63.9 |   58.97 |   68.66 |                   
+  backup.worker.ts |       0 |        0 |       0 |       0 | 10-39             
+  ...rkerServer.ts |   93.33 |       75 |     100 |     100 | 38-46             
+  ...nce.worker.ts |       0 |        0 |       0 |       0 | 4-102             
+  ...rkerServer.ts |   81.57 |    72.82 |   91.66 |   83.96 | ...79,323-328,336 
+  snapshotDelta.ts |   88.88 |    86.48 |     100 |   89.06 | ...9-50,67-68,174 
+ src/pwa           |   79.61 |    73.75 |   77.55 |   82.19 |                   
+  ...tyProtocol.ts |   72.79 |    69.49 |   67.64 |   75.59 | ...90,498-499,516 
+  ...erRegistry.ts |   92.85 |    85.71 |     100 |   95.31 | 54,125-126        
+ ...wa/containment |   97.61 |    85.71 |     100 |     100 |                   
+  index.ts         |   97.61 |    85.71 |     100 |     100 | 26                
+ src/pwa/recovery  |   94.48 |    87.97 |   94.33 |   96.61 |                   
+  ...overyAgent.ts |    93.3 |    81.96 |    90.9 |   96.31 | ...64,313,323,345 
+  recoveryRoot.ts  |   99.04 |    93.18 |     100 |     100 | 84,183-188        
+  ...geProtocol.ts |   97.29 |    97.95 |     100 |     100 | 62                
+  ...erRegistry.ts |    90.4 |     86.2 |   91.89 |   92.24 | ...44-247,265-266 
+ src/styles        |   88.88 |    66.66 |     100 |     100 |                   
+  ...Attributes.ts |   88.88 |    66.66 |     100 |     100 | 14,27,48-65       
+ src/utils         |   83.18 |    79.71 |    86.8 |   85.32 |                   
+  appBackup.ts     |   89.37 |    81.81 |   99.04 |   95.36 | ...1768,1779,1816 
+  ...ngsStorage.ts |    92.4 |    85.18 |     100 |   93.42 | ...30,148,173,201 
+  ...ScrollLock.ts |      92 |    81.81 |   83.33 |     100 | 18,35             
+  csvRecords.ts    |   98.36 |     90.9 |     100 |   98.24 | 86                
+  dayItemCounts.ts |   95.45 |    88.88 |     100 |     100 | 10,19             
+  downloadBlob.ts  |    9.09 |      100 |       0 |    9.09 | 2-12              
+  ...gressIndex.ts |   95.04 |    87.09 |     100 |   97.75 | 120-121           
+  ...VisitIndex.ts |   99.26 |    93.18 |     100 |     100 | ...80,183,209,227 
+  ...alculation.ts |     100 |    81.81 |     100 |     100 | 74                
+  ...SessionKey.ts |   85.71 |       80 |     100 |   85.71 | 18                
+  hallFallback.ts  |   48.14 |    16.66 |      50 |      60 | 37-43,67-68       
+  hallGrouping.ts  |   76.47 |    62.94 |   70.21 |   75.81 | ...26,535,572-598 
+  ...gSignature.ts |     100 |    59.52 |     100 |     100 | ...5,26-75,97-128 
+  importOutcome.ts |     100 |    91.66 |     100 |     100 | 6                 
+  ...entalItems.ts |   98.07 |    90.27 |   95.23 |   98.94 | 108               
+  ...ntentGuard.ts |   83.58 |    82.95 |   81.81 |    83.6 | ...65,203-204,211 
+  itemIndex.ts     |   91.86 |       96 |   84.21 |   92.75 | 90,99-107         
+  ...onalFields.ts |     100 |    98.14 |     100 |     100 | 86                
+  ...edBulkFlow.ts |   76.92 |       75 |      50 |   76.92 | 89-93             
+  ...haseIntent.ts |   86.36 |       80 |     100 |   94.44 | 34                
+  ...ersistence.ts |   90.94 |       88 |   92.53 |   91.41 | ...20,380-394,419 
+  ...uteHitTest.ts |   87.23 |       60 |     100 |   95.23 | 111,119           
+  ...uteMapData.ts |   97.91 |      100 |   91.66 |   97.36 | 53                
+  mapRouteOrder.ts |      96 |    91.66 |   92.85 |   95.23 | 97                
+  ...outePoints.ts |      92 |    85.71 |     100 |   91.66 | 57-58             
+  ...utePolygon.ts |   84.81 |    71.42 |   88.88 |    91.8 | 67-69,109,157     
+  ...gSignature.ts |      90 |    77.77 |     100 |   97.61 | 6                 
+  ...martInsert.ts |   87.09 |    76.47 |     100 |      90 | 30,42,91          
+  ...teSettings.ts |   63.63 |    55.88 |      50 |      65 | ...12-123,128-142 
+  ...ricExtrema.ts |      50 |      100 |      50 |      50 | 3-5               
+  pathfinding.ts   |   91.24 |    89.74 |   98.36 |   92.43 | ...,945,1077-1135 
+  ...oordinator.ts |   91.23 |    88.02 |   97.14 |   91.71 | ...99,606,669,681 
+  ...veryExport.ts |   93.75 |    88.88 |     100 |   93.75 | 49                
+  ...seAMetrics.ts |   93.84 |    86.39 |   93.33 |   96.08 | ...94,723,835,871 
+  ...icsBackend.ts |   85.91 |    77.55 |   85.71 |    87.3 | ...98-103,114,180 
+  ...Resilience.ts |      92 |    88.21 |    92.3 |    92.5 | ...1255,1266,1305 
+  ...Validation.ts |   89.65 |    75.71 |     100 |   96.73 | 165-170,195       
+  ...utionCheck.ts |     100 |    83.33 |     100 |     100 | 39                
+  ...seQuantity.ts |   95.31 |    92.15 |     100 |    99.1 | 163               
+  ...iagnostics.ts |     100 |    70.37 |     100 |     100 | 36-44,72,81-82    
+  ...eRendering.ts |   11.92 |     2.32 |   11.32 |   10.92 | ...03-863,913-937 
+  ...icEquality.ts |   97.61 |    97.02 |     100 |     100 | 84,112,145        
+  ...erformance.ts |   43.47 |    33.33 |      50 |   47.36 | 25-28,35-36,56-75 
+  spaceGrouping.ts |   33.33 |        0 |      40 |   33.33 | 54-60             
+  ...Projection.ts |   95.52 |       88 |    92.3 |   98.24 | 88                
+ src/xlsx/adapters |   80.12 |    89.18 |   79.54 |   80.13 |                   
+  ...dQaAdapter.ts |   51.72 |    71.42 |   66.66 |      50 | ...4,81-83,94-104 
+  ...cutionPort.ts |   18.18 |       50 |   14.28 |   18.18 | 33-66             
+  ...cutionPort.ts |   92.56 |     92.3 |   96.77 |   93.75 | 58-60,109,283-291 
+ src/xlsx/domain   |   77.23 |    82.87 |   85.96 |   79.83 |                   
+  ...cyWorkbook.ts |   91.46 |       93 |     100 |    92.3 | ...80,602,625,664 
+  itemNumber.ts    |    8.51 |        0 |       0 |   10.52 | ...7,35-55,67-104 
+ src/xlsx/download |    7.69 |        0 |       0 |    7.69 |                   
+  downloadBytes.ts |    7.69 |        0 |       0 |    7.69 | 6-21              
+ src/xlsx/engine   |   78.23 |    71.71 |   77.44 |   80.52 |                   
+  ...bookEngine.ts |   92.87 |       88 |     100 |   93.22 | ...1074,1089,1112 
+  ...bookEngine.ts |   68.65 |    55.99 |   69.69 |   71.38 | ...1724,1751-1752 
+ src/xlsx/port     |   98.68 |    92.61 |   95.83 |   98.64 |                   
+  protocol.ts      |   98.68 |    92.61 |   95.83 |   98.64 | 137               
+ src/xlsx/security |   84.82 |    78.02 |     100 |   86.21 |                   
+  zipPreflight.ts  |   84.82 |    78.02 |     100 |   86.21 | ...71,874,877,894 
+ src/xlsx/worker   |   90.59 |    92.85 |   88.88 |   92.79 |                   
+  ...erExecutor.ts |      82 |       75 |      75 |   85.41 | 11-16,33,54       
+  workerServer.ts  |   98.48 |    97.72 |     100 |     100 | 89                
+  xlsx.worker.ts   |       0 |      100 |     100 |       0 | 4                 
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 73.2% ( 25363/34646 )
+Branches     : 68.35% ( 17826/26080 )
+Functions    : 75.27% ( 5293/7032 )
+Lines        : 74.87% ( 23823/31816 )
+================================================================================
+
+=== pwa-recovery Node coverage ===
+✔ builds a reproducible self-contained outer agent graph (538.6225ms)
+✔ rejects outer agent byte and source-graph tampering (70.3334ms)
+✔ writes byte-identical canonical stable and versioned identities (33.4152ms)
+✔ rejects an immediate-activation worker (8.2686ms)
+✔ binds a non-target phase candidate into legacy identity bytes (9.8903ms)
+✔ marks a CLI-selected QA identity as nonpromotable (9.2084ms)
+✔ marks policy-activation identities as nonpromotable for either release role (17.801ms)
+✔ marks artifact-drill identities as nonpromotable for either release role (18.7475ms)
+✔ rejects malformed hashes, roles, and QA purpose bindings (0.8405ms)
+✔ rejects dimensions, variants, and worker identity contract drift (14.6672ms)
+✔ rejects empty and non-file recovery agent output (9.5355ms)
+✔ builds the projected containment identity (9.4195ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1090.5088
+ℹ start of coverage report
+ℹ ------------------------------------------------------------------------------------------------------------------------
+ℹ file                          | line % | branch % | funcs % | uncovered lines
+ℹ ------------------------------------------------------------------------------------------------------------------------
+ℹ scripts                       |        |          |         | 
+ℹ  build-pwa-recovery-agent.mjs |  86.89 |    86.44 |   91.67 | 47-53 82-85 91-94 108-111 121-124 171-172 357-358 366-389
+ℹ ------------------------------------------------------------------------------------------------------------------------
+ℹ all files                     |  86.89 |    86.44 |   91.67 | 
+ℹ ------------------------------------------------------------------------------------------------------------------------
+ℹ end of coverage report
+
+=== artifact-reducer Node coverage ===
+✔ creates byte-identical archives from different roots and mtimes (47.9266ms)
+✔ rejects traversal, absolute, Windows, and ambiguous paths (0.6706ms)
+✔ rejects archive policy drift before reading build output (0.5623ms)
+✔ CLI output is byte-identical across process timezones (316.8348ms)
+▶ build input closure binds stylesheet configuration and committed bytes
+  ✔ committed postcss.config.cjs changes the artifact binding (1218.7604ms)
+  ✔ committed postcss.config.mjs changes the artifact binding (1175.5456ms)
+  ✔ committed tailwind.config.cjs changes the artifact binding (1188.2892ms)
+  ✔ committed tailwind.config.mjs changes the artifact binding (1235.8774ms)
+  ✔ committed tailwind-legacy-theme.json changes the artifact binding (1205.6792ms)
+✔ build input closure binds stylesheet configuration and committed bytes (7744.9938ms)
+✔ Vercel build launcher passes only closed build authority (0.6617ms)
+✔ requires byte-identical role-independent outer agents in a pair (7.8439ms)
+✔ verifies a deterministic source-hardened role pair (463.2579ms)
+✔ verifies bootstrap raw dist byte-for-byte and fixed staging inputs (289.3359ms)
+✔ policy activation QA artifact purpose is explicit and production-rejected (149.7091ms)
+✔ artifact drill package is P0-only, closed, and production-rejected (376.3757ms)
+✔ rejects archive tampering independently of its manifest (203.5326ms)
+✔ accepts only the final remotely observed DB authority for production artifacts (1.5835ms)
+✔ artifact drill context binds static DB and policy hashes without production DB authority (3.775ms)
+✔ current external policy explicitly blocks production artifact context (3.0639ms)
+✔ rejects Python build triggers and non-Node Vercel functions (46.1007ms)
+✔ normalizes Vercel CSP headers and report function from dimensions (110.9566ms)
+✔ requires mode-aware CSP/Sheets API functions and exact emitted headers (91.3502ms)
+✔ independent build proof rejects output manifest drift (0.6799ms)
+✔ artifact contract rejects malformed manifests and role entry graphs (7.5861ms)
+✔ package index and content-addressed object guards reject ambiguity (11.1551ms)
+✔ appends the exact next formal phase exit after the pre-initialization seed (6.0194ms)
+✔ builds a source-hardened standard acceptance through the event chain (7.0571ms)
+✔ allows only a distinct source binding to replace an accepted standard at the exact same floor (23.5593ms)
+✔ accepts one reviewer filling both required promotion roles (4.0874ms)
+✔ rejects event tampering and a broken predecessor (0.8589ms)
+✔ rejects a prepared operation that does not bind the current head (0.956ms)
+✔ rejects namespace changes while replaying one event chain (1.3306ms)
+✔ applies policy and DB compatibility changes with reviewed inventory (2.5117ms)
+✔ activates bootstrap containment, source-hardened containment, and rollback (9.4592ms)
+✔ atomically swaps rollback inventory and rejects authority or eligibility tampering (16.3108ms)
+✔ rejects unauthorized or incomplete recovery terminal events (4.2763ms)
+✔ applies prepared standard and containment package redeploys (15.4284ms)
+✔ reconciles and aborts only the currently prepared operation (2.1045ms)
+✔ reconciles an already active previous accepted standard by aborting the no-op operation (2.8956ms)
+✔ reconciles a source-hardened emergency only as prepared containment recovery (2.6082ms)
+✔ validates event construction and replay boundary inputs (0.3483ms)
+✔ updates DB compatibility with active production and prepares a generic operation (2.9627ms)
+✔ accepts a closed payload fixture for every release event type (15.7383ms)
+✔ closes incident, recovery, legacy observation, and rollback inventory snapshots (3.2572ms)
+✔ rejects unknown, missing, wrong-type, URI, hash, and time payload values (7.9995ms)
+✔ verify-release-state validates payload schemas and payload hashes (812.4018ms)
+ℹ tests 47
+ℹ suites 0
+ℹ pass 47
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9953.6042
+ℹ start of coverage report
+ℹ ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ℹ file                          | line % | branch % | funcs % | uncovered lines
+ℹ ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ℹ scripts                       |        |          |         | 
+ℹ  deterministic-zip.mjs        |  84.41 |    56.52 |  100.00 | 117-119 129-130 132-133 135-136 142-143 145-148 153-154 156-159 161-162 166-167 169-172 174-177 182-183 186-189 192-194 256-259
+ℹ  lib                          |        |          |         | 
+ℹ   artifact-builder-core.mjs   |  90.25 |    80.00 |   94.44 | 83-84 102-103 116-117 122-123 125-126 166-167 185-186 191-192 194-197 238-239 281-282 300-331 407-410 437-438 441-442 446 448-449 506-509 512-515 527-528 578-579 610-611 628-629 631-632 637-638 699-700 706-707 809-810 893-894 900-901 1015-1016 1018-1019 1043-1044 1084-1086
+ℹ   artifact-contract.mjs       |  92.51 |    86.59 |   95.45 | 136-137 142-145 171-174 198-199 425 588-589 707-708 714-715 721-722 763-770 773-774 800-801 806-807 812-813 860-863 868-869 876-877 891-894 922-923 940-941 960-961 980-981 1005-1006 1017-1018 1050-1051 1058-1059 1065-1066 1073-1074 1089-1090 1097-1098 1104-1105 1110-1111 1144-1145 1152-1153 1159-1160 1165-1166 1175-1176 1181-1182
+ℹ   content-addressed-store.mjs |  98.32 |    91.18 |  100.00 | 74-75
+ℹ   file-manifest.mjs           |  91.84 |    85.71 |  100.00 | 46-47 53-54 71-72 95-96
+ℹ  release-state                |        |          |         | 
+ℹ   releaseStateReducer.mjs     |  95.47 |    91.87 |  100.00 | 66-67 585-594 604-615 880-892 1373-1377 1408-1424 1516-1524 1535-1539 1614
+ℹ  verify-release-artifact.mjs  |  81.42 |    66.30 |   80.00 | 65-66 97-100 113-116 119-122 127-130 144-145 181-182 216-217 223-226 240-241 276-279 284-285 314-317 369-370 378-379 385-386 388-389 391-398 411-412 423-424 426-427 431-432 436-437 501-502 547-548 605-608 614-617 685-686 713-721 725-726 730-783 790-791
+ℹ ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ℹ all files                     |  90.94 |    82.84 |   95.22 | 
+ℹ ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ℹ end of coverage report
+
+=== Generated and changed-code coverage ===
+Changed-code comparison: HEAD^...HEAD
+release-a-metrics: total lines 93.80% (227/242), branches 84.18% (165/196); changed lines n/a, branches n/a across 0 file(s)
+pwa-recovery: total lines 90.77% (993/1094), branches 83.58% (453/542); changed lines n/a, branches n/a across 0 file(s)
+artifact-reducer: total lines 90.94% (4738/5210), branches 82.84% (729/880); changed lines n/a, branches n/a across 0 file(s)
+xlsx-protocol-security: total lines 90.89% (509/560), branches 86.28% (415/481); changed lines n/a, branches n/a across 0 file(s)
+shopping-list-model-selector: total lines 95.90% (117/122), branches 93.13% (122/131); changed lines n/a, branches n/a across 0 file(s)
+persistence-transactions: total lines 92.96% (647/696), branches 88.99% (501/563); changed lines n/a, branches n/a across 0 file(s)
+PASS generated coverage and changed-code floors for 6 subsystems

@@ -1,0 +1,45 @@
+{
+  "dateJst": "2026-10-18",
+  "originalWorktree": "D:\\event-shopping-planner-routeplanning-1.9.6.7",
+  "validatedWorktree": "D:\\codex-worktrees\\u06-direct-edit-20261018",
+  "originalHeadUnchanged": true,
+  "cleanBeforeApplication": true,
+  "sourceChecks": [
+    {
+      "path": "src/components/map/CellItemsPopup.tsx",
+      "sha256": "C88B941A25C456A1CD38164098FD10FD138BD42E869B80FA29086F3B4664506C",
+      "matchesValidatedSource": true,
+      "encoding": "UTF-8",
+      "bom": false,
+      "eol": "LF",
+      "replacementCharacters": 0
+    },
+    {
+      "path": "src/components/map/CellItemsPopup.limitedPurchase.test.tsx",
+      "sha256": "E2539877E657115AFC93941297A5D5E29AB7874263E0F708A113B8B880E87B6A",
+      "matchesValidatedSource": true,
+      "encoding": "UTF-8",
+      "bom": false,
+      "eol": "LF",
+      "replacementCharacters": 0
+    },
+    {
+      "path": "tests/browser/priority-cell-popup-edit.spec.ts",
+      "sha256": "F0B46586471F4E27FDD8CD890AD7906811096C8DEFED7C3CA785FADB8A1B3C11",
+      "matchesValidatedSource": true,
+      "encoding": "UTF-8",
+      "bom": false,
+      "eol": "LF",
+      "replacementCharacters": 0
+    }
+  ],
+  "evidenceFilesCopiedAndHashMatched": 117,
+  "priorReviewOutputPreserved": true,
+  "priorReviewOutput": [
+    {
+      "path": ".last-run.json",
+      "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+    }
+  ],
+  "note": "No commit created on the original user branch. Prior review output temporarily moved for clean application and restored byte-for-byte."
+}

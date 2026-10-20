@@ -1,3 +1,4 @@
+import { useModalFocusBoundary } from "../../../hooks/useModalFocusBoundary";
 import React from "react";
 import type { NavigatorEntry } from "../types";
 import type { SpaceNavigatorActionResult } from "../SpaceNavigatorContext";
@@ -45,6 +46,8 @@ export function SpaceNavigatorActionDialog({
   onChoose,
   onCancel,
 }: SpaceNavigatorActionDialogProps) {
+  const dialogRef = React.useRef<HTMLElement>(null);
+  useModalFocusBoundary({ isOpen: true, dialogRef });
   const needsConfirmation = Boolean(
     result?.requiresConfirmation && pendingIntent,
   );
@@ -60,6 +63,7 @@ export function SpaceNavigatorActionDialog({
       }}
     >
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="space-navigator-action-title"

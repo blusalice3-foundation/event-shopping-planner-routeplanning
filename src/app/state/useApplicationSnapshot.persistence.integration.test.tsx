@@ -4,7 +4,7 @@ import {
   eventUpdateSourceMatches,
   EventUpdateInvalidatedError,
 } from "../../features/events/updateFlow";
-import { IDBFactory } from "fake-indexeddb";
+import { IDBDatabase, IDBFactory } from "fake-indexeddb";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "../../utils/indexedDB";
 import { resetDatabaseConnection } from "../../persistence/db/openDatabase";
@@ -17,6 +17,7 @@ import {
 } from "../../types/consistency";
 import {
   emptyApplicationSnapshot,
+  MEMO_SAVE_MAX_WAIT_MS,
   useApplicationSnapshot,
 } from "./useApplicationSnapshot";
 
@@ -69,7 +70,9 @@ async function harness(related = false, saveDelayMs = 1) {
   await db.commitApplicationSnapshotAtomically(seed, {
     expectedRoots: initial.expectedRoots,
   });
+  const singleOriginal = db.saveExecuteModeItems;
   const single = vi.spyOn(db, "saveExecuteModeItems");
+  const atomicOriginal = db.commitApplicationSnapshotAtomically;
   const atomic = vi.spyOn(db, "commitApplicationSnapshotAtomically");
   const commands = createIndexedDbPersistenceCommandAdapter();
   const mount = () =>
@@ -82,6 +85,7 @@ async function harness(related = false, saveDelayMs = 1) {
         saveDelayMs,
       });
       application.handlers.current = {
+        stopWrites: persistence.stopWrites,
         drain: persistence.flushPendingSave,
         observeSnapshot: persistence.observeSnapshot,
         applied: persistence.acceptCommittedSnapshot,
@@ -92,7 +96,16 @@ async function harness(related = false, saveDelayMs = 1) {
   await waitFor(() =>
     expect(hook.result.current.persistence.isInitialized).toBe(true),
   );
-  return { ...hook, single, atomic, seed, mount };
+  return {
+    ...hook,
+    single,
+    singleOriginal,
+    atomic,
+    seed,
+    mount,
+    commands,
+    atomicOriginal,
+  };
 }
 function reorder(h: Awaited<ReturnType<typeof harness>>) {
   h.result.current.application.setters.setExecuteModeItems((current) => ({
@@ -744,5 +757,240 @@ it.each(["queued", "cas-retry", "confirmation", "manual-retry"] as const)(
     expect(h.result.current.application.confirmations).toEqual([]);
     expect(h.result.current.application.retryableFailures).toEqual([]);
     if (phase !== "queued") expect(guard.mock.calls.length).toBeGreaterThan(1);
+  },
+);
+
+it("App handler wiring synchronously stops retry/flush before rerender and exports a later accepted edit without writing", async () => {
+  const h = await harness(true);
+  const original = h.atomicOriginal;
+  let release!: () => void;
+  h.atomic.mockImplementationOnce(async (...args) => {
+    await original(...args);
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+  });
+  let first!: Promise<unknown>;
+  act(() => {
+    first = h.result.current.application
+      .commitPatch({
+        eventLists: {
+          [EVENT]: items.map((item) =>
+            item.id === "1" ? { ...item, remarks: "保存済み" } : item,
+          ),
+        },
+      })
+      .catch((error: unknown) => error);
+  });
+  await waitFor(() => expect(release).toBeTypeOf("function"));
+  act(() =>
+    h.result.current.application.setters.setEventLists((lists) => ({
+      ...lists,
+      [EVENT]: lists[EVENT].map((item) =>
+        item.id === "2" ? { ...item, remarks: "停止前に受理した入力" } : item,
+      ),
+    })),
+  );
+  let flush!: Promise<unknown>;
+  let stoppedReason: unknown;
+  h.result.current.application.handlers.current.stopWrites = (reason) => {
+    stoppedReason = reason;
+    h.result.current.persistence.stopWrites(reason);
+    h.result.current.persistence.retrySave();
+    flush = h.result.current.persistence
+      .flushPendingSave()
+      .catch((error: unknown) => error);
+  };
+  h.result.current.application.handlers.current.applied = (snapshot) => {
+    h.result.current.persistence.acceptCommittedSnapshot(snapshot);
+    throw new Error("App effect failed after durable save");
+  };
+  await act(async () => {
+    release();
+    await first;
+  });
+  expect(await first).toMatchObject({ name: "CommittedStateApplyError" });
+  expect(await flush).toBe(stoppedReason);
+  expect(h.result.current.application.requiresReload).toBe(true);
+  expect(h.result.current.application.pendingCount).toBe(0);
+  expect(h.atomic).toHaveBeenCalledOnce();
+  h.result.current.persistence.retrySave();
+  await expect(h.result.current.persistence.flushPendingSave()).rejects.toBe(
+    stoppedReason,
+  );
+  const file =
+    await h.result.current.application.coordinator.createBackupFile();
+  const exported = JSON.parse(await file.blob.text());
+  expect(exported.data.eventLists[EVENT][1].remarks).toBe(
+    "停止前に受理した入力",
+  );
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.eventLists[EVENT][1],
+  ).toMatchObject({ remarks: "ユーザー登録" });
+  expect(h.atomic).toHaveBeenCalledOnce();
+  const writes = vi.spyOn(db, "saveEventLists");
+  act(() => h.result.current.persistence.acceptCommittedSnapshot(h.seed));
+  await expect(h.commands.saveEventLists({})).rejects.toBe(stoppedReason);
+  expect(writes).not.toHaveBeenCalled();
+});
+it.each(["read", "state adoption", "applied callback"] as const)(
+  "stops all writers when observed saving succeeds but its post-save %s fails",
+  async (phase) => {
+    const h = await harness(false);
+    const durableBefore = (await db.readApplicationSnapshot()).snapshot;
+    const fault = new Error(`observed save: ${phase} failed after commit`);
+    let started = 0;
+    let completed = 0;
+    const transaction = IDBDatabase.prototype.transaction;
+    vi.spyOn(IDBDatabase.prototype, "transaction").mockImplementation(function (
+      this: IDBDatabase,
+      ...args
+    ) {
+      const result = transaction.apply(this, args);
+      if (args[1] === "readwrite") {
+        started++;
+        result.addEventListener("complete", () => completed++);
+      }
+      return result;
+    });
+    let release!: () => void;
+    h.single.mockImplementationOnce(async (...args) => {
+      await h.singleOriginal(...args);
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    });
+    let first!: Promise<unknown>;
+    act(() => {
+      first = h.result.current.application
+        .commitPatch({
+          executeModeItems: {
+            ...h.seed.executeModeItems,
+            [EVENT]: { ...h.seed.executeModeItems[EVENT], [DAY]: ["2", "1"] },
+          },
+        })
+        .catch((error: unknown) => error);
+    });
+    await waitFor(() => expect(release).toBeTypeOf("function"));
+    expect(started).toBe(1);
+    expect(completed).toBe(1);
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    let queued!: Promise<unknown>;
+    act(() => {
+      queued = h.result.current.application
+        .commitPatch({
+          eventMetadata: {
+            [EVENT]: { spreadsheetUrl: "https://example.invalid/queued" },
+          },
+        })
+        .catch((error: unknown) => error);
+      h.result.current.application.updateItemFields({
+        eventName: EVENT,
+        itemId: "2",
+        baseline: h.result.current.application.values.eventLists[EVENT][1],
+        changes: { remarks: "停止前に受理した入力" },
+      });
+    });
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    const adopted = vi.fn(() => {
+      throw fault;
+    });
+    const applied = vi.fn(() => {
+      throw fault;
+    });
+    const postRead =
+      phase === "read"
+        ? vi
+            .spyOn(h.commands, "readApplicationSnapshot")
+            .mockRejectedValueOnce(fault)
+        : null;
+    if (phase === "state adoption") h.commands.adoptCommittedSnapshot = adopted;
+    if (phase === "applied callback")
+      h.result.current.application.handlers.current.applied = (snapshot) => {
+        h.result.current.persistence.acceptCommittedSnapshot(snapshot);
+        applied();
+      };
+    let synchronousFlush!: Promise<unknown>;
+    let synchronousCommand!: Promise<unknown>;
+    const stopped = vi.fn((reason: unknown) => {
+      // This listener runs in onApplyFailure, before React can rerender.
+      expect(h.result.current.application.requiresReload).toBe(false);
+      h.result.current.persistence.retrySave();
+      synchronousFlush = h.result.current.persistence
+        .flushPendingSave()
+        .catch((error: unknown) => error);
+      synchronousCommand = h.result.current.application
+        .commitPatch({ eventMetadata: {} })
+        .catch((error: unknown) => error);
+      expect(h.commands.getWriteStopReason?.()).toBe(reason);
+    });
+    h.commands.onWritesStopped?.(stopped);
+    try {
+      await act(async () => {
+        release();
+        await Promise.all([first, queued]);
+      });
+      const terminal = await first;
+      expect(terminal).toMatchObject({
+        name: "CommittedStateApplyError",
+        cause: fault,
+      });
+      expect(await queued).toBe(terminal);
+      expect(await synchronousFlush).toBe(terminal);
+      expect(await synchronousCommand).toBe(terminal);
+      expect(stopped).toHaveBeenCalledExactlyOnceWith(terminal);
+      expect(h.result.current.application.getWriteStopReason()).toBe(terminal);
+      expect(h.result.current.persistence.getWriteStopReason()).toBe(terminal);
+      expect(h.result.current.application.requiresReload).toBe(true);
+      expect(h.result.current.application.pendingCount).toBe(0);
+      expect(h.result.current.application.confirmations).toEqual([]);
+      expect(h.result.current.application.retryableFailures).toEqual([]);
+      if (phase === "read") expect(postRead).toHaveBeenCalledOnce();
+      if (phase === "state adoption") expect(adopted).toHaveBeenCalledOnce();
+      if (phase === "applied callback") expect(applied).toHaveBeenCalledOnce();
+      const durable = (await db.readApplicationSnapshot()).snapshot;
+      expect(durable).toEqual({
+        ...durableBefore,
+        executeModeItems: {
+          ...durableBefore.executeModeItems,
+          [EVENT]: {
+            ...durableBefore.executeModeItems[EVENT],
+            [DAY]: ["2", "1"],
+          },
+        },
+      });
+      await act(async () => {
+        h.result.current.persistence.retrySave();
+        h.result.current.application.retryPending();
+        h.result.current.persistence.acceptCommittedSnapshot(h.seed);
+        await vi.advanceTimersByTimeAsync(MEMO_SAVE_MAX_WAIT_MS + 25);
+      });
+      await expect(
+        h.result.current.persistence.flushPendingSave(),
+      ).rejects.toBe(terminal);
+      await expect(h.result.current.application.flush()).rejects.toBe(terminal);
+      await expect(h.commands.saveEventLists({})).rejects.toBe(terminal);
+      await expect(h.commands.saveEventMetadata({})).rejects.toBe(terminal);
+      await expect(
+        h.result.current.application.commitPatch({ eventLists: {} }),
+      ).rejects.toBe(terminal);
+      const file =
+        await h.result.current.application.coordinator.createBackupFile();
+      const exported = JSON.parse(await file.blob.text());
+      expect(exported.data.eventLists[EVENT][1].remarks).toBe(
+        "停止前に受理した入力",
+      );
+      expect(exported.data.executeModeItems[EVENT][DAY]).toEqual(["2", "1"]);
+      expect(
+        h.result.current.application.values.eventLists[EVENT][1].remarks,
+      ).toBe("停止前に受理した入力");
+      expect(h.single).toHaveBeenCalledOnce();
+      expect(h.atomic).not.toHaveBeenCalled();
+      expect(stopped).toHaveBeenCalledOnce();
+      expect(started).toBe(1);
+      expect(completed).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   },
 );

@@ -18,7 +18,14 @@ export function useDisablePriceUndefinedCheck(
     });
 
   useEffect(() => {
-    preferences.savePreference(STORAGE_KEY, String(disablePriceUndefinedCheck));
+    try {
+      preferences.savePreference(
+        STORAGE_KEY,
+        String(disablePriceUndefinedCheck),
+      );
+    } catch {
+      // Ignore storage failures; the in-memory setting still updates.
+    }
   }, [disablePriceUndefinedCheck, preferences]);
 
   return { disablePriceUndefinedCheck, setDisablePriceUndefinedCheck } as const;

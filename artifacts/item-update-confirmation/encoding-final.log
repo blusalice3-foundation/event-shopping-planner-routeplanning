@@ -1,0 +1,2 @@
+node scripts/verify-encoding.mjs
+PASS encoding verification: 1083 text files; UTF-8 without BOM; U+FFFD/mojibake/suspicious '?' absent; newlines: LF=1078, CRLF=3, none=2; question marks reviewed=14643; representative strings: ユーザー登録=140, エラーが発生しました=53

@@ -1,4 +1,5 @@
 import { normalizeItemOptionalFields } from "../../utils/itemOptionalFields";
+import { getExactImportItemKey } from "./duplicateEvent";
 import type {
   SheetImportDiagnostics,
   SheetRowExclusionSummary,
@@ -102,6 +103,8 @@ export type AppFieldSyncCandidate = {
 
 export type EventUpdateDiff = {
   sheetImport?: SheetImportDiagnostics;
+  /** Incoming rows suppressed only because they would add a complete duplicate. */
+  duplicateItemCount?: number;
   csvReview?: { warnings: string[]; itemCount: number };
   matching?: {
     currentItems: ShoppingItem[];
@@ -299,7 +302,23 @@ export function createEventUpdateDiff(
   identityChoices: SheetIdentityChoices = {},
   rowExclusions?: SheetRowExclusionSummary,
 ): EventUpdateDiff {
+  // Use evaluated CSV quantities only for the duplicate key. In particular, blank
+  // quantities compare as new-import quantity 1 while matched items preserve theirs.
+  const newQuantityDecisions = sheetItems.map((item) =>
+    decideSheetQuantity(getSheetQuantityInput(item), "new"),
+  );
+  const duplicateKeys = sheetItems.map((item, row) => {
+    const decision = newQuantityDecisions[row];
+    return decision.kind === "apply"
+      ? getExactImportItemKey({ ...item, quantity: decision.quantity })
+      : undefined;
+  });
   const matching = matchSheetItems(currentItems, sheetItems, identityChoices);
+  const seenKeys = new Set<string>();
+  for (const row of matching.matches.keys()) {
+    const key = duplicateKeys[row];
+    if (key !== undefined) seenKeys.add(key);
+  }
 
   const itemsToDelete: ShoppingItem[] = [];
   const itemsToUpdate: ShoppingItem[] = [];
@@ -309,6 +328,7 @@ export function createEventUpdateDiff(
   const pendingPurchasedQuantityChanges: PendingPurchasedQuantityChange[] = [];
   const limitedPurchaseQuantityConflicts: LimitedPurchaseQuantityConflict[] =
     [];
+  let duplicateItemCount = 0;
   let protectedFromDelete = 0;
   let protectedFromUpdate = 0;
 
@@ -327,10 +347,7 @@ export function createEventUpdateDiff(
     const existing = matching.matches.get(row);
 
     if (!existing) {
-      const quantityDecision = decideSheetQuantity(
-        getSheetQuantityInput(sheetItem),
-        "new",
-      );
+      const quantityDecision = newQuantityDecisions[row];
       if (quantityDecision.kind === "invalid") {
         quantityWarnings.push(
           toQuantityWarning(sheetItem, quantityDecision, "new-item-skipped"),
@@ -338,6 +355,14 @@ export function createEventUpdateDiff(
         return;
       }
 
+      const duplicateKey = duplicateKeys[row];
+      if (duplicateKey !== undefined) {
+        if (seenKeys.has(duplicateKey)) {
+          duplicateItemCount++;
+          return;
+        }
+        seenKeys.add(duplicateKey);
+      }
       const quantity =
         quantityDecision.kind === "apply" ? quantityDecision.quantity : 1;
       itemsToAdd.push(toItemToAdd(sheetItem, quantity));
@@ -445,7 +470,8 @@ export function createEventUpdateDiff(
               sheetItems.length -
               quantityWarnings.filter(
                 (warning) => warning.kind === "new-item-skipped",
-              ).length,
+              ).length -
+              duplicateItemCount,
             rowExclusions,
           },
         }
@@ -455,6 +481,7 @@ export function createEventUpdateDiff(
           matching: { currentItems, sheetItems, proposals: matching.proposals },
         }
       : {}),
+    duplicateItemCount,
     unresolvedMatches: matching.unresolved,
     itemsToDelete,
     itemsToUpdate,

@@ -1,0 +1,707 @@
+[
+  {
+    "path": "api.log",
+    "bytes": 1653,
+    "sha256": "B017AF6EB58A17F07499B172A3E93AD352DEF25AB1E96A50A40EC8E5CBE17941"
+  },
+  {
+    "path": "architecture.log",
+    "bytes": 170,
+    "sha256": "75C33ABB0E4D524AE270A6F54A986CF7897452450521FF8533E11A5341A00D0A"
+  },
+  {
+    "path": "browser-before-harness-correction.json",
+    "bytes": 1111575,
+    "sha256": "C97DACD1C95A84281A4CDF366BC9C3F7FD675B0EE8266BFB549AA1D4521645FA"
+  },
+  {
+    "path": "browser-before.json",
+    "bytes": 14621,
+    "sha256": "85A6A691096BFD6CD7CFC8BE7E4266B40C5E77596566DC4662E68879B950C62D"
+  },
+  {
+    "path": "browser-before.log",
+    "bytes": 6233,
+    "sha256": "0A5CF3D258A383913912A47255506A5AA04815E84C08CD8A7A4A4AA9F1A1AC4D"
+  },
+  {
+    "path": "browser-final.log",
+    "bytes": 43857,
+    "sha256": "8B066B73E19E85BCF9E5327AB8D2F483859C2DAD983F31B8FDD43F66C8BB4FC2"
+  },
+  {
+    "path": "browser-map-confirmation-final.json",
+    "bytes": 3846,
+    "sha256": "4767C00E669639C173B0018E1B526C437450599B2B635F3BDF7FF4337CABA5F9"
+  },
+  {
+    "path": "browser-map-confirmation-final.log",
+    "bytes": 391,
+    "sha256": "3C653097F4533A73BF6A766C97E7E67ACCB9D3DA4E0F315B195FCD00591F39D1"
+  },
+  {
+    "path": "browser-map-confirmation.json",
+    "bytes": 7296,
+    "sha256": "FA92678B997D2357517797E9FABC2D4FD90656CA738B4A8F86E6EB3879602867"
+  },
+  {
+    "path": "browser-map-confirmation.log",
+    "bytes": 2915,
+    "sha256": "FC9FC31EE4A41FF8704F83E587CA58DB42DAF9EA19140C8D890A55EFF7642F1D"
+  },
+  {
+    "path": "browser.json",
+    "bytes": 1109090,
+    "sha256": "CC68D4A849637EBD8096FBF7A6785F474E2D2AE2E3D74A1FDF63A1BFE7C16D1D"
+  },
+  {
+    "path": "browser.log",
+    "bytes": 47077,
+    "sha256": "DC89CC4C26D6B4E3F64C0168BBB925E265A4043EA35E729367481B849C07DADE"
+  },
+  {
+    "path": "build-clean-final.log",
+    "bytes": 3098,
+    "sha256": "33D57B6FC80570A54CDBED2F2806E9301849F1982A4E386F1F6502B29AFECA70"
+  },
+  {
+    "path": "build-final-verified.log",
+    "bytes": 3098,
+    "sha256": "918A5CC92BFA370855F542F848B3F75F1509FEF5B02ABF72D41EA20F238BB127"
+  },
+  {
+    "path": "build-final.log",
+    "bytes": 3873,
+    "sha256": "0FD3782D4772FA2997680DE26B705225F18AA9D29C130120CED34400D5C3958B"
+  },
+  {
+    "path": "build.log",
+    "bytes": 3810,
+    "sha256": "CA65D452994D210CC7C2F7A1B4A652BF49367166AE0D7E14CB53A0E89EAD1025"
+  },
+  {
+    "path": "dbCompatibility.log",
+    "bytes": 117,
+    "sha256": "8F2FF060ECA0FA682A7433CE5A25401098BB0EB59D92B6491278DC172A47025C"
+  },
+  {
+    "path": "drag-performance.json",
+    "bytes": 2461778,
+    "sha256": "FE8D2C837B837C791A7FFCCB3E8FC96C6E6D46BBDE8790610D281C4C2721BFE2"
+  },
+  {
+    "path": "drag-performance.log",
+    "bytes": 1457,
+    "sha256": "A55E0BDCDA2C0BA0021F68F101F064078ACEEE21F393318DDA3E0B3A7CEAFB95"
+  },
+  {
+    "path": "encoding-final.log",
+    "bytes": 252,
+    "sha256": "093B93BC8A7D20F4BD0A5F9BDA3B83D9868BD9B6D9C39A635442383A5BC94C0C"
+  },
+  {
+    "path": "encoding-integrated-final.log",
+    "bytes": 252,
+    "sha256": "D4A3AE04A125CB9EAC37AC796409680485DD04865F9E409EC502D0BD22B1634A"
+  },
+  {
+    "path": "encoding-integrated-manifest.json",
+    "bytes": 2661,
+    "sha256": "41342E383E889C72894FA7DBAB8E9A666C7A29334193ED99C4497689E9DE6418"
+  },
+  {
+    "path": "encoding.log",
+    "bytes": 252,
+    "sha256": "6D099C5660FF5908D90C5D48923737AAACA243E8C953BCE1ABE48A6B2DA6B144"
+  },
+  {
+    "path": "eslint-final.log",
+    "bytes": 0,
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "path": "eslint.log",
+    "bytes": 204,
+    "sha256": "7E37837AADB9F09BF87C021F13BFEA0CEDE0862548E83E78E906612E416F33BC"
+  },
+  {
+    "path": "final-build-capabilities.json",
+    "bytes": 290,
+    "sha256": "10FDC791AB5A3E49E2E89BB012697DD927BCF2B0F9F8F55F7E509F99F147B9B2"
+  },
+  {
+    "path": "final-build-identity.json",
+    "bytes": 751,
+    "sha256": "7D793C2376047AAC2C71B0BF744484D13A76F476D0DC62F1AB954214CFD83DF3"
+  },
+  {
+    "path": "final-verification.json",
+    "bytes": 5121,
+    "sha256": "42E91EEE6BD00375D32597EFC7FD6236FA4D99B10ED946B4B210379442933716"
+  },
+  {
+    "path": "frozen-change-manifest.json",
+    "bytes": 2062,
+    "sha256": "E4571FD174E0A983B67B53053557CDC4A9EF93892E4593A475BE6A42C737AE4B"
+  },
+  {
+    "path": "frozen-managed-files-final.json",
+    "bytes": 166376,
+    "sha256": "D6144E68DEAC28DD3ABF69B1D2773D485334DCB4DF9D5F6671F3ABB02A4C214E"
+  },
+  {
+    "path": "frozen-managed-files.json",
+    "bytes": 166376,
+    "sha256": "775287BDC1449E2DA8659947168280C020A065FEC45890913B35127419DE5286"
+  },
+  {
+    "path": "frozen-source.patch",
+    "bytes": 27748,
+    "sha256": "AFD4108F5960B250ABA33BC7A5CBDD4B5EA5B0637710272719412AE2DB5F4FFC"
+  },
+  {
+    "path": "membership.log",
+    "bytes": 78,
+    "sha256": "7FEA0623C48B947EC6F10E3156406AD95D116104BF5765438AB2D516CC6A4ED0"
+  },
+  {
+    "path": "original-file-manifest.json",
+    "bytes": 2362,
+    "sha256": "F86E788B9AA55036B5453BBF9666033E01F309A7585168D96E2493970EC7F69C"
+  },
+  {
+    "path": "original-status-after.txt",
+    "bytes": 1693,
+    "sha256": "13BE8BC8915E60A973C4EFE0933F5F10853601DEA3DE9A2CCFB778097BD6AFA9"
+  },
+  {
+    "path": "original-status-before-integration.txt",
+    "bytes": 1569,
+    "sha256": "BF4449E094E7FE14DCD4EFCCCD6CC70254EC7E10CBC4D3B86EFE0910213AC87D"
+  },
+  {
+    "path": "original-status-before.txt",
+    "bytes": 1569,
+    "sha256": "BF4449E094E7FE14DCD4EFCCCD6CC70254EC7E10CBC4D3B86EFE0910213AC87D"
+  },
+  {
+    "path": "prettier-final.log",
+    "bytes": 68,
+    "sha256": "F20510A9DA4717C51C4CFFEE6D0DD88D6C9A723D0A83711D01216F5B48961283"
+  },
+  {
+    "path": "prettier.log",
+    "bytes": 68,
+    "sha256": "F20510A9DA4717C51C4CFFEE6D0DD88D6C9A723D0A83711D01216F5B48961283"
+  },
+  {
+    "path": "quality-results.json",
+    "bytes": 182,
+    "sha256": "817D381ACDCF10A41FC24D1AE986814AD87CD27094E5674881176807C4A9A1C4"
+  },
+  {
+    "path": "releaseTypecheck.log",
+    "bytes": 0,
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "path": "shopping-performance.json",
+    "bytes": 3776587,
+    "sha256": "66AB32FC5720B41DB1F83EBAFA0EF8CB0E49177560E11FB1DD343740B6103858"
+  },
+  {
+    "path": "shopping-performance.log",
+    "bytes": 4976,
+    "sha256": "7ED433DE16C625F03703B29DB319C25CD33B5D4AC386AB73292349F9A70285AB"
+  },
+  {
+    "path": "typecheck-final.log",
+    "bytes": 0,
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "path": "typecheck.log",
+    "bytes": 0,
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "path": "vitest-before-modal-freeze.json",
+    "bytes": 1168788,
+    "sha256": "5652D57A88DA0915A61726DB8B24058F368980980D281A8F52674997BF3226FC"
+  },
+  {
+    "path": "vitest-before-modal-freeze.log",
+    "bytes": 6985,
+    "sha256": "88A056E5F94CCD3752623CDE052F241942C0A04420B3EC02DE2BE980729A19A9"
+  },
+  {
+    "path": "vitest-final.json",
+    "bytes": 1168277,
+    "sha256": "8DC1D5A1810ACAF395299FEF8147E38FB3CD66D35AF06513508A084A9CB65EED"
+  },
+  {
+    "path": "vitest-final.log",
+    "bytes": 17749,
+    "sha256": "9465A2149A725E82DC96F813E8B5D51051EC8C217C34A28393CBBF54DD4AD1E7"
+  },
+  {
+    "path": "vitest.json",
+    "bytes": 1168788,
+    "sha256": "5652D57A88DA0915A61726DB8B24058F368980980D281A8F52674997BF3226FC"
+  },
+  {
+    "path": "vitest.log",
+    "bytes": 6985,
+    "sha256": "88A056E5F94CCD3752623CDE052F241942C0A04420B3EC02DE2BE980729A19A9"
+  },
+  {
+    "path": "browser-before-output/.last-run.json",
+    "bytes": 145,
+    "sha256": "2A0F7178610F04955C07F43A1A333129511D2AF19181A6B06D6BA125337A8BBD"
+  },
+  {
+    "path": "browser-before-output/map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium/error-context.md",
+    "bytes": 11889,
+    "sha256": "797276FCCCAC7339789E2A2E55AC2403F5651AF2DFC5BF40B93BA7504090779C"
+  },
+  {
+    "path": "browser-before-output/map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium/test-failed-1.png",
+    "bytes": 56208,
+    "sha256": "7BEDAE2911FD2B5E35878BEF0E6FE2AA5629C1A364C6DDF9AFB461D0344CE076"
+  },
+  {
+    "path": "browser-before-output/map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium/video.webm",
+    "bytes": 193633,
+    "sha256": "9366A93222F2690CEE817911D3698B7193B7FD123303769D77062BB63830786B"
+  },
+  {
+    "path": "browser-before-output/modal-layer-order-OP05-lat-b4bee-e-visible-save-confirmation-chromium/error-context.md",
+    "bytes": 7685,
+    "sha256": "9D10E5A24864381EFC0279D294B5BCA183ED4D2F3762FF50C11987AAD6E0E2EC"
+  },
+  {
+    "path": "browser-before-output/modal-layer-order-OP05-lat-b4bee-e-visible-save-confirmation-chromium/test-failed-1.png",
+    "bytes": 47473,
+    "sha256": "8588E5E0166D74CA592114ECC915AE055C9F8363260B3C4A40B921A6244F985C"
+  },
+  {
+    "path": "browser-before-output/modal-layer-order-OP05-lat-b4bee-e-visible-save-confirmation-chromium/video.webm",
+    "bytes": 179646,
+    "sha256": "70A1E8FDC10D0BF655AE34E633651C61E69E150336213D533BCAF69BC74A6D07"
+  },
+  {
+    "path": "browser-final-output/.last-run.json",
+    "bytes": 45,
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "browser-map-confirmation-final-output/.last-run.json",
+    "bytes": 45,
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "browser-map-confirmation-output/.last-run.json",
+    "bytes": 96,
+    "sha256": "EC59E93BB8A53EE2E36A53521F29BDE43E787512E133B8835383B423EB597F14"
+  },
+  {
+    "path": "browser-map-confirmation-output/map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium/error-context.md",
+    "bytes": 5434,
+    "sha256": "8DC551B9E707AA32A16BEE8DC09D6439F9885C853857B82152DF6F04D2E9211E"
+  },
+  {
+    "path": "browser-map-confirmation-output/map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium/test-failed-1.png",
+    "bytes": 6487,
+    "sha256": "B76AE9EAC6643793F4A61B33752B7B9F59A2DD58B19EF745416EC9BFC55720F6"
+  },
+  {
+    "path": "browser-map-confirmation-output/map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium/video.webm",
+    "bytes": 105034,
+    "sha256": "F8ED4C82AAF62A1220281D75B35708A0BF6A53C3AB759517C55DE45BF2C6128D"
+  },
+  {
+    "path": "browser-output/.last-run.json",
+    "bytes": 96,
+    "sha256": "EC59E93BB8A53EE2E36A53521F29BDE43E787512E133B8835383B423EB597F14"
+  },
+  {
+    "path": "browser-output/map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium/error-context.md",
+    "bytes": 6644,
+    "sha256": "0DBBB0A6BB559D682308F23BF900FADB6A9D2433E72729FE72AE9B37E5CFF967"
+  },
+  {
+    "path": "browser-output/map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium/test-failed-1.png",
+    "bytes": 48456,
+    "sha256": "F7FA5E406CAD09411A74CB617F6704AB18E465592C0D9D8F93A366647A91914A"
+  },
+  {
+    "path": "browser-output/map-import-delayed-cancel--c5065-ed-by-a-real-Worker-preview-chromium/video.webm",
+    "bytes": 181648,
+    "sha256": "2C402859311A8CA11CBA96029065473B6A38C89ADB162C71CC39CE4E1A1B6746"
+  },
+  {
+    "path": "drag-performance-output/.last-run.json",
+    "bytes": 45,
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "independent-analysis/drag-start-end-comparison.json",
+    "bytes": 18094,
+    "sha256": "DF6ED3D4DC73E5E2F1A38395D4B8471D47BF104282B128148D11B805D2FBBF6F"
+  },
+  {
+    "path": "independent-analysis/drag-summary.json",
+    "bytes": 34746,
+    "sha256": "B9B2E4F9A1C5AB577C3B61B36F16EA977D46F499EE8AA63F6BA0928817E82763"
+  },
+  {
+    "path": "independent-analysis/inputs.json",
+    "bytes": 1197,
+    "sha256": "083D4DAA118C64E20CFD6E10774FD44C9908F9578751CF0FF267785BC05853AB"
+  },
+  {
+    "path": "independent-analysis/ordinary-io-comparison.json",
+    "bytes": 4728,
+    "sha256": "3EC0B9D84D41F9A4EA8D827DEB951160143BAF4F6CE2C8AAB5D5C40E4F63FC76"
+  },
+  {
+    "path": "independent-analysis/shopping-summary.json",
+    "bytes": 67326,
+    "sha256": "AFB587E2D982C510653806E0F73E39AF24EB5180C92DC0E452EEA94B2C4D2AF2"
+  },
+  {
+    "path": "independent-analysis/summary.json",
+    "bytes": 3015,
+    "sha256": "C9F6A893AE3D3DB7D972DB3748F7D692119CFCE551FBB7CEC2983756926790C1"
+  },
+  {
+    "path": "independent-analysis/extracted/baseline-drag-150-native-grouping-False.json",
+    "bytes": 207455,
+    "sha256": "584FEA314A59186E30987BF7C2F8450673BC940D1D9FAAA61F5A69EBFF030149"
+  },
+  {
+    "path": "independent-analysis/extracted/baseline-drag-150-native-grouping-True.json",
+    "bytes": 211780,
+    "sha256": "0E20C7EADE4C89658945493B1ECDB1D8FB573BCA4C507E014674A348ECED08D7"
+  },
+  {
+    "path": "independent-analysis/extracted/baseline-drag-150-touch-grouping-False.json",
+    "bytes": 207649,
+    "sha256": "C25188B396FFD32144AB163B10ECBF6F5DDCEB81C504FE3E72816F020E3C54A9"
+  },
+  {
+    "path": "independent-analysis/extracted/baseline-drag-150-touch-grouping-True.json",
+    "bytes": 212033,
+    "sha256": "2EFFE0878609FB9DC1F8A4EE26DF81EAA3F01DED7E1F42B2020BB57E616ABFCA"
+  },
+  {
+    "path": "independent-analysis/extracted/baseline-drag-500-native-grouping-False.json",
+    "bytes": 219043,
+    "sha256": "343D33B597F384B9941F3CC914FF3F8478518E44CD1666BD7D22D1905868E7A9"
+  },
+  {
+    "path": "independent-analysis/extracted/baseline-drag-500-native-grouping-True.json",
+    "bytes": 237687,
+    "sha256": "A7E7ABB0C954D073FDEFD8009A5957DE95A1829FF75AB62D0828DADD5240E6CA"
+  },
+  {
+    "path": "independent-analysis/extracted/baseline-drag-500-touch-grouping-False.json",
+    "bytes": 219384,
+    "sha256": "EAF1FA90D64AB29A043AF3BC39278738269520E1F82E89E18E0C84DD98264877"
+  },
+  {
+    "path": "independent-analysis/extracted/baseline-drag-500-touch-grouping-True.json",
+    "bytes": 237699,
+    "sha256": "F0D0C14C2E02912E4DB0765BDB18D5D9ED7D14F51A35497BDE61AB071A5E1BD6"
+  },
+  {
+    "path": "independent-analysis/extracted/drag-150-native-grouping-False.json",
+    "bytes": 217413,
+    "sha256": "80018E33E321EAA368C0503CF843EBC22A16422057394B299E9A381D3EE06FC8"
+  },
+  {
+    "path": "independent-analysis/extracted/drag-150-native-grouping-True.json",
+    "bytes": 222960,
+    "sha256": "154B0B2A4CB8FD4DEAA348AD08ECE2052472E47EE14B42719751C90EFCD0ACA9"
+  },
+  {
+    "path": "independent-analysis/extracted/drag-150-touch-grouping-False.json",
+    "bytes": 217508,
+    "sha256": "F8AD10AF29782C6E0A55B89A416649767F65EF45F81AE237C35CC6779DB95F6E"
+  },
+  {
+    "path": "independent-analysis/extracted/drag-150-touch-grouping-True.json",
+    "bytes": 222985,
+    "sha256": "7D5942BF8AB83F03862C2C83EDF34BD97E79DCE39246E3153328589AA690192E"
+  },
+  {
+    "path": "independent-analysis/extracted/drag-500-native-grouping-False.json",
+    "bytes": 229070,
+    "sha256": "1E516B99E0DC522AF2D44E155AA9D4C9B9DE19F146328141B5A0495BAA669C92"
+  },
+  {
+    "path": "independent-analysis/extracted/drag-500-native-grouping-True.json",
+    "bytes": 248538,
+    "sha256": "BB383C5590DC12DF3ADB17EF0A21A97F0CE4F099986EC55BDFF1D5069A1C8EC8"
+  },
+  {
+    "path": "independent-analysis/extracted/drag-500-touch-grouping-False.json",
+    "bytes": 229456,
+    "sha256": "76C53BD598E0480A5DFC25CEC322C7CF96425856D06E8E13CE4CA395A022CC3D"
+  },
+  {
+    "path": "independent-analysis/extracted/drag-500-touch-grouping-True.json",
+    "bytes": 248447,
+    "sha256": "7BEBB60DF272B58016FC3FA447AD583DFC57F175BED754922760A4E0376F8882"
+  },
+  {
+    "path": "independent-analysis/extracted/ordinary-persistence-io.json",
+    "bytes": 4711,
+    "sha256": "084D55E11B6F4139BEFE6BE32695E5FDE3057B6B8EA197C20F64F44499AE917D"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-150-concentrated-False-map-False-pc.json",
+    "bytes": 119352,
+    "sha256": "85EF14AD5D88798C3E7F22DD00A004CDE37CA7ADFA6A9E35F93E6B975AF3EEB5"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-150-concentrated-False-map-False-smartphone.json",
+    "bytes": 119283,
+    "sha256": "9890E8CC1A58A0E15CAF45352BA78174661A076071402CB2F9EC4BD63494902E"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-150-concentrated-False-map-True-pc.json",
+    "bytes": 120140,
+    "sha256": "9AA8AF3F4AB3FB3D99C5DC3E3EC227916ADB38AA3935C75412C8C8384C60ACF0"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-150-concentrated-False-map-True-smartphone.json",
+    "bytes": 119219,
+    "sha256": "782E4137001BB63AFC60EA926AC26EC63E3A450DB2FAB799C6FD80E414577D75"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-150-concentrated-True-map-False-pc.json",
+    "bytes": 113350,
+    "sha256": "C35BFE1B55A1DA86960DBB3A74E30E3AB8D970515E378BDAC47770BFD5AB54A4"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-150-concentrated-True-map-False-smartphone.json",
+    "bytes": 113521,
+    "sha256": "53072B4A3425BAC1A5C4402AC3486591EF70B1ABD386278709B4FF2BC7E5343E"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-150-concentrated-True-map-True-pc.json",
+    "bytes": 113542,
+    "sha256": "96108D5C34BB257A9B701D57612F1B215C59A8B845DBAA731C92123FF1CF4091"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-150-concentrated-True-map-True-smartphone.json",
+    "bytes": 113900,
+    "sha256": "1776EE04F389846D112D77A8EEF3F9A04C83BC63B7D08B93AA42910FFA51DD59"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-1500-concentrated-False-map-False-pc.json",
+    "bytes": 120208,
+    "sha256": "5DA1F2686DD96DF1A2F998B400AC31DB9D074F2046033D84004DE21B83152993"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-1500-concentrated-False-map-False-smartphone.json",
+    "bytes": 120999,
+    "sha256": "88D071CB029B26C85E9136748E3CD3AEEFD1C96727E16F3CC03F0A221169D43B"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-1500-concentrated-False-map-True-pc.json",
+    "bytes": 120658,
+    "sha256": "AEC5829EDFA58D2CC9841C59DCECB2307CBD3C5845C61DFE5013EC66BCA11478"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-1500-concentrated-False-map-True-smartphone.json",
+    "bytes": 120167,
+    "sha256": "C6719DED0593239179AF26C028CA50954426FEE652265F17942CC06821810657"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-1500-concentrated-True-map-False-pc.json",
+    "bytes": 113267,
+    "sha256": "1914A7D8DBE994C8563497358C67E18E1F65C93BA752188B51F3B63DF9A6C736"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-1500-concentrated-True-map-False-smartphone.json",
+    "bytes": 114076,
+    "sha256": "79D36E388178FACCD117E9AC882E83AB1FC73EDCB8028477B6B378EABE5BB322"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-1500-concentrated-True-map-True-pc.json",
+    "bytes": 113659,
+    "sha256": "304C1391390FB600D123D5D3D3FF12E50F69563ADBABAF78EF7481FB420E165C"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-1500-concentrated-True-map-True-smartphone.json",
+    "bytes": 113922,
+    "sha256": "79BB3F8986150E3C4D2276FE4B1F9875DB335B8853C348A92C0F354D7A612E87"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-500-concentrated-False-map-False-pc.json",
+    "bytes": 120219,
+    "sha256": "93DAC008B6AEB926EF044182055C9BD077011A69B0E1A6C7D76ACBFBAC6731EC"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-500-concentrated-False-map-False-smartphone.json",
+    "bytes": 120579,
+    "sha256": "30FAAA57D15B92ACECA412C698CECED5309598C67FE1A3D8AB45A9BC01F62976"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-500-concentrated-False-map-True-pc.json",
+    "bytes": 120672,
+    "sha256": "BFDE3507C1877A42BD249599BCE770C9CAD3E8A3427DF082F7B120469FD0775D"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-500-concentrated-False-map-True-smartphone.json",
+    "bytes": 120209,
+    "sha256": "67FD5DADEBBC13BE11BEC5F4FCDE486633172BEF32C1FA09AA44DE4E9A6B7773"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-500-concentrated-True-map-False-pc.json",
+    "bytes": 113432,
+    "sha256": "34C30007AEE49BCD532931C98B1E12FC27747A9CC4F7EEB5AAAF3A6FDD376F3A"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-500-concentrated-True-map-False-smartphone.json",
+    "bytes": 114070,
+    "sha256": "3AB45064906962C2F9DFF35CFC78F3C1563B1B3BFA7E95FE6C9A238177688C75"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-500-concentrated-True-map-True-pc.json",
+    "bytes": 113170,
+    "sha256": "D237514D79910CBDA33F7CC94609FF96A89ED993192B66731B573FAE5F004701"
+  },
+  {
+    "path": "independent-analysis/extracted/shopping-500-concentrated-True-map-True-smartphone.json",
+    "bytes": 114221,
+    "sha256": "6C240FC05BB672B807B526BEF6CB6994F8B51C3B34966010A9A1BA2E20B8892A"
+  },
+  {
+    "path": "shopping-performance-output/.last-run.json",
+    "bytes": 45,
+    "sha256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-037a3-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 120672,
+    "sha256": "BFDE3507C1877A42BD249599BCE770C9CAD3E8A3427DF082F7B120469FD0775D"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-06835-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 120658,
+    "sha256": "AEC5829EDFA58D2CC9841C59DCECB2307CBD3C5845C61DFE5013EC66BCA11478"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-11b90-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 113659,
+    "sha256": "304C1391390FB600D123D5D3D3FF12E50F69563ADBABAF78EF7481FB420E165C"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-1c261-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 120167,
+    "sha256": "C6719DED0593239179AF26C028CA50954426FEE652265F17942CC06821810657"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-1fd1d-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 120208,
+    "sha256": "5DA1F2686DD96DF1A2F998B400AC31DB9D074F2046033D84004DE21B83152993"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-290a0-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 119352,
+    "sha256": "85EF14AD5D88798C3E7F22DD00A004CDE37CA7ADFA6A9E35F93E6B975AF3EEB5"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-302a9-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 113350,
+    "sha256": "C35BFE1B55A1DA86960DBB3A74E30E3AB8D970515E378BDAC47770BFD5AB54A4"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-3ceed-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 114070,
+    "sha256": "3AB45064906962C2F9DFF35CFC78F3C1563B1B3BFA7E95FE6C9A238177688C75"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-44a37-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 113170,
+    "sha256": "D237514D79910CBDA33F7CC94609FF96A89ED993192B66731B573FAE5F004701"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-456a7-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 114076,
+    "sha256": "79D36E388178FACCD117E9AC882E83AB1FC73EDCB8028477B6B378EABE5BB322"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-5005a-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 113900,
+    "sha256": "1776EE04F389846D112D77A8EEF3F9A04C83BC63B7D08B93AA42910FFA51DD59"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-5b858-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 114221,
+    "sha256": "6C240FC05BB672B807B526BEF6CB6994F8B51C3B34966010A9A1BA2E20B8892A"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-65ffd-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 113267,
+    "sha256": "1914A7D8DBE994C8563497358C67E18E1F65C93BA752188B51F3B63DF9A6C736"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-76418-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 120219,
+    "sha256": "93DAC008B6AEB926EF044182055C9BD077011A69B0E1A6C7D76ACBFBAC6731EC"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-8937c-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 119283,
+    "sha256": "9890E8CC1A58A0E15CAF45352BA78174661A076071402CB2F9EC4BD63494902E"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-a5908-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 120579,
+    "sha256": "30FAAA57D15B92ACECA412C698CECED5309598C67FE1A3D8AB45A9BC01F62976"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-a77e3-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 120140,
+    "sha256": "9AA8AF3F4AB3FB3D99C5DC3E3EC227916ADB38AA3935C75412C8C8384C60ACF0"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-c046c-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 120209,
+    "sha256": "67FD5DADEBBC13BE11BEC5F4FCDE486633172BEF32C1FA09AA44DE4E9A6B7773"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-c1ee7-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 120999,
+    "sha256": "88D071CB029B26C85E9136748E3CD3AEEFD1C96727E16F3CC03F0A221169D43B"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-c6302-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 113432,
+    "sha256": "34C30007AEE49BCD532931C98B1E12FC27747A9CC4F7EEB5AAAF3A6FDD376F3A"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-c9f3f-out-pc-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 113542,
+    "sha256": "96108D5C34BB257A9B701D57612F1B215C59A8B845DBAA731C92123FF1CF4091"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-ddae0-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 119219,
+    "sha256": "782E4137001BB63AFC60EA926AC26EC63E3A450DB2FAB799C6FD80E414577D75"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-f6958-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 113521,
+    "sha256": "53072B4A3425BAC1A5C4402AC3486591EF70B1ABD386278709B4FF2BC7E5343E"
+  },
+  {
+    "path": "shopping-performance-output/responsive-performance-loc-f80a9-tphone-shopping-performance-chromium/shopping-operation-timings.json",
+    "bytes": 113922,
+    "sha256": "79BB3F8986150E3C4D2276FE4B1F9875DB335B8853C348A92C0F354D7A612E87"
+  }
+]

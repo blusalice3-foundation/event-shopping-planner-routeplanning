@@ -1,0 +1,30 @@
+{
+  "Date": "2026-10-19",
+  "RequiredChecks": {
+    "DbCompatibility": "passed (local contract, no remote observation)",
+    "TestProjectMembership": "passed",
+    "API": {
+      "Failed": 0,
+      "Passed": 21
+    },
+    "Typecheck": "passed",
+    "ChangedTypeScriptEslint": "passed",
+    "Encoding": "passed",
+    "ProductBuild": "passed standard build:app",
+    "Vitest": {
+      "Passed": 3142,
+      "Failed": 0,
+      "Skipped": 88
+    },
+    "PerformancePolicy": "passed",
+    "ChangedTypeScriptPrettier": "passed",
+    "Architecture": "passed"
+  },
+  "AdditionalReleaseVerifier": {
+    "Result": "expected rejection for dirty source",
+    "Reason": "Production verifier requires clean or provider-immutable sourceState. Editable checkouts with uncommitted changes are dirty.",
+    "SameOnUnmodifiedF59e07e": true,
+    "LegacyCleanupCapability": "forced-off",
+    "ProductSourceChangedToBypassGate": false
+  }
+}

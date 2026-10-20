@@ -1,0 +1,13 @@
+{
+  "head": "993c4a8949332edffd341c2655b867e35b70548c",
+  "sourceFiles": 1024,
+  "distFiles": 32,
+  "node": "v24.19.0",
+  "npm": "11.19.0",
+  "playwright": "Version 1.62.1",
+  "build": "npm run build:app; production standard release",
+  "workers": 1,
+  "retries": 0,
+  "performanceConcurrentHeavyJobs": false,
+  "baseline": "artifacts/consistency-audit-performance-20261019-210156 (same HEAD)"
+}

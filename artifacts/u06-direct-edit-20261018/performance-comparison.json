@@ -1,0 +1,4397 @@
+{
+  "recordedAtJst": "2026-10-18T20:17:14.6287729+09:00",
+  "evidenceType": "fresh local candidate measurements; inherited results are separate historical context",
+  "comparisonPolicy": "The inherited run is not a newly measured baseline. Deltas are contextual and do not establish causal before/after effects. Historical files and historical 50ms decisions remain unchanged.",
+  "criteria": {
+    "medianLimitMs": 55,
+    "minimumSamples": 20,
+    "p95LimitMs": 100
+  },
+  "quantiles": {
+    "diagnostics": "first sample reported separately; arithmetic midpoint median and nearest-rank p95 over following warm samples",
+    "shopping": "nearest-rank median and p95 over all samples, matching the unchanged harness"
+  },
+  "shopping": {
+    "raw": "shopping-samples.json",
+    "records": [
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 14.299999997019768,
+          "p95Ms": 19.0,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 13,
+          "p95Ms": 15.5
+        },
+        "contextualMedianDeltaMs": 1.2999999970197678,
+        "contextualP95DeltaMs": 3.5
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.300000000745058,
+          "p95Ms": 11.800000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 10.100000001490116,
+          "p95Ms": 11.599999999627471
+        },
+        "contextualMedianDeltaMs": 0.19999999925494194,
+        "contextualP95DeltaMs": 0.2000000011175871
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "focus",
+        "fresh": {
+          "count": 22,
+          "medianMs": 13.199999999254942,
+          "p95Ms": 13.899999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 22,
+          "medianMs": 12.900000000372529,
+          "p95Ms": 13.799999998882413
+        },
+        "contextualMedianDeltaMs": 0.2999999988824129,
+        "contextualP95DeltaMs": 0.09999999962747097
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.100000001490116,
+          "p95Ms": 12.399999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 10.400000000372529,
+          "p95Ms": 11.700000001117587
+        },
+        "contextualMedianDeltaMs": 0.7000000011175871,
+        "contextualP95DeltaMs": 0.6999999973922968
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "next",
+        "fresh": {
+          "count": 41,
+          "medianMs": 12.100000001490116,
+          "p95Ms": 13.199999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 41,
+          "medianMs": 12,
+          "p95Ms": 13.900000000372529
+        },
+        "contextualMedianDeltaMs": 0.10000000149011612,
+        "contextualP95DeltaMs": -0.7000000011175871
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 12.400000002235174,
+          "p95Ms": 13.200000002980232,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 12.199999999254942,
+          "p95Ms": 13.400000000372529
+        },
+        "contextualMedianDeltaMs": 0.20000000298023224,
+        "contextualP95DeltaMs": -0.1999999973922968
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 13.800000000745058,
+          "p95Ms": 15.600000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 13.800000000745058,
+          "p95Ms": 15.5
+        },
+        "contextualMedianDeltaMs": 0.0,
+        "contextualP95DeltaMs": 0.10000000149011612
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.0,
+          "p95Ms": 11.699999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 9,
+          "p95Ms": 10.799999998882413
+        },
+        "contextualMedianDeltaMs": 1.0,
+        "contextualP95DeltaMs": 0.900000000372529
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "focus",
+        "fresh": {
+          "count": 22,
+          "medianMs": 12.099999997764826,
+          "p95Ms": 13.099999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 22,
+          "medianMs": 11.399999998509884,
+          "p95Ms": 13.899999998509884
+        },
+        "contextualMedianDeltaMs": 0.6999999992549419,
+        "contextualP95DeltaMs": -0.8000000007450581
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 9.899999998509884,
+          "p95Ms": 11.900000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 10.5,
+          "p95Ms": 12.400000000372529
+        },
+        "contextualMedianDeltaMs": -0.6000000014901161,
+        "contextualP95DeltaMs": -0.49999999813735485
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "next",
+        "fresh": {
+          "count": 41,
+          "medianMs": 10.0,
+          "p95Ms": 11.700000002980232,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 41,
+          "medianMs": 10.599999999627471,
+          "p95Ms": 12.300000000745058
+        },
+        "contextualMedianDeltaMs": -0.599999999627471,
+        "contextualP95DeltaMs": -0.5999999977648258
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.699999999254942,
+          "p95Ms": 11.599999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 10.199999999254942,
+          "p95Ms": 11.699999999254942
+        },
+        "contextualMedianDeltaMs": 0.5,
+        "contextualP95DeltaMs": -0.10000000149011612
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 13.800000000745058,
+          "p95Ms": 16.700000002980232,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 12.400000000372529,
+          "p95Ms": 15.599999999627471
+        },
+        "contextualMedianDeltaMs": 1.400000000372529,
+        "contextualP95DeltaMs": 1.1000000033527613
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.0,
+          "p95Ms": 11.800000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 9.599999999627471,
+          "p95Ms": 10.900000000372529
+        },
+        "contextualMedianDeltaMs": 0.40000000037252903,
+        "contextualP95DeltaMs": 0.900000000372529
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "focus",
+        "fresh": {
+          "count": 22,
+          "medianMs": 16.399999998509884,
+          "p95Ms": 18.900000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 22,
+          "medianMs": 15.800000000745058,
+          "p95Ms": 17
+        },
+        "contextualMedianDeltaMs": 0.5999999977648258,
+        "contextualP95DeltaMs": 1.9000000022351742
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 12.200000002980232,
+          "p95Ms": 13.5,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 11.900000000372529,
+          "p95Ms": 13.899999998509884
+        },
+        "contextualMedianDeltaMs": 0.3000000026077032,
+        "contextualP95DeltaMs": -0.3999999985098839
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "next",
+        "fresh": {
+          "count": 41,
+          "medianMs": 18.599999997764826,
+          "p95Ms": 23.5,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 41,
+          "medianMs": 16.699999999254942,
+          "p95Ms": 19.299999998882413
+        },
+        "contextualMedianDeltaMs": 1.8999999985098839,
+        "contextualP95DeltaMs": 4.200000001117587
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 16.300000000745058,
+          "p95Ms": 18.900000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 16.399999998509884,
+          "p95Ms": 17
+        },
+        "contextualMedianDeltaMs": -0.09999999776482582,
+        "contextualP95DeltaMs": 1.9000000022351742
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 13.199999999254942,
+          "p95Ms": 18.0,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 13.699999999254942,
+          "p95Ms": 15.5
+        },
+        "contextualMedianDeltaMs": -0.5,
+        "contextualP95DeltaMs": 2.5
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.0,
+          "p95Ms": 11.900000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 10.099999999627471,
+          "p95Ms": 11.5
+        },
+        "contextualMedianDeltaMs": -0.09999999962747097,
+        "contextualP95DeltaMs": 0.4000000022351742
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "focus",
+        "fresh": {
+          "count": 22,
+          "medianMs": 13.800000000745058,
+          "p95Ms": 16.200000002980232,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 22,
+          "medianMs": 13.799999998882413,
+          "p95Ms": 15.199999999254942
+        },
+        "contextualMedianDeltaMs": 1.862645149230957E-09,
+        "contextualP95DeltaMs": 1.0000000037252903
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.5,
+          "p95Ms": 13.699999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 11.599999999627471,
+          "p95Ms": 13.199999999254942
+        },
+        "contextualMedianDeltaMs": -0.09999999962747097,
+        "contextualP95DeltaMs": 0.5
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "next",
+        "fresh": {
+          "count": 41,
+          "medianMs": 17.199999999254942,
+          "p95Ms": 19.199999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 41,
+          "medianMs": 13.100000001490116,
+          "p95Ms": 17.90000000037253
+        },
+        "contextualMedianDeltaMs": 4.099999997764826,
+        "contextualP95DeltaMs": 1.299999998882413
+      },
+      {
+        "items": 150,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 13.399999998509884,
+          "p95Ms": 18.600000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 11.900000000372529,
+          "p95Ms": 13.600000001490116
+        },
+        "contextualMedianDeltaMs": 1.4999999981373549,
+        "contextualP95DeltaMs": 5.0
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 12.599999997764826,
+          "p95Ms": 14.100000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 11.599999999627471,
+          "p95Ms": 15.099999999627471
+        },
+        "contextualMedianDeltaMs": 0.9999999981373549,
+        "contextualP95DeltaMs": -0.9999999981373549
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.599999997764826,
+          "p95Ms": 12.5,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 10.299999998882413,
+          "p95Ms": 12.200000001117587
+        },
+        "contextualMedianDeltaMs": 0.2999999988824129,
+        "contextualP95DeltaMs": 0.2999999988824129
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "focus",
+        "fresh": {
+          "count": 21,
+          "medianMs": 12.200000002980232,
+          "p95Ms": 13.300000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 12.900000000372529,
+          "p95Ms": 13.900000000372529
+        },
+        "contextualMedianDeltaMs": -0.6999999973922968,
+        "contextualP95DeltaMs": -0.599999999627471
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.299999997019768,
+          "p95Ms": 12.199999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 9.900000000372529,
+          "p95Ms": 11.600000001490116
+        },
+        "contextualMedianDeltaMs": 0.39999999664723873,
+        "contextualP95DeltaMs": 0.5999999977648258
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "next",
+        "fresh": {
+          "count": 21,
+          "medianMs": 12.0,
+          "p95Ms": 15.400000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 12.099999999627471,
+          "p95Ms": 13.299999998882413
+        },
+        "contextualMedianDeltaMs": -0.09999999962747097,
+        "contextualP95DeltaMs": 2.1000000033527613
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 15.599999997764826,
+          "p95Ms": 17.099999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 15.900000000372529,
+          "p95Ms": 17.40000000037253
+        },
+        "contextualMedianDeltaMs": -0.3000000026077032,
+        "contextualP95DeltaMs": -0.3000000026077032
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 12.5,
+          "p95Ms": 14.399999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 12.5,
+          "p95Ms": 14.099999999627471
+        },
+        "contextualMedianDeltaMs": 0.0,
+        "contextualP95DeltaMs": 0.2999999988824129
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.400000002235174,
+          "p95Ms": 13.800000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 9.699999999254942,
+          "p95Ms": 10.799999998882413
+        },
+        "contextualMedianDeltaMs": 1.7000000029802322,
+        "contextualP95DeltaMs": 3.000000001862645
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "focus",
+        "fresh": {
+          "count": 21,
+          "medianMs": 12.300000000745058,
+          "p95Ms": 13.5,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 11.799999998882413,
+          "p95Ms": 13.5
+        },
+        "contextualMedianDeltaMs": 0.5000000018626451,
+        "contextualP95DeltaMs": 0.0
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 9.899999998509884,
+          "p95Ms": 11.099999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 10.299999998882413,
+          "p95Ms": 11.300000000745058
+        },
+        "contextualMedianDeltaMs": -0.40000000037252903,
+        "contextualP95DeltaMs": -0.20000000298023224
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "next",
+        "fresh": {
+          "count": 21,
+          "medianMs": 11.199999999254942,
+          "p95Ms": 14.600000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 12.300000000745058,
+          "p95Ms": 14
+        },
+        "contextualMedianDeltaMs": -1.1000000014901161,
+        "contextualP95DeltaMs": 0.6000000014901161
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 13.799999997019768,
+          "p95Ms": 15.100000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 14.5,
+          "p95Ms": 15.699999999254942
+        },
+        "contextualMedianDeltaMs": -0.7000000029802322,
+        "contextualP95DeltaMs": -0.5999999977648258
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 13.299999997019768,
+          "p95Ms": 15.100000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 11.5,
+          "p95Ms": 14.299999998882413
+        },
+        "contextualMedianDeltaMs": 1.7999999970197678,
+        "contextualP95DeltaMs": 0.8000000026077032
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.899999998509884,
+          "p95Ms": 11.800000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 9.300000000745058,
+          "p95Ms": 11.399999998509884
+        },
+        "contextualMedianDeltaMs": 1.5999999977648258,
+        "contextualP95DeltaMs": 0.4000000022351742
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "focus",
+        "fresh": {
+          "count": 21,
+          "medianMs": 14.199999999254942,
+          "p95Ms": 15.900000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 14.599999999627471,
+          "p95Ms": 16.09999999962747
+        },
+        "contextualMedianDeltaMs": -0.40000000037252903,
+        "contextualP95DeltaMs": -0.1999999973922968
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.300000000745058,
+          "p95Ms": 14.400000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 11.300000000745058,
+          "p95Ms": 12.400000000372529
+        },
+        "contextualMedianDeltaMs": 0.0,
+        "contextualP95DeltaMs": 2.000000001862645
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "next",
+        "fresh": {
+          "count": 21,
+          "medianMs": 20.900000002235174,
+          "p95Ms": 25.300000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 21.200000001117587,
+          "p95Ms": 25.90000000037253
+        },
+        "contextualMedianDeltaMs": -0.2999999988824129,
+        "contextualP95DeltaMs": -0.599999999627471
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 16.300000000745058,
+          "p95Ms": 18.400000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 17.300000000745058,
+          "p95Ms": 18.799999998882413
+        },
+        "contextualMedianDeltaMs": -1.0,
+        "contextualP95DeltaMs": -0.39999999664723873
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.600000001490116,
+          "p95Ms": 13.5,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 12.200000001117587,
+          "p95Ms": 13.800000000745058
+        },
+        "contextualMedianDeltaMs": -0.599999999627471,
+        "contextualP95DeltaMs": -0.30000000074505806
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 9.100000001490116,
+          "p95Ms": 11.400000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 9.900000000372529,
+          "p95Ms": 10.400000000372529
+        },
+        "contextualMedianDeltaMs": -0.7999999988824129,
+        "contextualP95DeltaMs": 1.0000000018626451
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "focus",
+        "fresh": {
+          "count": 21,
+          "medianMs": 12.699999999254942,
+          "p95Ms": 15.199999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 13.5,
+          "p95Ms": 15.599999999627471
+        },
+        "contextualMedianDeltaMs": -0.8000000007450581,
+        "contextualP95DeltaMs": -0.40000000037252903
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.5,
+          "p95Ms": 12.300000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 10.699999999254942,
+          "p95Ms": 12
+        },
+        "contextualMedianDeltaMs": -0.19999999925494194,
+        "contextualP95DeltaMs": 0.30000000074505806
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "next",
+        "fresh": {
+          "count": 21,
+          "medianMs": 21.5,
+          "p95Ms": 24.799999997019768,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 18.59999999962747,
+          "p95Ms": 23.299999998882413
+        },
+        "contextualMedianDeltaMs": 2.900000000372529,
+        "contextualP95DeltaMs": 1.4999999981373549
+      },
+      {
+        "items": 150,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 18.400000002235174,
+          "p95Ms": 22.599999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 15.400000000372529,
+          "p95Ms": 22.40000000037253
+        },
+        "contextualMedianDeltaMs": 3.000000001862645,
+        "contextualP95DeltaMs": 0.1999999973922968
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 21.900000002235174,
+          "p95Ms": 28.0,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 17.5,
+          "p95Ms": 22.799999998882413
+        },
+        "contextualMedianDeltaMs": 4.400000002235174,
+        "contextualP95DeltaMs": 5.200000001117587
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 16.0,
+          "p95Ms": 19.0,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 12.800000000745058,
+          "p95Ms": 14.200000001117587
+        },
+        "contextualMedianDeltaMs": 3.199999999254942,
+        "contextualP95DeltaMs": 4.799999998882413
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "focus",
+        "fresh": {
+          "count": 22,
+          "medianMs": 13.0,
+          "p95Ms": 14.899999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 22,
+          "medianMs": 12.200000001117587,
+          "p95Ms": 13.199999999254942
+        },
+        "contextualMedianDeltaMs": 0.7999999988824129,
+        "contextualP95DeltaMs": 1.699999999254942
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.700000002980232,
+          "p95Ms": 12.099999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 11,
+          "p95Ms": 12.300000000745058
+        },
+        "contextualMedianDeltaMs": -0.29999999701976776,
+        "contextualP95DeltaMs": -0.20000000298023224
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "next",
+        "fresh": {
+          "count": 41,
+          "medianMs": 13.0,
+          "p95Ms": 14.5,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 41,
+          "medianMs": 12.400000000372529,
+          "p95Ms": 13.599999999627471
+        },
+        "contextualMedianDeltaMs": 0.599999999627471,
+        "contextualP95DeltaMs": 0.900000000372529
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 12.899999998509884,
+          "p95Ms": 14.299999997019768,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 13.400000000372529,
+          "p95Ms": 16.199999999254942
+        },
+        "contextualMedianDeltaMs": -0.5000000018626451,
+        "contextualP95DeltaMs": -1.9000000022351742
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 22.199999999254942,
+          "p95Ms": 27.5,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 17.5,
+          "p95Ms": 21.5
+        },
+        "contextualMedianDeltaMs": 4.699999999254942,
+        "contextualP95DeltaMs": 6.0
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 17.199999999254942,
+          "p95Ms": 22.199999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 13.300000000745058,
+          "p95Ms": 15.400000000372529
+        },
+        "contextualMedianDeltaMs": 3.899999998509884,
+        "contextualP95DeltaMs": 6.799999998882413
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "focus",
+        "fresh": {
+          "count": 22,
+          "medianMs": 12.699999999254942,
+          "p95Ms": 14.700000002980232,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 22,
+          "medianMs": 12.599999999627471,
+          "p95Ms": 14.5
+        },
+        "contextualMedianDeltaMs": 0.09999999962747097,
+        "contextualP95DeltaMs": 0.20000000298023224
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.300000000745058,
+          "p95Ms": 11.800000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 10.700000001117587,
+          "p95Ms": 12
+        },
+        "contextualMedianDeltaMs": -0.40000000037252903,
+        "contextualP95DeltaMs": -0.19999999925494194
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "next",
+        "fresh": {
+          "count": 41,
+          "medianMs": 11.199999999254942,
+          "p95Ms": 17.100000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 41,
+          "medianMs": 10.600000001490116,
+          "p95Ms": 11.799999998882413
+        },
+        "contextualMedianDeltaMs": 0.5999999977648258,
+        "contextualP95DeltaMs": 5.300000002607703
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.699999999254942,
+          "p95Ms": 14.699999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 10.799999998882413,
+          "p95Ms": 12.700000001117587
+        },
+        "contextualMedianDeltaMs": 0.900000000372529,
+        "contextualP95DeltaMs": 1.9999999981373549
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 24.199999999254942,
+          "p95Ms": 30.599999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 18.5,
+          "p95Ms": 24.90000000037253
+        },
+        "contextualMedianDeltaMs": 5.699999999254942,
+        "contextualP95DeltaMs": 5.699999997392297
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 17.300000000745058,
+          "p95Ms": 20.100000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 13.200000001117587,
+          "p95Ms": 15.300000000745058
+        },
+        "contextualMedianDeltaMs": 4.099999999627471,
+        "contextualP95DeltaMs": 4.800000000745058
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "focus",
+        "fresh": {
+          "count": 22,
+          "medianMs": 17.900000002235174,
+          "p95Ms": 20.700000002980232,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 22,
+          "medianMs": 16.09999999962747,
+          "p95Ms": 17.90000000037253
+        },
+        "contextualMedianDeltaMs": 1.8000000026077032,
+        "contextualP95DeltaMs": 2.800000002607703
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 13.199999999254942,
+          "p95Ms": 15.100000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 12.599999999627471,
+          "p95Ms": 14.400000000372529
+        },
+        "contextualMedianDeltaMs": 0.599999999627471,
+        "contextualP95DeltaMs": 0.7000000011175871
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "next",
+        "fresh": {
+          "count": 41,
+          "medianMs": 20.099999997764826,
+          "p95Ms": 25.800000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 41,
+          "medianMs": 18.90000000037253,
+          "p95Ms": 21
+        },
+        "contextualMedianDeltaMs": 1.1999999973922968,
+        "contextualP95DeltaMs": 4.800000000745058
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 19.299999997019768,
+          "p95Ms": 26.600000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 18.700000001117587,
+          "p95Ms": 20.40000000037253
+        },
+        "contextualMedianDeltaMs": 0.5999999959021807,
+        "contextualP95DeltaMs": 6.200000001117587
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 20.600000001490116,
+          "p95Ms": 27.399999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 18.5,
+          "p95Ms": 23.300000000745058
+        },
+        "contextualMedianDeltaMs": 2.100000001490116,
+        "contextualP95DeltaMs": 4.099999997764826
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 16.900000002235174,
+          "p95Ms": 22.100000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 13.599999999627471,
+          "p95Ms": 16.59999999962747
+        },
+        "contextualMedianDeltaMs": 3.300000002607703,
+        "contextualP95DeltaMs": 5.500000001862645
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "focus",
+        "fresh": {
+          "count": 22,
+          "medianMs": 15.399999998509884,
+          "p95Ms": 17.099999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 22,
+          "medianMs": 14.200000001117587,
+          "p95Ms": 15.700000001117587
+        },
+        "contextualMedianDeltaMs": 1.1999999973922968,
+        "contextualP95DeltaMs": 1.3999999966472387
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.899999998509884,
+          "p95Ms": 12.699999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 11.599999999627471,
+          "p95Ms": 12.5
+        },
+        "contextualMedianDeltaMs": 0.2999999988824129,
+        "contextualP95DeltaMs": 0.19999999925494194
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "next",
+        "fresh": {
+          "count": 41,
+          "medianMs": 17.900000002235174,
+          "p95Ms": 22.699999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 41,
+          "medianMs": 15.299999998882413,
+          "p95Ms": 18.300000000745058
+        },
+        "contextualMedianDeltaMs": 2.6000000033527613,
+        "contextualP95DeltaMs": 4.399999998509884
+      },
+      {
+        "items": 500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 16.099999997764826,
+          "p95Ms": 21.300000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 15.900000000372529,
+          "p95Ms": 19.600000001490116
+        },
+        "contextualMedianDeltaMs": 0.1999999973922968,
+        "contextualP95DeltaMs": 1.699999999254942
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 20.600000001490116,
+          "p95Ms": 23.899999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 14.5,
+          "p95Ms": 16.5
+        },
+        "contextualMedianDeltaMs": 6.100000001490116,
+        "contextualP95DeltaMs": 7.399999998509884
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 18.0,
+          "p95Ms": 22.300000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 13.599999999627471,
+          "p95Ms": 18
+        },
+        "contextualMedianDeltaMs": 4.400000000372529,
+        "contextualP95DeltaMs": 4.300000000745058
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "focus",
+        "fresh": {
+          "count": 21,
+          "medianMs": 13.800000000745058,
+          "p95Ms": 15.400000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 12.800000000745058,
+          "p95Ms": 14.300000000745058
+        },
+        "contextualMedianDeltaMs": 1.0,
+        "contextualP95DeltaMs": 1.1000000014901161
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.400000002235174,
+          "p95Ms": 12.800000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 9.900000000372529,
+          "p95Ms": 12
+        },
+        "contextualMedianDeltaMs": 1.5000000018626451,
+        "contextualP95DeltaMs": 0.8000000007450581
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "next",
+        "fresh": {
+          "count": 21,
+          "medianMs": 12.0,
+          "p95Ms": 15.800000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 12.699999999254942,
+          "p95Ms": 13.799999998882413
+        },
+        "contextualMedianDeltaMs": -0.6999999992549419,
+        "contextualP95DeltaMs": 2.000000001862645
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 20.5,
+          "p95Ms": 25.099999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 21.5,
+          "p95Ms": 22.59999999962747
+        },
+        "contextualMedianDeltaMs": -1.0,
+        "contextualP95DeltaMs": 2.499999998137355
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 19.699999999254942,
+          "p95Ms": 24.300000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 15.900000000372529,
+          "p95Ms": 17.299999998882413
+        },
+        "contextualMedianDeltaMs": 3.799999998882413,
+        "contextualP95DeltaMs": 7.000000001862645
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 16.300000000745058,
+          "p95Ms": 21.399999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 14.5,
+          "p95Ms": 16.200000001117587
+        },
+        "contextualMedianDeltaMs": 1.800000000745058,
+        "contextualP95DeltaMs": 5.199999997392297
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "focus",
+        "fresh": {
+          "count": 21,
+          "medianMs": 13.199999999254942,
+          "p95Ms": 15.399999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 13,
+          "p95Ms": 14.400000000372529
+        },
+        "contextualMedianDeltaMs": 0.19999999925494194,
+        "contextualP95DeltaMs": 0.9999999981373549
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.899999998509884,
+          "p95Ms": 14.400000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 9.900000000372529,
+          "p95Ms": 11.599999999627471
+        },
+        "contextualMedianDeltaMs": 1.9999999981373549,
+        "contextualP95DeltaMs": 2.800000002607703
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "next",
+        "fresh": {
+          "count": 21,
+          "medianMs": 12.300000000745058,
+          "p95Ms": 16.800000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 10.5,
+          "p95Ms": 15.100000001490116
+        },
+        "contextualMedianDeltaMs": 1.800000000745058,
+        "contextualP95DeltaMs": 1.699999999254942
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 19.099999997764826,
+          "p95Ms": 26.099999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 16.40000000037253,
+          "p95Ms": 18.699999999254942
+        },
+        "contextualMedianDeltaMs": 2.699999997392297,
+        "contextualP95DeltaMs": 7.399999998509884
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 21.199999999254942,
+          "p95Ms": 26.300000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 15.800000000745058,
+          "p95Ms": 18.5
+        },
+        "contextualMedianDeltaMs": 5.399999998509884,
+        "contextualP95DeltaMs": 7.800000000745058
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 18.699999999254942,
+          "p95Ms": 21.599999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 13.5,
+          "p95Ms": 15.5
+        },
+        "contextualMedianDeltaMs": 5.199999999254942,
+        "contextualP95DeltaMs": 6.099999997764826
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "focus",
+        "fresh": {
+          "count": 21,
+          "medianMs": 16.5,
+          "p95Ms": 20.399999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 14.799999998882413,
+          "p95Ms": 17.300000000745058
+        },
+        "contextualMedianDeltaMs": 1.700000001117587,
+        "contextualP95DeltaMs": 3.099999997764826
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 14.800000000745058,
+          "p95Ms": 20.300000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 12.699999999254942,
+          "p95Ms": 13.800000000745058
+        },
+        "contextualMedianDeltaMs": 2.100000001490116,
+        "contextualP95DeltaMs": 6.5
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "next",
+        "fresh": {
+          "count": 21,
+          "medianMs": 33.80000000074506,
+          "p95Ms": 42.0,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 32.5,
+          "p95Ms": 37.5
+        },
+        "contextualMedianDeltaMs": 1.300000000745058,
+        "contextualP95DeltaMs": 4.5
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 24.300000000745058,
+          "p95Ms": 32.399999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 22.90000000037253,
+          "p95Ms": 23.800000000745058
+        },
+        "contextualMedianDeltaMs": 1.400000000372529,
+        "contextualP95DeltaMs": 8.599999997764826
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 21.100000001490116,
+          "p95Ms": 24.200000002980232,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 15.400000000372529,
+          "p95Ms": 19.100000001490116
+        },
+        "contextualMedianDeltaMs": 5.700000001117587,
+        "contextualP95DeltaMs": 5.100000001490116
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 16.599999997764826,
+          "p95Ms": 22.199999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 14.700000001117587,
+          "p95Ms": 16.200000001117587
+        },
+        "contextualMedianDeltaMs": 1.8999999966472387,
+        "contextualP95DeltaMs": 5.999999998137355
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "focus",
+        "fresh": {
+          "count": 21,
+          "medianMs": 16.5,
+          "p95Ms": 19.599999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 14.400000000372529,
+          "p95Ms": 17
+        },
+        "contextualMedianDeltaMs": 2.099999999627471,
+        "contextualP95DeltaMs": 2.599999997764826
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 12.900000002235174,
+          "p95Ms": 15.199999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 12.599999999627471,
+          "p95Ms": 13.800000000745058
+        },
+        "contextualMedianDeltaMs": 0.3000000026077032,
+        "contextualP95DeltaMs": 1.3999999985098839
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "next",
+        "fresh": {
+          "count": 21,
+          "medianMs": 22.399999998509884,
+          "p95Ms": 32.399999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 20.09999999962747,
+          "p95Ms": 23.800000000745058
+        },
+        "contextualMedianDeltaMs": 2.299999998882413,
+        "contextualP95DeltaMs": 8.599999997764826
+      },
+      {
+        "items": 500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 23.0,
+          "p95Ms": 28.799999997019768,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 21.90000000037253,
+          "p95Ms": 25.59999999962747
+        },
+        "contextualMedianDeltaMs": 1.099999999627471,
+        "contextualP95DeltaMs": 3.199999997392297
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 51.69999999925494,
+          "p95Ms": 63.0,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 39.90000000037253,
+          "p95Ms": 53.59999999962747
+        },
+        "contextualMedianDeltaMs": 11.799999998882413,
+        "contextualP95DeltaMs": 9.400000000372529
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 35.0,
+          "p95Ms": 39.69999999925494,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 28.699999999254942,
+          "p95Ms": 32.5
+        },
+        "contextualMedianDeltaMs": 6.300000000745058,
+        "contextualP95DeltaMs": 7.199999999254942
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "focus",
+        "fresh": {
+          "count": 22,
+          "medianMs": 16.5,
+          "p95Ms": 22.099999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 22,
+          "medianMs": 14.400000000372529,
+          "p95Ms": 17.09999999962747
+        },
+        "contextualMedianDeltaMs": 2.099999999627471,
+        "contextualP95DeltaMs": 4.999999998137355
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 13.600000001490116,
+          "p95Ms": 15.899999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 12,
+          "p95Ms": 13.300000000745058
+        },
+        "contextualMedianDeltaMs": 1.6000000014901161,
+        "contextualP95DeltaMs": 2.599999997764826
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "next",
+        "fresh": {
+          "count": 41,
+          "medianMs": 16.400000002235174,
+          "p95Ms": 22.5,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 41,
+          "medianMs": 15.5,
+          "p95Ms": 16.899999998509884
+        },
+        "contextualMedianDeltaMs": 0.9000000022351742,
+        "contextualP95DeltaMs": 5.600000001490116
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 15.800000000745058,
+          "p95Ms": 21.599999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 14.800000000745058,
+          "p95Ms": 16.600000001490116
+        },
+        "contextualMedianDeltaMs": 1.0,
+        "contextualP95DeltaMs": 4.99999999627471
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 47.19999999925494,
+          "p95Ms": 57.69999999925494,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 35.40000000037253,
+          "p95Ms": 48
+        },
+        "contextualMedianDeltaMs": 11.799999998882413,
+        "contextualP95DeltaMs": 9.699999999254942
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 36.100000001490116,
+          "p95Ms": 40.5,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 28.199999999254942,
+          "p95Ms": 37.69999999925494
+        },
+        "contextualMedianDeltaMs": 7.900000002235174,
+        "contextualP95DeltaMs": 2.800000000745058
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "focus",
+        "fresh": {
+          "count": 22,
+          "medianMs": 15.0,
+          "p95Ms": 17.900000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 22,
+          "medianMs": 13.699999999254942,
+          "p95Ms": 15.800000000745058
+        },
+        "contextualMedianDeltaMs": 1.300000000745058,
+        "contextualP95DeltaMs": 2.100000001490116
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 12.800000000745058,
+          "p95Ms": 15.600000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 11.700000001117587,
+          "p95Ms": 12.299999998882413
+        },
+        "contextualMedianDeltaMs": 1.099999999627471,
+        "contextualP95DeltaMs": 3.300000002607703
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "next",
+        "fresh": {
+          "count": 41,
+          "medianMs": 16.400000002235174,
+          "p95Ms": 20.699999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 41,
+          "medianMs": 15.099999999627471,
+          "p95Ms": 16.600000001490116
+        },
+        "contextualMedianDeltaMs": 1.3000000026077032,
+        "contextualP95DeltaMs": 4.099999997764826
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 15.699999999254942,
+          "p95Ms": 18.5,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 13.799999998882413,
+          "p95Ms": 15.900000000372529
+        },
+        "contextualMedianDeltaMs": 1.900000000372529,
+        "contextualP95DeltaMs": 2.599999999627471
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 49.5,
+          "p95Ms": 58.0,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 45.59999999962747,
+          "p95Ms": 52.09999999962747
+        },
+        "contextualMedianDeltaMs": 3.900000000372529,
+        "contextualP95DeltaMs": 5.900000000372529
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 34.5,
+          "p95Ms": 40.69999999925494,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 32.40000000037253,
+          "p95Ms": 38.80000000074506
+        },
+        "contextualMedianDeltaMs": 2.099999999627471,
+        "contextualP95DeltaMs": 1.8999999985098839
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "focus",
+        "fresh": {
+          "count": 22,
+          "medianMs": 24.899999998509884,
+          "p95Ms": 30.800000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 22,
+          "medianMs": 21.199999999254942,
+          "p95Ms": 26
+        },
+        "contextualMedianDeltaMs": 3.699999999254942,
+        "contextualP95DeltaMs": 4.800000000745058
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 18.699999999254942,
+          "p95Ms": 22.200000002980232,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 18.699999999254942,
+          "p95Ms": 21.699999999254942
+        },
+        "contextualMedianDeltaMs": 0.0,
+        "contextualP95DeltaMs": 0.5000000037252903
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "next",
+        "fresh": {
+          "count": 41,
+          "medianMs": 29.0,
+          "p95Ms": 36.70000000298023,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 41,
+          "medianMs": 26.5,
+          "p95Ms": 34.09999999962747
+        },
+        "contextualMedianDeltaMs": 2.5,
+        "contextualP95DeltaMs": 2.6000000033527613
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 27.800000000745058,
+          "p95Ms": 32.899999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 26,
+          "p95Ms": 31.5
+        },
+        "contextualMedianDeltaMs": 1.800000000745058,
+        "contextualP95DeltaMs": 1.3999999985098839
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 47.5,
+          "p95Ms": 63.399999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 44.80000000074506,
+          "p95Ms": 52.5
+        },
+        "contextualMedianDeltaMs": 2.699999999254942,
+        "contextualP95DeltaMs": 10.899999998509884
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 36.599999997764826,
+          "p95Ms": 41.20000000298023,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 34.20000000111759,
+          "p95Ms": 38.399999998509884
+        },
+        "contextualMedianDeltaMs": 2.3999999966472387,
+        "contextualP95DeltaMs": 2.8000000044703484
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "focus",
+        "fresh": {
+          "count": 22,
+          "medianMs": 21.699999999254942,
+          "p95Ms": 26.199999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 22,
+          "medianMs": 18.09999999962747,
+          "p95Ms": 24.59999999962747
+        },
+        "contextualMedianDeltaMs": 3.599999999627471,
+        "contextualP95DeltaMs": 1.599999999627471
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 18.600000001490116,
+          "p95Ms": 20.300000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 14.800000000745058,
+          "p95Ms": 18.600000001490116
+        },
+        "contextualMedianDeltaMs": 3.800000000745058,
+        "contextualP95DeltaMs": 1.699999999254942
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "next",
+        "fresh": {
+          "count": 41,
+          "medianMs": 26.199999999254942,
+          "p95Ms": 32.100000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 41,
+          "medianMs": 21.700000001117587,
+          "p95Ms": 29.199999999254942
+        },
+        "contextualMedianDeltaMs": 4.499999998137355,
+        "contextualP95DeltaMs": 2.900000002235174
+      },
+      {
+        "items": 1500,
+        "concentrated": false,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 22.199999999254942,
+          "p95Ms": 29.100000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 21,
+          "p95Ms": 28.700000001117587
+        },
+        "contextualMedianDeltaMs": 1.199999999254942,
+        "contextualP95DeltaMs": 0.40000000037252903
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 45.20000000298023,
+          "p95Ms": 55.5,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 42.90000000037253,
+          "p95Ms": 49.30000000074506
+        },
+        "contextualMedianDeltaMs": 2.300000002607703,
+        "contextualP95DeltaMs": 6.199999999254942
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 41.80000000074506,
+          "p95Ms": 47.30000000074506,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 39.600000001490116,
+          "p95Ms": 44.90000000037253
+        },
+        "contextualMedianDeltaMs": 2.199999999254942,
+        "contextualP95DeltaMs": 2.400000000372529
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "focus",
+        "fresh": {
+          "count": 21,
+          "medianMs": 24.400000002235174,
+          "p95Ms": 30.399999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 19.5,
+          "p95Ms": 25.699999999254942
+        },
+        "contextualMedianDeltaMs": 4.900000002235174,
+        "contextualP95DeltaMs": 4.699999999254942
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 22.100000001490116,
+          "p95Ms": 23.899999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 18.200000001117587,
+          "p95Ms": 22.200000001117587
+        },
+        "contextualMedianDeltaMs": 3.900000000372529,
+        "contextualP95DeltaMs": 1.6999999973922968
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "next",
+        "fresh": {
+          "count": 21,
+          "medianMs": 17.800000000745058,
+          "p95Ms": 23.400000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 16.59999999962747,
+          "p95Ms": 22.800000000745058
+        },
+        "contextualMedianDeltaMs": 1.200000001117587,
+        "contextualP95DeltaMs": 0.6000000014901161
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "pc",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 39.30000000074506,
+          "p95Ms": 45.69999999925494,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 36.399999998509884,
+          "p95Ms": 42.80000000074506
+        },
+        "contextualMedianDeltaMs": 2.900000002235174,
+        "contextualP95DeltaMs": 2.899999998509884
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 47.0,
+          "p95Ms": 55.5,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 44.69999999925494,
+          "p95Ms": 53.69999999925494
+        },
+        "contextualMedianDeltaMs": 2.300000000745058,
+        "contextualP95DeltaMs": 1.800000000745058
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 43.70000000298023,
+          "p95Ms": 51.600000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 37.70000000111759,
+          "p95Ms": 45.5
+        },
+        "contextualMedianDeltaMs": 6.000000001862645,
+        "contextualP95DeltaMs": 6.100000001490116
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "focus",
+        "fresh": {
+          "count": 21,
+          "medianMs": 23.199999999254942,
+          "p95Ms": 26.5,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 22.40000000037253,
+          "p95Ms": 25.800000000745058
+        },
+        "contextualMedianDeltaMs": 0.7999999988824129,
+        "contextualP95DeltaMs": 0.6999999992549419
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 18.800000000745058,
+          "p95Ms": 22.399999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 18.59999999962747,
+          "p95Ms": 27.59999999962747
+        },
+        "contextualMedianDeltaMs": 0.2000000011175871,
+        "contextualP95DeltaMs": -5.200000001117587
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "next",
+        "fresh": {
+          "count": 21,
+          "medianMs": 18.400000002235174,
+          "p95Ms": 26.0,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 17.90000000037253,
+          "p95Ms": 19.800000000745058
+        },
+        "contextualMedianDeltaMs": 0.5000000018626451,
+        "contextualP95DeltaMs": 6.199999999254942
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": false,
+        "layout": "smartphone",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 43.19999999925494,
+          "p95Ms": 61.600000001490116,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 40.80000000074506,
+          "p95Ms": 44.600000001490116
+        },
+        "contextualMedianDeltaMs": 2.399999998509884,
+        "contextualP95DeltaMs": 17.0
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 47.899999998509884,
+          "p95Ms": 53.399999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 37.09999999962747,
+          "p95Ms": 41
+        },
+        "contextualMedianDeltaMs": 10.799999998882413,
+        "contextualP95DeltaMs": 12.399999998509884
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 40.599999997764826,
+          "p95Ms": 47.899999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 33.5,
+          "p95Ms": 36.899999998509884
+        },
+        "contextualMedianDeltaMs": 7.099999997764826,
+        "contextualP95DeltaMs": 11.0
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "focus",
+        "fresh": {
+          "count": 21,
+          "medianMs": 30.199999999254942,
+          "p95Ms": 35.599999997764826,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 23.59999999962747,
+          "p95Ms": 26
+        },
+        "contextualMedianDeltaMs": 6.599999999627471,
+        "contextualP95DeltaMs": 9.599999997764826
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 25.5,
+          "p95Ms": 29.199999999254942,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 19.800000000745058,
+          "p95Ms": 22.800000000745058
+        },
+        "contextualMedianDeltaMs": 5.699999999254942,
+        "contextualP95DeltaMs": 6.399999998509884
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "next",
+        "fresh": {
+          "count": 21,
+          "medianMs": 27.5,
+          "p95Ms": 34.0,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 28.09999999962747,
+          "p95Ms": 31.59999999962747
+        },
+        "contextualMedianDeltaMs": -0.599999999627471,
+        "contextualP95DeltaMs": 2.400000000372529
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "pc",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 50.400000002235174,
+          "p95Ms": 66.40000000223517,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 50.40000000037253,
+          "p95Ms": 55.600000001490116
+        },
+        "contextualMedianDeltaMs": 1.862645149230957E-09,
+        "contextualP95DeltaMs": 10.800000000745058
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "execute",
+        "fresh": {
+          "count": 20,
+          "medianMs": 41.69999999925494,
+          "p95Ms": 58.19999999925494,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 36.19999999925494,
+          "p95Ms": 45.40000000037253
+        },
+        "contextualMedianDeltaMs": 5.5,
+        "contextualP95DeltaMs": 12.799999998882413
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "executeRecord",
+        "fresh": {
+          "count": 20,
+          "medianMs": 43.600000001490116,
+          "p95Ms": 51.900000002235174,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 33.80000000074506,
+          "p95Ms": 39.69999999925494
+        },
+        "contextualMedianDeltaMs": 9.800000000745058,
+        "contextualP95DeltaMs": 12.200000002980232
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "focus",
+        "fresh": {
+          "count": 21,
+          "medianMs": 28.0,
+          "p95Ms": 32.80000000074506,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 21.40000000037253,
+          "p95Ms": 22.899999998509884
+        },
+        "contextualMedianDeltaMs": 6.599999999627471,
+        "contextualP95DeltaMs": 9.900000002235174
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "record",
+        "fresh": {
+          "count": 20,
+          "medianMs": 21.800000000745058,
+          "p95Ms": 26.800000000745058,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 19.09999999962747,
+          "p95Ms": 23.100000001490116
+        },
+        "contextualMedianDeltaMs": 2.700000001117587,
+        "contextualP95DeltaMs": 3.699999999254942
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "next",
+        "fresh": {
+          "count": 21,
+          "medianMs": 26.699999999254942,
+          "p95Ms": 32.399999998509884,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 21,
+          "medianMs": 23.90000000037253,
+          "p95Ms": 26.09999999962747
+        },
+        "contextualMedianDeltaMs": 2.799999998882413,
+        "contextualP95DeltaMs": 6.299999998882413
+      },
+      {
+        "items": 1500,
+        "concentrated": true,
+        "mapVisible": true,
+        "layout": "smartphone",
+        "operation": "back",
+        "fresh": {
+          "count": 20,
+          "medianMs": 54.29999999701977,
+          "p95Ms": 71.19999999925494,
+          "firstMs": null,
+          "pass": true
+        },
+        "inherited": {
+          "count": 20,
+          "medianMs": 46.5,
+          "p95Ms": 52
+        },
+        "contextualMedianDeltaMs": 7.799999997019768,
+        "contextualP95DeltaMs": 19.199999999254942
+      }
+    ],
+    "maximumMedianMs": 54.29999999701977,
+    "expectedGroups": 144,
+    "profiles": 24,
+    "allPass": true,
+    "maximumP95Ms": 71.19999999925494,
+    "minimumSamples": 20.0,
+    "groups": 144,
+    "report": "shopping.json",
+    "expectedProfiles": 24
+  },
+  "diagnostics": {
+    "raw": "diagnostics-samples.json",
+    "report": "diagnostics.json",
+    "maximumWarmMedianMs": 17.700000001117587,
+    "expectedGroups": 66,
+    "maximumWarmP95Ms": 19.099999997764826,
+    "profiles": 14,
+    "allPass": true,
+    "maximumFirstMs": 23.699999999254942,
+    "groups": 66,
+    "records": [
+      {
+        "profile": "dialog|150",
+        "items": 150,
+        "operation": "radial-open",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.400000002235174,
+          "p95Ms": 13.199999999254942,
+          "firstMs": 9.699999999254942,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 8.300000000745058,
+          "count": 20,
+          "medianMs": 11.25,
+          "p95Ms": 12.5
+        },
+        "contextualMedianDeltaMs": 0.15000000223517418,
+        "contextualP95DeltaMs": 0.6999999992549419
+      },
+      {
+        "profile": "dialog|150",
+        "items": 150,
+        "operation": "radial-to-limited-input",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.500000001862645,
+          "p95Ms": 12.600000001490116,
+          "firstMs": 9.699999999254942,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 9.200000001117587,
+          "count": 20,
+          "medianMs": 11,
+          "p95Ms": 12.099999999627471
+        },
+        "contextualMedianDeltaMs": 0.5000000018626451,
+        "contextualP95DeltaMs": 0.5000000018626451
+      },
+      {
+        "profile": "dialog|150",
+        "items": 150,
+        "operation": "limited-quantity-input",
+        "fresh": {
+          "count": 20,
+          "medianMs": 1.5,
+          "p95Ms": 1.6000000014901161,
+          "firstMs": 12.699999999254942,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 9.099999999627471,
+          "count": 20,
+          "medianMs": 1.5,
+          "p95Ms": 2.199999999254942
+        },
+        "contextualMedianDeltaMs": 0.0,
+        "contextualP95DeltaMs": -0.5999999977648258
+      },
+      {
+        "profile": "dialog|150",
+        "items": 150,
+        "operation": "limited-confirm-open",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.049999998882413,
+          "p95Ms": 12.0,
+          "firstMs": 9.800000000745058,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 8.100000001490116,
+          "count": 20,
+          "medianMs": 10.549999999813735,
+          "p95Ms": 11.400000000372529
+        },
+        "contextualMedianDeltaMs": 0.4999999990686774,
+        "contextualP95DeltaMs": 0.599999999627471
+      },
+      {
+        "profile": "dialog|150",
+        "items": 150,
+        "operation": "limited-confirm-return",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.799999998882413,
+          "p95Ms": 12.199999999254942,
+          "firstMs": 10.600000001490116,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 7.900000000372529,
+          "count": 20,
+          "medianMs": 10.900000000372529,
+          "p95Ms": 12.099999999627471
+        },
+        "contextualMedianDeltaMs": -0.10000000149011612,
+        "contextualP95DeltaMs": 0.09999999962747097
+      },
+      {
+        "profile": "dialog|150",
+        "items": 150,
+        "operation": "limited-cancel",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.799999998882413,
+          "p95Ms": 13.100000001490116,
+          "firstMs": 11.300000000745058,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 10.299999998882413,
+          "count": 20,
+          "medianMs": 11.5,
+          "p95Ms": 13.400000000372529
+        },
+        "contextualMedianDeltaMs": 0.2999999988824129,
+        "contextualP95DeltaMs": -0.2999999988824129
+      },
+      {
+        "profile": "dialog|150",
+        "items": 150,
+        "operation": "same-screen-confirmation-invalidation",
+        "fresh": {
+          "count": 20,
+          "medianMs": 15.0,
+          "p95Ms": 17.399999998509884,
+          "firstMs": 15.300000000745058,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 11.099999999627471,
+          "count": 20,
+          "medianMs": 7.6499999994412065,
+          "p95Ms": 15.299999998882413
+        },
+        "contextualMedianDeltaMs": 7.3500000005587935,
+        "contextualP95DeltaMs": 2.099999999627471
+      },
+      {
+        "profile": "dialog|150",
+        "items": 150,
+        "operation": "radial-to-single-choice",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.249999998137355,
+          "p95Ms": 12.700000002980232,
+          "firstMs": 10.899999998509884,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 8.900000000372529,
+          "count": 20,
+          "medianMs": 10.899999999441206,
+          "p95Ms": 13.400000000372529
+        },
+        "contextualMedianDeltaMs": 0.3499999986961484,
+        "contextualP95DeltaMs": -0.6999999973922968
+      },
+      {
+        "profile": "dialog|150",
+        "items": 150,
+        "operation": "single-choice-to-limited",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.150000002235174,
+          "p95Ms": 12.600000001490116,
+          "firstMs": 12.899999998509884,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 10.800000000745058,
+          "count": 20,
+          "medianMs": 11.150000000372529,
+          "p95Ms": 12
+        },
+        "contextualMedianDeltaMs": 1.862645149230957E-09,
+        "contextualP95DeltaMs": 0.6000000014901161
+      },
+      {
+        "profile": "dialog|150",
+        "items": 150,
+        "operation": "single-choice-limited-cancel",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.699999999254942,
+          "p95Ms": 13.599999997764826,
+          "firstMs": 8.699999999254942,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 11,
+          "count": 20,
+          "medianMs": 11.399999999441206,
+          "p95Ms": 12.699999999254942
+        },
+        "contextualMedianDeltaMs": 0.2999999998137355,
+        "contextualP95DeltaMs": 0.8999999985098839
+      },
+      {
+        "profile": "dialog|150",
+        "items": 150,
+        "operation": "bulk-limited-open",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.599999999627471,
+          "p95Ms": 11.399999998509884,
+          "firstMs": 7.800000000745058,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 9.599999999627471,
+          "count": 20,
+          "medianMs": 10.5,
+          "p95Ms": 11.5
+        },
+        "contextualMedianDeltaMs": 0.09999999962747097,
+        "contextualP95DeltaMs": -0.10000000149011612
+      },
+      {
+        "profile": "dialog|150",
+        "items": 150,
+        "operation": "bulk-limited-save-next",
+        "fresh": {
+          "count": 20,
+          "medianMs": 12.599999999627471,
+          "p95Ms": 13.100000001490116,
+          "firstMs": 14.0,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 15.199999999254942,
+          "count": 20,
+          "medianMs": 13,
+          "p95Ms": 14
+        },
+        "contextualMedianDeltaMs": -0.40000000037252903,
+        "contextualP95DeltaMs": -0.8999999985098839
+      },
+      {
+        "profile": "dialog|150",
+        "items": 150,
+        "operation": "day-switch-popup-invalidation",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.600000001490116,
+          "p95Ms": 13.100000001490116,
+          "firstMs": 12.100000001490116,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 11.799999998882413,
+          "count": 20,
+          "medianMs": 12.049999999813735,
+          "p95Ms": 13
+        },
+        "contextualMedianDeltaMs": -0.44999999832361937,
+        "contextualP95DeltaMs": 0.10000000149011612
+      },
+      {
+        "profile": "dialog|500",
+        "items": 500,
+        "operation": "radial-open",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.899999998509884,
+          "p95Ms": 13.399999998509884,
+          "firstMs": 11.399999998509884,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 10.699999999254942,
+          "count": 20,
+          "medianMs": 12.550000000745058,
+          "p95Ms": 14
+        },
+        "contextualMedianDeltaMs": -0.6500000022351742,
+        "contextualP95DeltaMs": -0.6000000014901161
+      },
+      {
+        "profile": "dialog|500",
+        "items": 500,
+        "operation": "radial-to-limited-input",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.400000002235174,
+          "p95Ms": 12.300000000745058,
+          "firstMs": 10.299999997019768,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 10.599999999627471,
+          "count": 20,
+          "medianMs": 11.050000000745058,
+          "p95Ms": 13.5
+        },
+        "contextualMedianDeltaMs": 0.3500000014901161,
+        "contextualP95DeltaMs": -1.199999999254942
+      },
+      {
+        "profile": "dialog|500",
+        "items": 500,
+        "operation": "limited-quantity-input",
+        "fresh": {
+          "count": 20,
+          "medianMs": 2.199999999254942,
+          "p95Ms": 2.699999999254942,
+          "firstMs": 12.200000002980232,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 11.5,
+          "count": 20,
+          "medianMs": 2.300000000745058,
+          "p95Ms": 2.400000000372529
+        },
+        "contextualMedianDeltaMs": -0.10000000149011612,
+        "contextualP95DeltaMs": 0.2999999988824129
+      },
+      {
+        "profile": "dialog|500",
+        "items": 500,
+        "operation": "limited-confirm-open",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.250000001862645,
+          "p95Ms": 12.699999999254942,
+          "firstMs": 10.100000001490116,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 10.300000000745058,
+          "count": 20,
+          "medianMs": 10.499999999068677,
+          "p95Ms": 12.399999998509884
+        },
+        "contextualMedianDeltaMs": 0.7500000027939677,
+        "contextualP95DeltaMs": 0.30000000074505806
+      },
+      {
+        "profile": "dialog|500",
+        "items": 500,
+        "operation": "limited-confirm-return",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.849999999627471,
+          "p95Ms": 12.600000001490116,
+          "firstMs": 9.5,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 9.799999998882413,
+          "count": 20,
+          "medianMs": 11.049999999813735,
+          "p95Ms": 12.099999999627471
+        },
+        "contextualMedianDeltaMs": -0.20000000018626451,
+        "contextualP95DeltaMs": 0.5000000018626451
+      },
+      {
+        "profile": "dialog|500",
+        "items": 500,
+        "operation": "limited-cancel",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.75,
+          "p95Ms": 14.199999999254942,
+          "firstMs": 12.100000001490116,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 12,
+          "count": 20,
+          "medianMs": 12.099999999627471,
+          "p95Ms": 12.900000000372529
+        },
+        "contextualMedianDeltaMs": -0.34999999962747097,
+        "contextualP95DeltaMs": 1.299999998882413
+      },
+      {
+        "profile": "dialog|500",
+        "items": 500,
+        "operation": "same-screen-confirmation-invalidation",
+        "fresh": {
+          "count": 20,
+          "medianMs": 15.400000002235174,
+          "p95Ms": 17.200000002980232,
+          "firstMs": 23.699999999254942,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 17.899999998509884,
+          "count": 20,
+          "medianMs": 13.399999999441206,
+          "p95Ms": 16.09999999962747
+        },
+        "contextualMedianDeltaMs": 2.0000000027939677,
+        "contextualP95DeltaMs": 1.1000000033527613
+      },
+      {
+        "profile": "dialog|500",
+        "items": 500,
+        "operation": "radial-to-single-choice",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.800000000745058,
+          "p95Ms": 11.900000002235174,
+          "firstMs": 11.399999998509884,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 11.199999999254942,
+          "count": 20,
+          "medianMs": 10.750000000931323,
+          "p95Ms": 11.400000000372529
+        },
+        "contextualMedianDeltaMs": 0.049999999813735485,
+        "contextualP95DeltaMs": 0.5000000018626451
+      },
+      {
+        "profile": "dialog|500",
+        "items": 500,
+        "operation": "single-choice-to-limited",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.450000001117587,
+          "p95Ms": 11.600000001490116,
+          "firstMs": 9.5,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 14.099999999627471,
+          "count": 20,
+          "medianMs": 10.599999999627471,
+          "p95Ms": 12.100000001490116
+        },
+        "contextualMedianDeltaMs": -0.14999999850988388,
+        "contextualP95DeltaMs": -0.5
+      },
+      {
+        "profile": "dialog|500",
+        "items": 500,
+        "operation": "single-choice-limited-cancel",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.550000000745058,
+          "p95Ms": 13.600000001490116,
+          "firstMs": 12.399999998509884,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 10.800000000745058,
+          "count": 20,
+          "medianMs": 11.149999999441206,
+          "p95Ms": 12.900000000372529
+        },
+        "contextualMedianDeltaMs": 0.4000000013038516,
+        "contextualP95DeltaMs": 0.7000000011175871
+      },
+      {
+        "profile": "dialog|500",
+        "items": 500,
+        "operation": "bulk-limited-open",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.450000001117587,
+          "p95Ms": 11.900000002235174,
+          "firstMs": 8.300000000745058,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 10,
+          "count": 20,
+          "medianMs": 10.150000000372529,
+          "p95Ms": 11.099999999627471
+        },
+        "contextualMedianDeltaMs": 0.30000000074505806,
+        "contextualP95DeltaMs": 0.8000000026077032
+      },
+      {
+        "profile": "dialog|500",
+        "items": 500,
+        "operation": "bulk-limited-save-next",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.999999998137355,
+          "p95Ms": 13.699999999254942,
+          "firstMs": 13.600000001490116,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 14.099999999627471,
+          "count": 20,
+          "medianMs": 12.649999999441206,
+          "p95Ms": 13.899999998509884
+        },
+        "contextualMedianDeltaMs": -0.6500000013038516,
+        "contextualP95DeltaMs": -0.19999999925494194
+      },
+      {
+        "profile": "dialog|500",
+        "items": 500,
+        "operation": "day-switch-popup-invalidation",
+        "fresh": {
+          "count": 20,
+          "medianMs": 12.200000001117587,
+          "p95Ms": 14.100000001490116,
+          "firstMs": 13.900000002235174,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 12.099999999627471,
+          "count": 20,
+          "medianMs": 11.049999999813735,
+          "p95Ms": 11.800000000745058
+        },
+        "contextualMedianDeltaMs": 1.1500000013038516,
+        "contextualP95DeltaMs": 2.300000000745058
+      },
+      {
+        "profile": "relay|150|map|False",
+        "items": 150,
+        "operation": "start",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.099999999627471,
+          "p95Ms": 11.300000000745058,
+          "firstMs": 10.099999997764826,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 11.5,
+          "count": 20,
+          "medianMs": 11.049999999813735,
+          "p95Ms": 13
+        },
+        "contextualMedianDeltaMs": -0.9500000001862645,
+        "contextualP95DeltaMs": -1.699999999254942
+      },
+      {
+        "profile": "relay|150|map|False",
+        "items": 150,
+        "operation": "dayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 9.599999997764826,
+          "p95Ms": 11.600000001490116,
+          "firstMs": 20.900000002235174,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 10.399999998509884,
+          "count": 20,
+          "medianMs": 8.549999999813735,
+          "p95Ms": 10.100000001490116
+        },
+        "contextualMedianDeltaMs": 1.0499999979510903,
+        "contextualP95DeltaMs": 1.5
+      },
+      {
+        "profile": "relay|150|preview|False",
+        "items": 150,
+        "operation": "start",
+        "fresh": {
+          "count": 20,
+          "medianMs": 5.199999999254942,
+          "p95Ms": 6.599999997764826,
+          "firstMs": 15.800000000745058,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 14.800000000745058,
+          "count": 20,
+          "medianMs": 6.25,
+          "p95Ms": 7.5
+        },
+        "contextualMedianDeltaMs": -1.050000000745058,
+        "contextualP95DeltaMs": -0.9000000022351742
+      },
+      {
+        "profile": "relay|150|preview|False",
+        "items": 150,
+        "operation": "dayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 8.400000000372529,
+          "p95Ms": 9.600000001490116,
+          "firstMs": 15.400000002235174,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 18.199999999254942,
+          "count": 20,
+          "medianMs": 8.850000000558794,
+          "p95Ms": 9.5
+        },
+        "contextualMedianDeltaMs": -0.4500000001862645,
+        "contextualP95DeltaMs": 0.10000000149011612
+      },
+      {
+        "profile": "relay|150|waiting|False",
+        "items": 150,
+        "operation": "start",
+        "fresh": {
+          "count": 20,
+          "medianMs": 5.5,
+          "p95Ms": 7.0,
+          "firstMs": 5.199999999254942,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 6.199999999254942,
+          "count": 20,
+          "medianMs": 5.8500000005587935,
+          "p95Ms": 6.900000000372529
+        },
+        "contextualMedianDeltaMs": -0.35000000055879354,
+        "contextualP95DeltaMs": 0.09999999962747097
+      },
+      {
+        "profile": "relay|150|waiting|False",
+        "items": 150,
+        "operation": "dayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.749999998137355,
+          "p95Ms": 11.799999997019768,
+          "firstMs": 9.0,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 9.400000000372529,
+          "count": 20,
+          "medianMs": 10.549999999813735,
+          "p95Ms": 11.600000001490116
+        },
+        "contextualMedianDeltaMs": 0.19999999832361937,
+        "contextualP95DeltaMs": 0.19999999552965164
+      },
+      {
+        "profile": "relay|150|waiting|False",
+        "items": 150,
+        "operation": "staleReplyDelivery",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.100000001490116,
+          "p95Ms": 12.100000001490116,
+          "firstMs": 11.0,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 8.800000000745058,
+          "count": 20,
+          "medianMs": 8.350000000558794,
+          "p95Ms": 9.799999998882413
+        },
+        "contextualMedianDeltaMs": 2.7500000009313226,
+        "contextualP95DeltaMs": 2.300000002607703
+      },
+      {
+        "profile": "relay|500|map|False",
+        "items": 500,
+        "operation": "start",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.149999998509884,
+          "p95Ms": 11.5,
+          "firstMs": 20.0,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 11.800000000745058,
+          "count": 20,
+          "medianMs": 10.750000000931323,
+          "p95Ms": 11.400000000372529
+        },
+        "contextualMedianDeltaMs": -0.6000000024214387,
+        "contextualP95DeltaMs": 0.09999999962747097
+      },
+      {
+        "profile": "relay|500|map|False",
+        "items": 500,
+        "operation": "dayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 13.199999999254942,
+          "p95Ms": 14.900000002235174,
+          "firstMs": 14.699999999254942,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 21.199999999254942,
+          "count": 20,
+          "medianMs": 11.599999999627471,
+          "p95Ms": 13.699999999254942
+        },
+        "contextualMedianDeltaMs": 1.599999999627471,
+        "contextualP95DeltaMs": 1.2000000029802322
+      },
+      {
+        "profile": "relay|500|preview|False",
+        "items": 500,
+        "operation": "start",
+        "fresh": {
+          "count": 20,
+          "medianMs": 5.449999999254942,
+          "p95Ms": 6.5,
+          "firstMs": 16.100000001490116,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 15.599999999627471,
+          "count": 20,
+          "medianMs": 6.400000000372529,
+          "p95Ms": 7.199999999254942
+        },
+        "contextualMedianDeltaMs": -0.9500000011175871,
+        "contextualP95DeltaMs": -0.6999999992549419
+      },
+      {
+        "profile": "relay|500|preview|False",
+        "items": 500,
+        "operation": "dayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.899999998509884,
+          "p95Ms": 12.399999998509884,
+          "firstMs": 12.400000002235174,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 11.200000001117587,
+          "count": 20,
+          "medianMs": 9.75,
+          "p95Ms": 10.799999998882413
+        },
+        "contextualMedianDeltaMs": 1.1499999985098839,
+        "contextualP95DeltaMs": 1.599999999627471
+      },
+      {
+        "profile": "relay|500|waiting|False",
+        "items": 500,
+        "operation": "start",
+        "fresh": {
+          "count": 20,
+          "medianMs": 5.050000000745058,
+          "p95Ms": 6.899999998509884,
+          "firstMs": 4.899999998509884,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 6,
+          "count": 20,
+          "medianMs": 6.3500000005587935,
+          "p95Ms": 7.700000001117587
+        },
+        "contextualMedianDeltaMs": -1.2999999998137355,
+        "contextualP95DeltaMs": -0.8000000026077032
+      },
+      {
+        "profile": "relay|500|waiting|False",
+        "items": 500,
+        "operation": "dayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.450000001117587,
+          "p95Ms": 13.100000001490116,
+          "firstMs": 11.599999997764826,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 11.800000000745058,
+          "count": 20,
+          "medianMs": 11.399999999441206,
+          "p95Ms": 12.599999999627471
+        },
+        "contextualMedianDeltaMs": -0.9499999983236194,
+        "contextualP95DeltaMs": 0.5000000018626451
+      },
+      {
+        "profile": "relay|500|waiting|False",
+        "items": 500,
+        "operation": "staleReplyDelivery",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.700000001117587,
+          "p95Ms": 11.900000002235174,
+          "firstMs": 9.0,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 5.600000001490116,
+          "count": 20,
+          "medianMs": 7.75,
+          "p95Ms": 9
+        },
+        "contextualMedianDeltaMs": 2.950000001117587,
+        "contextualP95DeltaMs": 2.900000002235174
+      },
+      {
+        "profile": "relay|150|map|True",
+        "items": 150,
+        "operation": "start",
+        "fresh": {
+          "count": 20,
+          "medianMs": 9.700000001117587,
+          "p95Ms": 10.899999998509884,
+          "firstMs": 9.5,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 11.099999999627471,
+          "count": 20,
+          "medianMs": 11.25,
+          "p95Ms": 11.700000001117587
+        },
+        "contextualMedianDeltaMs": -1.549999998882413,
+        "contextualP95DeltaMs": -0.8000000026077032
+      },
+      {
+        "profile": "relay|150|map|True",
+        "items": 150,
+        "operation": "dayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 17.700000001117587,
+          "p95Ms": 18.800000000745058,
+          "firstMs": 14.400000002235174,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 20.5,
+          "count": 20,
+          "medianMs": 18.699999999254942,
+          "p95Ms": 20.699999999254942
+        },
+        "contextualMedianDeltaMs": -0.9999999981373549,
+        "contextualP95DeltaMs": -1.8999999985098839
+      },
+      {
+        "profile": "relay|150|map|True",
+        "items": 150,
+        "operation": "returnDayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 9.199999997392297,
+          "p95Ms": 10.699999999254942,
+          "firstMs": 10.300000000745058,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 9.199999999254942,
+          "count": 20,
+          "medianMs": 8.249999999068677,
+          "p95Ms": 16.09999999962747
+        },
+        "contextualMedianDeltaMs": 0.9499999983236194,
+        "contextualP95DeltaMs": -5.400000000372529
+      },
+      {
+        "profile": "relay|150|map|True",
+        "items": 150,
+        "operation": "retainedDomClickDelivery",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.600000001490116,
+          "p95Ms": 11.600000001490116,
+          "firstMs": 8.300000000745058,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 5,
+          "count": 20,
+          "medianMs": 6.5,
+          "p95Ms": 8.800000000745058
+        },
+        "contextualMedianDeltaMs": 4.100000001490116,
+        "contextualP95DeltaMs": 2.800000000745058
+      },
+      {
+        "profile": "relay|150|preview|True",
+        "items": 150,
+        "operation": "start",
+        "fresh": {
+          "count": 20,
+          "medianMs": 4.599999999627471,
+          "p95Ms": 6.5,
+          "firstMs": 16.099999997764826,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 14.700000001117587,
+          "count": 20,
+          "medianMs": 6.249999999068677,
+          "p95Ms": 7.5
+        },
+        "contextualMedianDeltaMs": -1.6499999994412065,
+        "contextualP95DeltaMs": -1.0
+      },
+      {
+        "profile": "relay|150|preview|True",
+        "items": 150,
+        "operation": "dayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 14.850000001490116,
+          "p95Ms": 16.600000001490116,
+          "firstMs": 17.600000001490116,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 6.800000000745058,
+          "count": 20,
+          "medianMs": 15.949999999254942,
+          "p95Ms": 17.800000000745058
+        },
+        "contextualMedianDeltaMs": -1.0999999977648258,
+        "contextualP95DeltaMs": -1.199999999254942
+      },
+      {
+        "profile": "relay|150|preview|True",
+        "items": 150,
+        "operation": "returnDayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 9.099999999627471,
+          "p95Ms": 10.399999998509884,
+          "firstMs": 9.699999999254942,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 8.200000001117587,
+          "count": 20,
+          "medianMs": 7.199999999254942,
+          "p95Ms": 8.699999999254942
+        },
+        "contextualMedianDeltaMs": 1.900000000372529,
+        "contextualP95DeltaMs": 1.699999999254942
+      },
+      {
+        "profile": "relay|150|preview|True",
+        "items": 150,
+        "operation": "retainedDomClickDelivery",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.5,
+          "p95Ms": 11.700000002980232,
+          "firstMs": 6.0,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 7.700000001117587,
+          "count": 20,
+          "medianMs": 7.7999999998137355,
+          "p95Ms": 10.200000001117587
+        },
+        "contextualMedianDeltaMs": 2.7000000001862645,
+        "contextualP95DeltaMs": 1.5000000018626451
+      },
+      {
+        "profile": "relay|150|waiting|True",
+        "items": 150,
+        "operation": "start",
+        "fresh": {
+          "count": 20,
+          "medianMs": 15.300000000745058,
+          "p95Ms": 16.899999998509884,
+          "firstMs": 12.100000001490116,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 4,
+          "count": 20,
+          "medianMs": 14.25,
+          "p95Ms": 16.100000001490116
+        },
+        "contextualMedianDeltaMs": 1.050000000745058,
+        "contextualP95DeltaMs": 0.7999999970197678
+      },
+      {
+        "profile": "relay|150|waiting|True",
+        "items": 150,
+        "operation": "dayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 9.650000000372529,
+          "p95Ms": 11.199999999254942,
+          "firstMs": 9.400000002235174,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 9.199999999254942,
+          "count": 20,
+          "medianMs": 10.799999999813735,
+          "p95Ms": 11.599999999627471
+        },
+        "contextualMedianDeltaMs": -1.1499999994412065,
+        "contextualP95DeltaMs": -0.40000000037252903
+      },
+      {
+        "profile": "relay|150|waiting|True",
+        "items": 150,
+        "operation": "staleReplyDelivery",
+        "fresh": {
+          "count": 20,
+          "medianMs": 11.799999998882413,
+          "p95Ms": 15.299999997019768,
+          "firstMs": 14.400000002235174,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 14.699999999254942,
+          "count": 20,
+          "medianMs": 14.599999999627471,
+          "p95Ms": 15.800000000745058
+        },
+        "contextualMedianDeltaMs": -2.800000000745058,
+        "contextualP95DeltaMs": -0.5000000037252903
+      },
+      {
+        "profile": "relay|150|waiting|True",
+        "items": 150,
+        "operation": "returnDayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 8.900000000372529,
+          "p95Ms": 10.599999997764826,
+          "firstMs": 8.800000000745058,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 8.299999998882413,
+          "count": 20,
+          "medianMs": 6.750000000931323,
+          "p95Ms": 8.5
+        },
+        "contextualMedianDeltaMs": 2.1499999994412065,
+        "contextualP95DeltaMs": 2.099999997764826
+      },
+      {
+        "profile": "relay|150|waiting|True",
+        "items": 150,
+        "operation": "retainedDomClickDelivery",
+        "fresh": {
+          "count": 20,
+          "medianMs": 0.4000000022351742,
+          "p95Ms": 8.100000001490116,
+          "firstMs": 0.30000000074505806,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 2.300000000745058,
+          "count": 20,
+          "medianMs": 4.6499999994412065,
+          "p95Ms": 15.099999999627471
+        },
+        "contextualMedianDeltaMs": -4.249999997206032,
+        "contextualP95DeltaMs": -6.999999998137355
+      },
+      {
+        "profile": "relay|500|map|True",
+        "items": 500,
+        "operation": "start",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.0,
+          "p95Ms": 10.600000001490116,
+          "firstMs": 11.299999997019768,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 9.800000000745058,
+          "count": 20,
+          "medianMs": 10.349999999627471,
+          "p95Ms": 20.5
+        },
+        "contextualMedianDeltaMs": -0.34999999962747097,
+        "contextualP95DeltaMs": -9.899999998509884
+      },
+      {
+        "profile": "relay|500|map|True",
+        "items": 500,
+        "operation": "dayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 17.449999999254942,
+          "p95Ms": 19.099999997764826,
+          "firstMs": 17.800000000745058,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 15.700000001117587,
+          "count": 20,
+          "medianMs": 18.15000000037253,
+          "p95Ms": 20.59999999962747
+        },
+        "contextualMedianDeltaMs": -0.7000000011175871,
+        "contextualP95DeltaMs": -1.5000000018626451
+      },
+      {
+        "profile": "relay|500|map|True",
+        "items": 500,
+        "operation": "returnDayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 14.350000001490116,
+          "p95Ms": 15.600000001490116,
+          "firstMs": 15.899999998509884,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 17.90000000037253,
+          "count": 20,
+          "medianMs": 14.900000000372529,
+          "p95Ms": 18.90000000037253
+        },
+        "contextualMedianDeltaMs": -0.5499999988824129,
+        "contextualP95DeltaMs": -3.299999998882413
+      },
+      {
+        "profile": "relay|500|map|True",
+        "items": 500,
+        "operation": "retainedDomClickDelivery",
+        "fresh": {
+          "count": 20,
+          "medianMs": 6.5,
+          "p95Ms": 13.600000001490116,
+          "firstMs": 3.699999999254942,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 7.800000000745058,
+          "count": 20,
+          "medianMs": 8.5,
+          "p95Ms": 10.699999999254942
+        },
+        "contextualMedianDeltaMs": -2.0,
+        "contextualP95DeltaMs": 2.900000002235174
+      },
+      {
+        "profile": "relay|500|preview|True",
+        "items": 500,
+        "operation": "start",
+        "fresh": {
+          "count": 20,
+          "medianMs": 4.699999999254942,
+          "p95Ms": 5.199999999254942,
+          "firstMs": 17.099999997764826,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 15,
+          "count": 20,
+          "medianMs": 6.5,
+          "p95Ms": 8.599999999627471
+        },
+        "contextualMedianDeltaMs": -1.800000000745058,
+        "contextualP95DeltaMs": -3.400000000372529
+      },
+      {
+        "profile": "relay|500|preview|True",
+        "items": 500,
+        "operation": "dayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 14.099999999627471,
+          "p95Ms": 15.899999998509884,
+          "firstMs": 16.199999999254942,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 11.5,
+          "count": 20,
+          "medianMs": 15.900000000372529,
+          "p95Ms": 18.199999999254942
+        },
+        "contextualMedianDeltaMs": -1.800000000745058,
+        "contextualP95DeltaMs": -2.300000000745058
+      },
+      {
+        "profile": "relay|500|preview|True",
+        "items": 500,
+        "operation": "returnDayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 12.800000000745058,
+          "p95Ms": 13.699999999254942,
+          "firstMs": 14.5,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 13.5,
+          "count": 20,
+          "medianMs": 12.299999998882413,
+          "p95Ms": 15.400000000372529
+        },
+        "contextualMedianDeltaMs": 0.5000000018626451,
+        "contextualP95DeltaMs": -1.700000001117587
+      },
+      {
+        "profile": "relay|500|preview|True",
+        "items": 500,
+        "operation": "retainedDomClickDelivery",
+        "fresh": {
+          "count": 20,
+          "medianMs": 8.150000000372529,
+          "p95Ms": 10.0,
+          "firstMs": 6.900000002235174,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 8,
+          "count": 20,
+          "medianMs": 4.849999999627471,
+          "p95Ms": 15.900000000372529
+        },
+        "contextualMedianDeltaMs": 3.300000000745058,
+        "contextualP95DeltaMs": -5.900000000372529
+      },
+      {
+        "profile": "relay|500|waiting|True",
+        "items": 500,
+        "operation": "start",
+        "fresh": {
+          "count": 20,
+          "medianMs": 14.149999998509884,
+          "p95Ms": 16.099999997764826,
+          "firstMs": 14.5,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 15.5,
+          "count": 20,
+          "medianMs": 3.650000000372529,
+          "p95Ms": 16.5
+        },
+        "contextualMedianDeltaMs": 10.499999998137355,
+        "contextualP95DeltaMs": -0.4000000022351742
+      },
+      {
+        "profile": "relay|500|waiting|True",
+        "items": 500,
+        "operation": "dayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 10.799999998882413,
+          "p95Ms": 12.900000002235174,
+          "firstMs": 11.199999999254942,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 11.700000001117587,
+          "count": 20,
+          "medianMs": 11.299999999813735,
+          "p95Ms": 11.900000000372529
+        },
+        "contextualMedianDeltaMs": -0.5000000009313226,
+        "contextualP95DeltaMs": 1.0000000018626451
+      },
+      {
+        "profile": "relay|500|waiting|True",
+        "items": 500,
+        "operation": "staleReplyDelivery",
+        "fresh": {
+          "count": 20,
+          "medianMs": 14.900000000372529,
+          "p95Ms": 17.0,
+          "firstMs": 7.299999997019768,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 16.09999999962747,
+          "count": 20,
+          "medianMs": 14.950000000186265,
+          "p95Ms": 16
+        },
+        "contextualMedianDeltaMs": -0.049999999813735485,
+        "contextualP95DeltaMs": 1.0
+      },
+      {
+        "profile": "relay|500|waiting|True",
+        "items": 500,
+        "operation": "returnDayChange",
+        "fresh": {
+          "count": 20,
+          "medianMs": 14.399999998509884,
+          "p95Ms": 17.699999999254942,
+          "firstMs": 13.600000001490116,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 13.599999999627471,
+          "count": 20,
+          "medianMs": 12.650000000372529,
+          "p95Ms": 15.900000000372529
+        },
+        "contextualMedianDeltaMs": 1.7499999981373549,
+        "contextualP95DeltaMs": 1.799999998882413
+      },
+      {
+        "profile": "relay|500|waiting|True",
+        "items": 500,
+        "operation": "retainedDomClickDelivery",
+        "fresh": {
+          "count": 20,
+          "medianMs": 7.25,
+          "p95Ms": 16.099999997764826,
+          "firstMs": 0.3999999985098839,
+          "pass": true
+        },
+        "inherited": {
+          "firstMs": 12,
+          "count": 20,
+          "medianMs": 12.450000000186265,
+          "p95Ms": 15.100000001490116
+        },
+        "contextualMedianDeltaMs": -5.2000000001862645,
+        "contextualP95DeltaMs": 0.9999999962747097
+      }
+    ],
+    "minimumWarmSamples": 20.0,
+    "expectedProfiles": 14
+  },
+  "completionPolicy": "Save completion, actual Worker compute, and request-to-route-ready timings remain in raw attachments and are excluded from UI response gates.",
+  "renderingPolicy": "Rendering counters and per-phase diagnostics remain in raw shopping attachments; the summary adds no instrumentation or application work.",
+  "allPass": true,
+  "issues": [],
+  "reportHashes": {
+    "inheritedDiagnosticsSha256": "7D39D114071A4D8CB8DD21B445B334E76334FF737E56BA778B4BADA39158E622",
+    "inheritedShoppingSha256": "9E15F4E4F1CEFE4730513874E6CB4D1CF4D13E810FABECE22F0C798E450FD8AC",
+    "shoppingSha256": "71B7ECA0588A3295459148E3A0A2700F186A91F858C39A83C10E791C244395FB",
+    "diagnosticsSha256": "A4AEA0682971B3ECE8EACC827E3DD453F6D26FE2EE658CABAF2D05B5BC73D0CF"
+  }
+}

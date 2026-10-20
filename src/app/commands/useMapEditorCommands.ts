@@ -2,6 +2,7 @@ import { recordEntry } from "../../utils/ownRecord";
 import {
   useCallback,
   useEffect,
+  useRef,
   type Dispatch,
   type SetStateAction,
 } from "react";
@@ -26,6 +27,7 @@ import {
 } from "../../features/events/itemOps";
 import {
   cloneHallsForDates,
+  getCommittedEditorHalls,
   emptyHallRouteSettings,
   remapHallRouteSettings,
   splitHallsForStorage,
@@ -55,6 +57,11 @@ import {
   EXECUTION_VISIT_MERGE_NOTICE,
 } from "../../utils/visitProjection";
 
+import type { MapEditorSession } from "../../features/map/domain/mapEditorSession";
+import { CommittedStateApplyError } from "./applicationMutationCoordinator";
+import type { HallWriteResult } from "../ports/HallEditorCommandPort";
+import type { PersistenceSnapshot } from "../ports/PersistenceCommandPort";
+
 type StateSetter<T> = Dispatch<SetStateAction<T>>;
 
 export interface MutableMapEditorValue<T> {
@@ -64,6 +71,7 @@ export interface MutableMapEditorValue<T> {
 export type MapEditorPriorityLevel = "none" | "priority" | "highest";
 
 export interface MapEditorStatePort {
+  readonly editorSession?: MapEditorSession | null;
   readonly activeEventName: string | null;
   readonly activeEventDate: string;
   readonly isMapTab: boolean;
@@ -123,6 +131,7 @@ export interface MapEditorEffectPort {
     "addEventListener" | "removeEventListener"
   >;
   notify(message: string): void;
+  onCommittedFailure?(error: Error): void;
 }
 
 export interface MapEditorCommandPorts {
@@ -131,9 +140,15 @@ export interface MapEditorCommandPorts {
   readonly selectors: MapEditorSelectorPort;
   readonly effects: MapEditorEffectPort;
   readonly persistence: ApplicationSnapshotCommitPort;
+  readonly isEditorSessionCurrent?: (session: MapEditorSession) => boolean;
+  readonly readCommittedSnapshot: () => Pick<
+    PersistenceSnapshot,
+    "hallDefinitions"
+  >;
 }
 
 export interface MapEditorCommands {
+  isEditorWritePending(): boolean;
   handleAddToExecuteListFromMap(itemId: string): string[];
   handleAddToExecuteListFromMapAtPosition(
     itemId: string,
@@ -173,11 +188,28 @@ export interface MapEditorCommands {
     newPriorityLevel: MapEditorPriorityLevel,
     oldPriorityLevel: MapEditorPriorityLevel,
   ): void;
-  handleUpdateBlocks(blocks: BlockDefinition[]): void;
-  handleUpdateHalls(halls: HallDefinition[]): void;
-  handleUpdateMaplessHalls(halls: HallDefinition[]): void;
-  handleSyncMaplessHallsToOtherDates(targetDates: string[]): void;
-  handleSyncPolygonHallsToOtherDates(targetDates: string[]): void;
+  handleUpdateBlocks(
+    blocks: BlockDefinition[],
+    session?: MapEditorSession,
+  ): void;
+  handleUpdateHalls(
+    halls: HallDefinition[],
+    session?: MapEditorSession,
+  ): Promise<HallWriteResult>;
+  handleUpdateMaplessHalls(
+    halls: HallDefinition[],
+    session?: MapEditorSession,
+  ): Promise<HallWriteResult>;
+  handleSyncMaplessHallsToOtherDates(
+    targetDates: string[],
+    halls?: HallDefinition[],
+    session?: MapEditorSession,
+  ): Promise<HallWriteResult>;
+  handleSyncPolygonHallsToOtherDates(
+    targetDates: string[],
+    halls?: HallDefinition[],
+    session?: MapEditorSession,
+  ): Promise<HallWriteResult>;
   handleStartVertexSelection(editingData?: unknown): void;
   handleConfirmVertexSelection(): void;
   handleCancelVertexSelection(): void;
@@ -220,6 +252,8 @@ export const useMapEditorCommands = ({
   selectors,
   effects,
   persistence,
+  isEditorSessionCurrent,
+  readCommittedSnapshot,
 }: MapEditorCommandPorts): MapEditorCommands => {
   const {
     activeEventName,
@@ -257,6 +291,28 @@ export const useMapEditorCommands = ({
   const { getMapTabForDate, getItemHallId, areItemsInSameHallGroup } =
     selectors;
   const { notify, selectionEventTarget } = effects;
+  const editorWritePending = useRef(false);
+  const isEditorWritePending = useCallback(
+    () => editorWritePending.current,
+    [],
+  );
+  const liveEditor = useRef({ state, isEditorSessionCurrent });
+  liveEditor.current = { state, isEditorSessionCurrent };
+  const sessionIsCurrent = useCallback(
+    (session?: MapEditorSession): boolean => {
+      if (!session) return true;
+      const live = liveEditor.current;
+      return (
+        live.state.editorSession?.sessionId === session.sessionId &&
+        live.state.activeEventName === session.eventName &&
+        live.state.activeEventDate === session.day &&
+        (session.editorKind === "simple-hall-definition" ||
+          live.state.currentMapTabName === session.mapKey) &&
+        (live.isEditorSessionCurrent?.(session) ?? true)
+      );
+    },
+    [],
+  );
 
   const handleAddToExecuteListFromMap = useCallback(
     (itemId: string): string[] => {
@@ -801,300 +857,350 @@ export const useMapEditorCommands = ({
     ],
   );
 
-  const handleUpdateBlocks = useCallback(
-    (blocks: BlockDefinition[]): void => {
+  const resolveEditorSession = useCallback(
+    (
+      kind: MapEditorSession["editorKind"],
+      supplied?: MapEditorSession,
+    ): MapEditorSession | null => {
+      const session = supplied ?? state.editorSession;
+      if (session)
+        return session.editorKind === kind && sessionIsCurrent(session)
+          ? session
+          : null;
       if (
         !activeEventName ||
-        !isMapTab ||
-        !currentMapData ||
-        !currentMapTabName
-      ) {
-        return;
-      }
-
-      setMapData((previous) => ({
-        ...previous,
-        [activeEventName]: {
-          ...recordEntry(previous, activeEventName),
-          [currentMapTabName]: {
-            ...currentMapData,
-            blocks,
-          },
-        },
-      }));
-    },
-    [activeEventName, currentMapData, currentMapTabName, isMapTab, setMapData],
-  );
-
-  const handleUpdateHalls = useCallback(
-    async (halls: HallDefinition[]): Promise<void> => {
-      if (!activeEventName || !isMapTab || !currentMapTabName) return;
-
-      const { polygonHalls, maplessHalls } = splitHallsForStorage(halls);
-      const maplessKey = activeEventDate
-        ? getMaplessKey(activeEventDate)
-        : null;
-
-      const nextHallDefinitions = updateHallDefinitionsForHalls({
-        previous: hallDefinitions,
+        !activeEventDate ||
+        (kind !== "simple-hall-definition" && !currentMapTabName)
+      )
+        return null;
+      return {
+        sessionId: "",
         eventName: activeEventName,
-        mapTabName: currentMapTabName,
-        maplessKey,
-        polygonHalls,
-        maplessHalls,
-      });
-      const nextHallRouteSettings = updateHallRouteSettingsForHalls({
-        previous: hallRouteSettings,
-        eventName: activeEventName,
-        mapTabName: currentMapTabName,
-        maplessKey,
-        polygonHalls,
-        maplessHalls,
-      });
-      try {
-        await commitApplicationSnapshotPatch({
-          hallDefinitions: nextHallDefinitions,
-          hallRouteSettings: nextHallRouteSettings,
-        });
-      } catch {
-        return;
-      }
+        eventGeneration: 0,
+        day: activeEventDate,
+        mapKey:
+          kind === "simple-hall-definition"
+            ? getMaplessKey(activeEventDate)
+            : currentMapTabName!,
+        editorKind: kind,
+      };
     },
     [
       activeEventDate,
       activeEventName,
-      commitApplicationSnapshotPatch,
       currentMapTabName,
-      hallDefinitions,
-      hallRouteSettings,
+      sessionIsCurrent,
+      state.editorSession,
+    ],
+  );
+
+  const handleUpdateBlocks = useCallback(
+    (blocks: BlockDefinition[], supplied?: MapEditorSession): void => {
+      const session = resolveEditorSession("block-definition", supplied);
+      if (!session || !isMapTab || !currentMapData) return;
+      const source = recordEntry(mapData, session.eventName)?.[session.mapKey];
+      if (!source) return;
+      setMapData((previous) => {
+        if (session.sessionId && !sessionIsCurrent(session)) return previous;
+        const current = recordEntry(previous, session.eventName)?.[
+          session.mapKey
+        ];
+        if (!current) return previous;
+        return {
+          ...previous,
+          [session.eventName]: {
+            ...recordEntry(previous, session.eventName),
+            [session.mapKey]: { ...current, blocks },
+          },
+        };
+      });
+    },
+    [
+      currentMapData,
       isMapTab,
+      mapData,
+      resolveEditorSession,
+      sessionIsCurrent,
+      setMapData,
     ],
   );
 
-  const handleUpdateMaplessHalls = useCallback(
-    async (halls: HallDefinition[]): Promise<void> => {
-      if (!activeEventName || !activeEventDate) return;
-
-      const maplessKey = getMaplessKey(activeEventDate);
-      const nextHallDefinitions = updateMaplessHallDefinitions({
-        previous: hallDefinitions,
-        eventName: activeEventName,
-        maplessKey,
-        halls,
-      });
-      const nextHallRouteSettings = updateMaplessHallRouteSettings({
-        previous: hallRouteSettings,
-        eventName: activeEventName,
-        maplessKey,
-        halls,
-      });
-      try {
-        await commitApplicationSnapshotPatch({
-          hallDefinitions: nextHallDefinitions,
-          hallRouteSettings: nextHallRouteSettings,
-        });
-      } catch {
-        return;
-      }
-    },
-    [
-      activeEventDate,
-      activeEventName,
-      commitApplicationSnapshotPatch,
-      hallDefinitions,
-      hallRouteSettings,
-    ],
-  );
-
-  const handleSyncMaplessHallsToOtherDates = useCallback(
-    async (targetDates: string[]): Promise<void> => {
-      if (!activeEventName || !activeEventDate) return;
-
-      const sourceKey = getMaplessKey(activeEventDate);
-      const sourceHalls =
-        recordEntry(hallDefinitions, activeEventName)?.[sourceKey] ?? [];
-      if (sourceHalls.length === 0) return;
-      const clonedByDate = cloneHallsForDates(sourceHalls, targetDates);
-
-      const nextHallDefinitions = (() => {
-        const updated: HallDefinitionsStore = {
-          ...hallDefinitions,
-          [activeEventName]: {
-            ...recordEntry(hallDefinitions, activeEventName),
-          },
-        };
-        for (const date of targetDates) {
-          const targetKey = getMaplessKey(date);
-          const cloned = clonedByDate.get(date);
-          if (!cloned) continue;
-          updated[activeEventName][targetKey] = cloned.halls;
-        }
-        return updated;
-      })();
-
-      const nextHallRouteSettings = (() => {
-        const updated: HallRouteSettingsStore = {
-          ...hallRouteSettings,
-          [activeEventName]: {
-            ...recordEntry(hallRouteSettings, activeEventName),
-          },
-        };
-        for (const date of targetDates) {
-          const targetKey = getMaplessKey(date);
-          const cloned = clonedByDate.get(date);
-          if (!cloned) continue;
-          const sourceSettings =
-            recordEntry(hallRouteSettings, activeEventName)?.[sourceKey] ??
-            emptyHallRouteSettings();
-          updated[activeEventName][targetKey] = remapHallRouteSettings(
-            sourceSettings,
-            cloned.idMap,
-          );
-        }
-        return updated;
-      })();
-      try {
-        await commitApplicationSnapshotPatch(
-          {
-            hallDefinitions: nextHallDefinitions,
-            hallRouteSettings: nextHallRouteSettings,
-          },
-          undefined,
-          {
-            routeDays: {
-              [activeEventName]: Object.fromEntries(
-                targetDates.map((date) => [getMaplessKey(date), [date]]),
-              ),
-            },
-          },
+  const writeHalls = useCallback(
+    async (
+      kind: "hall-definition" | "simple-hall-definition",
+      halls: HallDefinition[],
+      targetDates: string[],
+      supplied?: MapEditorSession,
+      writeSource = true,
+    ): Promise<HallWriteResult> => {
+      const session = resolveEditorSession(kind, supplied);
+      if (!session || editorWritePending.current)
+        return { status: "cancelled" };
+      const { eventName, day, mapKey } = session;
+      const maplessKey = getMaplessKey(day);
+      const { polygonHalls, maplessHalls } =
+        kind === "simple-hall-definition"
+          ? { polygonHalls: [], maplessHalls: halls }
+          : splitHallsForStorage(halls);
+      // Source and destinations belong to a single existing atomic mutation.
+      let definitions = !writeSource
+        ? hallDefinitions
+        : kind === "simple-hall-definition"
+          ? updateMaplessHallDefinitions({
+              previous: hallDefinitions,
+              eventName,
+              maplessKey,
+              halls: maplessHalls,
+            })
+          : updateHallDefinitionsForHalls({
+              previous: hallDefinitions,
+              eventName,
+              mapTabName: mapKey,
+              maplessKey,
+              polygonHalls,
+              maplessHalls,
+            });
+      let routes = !writeSource
+        ? hallRouteSettings
+        : kind === "simple-hall-definition"
+          ? updateMaplessHallRouteSettings({
+              previous: hallRouteSettings,
+              eventName,
+              maplessKey,
+              halls: maplessHalls,
+            })
+          : updateHallRouteSettingsForHalls({
+              previous: hallRouteSettings,
+              eventName,
+              mapTabName: mapKey,
+              maplessKey,
+              polygonHalls,
+              maplessHalls,
+            });
+      const sourceKey = kind === "simple-hall-definition" ? maplessKey : mapKey;
+      const routeDays: Record<string, string[]> = { [sourceKey]: [day] };
+      if (kind === "hall-definition") routeDays[maplessKey] = [day];
+      const targets = new Map<string, string[]>();
+      const sourceMapTargetDays: string[] = [];
+      for (const date of new Set(targetDates)) {
+        const key =
+          kind === "simple-hall-definition"
+            ? getMaplessKey(date)
+            : getMapTabForDate(date);
+        if (!key) continue;
+        (routeDays[key] ??= []).push(
+          ...(routeDays[key]?.includes(date) ? [] : [date]),
         );
-      } catch {
-        return;
+        if (key === sourceKey) {
+          if (kind === "hall-definition" && date !== day)
+            sourceMapTargetDays.push(date);
+          continue;
+        }
+        const dates = targets.get(key) ?? [];
+        dates.push(date);
+        targets.set(key, dates);
       }
-    },
-    [
-      activeEventDate,
-      activeEventName,
-      commitApplicationSnapshotPatch,
-      hallDefinitions,
-      hallRouteSettings,
-    ],
-  );
-
-  const handleSyncPolygonHallsToOtherDates = useCallback(
-    async (targetDates: string[]): Promise<void> => {
-      if (!activeEventName || !isMapTab || !currentMapTabName) return;
-
-      const sourceHalls =
-        recordEntry(hallDefinitions, activeEventName)?.[currentMapTabName] ??
-        [];
-      if (sourceHalls.length === 0) return;
-      const targetMapTabsByDate = new Map<string, string>();
-      for (const date of targetDates) {
-        const targetMapTab = getMapTabForDate(date);
-        if (targetMapTab) targetMapTabsByDate.set(date, targetMapTab);
-      }
-      const routeDays: Record<string, string[]> = {};
-      for (const [date, mapKey] of targetMapTabsByDate)
-        (routeDays[mapKey] ??= []).push(date);
-      const clonedByDate = cloneHallsForDates(
-        sourceHalls,
-        Array.from(targetMapTabsByDate.keys()),
+      // Allocate once per storage destination, before coordinator re-planning/CAS retries.
+      const clones = cloneHallsForDates(
+        kind === "simple-hall-definition" ? maplessHalls : polygonHalls,
+        [...targets.keys()],
       );
-
-      const nextHallDefinitions = (() => {
-        const updated: HallDefinitionsStore = {
-          ...hallDefinitions,
-          [activeEventName]: {
-            ...recordEntry(hallDefinitions, activeEventName),
-          },
+      if (clones.size) {
+        definitions = {
+          ...definitions,
+          [eventName]: { ...recordEntry(definitions, eventName) },
         };
-        for (const [date, { halls }] of clonedByDate) {
-          const targetMapTab = targetMapTabsByDate.get(date);
-          if (targetMapTab) updated[activeEventName][targetMapTab] = halls;
-        }
-        return updated;
-      })();
-
-      const nextHallRouteSettings = (() => {
-        const updated: HallRouteSettingsStore = {
-          ...hallRouteSettings,
-          [activeEventName]: {
-            ...recordEntry(hallRouteSettings, activeEventName),
-          },
+        routes = {
+          ...routes,
+          [eventName]: { ...recordEntry(routes, eventName) },
         };
-        for (const [date, { idMap }] of clonedByDate) {
-          const targetMapTab = targetMapTabsByDate.get(date);
-          if (!targetMapTab) continue;
-          const sourceSettings =
-            recordEntry(hallRouteSettings, activeEventName)?.[
-              currentMapTabName
-            ] ?? emptyHallRouteSettings();
-          updated[activeEventName][targetMapTab] = remapHallRouteSettings(
+        const sourceSettings =
+          recordEntry(routes, eventName)?.[sourceKey] ??
+          emptyHallRouteSettings();
+        for (const [key, clone] of clones) {
+          definitions[eventName][key] = clone.halls;
+          routes[eventName][key] = remapHallRouteSettings(
             sourceSettings,
-            idMap,
+            clone.idMap,
           );
         }
-        return updated;
-      })();
+      }
+      editorWritePending.current = true;
+      let committed = false;
       try {
         await commitApplicationSnapshotPatch(
-          {
-            hallDefinitions: nextHallDefinitions,
-            hallRouteSettings: nextHallRouteSettings,
-          },
+          { hallDefinitions: definitions, hallRouteSettings: routes },
           undefined,
-          { routeDays: { [activeEventName]: routeDays } },
+          {
+            routeDays: { [eventName]: routeDays },
+            ...(kind === "hall-definition" && clones.size
+              ? { polygonHallSyncTargets: { [eventName]: [...clones.keys()] } }
+              : {}),
+            ...(sourceMapTargetDays.length
+              ? {
+                  polygonHallSyncTargetDays: {
+                    [eventName]: { [sourceKey]: sourceMapTargetDays },
+                  },
+                }
+              : {}),
+          },
+          (snapshot) => {
+            if (session.sessionId && !sessionIsCurrent(session))
+              throw new Error(
+                "地図編集の対象が変更されました。編集を開き直してください。",
+              );
+            if (
+              !recordEntry(snapshot.eventLists, eventName) ||
+              (kind === "hall-definition" &&
+                !recordEntry(snapshot.mapData, eventName)?.[mapKey])
+            )
+              throw new Error(
+                "地図編集の保存先が見つかりません。編集を開き直してください。",
+              );
+          },
         );
-      } catch {
-        return;
+        committed = true;
+        const snapshot = readCommittedSnapshot();
+        return {
+          status: "saved",
+          sessionId: session.sessionId,
+          committedHalls: getCommittedEditorHalls(
+            snapshot.hallDefinitions as HallDefinitionsStore,
+            session,
+          ),
+        };
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          (error.name === "MutationCancelled" ||
+            error.name === "MutationCancelledError")
+        )
+          return { status: "cancelled" };
+        if (committed) {
+          const failure = new CommittedStateApplyError(error);
+          effects.onCommittedFailure?.(failure);
+          throw failure;
+        }
+        throw error;
+      } finally {
+        editorWritePending.current = false;
       }
     },
     [
-      activeEventName,
       commitApplicationSnapshotPatch,
-      currentMapTabName,
       getMapTabForDate,
       hallDefinitions,
       hallRouteSettings,
-      isMapTab,
+      effects,
+      readCommittedSnapshot,
+      resolveEditorSession,
+      sessionIsCurrent,
     ],
   );
 
+  const handleUpdateHalls = useCallback(
+    (halls: HallDefinition[], session?: MapEditorSession) =>
+      writeHalls("hall-definition", halls, [], session),
+    [writeHalls],
+  );
+  const handleUpdateMaplessHalls = useCallback(
+    (halls: HallDefinition[], session?: MapEditorSession) =>
+      writeHalls("simple-hall-definition", halls, [], session),
+    [writeHalls],
+  );
+  const handleSyncMaplessHallsToOtherDates = useCallback(
+    (
+      targetDates: string[],
+      halls?: HallDefinition[],
+      session?: MapEditorSession,
+    ) =>
+      writeHalls(
+        "simple-hall-definition",
+        halls ??
+          recordEntry(hallDefinitions, activeEventName ?? "")?.[
+            getMaplessKey(activeEventDate)
+          ] ??
+          [],
+        targetDates,
+        session,
+        halls !== undefined,
+      ),
+    [activeEventDate, activeEventName, hallDefinitions, writeHalls],
+  );
+  const handleSyncPolygonHallsToOtherDates = useCallback(
+    (
+      targetDates: string[],
+      halls?: HallDefinition[],
+      session?: MapEditorSession,
+    ) =>
+      writeHalls(
+        "hall-definition",
+        halls ??
+          recordEntry(hallDefinitions, activeEventName ?? "")?.[
+            currentMapTabName ?? ""
+          ] ??
+          [],
+        targetDates,
+        session,
+        halls !== undefined,
+      ),
+    [activeEventName, currentMapTabName, hallDefinitions, writeHalls],
+  );
   const handleStartVertexSelection = useCallback(
     (editingData?: unknown): void => {
-      startVertexSelection({ clickedVertices: [], editingData });
+      const session = state.editorSession ?? undefined;
+      if (!sessionIsCurrent(session)) return;
+      startVertexSelection({
+        clickedVertices: [],
+        editingData,
+        ...(session ? { session } : {}),
+      });
     },
-    [startVertexSelection],
+    [sessionIsCurrent, startVertexSelection, state.editorSession],
   );
 
   const handleConfirmVertexSelection = useCallback((): void => {
-    if (vertexSelectionMode) {
+    if (vertexSelectionMode && sessionIsCurrent(vertexSelectionMode.session)) {
       finishVertexSelection({
         vertices: sortMapEditorVerticesNonCrossing(
           vertexSelectionMode.clickedVertices,
         ),
         editingData: vertexSelectionMode.editingData,
+        ...(vertexSelectionMode.session
+          ? { session: vertexSelectionMode.session }
+          : {}),
       });
       return;
     }
-    finishVertexSelection(null);
-  }, [finishVertexSelection, vertexSelectionMode]);
+    if (!vertexSelectionMode || sessionIsCurrent(vertexSelectionMode.session))
+      finishVertexSelection(null);
+  }, [finishVertexSelection, sessionIsCurrent, vertexSelectionMode]);
 
   const handleCancelVertexSelection = useCallback((): void => {
-    if (vertexSelectionMode?.editingData) {
+    if (
+      vertexSelectionMode?.editingData &&
+      sessionIsCurrent(vertexSelectionMode.session)
+    ) {
       finishVertexSelection({
         vertices: [],
         editingData: vertexSelectionMode.editingData,
+        ...(vertexSelectionMode.session
+          ? { session: vertexSelectionMode.session }
+          : {}),
       });
       return;
     }
-    finishVertexSelection(null);
-  }, [finishVertexSelection, vertexSelectionMode?.editingData]);
+    if (!vertexSelectionMode || sessionIsCurrent(vertexSelectionMode.session))
+      finishVertexSelection(null);
+  }, [finishVertexSelection, sessionIsCurrent, vertexSelectionMode]);
 
   useEffect(() => {
     const handleMapCellClickForVertex = (event: Event): void => {
-      if (!vertexSelectionMode) return;
+      if (
+        !vertexSelectionMode ||
+        !sessionIsCurrent(vertexSelectionMode.session)
+      )
+        return;
       const { row, col } = (event as CustomEvent<{ row: number; col: number }>)
         .detail;
       toggleVertexSelection({ row, col });
@@ -1110,46 +1216,66 @@ export const useMapEditorCommands = ({
         handleMapCellClickForVertex,
       );
     };
-  }, [selectionEventTarget, toggleVertexSelection, vertexSelectionMode]);
+  }, [
+    selectionEventTarget,
+    sessionIsCurrent,
+    toggleVertexSelection,
+    vertexSelectionMode,
+  ]);
 
   const handleStartCellSelection = useCallback(
     (type: CellSelectionType, editingData?: unknown): void => {
+      const session = state.editorSession ?? undefined;
+      if (!sessionIsCurrent(session)) return;
       startCellSelection({
+        ...(session ? { session } : {}),
         type,
         clickedCells: [],
         editingBlockData: editingData,
       });
     },
-    [startCellSelection],
+    [sessionIsCurrent, startCellSelection, state.editorSession],
   );
 
   const handleConfirmCellSelection = useCallback((): void => {
-    if (cellSelectionMode) {
+    if (cellSelectionMode && sessionIsCurrent(cellSelectionMode.session)) {
       finishCellSelection({
         type: cellSelectionMode.type,
         cells: cellSelectionMode.clickedCells,
         editingData: cellSelectionMode.editingBlockData,
+        ...(cellSelectionMode.session
+          ? { session: cellSelectionMode.session }
+          : {}),
       });
       return;
     }
-    finishCellSelection(null);
-  }, [cellSelectionMode, finishCellSelection]);
+    if (!cellSelectionMode || sessionIsCurrent(cellSelectionMode.session))
+      finishCellSelection(null);
+  }, [cellSelectionMode, finishCellSelection, sessionIsCurrent]);
 
   const handleCancelCellSelection = useCallback((): void => {
-    if (cellSelectionMode?.editingBlockData) {
+    if (
+      cellSelectionMode?.editingBlockData &&
+      sessionIsCurrent(cellSelectionMode.session)
+    ) {
       finishCellSelection({
         type: "cancelled",
         cells: [],
         editingData: cellSelectionMode.editingBlockData,
+        ...(cellSelectionMode.session
+          ? { session: cellSelectionMode.session }
+          : {}),
       });
       return;
     }
-    finishCellSelection(null);
-  }, [cellSelectionMode?.editingBlockData, finishCellSelection]);
+    if (!cellSelectionMode || sessionIsCurrent(cellSelectionMode.session))
+      finishCellSelection(null);
+  }, [cellSelectionMode, finishCellSelection, sessionIsCurrent]);
 
   useEffect(() => {
     const handleMapCellClick = (event: Event): void => {
-      if (!cellSelectionMode) return;
+      if (!cellSelectionMode || !sessionIsCurrent(cellSelectionMode.session))
+        return;
       const { row, col } = (event as CustomEvent<{ row: number; col: number }>)
         .detail;
       toggleCellSelection({ row, col });
@@ -1165,9 +1291,15 @@ export const useMapEditorCommands = ({
         handleMapCellClick,
       );
     };
-  }, [cellSelectionMode, selectionEventTarget, toggleCellSelection]);
+  }, [
+    cellSelectionMode,
+    selectionEventTarget,
+    sessionIsCurrent,
+    toggleCellSelection,
+  ]);
 
   return {
+    isEditorWritePending,
     handleAddToExecuteListFromMap,
     handleAddToExecuteListFromMapAtPosition,
     handleRemoveFromExecuteListFromMap,

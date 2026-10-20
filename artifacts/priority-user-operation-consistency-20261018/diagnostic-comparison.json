@@ -1,0 +1,1901 @@
+{
+  "profiles": 14,
+  "operationGroups": 66,
+  "minimumWarmSamples": 20.0,
+  "allWarmGroupsPass": true,
+  "maximumWarmMedianMs": 18.699999999254942,
+  "maximumWarmP95Ms": 20.699999999254942,
+  "maximumFirstMs": 21.199999999254942,
+  "firstSamplePolicy": "First sample reported separately; following 20 samples define warm summary.",
+  "workerTimingPolicy": "Actual Worker replies were held and released to reproduce stale delivery. Worker compute and request-to-ready completion are separate diagnostic measurements, not UI response gates.",
+  "comparisons": [
+    {
+      "items": 150,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "radial-open",
+      "before": {
+        "firstMs": 8.900000000372529,
+        "count": 20,
+        "medianMs": 11.249999999068677,
+        "p95Ms": 12.5
+      },
+      "after": {
+        "firstMs": 8.300000000745058,
+        "count": 20,
+        "medianMs": 11.25,
+        "p95Ms": 12.5
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "radial-to-limited-input",
+      "before": {
+        "firstMs": 14.100000001490116,
+        "count": 20,
+        "medianMs": 12.599999999627471,
+        "p95Ms": 13.300000000745058
+      },
+      "after": {
+        "firstMs": 9.200000001117587,
+        "count": 20,
+        "medianMs": 11,
+        "p95Ms": 12.099999999627471
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "limited-quantity-input",
+      "before": {
+        "firstMs": 7.699999999254942,
+        "count": 20,
+        "medianMs": 14.75,
+        "p95Ms": 16.399999998509884
+      },
+      "after": {
+        "firstMs": 9.099999999627471,
+        "count": 20,
+        "medianMs": 1.5,
+        "p95Ms": 2.199999999254942
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "limited-confirm-open",
+      "before": {
+        "firstMs": 11,
+        "count": 20,
+        "medianMs": 10.800000000745058,
+        "p95Ms": 12.599999999627471
+      },
+      "after": {
+        "firstMs": 8.100000001490116,
+        "count": 20,
+        "medianMs": 10.549999999813735,
+        "p95Ms": 11.400000000372529
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "limited-confirm-return",
+      "before": {
+        "firstMs": 10.600000001490116,
+        "count": 20,
+        "medianMs": 11.050000000745058,
+        "p95Ms": 11.900000000372529
+      },
+      "after": {
+        "firstMs": 7.900000000372529,
+        "count": 20,
+        "medianMs": 10.900000000372529,
+        "p95Ms": 12.099999999627471
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "limited-cancel",
+      "before": {
+        "firstMs": 11.600000001490116,
+        "count": 20,
+        "medianMs": 10.799999999813735,
+        "p95Ms": 12.100000001490116
+      },
+      "after": {
+        "firstMs": 10.299999998882413,
+        "count": 20,
+        "medianMs": 11.5,
+        "p95Ms": 13.400000000372529
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "same-screen-confirmation-invalidation",
+      "before": {
+        "firstMs": 15,
+        "count": 20,
+        "medianMs": 8.100000000558794,
+        "p95Ms": 17.09999999962747
+      },
+      "after": {
+        "firstMs": 11.099999999627471,
+        "count": 20,
+        "medianMs": 7.6499999994412065,
+        "p95Ms": 15.299999998882413
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "radial-to-single-choice",
+      "before": {
+        "firstMs": 10.200000001117587,
+        "count": 20,
+        "medianMs": 10.800000000745058,
+        "p95Ms": 11.300000000745058
+      },
+      "after": {
+        "firstMs": 8.900000000372529,
+        "count": 20,
+        "medianMs": 10.899999999441206,
+        "p95Ms": 13.400000000372529
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "single-choice-to-limited",
+      "before": {
+        "firstMs": 10.800000000745058,
+        "count": 20,
+        "medianMs": 10.799999999813735,
+        "p95Ms": 12.5
+      },
+      "after": {
+        "firstMs": 10.800000000745058,
+        "count": 20,
+        "medianMs": 11.150000000372529,
+        "p95Ms": 12
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "single-choice-limited-cancel",
+      "before": {
+        "firstMs": 11.900000000372529,
+        "count": 20,
+        "medianMs": 12.299999998882413,
+        "p95Ms": 13.099999999627471
+      },
+      "after": {
+        "firstMs": 11,
+        "count": 20,
+        "medianMs": 11.399999999441206,
+        "p95Ms": 12.699999999254942
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "bulk-limited-open",
+      "before": {
+        "firstMs": 17.799999998882413,
+        "count": 20,
+        "medianMs": 9.950000000186265,
+        "p95Ms": 11.599999999627471
+      },
+      "after": {
+        "firstMs": 9.599999999627471,
+        "count": 20,
+        "medianMs": 10.5,
+        "p95Ms": 11.5
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "bulk-limited-save-next",
+      "before": {
+        "firstMs": 13.900000000372529,
+        "count": 20,
+        "medianMs": 12.349999999627471,
+        "p95Ms": 13.5
+      },
+      "after": {
+        "firstMs": 15.199999999254942,
+        "count": 20,
+        "medianMs": 13,
+        "p95Ms": 14
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "day-switch-popup-invalidation",
+      "before": {
+        "firstMs": 13.5,
+        "count": 20,
+        "medianMs": 11.899999999441206,
+        "p95Ms": 12.700000001117587
+      },
+      "after": {
+        "firstMs": 11.799999998882413,
+        "count": 20,
+        "medianMs": 12.049999999813735,
+        "p95Ms": 13
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "radial-open",
+      "before": {
+        "firstMs": 12.099999999627471,
+        "count": 20,
+        "medianMs": 12.000000000931323,
+        "p95Ms": 13.900000000372529
+      },
+      "after": {
+        "firstMs": 10.699999999254942,
+        "count": 20,
+        "medianMs": 12.550000000745058,
+        "p95Ms": 14
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "radial-to-limited-input",
+      "before": {
+        "firstMs": 18.800000000745058,
+        "count": 20,
+        "medianMs": 14.399999999441206,
+        "p95Ms": 15.099999999627471
+      },
+      "after": {
+        "firstMs": 10.599999999627471,
+        "count": 20,
+        "medianMs": 11.050000000745058,
+        "p95Ms": 13.5
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "limited-quantity-input",
+      "before": {
+        "firstMs": 16.299999998882413,
+        "count": 20,
+        "medianMs": 9.799999999813735,
+        "p95Ms": 11.599999999627471
+      },
+      "after": {
+        "firstMs": 11.5,
+        "count": 20,
+        "medianMs": 2.300000000745058,
+        "p95Ms": 2.400000000372529
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "limited-confirm-open",
+      "before": {
+        "firstMs": 11.800000000745058,
+        "count": 20,
+        "medianMs": 11.350000000558794,
+        "p95Ms": 12
+      },
+      "after": {
+        "firstMs": 10.300000000745058,
+        "count": 20,
+        "medianMs": 10.499999999068677,
+        "p95Ms": 12.399999998509884
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "limited-confirm-return",
+      "before": {
+        "firstMs": 12,
+        "count": 20,
+        "medianMs": 10.649999999441206,
+        "p95Ms": 12.400000000372529
+      },
+      "after": {
+        "firstMs": 9.799999998882413,
+        "count": 20,
+        "medianMs": 11.049999999813735,
+        "p95Ms": 12.099999999627471
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "limited-cancel",
+      "before": {
+        "firstMs": 10.200000001117587,
+        "count": 20,
+        "medianMs": 10.5,
+        "p95Ms": 11.5
+      },
+      "after": {
+        "firstMs": 12,
+        "count": 20,
+        "medianMs": 12.099999999627471,
+        "p95Ms": 12.900000000372529
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "same-screen-confirmation-invalidation",
+      "before": {
+        "firstMs": 18.200000001117587,
+        "count": 20,
+        "medianMs": 13.700000000186265,
+        "p95Ms": 14.900000000372529
+      },
+      "after": {
+        "firstMs": 17.899999998509884,
+        "count": 20,
+        "medianMs": 13.399999999441206,
+        "p95Ms": 16.09999999962747
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "radial-to-single-choice",
+      "before": {
+        "firstMs": 12.199999999254942,
+        "count": 20,
+        "medianMs": 10.599999999627471,
+        "p95Ms": 12
+      },
+      "after": {
+        "firstMs": 11.199999999254942,
+        "count": 20,
+        "medianMs": 10.750000000931323,
+        "p95Ms": 11.400000000372529
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "single-choice-to-limited",
+      "before": {
+        "firstMs": 10.5,
+        "count": 20,
+        "medianMs": 10.699999999254942,
+        "p95Ms": 12
+      },
+      "after": {
+        "firstMs": 14.099999999627471,
+        "count": 20,
+        "medianMs": 10.599999999627471,
+        "p95Ms": 12.100000001490116
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "single-choice-limited-cancel",
+      "before": {
+        "firstMs": 14.099999999627471,
+        "count": 20,
+        "medianMs": 13.899999999441206,
+        "p95Ms": 14.799999998882413
+      },
+      "after": {
+        "firstMs": 10.800000000745058,
+        "count": 20,
+        "medianMs": 11.149999999441206,
+        "p95Ms": 12.900000000372529
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "bulk-limited-open",
+      "before": {
+        "firstMs": 9.099999999627471,
+        "count": 20,
+        "medianMs": 10.549999999813735,
+        "p95Ms": 11.700000001117587
+      },
+      "after": {
+        "firstMs": 10,
+        "count": 20,
+        "medianMs": 10.150000000372529,
+        "p95Ms": 11.099999999627471
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "bulk-limited-save-next",
+      "before": {
+        "firstMs": 13.099999999627471,
+        "count": 20,
+        "medianMs": 12.099999999627471,
+        "p95Ms": 13.200000001117587
+      },
+      "after": {
+        "firstMs": 14.099999999627471,
+        "count": 20,
+        "medianMs": 12.649999999441206,
+        "p95Ms": 13.899999998509884
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "dialog",
+      "roundTrip": null,
+      "operation": "day-switch-popup-invalidation",
+      "before": {
+        "firstMs": 14.100000001490116,
+        "count": 20,
+        "medianMs": 12.199999999254942,
+        "p95Ms": 14.400000000372529
+      },
+      "after": {
+        "firstMs": 12.099999999627471,
+        "count": 20,
+        "medianMs": 11.049999999813735,
+        "p95Ms": 11.800000000745058
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "map",
+      "roundTrip": false,
+      "operation": "start",
+      "before": {
+        "firstMs": 22.09999999962747,
+        "count": 20,
+        "medianMs": 9.799999999813735,
+        "p95Ms": 16.59999999962747
+      },
+      "after": {
+        "firstMs": 11.5,
+        "count": 20,
+        "medianMs": 11.049999999813735,
+        "p95Ms": 13
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "map",
+      "roundTrip": false,
+      "operation": "dayChange",
+      "before": {
+        "firstMs": 7.099999999627471,
+        "count": 20,
+        "medianMs": 6.800000000745058,
+        "p95Ms": 8.299999998882413
+      },
+      "after": {
+        "firstMs": 10.399999998509884,
+        "count": 20,
+        "medianMs": 8.549999999813735,
+        "p95Ms": 10.100000001490116
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "preview",
+      "roundTrip": false,
+      "operation": "start",
+      "before": {
+        "firstMs": 15.300000000745058,
+        "count": 20,
+        "medianMs": 5.6000000005587935,
+        "p95Ms": 6.900000000372529
+      },
+      "after": {
+        "firstMs": 14.800000000745058,
+        "count": 20,
+        "medianMs": 6.25,
+        "p95Ms": 7.5
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "preview",
+      "roundTrip": false,
+      "operation": "dayChange",
+      "before": {
+        "firstMs": 16,
+        "count": 20,
+        "medianMs": 8.099999999627471,
+        "p95Ms": 10.299999998882413
+      },
+      "after": {
+        "firstMs": 18.199999999254942,
+        "count": 20,
+        "medianMs": 8.850000000558794,
+        "p95Ms": 9.5
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "waiting",
+      "roundTrip": false,
+      "operation": "start",
+      "before": {
+        "firstMs": 7.5,
+        "count": 20,
+        "medianMs": 5,
+        "p95Ms": 6.600000001490116
+      },
+      "after": {
+        "firstMs": 6.199999999254942,
+        "count": 20,
+        "medianMs": 5.8500000005587935,
+        "p95Ms": 6.900000000372529
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "waiting",
+      "roundTrip": false,
+      "operation": "dayChange",
+      "before": {
+        "firstMs": 9.299999998882413,
+        "count": 20,
+        "medianMs": 10.299999999813735,
+        "p95Ms": 11.799999998882413
+      },
+      "after": {
+        "firstMs": 9.400000000372529,
+        "count": 20,
+        "medianMs": 10.549999999813735,
+        "p95Ms": 11.600000001490116
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "waiting",
+      "roundTrip": false,
+      "operation": "staleReplyDelivery",
+      "before": {
+        "firstMs": 11.099999999627471,
+        "count": 20,
+        "medianMs": 11.150000001303852,
+        "p95Ms": 12.900000000372529
+      },
+      "after": {
+        "firstMs": 8.800000000745058,
+        "count": 20,
+        "medianMs": 8.350000000558794,
+        "p95Ms": 9.799999998882413
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "map",
+      "roundTrip": false,
+      "operation": "start",
+      "before": {
+        "firstMs": 11.099999999627471,
+        "count": 20,
+        "medianMs": 9.849999998696148,
+        "p95Ms": 12.099999999627471
+      },
+      "after": {
+        "firstMs": 11.800000000745058,
+        "count": 20,
+        "medianMs": 10.750000000931323,
+        "p95Ms": 11.400000000372529
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "map",
+      "roundTrip": false,
+      "operation": "dayChange",
+      "before": {
+        "firstMs": 11.900000000372529,
+        "count": 20,
+        "medianMs": 9.649999999441206,
+        "p95Ms": 10.899999998509884
+      },
+      "after": {
+        "firstMs": 21.199999999254942,
+        "count": 20,
+        "medianMs": 11.599999999627471,
+        "p95Ms": 13.699999999254942
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "preview",
+      "roundTrip": false,
+      "operation": "start",
+      "before": {
+        "firstMs": 15.099999999627471,
+        "count": 20,
+        "medianMs": 4.9500000001862645,
+        "p95Ms": 6.600000001490116
+      },
+      "after": {
+        "firstMs": 15.599999999627471,
+        "count": 20,
+        "medianMs": 6.400000000372529,
+        "p95Ms": 7.199999999254942
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "preview",
+      "roundTrip": false,
+      "operation": "dayChange",
+      "before": {
+        "firstMs": 13.5,
+        "count": 20,
+        "medianMs": 9.550000000745058,
+        "p95Ms": 11.099999999627471
+      },
+      "after": {
+        "firstMs": 11.200000001117587,
+        "count": 20,
+        "medianMs": 9.75,
+        "p95Ms": 10.799999998882413
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "waiting",
+      "roundTrip": false,
+      "operation": "start",
+      "before": {
+        "firstMs": 3.800000000745058,
+        "count": 20,
+        "medianMs": 5.4500000001862645,
+        "p95Ms": 6.799999998882413
+      },
+      "after": {
+        "firstMs": 6,
+        "count": 20,
+        "medianMs": 6.3500000005587935,
+        "p95Ms": 7.700000001117587
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "waiting",
+      "roundTrip": false,
+      "operation": "dayChange",
+      "before": {
+        "firstMs": 12,
+        "count": 20,
+        "medianMs": 10.649999999441206,
+        "p95Ms": 11.599999999627471
+      },
+      "after": {
+        "firstMs": 11.800000000745058,
+        "count": 20,
+        "medianMs": 11.399999999441206,
+        "p95Ms": 12.599999999627471
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "waiting",
+      "roundTrip": false,
+      "operation": "staleReplyDelivery",
+      "before": {
+        "firstMs": 7.799999998882413,
+        "count": 20,
+        "medianMs": 9.899999999441206,
+        "p95Ms": 11.799999998882413
+      },
+      "after": {
+        "firstMs": 5.600000001490116,
+        "count": 20,
+        "medianMs": 7.75,
+        "p95Ms": 9
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "map",
+      "roundTrip": true,
+      "operation": "start",
+      "before": {
+        "firstMs": 9.699999999254942,
+        "count": 20,
+        "medianMs": 9.549999999813735,
+        "p95Ms": 10.900000000372529
+      },
+      "after": {
+        "firstMs": 11.099999999627471,
+        "count": 20,
+        "medianMs": 11.25,
+        "p95Ms": 11.700000001117587
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "map",
+      "roundTrip": true,
+      "operation": "dayChange",
+      "before": {
+        "firstMs": 13.699999999254942,
+        "count": 20,
+        "medianMs": 15.199999999254942,
+        "p95Ms": 18.100000001490116
+      },
+      "after": {
+        "firstMs": 20.5,
+        "count": 20,
+        "medianMs": 18.699999999254942,
+        "p95Ms": 20.699999999254942
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "map",
+      "roundTrip": true,
+      "operation": "returnDayChange",
+      "before": {
+        "firstMs": 9.700000001117587,
+        "count": 20,
+        "medianMs": 7.7999999998137355,
+        "p95Ms": 9.799999998882413
+      },
+      "after": {
+        "firstMs": 9.199999999254942,
+        "count": 20,
+        "medianMs": 8.249999999068677,
+        "p95Ms": 16.09999999962747
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "map",
+      "roundTrip": true,
+      "operation": "retainedDomClickDelivery",
+      "before": {
+        "firstMs": 13,
+        "count": 20,
+        "medianMs": 16.5,
+        "p95Ms": 17.90000000037253
+      },
+      "after": {
+        "firstMs": 5,
+        "count": 20,
+        "medianMs": 6.5,
+        "p95Ms": 8.800000000745058
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "preview",
+      "roundTrip": true,
+      "operation": "start",
+      "before": {
+        "firstMs": 15.400000000372529,
+        "count": 20,
+        "medianMs": 5.2000000001862645,
+        "p95Ms": 6.300000000745058
+      },
+      "after": {
+        "firstMs": 14.700000001117587,
+        "count": 20,
+        "medianMs": 6.249999999068677,
+        "p95Ms": 7.5
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "preview",
+      "roundTrip": true,
+      "operation": "dayChange",
+      "before": {
+        "firstMs": 6.400000000372529,
+        "count": 20,
+        "medianMs": 14.900000000372529,
+        "p95Ms": 16.09999999962747
+      },
+      "after": {
+        "firstMs": 6.800000000745058,
+        "count": 20,
+        "medianMs": 15.949999999254942,
+        "p95Ms": 17.800000000745058
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "preview",
+      "roundTrip": true,
+      "operation": "returnDayChange",
+      "before": {
+        "firstMs": 9.400000000372529,
+        "count": 20,
+        "medianMs": 9.400000000372529,
+        "p95Ms": 10.599999999627471
+      },
+      "after": {
+        "firstMs": 8.200000001117587,
+        "count": 20,
+        "medianMs": 7.199999999254942,
+        "p95Ms": 8.699999999254942
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "preview",
+      "roundTrip": true,
+      "operation": "retainedDomClickDelivery",
+      "before": {
+        "firstMs": 9.900000000372529,
+        "count": 20,
+        "medianMs": 9.549999999813735,
+        "p95Ms": 11.199999999254942
+      },
+      "after": {
+        "firstMs": 7.700000001117587,
+        "count": 20,
+        "medianMs": 7.7999999998137355,
+        "p95Ms": 10.200000001117587
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "waiting",
+      "roundTrip": true,
+      "operation": "start",
+      "before": {
+        "firstMs": 3.800000000745058,
+        "count": 20,
+        "medianMs": 15.150000000372529,
+        "p95Ms": 16.800000000745058
+      },
+      "after": {
+        "firstMs": 4,
+        "count": 20,
+        "medianMs": 14.25,
+        "p95Ms": 16.100000001490116
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "waiting",
+      "roundTrip": true,
+      "operation": "dayChange",
+      "before": {
+        "firstMs": 9.400000000372529,
+        "count": 20,
+        "medianMs": 9.950000000186265,
+        "p95Ms": 11.600000001490116
+      },
+      "after": {
+        "firstMs": 9.199999999254942,
+        "count": 20,
+        "medianMs": 10.799999999813735,
+        "p95Ms": 11.599999999627471
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "waiting",
+      "roundTrip": true,
+      "operation": "staleReplyDelivery",
+      "before": {
+        "firstMs": 13.400000000372529,
+        "count": 20,
+        "medianMs": 7.75,
+        "p95Ms": 12.200000001117587
+      },
+      "after": {
+        "firstMs": 14.699999999254942,
+        "count": 20,
+        "medianMs": 14.599999999627471,
+        "p95Ms": 15.800000000745058
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "waiting",
+      "roundTrip": true,
+      "operation": "returnDayChange",
+      "before": {
+        "firstMs": 10.5,
+        "count": 20,
+        "medianMs": 8.000000000931323,
+        "p95Ms": 9
+      },
+      "after": {
+        "firstMs": 8.299999998882413,
+        "count": 20,
+        "medianMs": 6.750000000931323,
+        "p95Ms": 8.5
+      },
+      "pass": true
+    },
+    {
+      "items": 150,
+      "kind": "waiting",
+      "roundTrip": true,
+      "operation": "retainedDomClickDelivery",
+      "before": {
+        "firstMs": 7.900000000372529,
+        "count": 20,
+        "medianMs": 1.300000000745058,
+        "p95Ms": 1.400000000372529
+      },
+      "after": {
+        "firstMs": 2.300000000745058,
+        "count": 20,
+        "medianMs": 4.6499999994412065,
+        "p95Ms": 15.099999999627471
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "map",
+      "roundTrip": true,
+      "operation": "start",
+      "before": {
+        "firstMs": 11.899999998509884,
+        "count": 20,
+        "medianMs": 9.849999999627471,
+        "p95Ms": 10.899999998509884
+      },
+      "after": {
+        "firstMs": 9.800000000745058,
+        "count": 20,
+        "medianMs": 10.349999999627471,
+        "p95Ms": 20.5
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "map",
+      "roundTrip": true,
+      "operation": "dayChange",
+      "before": {
+        "firstMs": 14.900000000372529,
+        "count": 20,
+        "medianMs": 15.850000000558794,
+        "p95Ms": 17.90000000037253
+      },
+      "after": {
+        "firstMs": 15.700000001117587,
+        "count": 20,
+        "medianMs": 18.15000000037253,
+        "p95Ms": 20.59999999962747
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "map",
+      "roundTrip": true,
+      "operation": "returnDayChange",
+      "before": {
+        "firstMs": 14,
+        "count": 20,
+        "medianMs": 12,
+        "p95Ms": 13.599999999627471
+      },
+      "after": {
+        "firstMs": 17.90000000037253,
+        "count": 20,
+        "medianMs": 14.900000000372529,
+        "p95Ms": 18.90000000037253
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "map",
+      "roundTrip": true,
+      "operation": "retainedDomClickDelivery",
+      "before": {
+        "firstMs": 10.5,
+        "count": 20,
+        "medianMs": 11.299999999813735,
+        "p95Ms": 14.399999998509884
+      },
+      "after": {
+        "firstMs": 7.800000000745058,
+        "count": 20,
+        "medianMs": 8.5,
+        "p95Ms": 10.699999999254942
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "preview",
+      "roundTrip": true,
+      "operation": "start",
+      "before": {
+        "firstMs": 15.400000000372529,
+        "count": 20,
+        "medianMs": 5.700000001117587,
+        "p95Ms": 7.199999999254942
+      },
+      "after": {
+        "firstMs": 15,
+        "count": 20,
+        "medianMs": 6.5,
+        "p95Ms": 8.599999999627471
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "preview",
+      "roundTrip": true,
+      "operation": "dayChange",
+      "before": {
+        "firstMs": 10.800000000745058,
+        "count": 20,
+        "medianMs": 15,
+        "p95Ms": 16.699999999254942
+      },
+      "after": {
+        "firstMs": 11.5,
+        "count": 20,
+        "medianMs": 15.900000000372529,
+        "p95Ms": 18.199999999254942
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "preview",
+      "roundTrip": true,
+      "operation": "returnDayChange",
+      "before": {
+        "firstMs": 17.799999998882413,
+        "count": 20,
+        "medianMs": 13.900000000372529,
+        "p95Ms": 15.399999998509884
+      },
+      "after": {
+        "firstMs": 13.5,
+        "count": 20,
+        "medianMs": 12.299999998882413,
+        "p95Ms": 15.400000000372529
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "preview",
+      "roundTrip": true,
+      "operation": "retainedDomClickDelivery",
+      "before": {
+        "firstMs": 10.699999999254942,
+        "count": 20,
+        "medianMs": 7.349999999627471,
+        "p95Ms": 8.900000000372529
+      },
+      "after": {
+        "firstMs": 8,
+        "count": 20,
+        "medianMs": 4.849999999627471,
+        "p95Ms": 15.900000000372529
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "waiting",
+      "roundTrip": true,
+      "operation": "start",
+      "before": {
+        "firstMs": 16.399999998509884,
+        "count": 20,
+        "medianMs": 15.5,
+        "p95Ms": 16.800000000745058
+      },
+      "after": {
+        "firstMs": 15.5,
+        "count": 20,
+        "medianMs": 3.650000000372529,
+        "p95Ms": 16.5
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "waiting",
+      "roundTrip": true,
+      "operation": "dayChange",
+      "before": {
+        "firstMs": 11.799999998882413,
+        "count": 20,
+        "medianMs": 10.800000000745058,
+        "p95Ms": 12.300000000745058
+      },
+      "after": {
+        "firstMs": 11.700000001117587,
+        "count": 20,
+        "medianMs": 11.299999999813735,
+        "p95Ms": 11.900000000372529
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "waiting",
+      "roundTrip": true,
+      "operation": "staleReplyDelivery",
+      "before": {
+        "firstMs": 13.900000000372529,
+        "count": 20,
+        "medianMs": 14.300000000745058,
+        "p95Ms": 15.699999999254942
+      },
+      "after": {
+        "firstMs": 16.09999999962747,
+        "count": 20,
+        "medianMs": 14.950000000186265,
+        "p95Ms": 16
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "waiting",
+      "roundTrip": true,
+      "operation": "returnDayChange",
+      "before": {
+        "firstMs": 14.5,
+        "count": 20,
+        "medianMs": 12.700000000186265,
+        "p95Ms": 14.099999999627471
+      },
+      "after": {
+        "firstMs": 13.599999999627471,
+        "count": 20,
+        "medianMs": 12.650000000372529,
+        "p95Ms": 15.900000000372529
+      },
+      "pass": true
+    },
+    {
+      "items": 500,
+      "kind": "waiting",
+      "roundTrip": true,
+      "operation": "retainedDomClickDelivery",
+      "before": {
+        "firstMs": 10.800000000745058,
+        "count": 20,
+        "medianMs": 1.4500000001862645,
+        "p95Ms": 12.900000000372529
+      },
+      "after": {
+        "firstMs": 12,
+        "count": 20,
+        "medianMs": 12.450000000186265,
+        "p95Ms": 15.100000001490116
+      },
+      "pass": true
+    }
+  ],
+  "observations": [
+    {
+      "items": 150,
+      "observation": "popupRetainedAfterDaySwitch",
+      "beforeTrue": 21,
+      "beforeTotal": 21,
+      "afterTrue": 0,
+      "afterTotal": 21
+    },
+    {
+      "items": 150,
+      "observation": "radialInputFocused",
+      "beforeTrue": 0,
+      "beforeTotal": 21,
+      "afterTrue": 21,
+      "afterTotal": 21
+    },
+    {
+      "items": 150,
+      "observation": "bulkNextInputFocused",
+      "beforeTrue": 0,
+      "beforeTotal": 21,
+      "afterTrue": 21,
+      "afterTotal": 21
+    },
+    {
+      "items": 150,
+      "observation": "invalidationInputFocused",
+      "beforeTrue": 0,
+      "beforeTotal": 21,
+      "afterTrue": 21,
+      "afterTotal": 21
+    },
+    {
+      "items": 500,
+      "observation": "popupRetainedAfterDaySwitch",
+      "beforeTrue": 21,
+      "beforeTotal": 21,
+      "afterTrue": 0,
+      "afterTotal": 21
+    },
+    {
+      "items": 500,
+      "observation": "radialInputFocused",
+      "beforeTrue": 0,
+      "beforeTotal": 21,
+      "afterTrue": 21,
+      "afterTotal": 21
+    },
+    {
+      "items": 500,
+      "observation": "bulkNextInputFocused",
+      "beforeTrue": 0,
+      "beforeTotal": 21,
+      "afterTrue": 21,
+      "afterTotal": 21
+    },
+    {
+      "items": 500,
+      "observation": "invalidationInputFocused",
+      "beforeTrue": 0,
+      "beforeTotal": 21,
+      "afterTrue": 21,
+      "afterTotal": 21
+    }
+  ],
+  "completion": [
+    {
+      "items": 150,
+      "operation": "same-screen-quantity-save",
+      "before": {
+        "count": 21,
+        "medianMs": 33.19999999925494,
+        "p95Ms": 40.80000000074506,
+        "minMs": 28.800000000745058,
+        "maxMs": 41.69999999925494
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 32,
+        "p95Ms": 39.90000000037253,
+        "minMs": 29.59999999962747,
+        "maxMs": 41.100000001490116
+      }
+    },
+    {
+      "items": 150,
+      "operation": "bulk-limited-save",
+      "before": {
+        "count": 21,
+        "medianMs": 66,
+        "p95Ms": 68,
+        "minMs": 62.40000000037253,
+        "maxMs": 72.09999999962747
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 67.40000000037253,
+        "p95Ms": 69,
+        "minMs": 64,
+        "maxMs": 69.5
+      }
+    },
+    {
+      "items": 500,
+      "operation": "same-screen-quantity-save",
+      "before": {
+        "count": 21,
+        "medianMs": 43.90000000037253,
+        "p95Ms": 46.80000000074506,
+        "minMs": 38.90000000037253,
+        "maxMs": 50.69999999925494
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 44.600000001490116,
+        "p95Ms": 49.19999999925494,
+        "minMs": 40.5,
+        "maxMs": 50.70000000111759
+      }
+    },
+    {
+      "items": 500,
+      "operation": "bulk-limited-save",
+      "before": {
+        "count": 21,
+        "medianMs": 69.5,
+        "p95Ms": 73.90000000037253,
+        "minMs": 66.40000000037253,
+        "maxMs": 74.69999999925494
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 70.59999999962747,
+        "p95Ms": 72.70000000111759,
+        "minMs": 68,
+        "maxMs": 73.19999999925494
+      }
+    }
+  ],
+  "relay": [
+    {
+      "items": 150,
+      "kind": "map",
+      "roundTrip": false,
+      "samples": 21,
+      "retainedAfterDayChangeBefore": 21,
+      "retainedAfterDayChangeAfter": 0,
+      "popupRetainedAfterDayChangeAfter": 0,
+      "staleWritesAfter": 0,
+      "stalePersistenceMethodsAfter": 0,
+      "candidateSavedAfter": 0,
+      "sameKeyDistinctRequestSamples": 0,
+      "workerComputeBefore": {
+        "count": 42,
+        "medianMs": 6.5,
+        "p95Ms": 11.800000000745058,
+        "minMs": 0.2999999988824129,
+        "maxMs": 12
+      },
+      "workerComputeAfter": {
+        "count": 42,
+        "medianMs": 7.849999999627471,
+        "p95Ms": 12.199999999254942,
+        "minMs": 0.900000000372529,
+        "maxMs": 12.5
+      },
+      "requestToCurrentReadyBefore": {
+        "count": 21,
+        "medianMs": 151.39999999850988,
+        "p95Ms": 169.59999999962747,
+        "minMs": 135.09999999962747,
+        "maxMs": 193.19999999925494
+      },
+      "requestToCurrentReadyAfter": {
+        "count": 21,
+        "medianMs": 148.40000000037253,
+        "p95Ms": 176.2000000011176,
+        "minMs": 141.69999999925494,
+        "maxMs": 177.40000000037253
+      }
+    },
+    {
+      "items": 150,
+      "kind": "preview",
+      "roundTrip": false,
+      "samples": 21,
+      "retainedAfterDayChangeBefore": 21,
+      "retainedAfterDayChangeAfter": 0,
+      "popupRetainedAfterDayChangeAfter": 0,
+      "staleWritesAfter": 0,
+      "stalePersistenceMethodsAfter": 0,
+      "candidateSavedAfter": 0,
+      "sameKeyDistinctRequestSamples": 0,
+      "workerComputeBefore": {
+        "count": 42,
+        "medianMs": 5.650000000372529,
+        "p95Ms": 12,
+        "minMs": 0.2999999988824129,
+        "maxMs": 12.799999998882413
+      },
+      "workerComputeAfter": {
+        "count": 42,
+        "medianMs": 5.050000000745058,
+        "p95Ms": 12.199999999254942,
+        "minMs": 0.40000000037252903,
+        "maxMs": 13.200000001117587
+      },
+      "requestToCurrentReadyBefore": {
+        "count": 21,
+        "medianMs": 136.30000000074506,
+        "p95Ms": 153.40000000037253,
+        "minMs": 133.30000000074506,
+        "maxMs": 189.19999999925494
+      },
+      "requestToCurrentReadyAfter": {
+        "count": 21,
+        "medianMs": 139.90000000037253,
+        "p95Ms": 161.7000000011176,
+        "minMs": 137.7999999988824,
+        "maxMs": 191.59999999962747
+      }
+    },
+    {
+      "items": 150,
+      "kind": "waiting",
+      "roundTrip": false,
+      "samples": 21,
+      "retainedAfterDayChangeBefore": 0,
+      "retainedAfterDayChangeAfter": 0,
+      "popupRetainedAfterDayChangeAfter": 0,
+      "staleWritesAfter": 0,
+      "stalePersistenceMethodsAfter": 0,
+      "candidateSavedAfter": 0,
+      "sameKeyDistinctRequestSamples": 0,
+      "workerComputeBefore": {
+        "count": 42,
+        "medianMs": 8.300000000745058,
+        "p95Ms": 12.5,
+        "minMs": 5.599999999627471,
+        "maxMs": 12.799999998882413
+      },
+      "workerComputeAfter": {
+        "count": 42,
+        "medianMs": 8.150000000372529,
+        "p95Ms": 11.900000000372529,
+        "minMs": 5.399999998509884,
+        "maxMs": 12.199999999254942
+      },
+      "requestToCurrentReadyBefore": {
+        "count": 21,
+        "medianMs": 232.40000000037253,
+        "p95Ms": 248.7000000011176,
+        "minMs": 231.2999999988824,
+        "maxMs": 251.80000000074506
+      },
+      "requestToCurrentReadyAfter": {
+        "count": 21,
+        "medianMs": 235.19999999925494,
+        "p95Ms": 251.40000000037253,
+        "minMs": 232.40000000037253,
+        "maxMs": 259.40000000037253
+      }
+    },
+    {
+      "items": 500,
+      "kind": "map",
+      "roundTrip": false,
+      "samples": 21,
+      "retainedAfterDayChangeBefore": 21,
+      "retainedAfterDayChangeAfter": 0,
+      "popupRetainedAfterDayChangeAfter": 0,
+      "staleWritesAfter": 0,
+      "stalePersistenceMethodsAfter": 0,
+      "candidateSavedAfter": 0,
+      "sameKeyDistinctRequestSamples": 0,
+      "workerComputeBefore": {
+        "count": 42,
+        "medianMs": 4.400000000372529,
+        "p95Ms": 7,
+        "minMs": 0.599999999627471,
+        "maxMs": 8.300000000745058
+      },
+      "workerComputeAfter": {
+        "count": 42,
+        "medianMs": 6,
+        "p95Ms": 7.200000001117587,
+        "minMs": 1.599999999627471,
+        "maxMs": 8
+      },
+      "requestToCurrentReadyBefore": {
+        "count": 21,
+        "medianMs": 140,
+        "p95Ms": 157.80000000074506,
+        "minMs": 120.39999999850988,
+        "maxMs": 166.10000000149012
+      },
+      "requestToCurrentReadyAfter": {
+        "count": 21,
+        "medianMs": 151.80000000074506,
+        "p95Ms": 171.30000000074506,
+        "minMs": 128.59999999962747,
+        "maxMs": 172.5
+      }
+    },
+    {
+      "items": 500,
+      "kind": "preview",
+      "roundTrip": false,
+      "samples": 21,
+      "retainedAfterDayChangeBefore": 21,
+      "retainedAfterDayChangeAfter": 0,
+      "popupRetainedAfterDayChangeAfter": 0,
+      "staleWritesAfter": 0,
+      "stalePersistenceMethodsAfter": 0,
+      "candidateSavedAfter": 0,
+      "sameKeyDistinctRequestSamples": 0,
+      "workerComputeBefore": {
+        "count": 42,
+        "medianMs": 3.0499999998137355,
+        "p95Ms": 7,
+        "minMs": 0.2999999988824129,
+        "maxMs": 7.400000000372529
+      },
+      "workerComputeAfter": {
+        "count": 42,
+        "medianMs": 2.9500000001862645,
+        "p95Ms": 7.599999999627471,
+        "minMs": 0.40000000037252903,
+        "maxMs": 8.200000001117587
+      },
+      "requestToCurrentReadyBefore": {
+        "count": 21,
+        "medianMs": 121.90000000037253,
+        "p95Ms": 153.90000000037253,
+        "minMs": 117.29999999888241,
+        "maxMs": 156.69999999925494
+      },
+      "requestToCurrentReadyAfter": {
+        "count": 21,
+        "medianMs": 141.30000000074506,
+        "p95Ms": 157.7999999988824,
+        "minMs": 120,
+        "maxMs": 158.5
+      }
+    },
+    {
+      "items": 500,
+      "kind": "waiting",
+      "roundTrip": false,
+      "samples": 21,
+      "retainedAfterDayChangeBefore": 0,
+      "retainedAfterDayChangeAfter": 0,
+      "popupRetainedAfterDayChangeAfter": 0,
+      "staleWritesAfter": 0,
+      "stalePersistenceMethodsAfter": 0,
+      "candidateSavedAfter": 0,
+      "sameKeyDistinctRequestSamples": 0,
+      "workerComputeBefore": {
+        "count": 42,
+        "medianMs": 6.099999999627471,
+        "p95Ms": 8.900000000372529,
+        "minMs": 2.599999999627471,
+        "maxMs": 9
+      },
+      "workerComputeAfter": {
+        "count": 42,
+        "medianMs": 6,
+        "p95Ms": 9,
+        "minMs": 2.5,
+        "maxMs": 10.099999999627471
+      },
+      "requestToCurrentReadyBefore": {
+        "count": 21,
+        "medianMs": 133.40000000037253,
+        "p95Ms": 247.40000000037253,
+        "minMs": 130.7000000011176,
+        "maxMs": 247.59999999962747
+      },
+      "requestToCurrentReadyAfter": {
+        "count": 21,
+        "medianMs": 135.69999999925494,
+        "p95Ms": 251.39999999850988,
+        "minMs": 132.5,
+        "maxMs": 252.09999999962747
+      }
+    },
+    {
+      "items": 150,
+      "kind": "map",
+      "roundTrip": true,
+      "samples": 21,
+      "retainedAfterDayChangeBefore": 21,
+      "retainedAfterDayChangeAfter": 0,
+      "popupRetainedAfterDayChangeAfter": 0,
+      "staleWritesAfter": 0,
+      "stalePersistenceMethodsAfter": 0,
+      "candidateSavedAfter": 0,
+      "sameKeyDistinctRequestSamples": 0,
+      "workerComputeBefore": {
+        "count": 63,
+        "medianMs": 0.599999999627471,
+        "p95Ms": 11,
+        "minMs": 0.19999999925494194,
+        "maxMs": 12.599999999627471
+      },
+      "workerComputeAfter": {
+        "count": 63,
+        "medianMs": 4.400000000372529,
+        "p95Ms": 11.800000000745058,
+        "minMs": 0.19999999925494194,
+        "maxMs": 12.5
+      },
+      "requestToCurrentReadyBefore": {
+        "count": 21,
+        "medianMs": 199.59999999962747,
+        "p95Ms": 214.7000000011176,
+        "minMs": 171.5,
+        "maxMs": 224.30000000074506
+      },
+      "requestToCurrentReadyAfter": {
+        "count": 21,
+        "medianMs": 191.5,
+        "p95Ms": 207.69999999925494,
+        "minMs": 181.30000000074506,
+        "maxMs": 221.80000000074506
+      }
+    },
+    {
+      "items": 150,
+      "kind": "preview",
+      "roundTrip": true,
+      "samples": 21,
+      "retainedAfterDayChangeBefore": 21,
+      "retainedAfterDayChangeAfter": 0,
+      "popupRetainedAfterDayChangeAfter": 0,
+      "staleWritesAfter": 0,
+      "stalePersistenceMethodsAfter": 0,
+      "candidateSavedAfter": 0,
+      "sameKeyDistinctRequestSamples": 0,
+      "workerComputeBefore": {
+        "count": 63,
+        "medianMs": 0.40000000037252903,
+        "p95Ms": 11.299999998882413,
+        "minMs": 0.19999999925494194,
+        "maxMs": 11.900000000372529
+      },
+      "workerComputeAfter": {
+        "count": 63,
+        "medianMs": 2.5,
+        "p95Ms": 11.599999999627471,
+        "minMs": 0.30000000074505806,
+        "maxMs": 12.5
+      },
+      "requestToCurrentReadyBefore": {
+        "count": 21,
+        "medianMs": 194.2999999988824,
+        "p95Ms": 204.2999999988824,
+        "minMs": 180,
+        "maxMs": 224.09999999962747
+      },
+      "requestToCurrentReadyAfter": {
+        "count": 21,
+        "medianMs": 188.5,
+        "p95Ms": 205.7000000011176,
+        "minMs": 180,
+        "maxMs": 209.5
+      }
+    },
+    {
+      "items": 150,
+      "kind": "waiting",
+      "roundTrip": true,
+      "samples": 21,
+      "retainedAfterDayChangeBefore": 0,
+      "retainedAfterDayChangeAfter": 0,
+      "popupRetainedAfterDayChangeAfter": 0,
+      "staleWritesAfter": 0,
+      "stalePersistenceMethodsAfter": 0,
+      "candidateSavedAfter": 0,
+      "sameKeyDistinctRequestSamples": 21,
+      "workerComputeBefore": {
+        "count": 63,
+        "medianMs": 9.400000000372529,
+        "p95Ms": 11.700000001117587,
+        "minMs": 5.599999999627471,
+        "maxMs": 12.199999999254942
+      },
+      "workerComputeAfter": {
+        "count": 63,
+        "medianMs": 9.100000001490116,
+        "p95Ms": 11.699999999254942,
+        "minMs": 6,
+        "maxMs": 12.200000001117587
+      },
+      "requestToCurrentReadyBefore": {
+        "count": 21,
+        "medianMs": 409.09999999962747,
+        "p95Ms": 413.59999999962747,
+        "minMs": 305.80000000074506,
+        "maxMs": 415.59999999962747
+      },
+      "requestToCurrentReadyAfter": {
+        "count": 21,
+        "medianMs": 304.2000000011176,
+        "p95Ms": 331.5,
+        "minMs": 283.80000000074506,
+        "maxMs": 338.7000000011176
+      }
+    },
+    {
+      "items": 500,
+      "kind": "map",
+      "roundTrip": true,
+      "samples": 21,
+      "retainedAfterDayChangeBefore": 21,
+      "retainedAfterDayChangeAfter": 0,
+      "popupRetainedAfterDayChangeAfter": 0,
+      "staleWritesAfter": 0,
+      "stalePersistenceMethodsAfter": 0,
+      "candidateSavedAfter": 0,
+      "sameKeyDistinctRequestSamples": 0,
+      "workerComputeBefore": {
+        "count": 63,
+        "medianMs": 2.599999999627471,
+        "p95Ms": 6.099999999627471,
+        "minMs": 0.2999999988824129,
+        "maxMs": 6.599999999627471
+      },
+      "workerComputeAfter": {
+        "count": 63,
+        "medianMs": 3.099999999627471,
+        "p95Ms": 6.400000000372529,
+        "minMs": 0.40000000037252903,
+        "maxMs": 7.300000000745058
+      },
+      "requestToCurrentReadyBefore": {
+        "count": 21,
+        "medianMs": 184.7999999988824,
+        "p95Ms": 215.7999999988824,
+        "minMs": 168.40000000037253,
+        "maxMs": 220.19999999925494
+      },
+      "requestToCurrentReadyAfter": {
+        "count": 21,
+        "medianMs": 193.5,
+        "p95Ms": 218.7999999988824,
+        "minMs": 167.09999999962747,
+        "maxMs": 220
+      }
+    },
+    {
+      "items": 500,
+      "kind": "preview",
+      "roundTrip": true,
+      "samples": 21,
+      "retainedAfterDayChangeBefore": 21,
+      "retainedAfterDayChangeAfter": 0,
+      "popupRetainedAfterDayChangeAfter": 0,
+      "staleWritesAfter": 0,
+      "stalePersistenceMethodsAfter": 0,
+      "candidateSavedAfter": 0,
+      "sameKeyDistinctRequestSamples": 0,
+      "workerComputeBefore": {
+        "count": 63,
+        "medianMs": 3.799999998882413,
+        "p95Ms": 7.199999999254942,
+        "minMs": 0.2999999988824129,
+        "maxMs": 7.300000000745058
+      },
+      "workerComputeAfter": {
+        "count": 63,
+        "medianMs": 2.599999999627471,
+        "p95Ms": 7.600000001490116,
+        "minMs": 0.2999999988824129,
+        "maxMs": 7.800000000745058
+      },
+      "requestToCurrentReadyBefore": {
+        "count": 21,
+        "medianMs": 199.30000000074506,
+        "p95Ms": 214,
+        "minMs": 164.7999999988824,
+        "maxMs": 214.09999999962747
+      },
+      "requestToCurrentReadyAfter": {
+        "count": 21,
+        "medianMs": 197.59999999962747,
+        "p95Ms": 222,
+        "minMs": 169.2999999988824,
+        "maxMs": 229.2000000011176
+      }
+    },
+    {
+      "items": 500,
+      "kind": "waiting",
+      "roundTrip": true,
+      "samples": 21,
+      "retainedAfterDayChangeBefore": 0,
+      "retainedAfterDayChangeAfter": 0,
+      "popupRetainedAfterDayChangeAfter": 0,
+      "staleWritesAfter": 0,
+      "stalePersistenceMethodsAfter": 0,
+      "candidateSavedAfter": 0,
+      "sameKeyDistinctRequestSamples": 21,
+      "workerComputeBefore": {
+        "count": 63,
+        "medianMs": 8.199999999254942,
+        "p95Ms": 10.299999998882413,
+        "minMs": 2.300000000745058,
+        "maxMs": 11.199999999254942
+      },
+      "workerComputeAfter": {
+        "count": 63,
+        "medianMs": 7.300000000745058,
+        "p95Ms": 10,
+        "minMs": 2.5,
+        "maxMs": 10.400000000372529
+      },
+      "requestToCurrentReadyBefore": {
+        "count": 21,
+        "medianMs": 402,
+        "p95Ms": 420.5,
+        "minMs": 300.30000000074506,
+        "maxMs": 434.59999999962747
+      },
+      "requestToCurrentReadyAfter": {
+        "count": 21,
+        "medianMs": 218.89999999850988,
+        "p95Ms": 314.5,
+        "minMs": 186.2000000011176,
+        "maxMs": 343.7000000011176
+      }
+    }
+  ]
+}

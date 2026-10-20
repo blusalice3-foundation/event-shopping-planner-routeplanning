@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import { useModalFocusBoundary } from "../hooks/useModalFocusBoundary";
 import { recordEntry } from "../utils/ownRecord";
 import { normalizeExecutionVisitDay } from "../utils/visitProjection";
 import { useState } from "react";
@@ -79,6 +81,8 @@ function LegacyEntryEditor({
   select(value: string): void;
   close(): void;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocusBoundary({ isOpen: true, dialogRef });
   const event = recordEntry(snapshot.eventConsistency, eventName);
   const days = collectEventDays(
     recordEntry(snapshot.eventLists, eventName) as ShoppingItem[],
@@ -125,6 +129,7 @@ function LegacyEntryEditor({
       role="presentation"
     >
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="legacy-review-title"

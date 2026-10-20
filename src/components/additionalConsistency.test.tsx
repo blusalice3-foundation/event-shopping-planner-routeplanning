@@ -274,6 +274,7 @@ function mapView(pending: ShoppingItem, anchor = item("anchor"), data = map) {
   const add = vi.fn(() => ["pending"]);
   render(
     <MapView
+      operationScope={JSON.stringify(["event", 0, "1日目", "1日目マップ"])}
       mapData={data}
       mapName="1日目マップ"
       items={[anchor, pending]}

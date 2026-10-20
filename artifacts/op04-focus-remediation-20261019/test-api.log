@@ -1,0 +1,33 @@
+
+> event-shopping-planner@1.0.0 test:api
+> node --test api/csp-report.test.mjs api/google-sheets-csv.test.mjs api/not-found.test.mjs
+
+✔ stores only closed CSP fields and server-owned identity (2.2867ms)
+✔ accepts a bounded Reporting API batch (0.9607ms)
+✔ keeps the effective directive contract ordered and immutable (0.1869ms)
+✔ normalizes a syntactically valid unknown directive before insertion (0.2621ms)
+✔ rejects an empty or malformed effective directive (0.3843ms)
+✔ separates method, media type, invalid, oversize, and config errors (0.5131ms)
+✔ maps upstream failure to 502 without reflecting details (0.9665ms)
+✔ blocked target classifier never returns a raw target (1.5379ms)
+✔ resolves the requested tab and proxies its full-row CSV export (31.1461ms)
+✔ decodes escaped tab names and lets the saved sheet name override URL gid (1.1133ms)
+✔ does not fall back to URL gid when the requested tab cannot be resolved (0.528ms)
+✔ uses URL gid directly only when no sheet name is available (0.8856ms)
+✔ rejects method, media type, origin, shape, and configuration drift (0.7996ms)
+✔ rejects redirects outside the fixed Google CSV download host (2.12ms)
+✔ bounds upstream responses and rejects non-CSV responses (5.2033ms)
+✔ unknown API returns the closed JSON 404 for GET (1.2442ms)
+✔ unknown API returns the closed JSON 404 for POST (0.1394ms)
+✔ unknown API returns the closed JSON 404 for PUT (0.1036ms)
+✔ unknown API returns the closed JSON 404 for PATCH (0.1199ms)
+✔ unknown API returns the closed JSON 404 for DELETE (1.2525ms)
+✔ unknown API returns the closed JSON 404 for OPTIONS (0.137ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 186.5487

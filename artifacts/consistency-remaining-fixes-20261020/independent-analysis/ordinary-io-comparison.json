@@ -1,0 +1,152 @@
+[
+  {
+    "baselineSaveCompletionMs": 19.30000000447035,
+    "baseline": {
+      "workerRoundTripsByMethod": {
+        "items": 1
+      },
+      "physicalCommittedTransactions": 1,
+      "committedObjectStoreMutationRequests": 9,
+      "transactionStores": [
+        "dayModes|eventConsistency|eventLists|eventMetadata|executeModeItems|hallDefinitions|hallRouteSettings|mapData|mapRotationSettings|mapViewportSettings|routeSettings|syncQueue"
+      ],
+      "mutations": [
+        "eventLists|delete",
+        "eventLists|delete",
+        "eventLists|put",
+        "eventLists|put",
+        "syncQueue|delete",
+        "syncQueue|put",
+        "syncQueue|put",
+        "syncQueue|put",
+        "syncQueue|put"
+      ]
+    },
+    "responseMs": 12.099999994039536,
+    "operation": "purchase",
+    "unchanged": true,
+    "baselineResponseMs": 13.200000002980232,
+    "saveCompletionMs": 16.899999991059303,
+    "current": {
+      "workerRoundTripsByMethod": {
+        "items": 1
+      },
+      "physicalCommittedTransactions": 1,
+      "committedObjectStoreMutationRequests": 9,
+      "transactionStores": [
+        "dayModes|eventConsistency|eventLists|eventMetadata|executeModeItems|hallDefinitions|hallRouteSettings|mapData|mapRotationSettings|mapViewportSettings|routeSettings|syncQueue"
+      ],
+      "mutations": [
+        "eventLists|delete",
+        "eventLists|delete",
+        "eventLists|put",
+        "eventLists|put",
+        "syncQueue|delete",
+        "syncQueue|put",
+        "syncQueue|put",
+        "syncQueue|put",
+        "syncQueue|put"
+      ]
+    }
+  },
+  {
+    "baselineSaveCompletionMs": 13.199999995529652,
+    "baseline": {
+      "workerRoundTripsByMethod": {
+        "items": 1
+      },
+      "physicalCommittedTransactions": 1,
+      "committedObjectStoreMutationRequests": 9,
+      "transactionStores": [
+        "dayModes|eventConsistency|eventLists|eventMetadata|executeModeItems|hallDefinitions|hallRouteSettings|mapData|mapRotationSettings|mapViewportSettings|routeSettings|syncQueue"
+      ],
+      "mutations": [
+        "eventLists|delete",
+        "eventLists|delete",
+        "eventLists|put",
+        "eventLists|put",
+        "syncQueue|delete",
+        "syncQueue|put",
+        "syncQueue|put",
+        "syncQueue|put",
+        "syncQueue|put"
+      ]
+    },
+    "responseMs": 10.100000008940697,
+    "operation": "planned-quantity",
+    "unchanged": true,
+    "baselineResponseMs": 8.299999997019768,
+    "saveCompletionMs": 12.900000005960464,
+    "current": {
+      "workerRoundTripsByMethod": {
+        "items": 1
+      },
+      "physicalCommittedTransactions": 1,
+      "committedObjectStoreMutationRequests": 9,
+      "transactionStores": [
+        "dayModes|eventConsistency|eventLists|eventMetadata|executeModeItems|hallDefinitions|hallRouteSettings|mapData|mapRotationSettings|mapViewportSettings|routeSettings|syncQueue"
+      ],
+      "mutations": [
+        "eventLists|delete",
+        "eventLists|delete",
+        "eventLists|put",
+        "eventLists|put",
+        "syncQueue|delete",
+        "syncQueue|put",
+        "syncQueue|put",
+        "syncQueue|put",
+        "syncQueue|put"
+      ]
+    }
+  },
+  {
+    "baselineSaveCompletionMs": 314.3999999985099,
+    "baseline": {
+      "workerRoundTripsByMethod": {
+        "items": 1
+      },
+      "physicalCommittedTransactions": 1,
+      "committedObjectStoreMutationRequests": 9,
+      "transactionStores": [
+        "dayModes|eventConsistency|eventLists|eventMetadata|executeModeItems|hallDefinitions|hallRouteSettings|mapData|mapRotationSettings|mapViewportSettings|routeSettings|syncQueue"
+      ],
+      "mutations": [
+        "eventLists|delete",
+        "eventLists|delete",
+        "eventLists|put",
+        "eventLists|put",
+        "syncQueue|delete",
+        "syncQueue|put",
+        "syncQueue|put",
+        "syncQueue|put",
+        "syncQueue|put"
+      ]
+    },
+    "responseMs": 7.799999997019768,
+    "operation": "memo",
+    "unchanged": true,
+    "baselineResponseMs": 10.899999998509884,
+    "saveCompletionMs": 316.40000000596046,
+    "current": {
+      "workerRoundTripsByMethod": {
+        "items": 1
+      },
+      "physicalCommittedTransactions": 1,
+      "committedObjectStoreMutationRequests": 9,
+      "transactionStores": [
+        "dayModes|eventConsistency|eventLists|eventMetadata|executeModeItems|hallDefinitions|hallRouteSettings|mapData|mapRotationSettings|mapViewportSettings|routeSettings|syncQueue"
+      ],
+      "mutations": [
+        "eventLists|delete",
+        "eventLists|delete",
+        "eventLists|put",
+        "eventLists|put",
+        "syncQueue|delete",
+        "syncQueue|put",
+        "syncQueue|put",
+        "syncQueue|put",
+        "syncQueue|put"
+      ]
+    }
+  }
+]

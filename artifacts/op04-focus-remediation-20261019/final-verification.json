@@ -1,0 +1,19 @@
+{
+  "preservedUserFiles": 51,
+  "preservedHashesMatch": true,
+  "measuredSourceFiles": 1024,
+  "measuredSourceHashesMatch": true,
+  "distFiles": 32,
+  "distHashesMatch": true,
+  "document": {
+    "newlines": "LF",
+    "path": "docs/user-operation-consistency-op04-focus-results-20261019.md",
+    "replacementCharacters": 0,
+    "encoding": "UTF8 without BOM",
+    "japaneseReread": "valid",
+    "sha256": "321FDF955DAC8A8586CAB07F4F07C86BFC393427E0951E536FF2A9A231D3B192"
+  },
+  "dragPooledAcceptance": true,
+  "dragAllBatchesPassed": false,
+  "head": "993c4a8949332edffd341c2655b867e35b70548c"
+}

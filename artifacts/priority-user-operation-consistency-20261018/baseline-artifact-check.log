@@ -1,0 +1,16 @@
+node:internal/fs/promises:697
+  return new FileHandle(await PromisePrototypeThen(
+                        ^
+
+Error: ENOENT: no such file or directory, open 'C:\Users\blu\AppData\Local\Temp\codex-priority-consistency-20261018\baseline-verifier-root\vercel.json'
+    at async open (node:internal/fs/promises:697:25)
+    at async readFile (node:internal/fs/promises:1348:14)
+    at async readJson (file:///D:/event-shopping-planner-routeplanning-1.9.6.7/scripts/verify-release-a-build.mjs:21:14)
+    at async file:///D:/event-shopping-planner-routeplanning-1.9.6.7/scripts/verify-release-a-build.mjs:215:22 {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\blu\\AppData\\Local\\Temp\\codex-priority-consistency-20261018\\baseline-verifier-root\\vercel.json'
+}
+
+Node.js v24.19.0

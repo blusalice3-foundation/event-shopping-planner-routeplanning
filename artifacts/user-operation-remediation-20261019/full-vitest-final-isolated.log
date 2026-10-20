@@ -1,0 +1,9 @@
+
+ RUN  v4.1.10 D:/esp-op18
+
+
+ Test Files  260 passed | 1 skipped (261)
+      Tests  3087 passed | 88 skipped (3175)
+   Start at  02:43:38
+   Duration  109.82s (transform 13.26s, setup 73.86s, import 44.09s, tests 111.58s, environment 149.90s)
+

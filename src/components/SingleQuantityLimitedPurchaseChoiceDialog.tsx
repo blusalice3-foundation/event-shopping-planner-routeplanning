@@ -1,3 +1,4 @@
+import { useModalFocusBoundary } from "../hooks/useModalFocusBoundary";
 import {
   useEffect,
   useId,
@@ -19,12 +20,26 @@ const stopDialogEvent = (event: SyntheticEvent) => {
   event.nativeEvent.stopImmediatePropagation?.();
 };
 
-export default function SingleQuantityLimitedPurchaseChoiceDialog({
-  isOpen,
+export default function SingleQuantityLimitedPurchaseChoiceDialog(
+  props: SingleQuantityLimitedPurchaseChoiceDialogProps,
+) {
+  if (!props.isOpen) return null;
+  return (
+    <OpenSingleQuantityLimitedPurchaseChoiceDialog
+      onPurchased={props.onPurchased}
+      onLimited={props.onLimited}
+      onCancel={props.onCancel}
+    />
+  );
+}
+
+function OpenSingleQuantityLimitedPurchaseChoiceDialog({
   onPurchased,
   onLimited,
   onCancel,
-}: SingleQuantityLimitedPurchaseChoiceDialogProps) {
+}: Omit<SingleQuantityLimitedPurchaseChoiceDialogProps, "isOpen">) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocusBoundary({ isOpen: true, dialogRef });
   const titleId = useId();
   const descriptionId = useId();
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -32,13 +47,10 @@ export default function SingleQuantityLimitedPurchaseChoiceDialog({
   const purchasedButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
-    if (!isOpen) return;
     purchasedButtonRef.current?.focus();
-  }, [isOpen]);
+  }, []);
 
   useEffect(() => {
-    if (!isOpen) return;
-
     const handleKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
@@ -49,9 +61,7 @@ export default function SingleQuantityLimitedPurchaseChoiceDialog({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, onCancel]);
-
-  if (!isOpen) return null;
+  }, [onCancel]);
 
   const handleDialogKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== "Tab") return;
@@ -80,6 +90,7 @@ export default function SingleQuantityLimitedPurchaseChoiceDialog({
 
   return createPortal(
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -90,6 +101,10 @@ export default function SingleQuantityLimitedPurchaseChoiceDialog({
       onMouseUp={stopDialogEvent}
       onPointerDown={stopDialogEvent}
       onPointerUp={stopDialogEvent}
+      onTouchStart={stopDialogEvent}
+      onTouchMove={stopDialogEvent}
+      onTouchEnd={stopDialogEvent}
+      onTouchCancel={stopDialogEvent}
       onKeyDown={handleDialogKeyDown}
     >
       <div

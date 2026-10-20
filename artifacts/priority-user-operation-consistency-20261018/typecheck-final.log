@@ -1,0 +1,6 @@
+
+> event-shopping-planner@1.0.0 typecheck
+> tsc --noEmit && tsc -p tsconfig.release-tools.json
+
+src/components/FocusMode.tsx(3268,9): error TS17001: JSX elements cannot have multiple attributes with the same name.
+src/components/FocusMode.tsx(3443,9): error TS17001: JSX elements cannot have multiple attributes with the same name.

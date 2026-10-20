@@ -1,0 +1,21 @@
+{
+  "playwrightConfigSha256": "7E04B0FDB3AB7D32E44A26A21C374E24EEF551350D69683D848D3A07805E08A9",
+  "indexSha256": "03B17161A927028FCDD5616EE90F03DE5A6576692165DA88A802460BB993FE00",
+  "browserDirectories": [
+    ".links",
+    "chromium_headless_shell-1234",
+    "chromium-1234",
+    "ffmpeg-1011",
+    "winldd-1007"
+  ],
+  "p95LimitMs": 100,
+  "harnessSha256": "4F5AC824A820BA3A58C325E316C9F3545E14404BB060D150374585D41E98F84F",
+  "commit": "8fc18707f365c9df9ef710e06999f963fe6c72d4",
+  "sourceState": "dirty local candidate",
+  "time": "2026-10-18T18:45:23.9022663+09:00",
+  "minimumSamples": 20,
+  "profiles": 24,
+  "node": "v24.19.0",
+  "medianLimitMs": 55,
+  "npm": "11.19.0"
+}

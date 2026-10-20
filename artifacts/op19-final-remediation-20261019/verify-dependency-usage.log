@@ -1,0 +1,5 @@
+
+> event-shopping-planner@1.0.0 verify:dependency-usage
+> node scripts/verify-direct-dependency-usage.mjs
+
+PASS direct dependency usage: 40 known, 0 unknown, 0 unused; production=347, release-tool=296, test=656, build=17

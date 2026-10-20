@@ -4,7 +4,7 @@ import type {
 } from "./ApplicationSnapshotCommitPort";
 import { bulkImportFailureStatus } from "../../utils/importOutcome";
 import { recordEntry } from "../../utils/ownRecord";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import type { BulkImportResult } from "../../types/import";
 import type {
   EventMetadata,
@@ -28,8 +28,14 @@ import {
   type PendingEventUpdate,
   type SpreadsheetSource,
 } from "../../features/events/updateFlow";
-import { settleEventUpdatePreviewIfCurrent } from "../../features/events/sourceSwitchPreview";
 import type { PendingDuplicateEventImport } from "../state/appOverlayTypes";
+import type { AppOverlayOpenReceipt } from "../state/useAppOverlayController";
+import {
+  createEventUpdateOperationRegistry,
+  type EventUpdateOperation,
+  type EventUpdateUrlDraft,
+  type EventUpdateOperationRegistry,
+} from "./eventUpdateOperation";
 
 export interface MutableEventUpdateValue<T> {
   current: T;
@@ -42,6 +48,7 @@ export interface EventUpdateStatePort {
   readonly pendingDuplicateEvent: PendingDuplicateEventImport | null;
   readonly pendingEventUpdate: PendingEventUpdate | null;
   readonly pendingUpdateEventName: string | null;
+  readonly eventUpdateOperationsRef?: MutableEventUpdateValue<EventUpdateOperationRegistry>;
   readonly eventListsRef: MutableEventUpdateValue<
     Record<string, ShoppingItem[]>
   >;
@@ -57,6 +64,7 @@ export interface EventUpdateStatePort {
   readonly eventUpdatePreviewEpochRef: MutableEventUpdateValue<number>;
 }
 
+type OpenReceiptCallback = (receipt: AppOverlayOpenReceipt) => void;
 export interface EventUpdateActionPort {
   applyBulkAdd(
     eventName: string,
@@ -68,10 +76,16 @@ export interface EventUpdateActionPort {
     assertCurrent: ApplicationSnapshotGuard,
     context: ApplicationSnapshotCommitContext,
   ): Promise<boolean>;
-  openEventUpdate(pending: PendingEventUpdate): void;
-  openUrlUpdate(eventName: string): void;
-  closeEventOverlay(): void;
-  confirmEventOverlay(): void;
+  openEventUpdate(
+    pending: PendingEventUpdate,
+    onReceipt?: OpenReceiptCallback,
+  ): string | void;
+  openUrlUpdate(
+    eventName: string,
+    onReceipt?: OpenReceiptCallback,
+  ): string | void;
+  closeEventOverlay(requestId?: string): void;
+  confirmEventOverlay(requestId?: string): void;
 }
 
 export interface EventUpdateEffectPort {
@@ -86,22 +100,33 @@ export interface EventUpdateCommandPorts {
 }
 
 export interface EventUpdateCommands {
+  readonly isEventUpdateSaving: boolean;
+  readonly currentUpdateOperationId: string | undefined;
+  readonly currentUpdateUrlDraft: EventUpdateUrlDraft | undefined;
+  finishUpdateOperation(
+    updateOperationId: string,
+    result: BulkImportResult,
+  ): void;
+  invalidateEventUpdateForEvent(eventName: string): void;
   handleUpdateEvent(eventName: string): Promise<void>;
   handleDuplicateEventResolution(
     resolution: DuplicateEventResolution,
   ): Promise<void>;
-  handleDuplicateEventCancel(): void;
-  handleCancelUpdate(): void;
+  handleDuplicateEventCancel(expectedOperationId?: string): boolean;
+  handleCancelUpdate(expectedOperationId?: string): boolean;
+  handleUrlUpdateCancel(expectedOperationId?: string): boolean;
   handleConfirmUpdate(options: EventUpdateApplyOptions): Promise<void>;
-  handleUrlUpdate(newUrl: string, sheetName: string): Promise<void>;
+  handleUrlUpdate(
+    newUrl: string,
+    sheetName: string,
+    expectedOperationId?: string,
+  ): Promise<void>;
 }
 
-interface EventUpdatePreviewRequest {
-  readonly kind: PendingEventUpdate["kind"];
-  readonly eventName: string;
-  readonly source: SpreadsheetSource;
-  readonly onError: (error: unknown) => void;
-}
+const savingNotice =
+  "アイテム更新を保存中です。保留中の保存を再試行または取り消してから、次の更新を開始してください。";
+const pendingSaveNotice =
+  "先行する未保存の操作を再試行または取り消してから、この確認画面でもう一度更新してください。";
 
 export const useEventUpdateCommands = ({
   state,
@@ -128,421 +153,585 @@ export const useEventUpdateCommands = ({
     confirmEventOverlay,
   } = actions;
   const { notify, reportError } = effects;
-  const importCompletion =
-    useRef<PendingDuplicateEventImport["complete"]>(undefined);
-  const savingImport = useRef(false);
-  const finishImport = useCallback(
-    (result: BulkImportResult) => {
-      const complete =
-        importCompletion.current ??
-        pendingEventUpdate?.onImportComplete ??
-        pendingDuplicateEvent?.complete;
-      complete?.(result);
-      importCompletion.current = undefined;
+  const localRegistry = useRef<EventUpdateOperationRegistry | null>(null);
+  if (!localRegistry.current)
+    localRegistry.current = createEventUpdateOperationRegistry();
+  const registry =
+    state.eventUpdateOperationsRef?.current ?? localRegistry.current;
+  const isEventUpdateSaving = useSyncExternalStore(
+    registry.subscribe,
+    registry.isSaving,
+    registry.isSaving,
+  );
+
+  const currentUpdateOperationId = useSyncExternalStore(
+    registry.subscribe,
+    () => registry.current?.id,
+    () => undefined,
+  );
+
+  const currentUpdateUrlDraft = useSyncExternalStore(
+    registry.subscribe,
+    () => registry.current?.urlDraft,
+    () => undefined,
+  );
+
+  registry.onFinish = (operation, result) => {
+    eventUpdatePreviewEpochRef.current += 1;
+    pendingEventUpdateBaseItemsRef.current = null;
+    if (!operation.requestId && !operation.ownsUntrackedOverlay) return;
+    if (result.status === "saved") confirmEventOverlay(operation.requestId);
+    else closeEventOverlay(operation.requestId);
+  };
+  const finishUpdateOperation = useCallback(
+    (id: string, result: BulkImportResult) => registry.finish(id, result),
+    [registry],
+  );
+  useEffect(
+    () => () => {
+      const operation = registry.current;
+      if (operation && operation.phase !== "saving")
+        registry.finish(operation.id, { status: "invalidated" });
     },
-    [pendingEventUpdate?.onImportComplete, pendingDuplicateEvent?.complete],
+    [registry],
+  );
+
+  const owns = useCallback(
+    (operation: EventUpdateOperation) =>
+      registry.current === operation && operation.phase !== "finished",
+    [registry],
+  );
+  const inputIsCurrent = useCallback(
+    (operation: EventUpdateOperation) =>
+      owns(operation) &&
+      operation.isCurrentInput?.() !== false &&
+      (operation.eventGeneration === undefined ||
+        operation.eventGeneration ===
+          getEventGeneration?.(operation.eventName)),
+    [getEventGeneration, owns],
+  );
+  const invalidateEventUpdateForEvent = useCallback(
+    (eventName: string) => {
+      const operation = registry.current;
+      // A committed save applies its own source changes before its Promise resolves.
+      if (operation?.eventName === eventName && operation.phase !== "saving")
+        finishUpdateOperation(operation.id, { status: "invalidated" });
+    },
+    [finishUpdateOperation, registry],
+  );
+
+  const startOperation = useCallback(
+    (
+      eventName: string,
+      complete?: (result: BulkImportResult) => void,
+      isCurrentInput?: () => boolean,
+      eventGeneration?: number,
+    ) => {
+      const operation = registry.start({
+        eventName,
+        complete,
+        isCurrentInput,
+        eventGeneration: eventGeneration ?? getEventGeneration?.(eventName),
+      });
+      if (!operation) notify(savingNotice);
+      return operation;
+    },
+    [getEventGeneration, notify, registry],
+  );
+
+  const receiptFor = useCallback(
+    (
+      operation: EventUpdateOperation,
+      generation: number,
+      phase: "url" | "confirmation",
+    ): OpenReceiptCallback =>
+      (receipt) => {
+        if (
+          !owns(operation) ||
+          operation.acquisitionGeneration !== generation ||
+          operation.phase !== phase ||
+          operation.requestId !== receipt.requestId
+        )
+          return;
+        if (!inputIsCurrent(operation) || !receipt.accepted)
+          finishUpdateOperation(operation.id, { status: "invalidated" });
+      },
+    [finishUpdateOperation, inputIsCurrent, owns],
+  );
+
+  const showUrl = useCallback(
+    (operation: EventUpdateOperation) => {
+      if (!inputIsCurrent(operation)) {
+        finishUpdateOperation(operation.id, { status: "invalidated" });
+        return;
+      }
+      registry.changePhase(operation, "url");
+      operation.requestId =
+        openUrlUpdate(
+          operation.eventName,
+          receiptFor(operation, operation.acquisitionGeneration, "url"),
+        ) || undefined;
+      operation.ownsUntrackedOverlay = !operation.requestId;
+    },
+    [
+      finishUpdateOperation,
+      inputIsCurrent,
+      openUrlUpdate,
+      receiptFor,
+      registry,
+    ],
   );
 
   const previewEventUpdate = useCallback(
-    async ({
-      kind,
-      eventName,
-      source,
-      onError,
-    }: EventUpdatePreviewRequest): Promise<void> => {
-      eventUpdatePreviewEpochRef.current += 1;
-      closeEventOverlay();
+    async (
+      operation: EventUpdateOperation,
+      kind: PendingEventUpdate["kind"],
+      source: SpreadsheetSource,
+      retryUrl: boolean,
+    ): Promise<void> => {
+      if (!inputIsCurrent(operation)) {
+        finishUpdateOperation(operation.id, { status: "invalidated" });
+        return;
+      }
+      if (operation.requestId) closeEventOverlay(operation.requestId);
+      else if (operation.ownsUntrackedOverlay) closeEventOverlay();
+      operation.requestId = undefined;
+      operation.ownsUntrackedOverlay = false;
+      registry.changePhase(operation, "loading");
+      operation.acquisitionGeneration += 1;
+      const generation = operation.acquisitionGeneration;
+      const requestEpoch = ++eventUpdatePreviewEpochRef.current;
       pendingEventUpdateBaseItemsRef.current = null;
-
-      const latestItems = recordEntry(eventListsRef.current, eventName);
+      const latestItems = recordEntry(
+        eventListsRef.current,
+        operation.eventName,
+      );
       if (!latestItems) {
-        finishImport({ status: "invalidated" });
+        finishUpdateOperation(operation.id, { status: "invalidated" });
         return;
       }
       const currentItems = structuredClone(latestItems);
-      const requestEpoch = eventUpdatePreviewEpochRef.current;
-      const eventGeneration = getEventGeneration?.(eventName);
       const baseSource = resolveSpreadsheetSource(
-        recordEntry(eventMetadataRef.current, eventName),
+        recordEntry(eventMetadataRef.current, operation.eventName),
       );
+      operation.baseItems = currentItems;
+      operation.baseSource = baseSource;
+      const stillAcquiring = () =>
+        owns(operation) &&
+        operation.acquisitionGeneration === generation &&
+        operation.phase === "loading";
       const isCurrentRequest = () =>
+        stillAcquiring() &&
+        inputIsCurrent(operation) &&
         eventUpdatePreviewEpochRef.current === requestEpoch &&
-        getEventGeneration?.(eventName) === eventGeneration &&
         eventUpdateSourceMatches(
-          recordEntry(eventMetadataRef.current, eventName),
+          recordEntry(eventMetadataRef.current, operation.eventName),
           baseSource,
         ) &&
         eventUpdateItemsMatch(
-          recordEntry(eventListsRef.current, eventName),
+          recordEntry(eventListsRef.current, operation.eventName),
           currentItems,
         );
-
-      const previewResult = await settleEventUpdatePreviewIfCurrent({
-        loadPreview: () =>
-          buildEventUpdateDiffFromSpreadsheet(currentItems, source),
-        isCurrent: isCurrentRequest,
-        commit: (updateDiff) => {
-          pendingEventUpdateBaseItemsRef.current = currentItems;
+      try {
+        const updateDiff = await buildEventUpdateDiffFromSpreadsheet(
+          currentItems,
+          source,
+        );
+        // A late response never completes a newer acquisition or a replacement owner.
+        if (!stillAcquiring()) return;
+        if (!isCurrentRequest()) {
+          finishUpdateOperation(operation.id, { status: "invalidated" });
+          return;
+        }
+        const common = {
+          eventName: operation.eventName,
+          diff: updateDiff,
+          baseSource,
+          updateOperationId: operation.id,
+          reviewedSource: source,
+          ...(operation.eventGeneration === undefined
+            ? {}
+            : { eventGeneration: operation.eventGeneration }),
+          ...(operation.complete
+            ? { onImportComplete: operation.complete }
+            : {}),
+        };
+        const pending: PendingEventUpdate =
+          kind === "source-switch"
+            ? { ...common, kind, nextSource: source }
+            : { ...common, kind };
+        operation.pending = pending;
+        pendingEventUpdateBaseItemsRef.current = currentItems;
+        registry.changePhase(operation, "confirmation");
+        operation.requestId =
           openEventUpdate(
-            kind === "source-switch"
-              ? {
-                  kind,
-                  eventName,
-                  diff: updateDiff,
-                  baseSource,
-                  ...(eventGeneration === undefined ? {} : { eventGeneration }),
-                  ...(importCompletion.current
-                    ? { onImportComplete: importCompletion.current }
-                    : {}),
-                  nextSource: source,
-                }
-              : {
-                  kind,
-                  eventName,
-                  diff: updateDiff,
-                  baseSource,
-                  ...(eventGeneration === undefined ? {} : { eventGeneration }),
-                  ...(importCompletion.current
-                    ? { onImportComplete: importCompletion.current }
-                    : {}),
-                },
+            pending,
+            receiptFor(operation, generation, "confirmation"),
+          ) || undefined;
+        operation.ownsUntrackedOverlay = !operation.requestId;
+      } catch (error) {
+        if (!stillAcquiring()) return;
+        if (!isCurrentRequest()) {
+          finishUpdateOperation(operation.id, { status: "invalidated" });
+          return;
+        }
+        if (error instanceof Error) notify(error.message);
+        reportError(
+          kind === "source-switch" && !retryUrl
+            ? "Spreadsheet source switch preview failed (preview-failed)."
+            : "Spreadsheet update preview failed (preview-failed).",
+        );
+        if (retryUrl) showUrl(operation);
+        else {
+          notify(
+            "新しい更新元の内容を確認できなかったため、更新元も品目も変更していません。",
           );
-        },
-        onError: (error) => {
-          if (error instanceof Error) notify(error.message);
-          onError(error);
-        },
-      });
-      if (previewResult !== "committed")
-        finishImport({
-          status: previewResult === "stale" ? "invalidated" : "failed",
-        });
+          finishUpdateOperation(operation.id, { status: "failed" });
+        }
+      }
     },
     [
-      getEventGeneration,
-      finishImport,
-      notify,
+      closeEventOverlay,
       eventListsRef,
       eventMetadataRef,
       eventUpdatePreviewEpochRef,
-      closeEventOverlay,
+      finishUpdateOperation,
+      inputIsCurrent,
+      notify,
       openEventUpdate,
+      owns,
       pendingEventUpdateBaseItemsRef,
+      receiptFor,
+      registry,
+      reportError,
+      showUrl,
     ],
   );
 
   const handleUpdateEvent = useCallback(
     async (eventName: string): Promise<void> => {
+      const operation = startOperation(eventName);
+      if (!operation) return;
       const source = resolveSpreadsheetSource(
         recordEntry(eventMetadataRef.current, eventName),
       );
       if (!source) {
         eventUpdatePreviewEpochRef.current += 1;
-        openUrlUpdate(eventName);
-        return;
-      }
-
-      await previewEventUpdate({
-        kind: "items-only",
-        eventName,
-        source,
-        onError: () => {
-          reportError("Spreadsheet update preview failed (preview-failed).");
-          openUrlUpdate(eventName);
-        },
-      });
+        showUrl(operation);
+      } else await previewEventUpdate(operation, "items-only", source, true);
     },
     [
       eventMetadataRef,
       eventUpdatePreviewEpochRef,
-      openUrlUpdate,
       previewEventUpdate,
-      reportError,
+      showUrl,
+      startOperation,
     ],
+  );
+
+  const duplicateOperation = useCallback(
+    (pending: PendingDuplicateEventImport) => {
+      const current = registry.current;
+      if (pending.updateOperationId)
+        return current?.id === pending.updateOperationId ? current : null;
+      if (
+        current &&
+        current.complete === pending.complete &&
+        current.eventName === pending.analysis.eventName
+      )
+        return current;
+      const operation = startOperation(
+        pending.analysis.eventName,
+        pending.complete,
+        pending.metadata?.request?.isCurrent,
+        pending.eventGeneration,
+      );
+      if (operation) operation.ownsUntrackedOverlay = true;
+      return operation;
+    },
+    [registry, startOperation],
   );
 
   const handleDuplicateEventResolution = useCallback(
     async (resolution: DuplicateEventResolution): Promise<void> => {
+      if (!pendingDuplicateEvent || registry.isSaving()) return;
       const pending = pendingDuplicateEvent;
-      if (savingImport.current) return;
-      if (!pending) return;
-      if (pending.metadata?.request?.isCurrent?.() === false) {
-        pending.complete?.({ status: "invalidated" });
-        closeEventOverlay();
-        return;
-      }
+      const operation = duplicateOperation(pending);
+      if (!operation || operation.phase !== "selection") return;
       if (
-        pending.eventGeneration !== undefined &&
-        pending.eventGeneration !==
-          getEventGeneration?.(pending.analysis.eventName)
-      ) {
-        pending.complete?.({ status: "invalidated" });
-        closeEventOverlay();
-        notify(
-          "対象イベントが変更されたため取込みを終了しました。入力を確認して再試行してください。",
-        );
-        return;
-      }
-      if (
-        (resolution.action === "open-update" ||
+        !inputIsCurrent(operation) ||
+        ((resolution.action === "open-update" ||
           resolution.action === "switch-source") &&
-        !eventUpdateSourceMatches(
-          recordEntry(eventMetadataRef.current, pending.analysis.eventName),
-          pending.analysis.existingSource,
-        )
+          !eventUpdateSourceMatches(
+            recordEntry(eventMetadataRef.current, pending.analysis.eventName),
+            pending.analysis.existingSource,
+          ))
       ) {
-        pending.complete?.({ status: "invalidated" });
-        closeEventOverlay();
+        finishUpdateOperation(operation.id, { status: "invalidated" });
         notify(new EventUpdateInvalidatedError().message);
         return;
       }
-      importCompletion.current = pending.complete;
-      eventUpdatePreviewEpochRef.current += 1;
-      closeEventOverlay();
-
-      if (resolution.action === "create-alias") {
-        const nextMetadata: BulkAddMetadata | undefined = resolution.source
-          ? {
-              ...pending.metadata,
-              url: resolution.source.url,
-              sheetName: resolution.source.sheetName,
-              source: "spreadsheet",
-            }
-          : pending.metadata;
-        savingImport.current = true;
-        try {
-          finishImport(
-            await applyBulkAdd(
-              resolution.eventName,
-              resolution.items,
-              nextMetadata,
-            ),
-          );
-        } catch {
-          finishImport({ status: "failed" });
-        } finally {
-          savingImport.current = false;
-        }
+      if (
+        resolution.action === "open-update" ||
+        resolution.action === "switch-source"
+      ) {
+        await previewEventUpdate(
+          operation,
+          resolution.action === "open-update" ? "items-only" : "source-switch",
+          resolution.source,
+          resolution.action === "open-update",
+        );
         return;
       }
-
-      if (resolution.action === "append-fixed-items") {
-        if (resolution.items.length === 0) {
-          finishImport({ status: "no-additions" });
-          notify(
-            `追加できる新しい品目はありません。完全一致の${resolution.duplicateItemCount}件は追加対象から除かれました。`,
-          );
-        } else {
-          savingImport.current = true;
-          try {
-            finishImport(
-              await applyBulkAdd(resolution.eventName, resolution.items, {
-                source: "app",
-                request: pending.metadata?.request,
-              }),
-            );
-          } catch {
-            finishImport({ status: "failed" });
-          } finally {
-            savingImport.current = false;
-          }
-        }
+      closeEventOverlay(operation.requestId);
+      if (
+        resolution.action === "append-fixed-items" &&
+        !resolution.items.length
+      ) {
+        finishUpdateOperation(operation.id, { status: "no-additions" });
+        notify(
+          `追加できる新しい品目はありません。完全一致の${resolution.duplicateItemCount}件は追加対象から除かれました。`,
+        );
         return;
       }
-
-      if (resolution.action === "open-update") {
-        await previewEventUpdate({
-          kind: "items-only",
-          eventName: resolution.eventName,
-          source: {
-            url: resolution.source.url,
-            sheetName: resolution.source.sheetName,
-          },
-          onError: () => {
-            reportError("Spreadsheet update preview failed (preview-failed).");
-            openUrlUpdate(resolution.eventName);
-          },
-        });
-        return;
+      const metadata =
+        resolution.action === "create-alias"
+          ? resolution.source
+            ? {
+                ...pending.metadata,
+                url: resolution.source.url,
+                sheetName: resolution.source.sheetName,
+                source: "spreadsheet" as const,
+              }
+            : pending.metadata
+          : { source: "app" as const, request: pending.metadata?.request };
+      registry.changePhase(operation, "saving");
+      try {
+        finishUpdateOperation(
+          operation.id,
+          await applyBulkAdd(resolution.eventName, resolution.items, metadata),
+        );
+      } catch {
+        finishUpdateOperation(operation.id, { status: "failed" });
       }
-
-      await previewEventUpdate({
-        kind: "source-switch",
-        eventName: resolution.eventName,
-        source: {
-          url: resolution.source.url,
-          sheetName: resolution.source.sheetName,
-        },
-        onError: () => {
-          reportError(
-            "Spreadsheet source switch preview failed (preview-failed).",
-          );
-          notify(
-            "新しい更新元の内容を確認できなかったため、更新元も品目も変更していません。",
-          );
-        },
-      });
     },
     [
       applyBulkAdd,
-      finishImport,
-      getEventGeneration,
       closeEventOverlay,
-      eventUpdatePreviewEpochRef,
-      notify,
-      openUrlUpdate,
-      pendingDuplicateEvent,
+      duplicateOperation,
       eventMetadataRef,
+      finishUpdateOperation,
+      inputIsCurrent,
+      notify,
+      pendingDuplicateEvent,
       previewEventUpdate,
-      reportError,
+      registry,
     ],
   );
 
-  const handleDuplicateEventCancel = useCallback(() => {
-    if (savingImport.current) return;
+  const operationForConfirmation = useCallback(() => {
+    if (!pendingEventUpdate) return null;
+    const current = registry.current;
+    if (pendingEventUpdate.updateOperationId)
+      return current?.id === pendingEventUpdate.updateOperationId
+        ? current
+        : null;
+    if (current?.pending === pendingEventUpdate) return current;
+    if (registry.isSaving()) return null;
+    const operation = startOperation(
+      pendingEventUpdate.eventName,
+      pendingEventUpdate.onImportComplete,
+      undefined,
+      pendingEventUpdate.eventGeneration,
+    );
+    if (operation) {
+      operation.baseItems = pendingEventUpdateBaseItemsRef.current;
+      operation.baseSource = pendingEventUpdate.baseSource;
+      operation.pending = pendingEventUpdate;
+      operation.ownsUntrackedOverlay = true;
+      registry.changePhase(operation, "confirmation");
+    }
+    return operation;
+  }, [
+    pendingEventUpdate,
+    pendingEventUpdateBaseItemsRef,
+    registry,
+    startOperation,
+  ]);
 
-    finishImport({ status: "cancelled" });
-    eventUpdatePreviewEpochRef.current += 1;
-    closeEventOverlay();
-  }, [closeEventOverlay, eventUpdatePreviewEpochRef, finishImport]);
-
-  const handleCancelUpdate = useCallback(() => {
-    if (savingImport.current) return;
-    finishImport({ status: "cancelled" });
-    eventUpdatePreviewEpochRef.current += 1;
-    closeEventOverlay();
-  }, [closeEventOverlay, eventUpdatePreviewEpochRef, finishImport]);
+  const handleCancelUpdate = useCallback(
+    (expectedOperationId?: string): boolean => {
+      if (registry.isSaving()) return false;
+      if (expectedOperationId && registry.current?.id !== expectedOperationId)
+        return false;
+      const operation =
+        registry.current ??
+        (pendingDuplicateEvent
+          ? duplicateOperation(pendingDuplicateEvent)
+          : operationForConfirmation());
+      if (operation)
+        finishUpdateOperation(operation.id, { status: "cancelled" });
+      else closeEventOverlay();
+      return true;
+    },
+    [
+      closeEventOverlay,
+      duplicateOperation,
+      finishUpdateOperation,
+      operationForConfirmation,
+      pendingDuplicateEvent,
+      registry,
+    ],
+  );
 
   const handleConfirmUpdate = useCallback(
     async (options: EventUpdateApplyOptions): Promise<void> => {
-      if (!pendingEventUpdate || savingImport.current) return;
-
-      const generationMatches =
-        pendingEventUpdate.eventGeneration === undefined ||
-        pendingEventUpdate.eventGeneration ===
-          getEventGeneration?.(pendingEventUpdate.eventName);
-      const nextState = generationMatches
+      if (registry.isSaving()) return;
+      const operation = operationForConfirmation();
+      const pending = operation?.pending;
+      if (!operation || !pending || operation.phase !== "confirmation") return;
+      const nextState = inputIsCurrent(operation)
         ? applyPendingEventUpdate({
             state: {
               eventLists: eventListsRef.current,
               eventMetadata: eventMetadataRef.current,
               executeModeItems: executeModeItemsRef.current,
             },
-            pending: pendingEventUpdate,
-            baseItems: pendingEventUpdateBaseItemsRef.current,
+            pending,
+            baseItems: operation.baseItems,
             options,
           })
         : null;
       if (!nextState) {
-        finishImport({ status: "invalidated" });
-        closeEventOverlay();
+        finishUpdateOperation(operation.id, { status: "invalidated" });
         notify(new EventUpdateInvalidatedError().message);
         return;
       }
-
-      savingImport.current = true;
+      registry.changePhase(operation, "saving");
       try {
-        if (
-          !(await commitEventUpdateState(
-            nextState,
-            (snapshot) => {
-              if (
-                !eventUpdateSourceMatches(
-                  recordEntry(
-                    snapshot.eventMetadata,
-                    pendingEventUpdate.eventName,
-                  ) as EventMetadata | undefined,
-                  pendingEventUpdate.baseSource,
-                )
+        const committed = await commitEventUpdateState(
+          nextState,
+          (snapshot) => {
+            if (
+              !inputIsCurrent(operation) ||
+              !eventUpdateSourceMatches(
+                recordEntry(snapshot.eventMetadata, pending.eventName) as
+                  | EventMetadata
+                  | undefined,
+                pending.baseSource,
               )
-                throw new EventUpdateInvalidatedError();
-            },
-            { confirm: false },
-          ))
-        ) {
-          finishImport({ status: "failed" });
+            )
+              throw new EventUpdateInvalidatedError();
+          },
+          { confirm: false },
+        );
+        if (!committed) {
+          registry.changePhase(operation, "confirmation");
+          notify(
+            "イベントを保存できませんでした。確認内容を保持しています。もう一度更新してください。",
+          );
           return;
         }
       } catch (error) {
+        if (!owns(operation)) return;
         if (error instanceof EventUpdateInvalidatedError) {
-          finishImport({ status: "invalidated" });
-          closeEventOverlay();
+          finishUpdateOperation(operation.id, { status: "invalidated" });
           notify(error.message);
           return;
         }
+        if (
+          error instanceof Error &&
+          error.name === "PendingAcceptedMutation"
+        ) {
+          registry.changePhase(operation, "confirmation");
+          notify(pendingSaveNotice);
+          return;
+        }
         const status = bulkImportFailureStatus(error);
-        finishImport({ status });
-        if (status === "unknown" || status === "committed-ui-failed") {
-          closeEventOverlay();
+        if (status === "failed" || status === "cancelled") {
+          registry.changePhase(operation, "confirmation");
+          if (status === "failed")
+            notify(
+              "イベントを保存できませんでした。確認内容を保持しています。もう一度更新してください。",
+            );
+        } else {
+          finishUpdateOperation(operation.id, { status });
           notify(
             "保存結果の確認が必要です。再取込みせず、画面を再読み込みして保存内容を確認してください。",
           );
-        } else if (status === "failed")
-          notify(
-            "イベントを保存できませんでした。表示内容は変更されていません。",
-          );
+        }
         return;
-      } finally {
-        savingImport.current = false;
       }
-      finishImport({ status: "saved" });
-      pendingEventUpdateBaseItemsRef.current = null;
-      confirmEventOverlay();
+      if (!owns(operation)) return;
+      finishUpdateOperation(operation.id, { status: "saved" });
       notify("アイテムを更新しました。");
     },
     [
       commitEventUpdateState,
-      finishImport,
-      closeEventOverlay,
-      confirmEventOverlay,
       eventListsRef,
       eventMetadataRef,
       executeModeItemsRef,
+      finishUpdateOperation,
+      inputIsCurrent,
       notify,
-      pendingEventUpdate,
-      getEventGeneration,
-      pendingEventUpdateBaseItemsRef,
+      operationForConfirmation,
+      owns,
+      registry,
     ],
   );
 
   const handleUrlUpdate = useCallback(
-    async (newUrl: string, sheetName: string): Promise<void> => {
-      closeEventOverlay();
-      if (!pendingUpdateEventName) return;
-
-      const eventName = pendingUpdateEventName;
-      const currentMetadata = recordEntry(eventMetadataRef.current, eventName);
-      const normalizedSheetName =
-        sheetName || currentMetadata?.spreadsheetSheetName || "";
-
-      await previewEventUpdate({
-        kind: "source-switch",
-        eventName,
-        source: {
-          url: newUrl,
-          sheetName: normalizedSheetName,
-        },
-        onError: () => {
-          reportError("Spreadsheet update preview failed (preview-failed).");
-          openUrlUpdate(eventName);
-        },
-      });
+    async (
+      newUrl: string,
+      sheetName: string,
+      expectedOperationId?: string,
+    ): Promise<void> => {
+      if (expectedOperationId && registry.current?.id !== expectedOperationId)
+        return;
+      if (registry.isSaving()) {
+        notify(savingNotice);
+        return;
+      }
+      const operation =
+        registry.current ??
+        (pendingUpdateEventName
+          ? startOperation(pendingUpdateEventName)
+          : null);
+      if (
+        !operation ||
+        (operation.phase !== "url" &&
+          operation.phase !== "selection" &&
+          operation.phase !== "loading")
+      )
+        return;
+      if (!registry.setUrlDraft(operation, newUrl, sheetName)) return;
+      await previewEventUpdate(
+        operation,
+        "source-switch",
+        { url: newUrl, sheetName },
+        true,
+      );
     },
     [
-      eventMetadataRef,
-      closeEventOverlay,
-      openUrlUpdate,
+      notify,
       pendingUpdateEventName,
       previewEventUpdate,
-      reportError,
+      registry,
+      startOperation,
     ],
   );
 
   return {
+    isEventUpdateSaving,
+    currentUpdateOperationId,
+    currentUpdateUrlDraft,
+    finishUpdateOperation,
+    invalidateEventUpdateForEvent,
     handleUpdateEvent,
     handleDuplicateEventResolution,
-    handleDuplicateEventCancel,
+    handleDuplicateEventCancel: handleCancelUpdate,
     handleCancelUpdate,
+    handleUrlUpdateCancel: handleCancelUpdate,
     handleConfirmUpdate,
     handleUrlUpdate,
   };

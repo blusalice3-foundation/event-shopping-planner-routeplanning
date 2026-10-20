@@ -1,0 +1,15 @@
+
+Running 41 tests using 1 worker
+
+(node:33048) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  1 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:646:3 › execution group boundary and durable order: native (1.7s)
+  ok  2 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:678:5 › candidate null keeps existing save and reload rules: native (2.1s)
+  ok  3 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:678:5 › candidate asc keeps existing save and reload rules: native (2.3s)
+  ok  4 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:678:5 › candidate desc keeps existing save and reload rules: native (3.3s)
+  ok  5 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:646:3 › execution group boundary and durable order: touch (1.8s)
+  ok  6 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:678:5 › candidate null keeps existing save and reload rules: touch (2.3s)
+  ok  7 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:678:5 › candidate asc keeps existing save and reload rules: touch (2.4s)
+  ok  8 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:678:5 › candidate desc keeps existing save and reload rules: touch (2.4s)
+  ok  9 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:788:5 › mixed insertion and multiple durable merges: native grouping true (1.7s)
+  ok 10 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:818:5 › offscreen merge follows its own destination: native grouping true (2.1s)

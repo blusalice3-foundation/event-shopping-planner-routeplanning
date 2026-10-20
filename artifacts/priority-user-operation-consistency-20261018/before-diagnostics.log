@@ -1,0 +1,83 @@
+[WebServer] (node:27548) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 8 tests using 1 worker
+
+(node:31480) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 [chromium] › tests\browser\priority-operation-diagnostics.spec.ts:221:3 › priority dialog and scope operations 150 @priority-operation-performance (11.8s)
+(node:25144) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  2 [chromium] › tests\browser\priority-operation-diagnostics.spec.ts:221:3 › priority dialog and scope operations 500 @priority-operation-performance (11.9s)
+(node:31960) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 3 [chromium] › tests\browser\priority-relay-diagnostics.spec.ts:208:5 › popup map relay invalidation 150 @priority-operation-performance (5.7s)
+  ok 4 [chromium] › tests\browser\priority-relay-diagnostics.spec.ts:208:5 › popup preview relay invalidation 150 @priority-operation-performance (5.5s)
+  ok 5 [chromium] › tests\browser\priority-relay-diagnostics.spec.ts:208:5 › popup waiting relay invalidation 150 @priority-operation-performance (7.3s)
+  ok 6 [chromium] › tests\browser\priority-relay-diagnostics.spec.ts:208:5 › popup map relay invalidation 500 @priority-operation-performance (5.4s)
+  ok 7 [chromium] › tests\browser\priority-relay-diagnostics.spec.ts:208:5 › popup preview relay invalidation 500 @priority-operation-performance (5.3s)
+  ok 8 [chromium] › tests\browser\priority-relay-diagnostics.spec.ts:208:5 › popup waiting relay invalidation 500 @priority-operation-performance (5.8s)
+
+
+  1) [chromium] › tests\browser\priority-operation-diagnostics.spec.ts:221:3 › priority dialog and scope operations 150 @priority-operation-performance 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('dialog', { name: '購入済として保存しますか？', exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('dialog', { name: '購入済として保存しますか？', exact: true })
+
+
+      315 |           .fill("5");
+      316 |         await main.getByRole("button", { name: "保存", exact: true }).click();
+    > 317 |         await expect(confirmation).toBeVisible();
+          |                                    ^
+      318 |         const started = await page.evaluate(() => performance.now());
+      319 |         add(
+      320 |           timings,
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-operation-diagnostics.spec.ts:317:36
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-diagnostics\priority-operation-diagnos-412f7-ority-operation-performance-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\before-diagnostics\priority-operation-diagnos-412f7-ority-operation-performance-chromium\error-context.md
+
+  2) [chromium] › tests\browser\priority-operation-diagnostics.spec.ts:221:3 › priority dialog and scope operations 500 @priority-operation-performance 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('dialog', { name: '購入済として保存しますか？', exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('dialog', { name: '購入済として保存しますか？', exact: true })
+
+
+      315 |           .fill("5");
+      316 |         await main.getByRole("button", { name: "保存", exact: true }).click();
+    > 317 |         await expect(confirmation).toBeVisible();
+          |                                    ^
+      318 |         const started = await page.evaluate(() => performance.now());
+      319 |         add(
+      320 |           timings,
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-operation-diagnostics.spec.ts:317:36
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-diagnostics\priority-operation-diagnos-a6047-ority-operation-performance-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\before-diagnostics\priority-operation-diagnos-a6047-ority-operation-performance-chromium\error-context.md
+
+  2 failed
+    [chromium] › tests\browser\priority-operation-diagnostics.spec.ts:221:3 › priority dialog and scope operations 150 @priority-operation-performance 
+    [chromium] › tests\browser\priority-operation-diagnostics.spec.ts:221:3 › priority dialog and scope operations 500 @priority-operation-performance 
+  6 passed (1.0m)

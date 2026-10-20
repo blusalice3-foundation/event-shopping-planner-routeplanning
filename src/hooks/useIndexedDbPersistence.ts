@@ -1,3 +1,7 @@
+import {
+  isPersistenceWriteStopReason,
+  type PersistenceWriteStopReason,
+} from "../app/ports/PersistenceCommandPort";
 import { normalizeSnapshotItemOptionalFields } from "../utils/itemOptionalFields";
 import { jsonEqual } from "../utils/semanticEquality";
 import type { EventConsistencyStore } from "../types/consistency";
@@ -427,6 +431,7 @@ export function useIndexedDbPersistence({
   const [failureDetails, setFailureDetails] = useState<
     PersistenceFailureDetail[]
   >([]);
+  const writeStopReasonRef = useRef<PersistenceWriteStopReason>();
   const isSavingRef = useRef(false);
   const saveRequestedRef = useRef(false);
   const latestValuesRef = useRef<PersistedStateValues>(values);
@@ -438,7 +443,9 @@ export function useIndexedDbPersistence({
   const recoveryAdoptionInProgressRef = useRef(false);
   const isMountedRef = useRef(false);
   const initializationPromiseRef = useRef<Promise<void> | null>(null);
-  const saveIdleWaitersRef = useRef<Array<() => void>>([]);
+  const saveIdleWaitersRef = useRef<
+    Array<{ resolve(): void; reject(reason: unknown): void }>
+  >([]);
   const persistenceStatusRef = useRef<PersistenceStatus>(persistenceStatus);
   const failedStoresRef = useRef<PersistedStoreName[]>(failedStores);
   const failureDetailsRef = useRef<PersistenceFailureDetail[]>(failureDetails);
@@ -477,8 +484,9 @@ export function useIndexedDbPersistence({
   } = setters;
 
   const updatePersistenceStatus = useCallback((status: PersistenceStatus) => {
-    persistenceStatusRef.current = status;
-    setPersistenceStatus(status);
+    const next = writeStopReasonRef.current ? "failed" : status;
+    persistenceStatusRef.current = next;
+    setPersistenceStatus(next);
   }, []);
 
   const updateFailedStores = useCallback((stores: PersistedStoreName[]) => {
@@ -494,24 +502,59 @@ export function useIndexedDbPersistence({
     [],
   );
 
+  const stopWrites = useCallback(
+    (reason: PersistenceWriteStopReason) => {
+      if (writeStopReasonRef.current) return;
+      writeStopReasonRef.current = reason;
+      lastSaveErrorRef.current = reason;
+      saveRequestedRef.current = false;
+      persistenceCommands.stopWrites?.(reason);
+      updatePersistenceStatus("failed");
+      for (const waiter of saveIdleWaitersRef.current.splice(0))
+        waiter.reject(reason);
+    },
+    [persistenceCommands, updatePersistenceStatus],
+  );
+  const assertWritesAllowed = useCallback(() => {
+    const reason =
+      writeStopReasonRef.current ?? persistenceCommands.getWriteStopReason?.();
+    if (reason) {
+      stopWrites(reason);
+      throw reason;
+    }
+  }, [persistenceCommands, stopWrites]);
+  useEffect(() => {
+    const release = persistenceCommands.onWritesStopped?.(stopWrites);
+    const reason = persistenceCommands.getWriteStopReason?.();
+    if (reason) stopWrites(reason);
+    return release;
+  }, [persistenceCommands, stopWrites]);
   const resolveSaveIdleWaiters = useCallback(() => {
     const waiters = saveIdleWaitersRef.current.splice(0);
-    waiters.forEach((resolve) => resolve());
+    waiters.forEach((waiter) =>
+      writeStopReasonRef.current
+        ? waiter.reject(writeStopReasonRef.current)
+        : waiter.resolve(),
+    );
   }, []);
 
   const waitForSaveIdle = useCallback((): Promise<void> => {
+    if (writeStopReasonRef.current)
+      return Promise.reject(writeStopReasonRef.current);
     if (!isSavingRef.current) return Promise.resolve();
-    return new Promise<void>((resolve) => {
-      saveIdleWaitersRef.current.push(resolve);
+    return new Promise<void>((resolve, reject) => {
+      saveIdleWaitersRef.current.push({ resolve, reject });
     });
   }, []);
 
   const drainSaveQueue = useCallback(async () => {
+    assertWritesAllowed();
     if (isSavingRef.current || restoreInProgressRef.current) return;
     isSavingRef.current = true;
     lastSaveErrorRef.current = null;
     try {
       while (saveRequestedRef.current && !restoreInProgressRef.current) {
+        assertWritesAllowed();
         saveRequestedRef.current = false;
         const currentValues = latestValuesRef.current;
         const previousValues = previousSavedValuesRef.current;
@@ -537,9 +580,15 @@ export function useIndexedDbPersistence({
         // 実際には保存できるデータでも失敗扱いになってしまうため。
         const failed: { label: PersistedStoreName; error: unknown }[] = [];
         for (const { label, save } of saveTasks) {
+          assertWritesAllowed();
           try {
             await save();
+            assertWritesAllowed();
           } catch (error) {
+            if (isPersistenceWriteStopReason(error)) {
+              stopWrites(error);
+              throw error;
+            }
             failed.push({ label, error });
             lastSaveErrorRef.current = error;
           }
@@ -586,6 +635,10 @@ export function useIndexedDbPersistence({
         }
       }
     } catch (error) {
+      if (isPersistenceWriteStopReason(error)) {
+        stopWrites(error);
+        throw error;
+      }
       lastSaveErrorRef.current = error;
       recordPersistenceReleaseAMetric({
         version: 1,
@@ -609,14 +662,20 @@ export function useIndexedDbPersistence({
       updatePersistenceStatus("failed");
     } finally {
       isSavingRef.current = false;
-      if (saveRequestedRef.current && !restoreInProgressRef.current) {
-        void drainSaveQueue();
+      if (
+        !writeStopReasonRef.current &&
+        saveRequestedRef.current &&
+        !restoreInProgressRef.current
+      ) {
+        void drainSaveQueue().catch(() => {});
       } else {
         resolveSaveIdleWaiters();
       }
     }
   }, [
     persistenceCommands,
+    assertWritesAllowed,
+    stopWrites,
     resolveSaveIdleWaiters,
     updateFailedStores,
     updateFailureDetails,
@@ -624,13 +683,20 @@ export function useIndexedDbPersistence({
   ]);
 
   const retrySave = useCallback(() => {
-    if (!isInitialized || restoreInProgressRef.current) return;
+    if (
+      writeStopReasonRef.current ||
+      persistenceCommands.getWriteStopReason?.() ||
+      !isInitialized ||
+      restoreInProgressRef.current
+    )
+      return;
     saveRequestedRef.current = true;
-    void drainSaveQueue();
-  }, [drainSaveQueue, isInitialized]);
+    void drainSaveQueue().catch(() => {});
+  }, [drainSaveQueue, isInitialized, persistenceCommands]);
 
   const isUpdateBlocked = useCallback((): boolean => {
     if (
+      writeStopReasonRef.current ||
       !isInitializedRef.current ||
       restoreInProgressRef.current ||
       recoveryAdoptionInProgressRef.current ||
@@ -651,6 +717,7 @@ export function useIndexedDbPersistence({
   }, [persistenceCommands]);
 
   const flushPendingSave = useCallback(async (): Promise<void> => {
+    assertWritesAllowed();
     if (recoveryAdoptionInProgressRef.current) {
       throw new Error("復旧候補の採用中は保存を確定できません。");
     }
@@ -662,6 +729,7 @@ export function useIndexedDbPersistence({
     }
 
     while (isUpdateBlocked()) {
+      assertWritesAllowed();
       if (restoreInProgressRef.current) {
         throw new Error("復元処理の完了前に保存を確定できません。");
       }
@@ -673,7 +741,9 @@ export function useIndexedDbPersistence({
       // drainSaveQueueはsingle-flightなので、実行中ならこの要求を現在の保存後に処理する。
       saveRequestedRef.current = true;
       await drainSaveQueue();
+      assertWritesAllowed();
       await waitForSaveIdle();
+      assertWritesAllowed();
 
       if (restoreInProgressRef.current) {
         throw new Error("復元処理の完了前に保存を確定できません。");
@@ -685,13 +755,14 @@ export function useIndexedDbPersistence({
         throw new Error("保存を完了できませんでした。");
       }
     }
-  }, [drainSaveQueue, isUpdateBlocked, waitForSaveIdle]);
+  }, [drainSaveQueue, isUpdateBlocked, waitForSaveIdle, assertWritesAllowed]);
 
   // The application coordinator owns this observation until it settles.
   // Reuse the debounced watcher and its per-store queue, rather than a second
   // DB writer. Unchanged roots keep their baseline references.
   const observeSnapshot = useCallback(
     async (snapshot: PersistedStateValues, base: PersistedStateValues) => {
+      assertWritesAllowed();
       const previous = latestValuesRef.current;
       const changedStores = (Object.keys(base) as PersistedStoreName[]).filter(
         (key) => !jsonEqual(base[key], snapshot[key]),
@@ -706,7 +777,9 @@ export function useIndexedDbPersistence({
       updatePersistenceStatus("unsaved");
       try {
         await new Promise<void>((resolve) => setTimeout(resolve, saveDelayMs));
+        assertWritesAllowed();
         await flushPendingSave();
+        assertWritesAllowed();
       } catch (error) {
         // The coordinator retains the intent for replan/retry or explicit
         // discard. Do not let the watcher independently resend a stale plan.
@@ -717,7 +790,12 @@ export function useIndexedDbPersistence({
         latestValuesRef.current = previousSavedValuesRef.current;
       }
     },
-    [flushPendingSave, saveDelayMs, updatePersistenceStatus],
+    [
+      flushPendingSave,
+      saveDelayMs,
+      updatePersistenceStatus,
+      assertWritesAllowed,
+    ],
   );
 
   const runExclusiveRestore = useCallback(
@@ -725,6 +803,7 @@ export function useIndexedDbPersistence({
       restoredValues: PersistedStateValues,
       restore: () => Promise<T>,
     ): Promise<T> => {
+      assertWritesAllowed();
       if (!isInitialized) {
         throw new Error("保存データの初期化が完了していません。");
       }
@@ -755,7 +834,9 @@ export function useIndexedDbPersistence({
 
       let completed = false;
       try {
+        assertWritesAllowed();
         const result = await restore();
+        assertWritesAllowed();
         previousSavedValuesRef.current = restoredValues;
         latestValuesRef.current = restoredValues;
         saveRequestedRef.current = false;
@@ -766,7 +847,7 @@ export function useIndexedDbPersistence({
         return result;
       } finally {
         restoreInProgressRef.current = false;
-        if (!completed) {
+        if (!completed && !writeStopReasonRef.current) {
           const requestedDuringRestore = saveRequestedRef.current;
           const hasPendingValues =
             createSaveTasks(
@@ -783,13 +864,14 @@ export function useIndexedDbPersistence({
           );
           if (hasPendingValues && (hadPendingSave || requestedDuringRestore)) {
             saveRequestedRef.current = true;
-            void drainSaveQueue();
+            void drainSaveQueue().catch(() => {});
           }
         }
       }
     },
     [
       drainSaveQueue,
+      assertWritesAllowed,
       isInitialized,
       persistenceCommands,
       updateFailedStores,
@@ -800,6 +882,7 @@ export function useIndexedDbPersistence({
   );
 
   const initializePersistence = useCallback(async (): Promise<void> => {
+    assertWritesAllowed();
     const startupStartedAt =
       typeof performance !== "undefined" ? performance.now() : Date.now();
     const recordStartupOutcome = (
@@ -1095,6 +1178,7 @@ export function useIndexedDbPersistence({
     }
   }, [
     persistenceCommands,
+    assertWritesAllowed,
     onHydratedSnapshot,
     setDayModes,
     setEventConsistency,
@@ -1124,6 +1208,7 @@ export function useIndexedDbPersistence({
 
   const retryInitialization = useCallback((): void => {
     if (
+      writeStopReasonRef.current ||
       initializationPromiseRef.current ||
       recoveryAdoptionInProgressRef.current
     ) {
@@ -1135,11 +1220,12 @@ export function useIndexedDbPersistence({
         ? { ...current, isRetrying: true }
         : current,
     );
-    startInitialization();
+    if (!writeStopReasonRef.current) void startInitialization().catch(() => {});
   }, [startInitialization]);
 
   const adoptRecoveryCandidate = useCallback(
     async (requestedCandidate: StartupRecoveryCandidate): Promise<void> => {
+      assertWritesAllowed();
       if (
         recoveryAdoptionInProgressRef.current ||
         initializationPromiseRef.current ||
@@ -1184,19 +1270,25 @@ export function useIndexedDbPersistence({
         }
       }
     },
-    [persistenceCommands, startInitialization, startupState],
+    [
+      persistenceCommands,
+      startInitialization,
+      startupState,
+      assertWritesAllowed,
+    ],
   );
 
   useEffect(() => {
     isMountedRef.current = true;
-    startInitialization();
+    if (!writeStopReasonRef.current) void startInitialization().catch(() => {});
     return () => {
       isMountedRef.current = false;
     };
   }, [startInitialization]);
 
   useEffect(() => {
-    if (!isInitialized || externalMutations) return;
+    if (writeStopReasonRef.current || !isInitialized || externalMutations)
+      return;
 
     // 初期復元による値の反映はユーザー編集ではないため保存対象にしない。
     // Reactは次の操作を処理する前にこのeffectを確定するため、その直後の編集は
@@ -1220,7 +1312,7 @@ export function useIndexedDbPersistence({
     updatePersistenceStatus("unsaved");
 
     const timeoutId = setTimeout(() => {
-      void drainSaveQueue();
+      void drainSaveQueue().catch(() => {});
     }, saveDelayMs);
     return () => clearTimeout(timeoutId);
   }, [
@@ -1256,6 +1348,7 @@ export function useIndexedDbPersistence({
 
   const acceptCommittedSnapshot = useCallback(
     (snapshot: PersistedStateValues) => {
+      if (writeStopReasonRef.current) return;
       previousSavedValuesRef.current = snapshot;
       latestValuesRef.current = snapshot;
       saveRequestedRef.current = false;
@@ -1266,6 +1359,8 @@ export function useIndexedDbPersistence({
     [updateFailedStores, updateFailureDetails, updatePersistenceStatus],
   );
   return {
+    stopWrites,
+    getWriteStopReason: () => writeStopReasonRef.current,
     observeSnapshot,
     acceptCommittedSnapshot,
     migrationNotices,

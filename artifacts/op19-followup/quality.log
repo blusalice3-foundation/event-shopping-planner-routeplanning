@@ -1,0 +1,70 @@
+
+> event-shopping-planner@1.0.0 typecheck
+> tsc --noEmit && tsc -p tsconfig.release-tools.json
+
+
+> event-shopping-planner@1.0.0 verify:architecture
+> node scripts/verify-architecture.mjs
+
+PASS architecture verification: 354 production files; 1730 import edges; 0 baseline exception(s); graph 021e205566efcb39e3310b71b5b31777b2c6add63407e12d3973744628429d06
+
+> event-shopping-planner@1.0.0 verify:test-project-membership
+> node scripts/verify-test-project-membership.mjs
+
+PASS test project membership: 262 files; integration=54, unit=198, worker=10
+
+> event-shopping-planner@1.0.0 verify:db-compatibility
+> node scripts/verify-db-compatibility-contract.mjs
+
+PASS DB compatibility contract 59cab323aedb35d8677e289545053591d34348970bfa268be3c4c437faf7c91f; remote unobserved.
+
+> event-shopping-planner@1.0.0 verify:performance-policy
+> node scripts/verify-performance-policy.mjs
+
+PASS performance policy: 17 canonical scenarios; 17 explicit pending scenario(s); production exits remain fail-closed
+
+> event-shopping-planner@1.0.0 test:encoding
+> node scripts/verify-encoding.mjs
+
+PASS encoding verification: 1112 text files; UTF-8 without BOM; U+FFFD/mojibake/suspicious '?' absent; newlines: LF=1108, CRLF=3, none=1; question marks reviewed=15267; representative strings: ユーザー登録=152, エラーが発生しました=56
+
+> event-shopping-planner@1.0.0 test:api
+> node --test api/csp-report.test.mjs api/google-sheets-csv.test.mjs api/not-found.test.mjs
+
+✔ stores only closed CSP fields and server-owned identity (2.1138ms)
+✔ accepts a bounded Reporting API batch (0.5108ms)
+✔ keeps the effective directive contract ordered and immutable (0.1709ms)
+✔ normalizes a syntactically valid unknown directive before insertion (0.2328ms)
+✔ rejects an empty or malformed effective directive (0.2404ms)
+✔ separates method, media type, invalid, oversize, and config errors (0.3273ms)
+✔ maps upstream failure to 502 without reflecting details (0.2966ms)
+✔ blocked target classifier never returns a raw target (0.1833ms)
+✔ resolves the requested tab and proxies its full-row CSV export (24.1553ms)
+✔ decodes escaped tab names and lets the saved sheet name override URL gid (0.906ms)
+✔ does not fall back to URL gid when the requested tab cannot be resolved (0.5179ms)
+✔ uses URL gid directly only when no sheet name is available (0.5542ms)
+✔ rejects method, media type, origin, shape, and configuration drift (0.4223ms)
+✔ rejects redirects outside the fixed Google CSV download host (1.5435ms)
+✔ bounds upstream responses and rejects non-CSV responses (4.6342ms)
+✔ unknown API returns the closed JSON 404 for GET (0.8052ms)
+✔ unknown API returns the closed JSON 404 for POST (0.1035ms)
+✔ unknown API returns the closed JSON 404 for PUT (0.0835ms)
+✔ unknown API returns the closed JSON 404 for PATCH (0.0925ms)
+✔ unknown API returns the closed JSON 404 for DELETE (0.8857ms)
+✔ unknown API returns the closed JSON 404 for OPTIONS (0.0918ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 148.5714
+file:///D:/esp-op19-fix/scripts/verify-release-a-build.mjs:68
+  throw new Error(
+        ^
+
+Error: Release A capability verification failed: legacy cleanup is not provably forced off.
+    at file:///D:/esp-op19-fix/scripts/verify-release-a-build.mjs:68:9
+
+Node.js v24.19.0

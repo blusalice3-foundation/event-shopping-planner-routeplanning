@@ -1,0 +1,10 @@
+node node_modules/vitest/vitest.mjs run src/features/events/sheetMatching.test.ts src/features/events/updateDiff.test.ts src/features/events/updateApply.test.ts src/features/events/updateFlow.test.ts src/features/events/duplicateEvent.test.ts src/app/commands/useEventUpdateCommands.test.tsx src/app/commands/useEventUpdateCommands.modal.integration.test.tsx src/app/state/useAppOverlayController.test.tsx src/components/UpdateConfirmationModal.test.tsx
+
+ RUN  v4.1.10 D:/ciub-1018
+
+
+ Test Files  9 passed (9)
+      Tests  153 passed (153)
+   Start at  11:31:27
+   Duration  32.78s (transform 3.28s, setup 31.80s, import 5.51s, tests 900ms, environment 114.76s)
+

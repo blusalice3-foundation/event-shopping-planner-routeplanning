@@ -1,0 +1,6881 @@
+{
+  "build": "npm run build:app",
+  "fixture": {
+    "count": 500,
+    "halls": [
+      "A",
+      "B"
+    ],
+    "priorities": [
+      "none",
+      "priority"
+    ]
+  },
+  "browser": "chromium",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+  "input": "native",
+  "grouped": true,
+  "warmup": 1,
+  "probeCounting": {
+    "positiveControl": true,
+    "comparableStartEnd": false,
+    "pointer": true,
+    "drop": false
+  },
+  "records": {
+    "same-boundary": {
+      "samples": [
+        9.200000002980232,
+        13.800000004470348,
+        13.899999998509884,
+        12.100000001490116,
+        13.899999998509884,
+        5.799999997019768,
+        12.299999997019768,
+        17.700000002980232,
+        8.299999997019768,
+        15.299999997019768,
+        12.199999995529652,
+        15,
+        15,
+        13,
+        12.799999997019768,
+        14.5,
+        14.200000002980232,
+        13.299999997019768,
+        14.700000002980232,
+        13.5
+      ],
+      "medianMs": 13.5,
+      "p95Ms": 15.299999997019768
+    },
+    "boundary-switch": {
+      "samples": [
+        12.200000002980232,
+        14.300000004470348,
+        13.199999995529652,
+        12.5,
+        13.5,
+        14.200000002980232,
+        14.399999998509884,
+        14.200000002980232,
+        12.399999998509884,
+        12.900000005960464,
+        13.399999998509884,
+        15,
+        14,
+        12.599999994039536,
+        13.5,
+        14.100000001490116,
+        12.600000001490116,
+        14.899999998509884,
+        13.600000001490116,
+        14.5
+      ],
+      "medianMs": 13.5,
+      "p95Ms": 14.899999998509884
+    },
+    "multiple-merges": {
+      "samples": [
+        11.699999995529652,
+        14.400000005960464,
+        13.600000001490116,
+        12.100000001490116,
+        13.299999997019768,
+        10.5,
+        12.799999997019768,
+        14.299999997019768,
+        10.5,
+        13.100000001490116,
+        13.300000004470348,
+        13.200000002980232,
+        13.299999997019768,
+        12,
+        15,
+        12.699999995529652,
+        12.700000002980232,
+        15.699999995529652,
+        11.900000005960464,
+        13.799999997019768
+      ],
+      "medianMs": 13.100000001490116,
+      "p95Ms": 15
+    },
+    "mixed": {
+      "samples": [
+        11.200000002980232,
+        11.100000001490116,
+        12.299999997019768,
+        14.100000001490116,
+        10,
+        14.100000001490116,
+        12.600000001490116,
+        14.399999998509884,
+        10.100000001490116,
+        14.5,
+        12.200000002980232,
+        13.200000002980232,
+        12,
+        13.399999998509884,
+        14.600000001490116,
+        11.100000001490116,
+        15,
+        12,
+        12.199999995529652,
+        14.5
+      ],
+      "medianMs": 12.299999997019768,
+      "p95Ms": 14.600000001490116
+    },
+    "offscreen-merge": {
+      "samples": [
+        9.200000002980232,
+        15.600000001490116,
+        14.899999998509884,
+        9.699999995529652,
+        12.100000001490116,
+        14.099999994039536,
+        13.5,
+        13.100000001490116,
+        13.5,
+        12.5,
+        13.5,
+        10.200000002980232,
+        10.099999994039536,
+        11.099999994039536,
+        13.099999994039536,
+        14,
+        9.800000004470348,
+        14.099999994039536,
+        11.200000002980232,
+        13.100000001490116
+      ],
+      "medianMs": 13.099999994039536,
+      "p95Ms": 14.899999998509884
+    },
+    "auto-scroll": {
+      "samples": [
+        12.800000004470348,
+        10.200000002980232,
+        12.300000004470348,
+        15,
+        12.399999998509884,
+        7.4000000059604645,
+        12.200000002980232,
+        13.5,
+        8.300000004470348,
+        9.800000004470348,
+        12.5,
+        10.100000001490116,
+        11,
+        13.300000004470348,
+        16,
+        8.799999997019768,
+        6.5,
+        15.5,
+        11.399999998509884,
+        6.799999997019768
+      ],
+      "medianMs": 11.399999998509884,
+      "p95Ms": 15.5
+    },
+    "drop": {
+      "samples": [
+        78.89999999850988,
+        62.69999999552965,
+        58.29999999701977,
+        62.899999998509884,
+        69,
+        69.60000000149012,
+        62.899999998509884,
+        59.100000001490116,
+        61.80000000447035,
+        59.599999994039536,
+        59,
+        58.5,
+        57.899999998509884,
+        58.20000000298023,
+        55.399999998509884,
+        61.100000001490116,
+        56.5,
+        58.79999999701977,
+        57.5,
+        60.70000000298023
+      ],
+      "medianMs": 59.100000001490116,
+      "p95Ms": 69.60000000149012
+    }
+  },
+  "locality": {
+    "same-boundary": {
+      "counts": {},
+      "mounts": {},
+      "known": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:priority",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:new-2",
+        "group:group:\"A-03a:priority\"",
+        "group:group:\"A-01a\"",
+        "group:group:\"A-02a\"",
+        "group:group:\"B-10\"",
+        "group:group:\"A-04a\"",
+        "group:group:\"A-05a\"",
+        "group:group:\"A-1000\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "group:group:\"A-1001\"",
+        "group:group:\"B-250\"",
+        "group:group:\"A-251\"",
+        "group:group:\"A-252\"",
+        "group:group:\"A-253\"",
+        "group:group:\"A-254\"",
+        "group:group:\"B-999a\"",
+        "group:group:\"A-1241\"",
+        "group:group:\"A-1242\"",
+        "group:group:\"A-1243\"",
+        "group:group:\"A-1244\"",
+        "item:execute-240",
+        "item:execute-241",
+        "item:execute-242",
+        "item:execute-243",
+        "item:execute-244",
+        "item:offscreen",
+        "item:new-241",
+        "item:new-242",
+        "item:new-243",
+        "item:new-244",
+        "item:merge-offscreen",
+        "group:group:\"A-249\"",
+        "group:group:\"A-1240\"",
+        "item:new-240",
+        "group:group:\"A-1002\""
+      ],
+      "mounted": [
+        "group:group:\"A-03a:priority\"",
+        "item:priority",
+        "group:group:\"A-01a\"",
+        "item:a1",
+        "item:a2",
+        "group:group:\"A-02a\"",
+        "item:b1",
+        "group:group:\"B-10\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "item:execute-1",
+        "item:merge-a",
+        "item:merge-b",
+        "group:group:\"A-04a\"",
+        "item:new-x",
+        "group:group:\"A-05a\"",
+        "item:bad-priority",
+        "group:group:\"A-1000\"",
+        "item:new-0",
+        "group:group:\"A-1001\"",
+        "item:new-1",
+        "group:group:\"A-1002\"",
+        "item:new-2"
+      ],
+      "mountedBefore": [
+        "group:group:\"A-03a:priority\"",
+        "item:priority",
+        "group:group:\"A-01a\"",
+        "item:a1",
+        "item:a2",
+        "group:group:\"A-02a\"",
+        "item:b1",
+        "group:group:\"B-10\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "item:execute-1",
+        "item:merge-a",
+        "item:merge-b",
+        "group:group:\"A-04a\"",
+        "item:new-x",
+        "group:group:\"A-05a\"",
+        "item:bad-priority",
+        "group:group:\"A-1000\"",
+        "item:new-0",
+        "group:group:\"A-1001\"",
+        "item:new-1",
+        "group:group:\"A-1002\"",
+        "item:new-2"
+      ],
+      "guideSamples": [
+        {
+          "ms": 9.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.800000004470348,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.899999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.899999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 5.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 17.700000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 8.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 15.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.199999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 15,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 15,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.700000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        }
+      ],
+      "io": {
+        "before": {
+          "requests": [],
+          "completed": []
+        },
+        "after": {
+          "requests": [],
+          "completed": []
+        },
+        "delta": {
+          "mutationRequests": [],
+          "completedReadwriteTransactions": []
+        }
+      }
+    },
+    "boundary-switch": {
+      "counts": {},
+      "mounts": {},
+      "known": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:priority",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:new-2",
+        "group:group:\"A-03a:priority\"",
+        "group:group:\"A-01a\"",
+        "group:group:\"A-02a\"",
+        "group:group:\"B-10\"",
+        "group:group:\"A-04a\"",
+        "group:group:\"A-05a\"",
+        "group:group:\"A-1000\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "group:group:\"A-1001\"",
+        "group:group:\"B-250\"",
+        "group:group:\"A-251\"",
+        "group:group:\"A-252\"",
+        "group:group:\"A-253\"",
+        "group:group:\"A-254\"",
+        "group:group:\"B-999a\"",
+        "group:group:\"A-1241\"",
+        "group:group:\"A-1242\"",
+        "group:group:\"A-1243\"",
+        "group:group:\"A-1244\"",
+        "item:execute-240",
+        "item:execute-241",
+        "item:execute-242",
+        "item:execute-243",
+        "item:execute-244",
+        "item:offscreen",
+        "item:new-241",
+        "item:new-242",
+        "item:new-243",
+        "item:new-244",
+        "item:merge-offscreen",
+        "group:group:\"A-249\"",
+        "group:group:\"A-1240\"",
+        "item:new-240",
+        "group:group:\"A-1002\""
+      ],
+      "mounted": [
+        "group:group:\"A-03a:priority\"",
+        "item:priority",
+        "group:group:\"A-01a\"",
+        "item:a1",
+        "item:a2",
+        "group:group:\"A-02a\"",
+        "item:b1",
+        "group:group:\"B-10\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "item:execute-1",
+        "item:merge-a",
+        "item:merge-b",
+        "group:group:\"A-04a\"",
+        "item:new-x",
+        "group:group:\"A-05a\"",
+        "item:bad-priority",
+        "group:group:\"A-1000\"",
+        "item:new-0",
+        "group:group:\"A-1001\"",
+        "item:new-1",
+        "group:group:\"A-1002\"",
+        "item:new-2"
+      ],
+      "mountedBefore": [
+        "group:group:\"A-03a:priority\"",
+        "item:priority",
+        "group:group:\"A-01a\"",
+        "item:a1",
+        "item:a2",
+        "group:group:\"A-02a\"",
+        "item:b1",
+        "group:group:\"B-10\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "item:execute-1",
+        "item:merge-a",
+        "item:merge-b",
+        "group:group:\"A-04a\"",
+        "item:new-x",
+        "group:group:\"A-05a\"",
+        "item:bad-priority",
+        "group:group:\"A-1000\"",
+        "item:new-0",
+        "group:group:\"A-1001\"",
+        "item:new-1",
+        "group:group:\"A-1002\"",
+        "item:new-2"
+      ],
+      "guideSamples": [
+        {
+          "ms": 12.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.300000004470348,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.199999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.900000005960464,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 15,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.599999994039536,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.600000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.899999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.600000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "表示した訪問境界へ移動します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        }
+      ],
+      "io": {
+        "before": {
+          "requests": [],
+          "completed": []
+        },
+        "after": {
+          "requests": [],
+          "completed": []
+        },
+        "delta": {
+          "mutationRequests": [],
+          "completedReadwriteTransactions": []
+        }
+      }
+    },
+    "multiple-merges": {
+      "counts": {},
+      "mounts": {},
+      "known": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:priority",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:new-2",
+        "group:group:\"A-03a:priority\"",
+        "group:group:\"A-01a\"",
+        "group:group:\"A-02a\"",
+        "group:group:\"B-10\"",
+        "group:group:\"A-04a\"",
+        "group:group:\"A-05a\"",
+        "group:group:\"A-1000\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "group:group:\"A-1001\"",
+        "group:group:\"B-250\"",
+        "group:group:\"A-251\"",
+        "group:group:\"A-252\"",
+        "group:group:\"A-253\"",
+        "group:group:\"A-254\"",
+        "group:group:\"B-999a\"",
+        "group:group:\"A-1241\"",
+        "group:group:\"A-1242\"",
+        "group:group:\"A-1243\"",
+        "group:group:\"A-1244\"",
+        "item:execute-240",
+        "item:execute-241",
+        "item:execute-242",
+        "item:execute-243",
+        "item:execute-244",
+        "item:offscreen",
+        "item:new-241",
+        "item:new-242",
+        "item:new-243",
+        "item:new-244",
+        "item:merge-offscreen",
+        "group:group:\"A-249\"",
+        "group:group:\"A-1240\"",
+        "item:new-240",
+        "group:group:\"A-1002\""
+      ],
+      "mounted": [
+        "group:group:\"A-03a:priority\"",
+        "item:priority",
+        "group:group:\"A-01a\"",
+        "item:a1",
+        "item:a2",
+        "group:group:\"A-02a\"",
+        "item:b1",
+        "group:group:\"B-10\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "item:execute-1",
+        "item:merge-a",
+        "item:merge-b",
+        "group:group:\"A-04a\"",
+        "item:new-x",
+        "group:group:\"A-05a\"",
+        "item:bad-priority",
+        "group:group:\"A-1000\"",
+        "item:new-0",
+        "group:group:\"A-1001\"",
+        "item:new-1",
+        "group:group:\"A-1002\"",
+        "item:new-2"
+      ],
+      "mountedBefore": [
+        "group:group:\"A-03a:priority\"",
+        "item:priority",
+        "group:group:\"A-01a\"",
+        "item:a1",
+        "item:a2",
+        "group:group:\"A-02a\"",
+        "item:b1",
+        "group:group:\"B-10\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "item:execute-1",
+        "item:merge-a",
+        "item:merge-b",
+        "group:group:\"A-04a\"",
+        "item:new-x",
+        "group:group:\"A-05a\"",
+        "item:bad-priority",
+        "group:group:\"A-1000\"",
+        "item:new-0",
+        "group:group:\"A-1001\"",
+        "item:new-1",
+        "group:group:\"A-1002\"",
+        "item:new-2"
+      ],
+      "guideSamples": [
+        {
+          "ms": 11.699999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.400000005960464,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.600000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 10.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 10.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.300000004470348,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 15,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.699999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.700000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 15.699999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 11.900000005960464,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.799999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        }
+      ],
+      "io": {
+        "before": {
+          "requests": [],
+          "completed": []
+        },
+        "after": {
+          "requests": [],
+          "completed": []
+        },
+        "delta": {
+          "mutationRequests": [],
+          "completedReadwriteTransactions": []
+        }
+      }
+    },
+    "mixed": {
+      "counts": {},
+      "mounts": {},
+      "known": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:priority",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:new-2",
+        "group:group:\"A-03a:priority\"",
+        "group:group:\"A-01a\"",
+        "group:group:\"A-02a\"",
+        "group:group:\"B-10\"",
+        "group:group:\"A-04a\"",
+        "group:group:\"A-05a\"",
+        "group:group:\"A-1000\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "group:group:\"A-1001\"",
+        "group:group:\"B-250\"",
+        "group:group:\"A-251\"",
+        "group:group:\"A-252\"",
+        "group:group:\"A-253\"",
+        "group:group:\"A-254\"",
+        "group:group:\"B-999a\"",
+        "group:group:\"A-1241\"",
+        "group:group:\"A-1242\"",
+        "group:group:\"A-1243\"",
+        "group:group:\"A-1244\"",
+        "item:execute-240",
+        "item:execute-241",
+        "item:execute-242",
+        "item:execute-243",
+        "item:execute-244",
+        "item:offscreen",
+        "item:new-241",
+        "item:new-242",
+        "item:new-243",
+        "item:new-244",
+        "item:merge-offscreen",
+        "group:group:\"A-249\"",
+        "group:group:\"A-1240\"",
+        "item:new-240",
+        "group:group:\"A-1002\""
+      ],
+      "mounted": [
+        "group:group:\"A-03a:priority\"",
+        "item:priority",
+        "group:group:\"A-01a\"",
+        "item:a1",
+        "item:a2",
+        "group:group:\"A-02a\"",
+        "item:b1",
+        "group:group:\"B-10\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "item:execute-1",
+        "item:merge-a",
+        "item:merge-b",
+        "group:group:\"A-04a\"",
+        "item:new-x",
+        "group:group:\"A-05a\"",
+        "item:bad-priority",
+        "group:group:\"A-1000\"",
+        "item:new-0",
+        "group:group:\"A-1001\"",
+        "item:new-1",
+        "group:group:\"A-1002\"",
+        "item:new-2"
+      ],
+      "mountedBefore": [
+        "group:group:\"A-03a:priority\"",
+        "item:priority",
+        "group:group:\"A-01a\"",
+        "item:a1",
+        "item:a2",
+        "group:group:\"A-02a\"",
+        "item:b1",
+        "group:group:\"B-10\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "item:execute-1",
+        "item:merge-a",
+        "item:merge-b",
+        "group:group:\"A-04a\"",
+        "item:new-x",
+        "group:group:\"A-05a\"",
+        "item:bad-priority",
+        "group:group:\"A-1000\"",
+        "item:new-0",
+        "group:group:\"A-1001\"",
+        "item:new-1",
+        "group:group:\"A-1002\"",
+        "item:new-2"
+      ],
+      "guideSamples": [
+        {
+          "ms": 11.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 11.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.299999997019768,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 10,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.600000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 10.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.399999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.600000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 11.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 15,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.199999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "before"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "新しい訪問を境界へ挿入し、既存の2訪問の末尾へ合流します。",
+          "guides": [
+            {
+              "kind": "insert",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        }
+      ],
+      "io": {
+        "before": {
+          "requests": [],
+          "completed": []
+        },
+        "after": {
+          "requests": [],
+          "completed": []
+        },
+        "delta": {
+          "mutationRequests": [],
+          "completedReadwriteTransactions": []
+        }
+      }
+    },
+    "offscreen-merge": {
+      "counts": {},
+      "mounts": {},
+      "known": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:priority",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:new-2",
+        "group:group:\"A-03a:priority\"",
+        "group:group:\"A-01a\"",
+        "group:group:\"A-02a\"",
+        "group:group:\"B-10\"",
+        "group:group:\"A-04a\"",
+        "group:group:\"A-05a\"",
+        "group:group:\"A-1000\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "group:group:\"A-1001\"",
+        "group:group:\"B-250\"",
+        "group:group:\"A-251\"",
+        "group:group:\"A-252\"",
+        "group:group:\"A-253\"",
+        "group:group:\"A-254\"",
+        "group:group:\"B-999a\"",
+        "group:group:\"A-1241\"",
+        "group:group:\"A-1242\"",
+        "group:group:\"A-1243\"",
+        "group:group:\"A-1244\"",
+        "item:execute-240",
+        "item:execute-241",
+        "item:execute-242",
+        "item:execute-243",
+        "item:execute-244",
+        "item:offscreen",
+        "item:new-241",
+        "item:new-242",
+        "item:new-243",
+        "item:new-244",
+        "item:merge-offscreen",
+        "group:group:\"A-249\"",
+        "group:group:\"A-1240\"",
+        "item:new-240",
+        "group:group:\"A-1002\"",
+        "item:execute-239"
+      ],
+      "mounted": [
+        "group:group:\"A-03a:priority\"",
+        "item:priority",
+        "group:group:\"A-01a\"",
+        "item:a1",
+        "item:a2",
+        "group:group:\"A-02a\"",
+        "item:b1",
+        "group:group:\"B-10\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "item:execute-1",
+        "item:merge-a",
+        "item:merge-b",
+        "group:group:\"A-04a\"",
+        "item:new-x",
+        "group:group:\"A-05a\"",
+        "item:bad-priority",
+        "group:group:\"A-1000\"",
+        "item:new-0",
+        "group:group:\"A-1001\"",
+        "item:new-1",
+        "group:group:\"A-1002\"",
+        "item:new-2"
+      ],
+      "mountedBefore": [
+        "group:group:\"A-03a:priority\"",
+        "item:priority",
+        "group:group:\"A-01a\"",
+        "item:a1",
+        "item:a2",
+        "group:group:\"A-02a\"",
+        "item:b1",
+        "group:group:\"B-10\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "item:execute-1",
+        "item:merge-a",
+        "item:merge-b",
+        "group:group:\"A-04a\"",
+        "item:new-x",
+        "group:group:\"A-05a\"",
+        "item:bad-priority",
+        "group:group:\"A-1000\"",
+        "item:new-0",
+        "group:group:\"A-1001\"",
+        "item:new-1",
+        "group:group:\"A-1002\"",
+        "item:new-2"
+      ],
+      "guideSamples": [
+        {
+          "ms": 9.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 15.600000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.899999998509884,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 9.699999995529652,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.099999994039536,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 12.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.5,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 10.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 10.099999994039536,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 11.099999994039536,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.099999994039536,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 9.800000004470348,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 14.099999994039536,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 11.200000002980232,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        },
+        {
+          "ms": 13.100000001490116,
+          "viewportScroll": {
+            "before": 200,
+            "after": 200
+          },
+          "status": "accepted",
+          "text": "既存の2訪問の末尾へ合流します。画面外の合流先を含みます。",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after"
+            },
+            {
+              "kind": "merge",
+              "edge": "after"
+            }
+          ],
+          "header": true
+        }
+      ],
+      "io": {
+        "before": {
+          "requests": [],
+          "completed": []
+        },
+        "after": {
+          "requests": [],
+          "completed": []
+        },
+        "delta": {
+          "mutationRequests": [],
+          "completedReadwriteTransactions": []
+        }
+      }
+    },
+    "auto-scroll": {
+      "counts": {},
+      "mounts": {
+        "group:group:\"A-12\"": 1,
+        "item:execute-2": 1,
+        "group:group:\"A-1003\"": 1,
+        "item:new-3": 1,
+        "group:group:\"A-13\"": 1,
+        "item:execute-3": 1,
+        "group:group:\"A-1004\"": 1,
+        "item:new-4": 1
+      },
+      "known": [
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "item:merge-a",
+        "item:merge-b",
+        "item:new-x",
+        "item:bad-priority",
+        "item:new-0",
+        "item:new-1",
+        "item:priority",
+        "item:a1",
+        "item:a2",
+        "item:b1",
+        "item:execute-1",
+        "item:new-2",
+        "group:group:\"A-03a:priority\"",
+        "group:group:\"A-01a\"",
+        "group:group:\"A-02a\"",
+        "group:group:\"B-10\"",
+        "group:group:\"A-04a\"",
+        "group:group:\"A-05a\"",
+        "group:group:\"A-1000\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "group:group:\"A-1001\"",
+        "group:group:\"B-250\"",
+        "group:group:\"A-251\"",
+        "group:group:\"A-252\"",
+        "group:group:\"A-253\"",
+        "group:group:\"A-254\"",
+        "group:group:\"B-999a\"",
+        "group:group:\"A-1241\"",
+        "group:group:\"A-1242\"",
+        "group:group:\"A-1243\"",
+        "group:group:\"A-1244\"",
+        "item:execute-240",
+        "item:execute-241",
+        "item:execute-242",
+        "item:execute-243",
+        "item:execute-244",
+        "item:offscreen",
+        "item:new-241",
+        "item:new-242",
+        "item:new-243",
+        "item:new-244",
+        "item:merge-offscreen",
+        "group:group:\"A-249\"",
+        "group:group:\"A-1240\"",
+        "item:new-240",
+        "group:group:\"A-1002\"",
+        "item:execute-239",
+        "group:group:\"A-12\"",
+        "item:execute-2",
+        "group:group:\"A-1003\"",
+        "item:new-3",
+        "group:group:\"A-13\"",
+        "item:execute-3",
+        "group:group:\"A-1004\"",
+        "item:new-4"
+      ],
+      "mounted": [
+        "group:group:\"A-03a:priority\"",
+        "item:priority",
+        "group:group:\"A-01a\"",
+        "item:a1",
+        "item:a2",
+        "group:group:\"A-02a\"",
+        "item:b1",
+        "group:group:\"B-10\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "item:execute-1",
+        "group:group:\"A-12\"",
+        "item:execute-2",
+        "group:group:\"A-13\"",
+        "item:execute-3",
+        "item:merge-a",
+        "item:merge-b",
+        "group:group:\"A-04a\"",
+        "item:new-x",
+        "group:group:\"A-05a\"",
+        "item:bad-priority",
+        "group:group:\"A-1000\"",
+        "item:new-0",
+        "group:group:\"A-1001\"",
+        "item:new-1",
+        "group:group:\"A-1002\"",
+        "item:new-2",
+        "group:group:\"A-1003\"",
+        "item:new-3",
+        "group:group:\"A-1004\"",
+        "item:new-4"
+      ],
+      "mountedBefore": [
+        "group:group:\"A-03a:priority\"",
+        "item:priority",
+        "group:group:\"A-01a\"",
+        "item:a1",
+        "item:a2",
+        "group:group:\"A-02a\"",
+        "item:b1",
+        "group:group:\"B-10\"",
+        "item:execute-0",
+        "group:group:\"A-11\"",
+        "item:execute-1",
+        "item:merge-a",
+        "item:merge-b",
+        "group:group:\"A-04a\"",
+        "item:new-x",
+        "group:group:\"A-05a\"",
+        "item:bad-priority",
+        "group:group:\"A-1000\"",
+        "item:new-0",
+        "group:group:\"A-1001\"",
+        "item:new-1",
+        "group:group:\"A-1002\"",
+        "item:new-2"
+      ],
+      "guideSamples": [
+        {
+          "ms": 12.800000004470348,
+          "scrollBefore": 200,
+          "scrollAfter": 220,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 763.84375,
+              "ownerTop": 317.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 983.84375,
+              "ownerTop": 773.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66695.84375,
+              "ownerTop": 66445.84375
+            }
+          ]
+        },
+        {
+          "ms": 10.200000002980232,
+          "scrollBefore": 220,
+          "scrollAfter": 240,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 945.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 743.84375,
+              "ownerTop": 297.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 963.84375,
+              "ownerTop": 753.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66675.84375,
+              "ownerTop": 66425.84375
+            }
+          ]
+        },
+        {
+          "ms": 12.300000004470348,
+          "scrollBefore": 240,
+          "scrollAfter": 260,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 935.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 723.84375,
+              "ownerTop": 277.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 943.84375,
+              "ownerTop": 733.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66655.84375,
+              "ownerTop": 66405.84375
+            }
+          ]
+        },
+        {
+          "ms": 15,
+          "scrollBefore": 260,
+          "scrollAfter": 280,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 925.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 703.84375,
+              "ownerTop": 257.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 923.84375,
+              "ownerTop": 713.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66627.84375,
+              "ownerTop": 66377.84375
+            }
+          ]
+        },
+        {
+          "ms": 12.399999998509884,
+          "scrollBefore": 280,
+          "scrollAfter": 300,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 915.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 683.84375,
+              "ownerTop": 237.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 903.84375,
+              "ownerTop": 693.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66607.84375,
+              "ownerTop": 66357.84375
+            }
+          ]
+        },
+        {
+          "ms": 7.4000000059604645,
+          "scrollBefore": 300,
+          "scrollAfter": 320,
+          "trigger": {
+            "targetId": "b1",
+            "x": 132,
+            "y": 905.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 663.84375,
+              "ownerTop": 217.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 883.84375,
+              "ownerTop": 673.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66547.84375,
+              "ownerTop": 66297.84375
+            }
+          ]
+        },
+        {
+          "ms": 12.200000002980232,
+          "scrollBefore": 320,
+          "scrollAfter": 340,
+          "trigger": {
+            "targetId": "execute-0",
+            "x": 132,
+            "y": 988.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 643.84375,
+              "ownerTop": 197.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 863.84375,
+              "ownerTop": 653.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66527.84375,
+              "ownerTop": 66277.84375
+            }
+          ]
+        },
+        {
+          "ms": 13.5,
+          "scrollBefore": 340,
+          "scrollAfter": 360,
+          "trigger": {
+            "targetId": "execute-0",
+            "x": 132,
+            "y": 978.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 623.84375,
+              "ownerTop": 177.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 843.84375,
+              "ownerTop": 633.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66507.84375,
+              "ownerTop": 66257.84375
+            }
+          ]
+        },
+        {
+          "ms": 8.300000004470348,
+          "scrollBefore": 360,
+          "scrollAfter": 380,
+          "trigger": {
+            "targetId": "execute-0",
+            "x": 132,
+            "y": 968.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 603.84375,
+              "ownerTop": 157.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 823.84375,
+              "ownerTop": 613.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66487.84375,
+              "ownerTop": 66237.84375
+            }
+          ]
+        },
+        {
+          "ms": 9.800000004470348,
+          "scrollBefore": 380,
+          "scrollAfter": 400,
+          "trigger": {
+            "targetId": "execute-0",
+            "x": 132,
+            "y": 958.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 583.84375,
+              "ownerTop": 137.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 803.84375,
+              "ownerTop": 593.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66467.84375,
+              "ownerTop": 66217.84375
+            }
+          ]
+        },
+        {
+          "ms": 12.5,
+          "scrollBefore": 400,
+          "scrollAfter": 420,
+          "trigger": {
+            "targetId": "execute-0",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 563.84375,
+              "ownerTop": 117.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 783.84375,
+              "ownerTop": 573.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66447.84375,
+              "ownerTop": 66197.84375
+            }
+          ]
+        },
+        {
+          "ms": 10.100000001490116,
+          "scrollBefore": 420,
+          "scrollAfter": 440,
+          "trigger": {
+            "targetId": "execute-0",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 543.84375,
+              "ownerTop": 97.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 763.84375,
+              "ownerTop": 553.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66427.84375,
+              "ownerTop": 66177.84375
+            }
+          ]
+        },
+        {
+          "ms": 11,
+          "scrollBefore": 440,
+          "scrollAfter": 460,
+          "trigger": {
+            "targetId": "execute-0",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 523.84375,
+              "ownerTop": 77.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 743.84375,
+              "ownerTop": 533.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66407.84375,
+              "ownerTop": 66157.84375
+            }
+          ]
+        },
+        {
+          "ms": 13.300000004470348,
+          "scrollBefore": 460,
+          "scrollAfter": 480,
+          "trigger": {
+            "targetId": "execute-0",
+            "x": 132,
+            "y": 950
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 503.84375,
+              "ownerTop": 57.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 723.84375,
+              "ownerTop": 513.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66387.84375,
+              "ownerTop": 66137.84375
+            }
+          ]
+        },
+        {
+          "ms": 16,
+          "scrollBefore": 480,
+          "scrollAfter": 500,
+          "trigger": {
+            "targetId": "execute-0",
+            "x": 132,
+            "y": 949.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 483.84375,
+              "ownerTop": 37.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 703.84375,
+              "ownerTop": 493.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66359.84375,
+              "ownerTop": 66109.84375
+            }
+          ]
+        },
+        {
+          "ms": 8.799999997019768,
+          "scrollBefore": 500,
+          "scrollAfter": 520,
+          "trigger": {
+            "targetId": "execute-0",
+            "x": 132,
+            "y": 939.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 463.84375,
+              "ownerTop": 17.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 683.84375,
+              "ownerTop": 473.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66339.84375,
+              "ownerTop": 66089.84375
+            }
+          ]
+        },
+        {
+          "ms": 6.5,
+          "scrollBefore": 520,
+          "scrollAfter": 540,
+          "trigger": {
+            "targetId": "execute-0",
+            "x": 132,
+            "y": 929.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 443.84375,
+              "ownerTop": -2.15625
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 663.84375,
+              "ownerTop": 453.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66279.84375,
+              "ownerTop": 66029.84375
+            }
+          ]
+        },
+        {
+          "ms": 15.5,
+          "scrollBefore": 540,
+          "scrollAfter": 560,
+          "trigger": {
+            "targetId": "execute-0",
+            "x": 132,
+            "y": 919.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 423.84375,
+              "ownerTop": -22.15625
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 643.84375,
+              "ownerTop": 433.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66259.84375,
+              "ownerTop": 66009.84375
+            }
+          ]
+        },
+        {
+          "ms": 11.399999998509884,
+          "scrollBefore": 560,
+          "scrollAfter": 580,
+          "trigger": {
+            "targetId": "execute-0",
+            "x": 132,
+            "y": 909.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 403.84375,
+              "ownerTop": -42.15625
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 623.84375,
+              "ownerTop": 413.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66239.84375,
+              "ownerTop": 65989.84375
+            }
+          ]
+        },
+        {
+          "ms": 6.799999997019768,
+          "scrollBefore": 580,
+          "scrollAfter": 600,
+          "trigger": {
+            "targetId": "execute-1",
+            "x": 132,
+            "y": 992.421875
+          },
+          "status": "accepted",
+          "guides": [
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-01a\"",
+              "offsetPx": 0,
+              "viewportTop": 383.84375,
+              "ownerTop": -62.15625
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"A-02a\"",
+              "offsetPx": 0,
+              "viewportTop": 603.84375,
+              "ownerTop": 393.84375
+            },
+            {
+              "kind": "merge",
+              "edge": "after",
+              "owner": "group:\"B-999a\"",
+              "offsetPx": 0,
+              "viewportTop": 66219.84375,
+              "ownerTop": 65969.84375
+            }
+          ]
+        }
+      ],
+      "io": {
+        "before": {
+          "requests": [],
+          "completed": []
+        },
+        "after": {
+          "requests": [],
+          "completed": []
+        },
+        "delta": {
+          "mutationRequests": [],
+          "completedReadwriteTransactions": []
+        }
+      }
+    }
+  },
+  "pointerIO": {
+    "settleMs": 600,
+    "before": {
+      "requests": [],
+      "completed": []
+    },
+    "after": {
+      "requests": [],
+      "completed": []
+    },
+    "delta": {
+      "mutationRequests": [],
+      "completedReadwriteTransactions": []
+    }
+  },
+  "start": [
+    {
+      "totalMs": 17.700000002980232,
+      "fallbackMs": 17.700000002980232,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.700000002980232,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 13.700000002980232,
+      "fallbackMs": 13.700000002980232,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 13.700000002980232,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17.799999997019768,
+      "fallbackMs": 17.799999997019768,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.799999997019768,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 18.899999998509884,
+      "fallbackMs": 18.899999998509884,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 18.899999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 18.100000001490116,
+      "fallbackMs": 18.100000001490116,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 18.100000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 18.299999997019768,
+      "fallbackMs": 18.299999997019768,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 18.299999997019768,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 19.19999999552965,
+      "fallbackMs": 19.19999999552965,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 19.19999999552965,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17.100000001490116,
+      "fallbackMs": 17.100000001490116,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.100000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17.299999997019768,
+      "fallbackMs": 17.399999998509884,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.399999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 19.600000001490116,
+      "fallbackMs": 19.600000001490116,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 19.600000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 18.100000001490116,
+      "fallbackMs": 18.100000001490116,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 18.100000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 19.100000001490116,
+      "fallbackMs": 19.100000001490116,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 19.100000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 18.19999999552965,
+      "fallbackMs": 18.19999999552965,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 18.19999999552965,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 18,
+      "fallbackMs": 18,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 18,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 16.30000000447035,
+      "fallbackMs": 16.30000000447035,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16.30000000447035,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 19.80000000447035,
+      "fallbackMs": 19.80000000447035,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 19.80000000447035,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 20.700000002980232,
+      "fallbackMs": 20.700000002980232,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 20.700000002980232,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 20.600000001490116,
+      "fallbackMs": 20.600000001490116,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 20.600000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17,
+      "fallbackMs": 17,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 18.200000002980232,
+      "fallbackMs": 18.200000002980232,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 18.200000002980232,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    }
+  ],
+  "end": [
+    12.400000005960464,
+    10.5,
+    11.899999998509884,
+    10.899999998509884,
+    12.700000002980232,
+    10.699999995529652,
+    11.399999998509884,
+    12,
+    13.5,
+    11.5,
+    13.5,
+    12.800000004470348,
+    12.200000002980232,
+    11.899999998509884,
+    13.299999997019768,
+    10.799999997019768,
+    8.399999998509884,
+    9.600000001490116,
+    12.099999994039536,
+    12.899999998509884
+  ],
+  "fixtureControl": [
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"A-03a:priority\"",
+        "A-03a:priority",
+        "group:\"A-01a\"",
+        "A-01a",
+        "group:\"A-02a\"",
+        "A-02a",
+        "group:\"B-10\"",
+        "B-10",
+        "group:\"A-11\"",
+        "A-11",
+        "group:\"A-12\"",
+        "group:\"A-13\"",
+        "group:\"A-14\"",
+        "group:\"B-15\"",
+        "group:\"A-16\"",
+        "group:\"A-17\"",
+        "group:\"A-18\"",
+        "group:\"A-19\"",
+        "group:\"B-20\"",
+        "group:\"A-21\"",
+        "group:\"A-22\"",
+        "group:\"A-23\"",
+        "group:\"A-24\"",
+        "group:\"B-25\"",
+        "group:\"A-26\"",
+        "group:\"A-27\"",
+        "group:\"A-28\"",
+        "group:\"A-29\"",
+        "group:\"B-30\"",
+        "group:\"A-31\"",
+        "group:\"A-32\"",
+        "group:\"A-33\"",
+        "group:\"A-34\"",
+        "group:\"B-35\"",
+        "group:\"A-36\"",
+        "group:\"A-37\"",
+        "group:\"A-38\"",
+        "group:\"A-39\"",
+        "group:\"B-40\"",
+        "group:\"A-41\"",
+        "group:\"A-42\"",
+        "group:\"A-43\"",
+        "group:\"A-44\"",
+        "group:\"B-45\"",
+        "group:\"A-46\"",
+        "group:\"A-47\"",
+        "group:\"A-48\"",
+        "group:\"A-49\"",
+        "group:\"B-50\"",
+        "group:\"A-51\"",
+        "group:\"A-52\"",
+        "group:\"A-53\"",
+        "group:\"A-54\"",
+        "group:\"B-55\"",
+        "group:\"A-56\"",
+        "group:\"A-57\"",
+        "group:\"A-58\"",
+        "group:\"A-59\"",
+        "group:\"B-60\"",
+        "group:\"A-61\"",
+        "group:\"A-62\"",
+        "group:\"A-63\"",
+        "group:\"A-64\"",
+        "group:\"B-65\"",
+        "group:\"A-66\"",
+        "group:\"A-67\"",
+        "group:\"A-68\"",
+        "group:\"A-69\"",
+        "group:\"B-70\"",
+        "group:\"A-71\"",
+        "group:\"A-72\"",
+        "group:\"A-73\"",
+        "group:\"A-74\"",
+        "group:\"B-75\"",
+        "group:\"A-76\"",
+        "group:\"A-77\"",
+        "group:\"A-78\"",
+        "group:\"A-79\"",
+        "group:\"B-80\"",
+        "group:\"A-81\"",
+        "group:\"A-82\"",
+        "group:\"A-83\"",
+        "group:\"A-84\"",
+        "group:\"B-85\"",
+        "group:\"A-86\"",
+        "group:\"A-87\"",
+        "group:\"A-88\"",
+        "group:\"A-89\"",
+        "group:\"B-90\"",
+        "group:\"A-91\"",
+        "group:\"A-92\"",
+        "group:\"A-93\"",
+        "group:\"A-94\"",
+        "group:\"B-95\"",
+        "group:\"A-96\"",
+        "group:\"A-97\"",
+        "group:\"A-98\"",
+        "group:\"A-99\"",
+        "group:\"B-100\"",
+        "group:\"A-101\"",
+        "group:\"A-102\"",
+        "group:\"A-103\"",
+        "group:\"A-104\"",
+        "group:\"B-105\"",
+        "group:\"A-106\"",
+        "group:\"A-107\"",
+        "group:\"A-108\"",
+        "group:\"A-109\"",
+        "group:\"B-110\"",
+        "group:\"A-111\"",
+        "group:\"A-112\"",
+        "group:\"A-113\"",
+        "group:\"A-114\"",
+        "group:\"B-115\"",
+        "group:\"A-116\"",
+        "group:\"A-117\"",
+        "group:\"A-118\"",
+        "group:\"A-119\"",
+        "group:\"B-120\"",
+        "group:\"A-121\"",
+        "group:\"A-122\"",
+        "group:\"A-123\"",
+        "group:\"A-124\"",
+        "group:\"B-125\"",
+        "group:\"A-126\"",
+        "group:\"A-127\"",
+        "group:\"A-128\"",
+        "group:\"A-129\"",
+        "group:\"B-130\"",
+        "group:\"A-131\"",
+        "group:\"A-132\"",
+        "group:\"A-133\"",
+        "group:\"A-134\"",
+        "group:\"B-135\"",
+        "group:\"A-136\"",
+        "group:\"A-137\"",
+        "group:\"A-138\"",
+        "group:\"A-139\"",
+        "group:\"B-140\"",
+        "group:\"A-141\"",
+        "group:\"A-142\"",
+        "group:\"A-143\"",
+        "group:\"A-144\"",
+        "group:\"B-145\"",
+        "group:\"A-146\"",
+        "group:\"A-147\"",
+        "group:\"A-148\"",
+        "group:\"A-149\"",
+        "group:\"B-150\"",
+        "group:\"A-151\"",
+        "group:\"A-152\"",
+        "group:\"A-153\"",
+        "group:\"A-154\"",
+        "group:\"B-155\"",
+        "group:\"A-156\"",
+        "group:\"A-157\"",
+        "group:\"A-158\"",
+        "group:\"A-159\"",
+        "group:\"B-160\"",
+        "group:\"A-161\"",
+        "group:\"A-162\"",
+        "group:\"A-163\"",
+        "group:\"A-164\"",
+        "group:\"B-165\"",
+        "group:\"A-166\"",
+        "group:\"A-167\"",
+        "group:\"A-168\"",
+        "group:\"A-169\"",
+        "group:\"B-170\"",
+        "group:\"A-171\"",
+        "group:\"A-172\"",
+        "group:\"A-173\"",
+        "group:\"A-174\"",
+        "group:\"B-175\"",
+        "group:\"A-176\"",
+        "group:\"A-177\"",
+        "group:\"A-178\"",
+        "group:\"A-179\"",
+        "group:\"B-180\"",
+        "group:\"A-181\"",
+        "group:\"A-182\"",
+        "group:\"A-183\"",
+        "group:\"A-184\"",
+        "group:\"B-185\"",
+        "group:\"A-186\"",
+        "group:\"A-187\"",
+        "group:\"A-188\"",
+        "group:\"A-189\"",
+        "group:\"B-190\"",
+        "group:\"A-191\"",
+        "group:\"A-192\"",
+        "group:\"A-193\"",
+        "group:\"A-194\"",
+        "group:\"B-195\"",
+        "group:\"A-196\"",
+        "group:\"A-197\"",
+        "group:\"A-198\"",
+        "group:\"A-199\"",
+        "group:\"B-200\"",
+        "group:\"A-201\"",
+        "group:\"A-202\"",
+        "group:\"A-203\"",
+        "group:\"A-204\"",
+        "group:\"B-205\"",
+        "group:\"A-206\"",
+        "group:\"A-207\"",
+        "group:\"A-208\"",
+        "group:\"A-209\"",
+        "group:\"B-210\"",
+        "group:\"A-211\"",
+        "group:\"A-212\"",
+        "group:\"A-213\"",
+        "group:\"A-214\"",
+        "group:\"B-215\"",
+        "group:\"A-216\"",
+        "group:\"A-217\"",
+        "group:\"A-218\"",
+        "group:\"A-219\"",
+        "group:\"B-220\"",
+        "group:\"A-221\"",
+        "group:\"A-222\"",
+        "group:\"A-223\"",
+        "group:\"A-224\"",
+        "group:\"B-225\"",
+        "group:\"A-226\"",
+        "group:\"A-227\"",
+        "group:\"A-228\"",
+        "group:\"A-229\"",
+        "group:\"B-230\"",
+        "group:\"A-231\"",
+        "group:\"A-232\"",
+        "group:\"A-233\"",
+        "group:\"A-234\"",
+        "group:\"B-235\"",
+        "group:\"A-236\"",
+        "group:\"A-237\"",
+        "group:\"A-238\"",
+        "group:\"A-239\"",
+        "group:\"B-240\"",
+        "group:\"A-241\"",
+        "group:\"A-242\"",
+        "group:\"A-243\"",
+        "group:\"A-244\"",
+        "group:\"B-245\"",
+        "group:\"A-246\"",
+        "group:\"A-247\"",
+        "group:\"A-248\"",
+        "group:\"A-249\"",
+        "group:\"B-250\"",
+        "group:\"A-251\"",
+        "group:\"A-252\"",
+        "group:\"A-253\"",
+        "group:\"A-254\"",
+        "group:\"B-999a\""
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "B-10:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "B-15:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "B-20:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "B-25:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "B-30:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "B-35:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "B-40:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "B-45:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "B-50:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "B-55:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "B-60:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "B-65:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "B-70:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "B-75:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-80:none",
+        "A-81:none",
+        "A-82:none",
+        "A-83:none",
+        "A-84:none",
+        "B-85:none",
+        "A-86:none",
+        "A-87:none",
+        "A-88:none",
+        "A-89:none",
+        "B-90:none",
+        "A-91:none",
+        "A-92:none",
+        "A-93:none",
+        "A-94:none",
+        "B-95:none",
+        "A-96:none",
+        "A-97:none",
+        "A-98:none",
+        "A-99:none",
+        "B-100:none",
+        "A-101:none",
+        "A-102:none",
+        "A-103:none",
+        "A-104:none",
+        "B-105:none",
+        "A-106:none",
+        "A-107:none",
+        "A-108:none",
+        "A-109:none",
+        "B-110:none",
+        "A-111:none",
+        "A-112:none",
+        "A-113:none",
+        "A-114:none",
+        "B-115:none",
+        "A-116:none",
+        "A-117:none",
+        "A-118:none",
+        "A-119:none",
+        "B-120:none",
+        "A-121:none",
+        "A-122:none",
+        "A-123:none",
+        "A-124:none",
+        "B-125:none",
+        "A-126:none",
+        "A-127:none",
+        "A-128:none",
+        "A-129:none",
+        "B-130:none",
+        "A-131:none",
+        "A-132:none",
+        "A-133:none",
+        "A-134:none",
+        "B-135:none",
+        "A-136:none",
+        "A-137:none",
+        "A-138:none",
+        "A-139:none",
+        "B-140:none",
+        "A-141:none",
+        "A-142:none",
+        "A-143:none",
+        "A-144:none",
+        "B-145:none",
+        "A-146:none",
+        "A-147:none",
+        "A-148:none",
+        "A-149:none",
+        "B-150:none",
+        "A-151:none",
+        "A-152:none",
+        "A-153:none",
+        "A-154:none",
+        "B-155:none",
+        "A-156:none",
+        "A-157:none",
+        "A-158:none",
+        "A-159:none",
+        "B-160:none",
+        "A-161:none",
+        "A-162:none",
+        "A-163:none",
+        "A-164:none",
+        "B-165:none",
+        "A-166:none",
+        "A-167:none",
+        "A-168:none",
+        "A-169:none",
+        "B-170:none",
+        "A-171:none",
+        "A-172:none",
+        "A-173:none",
+        "A-174:none",
+        "B-175:none",
+        "A-176:none",
+        "A-177:none",
+        "A-178:none",
+        "A-179:none",
+        "B-180:none",
+        "A-181:none",
+        "A-182:none",
+        "A-183:none",
+        "A-184:none",
+        "B-185:none",
+        "A-186:none",
+        "A-187:none",
+        "A-188:none",
+        "A-189:none",
+        "B-190:none",
+        "A-191:none",
+        "A-192:none",
+        "A-193:none",
+        "A-194:none",
+        "B-195:none",
+        "A-196:none",
+        "A-197:none",
+        "A-198:none",
+        "A-199:none",
+        "B-200:none",
+        "A-201:none",
+        "A-202:none",
+        "A-203:none",
+        "A-204:none",
+        "B-205:none",
+        "A-206:none",
+        "A-207:none",
+        "A-208:none",
+        "A-209:none",
+        "B-210:none",
+        "A-211:none",
+        "A-212:none",
+        "A-213:none",
+        "A-214:none",
+        "B-215:none",
+        "A-216:none",
+        "A-217:none",
+        "A-218:none",
+        "A-219:none",
+        "B-220:none",
+        "A-221:none",
+        "A-222:none",
+        "A-223:none",
+        "A-224:none",
+        "B-225:none",
+        "A-226:none",
+        "A-227:none",
+        "A-228:none",
+        "A-229:none",
+        "B-230:none",
+        "A-231:none",
+        "A-232:none",
+        "A-233:none",
+        "A-234:none",
+        "B-235:none",
+        "A-236:none",
+        "A-237:none",
+        "A-238:none",
+        "A-239:none",
+        "B-240:none",
+        "A-241:none",
+        "A-242:none",
+        "A-243:none",
+        "A-244:none",
+        "B-245:none",
+        "A-246:none",
+        "A-247:none",
+        "A-248:none",
+        "A-249:none",
+        "B-250:none",
+        "A-251:none",
+        "A-252:none",
+        "A-253:none",
+        "A-254:none",
+        "B-999a:none"
+      ]
+    },
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"A-03a:priority\"",
+        "group:\"A-01a\"",
+        "group:\"A-02a\"",
+        "group:\"B-10\"",
+        "group:\"A-11\"",
+        "group:\"A-12\"",
+        "group:\"A-13\"",
+        "group:\"A-14\"",
+        "group:\"B-15\"",
+        "group:\"A-16\"",
+        "group:\"A-17\"",
+        "group:\"A-18\"",
+        "group:\"A-19\"",
+        "group:\"B-20\"",
+        "group:\"A-21\"",
+        "group:\"A-22\"",
+        "group:\"A-23\"",
+        "group:\"A-24\"",
+        "group:\"B-25\"",
+        "group:\"A-26\"",
+        "group:\"A-27\"",
+        "group:\"A-28\"",
+        "group:\"A-29\"",
+        "group:\"B-30\"",
+        "group:\"A-31\"",
+        "group:\"A-32\"",
+        "group:\"A-33\"",
+        "group:\"A-34\"",
+        "group:\"B-35\"",
+        "group:\"A-36\"",
+        "group:\"A-37\"",
+        "group:\"A-38\"",
+        "group:\"A-39\"",
+        "group:\"B-40\"",
+        "group:\"A-41\"",
+        "group:\"A-42\"",
+        "group:\"A-43\"",
+        "group:\"A-44\"",
+        "group:\"B-45\"",
+        "group:\"A-46\"",
+        "group:\"A-47\"",
+        "group:\"A-48\"",
+        "group:\"A-49\"",
+        "group:\"B-50\"",
+        "group:\"A-51\"",
+        "group:\"A-52\"",
+        "group:\"A-53\"",
+        "group:\"A-54\"",
+        "group:\"B-55\"",
+        "group:\"A-56\"",
+        "group:\"A-57\"",
+        "group:\"A-58\"",
+        "group:\"A-59\"",
+        "group:\"B-60\"",
+        "group:\"A-61\"",
+        "group:\"A-62\"",
+        "group:\"A-63\"",
+        "group:\"A-64\"",
+        "group:\"B-65\"",
+        "group:\"A-66\"",
+        "group:\"A-67\"",
+        "group:\"A-68\"",
+        "group:\"A-69\"",
+        "group:\"B-70\"",
+        "group:\"A-71\"",
+        "group:\"A-72\"",
+        "group:\"A-73\"",
+        "group:\"A-74\"",
+        "group:\"B-75\"",
+        "group:\"A-76\"",
+        "group:\"A-77\"",
+        "group:\"A-78\"",
+        "group:\"A-79\"",
+        "group:\"B-80\"",
+        "group:\"A-81\"",
+        "group:\"A-82\"",
+        "group:\"A-83\"",
+        "group:\"A-84\"",
+        "group:\"B-85\"",
+        "group:\"A-86\"",
+        "group:\"A-87\"",
+        "group:\"A-88\"",
+        "group:\"A-89\"",
+        "group:\"B-90\"",
+        "group:\"A-91\"",
+        "group:\"A-92\"",
+        "group:\"A-93\"",
+        "group:\"A-94\"",
+        "group:\"B-95\"",
+        "group:\"A-96\"",
+        "group:\"A-97\"",
+        "group:\"A-98\"",
+        "group:\"A-99\"",
+        "group:\"B-100\"",
+        "group:\"A-101\"",
+        "group:\"A-102\"",
+        "group:\"A-103\"",
+        "group:\"A-104\"",
+        "group:\"B-105\"",
+        "group:\"A-106\"",
+        "group:\"A-107\"",
+        "group:\"A-108\"",
+        "group:\"A-109\"",
+        "group:\"B-110\"",
+        "group:\"A-111\"",
+        "group:\"A-112\"",
+        "group:\"A-113\"",
+        "group:\"A-114\"",
+        "group:\"B-115\"",
+        "group:\"A-116\"",
+        "group:\"A-117\"",
+        "group:\"A-118\"",
+        "group:\"A-119\"",
+        "group:\"B-120\"",
+        "group:\"A-121\"",
+        "group:\"A-122\"",
+        "group:\"A-123\"",
+        "group:\"A-124\"",
+        "group:\"B-125\"",
+        "group:\"A-126\"",
+        "group:\"A-127\"",
+        "group:\"A-128\"",
+        "group:\"A-129\"",
+        "group:\"B-130\"",
+        "group:\"A-131\"",
+        "group:\"A-132\"",
+        "group:\"A-133\"",
+        "group:\"A-134\"",
+        "group:\"B-135\"",
+        "group:\"A-136\"",
+        "group:\"A-137\"",
+        "group:\"A-138\"",
+        "group:\"A-139\"",
+        "group:\"B-140\"",
+        "group:\"A-141\"",
+        "group:\"A-142\"",
+        "group:\"A-143\"",
+        "group:\"A-144\"",
+        "group:\"B-145\"",
+        "group:\"A-146\"",
+        "group:\"A-147\"",
+        "group:\"A-148\"",
+        "group:\"A-149\"",
+        "group:\"B-150\"",
+        "group:\"A-151\"",
+        "group:\"A-152\"",
+        "group:\"A-153\"",
+        "group:\"A-154\"",
+        "group:\"B-155\"",
+        "group:\"A-156\"",
+        "group:\"A-157\"",
+        "group:\"A-158\"",
+        "group:\"A-159\"",
+        "group:\"B-160\"",
+        "group:\"A-161\"",
+        "group:\"A-162\"",
+        "group:\"A-163\"",
+        "group:\"A-164\"",
+        "group:\"B-165\"",
+        "group:\"A-166\"",
+        "group:\"A-167\"",
+        "group:\"A-168\"",
+        "group:\"A-169\"",
+        "group:\"B-170\"",
+        "group:\"A-171\"",
+        "group:\"A-172\"",
+        "group:\"A-173\"",
+        "group:\"A-174\"",
+        "group:\"B-175\"",
+        "group:\"A-176\"",
+        "group:\"A-177\"",
+        "group:\"A-178\"",
+        "group:\"A-179\"",
+        "group:\"B-180\"",
+        "group:\"A-181\"",
+        "group:\"A-182\"",
+        "group:\"A-183\"",
+        "group:\"A-184\"",
+        "group:\"B-185\"",
+        "group:\"A-186\"",
+        "group:\"A-187\"",
+        "group:\"A-188\"",
+        "group:\"A-189\"",
+        "group:\"B-190\"",
+        "group:\"A-191\"",
+        "group:\"A-192\"",
+        "group:\"A-193\"",
+        "group:\"A-194\"",
+        "group:\"B-195\"",
+        "group:\"A-196\"",
+        "group:\"A-197\"",
+        "group:\"A-198\"",
+        "group:\"A-199\"",
+        "group:\"B-200\"",
+        "group:\"A-201\"",
+        "group:\"A-202\"",
+        "group:\"A-203\"",
+        "group:\"A-204\"",
+        "group:\"B-205\"",
+        "group:\"A-206\"",
+        "group:\"A-207\"",
+        "group:\"A-208\"",
+        "group:\"A-209\"",
+        "group:\"B-210\"",
+        "group:\"A-211\"",
+        "group:\"A-212\"",
+        "group:\"A-213\"",
+        "group:\"A-214\"",
+        "group:\"B-215\"",
+        "group:\"A-216\"",
+        "group:\"A-217\"",
+        "group:\"A-218\"",
+        "group:\"A-219\"",
+        "group:\"B-220\"",
+        "group:\"A-221\"",
+        "group:\"A-222\"",
+        "group:\"A-223\"",
+        "group:\"A-224\"",
+        "group:\"B-225\"",
+        "group:\"A-226\"",
+        "group:\"A-227\"",
+        "group:\"A-228\"",
+        "group:\"A-229\"",
+        "group:\"B-230\"",
+        "group:\"A-231\"",
+        "group:\"A-232\"",
+        "group:\"A-233\"",
+        "group:\"A-234\"",
+        "group:\"B-235\"",
+        "group:\"A-236\"",
+        "group:\"A-237\"",
+        "group:\"A-238\"",
+        "group:\"A-239\"",
+        "group:\"B-240\"",
+        "group:\"A-241\"",
+        "group:\"A-242\"",
+        "group:\"A-243\"",
+        "group:\"A-244\"",
+        "group:\"B-245\"",
+        "group:\"A-246\"",
+        "group:\"A-247\"",
+        "group:\"A-248\"",
+        "group:\"A-249\"",
+        "group:\"B-250\"",
+        "B-250",
+        "group:\"A-251\"",
+        "A-251",
+        "group:\"A-252\"",
+        "A-252",
+        "group:\"A-253\"",
+        "A-253",
+        "group:\"A-254\"",
+        "A-254",
+        "group:\"B-999a\"",
+        "B-999a"
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "B-10:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "B-15:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "B-20:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "B-25:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "B-30:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "B-35:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "B-40:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "B-45:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "B-50:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "B-55:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "B-60:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "B-65:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "B-70:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "B-75:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-80:none",
+        "A-81:none",
+        "A-82:none",
+        "A-83:none",
+        "A-84:none",
+        "B-85:none",
+        "A-86:none",
+        "A-87:none",
+        "A-88:none",
+        "A-89:none",
+        "B-90:none",
+        "A-91:none",
+        "A-92:none",
+        "A-93:none",
+        "A-94:none",
+        "B-95:none",
+        "A-96:none",
+        "A-97:none",
+        "A-98:none",
+        "A-99:none",
+        "B-100:none",
+        "A-101:none",
+        "A-102:none",
+        "A-103:none",
+        "A-104:none",
+        "B-105:none",
+        "A-106:none",
+        "A-107:none",
+        "A-108:none",
+        "A-109:none",
+        "B-110:none",
+        "A-111:none",
+        "A-112:none",
+        "A-113:none",
+        "A-114:none",
+        "B-115:none",
+        "A-116:none",
+        "A-117:none",
+        "A-118:none",
+        "A-119:none",
+        "B-120:none",
+        "A-121:none",
+        "A-122:none",
+        "A-123:none",
+        "A-124:none",
+        "B-125:none",
+        "A-126:none",
+        "A-127:none",
+        "A-128:none",
+        "A-129:none",
+        "B-130:none",
+        "A-131:none",
+        "A-132:none",
+        "A-133:none",
+        "A-134:none",
+        "B-135:none",
+        "A-136:none",
+        "A-137:none",
+        "A-138:none",
+        "A-139:none",
+        "B-140:none",
+        "A-141:none",
+        "A-142:none",
+        "A-143:none",
+        "A-144:none",
+        "B-145:none",
+        "A-146:none",
+        "A-147:none",
+        "A-148:none",
+        "A-149:none",
+        "B-150:none",
+        "A-151:none",
+        "A-152:none",
+        "A-153:none",
+        "A-154:none",
+        "B-155:none",
+        "A-156:none",
+        "A-157:none",
+        "A-158:none",
+        "A-159:none",
+        "B-160:none",
+        "A-161:none",
+        "A-162:none",
+        "A-163:none",
+        "A-164:none",
+        "B-165:none",
+        "A-166:none",
+        "A-167:none",
+        "A-168:none",
+        "A-169:none",
+        "B-170:none",
+        "A-171:none",
+        "A-172:none",
+        "A-173:none",
+        "A-174:none",
+        "B-175:none",
+        "A-176:none",
+        "A-177:none",
+        "A-178:none",
+        "A-179:none",
+        "B-180:none",
+        "A-181:none",
+        "A-182:none",
+        "A-183:none",
+        "A-184:none",
+        "B-185:none",
+        "A-186:none",
+        "A-187:none",
+        "A-188:none",
+        "A-189:none",
+        "B-190:none",
+        "A-191:none",
+        "A-192:none",
+        "A-193:none",
+        "A-194:none",
+        "B-195:none",
+        "A-196:none",
+        "A-197:none",
+        "A-198:none",
+        "A-199:none",
+        "B-200:none",
+        "A-201:none",
+        "A-202:none",
+        "A-203:none",
+        "A-204:none",
+        "B-205:none",
+        "A-206:none",
+        "A-207:none",
+        "A-208:none",
+        "A-209:none",
+        "B-210:none",
+        "A-211:none",
+        "A-212:none",
+        "A-213:none",
+        "A-214:none",
+        "B-215:none",
+        "A-216:none",
+        "A-217:none",
+        "A-218:none",
+        "A-219:none",
+        "B-220:none",
+        "A-221:none",
+        "A-222:none",
+        "A-223:none",
+        "A-224:none",
+        "B-225:none",
+        "A-226:none",
+        "A-227:none",
+        "A-228:none",
+        "A-229:none",
+        "B-230:none",
+        "A-231:none",
+        "A-232:none",
+        "A-233:none",
+        "A-234:none",
+        "B-235:none",
+        "A-236:none",
+        "A-237:none",
+        "A-238:none",
+        "A-239:none",
+        "B-240:none",
+        "A-241:none",
+        "A-242:none",
+        "A-243:none",
+        "A-244:none",
+        "B-245:none",
+        "A-246:none",
+        "A-247:none",
+        "A-248:none",
+        "A-249:none",
+        "B-250:none",
+        "A-251:none",
+        "A-252:none",
+        "A-253:none",
+        "A-254:none",
+        "B-999a:none"
+      ]
+    },
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"A-03a:priority\"",
+        "A-03a:priority",
+        "group:\"A-01a\"",
+        "A-01a",
+        "group:\"A-02a\"",
+        "A-02a",
+        "group:\"B-10\"",
+        "B-10",
+        "group:\"A-11\"",
+        "A-11",
+        "group:\"A-12\"",
+        "group:\"A-13\"",
+        "group:\"A-14\"",
+        "group:\"B-15\"",
+        "group:\"A-16\"",
+        "group:\"A-17\"",
+        "group:\"A-18\"",
+        "group:\"A-19\"",
+        "group:\"B-20\"",
+        "group:\"A-21\"",
+        "group:\"A-22\"",
+        "group:\"A-23\"",
+        "group:\"A-24\"",
+        "group:\"B-25\"",
+        "group:\"A-26\"",
+        "group:\"A-27\"",
+        "group:\"A-28\"",
+        "group:\"A-29\"",
+        "group:\"B-30\"",
+        "group:\"A-31\"",
+        "group:\"A-32\"",
+        "group:\"A-33\"",
+        "group:\"A-34\"",
+        "group:\"B-35\"",
+        "group:\"A-36\"",
+        "group:\"A-37\"",
+        "group:\"A-38\"",
+        "group:\"A-39\"",
+        "group:\"B-40\"",
+        "group:\"A-41\"",
+        "group:\"A-42\"",
+        "group:\"A-43\"",
+        "group:\"A-44\"",
+        "group:\"B-45\"",
+        "group:\"A-46\"",
+        "group:\"A-47\"",
+        "group:\"A-48\"",
+        "group:\"A-49\"",
+        "group:\"B-50\"",
+        "group:\"A-51\"",
+        "group:\"A-52\"",
+        "group:\"A-53\"",
+        "group:\"A-54\"",
+        "group:\"B-55\"",
+        "group:\"A-56\"",
+        "group:\"A-57\"",
+        "group:\"A-58\"",
+        "group:\"A-59\"",
+        "group:\"B-60\"",
+        "group:\"A-61\"",
+        "group:\"A-62\"",
+        "group:\"A-63\"",
+        "group:\"A-64\"",
+        "group:\"B-65\"",
+        "group:\"A-66\"",
+        "group:\"A-67\"",
+        "group:\"A-68\"",
+        "group:\"A-69\"",
+        "group:\"B-70\"",
+        "group:\"A-71\"",
+        "group:\"A-72\"",
+        "group:\"A-73\"",
+        "group:\"A-74\"",
+        "group:\"B-75\"",
+        "group:\"A-76\"",
+        "group:\"A-77\"",
+        "group:\"A-78\"",
+        "group:\"A-79\"",
+        "group:\"B-80\"",
+        "group:\"A-81\"",
+        "group:\"A-82\"",
+        "group:\"A-83\"",
+        "group:\"A-84\"",
+        "group:\"B-85\"",
+        "group:\"A-86\"",
+        "group:\"A-87\"",
+        "group:\"A-88\"",
+        "group:\"A-89\"",
+        "group:\"B-90\"",
+        "group:\"A-91\"",
+        "group:\"A-92\"",
+        "group:\"A-93\"",
+        "group:\"A-94\"",
+        "group:\"B-95\"",
+        "group:\"A-96\"",
+        "group:\"A-97\"",
+        "group:\"A-98\"",
+        "group:\"A-99\"",
+        "group:\"B-100\"",
+        "group:\"A-101\"",
+        "group:\"A-102\"",
+        "group:\"A-103\"",
+        "group:\"A-104\"",
+        "group:\"B-105\"",
+        "group:\"A-106\"",
+        "group:\"A-107\"",
+        "group:\"A-108\"",
+        "group:\"A-109\"",
+        "group:\"B-110\"",
+        "group:\"A-111\"",
+        "group:\"A-112\"",
+        "group:\"A-113\"",
+        "group:\"A-114\"",
+        "group:\"B-115\"",
+        "group:\"A-116\"",
+        "group:\"A-117\"",
+        "group:\"A-118\"",
+        "group:\"A-119\"",
+        "group:\"B-120\"",
+        "group:\"A-121\"",
+        "group:\"A-122\"",
+        "group:\"A-123\"",
+        "group:\"A-124\"",
+        "group:\"B-125\"",
+        "group:\"A-126\"",
+        "group:\"A-127\"",
+        "group:\"A-128\"",
+        "group:\"A-129\"",
+        "group:\"B-130\"",
+        "group:\"A-131\"",
+        "group:\"A-132\"",
+        "group:\"A-133\"",
+        "group:\"A-134\"",
+        "group:\"B-135\"",
+        "group:\"A-136\"",
+        "group:\"A-137\"",
+        "group:\"A-138\"",
+        "group:\"A-139\"",
+        "group:\"B-140\"",
+        "group:\"A-141\"",
+        "group:\"A-142\"",
+        "group:\"A-143\"",
+        "group:\"A-144\"",
+        "group:\"B-145\"",
+        "group:\"A-146\"",
+        "group:\"A-147\"",
+        "group:\"A-148\"",
+        "group:\"A-149\"",
+        "group:\"B-150\"",
+        "group:\"A-151\"",
+        "group:\"A-152\"",
+        "group:\"A-153\"",
+        "group:\"A-154\"",
+        "group:\"B-155\"",
+        "group:\"A-156\"",
+        "group:\"A-157\"",
+        "group:\"A-158\"",
+        "group:\"A-159\"",
+        "group:\"B-160\"",
+        "group:\"A-161\"",
+        "group:\"A-162\"",
+        "group:\"A-163\"",
+        "group:\"A-164\"",
+        "group:\"B-165\"",
+        "group:\"A-166\"",
+        "group:\"A-167\"",
+        "group:\"A-168\"",
+        "group:\"A-169\"",
+        "group:\"B-170\"",
+        "group:\"A-171\"",
+        "group:\"A-172\"",
+        "group:\"A-173\"",
+        "group:\"A-174\"",
+        "group:\"B-175\"",
+        "group:\"A-176\"",
+        "group:\"A-177\"",
+        "group:\"A-178\"",
+        "group:\"A-179\"",
+        "group:\"B-180\"",
+        "group:\"A-181\"",
+        "group:\"A-182\"",
+        "group:\"A-183\"",
+        "group:\"A-184\"",
+        "group:\"B-185\"",
+        "group:\"A-186\"",
+        "group:\"A-187\"",
+        "group:\"A-188\"",
+        "group:\"A-189\"",
+        "group:\"B-190\"",
+        "group:\"A-191\"",
+        "group:\"A-192\"",
+        "group:\"A-193\"",
+        "group:\"A-194\"",
+        "group:\"B-195\"",
+        "group:\"A-196\"",
+        "group:\"A-197\"",
+        "group:\"A-198\"",
+        "group:\"A-199\"",
+        "group:\"B-200\"",
+        "group:\"A-201\"",
+        "group:\"A-202\"",
+        "group:\"A-203\"",
+        "group:\"A-204\"",
+        "group:\"B-205\"",
+        "group:\"A-206\"",
+        "group:\"A-207\"",
+        "group:\"A-208\"",
+        "group:\"A-209\"",
+        "group:\"B-210\"",
+        "group:\"A-211\"",
+        "group:\"A-212\"",
+        "group:\"A-213\"",
+        "group:\"A-214\"",
+        "group:\"B-215\"",
+        "group:\"A-216\"",
+        "group:\"A-217\"",
+        "group:\"A-218\"",
+        "group:\"A-219\"",
+        "group:\"B-220\"",
+        "group:\"A-221\"",
+        "group:\"A-222\"",
+        "group:\"A-223\"",
+        "group:\"A-224\"",
+        "group:\"B-225\"",
+        "group:\"A-226\"",
+        "group:\"A-227\"",
+        "group:\"A-228\"",
+        "group:\"A-229\"",
+        "group:\"B-230\"",
+        "group:\"A-231\"",
+        "group:\"A-232\"",
+        "group:\"A-233\"",
+        "group:\"A-234\"",
+        "group:\"B-235\"",
+        "group:\"A-236\"",
+        "group:\"A-237\"",
+        "group:\"A-238\"",
+        "group:\"A-239\"",
+        "group:\"B-240\"",
+        "group:\"A-241\"",
+        "group:\"A-242\"",
+        "group:\"A-243\"",
+        "group:\"A-244\"",
+        "group:\"B-245\"",
+        "group:\"A-246\"",
+        "group:\"A-247\"",
+        "group:\"A-248\"",
+        "group:\"A-249\"",
+        "group:\"B-250\"",
+        "group:\"A-251\"",
+        "group:\"A-252\"",
+        "group:\"A-253\"",
+        "group:\"A-254\"",
+        "group:\"B-999a\""
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "B-10:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "B-15:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "B-20:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "B-25:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "B-30:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "B-35:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "B-40:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "B-45:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "B-50:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "B-55:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "B-60:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "B-65:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "B-70:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "B-75:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-80:none",
+        "A-81:none",
+        "A-82:none",
+        "A-83:none",
+        "A-84:none",
+        "B-85:none",
+        "A-86:none",
+        "A-87:none",
+        "A-88:none",
+        "A-89:none",
+        "B-90:none",
+        "A-91:none",
+        "A-92:none",
+        "A-93:none",
+        "A-94:none",
+        "B-95:none",
+        "A-96:none",
+        "A-97:none",
+        "A-98:none",
+        "A-99:none",
+        "B-100:none",
+        "A-101:none",
+        "A-102:none",
+        "A-103:none",
+        "A-104:none",
+        "B-105:none",
+        "A-106:none",
+        "A-107:none",
+        "A-108:none",
+        "A-109:none",
+        "B-110:none",
+        "A-111:none",
+        "A-112:none",
+        "A-113:none",
+        "A-114:none",
+        "B-115:none",
+        "A-116:none",
+        "A-117:none",
+        "A-118:none",
+        "A-119:none",
+        "B-120:none",
+        "A-121:none",
+        "A-122:none",
+        "A-123:none",
+        "A-124:none",
+        "B-125:none",
+        "A-126:none",
+        "A-127:none",
+        "A-128:none",
+        "A-129:none",
+        "B-130:none",
+        "A-131:none",
+        "A-132:none",
+        "A-133:none",
+        "A-134:none",
+        "B-135:none",
+        "A-136:none",
+        "A-137:none",
+        "A-138:none",
+        "A-139:none",
+        "B-140:none",
+        "A-141:none",
+        "A-142:none",
+        "A-143:none",
+        "A-144:none",
+        "B-145:none",
+        "A-146:none",
+        "A-147:none",
+        "A-148:none",
+        "A-149:none",
+        "B-150:none",
+        "A-151:none",
+        "A-152:none",
+        "A-153:none",
+        "A-154:none",
+        "B-155:none",
+        "A-156:none",
+        "A-157:none",
+        "A-158:none",
+        "A-159:none",
+        "B-160:none",
+        "A-161:none",
+        "A-162:none",
+        "A-163:none",
+        "A-164:none",
+        "B-165:none",
+        "A-166:none",
+        "A-167:none",
+        "A-168:none",
+        "A-169:none",
+        "B-170:none",
+        "A-171:none",
+        "A-172:none",
+        "A-173:none",
+        "A-174:none",
+        "B-175:none",
+        "A-176:none",
+        "A-177:none",
+        "A-178:none",
+        "A-179:none",
+        "B-180:none",
+        "A-181:none",
+        "A-182:none",
+        "A-183:none",
+        "A-184:none",
+        "B-185:none",
+        "A-186:none",
+        "A-187:none",
+        "A-188:none",
+        "A-189:none",
+        "B-190:none",
+        "A-191:none",
+        "A-192:none",
+        "A-193:none",
+        "A-194:none",
+        "B-195:none",
+        "A-196:none",
+        "A-197:none",
+        "A-198:none",
+        "A-199:none",
+        "B-200:none",
+        "A-201:none",
+        "A-202:none",
+        "A-203:none",
+        "A-204:none",
+        "B-205:none",
+        "A-206:none",
+        "A-207:none",
+        "A-208:none",
+        "A-209:none",
+        "B-210:none",
+        "A-211:none",
+        "A-212:none",
+        "A-213:none",
+        "A-214:none",
+        "B-215:none",
+        "A-216:none",
+        "A-217:none",
+        "A-218:none",
+        "A-219:none",
+        "B-220:none",
+        "A-221:none",
+        "A-222:none",
+        "A-223:none",
+        "A-224:none",
+        "B-225:none",
+        "A-226:none",
+        "A-227:none",
+        "A-228:none",
+        "A-229:none",
+        "B-230:none",
+        "A-231:none",
+        "A-232:none",
+        "A-233:none",
+        "A-234:none",
+        "B-235:none",
+        "A-236:none",
+        "A-237:none",
+        "A-238:none",
+        "A-239:none",
+        "B-240:none",
+        "A-241:none",
+        "A-242:none",
+        "A-243:none",
+        "A-244:none",
+        "B-245:none",
+        "A-246:none",
+        "A-247:none",
+        "A-248:none",
+        "A-249:none",
+        "B-250:none",
+        "A-251:none",
+        "A-252:none",
+        "A-253:none",
+        "A-254:none",
+        "B-999a:none"
+      ]
+    }
+  ],
+  "positiveControl": {
+    "counts": {
+      "group:group:\"A-03a:priority\"": 6,
+      "item:priority": 4,
+      "group:group:\"A-01a\"": 10,
+      "group:group:\"A-02a\"": 10,
+      "group:group:\"B-10\"": 6,
+      "group:group:\"A-11\"": 6,
+      "group:group:\"A-04a\"": 4,
+      "group:group:\"A-05a\"": 4,
+      "group:group:\"A-1000\"": 4,
+      "group:group:\"A-1001\"": 4
+    },
+    "mounts": {},
+    "known": [
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+      "item:merge-a",
+      "item:merge-b",
+      "item:new-x",
+      "item:bad-priority",
+      "item:new-0",
+      "item:new-1",
+      "item:priority",
+      "item:a1",
+      "item:a2",
+      "item:b1",
+      "item:execute-1",
+      "item:new-2",
+      "group:group:\"A-03a:priority\"",
+      "group:group:\"A-01a\"",
+      "group:group:\"A-02a\"",
+      "group:group:\"B-10\"",
+      "group:group:\"A-04a\"",
+      "group:group:\"A-05a\"",
+      "group:group:\"A-1000\"",
+      "item:execute-0",
+      "group:group:\"A-11\"",
+      "group:group:\"A-1001\"",
+      "group:group:\"B-250\"",
+      "group:group:\"A-251\"",
+      "group:group:\"A-252\"",
+      "group:group:\"A-253\"",
+      "group:group:\"A-254\"",
+      "group:group:\"B-999a\"",
+      "group:group:\"A-1241\"",
+      "group:group:\"A-1242\"",
+      "group:group:\"A-1243\"",
+      "group:group:\"A-1244\"",
+      "item:execute-240",
+      "item:execute-241",
+      "item:execute-242",
+      "item:execute-243",
+      "item:execute-244",
+      "item:offscreen",
+      "item:new-241",
+      "item:new-242",
+      "item:new-243",
+      "item:new-244",
+      "item:merge-offscreen",
+      "group:group:\"A-249\"",
+      "group:group:\"A-1240\"",
+      "item:new-240"
+    ],
+    "mounted": [
+      "group:group:\"A-03a:priority\"",
+      "item:priority",
+      "group:group:\"A-01a\"",
+      "item:a1",
+      "item:a2",
+      "group:group:\"A-02a\"",
+      "item:b1",
+      "group:group:\"B-10\"",
+      "item:execute-0",
+      "group:group:\"A-11\"",
+      "item:merge-a",
+      "item:merge-b",
+      "group:group:\"A-04a\"",
+      "item:new-x",
+      "group:group:\"A-05a\"",
+      "item:bad-priority",
+      "group:group:\"A-1000\"",
+      "item:new-0",
+      "group:group:\"A-1001\"",
+      "item:new-1"
+    ]
+  },
+  "rendererBefore": [
+    {
+      "column": "execute",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 5,
+      "mountedGroups": 5
+    },
+    {
+      "column": "candidate",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 6,
+      "mountedGroups": 6
+    }
+  ],
+  "rendererAfter": [
+    {
+      "column": "execute",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 6,
+      "mountedGroups": 6
+    },
+    {
+      "column": "candidate",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 6,
+      "mountedGroups": 6
+    }
+  ],
+  "saveCompletionMs": [
+    114,
+    85,
+    84,
+    85,
+    98,
+    89,
+    87,
+    82,
+    86,
+    83,
+    92,
+    77,
+    75,
+    89,
+    74,
+    92,
+    74,
+    88,
+    81,
+    87
+  ],
+  "diagnosticPerformanceMetrics": [
+    {
+      "id": "new-0",
+      "elapsedMs": 78.89999999850988,
+      "metrics": {
+        "LayoutCount": 6,
+        "RecalcStyleCount": 9,
+        "LayoutDuration": 3.755999999999999,
+        "RecalcStyleDuration": 4.782,
+        "ScriptDuration": 32.629999999999995,
+        "TaskDuration": 67.47099999999999
+      }
+    },
+    {
+      "id": "new-1",
+      "elapsedMs": 62.69999999552965,
+      "metrics": {
+        "LayoutCount": 6,
+        "RecalcStyleCount": 8,
+        "LayoutDuration": 3.4990000000000023,
+        "RecalcStyleDuration": 4.3020000000000005,
+        "ScriptDuration": 29.003,
+        "TaskDuration": 57.482000000000035
+      }
+    },
+    {
+      "id": "new-2",
+      "elapsedMs": 58.29999999701977,
+      "metrics": {
+        "LayoutCount": 6,
+        "RecalcStyleCount": 8,
+        "LayoutDuration": 3.7540000000000004,
+        "RecalcStyleDuration": 4.248999999999996,
+        "ScriptDuration": 27.577000000000005,
+        "TaskDuration": 55.867
+      }
+    },
+    {
+      "id": "new-3",
+      "elapsedMs": 62.899999998509884,
+      "metrics": {
+        "LayoutCount": 6,
+        "RecalcStyleCount": 9,
+        "LayoutDuration": 3.6839999999999997,
+        "RecalcStyleDuration": 4.298999999999998,
+        "ScriptDuration": 28.278,
+        "TaskDuration": 57.728
+      }
+    },
+    {
+      "id": "new-4",
+      "elapsedMs": 69,
+      "metrics": {
+        "LayoutCount": 6,
+        "RecalcStyleCount": 7,
+        "LayoutDuration": 4.216999999999999,
+        "RecalcStyleDuration": 4.822999999999994,
+        "ScriptDuration": 36.418000000000006,
+        "TaskDuration": 68.01400000000002
+      }
+    },
+    {
+      "id": "new-5",
+      "elapsedMs": 69.60000000149012,
+      "metrics": {
+        "LayoutCount": 5,
+        "RecalcStyleCount": 7,
+        "LayoutDuration": 5.14400000000001,
+        "RecalcStyleDuration": 5.03300000000001,
+        "ScriptDuration": 30.639000000000028,
+        "TaskDuration": 62.62500000000004
+      }
+    },
+    {
+      "id": "new-6",
+      "elapsedMs": 62.899999998509884,
+      "metrics": {
+        "LayoutCount": 5,
+        "RecalcStyleCount": 8,
+        "LayoutDuration": 3.2039999999999984,
+        "RecalcStyleDuration": 4.320000000000018,
+        "ScriptDuration": 31.920999999999978,
+        "TaskDuration": 57.787000000000035
+      }
+    },
+    {
+      "id": "new-7",
+      "elapsedMs": 59.100000001490116,
+      "metrics": {
+        "LayoutCount": 6,
+        "RecalcStyleCount": 7,
+        "LayoutDuration": 2.9519999999999964,
+        "RecalcStyleDuration": 3.8180000000000156,
+        "ScriptDuration": 26.34700000000001,
+        "TaskDuration": 54.50099999999991
+      }
+    },
+    {
+      "id": "new-8",
+      "elapsedMs": 61.80000000447035,
+      "metrics": {
+        "LayoutCount": 6,
+        "RecalcStyleCount": 9,
+        "LayoutDuration": 3.368999999999983,
+        "RecalcStyleDuration": 4.150999999999988,
+        "ScriptDuration": 30.972999999999974,
+        "TaskDuration": 58.70199999999981
+      }
+    },
+    {
+      "id": "new-9",
+      "elapsedMs": 59.599999994039536,
+      "metrics": {
+        "LayoutCount": 6,
+        "RecalcStyleCount": 9,
+        "LayoutDuration": 3.623999999999988,
+        "RecalcStyleDuration": 4.612999999999978,
+        "ScriptDuration": 26.229999999999976,
+        "TaskDuration": 54.6399999999998
+      }
+    },
+    {
+      "id": "new-10",
+      "elapsedMs": 59,
+      "metrics": {
+        "LayoutCount": 5,
+        "RecalcStyleCount": 6,
+        "LayoutDuration": 3.3499999999999917,
+        "RecalcStyleDuration": 4.247000000000001,
+        "ScriptDuration": 27.23600000000004,
+        "TaskDuration": 57.44199999999999
+      }
+    },
+    {
+      "id": "new-11",
+      "elapsedMs": 58.5,
+      "metrics": {
+        "LayoutCount": 5,
+        "RecalcStyleCount": 7,
+        "LayoutDuration": 3.204999999999986,
+        "RecalcStyleDuration": 3.927000000000014,
+        "ScriptDuration": 26.496999999999993,
+        "TaskDuration": 52.89100000000002
+      }
+    },
+    {
+      "id": "new-12",
+      "elapsedMs": 57.899999998509884,
+      "metrics": {
+        "LayoutCount": 5,
+        "RecalcStyleCount": 6,
+        "LayoutDuration": 3.0710000000000184,
+        "RecalcStyleDuration": 3.672999999999982,
+        "ScriptDuration": 25.916999999999966,
+        "TaskDuration": 51.752000000000024
+      }
+    },
+    {
+      "id": "new-13",
+      "elapsedMs": 58.20000000298023,
+      "metrics": {
+        "LayoutCount": 5,
+        "RecalcStyleCount": 7,
+        "LayoutDuration": 3.605000000000025,
+        "RecalcStyleDuration": 4.421999999999981,
+        "ScriptDuration": 27.434999999999988,
+        "TaskDuration": 53.44199999999999
+      }
+    },
+    {
+      "id": "new-14",
+      "elapsedMs": 55.399999998509884,
+      "metrics": {
+        "LayoutCount": 5,
+        "RecalcStyleCount": 7,
+        "LayoutDuration": 3.060000000000007,
+        "RecalcStyleDuration": 3.7790000000000323,
+        "ScriptDuration": 25.244999999999962,
+        "TaskDuration": 49.722000000000044
+      }
+    },
+    {
+      "id": "new-15",
+      "elapsedMs": 61.100000001490116,
+      "metrics": {
+        "LayoutCount": 6,
+        "RecalcStyleCount": 8,
+        "LayoutDuration": 4.1720000000000095,
+        "RecalcStyleDuration": 5.301999999999973,
+        "ScriptDuration": 27.68000000000004,
+        "TaskDuration": 57.68599999999991
+      }
+    },
+    {
+      "id": "new-16",
+      "elapsedMs": 56.5,
+      "metrics": {
+        "LayoutCount": 6,
+        "RecalcStyleCount": 6,
+        "LayoutDuration": 3.252000000000005,
+        "RecalcStyleDuration": 3.793999999999964,
+        "ScriptDuration": 26.349999999999984,
+        "TaskDuration": 53.14400000000008
+      }
+    },
+    {
+      "id": "new-17",
+      "elapsedMs": 58.79999999701977,
+      "metrics": {
+        "LayoutCount": 6,
+        "RecalcStyleCount": 8,
+        "LayoutDuration": 3.7910000000000443,
+        "RecalcStyleDuration": 4.815000000000014,
+        "ScriptDuration": 27.783,
+        "TaskDuration": 56.511999999999674
+      }
+    },
+    {
+      "id": "new-18",
+      "elapsedMs": 57.5,
+      "metrics": {
+        "LayoutCount": 6,
+        "RecalcStyleCount": 7,
+        "LayoutDuration": 3.481000000000012,
+        "RecalcStyleDuration": 4.09799999999999,
+        "ScriptDuration": 26.692999999999966,
+        "TaskDuration": 55.08399999999991
+      }
+    },
+    {
+      "id": "new-19",
+      "elapsedMs": 60.70000000298023,
+      "metrics": {
+        "LayoutCount": 6,
+        "RecalcStyleCount": 7,
+        "LayoutDuration": 4.047000000000023,
+        "RecalcStyleDuration": 4.474999999999952,
+        "ScriptDuration": 26.69699999999997,
+        "TaskDuration": 56.89600000000006
+      }
+    }
+  ],
+  "dropDetails": [
+    {
+      "id": "new-0",
+      "dispatchMs": 4,
+      "sourceGroupRowKey": "group:\"A-1000\"",
+      "outerPlaceholderMs": 72.30000000447035,
+      "outerActiveMs": 72.30000000447035,
+      "placeholderMs": 72.30000000447035,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 7.5,
+          "id": 6,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 45.70000000298023,
+          "id": 6
+        }
+      ],
+      "commitsMs": [
+        6.399999998509884,
+        6.399999998509884,
+        14,
+        65.30000000447035,
+        67.80000000447035,
+        71.60000000149012,
+        71.70000000298023,
+        78.89999999850988
+      ],
+      "observedMs": 72.30000000447035,
+      "paintedMs": 78.89999999850988,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-1",
+      "dispatchMs": 3.0999999940395355,
+      "sourceGroupRowKey": "group:\"A-1001\"",
+      "outerPlaceholderMs": 57.29999999701977,
+      "outerActiveMs": 57.29999999701977,
+      "placeholderMs": 57.29999999701977,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.5,
+          "id": 7,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 30.899999998509884,
+          "id": 7
+        }
+      ],
+      "commitsMs": [
+        4.899999998509884,
+        4.899999998509884,
+        10.899999998509884,
+        50.5,
+        53.19999999552965,
+        56.79999999701977,
+        56.79999999701977,
+        62.69999999552965
+      ],
+      "observedMs": 57.29999999701977,
+      "paintedMs": 62.69999999552965,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-2",
+      "dispatchMs": 2.7999999970197678,
+      "sourceGroupRowKey": "group:\"A-1002\"",
+      "outerPlaceholderMs": 52.79999999701977,
+      "outerActiveMs": 52.79999999701977,
+      "placeholderMs": 52.79999999701977,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.899999998509884,
+          "id": 8,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 28.600000001490116,
+          "id": 8
+        }
+      ],
+      "commitsMs": [
+        5.100000001490116,
+        5.200000002980232,
+        12,
+        46,
+        48.20000000298023,
+        52.20000000298023,
+        52.399999998509884,
+        58.20000000298023
+      ],
+      "observedMs": 52.79999999701977,
+      "paintedMs": 58.29999999701977,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-3",
+      "dispatchMs": 2.6999999955296516,
+      "sourceGroupRowKey": "group:\"A-1003\"",
+      "outerPlaceholderMs": 56.599999994039536,
+      "outerActiveMs": 56.599999994039536,
+      "placeholderMs": 56.599999994039536,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.5999999940395355,
+          "id": 9,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 31.799999997019768,
+          "id": 9
+        }
+      ],
+      "commitsMs": [
+        4.899999998509884,
+        5,
+        12.799999997019768,
+        49.599999994039536,
+        52.29999999701977,
+        56.099999994039536,
+        56.19999999552965,
+        62.899999998509884
+      ],
+      "observedMs": 56.599999994039536,
+      "paintedMs": 62.899999998509884,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-4",
+      "dispatchMs": 3,
+      "sourceGroupRowKey": "group:\"A-1004\"",
+      "outerPlaceholderMs": 63.100000001490116,
+      "outerActiveMs": 63.100000001490116,
+      "placeholderMs": 63.20000000298023,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 6.399999998509884,
+          "id": 10,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 30.799999997019768,
+          "id": 10
+        }
+      ],
+      "commitsMs": [
+        5.600000001490116,
+        5.700000002980232,
+        13,
+        55.600000001490116,
+        58.5,
+        62.5,
+        62.70000000298023,
+        69
+      ],
+      "observedMs": 63.20000000298023,
+      "paintedMs": 69,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-5",
+      "dispatchMs": 2.5,
+      "sourceGroupRowKey": "group:\"A-1005\"",
+      "outerPlaceholderMs": 63.30000000447035,
+      "outerActiveMs": 63.30000000447035,
+      "placeholderMs": 63.400000005960464,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.4000000059604645,
+          "id": 11,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 33.400000005960464,
+          "id": 11
+        }
+      ],
+      "commitsMs": [
+        4.600000001490116,
+        4.600000001490116,
+        7.4000000059604645,
+        52.80000000447035,
+        55.5,
+        62.400000005960464,
+        62.600000001490116,
+        69.5
+      ],
+      "observedMs": 63.400000005960464,
+      "paintedMs": 69.60000000149012,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-6",
+      "dispatchMs": 2.3000000044703484,
+      "sourceGroupRowKey": "group:\"A-1006\"",
+      "outerPlaceholderMs": 57.70000000298023,
+      "outerActiveMs": 57.70000000298023,
+      "placeholderMs": 57.70000000298023,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.200000002980232,
+          "id": 12,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 28.30000000447035,
+          "id": 12
+        }
+      ],
+      "commitsMs": [
+        4.5,
+        4.5,
+        7.399999998509884,
+        51.20000000298023,
+        53.399999998509884,
+        57.30000000447035,
+        57.399999998509884,
+        62.899999998509884
+      ],
+      "observedMs": 57.70000000298023,
+      "paintedMs": 62.899999998509884,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-7",
+      "dispatchMs": 2.5,
+      "sourceGroupRowKey": "group:\"A-1007\"",
+      "outerPlaceholderMs": 52.5,
+      "outerActiveMs": 52.600000001490116,
+      "placeholderMs": 52.600000001490116,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.200000002980232,
+          "id": 13,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 29.600000001490116,
+          "id": 13
+        }
+      ],
+      "commitsMs": [
+        4.5,
+        4.5,
+        11,
+        46.70000000298023,
+        48.900000005960464,
+        52,
+        52.100000001490116,
+        59.100000001490116
+      ],
+      "observedMs": 52.600000001490116,
+      "paintedMs": 59.100000001490116,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-8",
+      "dispatchMs": 2.5,
+      "sourceGroupRowKey": "group:\"A-1008\"",
+      "outerPlaceholderMs": 56.30000000447035,
+      "outerActiveMs": 56.30000000447035,
+      "placeholderMs": 56.30000000447035,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.399999998509884,
+          "id": 14,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 28.5,
+          "id": 14
+        }
+      ],
+      "commitsMs": [
+        4.800000004470348,
+        4.800000004470348,
+        11.600000001490116,
+        49.80000000447035,
+        52,
+        55.70000000298023,
+        55.80000000447035,
+        61.80000000447035
+      ],
+      "observedMs": 56.30000000447035,
+      "paintedMs": 61.80000000447035,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-9",
+      "dispatchMs": 2.5,
+      "sourceGroupRowKey": "group:\"A-1009\"",
+      "outerPlaceholderMs": 54,
+      "outerActiveMs": 54,
+      "placeholderMs": 54,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.0999999940395355,
+          "id": 15,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 29.69999999552965,
+          "id": 15
+        }
+      ],
+      "commitsMs": [
+        4.5,
+        4.5,
+        10.699999995529652,
+        46.79999999701977,
+        49.29999999701977,
+        53.5,
+        53.69999999552965,
+        59.5
+      ],
+      "observedMs": 54,
+      "paintedMs": 59.599999994039536,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-10",
+      "dispatchMs": 2.7000000029802322,
+      "sourceGroupRowKey": "group:\"A-1010\"",
+      "outerPlaceholderMs": 53.5,
+      "outerActiveMs": 53.5,
+      "placeholderMs": 53.600000001490116,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.5,
+          "id": 16,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 28.700000002980232,
+          "id": 16
+        }
+      ],
+      "commitsMs": [
+        4.700000002980232,
+        4.799999997019768,
+        7.200000002980232,
+        46.5,
+        48.600000001490116,
+        53,
+        53.100000001490116,
+        59
+      ],
+      "observedMs": 53.600000001490116,
+      "paintedMs": 59,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-11",
+      "dispatchMs": 2.5,
+      "sourceGroupRowKey": "group:\"A-1011\"",
+      "outerPlaceholderMs": 53.099999994039536,
+      "outerActiveMs": 53.099999994039536,
+      "placeholderMs": 53.099999994039536,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.0999999940395355,
+          "id": 17,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 28.899999998509884,
+          "id": 17
+        }
+      ],
+      "commitsMs": [
+        4.399999998509884,
+        4.399999998509884,
+        6.699999995529652,
+        46.899999998509884,
+        49.29999999701977,
+        52.5,
+        52.599999994039536,
+        58.399999998509884
+      ],
+      "observedMs": 53.099999994039536,
+      "paintedMs": 58.5,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-12",
+      "dispatchMs": 2.399999998509884,
+      "sourceGroupRowKey": "group:\"A-1012\"",
+      "outerPlaceholderMs": 51.70000000298023,
+      "outerActiveMs": 51.70000000298023,
+      "placeholderMs": 51.70000000298023,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 4.899999998509884,
+          "id": 18,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 28.30000000447035,
+          "id": 18
+        }
+      ],
+      "commitsMs": [
+        4.300000004470348,
+        4.399999998509884,
+        6.399999998509884,
+        46.100000001490116,
+        48.100000001490116,
+        51.30000000447035,
+        51.399999998509884,
+        57.80000000447035
+      ],
+      "observedMs": 51.70000000298023,
+      "paintedMs": 57.899999998509884,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-13",
+      "dispatchMs": 2.5,
+      "sourceGroupRowKey": "group:\"A-1013\"",
+      "outerPlaceholderMs": 52.100000001490116,
+      "outerActiveMs": 52.100000001490116,
+      "placeholderMs": 52.20000000298023,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5,
+          "id": 19,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 26.5,
+          "id": 19
+        }
+      ],
+      "commitsMs": [
+        4.399999998509884,
+        4.399999998509884,
+        6.899999998509884,
+        45,
+        47.600000001490116,
+        51.600000001490116,
+        51.70000000298023,
+        58.20000000298023
+      ],
+      "observedMs": 52.20000000298023,
+      "paintedMs": 58.20000000298023,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-14",
+      "dispatchMs": 2.399999998509884,
+      "sourceGroupRowKey": "group:\"A-1014\"",
+      "outerPlaceholderMs": 50,
+      "outerActiveMs": 50,
+      "placeholderMs": 50,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 4.5999999940395355,
+          "id": 20,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 25.899999998509884,
+          "id": 20
+        }
+      ],
+      "commitsMs": [
+        4.0999999940395355,
+        4.0999999940395355,
+        6.399999998509884,
+        44.29999999701977,
+        46.399999998509884,
+        49.599999994039536,
+        49.79999999701977,
+        55.399999998509884
+      ],
+      "observedMs": 50,
+      "paintedMs": 55.399999998509884,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-15",
+      "dispatchMs": 2.5,
+      "sourceGroupRowKey": "group:\"A-1015\"",
+      "outerPlaceholderMs": 54.79999999701977,
+      "outerActiveMs": 54.79999999701977,
+      "placeholderMs": 54.899999998509884,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.299999997019768,
+          "id": 21,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 28.600000001490116,
+          "id": 21
+        }
+      ],
+      "commitsMs": [
+        4.5,
+        4.600000001490116,
+        11.399999998509884,
+        46.69999999552965,
+        49,
+        54.100000001490116,
+        54.29999999701977,
+        61.100000001490116
+      ],
+      "observedMs": 54.899999998509884,
+      "paintedMs": 61.100000001490116,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-16",
+      "dispatchMs": 2.5,
+      "sourceGroupRowKey": "group:\"A-1016\"",
+      "outerPlaceholderMs": 50.5,
+      "outerActiveMs": 50.5,
+      "placeholderMs": 50.600000001490116,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.200000002980232,
+          "id": 22,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 27.399999998509884,
+          "id": 22
+        }
+      ],
+      "commitsMs": [
+        4.5,
+        4.5,
+        10.5,
+        44.79999999701977,
+        46.79999999701977,
+        50.100000001490116,
+        50.100000001490116,
+        56.399999998509884
+      ],
+      "observedMs": 50.600000001490116,
+      "paintedMs": 56.5,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-17",
+      "dispatchMs": 2.6999999955296516,
+      "sourceGroupRowKey": "group:\"A-1017\"",
+      "outerPlaceholderMs": 52.79999999701977,
+      "outerActiveMs": 52.79999999701977,
+      "placeholderMs": 52.899999998509884,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 6,
+          "id": 23,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 28,
+          "id": 23
+        }
+      ],
+      "commitsMs": [
+        4.699999995529652,
+        4.699999995529652,
+        12.299999997019768,
+        45.29999999701977,
+        47.5,
+        52.19999999552965,
+        52.5,
+        58.79999999701977
+      ],
+      "observedMs": 52.899999998509884,
+      "paintedMs": 58.79999999701977,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-18",
+      "dispatchMs": 2.600000001490116,
+      "sourceGroupRowKey": "group:\"A-1018\"",
+      "outerPlaceholderMs": 51.100000001490116,
+      "outerActiveMs": 51.100000001490116,
+      "placeholderMs": 51.100000001490116,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.200000002980232,
+          "id": 24,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 26.900000005960464,
+          "id": 24
+        }
+      ],
+      "commitsMs": [
+        4.5,
+        4.5,
+        10.900000005960464,
+        44.5,
+        47,
+        50.400000005960464,
+        50.600000001490116,
+        57.5
+      ],
+      "observedMs": 51.100000001490116,
+      "paintedMs": 57.5,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    },
+    {
+      "id": "new-19",
+      "dispatchMs": 2.9000000059604645,
+      "sourceGroupRowKey": "group:\"A-1019\"",
+      "outerPlaceholderMs": 53.5,
+      "outerActiveMs": 53.5,
+      "placeholderMs": 53.5,
+      "rpc": [
+        {
+          "direction": "send",
+          "at": 5.5,
+          "id": 25,
+          "type": "day"
+        },
+        {
+          "direction": "receive",
+          "at": 26,
+          "id": 25
+        }
+      ],
+      "commitsMs": [
+        4.800000004470348,
+        4.800000004470348,
+        12.200000002980232,
+        45.900000005960464,
+        48.600000001490116,
+        52.900000005960464,
+        53,
+        60.70000000298023
+      ],
+      "observedMs": 53.5,
+      "paintedMs": 60.70000000298023,
+      "probeOverheadMs": 0,
+      "commitCallbacks": 8,
+      "measuredCommitCallbacks": 0
+    }
+  ],
+  "scenarioStarts": [
+    {
+      "name": "same-boundary",
+      "response": {
+        "totalMs": 17.899999998509884,
+        "fallbackMs": 17.899999998509884,
+        "intentionalLongPressMs": 0,
+        "postClonePaintMs": 17.899999998509884,
+        "renderer": [
+          {
+            "column": "execute",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 5
+          },
+          {
+            "column": "candidate",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 6
+          }
+        ]
+      }
+    },
+    {
+      "name": "boundary-switch",
+      "response": {
+        "totalMs": 18,
+        "fallbackMs": 18,
+        "intentionalLongPressMs": 0,
+        "postClonePaintMs": 18,
+        "renderer": [
+          {
+            "column": "execute",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 5
+          },
+          {
+            "column": "candidate",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 6
+          }
+        ]
+      }
+    },
+    {
+      "name": "multiple-merges",
+      "response": {
+        "totalMs": 17.299999997019768,
+        "fallbackMs": 17.299999997019768,
+        "intentionalLongPressMs": 0,
+        "postClonePaintMs": 17.299999997019768,
+        "renderer": [
+          {
+            "column": "execute",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 5
+          },
+          {
+            "column": "candidate",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 6
+          }
+        ]
+      }
+    },
+    {
+      "name": "mixed",
+      "response": {
+        "totalMs": 25.399999998509884,
+        "fallbackMs": 25.399999998509884,
+        "intentionalLongPressMs": 0,
+        "postClonePaintMs": 25.399999998509884,
+        "renderer": [
+          {
+            "column": "execute",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 5
+          },
+          {
+            "column": "candidate",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 6
+          }
+        ]
+      }
+    },
+    {
+      "name": "offscreen-merge",
+      "response": {
+        "totalMs": 17.399999998509884,
+        "fallbackMs": 17.399999998509884,
+        "intentionalLongPressMs": 0,
+        "postClonePaintMs": 17.399999998509884,
+        "renderer": [
+          {
+            "column": "execute",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 5
+          },
+          {
+            "column": "candidate",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 6
+          }
+        ]
+      }
+    },
+    {
+      "name": "auto-scroll",
+      "response": {
+        "totalMs": 18.899999998509884,
+        "fallbackMs": 18.899999998509884,
+        "intentionalLongPressMs": 0,
+        "postClonePaintMs": 18.899999998509884,
+        "renderer": [
+          {
+            "column": "execute",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 5
+          },
+          {
+            "column": "candidate",
+            "engine": "virtual",
+            "strategy": "retained-viewport",
+            "mounted": 6
+          }
+        ]
+      }
+    }
+  ],
+  "scenarioEnds": [
+    {
+      "name": "same-boundary",
+      "ms": 11.600000001490116
+    },
+    {
+      "name": "boundary-switch",
+      "ms": 8.100000001490116
+    },
+    {
+      "name": "multiple-merges",
+      "ms": 9.199999995529652
+    },
+    {
+      "name": "mixed",
+      "ms": 7.100000001490116
+    },
+    {
+      "name": "offscreen-merge",
+      "ms": 6.5999999940395355
+    },
+    {
+      "name": "auto-scroll",
+      "ms": 17.299999997019768
+    }
+  ],
+  "dropMeasurement": "input dispatch to observed execute item DOM, then requestAnimationFrame and following task; save completion polled separately",
+  "baseline": {
+    "crossColumn": "not functioning at 5bf82a3; no baseline UI timing is substituted",
+    "startEndComparison": "requires separately built 5bf82a3 run"
+  }
+}

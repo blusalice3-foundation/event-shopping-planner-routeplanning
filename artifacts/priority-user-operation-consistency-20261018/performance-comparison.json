@@ -1,0 +1,6507 @@
+{
+  "profiles": 24,
+  "operations": 144,
+  "allPass": true,
+  "maximumMedianMs": 50.40000000037253,
+  "maximumP95Ms": 55.600000001490116,
+  "minimumSamples": 20.0,
+  "meanMedianDeltaMs": -0.19861111112145913,
+  "comparisons": [
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 13.300000000745058,
+        "p95Ms": 21.5
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 13,
+        "p95Ms": 15.5
+      },
+      "medianDeltaMs": -0.30000000074505806,
+      "p95DeltaMs": -6.0,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 10,
+        "p95Ms": 11.799999998882413
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 10.100000001490116,
+        "p95Ms": 11.599999999627471
+      },
+      "medianDeltaMs": 0.10000000149011612,
+      "p95DeltaMs": -0.19999999925494194,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "focus",
+      "before": {
+        "count": 22,
+        "medianMs": 12.599999999627471,
+        "p95Ms": 13.800000000745058
+      },
+      "after": {
+        "count": 22,
+        "medianMs": 12.900000000372529,
+        "p95Ms": 13.799999998882413
+      },
+      "medianDeltaMs": 0.30000000074505806,
+      "p95DeltaMs": -1.862645149230957E-09,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 9.700000001117587,
+        "p95Ms": 10.800000000745058
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 10.400000000372529,
+        "p95Ms": 11.700000001117587
+      },
+      "medianDeltaMs": 0.6999999992549419,
+      "p95DeltaMs": 0.900000000372529,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "next",
+      "before": {
+        "count": 41,
+        "medianMs": 12.099999999627471,
+        "p95Ms": 14
+      },
+      "after": {
+        "count": 41,
+        "medianMs": 12,
+        "p95Ms": 13.900000000372529
+      },
+      "medianDeltaMs": -0.09999999962747097,
+      "p95DeltaMs": -0.09999999962747097,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 11.599999999627471,
+        "p95Ms": 13
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 12.199999999254942,
+        "p95Ms": 13.400000000372529
+      },
+      "medianDeltaMs": 0.599999999627471,
+      "p95DeltaMs": 0.40000000037252903,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 14.099999999627471,
+        "p95Ms": 19
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 13.800000000745058,
+        "p95Ms": 15.5
+      },
+      "medianDeltaMs": -0.2999999988824129,
+      "p95DeltaMs": -3.5,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 10.400000000372529,
+        "p95Ms": 12
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 9,
+        "p95Ms": 10.799999998882413
+      },
+      "medianDeltaMs": -1.400000000372529,
+      "p95DeltaMs": -1.200000001117587,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "focus",
+      "before": {
+        "count": 22,
+        "medianMs": 11.599999999627471,
+        "p95Ms": 13.700000001117587
+      },
+      "after": {
+        "count": 22,
+        "medianMs": 11.399999998509884,
+        "p95Ms": 13.899999998509884
+      },
+      "medianDeltaMs": -0.2000000011175871,
+      "p95DeltaMs": 0.1999999973922968,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 10.200000001117587,
+        "p95Ms": 12
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 10.5,
+        "p95Ms": 12.400000000372529
+      },
+      "medianDeltaMs": 0.2999999988824129,
+      "p95DeltaMs": 0.40000000037252903,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "next",
+      "before": {
+        "count": 41,
+        "medianMs": 10.299999998882413,
+        "p95Ms": 12.900000000372529
+      },
+      "after": {
+        "count": 41,
+        "medianMs": 10.599999999627471,
+        "p95Ms": 12.300000000745058
+      },
+      "medianDeltaMs": 0.30000000074505806,
+      "p95DeltaMs": -0.599999999627471,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 9.799999998882413,
+        "p95Ms": 17.199999999254942
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 10.199999999254942,
+        "p95Ms": 11.699999999254942
+      },
+      "medianDeltaMs": 0.40000000037252903,
+      "p95DeltaMs": -5.5,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 13.599999999627471,
+        "p95Ms": 15.399999998509884
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 12.400000000372529,
+        "p95Ms": 15.599999999627471
+      },
+      "medianDeltaMs": -1.199999999254942,
+      "p95DeltaMs": 0.2000000011175871,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 9.200000001117587,
+        "p95Ms": 12.099999999627471
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 9.599999999627471,
+        "p95Ms": 10.900000000372529
+      },
+      "medianDeltaMs": 0.3999999985098839,
+      "p95DeltaMs": -1.199999999254942,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "focus",
+      "before": {
+        "count": 22,
+        "medianMs": 15.900000000372529,
+        "p95Ms": 16.899999998509884
+      },
+      "after": {
+        "count": 22,
+        "medianMs": 15.800000000745058,
+        "p95Ms": 17
+      },
+      "medianDeltaMs": -0.09999999962747097,
+      "p95DeltaMs": 0.10000000149011612,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 12.199999999254942,
+        "p95Ms": 13.5
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 11.900000000372529,
+        "p95Ms": 13.899999998509884
+      },
+      "medianDeltaMs": -0.2999999988824129,
+      "p95DeltaMs": 0.3999999985098839,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "next",
+      "before": {
+        "count": 41,
+        "medianMs": 16.899999998509884,
+        "p95Ms": 19.399999998509884
+      },
+      "after": {
+        "count": 41,
+        "medianMs": 16.699999999254942,
+        "p95Ms": 19.299999998882413
+      },
+      "medianDeltaMs": -0.19999999925494194,
+      "p95DeltaMs": -0.09999999962747097,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 16.700000001117587,
+        "p95Ms": 18.59999999962747
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 16.399999998509884,
+        "p95Ms": 17
+      },
+      "medianDeltaMs": -0.3000000026077032,
+      "p95DeltaMs": -1.599999999627471,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 14.399999998509884,
+        "p95Ms": 15.700000001117587
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 13.699999999254942,
+        "p95Ms": 15.5
+      },
+      "medianDeltaMs": -0.6999999992549419,
+      "p95DeltaMs": -0.2000000011175871,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 10.199999999254942,
+        "p95Ms": 11.900000000372529
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 10.099999999627471,
+        "p95Ms": 11.5
+      },
+      "medianDeltaMs": -0.09999999962747097,
+      "p95DeltaMs": -0.40000000037252903,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "focus",
+      "before": {
+        "count": 22,
+        "medianMs": 14.099999999627471,
+        "p95Ms": 14.900000000372529
+      },
+      "after": {
+        "count": 22,
+        "medianMs": 13.799999998882413,
+        "p95Ms": 15.199999999254942
+      },
+      "medianDeltaMs": -0.30000000074505806,
+      "p95DeltaMs": 0.2999999988824129,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 11.299999998882413,
+        "p95Ms": 12.700000001117587
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 11.599999999627471,
+        "p95Ms": 13.199999999254942
+      },
+      "medianDeltaMs": 0.30000000074505806,
+      "p95DeltaMs": 0.49999999813735485,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "next",
+      "before": {
+        "count": 41,
+        "medianMs": 12.800000000745058,
+        "p95Ms": 16.100000001490116
+      },
+      "after": {
+        "count": 41,
+        "medianMs": 13.100000001490116,
+        "p95Ms": 17.90000000037253
+      },
+      "medianDeltaMs": 0.30000000074505806,
+      "p95DeltaMs": 1.799999998882413,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 12.599999999627471,
+        "p95Ms": 18.199999999254942
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 11.900000000372529,
+        "p95Ms": 13.600000001490116
+      },
+      "medianDeltaMs": -0.6999999992549419,
+      "p95DeltaMs": -4.599999997764826,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 11.800000000745058,
+        "p95Ms": 14.099999999627471
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 11.599999999627471,
+        "p95Ms": 15.099999999627471
+      },
+      "medianDeltaMs": -0.2000000011175871,
+      "p95DeltaMs": 1.0,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 10.199999999254942,
+        "p95Ms": 11.300000000745058
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 10.299999998882413,
+        "p95Ms": 12.200000001117587
+      },
+      "medianDeltaMs": 0.09999999962747097,
+      "p95DeltaMs": 0.900000000372529,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "focus",
+      "before": {
+        "count": 21,
+        "medianMs": 12.700000001117587,
+        "p95Ms": 13.800000000745058
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 12.900000000372529,
+        "p95Ms": 13.900000000372529
+      },
+      "medianDeltaMs": 0.19999999925494194,
+      "p95DeltaMs": 0.09999999962747097,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 9.900000000372529,
+        "p95Ms": 10.900000000372529
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 9.900000000372529,
+        "p95Ms": 11.600000001490116
+      },
+      "medianDeltaMs": 0.0,
+      "p95DeltaMs": 0.7000000011175871,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "next",
+      "before": {
+        "count": 21,
+        "medianMs": 12.199999999254942,
+        "p95Ms": 13.5
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 12.099999999627471,
+        "p95Ms": 13.299999998882413
+      },
+      "medianDeltaMs": -0.09999999962747097,
+      "p95DeltaMs": -0.2000000011175871,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 15.5,
+        "p95Ms": 16.40000000037253
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 15.900000000372529,
+        "p95Ms": 17.40000000037253
+      },
+      "medianDeltaMs": 0.40000000037252903,
+      "p95DeltaMs": 1.0,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 11.900000000372529,
+        "p95Ms": 13.599999999627471
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 12.5,
+        "p95Ms": 14.099999999627471
+      },
+      "medianDeltaMs": 0.599999999627471,
+      "p95DeltaMs": 0.5,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 9.5,
+        "p95Ms": 10.600000001490116
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 9.699999999254942,
+        "p95Ms": 10.799999998882413
+      },
+      "medianDeltaMs": 0.19999999925494194,
+      "p95DeltaMs": 0.1999999973922968,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "focus",
+      "before": {
+        "count": 21,
+        "medianMs": 11.399999998509884,
+        "p95Ms": 12.700000001117587
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 11.799999998882413,
+        "p95Ms": 13.5
+      },
+      "medianDeltaMs": 0.40000000037252903,
+      "p95DeltaMs": 0.7999999988824129,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 9.400000000372529,
+        "p95Ms": 10.400000000372529
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 10.299999998882413,
+        "p95Ms": 11.300000000745058
+      },
+      "medianDeltaMs": 0.8999999985098839,
+      "p95DeltaMs": 0.900000000372529,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "next",
+      "before": {
+        "count": 21,
+        "medianMs": 10.800000000745058,
+        "p95Ms": 13.099999999627471
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 12.300000000745058,
+        "p95Ms": 14
+      },
+      "medianDeltaMs": 1.5,
+      "p95DeltaMs": 0.900000000372529,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 13.300000000745058,
+        "p95Ms": 15.699999999254942
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 14.5,
+        "p95Ms": 15.699999999254942
+      },
+      "medianDeltaMs": 1.199999999254942,
+      "p95DeltaMs": 0.0,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 12.700000001117587,
+        "p95Ms": 18
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 11.5,
+        "p95Ms": 14.299999998882413
+      },
+      "medianDeltaMs": -1.200000001117587,
+      "p95DeltaMs": -3.700000001117587,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 10.300000000745058,
+        "p95Ms": 12.900000000372529
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 9.300000000745058,
+        "p95Ms": 11.399999998509884
+      },
+      "medianDeltaMs": -1.0,
+      "p95DeltaMs": -1.5000000018626451,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "focus",
+      "before": {
+        "count": 21,
+        "medianMs": 12.900000000372529,
+        "p95Ms": 15
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 14.599999999627471,
+        "p95Ms": 16.09999999962747
+      },
+      "medianDeltaMs": 1.699999999254942,
+      "p95DeltaMs": 1.099999999627471,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 11,
+        "p95Ms": 13
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 11.300000000745058,
+        "p95Ms": 12.400000000372529
+      },
+      "medianDeltaMs": 0.30000000074505806,
+      "p95DeltaMs": -0.599999999627471,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "next",
+      "before": {
+        "count": 21,
+        "medianMs": 20.5,
+        "p95Ms": 30.199999999254942
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 21.200000001117587,
+        "p95Ms": 25.90000000037253
+      },
+      "medianDeltaMs": 0.7000000011175871,
+      "p95DeltaMs": -4.299999998882413,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 15.900000000372529,
+        "p95Ms": 18.09999999962747
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 17.300000000745058,
+        "p95Ms": 18.799999998882413
+      },
+      "medianDeltaMs": 1.400000000372529,
+      "p95DeltaMs": 0.6999999992549419,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 11.900000000372529,
+        "p95Ms": 13.599999999627471
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 12.200000001117587,
+        "p95Ms": 13.800000000745058
+      },
+      "medianDeltaMs": 0.30000000074505806,
+      "p95DeltaMs": 0.2000000011175871,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 9.400000000372529,
+        "p95Ms": 11.800000000745058
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 9.900000000372529,
+        "p95Ms": 10.400000000372529
+      },
+      "medianDeltaMs": 0.5,
+      "p95DeltaMs": -1.400000000372529,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "focus",
+      "before": {
+        "count": 21,
+        "medianMs": 13.400000000372529,
+        "p95Ms": 14.900000000372529
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 13.5,
+        "p95Ms": 15.599999999627471
+      },
+      "medianDeltaMs": 0.09999999962747097,
+      "p95DeltaMs": 0.6999999992549419,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 11,
+        "p95Ms": 12.600000001490116
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 10.699999999254942,
+        "p95Ms": 12
+      },
+      "medianDeltaMs": -0.30000000074505806,
+      "p95DeltaMs": -0.6000000014901161,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "next",
+      "before": {
+        "count": 21,
+        "medianMs": 17.800000000745058,
+        "p95Ms": 24
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 18.59999999962747,
+        "p95Ms": 23.299999998882413
+      },
+      "medianDeltaMs": 0.7999999988824129,
+      "p95DeltaMs": -0.7000000011175871,
+      "pass": true
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 17.100000001490116,
+        "p95Ms": 19.90000000037253
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 15.400000000372529,
+        "p95Ms": 22.40000000037253
+      },
+      "medianDeltaMs": -1.700000001117587,
+      "p95DeltaMs": 2.5,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 22.90000000037253,
+        "p95Ms": 25.300000000745058
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 17.5,
+        "p95Ms": 22.799999998882413
+      },
+      "medianDeltaMs": -5.400000000372529,
+      "p95DeltaMs": -2.500000001862645,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 13.400000000372529,
+        "p95Ms": 18.300000000745058
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 12.800000000745058,
+        "p95Ms": 14.200000001117587
+      },
+      "medianDeltaMs": -0.599999999627471,
+      "p95DeltaMs": -4.099999999627471,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "focus",
+      "before": {
+        "count": 22,
+        "medianMs": 12.400000000372529,
+        "p95Ms": 13.899999998509884
+      },
+      "after": {
+        "count": 22,
+        "medianMs": 12.200000001117587,
+        "p95Ms": 13.199999999254942
+      },
+      "medianDeltaMs": -0.19999999925494194,
+      "p95DeltaMs": -0.6999999992549419,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 10.5,
+        "p95Ms": 11
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 11,
+        "p95Ms": 12.300000000745058
+      },
+      "medianDeltaMs": 0.5,
+      "p95DeltaMs": 1.300000000745058,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "next",
+      "before": {
+        "count": 41,
+        "medianMs": 12.300000000745058,
+        "p95Ms": 14.300000000745058
+      },
+      "after": {
+        "count": 41,
+        "medianMs": 12.400000000372529,
+        "p95Ms": 13.599999999627471
+      },
+      "medianDeltaMs": 0.09999999962747097,
+      "p95DeltaMs": -0.7000000011175871,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 12.599999999627471,
+        "p95Ms": 13.900000000372529
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 13.400000000372529,
+        "p95Ms": 16.199999999254942
+      },
+      "medianDeltaMs": 0.8000000007450581,
+      "p95DeltaMs": 2.299999998882413,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 18.199999999254942,
+        "p95Ms": 24.700000001117587
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 17.5,
+        "p95Ms": 21.5
+      },
+      "medianDeltaMs": -0.6999999992549419,
+      "p95DeltaMs": -3.200000001117587,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 17.09999999962747,
+        "p95Ms": 20
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 13.300000000745058,
+        "p95Ms": 15.400000000372529
+      },
+      "medianDeltaMs": -3.799999998882413,
+      "p95DeltaMs": -4.599999999627471,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "focus",
+      "before": {
+        "count": 22,
+        "medianMs": 13,
+        "p95Ms": 14.700000001117587
+      },
+      "after": {
+        "count": 22,
+        "medianMs": 12.599999999627471,
+        "p95Ms": 14.5
+      },
+      "medianDeltaMs": -0.40000000037252903,
+      "p95DeltaMs": -0.2000000011175871,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 9.599999999627471,
+        "p95Ms": 11
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 10.700000001117587,
+        "p95Ms": 12
+      },
+      "medianDeltaMs": 1.1000000014901161,
+      "p95DeltaMs": 1,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "next",
+      "before": {
+        "count": 41,
+        "medianMs": 10.199999999254942,
+        "p95Ms": 13.400000000372529
+      },
+      "after": {
+        "count": 41,
+        "medianMs": 10.600000001490116,
+        "p95Ms": 11.799999998882413
+      },
+      "medianDeltaMs": 0.4000000022351742,
+      "p95DeltaMs": -1.6000000014901161,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 9.400000000372529,
+        "p95Ms": 11.900000000372529
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 10.799999998882413,
+        "p95Ms": 12.700000001117587
+      },
+      "medianDeltaMs": 1.3999999985098839,
+      "p95DeltaMs": 0.8000000007450581,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 21,
+        "p95Ms": 24.40000000037253
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 18.5,
+        "p95Ms": 24.90000000037253
+      },
+      "medianDeltaMs": -2.5,
+      "p95DeltaMs": 0.5,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 14.900000000372529,
+        "p95Ms": 18
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 13.200000001117587,
+        "p95Ms": 15.300000000745058
+      },
+      "medianDeltaMs": -1.699999999254942,
+      "p95DeltaMs": -2.699999999254942,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "focus",
+      "before": {
+        "count": 22,
+        "medianMs": 18,
+        "p95Ms": 19
+      },
+      "after": {
+        "count": 22,
+        "medianMs": 16.09999999962747,
+        "p95Ms": 17.90000000037253
+      },
+      "medianDeltaMs": -1.900000000372529,
+      "p95DeltaMs": -1.099999999627471,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 12.900000000372529,
+        "p95Ms": 14.700000001117587
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 12.599999999627471,
+        "p95Ms": 14.400000000372529
+      },
+      "medianDeltaMs": -0.30000000074505806,
+      "p95DeltaMs": -0.30000000074505806,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "next",
+      "before": {
+        "count": 41,
+        "medianMs": 19.40000000037253,
+        "p95Ms": 25.09999999962747
+      },
+      "after": {
+        "count": 41,
+        "medianMs": 18.90000000037253,
+        "p95Ms": 21
+      },
+      "medianDeltaMs": -0.5,
+      "p95DeltaMs": -4.099999999627471,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 18.100000001490116,
+        "p95Ms": 26.90000000037253
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 18.700000001117587,
+        "p95Ms": 20.40000000037253
+      },
+      "medianDeltaMs": 0.599999999627471,
+      "p95DeltaMs": -6.5,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 18.40000000037253,
+        "p95Ms": 24.5
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 18.5,
+        "p95Ms": 23.300000000745058
+      },
+      "medianDeltaMs": 0.09999999962747097,
+      "p95DeltaMs": -1.199999999254942,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 13.599999999627471,
+        "p95Ms": 19.799999998882413
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 13.599999999627471,
+        "p95Ms": 16.59999999962747
+      },
+      "medianDeltaMs": 0.0,
+      "p95DeltaMs": -3.199999999254942,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "focus",
+      "before": {
+        "count": 22,
+        "medianMs": 14.300000000745058,
+        "p95Ms": 17
+      },
+      "after": {
+        "count": 22,
+        "medianMs": 14.200000001117587,
+        "p95Ms": 15.700000001117587
+      },
+      "medianDeltaMs": -0.09999999962747097,
+      "p95DeltaMs": -1.299999998882413,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 12.099999999627471,
+        "p95Ms": 13.400000000372529
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 11.599999999627471,
+        "p95Ms": 12.5
+      },
+      "medianDeltaMs": -0.5,
+      "p95DeltaMs": -0.900000000372529,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "next",
+      "before": {
+        "count": 41,
+        "medianMs": 16.700000001117587,
+        "p95Ms": 21.90000000037253
+      },
+      "after": {
+        "count": 41,
+        "medianMs": 15.299999998882413,
+        "p95Ms": 18.300000000745058
+      },
+      "medianDeltaMs": -1.4000000022351742,
+      "p95DeltaMs": -3.599999999627471,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 16.200000001117587,
+        "p95Ms": 21.199999999254942
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 15.900000000372529,
+        "p95Ms": 19.600000001490116
+      },
+      "medianDeltaMs": -0.30000000074505806,
+      "p95DeltaMs": -1.5999999977648258,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 18.399999998509884,
+        "p95Ms": 22
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 14.5,
+        "p95Ms": 16.5
+      },
+      "medianDeltaMs": -3.899999998509884,
+      "p95DeltaMs": -5.5,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 14.699999999254942,
+        "p95Ms": 18.5
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 13.599999999627471,
+        "p95Ms": 18
+      },
+      "medianDeltaMs": -1.099999999627471,
+      "p95DeltaMs": -0.5,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "focus",
+      "before": {
+        "count": 21,
+        "medianMs": 13.5,
+        "p95Ms": 14.599999999627471
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 12.800000000745058,
+        "p95Ms": 14.300000000745058
+      },
+      "medianDeltaMs": -0.6999999992549419,
+      "p95DeltaMs": -0.2999999988824129,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 9.600000001490116,
+        "p95Ms": 11.199999999254942
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 9.900000000372529,
+        "p95Ms": 12
+      },
+      "medianDeltaMs": 0.2999999988824129,
+      "p95DeltaMs": 0.8000000007450581,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "next",
+      "before": {
+        "count": 21,
+        "medianMs": 12.099999999627471,
+        "p95Ms": 15.799999998882413
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 12.699999999254942,
+        "p95Ms": 13.799999998882413
+      },
+      "medianDeltaMs": 0.599999999627471,
+      "p95DeltaMs": -2.0,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 20.800000000745058,
+        "p95Ms": 25.40000000037253
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 21.5,
+        "p95Ms": 22.59999999962747
+      },
+      "medianDeltaMs": 0.6999999992549419,
+      "p95DeltaMs": -2.800000000745058,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 16.799999998882413,
+        "p95Ms": 22.299999998882413
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 15.900000000372529,
+        "p95Ms": 17.299999998882413
+      },
+      "medianDeltaMs": -0.8999999985098839,
+      "p95DeltaMs": -5.0,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 16,
+        "p95Ms": 20.5
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 14.5,
+        "p95Ms": 16.200000001117587
+      },
+      "medianDeltaMs": -1.5,
+      "p95DeltaMs": -4.299999998882413,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "focus",
+      "before": {
+        "count": 21,
+        "medianMs": 13.100000001490116,
+        "p95Ms": 15.200000001117587
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 13,
+        "p95Ms": 14.400000000372529
+      },
+      "medianDeltaMs": -0.10000000149011612,
+      "p95DeltaMs": -0.8000000007450581,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 9.800000000745058,
+        "p95Ms": 12.700000001117587
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 9.900000000372529,
+        "p95Ms": 11.599999999627471
+      },
+      "medianDeltaMs": 0.09999999962747097,
+      "p95DeltaMs": -1.1000000014901161,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "next",
+      "before": {
+        "count": 21,
+        "medianMs": 11,
+        "p95Ms": 18.5
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 10.5,
+        "p95Ms": 15.100000001490116
+      },
+      "medianDeltaMs": -0.5,
+      "p95DeltaMs": -3.399999998509884,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 19.5,
+        "p95Ms": 31
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 16.40000000037253,
+        "p95Ms": 18.699999999254942
+      },
+      "medianDeltaMs": -3.099999999627471,
+      "p95DeltaMs": -12.300000000745058,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 17,
+        "p95Ms": 21.800000000745058
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 15.800000000745058,
+        "p95Ms": 18.5
+      },
+      "medianDeltaMs": -1.199999999254942,
+      "p95DeltaMs": -3.300000000745058,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 15.900000000372529,
+        "p95Ms": 20.300000000745058
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 13.5,
+        "p95Ms": 15.5
+      },
+      "medianDeltaMs": -2.400000000372529,
+      "p95DeltaMs": -4.800000000745058,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "focus",
+      "before": {
+        "count": 21,
+        "medianMs": 15.100000001490116,
+        "p95Ms": 17.799999998882413
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 14.799999998882413,
+        "p95Ms": 17.300000000745058
+      },
+      "medianDeltaMs": -0.3000000026077032,
+      "p95DeltaMs": -0.49999999813735485,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 14.599999999627471,
+        "p95Ms": 20.799999998882413
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 12.699999999254942,
+        "p95Ms": 13.800000000745058
+      },
+      "medianDeltaMs": -1.900000000372529,
+      "p95DeltaMs": -6.999999998137355,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "next",
+      "before": {
+        "count": 21,
+        "medianMs": 31.799999998882413,
+        "p95Ms": 37.69999999925494
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 32.5,
+        "p95Ms": 37.5
+      },
+      "medianDeltaMs": 0.7000000011175871,
+      "p95DeltaMs": -0.19999999925494194,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 22.40000000037253,
+        "p95Ms": 26.5
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 22.90000000037253,
+        "p95Ms": 23.800000000745058
+      },
+      "medianDeltaMs": 0.5,
+      "p95DeltaMs": -2.699999999254942,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 18.200000001117587,
+        "p95Ms": 21.40000000037253
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 15.400000000372529,
+        "p95Ms": 19.100000001490116
+      },
+      "medianDeltaMs": -2.800000000745058,
+      "p95DeltaMs": -2.299999998882413,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 15.099999999627471,
+        "p95Ms": 20.40000000037253
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 14.700000001117587,
+        "p95Ms": 16.200000001117587
+      },
+      "medianDeltaMs": -0.3999999985098839,
+      "p95DeltaMs": -4.199999999254942,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "focus",
+      "before": {
+        "count": 21,
+        "medianMs": 14.599999999627471,
+        "p95Ms": 16.699999999254942
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 14.400000000372529,
+        "p95Ms": 17
+      },
+      "medianDeltaMs": -0.19999999925494194,
+      "p95DeltaMs": 0.30000000074505806,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 12.099999999627471,
+        "p95Ms": 14.599999999627471
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 12.599999999627471,
+        "p95Ms": 13.800000000745058
+      },
+      "medianDeltaMs": 0.5,
+      "p95DeltaMs": -0.7999999988824129,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "next",
+      "before": {
+        "count": 21,
+        "medianMs": 22.5,
+        "p95Ms": 28.399999998509884
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 20.09999999962747,
+        "p95Ms": 23.800000000745058
+      },
+      "medianDeltaMs": -2.400000000372529,
+      "p95DeltaMs": -4.599999997764826,
+      "pass": true
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 22.40000000037253,
+        "p95Ms": 32.29999999888241
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 21.90000000037253,
+        "p95Ms": 25.59999999962747
+      },
+      "medianDeltaMs": -0.5,
+      "p95DeltaMs": -6.699999999254942,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 45.399999998509884,
+        "p95Ms": 55.09999999962747
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 39.90000000037253,
+        "p95Ms": 53.59999999962747
+      },
+      "medianDeltaMs": -5.499999998137355,
+      "p95DeltaMs": -1.5,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 32.90000000037253,
+        "p95Ms": 39.5
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 28.699999999254942,
+        "p95Ms": 32.5
+      },
+      "medianDeltaMs": -4.200000001117587,
+      "p95DeltaMs": -7.0,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "focus",
+      "before": {
+        "count": 22,
+        "medianMs": 15.699999999254942,
+        "p95Ms": 18.300000000745058
+      },
+      "after": {
+        "count": 22,
+        "medianMs": 14.400000000372529,
+        "p95Ms": 17.09999999962747
+      },
+      "medianDeltaMs": -1.299999998882413,
+      "p95DeltaMs": -1.200000001117587,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 11.300000000745058,
+        "p95Ms": 15.800000000745058
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 12,
+        "p95Ms": 13.300000000745058
+      },
+      "medianDeltaMs": 0.6999999992549419,
+      "p95DeltaMs": -2.5,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "next",
+      "before": {
+        "count": 41,
+        "medianMs": 14.600000001490116,
+        "p95Ms": 20.5
+      },
+      "after": {
+        "count": 41,
+        "medianMs": 15.5,
+        "p95Ms": 16.899999998509884
+      },
+      "medianDeltaMs": 0.8999999985098839,
+      "p95DeltaMs": -3.600000001490116,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 15,
+        "p95Ms": 19.5
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 14.800000000745058,
+        "p95Ms": 16.600000001490116
+      },
+      "medianDeltaMs": -0.19999999925494194,
+      "p95DeltaMs": -2.899999998509884,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 41.5,
+        "p95Ms": 47.40000000037253
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 35.40000000037253,
+        "p95Ms": 48
+      },
+      "medianDeltaMs": -6.099999999627471,
+      "p95DeltaMs": 0.599999999627471,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 31.40000000037253,
+        "p95Ms": 38.59999999962747
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 28.199999999254942,
+        "p95Ms": 37.69999999925494
+      },
+      "medianDeltaMs": -3.200000001117587,
+      "p95DeltaMs": -0.900000000372529,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "focus",
+      "before": {
+        "count": 22,
+        "medianMs": 13.900000000372529,
+        "p95Ms": 17.200000001117587
+      },
+      "after": {
+        "count": 22,
+        "medianMs": 13.699999999254942,
+        "p95Ms": 15.800000000745058
+      },
+      "medianDeltaMs": -0.2000000011175871,
+      "p95DeltaMs": -1.400000000372529,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 11.699999999254942,
+        "p95Ms": 15.599999999627471
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 11.700000001117587,
+        "p95Ms": 12.299999998882413
+      },
+      "medianDeltaMs": 1.862645149230957E-09,
+      "p95DeltaMs": -3.300000000745058,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "next",
+      "before": {
+        "count": 41,
+        "medianMs": 15,
+        "p95Ms": 21.5
+      },
+      "after": {
+        "count": 41,
+        "medianMs": 15.099999999627471,
+        "p95Ms": 16.600000001490116
+      },
+      "medianDeltaMs": 0.09999999962747097,
+      "p95DeltaMs": -4.899999998509884,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 14.300000000745058,
+        "p95Ms": 18.40000000037253
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 13.799999998882413,
+        "p95Ms": 15.900000000372529
+      },
+      "medianDeltaMs": -0.5000000018626451,
+      "p95DeltaMs": -2.5,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 45.19999999925494,
+        "p95Ms": 49.19999999925494
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 45.59999999962747,
+        "p95Ms": 52.09999999962747
+      },
+      "medianDeltaMs": 0.40000000037252903,
+      "p95DeltaMs": 2.900000000372529,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 32.80000000074506,
+        "p95Ms": 41.09999999962747
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 32.40000000037253,
+        "p95Ms": 38.80000000074506
+      },
+      "medianDeltaMs": -0.40000000037252903,
+      "p95DeltaMs": -2.299999998882413,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "focus",
+      "before": {
+        "count": 22,
+        "medianMs": 21.40000000037253,
+        "p95Ms": 28.199999999254942
+      },
+      "after": {
+        "count": 22,
+        "medianMs": 21.199999999254942,
+        "p95Ms": 26
+      },
+      "medianDeltaMs": -0.2000000011175871,
+      "p95DeltaMs": -2.199999999254942,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 18.200000001117587,
+        "p95Ms": 21.700000001117587
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 18.699999999254942,
+        "p95Ms": 21.699999999254942
+      },
+      "medianDeltaMs": 0.49999999813735485,
+      "p95DeltaMs": -1.862645149230957E-09,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "next",
+      "before": {
+        "count": 41,
+        "medianMs": 27.40000000037253,
+        "p95Ms": 35.70000000111759
+      },
+      "after": {
+        "count": 41,
+        "medianMs": 26.5,
+        "p95Ms": 34.09999999962747
+      },
+      "medianDeltaMs": -0.900000000372529,
+      "p95DeltaMs": -1.6000000014901161,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 24.59999999962747,
+        "p95Ms": 31.800000000745058
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 26,
+        "p95Ms": 31.5
+      },
+      "medianDeltaMs": 1.400000000372529,
+      "p95DeltaMs": -0.30000000074505806,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 43.90000000037253,
+        "p95Ms": 56.09999999962747
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 44.80000000074506,
+        "p95Ms": 52.5
+      },
+      "medianDeltaMs": 0.900000000372529,
+      "p95DeltaMs": -3.599999999627471,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 32.09999999962747,
+        "p95Ms": 37.80000000074506
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 34.20000000111759,
+        "p95Ms": 38.399999998509884
+      },
+      "medianDeltaMs": 2.100000001490116,
+      "p95DeltaMs": 0.5999999977648258,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "focus",
+      "before": {
+        "count": 22,
+        "medianMs": 19.40000000037253,
+        "p95Ms": 23.5
+      },
+      "after": {
+        "count": 22,
+        "medianMs": 18.09999999962747,
+        "p95Ms": 24.59999999962747
+      },
+      "medianDeltaMs": -1.300000000745058,
+      "p95DeltaMs": 1.099999999627471,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 16.800000000745058,
+        "p95Ms": 19.700000001117587
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 14.800000000745058,
+        "p95Ms": 18.600000001490116
+      },
+      "medianDeltaMs": -2.0,
+      "p95DeltaMs": -1.099999999627471,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "next",
+      "before": {
+        "count": 41,
+        "medianMs": 22.59999999962747,
+        "p95Ms": 31.600000001490116
+      },
+      "after": {
+        "count": 41,
+        "medianMs": 21.700000001117587,
+        "p95Ms": 29.199999999254942
+      },
+      "medianDeltaMs": -0.8999999985098839,
+      "p95DeltaMs": -2.400000002235174,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 22,
+        "p95Ms": 28.800000000745058
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 21,
+        "p95Ms": 28.700000001117587
+      },
+      "medianDeltaMs": -1,
+      "p95DeltaMs": -0.09999999962747097,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 36.69999999925494,
+        "p95Ms": 48.79999999888241
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 42.90000000037253,
+        "p95Ms": 49.30000000074506
+      },
+      "medianDeltaMs": 6.200000001117587,
+      "p95DeltaMs": 0.5000000018626451,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 33.899999998509884,
+        "p95Ms": 43.09999999962747
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 39.600000001490116,
+        "p95Ms": 44.90000000037253
+      },
+      "medianDeltaMs": 5.700000002980232,
+      "p95DeltaMs": 1.800000000745058,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "focus",
+      "before": {
+        "count": 21,
+        "medianMs": 21.59999999962747,
+        "p95Ms": 24.700000001117587
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 19.5,
+        "p95Ms": 25.699999999254942
+      },
+      "medianDeltaMs": -2.099999999627471,
+      "p95DeltaMs": 0.9999999981373549,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 17.800000000745058,
+        "p95Ms": 23.600000001490116
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 18.200000001117587,
+        "p95Ms": 22.200000001117587
+      },
+      "medianDeltaMs": 0.40000000037252903,
+      "p95DeltaMs": -1.400000000372529,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "next",
+      "before": {
+        "count": 21,
+        "medianMs": 16.90000000037253,
+        "p95Ms": 25.199999999254942
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 16.59999999962747,
+        "p95Ms": 22.800000000745058
+      },
+      "medianDeltaMs": -0.30000000074505806,
+      "p95DeltaMs": -2.399999998509884,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 37.600000001490116,
+        "p95Ms": 39.600000001490116
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 36.399999998509884,
+        "p95Ms": 42.80000000074506
+      },
+      "medianDeltaMs": -1.2000000029802322,
+      "p95DeltaMs": 3.199999999254942,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 38.5,
+        "p95Ms": 46.600000001490116
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 44.69999999925494,
+        "p95Ms": 53.69999999925494
+      },
+      "medianDeltaMs": 6.199999999254942,
+      "p95DeltaMs": 7.099999997764826,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 35.30000000074506,
+        "p95Ms": 44.19999999925494
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 37.70000000111759,
+        "p95Ms": 45.5
+      },
+      "medianDeltaMs": 2.400000000372529,
+      "p95DeltaMs": 1.300000000745058,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "focus",
+      "before": {
+        "count": 21,
+        "medianMs": 18.700000001117587,
+        "p95Ms": 22.700000001117587
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 22.40000000037253,
+        "p95Ms": 25.800000000745058
+      },
+      "medianDeltaMs": 3.699999999254942,
+      "p95DeltaMs": 3.099999999627471,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 19.40000000037253,
+        "p95Ms": 23.90000000037253
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 18.59999999962747,
+        "p95Ms": 27.59999999962747
+      },
+      "medianDeltaMs": -0.8000000007450581,
+      "p95DeltaMs": 3.699999999254942,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "next",
+      "before": {
+        "count": 21,
+        "medianMs": 16.799999998882413,
+        "p95Ms": 24.5
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 17.90000000037253,
+        "p95Ms": 19.800000000745058
+      },
+      "medianDeltaMs": 1.1000000014901161,
+      "p95DeltaMs": -4.699999999254942,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 35.79999999888241,
+        "p95Ms": 52.90000000037253
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 40.80000000074506,
+        "p95Ms": 44.600000001490116
+      },
+      "medianDeltaMs": 5.000000001862645,
+      "p95DeltaMs": -8.299999998882413,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 38.59999999962747,
+        "p95Ms": 48.30000000074506
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 37.09999999962747,
+        "p95Ms": 41
+      },
+      "medianDeltaMs": -1.5,
+      "p95DeltaMs": -7.300000000745058,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 31.90000000037253,
+        "p95Ms": 43.90000000037253
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 33.5,
+        "p95Ms": 36.899999998509884
+      },
+      "medianDeltaMs": 1.599999999627471,
+      "p95DeltaMs": -7.000000001862645,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "focus",
+      "before": {
+        "count": 21,
+        "medianMs": 25.09999999962747,
+        "p95Ms": 31.5
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 23.59999999962747,
+        "p95Ms": 26
+      },
+      "medianDeltaMs": -1.5,
+      "p95DeltaMs": -5.5,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 20.799999998882413,
+        "p95Ms": 27
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 19.800000000745058,
+        "p95Ms": 22.800000000745058
+      },
+      "medianDeltaMs": -0.9999999981373549,
+      "p95DeltaMs": -4.199999999254942,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "next",
+      "before": {
+        "count": 21,
+        "medianMs": 26.699999999254942,
+        "p95Ms": 34.69999999925494
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 28.09999999962747,
+        "p95Ms": 31.59999999962747
+      },
+      "medianDeltaMs": 1.400000000372529,
+      "p95DeltaMs": -3.099999999627471,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 45.69999999925494,
+        "p95Ms": 57.19999999925494
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 50.40000000037253,
+        "p95Ms": 55.600000001490116
+      },
+      "medianDeltaMs": 4.700000001117587,
+      "p95DeltaMs": -1.5999999977648258,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "execute",
+      "before": {
+        "count": 20,
+        "medianMs": 40.19999999925494,
+        "p95Ms": 48.5
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 36.19999999925494,
+        "p95Ms": 45.40000000037253
+      },
+      "medianDeltaMs": -4.0,
+      "p95DeltaMs": -3.099999999627471,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "executeRecord",
+      "before": {
+        "count": 20,
+        "medianMs": 39.40000000037253,
+        "p95Ms": 46.5
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 33.80000000074506,
+        "p95Ms": 39.69999999925494
+      },
+      "medianDeltaMs": -5.599999999627471,
+      "p95DeltaMs": -6.800000000745058,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "focus",
+      "before": {
+        "count": 21,
+        "medianMs": 22.600000001490116,
+        "p95Ms": 27.300000000745058
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 21.40000000037253,
+        "p95Ms": 22.899999998509884
+      },
+      "medianDeltaMs": -1.200000001117587,
+      "p95DeltaMs": -4.400000002235174,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "record",
+      "before": {
+        "count": 20,
+        "medianMs": 19.5,
+        "p95Ms": 25.699999999254942
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 19.09999999962747,
+        "p95Ms": 23.100000001490116
+      },
+      "medianDeltaMs": -0.40000000037252903,
+      "p95DeltaMs": -2.599999997764826,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "next",
+      "before": {
+        "count": 21,
+        "medianMs": 23.199999999254942,
+        "p95Ms": 31.699999999254942
+      },
+      "after": {
+        "count": 21,
+        "medianMs": 23.90000000037253,
+        "p95Ms": 26.09999999962747
+      },
+      "medianDeltaMs": 0.7000000011175871,
+      "p95DeltaMs": -5.599999999627471,
+      "pass": true
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "operation": "back",
+      "before": {
+        "count": 20,
+        "medianMs": 42.20000000111759,
+        "p95Ms": 49.30000000074506
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 46.5,
+        "p95Ms": 52
+      },
+      "medianDeltaMs": 4.299999998882413,
+      "p95DeltaMs": 2.699999999254942,
+      "pass": true
+    }
+  ],
+  "renderCounts": [
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 82,
+      "after": 77,
+      "delta": -5
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 44,
+      "after": 40,
+      "delta": -4
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 164,
+      "after": 164,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 183,
+      "after": 183,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 66,
+      "after": 66,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 65,
+      "after": 65,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 164,
+      "after": 164,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 183,
+      "after": 183,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 82,
+      "after": 82,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 44,
+      "after": 44,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 164,
+      "after": 164,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 183,
+      "after": 183,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-map-paint",
+      "before": 106,
+      "after": 106,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 68,
+      "after": 66,
+      "delta": -2
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 66,
+      "after": 65,
+      "delta": -1
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 164,
+      "after": 164,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 183,
+      "after": 183,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-map-paint",
+      "before": 104,
+      "after": 104,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 66,
+      "after": 66,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 231,
+      "after": 231,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 263,
+      "after": 263,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 70,
+      "after": 70,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 256,
+      "after": 261,
+      "delta": 5
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 263,
+      "after": 268,
+      "delta": 5
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 65,
+      "after": 65,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 225,
+      "after": 225,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 122,
+      "after": 122,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-map-paint",
+      "before": 84,
+      "after": 84,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 70,
+      "after": 70,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 206,
+      "after": 205,
+      "delta": -1
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 122,
+      "after": 122,
+      "delta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-map-paint",
+      "before": 94,
+      "after": 93,
+      "delta": -1
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 82,
+      "after": 82,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 44,
+      "after": 44,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 165,
+      "after": 164,
+      "delta": -1
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 184,
+      "after": 183,
+      "delta": -1
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 70,
+      "after": 66,
+      "delta": -4
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 66,
+      "after": 65,
+      "delta": -1
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 164,
+      "after": 164,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 183,
+      "after": 183,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 82,
+      "after": 82,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 44,
+      "after": 44,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 164,
+      "after": 164,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 183,
+      "after": 183,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-map-paint",
+      "before": 104,
+      "after": 106,
+      "delta": 2
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 66,
+      "after": 66,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 65,
+      "after": 65,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 164,
+      "after": 164,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 183,
+      "after": 183,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-map-paint",
+      "before": 104,
+      "after": 104,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 65,
+      "after": 66,
+      "delta": 1
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 231,
+      "after": 231,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 613,
+      "after": 613,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 70,
+      "after": 70,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 20,
+      "after": 22,
+      "delta": 2
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 256,
+      "after": 256,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 613,
+      "after": 613,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 65,
+      "after": 65,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 225,
+      "after": 225,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 122,
+      "after": 122,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-map-paint",
+      "before": 84,
+      "after": 83,
+      "delta": -1
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 70,
+      "after": 70,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 205,
+      "after": 205,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 122,
+      "after": 122,
+      "delta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-map-paint",
+      "before": 90,
+      "after": 95,
+      "delta": 5
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 82,
+      "after": 82,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 44,
+      "after": 44,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 164,
+      "after": 164,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 183,
+      "after": 183,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 66,
+      "after": 66,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 65,
+      "after": 65,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 164,
+      "after": 164,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 183,
+      "after": 183,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 82,
+      "after": 82,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 44,
+      "after": 44,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 164,
+      "after": 164,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 183,
+      "after": 183,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-map-paint",
+      "before": 106,
+      "after": 105,
+      "delta": -1
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 66,
+      "after": 66,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 65,
+      "after": 65,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 164,
+      "after": 164,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 183,
+      "after": 183,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-map-paint",
+      "before": 104,
+      "after": 105,
+      "delta": 1
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 65,
+      "after": 65,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 231,
+      "after": 231,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 1613,
+      "after": 1613,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 70,
+      "after": 70,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 256,
+      "after": 256,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 1613,
+      "after": 1613,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 65,
+      "after": 65,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 225,
+      "after": 225,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 122,
+      "after": 122,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "category": "focus-map-paint",
+      "before": 91,
+      "after": 91,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "card",
+      "before": 70,
+      "after": 70,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-space",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "category": "execution-viewport",
+      "before": 20,
+      "after": 20,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "card",
+      "before": 61,
+      "after": 61,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-space",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "category": "execution-viewport",
+      "before": 22,
+      "after": 22,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "card",
+      "before": 205,
+      "after": 205,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-item",
+      "before": 122,
+      "after": 122,
+      "delta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "category": "focus-map-paint",
+      "before": 99,
+      "after": 100,
+      "delta": 1
+    }
+  ],
+  "saveCompletion": [
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 448.80000000074506,
+        "p95Ms": 641.0999999996275
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 394.7999999988824,
+        "p95Ms": 561.8000000007451
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 31,
+        "medianMs": 430.2000000011176,
+        "p95Ms": 680.5999999996275
+      },
+      "after": {
+        "count": 30,
+        "medianMs": 412.80000000074506,
+        "p95Ms": 579.1999999992549
+      },
+      "countDelta": -1
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 61,
+        "medianMs": 449.69999999925494,
+        "p95Ms": 578.5
+      },
+      "after": {
+        "count": 61,
+        "medianMs": 384,
+        "p95Ms": 525.5
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 512.6999999992549,
+        "p95Ms": 640.4000000003725
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 408.09999999962747,
+        "p95Ms": 536.9000000003725
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 32,
+        "medianMs": 474.59999999962747,
+        "p95Ms": 631.5
+      },
+      "after": {
+        "count": 34,
+        "medianMs": 345.2999999988824,
+        "p95Ms": 455.40000000037253
+      },
+      "countDelta": 2
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 61,
+        "medianMs": 416.2000000011176,
+        "p95Ms": 571.9000000003725
+      },
+      "after": {
+        "count": 61,
+        "medianMs": 381,
+        "p95Ms": 516.2999999988824
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 426.5,
+        "p95Ms": 552.9000000003725
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 411.90000000037253,
+        "p95Ms": 564.8999999985099
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 35,
+        "medianMs": 323.30000000074506,
+        "p95Ms": 612.3000000007451
+      },
+      "after": {
+        "count": 32,
+        "medianMs": 354.7999999988824,
+        "p95Ms": 508.90000000037253
+      },
+      "countDelta": -3
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 61,
+        "medianMs": 393.40000000037253,
+        "p95Ms": 543.7999999988824
+      },
+      "after": {
+        "count": 61,
+        "medianMs": 388,
+        "p95Ms": 518
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 18,
+        "medianMs": 421,
+        "p95Ms": 569.8999999985099
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 410.7999999988824,
+        "p95Ms": 529.5
+      },
+      "countDelta": 2
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 33,
+        "medianMs": 402.1000000014901,
+        "p95Ms": 513.1999999992549
+      },
+      "after": {
+        "count": 34,
+        "medianMs": 343.19999999925494,
+        "p95Ms": 466.8999999985099
+      },
+      "countDelta": 1
+    },
+    {
+      "items": 150,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 61,
+        "medianMs": 356.90000000037253,
+        "p95Ms": 524
+      },
+      "after": {
+        "count": 61,
+        "medianMs": 371,
+        "p95Ms": 514.2000000011176
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 432.80000000074506,
+        "p95Ms": 566.1999999992549
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 399.90000000037253,
+        "p95Ms": 525.2000000011176
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 35,
+        "medianMs": 368.8999999985099,
+        "p95Ms": 541.1999999992549
+      },
+      "after": {
+        "count": 35,
+        "medianMs": 336,
+        "p95Ms": 504.1000000014901
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 60,
+        "medianMs": 390.2999999988824,
+        "p95Ms": 528.2000000011176
+      },
+      "after": {
+        "count": 60,
+        "medianMs": 401,
+        "p95Ms": 524.6999999992549
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 436.7999999988824,
+        "p95Ms": 577.7999999988824
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 403.59999999962747,
+        "p95Ms": 536.2000000011176
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 37,
+        "medianMs": 380.5,
+        "p95Ms": 510.7999999988824
+      },
+      "after": {
+        "count": 37,
+        "medianMs": 367.19999999925494,
+        "p95Ms": 496.2999999988824
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 60,
+        "medianMs": 374.5,
+        "p95Ms": 524.9000000003725
+      },
+      "after": {
+        "count": 60,
+        "medianMs": 394,
+        "p95Ms": 518.1999999992549
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 499.40000000037253,
+        "p95Ms": 703.4000000003725
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 403.30000000074506,
+        "p95Ms": 550.6000000014901
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 35,
+        "medianMs": 366,
+        "p95Ms": 571.2999999988824
+      },
+      "after": {
+        "count": 31,
+        "medianMs": 402.09999999962747,
+        "p95Ms": 525.7000000011176
+      },
+      "countDelta": -4
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 60,
+        "medianMs": 441,
+        "p95Ms": 582.6000000014901
+      },
+      "after": {
+        "count": 60,
+        "medianMs": 373.59999999962747,
+        "p95Ms": 533.2000000011176
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 431.40000000037253,
+        "p95Ms": 568.0999999996275
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 403.7000000011176,
+        "p95Ms": 525.6000000014901
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 31,
+        "medianMs": 478,
+        "p95Ms": 643.4000000003725
+      },
+      "after": {
+        "count": 35,
+        "medianMs": 343.59999999962747,
+        "p95Ms": 475.5
+      },
+      "countDelta": 4
+    },
+    {
+      "items": 150,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 60,
+        "medianMs": 427.5,
+        "p95Ms": 565.4000000003725
+      },
+      "after": {
+        "count": 60,
+        "medianMs": 359.30000000074506,
+        "p95Ms": 506.09999999962747
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 511.19999999925494,
+        "p95Ms": 656.5
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 422.59999999962747,
+        "p95Ms": 551.5
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 35,
+        "medianMs": 415.80000000074506,
+        "p95Ms": 576.9000000003725
+      },
+      "after": {
+        "count": 36,
+        "medianMs": 372.40000000037253,
+        "p95Ms": 557.4000000003725
+      },
+      "countDelta": 1
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 61,
+        "medianMs": 444.5,
+        "p95Ms": 637
+      },
+      "after": {
+        "count": 61,
+        "medianMs": 405.69999999925494,
+        "p95Ms": 536
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 500.2000000011176,
+        "p95Ms": 651.5999999996275
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 424.19999999925494,
+        "p95Ms": 565.8999999985099
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 35,
+        "medianMs": 415.2999999988824,
+        "p95Ms": 562.5
+      },
+      "after": {
+        "count": 34,
+        "medianMs": 377.69999999925494,
+        "p95Ms": 564.5999999996275
+      },
+      "countDelta": -1
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 61,
+        "medianMs": 447.7000000011176,
+        "p95Ms": 591.9000000003725
+      },
+      "after": {
+        "count": 61,
+        "medianMs": 419.90000000037253,
+        "p95Ms": 555.5999999996275
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 512,
+        "p95Ms": 708.6999999992549
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 452.30000000074506,
+        "p95Ms": 590.6000000014901
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 37,
+        "medianMs": 420.69999999925494,
+        "p95Ms": 625.2999999988824
+      },
+      "after": {
+        "count": 34,
+        "medianMs": 363.59999999962747,
+        "p95Ms": 596.5999999996275
+      },
+      "countDelta": -3
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 61,
+        "medianMs": 447.69999999925494,
+        "p95Ms": 643.9000000003725
+      },
+      "after": {
+        "count": 61,
+        "medianMs": 438.59999999962747,
+        "p95Ms": 579.7000000011176
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 19,
+        "medianMs": 493,
+        "p95Ms": 693
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 414,
+        "p95Ms": 572.9000000003725
+      },
+      "countDelta": 1
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 31,
+        "medianMs": 439,
+        "p95Ms": 692.7999999988824
+      },
+      "after": {
+        "count": 36,
+        "medianMs": 400.09999999962747,
+        "p95Ms": 625.4000000003725
+      },
+      "countDelta": 5
+    },
+    {
+      "items": 500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 61,
+        "medianMs": 464.59999999962747,
+        "p95Ms": 644.5
+      },
+      "after": {
+        "count": 61,
+        "medianMs": 407.5,
+        "p95Ms": 547.4000000003725
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 18,
+        "medianMs": 466.40000000037253,
+        "p95Ms": 662
+      },
+      "after": {
+        "count": 18,
+        "medianMs": 407.80000000074506,
+        "p95Ms": 591.6000000014901
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 31,
+        "medianMs": 475.09999999962747,
+        "p95Ms": 653
+      },
+      "after": {
+        "count": 31,
+        "medianMs": 438.7000000011176,
+        "p95Ms": 563.5
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 60,
+        "medianMs": 462.7999999988824,
+        "p95Ms": 650.8000000007451
+      },
+      "after": {
+        "count": 60,
+        "medianMs": 393.40000000037253,
+        "p95Ms": 533.0999999996275
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 18,
+        "medianMs": 452.40000000037253,
+        "p95Ms": 633
+      },
+      "after": {
+        "count": 18,
+        "medianMs": 429.2999999988824,
+        "p95Ms": 606.7000000011176
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 33,
+        "medianMs": 459.30000000074506,
+        "p95Ms": 639.6000000014901
+      },
+      "after": {
+        "count": 34,
+        "medianMs": 431.40000000037253,
+        "p95Ms": 595.4000000003725
+      },
+      "countDelta": 1
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 60,
+        "medianMs": 456.40000000037253,
+        "p95Ms": 607
+      },
+      "after": {
+        "count": 60,
+        "medianMs": 390.8999999985099,
+        "p95Ms": 560.3000000007451
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 18,
+        "medianMs": 491.09999999962747,
+        "p95Ms": 662.2000000011176
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 438.40000000037253,
+        "p95Ms": 545.2999999988824
+      },
+      "countDelta": 2
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 31,
+        "medianMs": 522.6999999992549,
+        "p95Ms": 665.3000000007451
+      },
+      "after": {
+        "count": 33,
+        "medianMs": 387.30000000074506,
+        "p95Ms": 538.5
+      },
+      "countDelta": 2
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 60,
+        "medianMs": 481.7000000011176,
+        "p95Ms": 674.3000000007451
+      },
+      "after": {
+        "count": 60,
+        "medianMs": 405.5,
+        "p95Ms": 557.5999999996275
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 18,
+        "medianMs": 447.09999999962747,
+        "p95Ms": 613
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 432.2000000011176,
+        "p95Ms": 581.6999999992549
+      },
+      "countDelta": 2
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 35,
+        "medianMs": 439.2000000011176,
+        "p95Ms": 656.6999999992549
+      },
+      "after": {
+        "count": 33,
+        "medianMs": 368.5,
+        "p95Ms": 515.4000000003725
+      },
+      "countDelta": -2
+    },
+    {
+      "items": 500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 60,
+        "medianMs": 448.30000000074506,
+        "p95Ms": 626.3000000007451
+      },
+      "after": {
+        "count": 60,
+        "medianMs": 451.5,
+        "p95Ms": 592.5999999996275
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 19,
+        "medianMs": 668.5999999996275,
+        "p95Ms": 1031.9000000003725
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 534.5,
+        "p95Ms": 747.6999999992549
+      },
+      "countDelta": 1
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 35,
+        "medianMs": 588.5,
+        "p95Ms": 822.5999999996275
+      },
+      "after": {
+        "count": 35,
+        "medianMs": 495.5,
+        "p95Ms": 825
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 61,
+        "medianMs": 590,
+        "p95Ms": 817.1999999992549
+      },
+      "after": {
+        "count": 61,
+        "medianMs": 470.40000000037253,
+        "p95Ms": 654.0999999996275
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 596.6000000014901,
+        "p95Ms": 836.6999999992549
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 549.8999999985099,
+        "p95Ms": 753.5999999996275
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 37,
+        "medianMs": 590.3000000007451,
+        "p95Ms": 826.0999999996275
+      },
+      "after": {
+        "count": 37,
+        "medianMs": 478,
+        "p95Ms": 695.9000000003725
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 61,
+        "medianMs": 570,
+        "p95Ms": 788.0999999996275
+      },
+      "after": {
+        "count": 61,
+        "medianMs": 501.69999999925494,
+        "p95Ms": 685.4000000003725
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 672.9000000003725,
+        "p95Ms": 932.8000000007451
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 649.7000000011176,
+        "p95Ms": 908.8000000007451
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 37,
+        "medianMs": 557.3999999985099,
+        "p95Ms": 779.7999999988824
+      },
+      "after": {
+        "count": 37,
+        "medianMs": 552.1999999992549,
+        "p95Ms": 723.3000000007451
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 61,
+        "medianMs": 605.4000000003725,
+        "p95Ms": 850.5999999996275
+      },
+      "after": {
+        "count": 61,
+        "medianMs": 552.0999999996275,
+        "p95Ms": 761.3000000007451
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 618.5,
+        "p95Ms": 909.3999999985099
+      },
+      "after": {
+        "count": 19,
+        "medianMs": 699.9000000003725,
+        "p95Ms": 953.5
+      },
+      "countDelta": -1
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 38,
+        "medianMs": 550.5999999996275,
+        "p95Ms": 818.0999999996275
+      },
+      "after": {
+        "count": 37,
+        "medianMs": 573.3000000007451,
+        "p95Ms": 750.1000000014901
+      },
+      "countDelta": -1
+    },
+    {
+      "items": 1500,
+      "concentrated": false,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 61,
+        "medianMs": 537.4000000003725,
+        "p95Ms": 795
+      },
+      "after": {
+        "count": 61,
+        "medianMs": 549.6999999992549,
+        "p95Ms": 761.6000000014901
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 616.9000000003725,
+        "p95Ms": 827.5
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 611.0999999996275,
+        "p95Ms": 863.3000000007451
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 34,
+        "medianMs": 599.3999999985099,
+        "p95Ms": 906.9000000003725
+      },
+      "after": {
+        "count": 33,
+        "medianMs": 534.8999999985099,
+        "p95Ms": 777
+      },
+      "countDelta": -1
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 60,
+        "medianMs": 598.5999999996275,
+        "p95Ms": 789.7000000011176
+      },
+      "after": {
+        "count": 60,
+        "medianMs": 570.7000000011176,
+        "p95Ms": 782.2000000011176
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 18,
+        "medianMs": 588.5,
+        "p95Ms": 749.5
+      },
+      "after": {
+        "count": 18,
+        "medianMs": 659.0999999996275,
+        "p95Ms": 962.3999999985099
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 37,
+        "medianMs": 540.5,
+        "p95Ms": 856
+      },
+      "after": {
+        "count": 33,
+        "medianMs": 609.6999999992549,
+        "p95Ms": 901.5999999996275
+      },
+      "countDelta": -4
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": false,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 60,
+        "medianMs": 562.5,
+        "p95Ms": 807.6000000014901
+      },
+      "after": {
+        "count": 60,
+        "medianMs": 596.9000000003725,
+        "p95Ms": 854.5999999996275
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 610.5999999996275,
+        "p95Ms": 891.5999999996275
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 566.6000000014901,
+        "p95Ms": 762.5
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 35,
+        "medianMs": 589.6999999992549,
+        "p95Ms": 841.5
+      },
+      "after": {
+        "count": 33,
+        "medianMs": 472.09999999962747,
+        "p95Ms": 696.7999999988824
+      },
+      "countDelta": -2
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "pc",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 60,
+        "medianMs": 554.4000000003725,
+        "p95Ms": 780.5999999996275
+      },
+      "after": {
+        "count": 60,
+        "medianMs": 472.30000000074506,
+        "p95Ms": 661.2999999988824
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 20,
+        "medianMs": 626.6999999992549,
+        "p95Ms": 811.2999999988824
+      },
+      "after": {
+        "count": 20,
+        "medianMs": 493.90000000037253,
+        "p95Ms": 702
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "executionRecordDiagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 35,
+        "medianMs": 560,
+        "p95Ms": 856.9000000003725
+      },
+      "after": {
+        "count": 35,
+        "medianMs": 454.30000000074506,
+        "p95Ms": 697.2000000011176
+      },
+      "countDelta": 0
+    },
+    {
+      "items": 1500,
+      "concentrated": true,
+      "mapVisible": true,
+      "layout": "smartphone",
+      "phase": "diagnostic",
+      "operation": "item-command:save",
+      "before": {
+        "count": 60,
+        "medianMs": 577.5999999996275,
+        "p95Ms": 800
+      },
+      "after": {
+        "count": 60,
+        "medianMs": 526.3000000007451,
+        "p95Ms": 773.3999999985099
+      },
+      "countDelta": 0
+    }
+  ]
+}

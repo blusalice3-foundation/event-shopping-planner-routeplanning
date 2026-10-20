@@ -1,0 +1,38 @@
+ M src/App.tsx
+ M src/app/commands/useEventLifecycleCommands.test.tsx
+ M src/app/commands/useEventLifecycleCommands.ts
+ M src/app/state/useMapWorkspaceState.test.tsx
+ M src/components/FocusMode.tsx
+ M src/components/ImportScreen.tsx
+ M src/components/ItemEditDialog.tsx
+ M src/components/LimitedPurchaseConfirmDialog.tsx
+ M src/components/LimitedPurchaseDialog.test.tsx
+ M src/components/LimitedPurchaseDialog.tsx
+ M src/components/ShoppingItemCard.tsx
+ M src/components/SingleQuantityLimitedPurchaseChoiceDialog.tsx
+ M src/components/additionalConsistency.test.tsx
+ M src/components/map/CellItemsPopup.tsx
+ M src/components/map/MapView.tsx
+ M src/components/map/MapView.visitProjection.integration.test.tsx
+ M src/features/app-shell/components/AppMainContent.tsx
+ M src/features/app-shell/components/AppOverlayLayer.tsx
+ M src/hooks/useDisableLimitedPurchaseQuantityCheck.ts
+ M src/hooks/useDisablePriceUndefinedCheck.ts
+ M src/hooks/useNumberCellOutlineStyle.ts
+ M src/hooks/useThemeMode.ts
+ M src/hooks/useUIVisibilitySettings.ts
+?? artifacts/priority-user-operation-consistency-20261018/
+?? docs/priority-user-operation-consistency-fix-plan-20261018.md
+?? src/components/FocusMode.limitedInteraction.integration.test.tsx
+?? src/components/ManualItemDate.persistence.integration.test.tsx
+?? src/components/ShoppingItemCard.limitedInteraction.integration.test.tsx
+?? src/components/map/MapView.popupRelay.integration.test.tsx
+?? src/features/app-shell/components/AppOverlayLayer.eventCancellation.integration.test.tsx
+?? src/features/map/hooks/useMapPopupSession.ts
+?? src/hooks/preferencePersistenceFailure.test.tsx
+?? tests/browser/priority-dialog-interaction.spec.ts
+?? tests/browser/priority-event-overlay.spec.ts
+?? tests/browser/priority-manual-item-consistency.spec.ts
+?? tests/browser/priority-operation-diagnostics.spec.ts
+?? tests/browser/priority-preference-consistency.spec.ts
+?? tests/browser/priority-relay-diagnostics.spec.ts

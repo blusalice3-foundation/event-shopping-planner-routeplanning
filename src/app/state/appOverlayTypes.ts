@@ -9,6 +9,7 @@ export type PendingDuplicateEventImport = {
   analysis: SameSourceEventAnalysis | DifferentSourceEventAnalysis;
   metadata?: BulkAddMetadata;
   eventGeneration?: number;
+  updateOperationId?: string;
   complete?: (result: BulkImportResult) => void;
 };
 

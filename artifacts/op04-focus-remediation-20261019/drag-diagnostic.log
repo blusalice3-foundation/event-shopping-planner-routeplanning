@@ -1,0 +1,38 @@
+
+[WebServer] (node:45808) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:39820) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/1] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2060:7 › @shopping-performance @shopping-drag-performance 500 touch grouping on
+  1) [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2060:7 › @shopping-performance @shopping-drag-performance 500 touch grouping on 
+
+    Error: drop
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 55
+    Received:    62.100000001490116
+
+      2581 |         for (const [operation, value] of Object.entries(records)) {
+      2582 |           expect(value.samples.length, operation).toBeGreaterThanOrEqual(20);
+    > 2583 |           expect(value.medianMs, operation).toBeLessThanOrEqual(55);
+           |                                             ^
+      2584 |           expect(value.p95Ms, operation).toBeLessThanOrEqual(100);
+      2585 |         }
+      2586 |       });
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\shopping-cross-column-drag.spec.ts:2583:45
+
+    attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\op04-focus-remediation-20261019\drag-diagnostic-output\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\op04-focus-remediation-20261019\drag-diagnostic-output\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\error-context.md
+
+
+  1 failed
+    [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:2060:7 › @shopping-performance @shopping-drag-performance 500 touch grouping on 

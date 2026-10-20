@@ -1,0 +1,158 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\esp-op19-fix\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/cross-feature-consistency.spec.ts",
+      "--grep",
+      "OP05 late.*add dialog",
+      "--workers=1",
+      "--reporter=json",
+      "--output=artifacts/op19-followup/baseline-add"
+    ],
+    "configFile": "D:\\esp-op19-fix\\playwright.config.ts",
+    "rootDir": "D:/esp-op19-fix/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/esp-op19-fix/artifacts/op19-followup/baseline-add",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/esp-op19-fix/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "cross-feature-consistency.spec.ts",
+      "file": "cross-feature-consistency.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "OP05 late purchase failure keeps focus inside the focus-mode add dialog",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6056,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n    at D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:5729:8",
+                    "location": {
+                      "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                      "column": 8,
+                      "line": 5729
+                    },
+                    "snippet": "  5727 |         dialog.evaluate((element) => element.contains(document.activeElement)),\n  5728 |       )\n> 5729 |       .toBe(true);\n       |        ^\n  5730 |     const before = await persistenceRealm(page).evaluate(\n  5731 |       () =>\n  5732 |         ("
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                        "column": 8,
+                        "line": 5729
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n\n  5727 |         dialog.evaluate((element) => element.contains(document.activeElement)),\n  5728 |       )\n> 5729 |       .toBe(true);\n       |        ^\n  5730 |     const before = await persistenceRealm(page).evaluate(\n  5731 |       () =>\n  5732 |         (\n    at D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts:5729:8"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-19T03:51:05.814Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-add\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-add\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\baseline-add\\cross-feature-consistency--a271b-e-the-focus-mode-add-dialog-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op19-fix\\tests\\browser\\cross-feature-consistency.spec.ts",
+                    "column": 8,
+                    "line": 5729
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "deeeee3f85f1f2867853-d568ee8f6c5a57f08daf",
+          "file": "cross-feature-consistency.spec.ts",
+          "line": 5676,
+          "column": 3
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-19T03:51:03.754Z",
+    "duration": 8333.552000000001,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

@@ -10,6 +10,12 @@ export interface ApplicationSnapshotCommitContext {
   /** Skip the ordinary placement review after an event update was reviewed. */
   confirm?: boolean;
   routeDays?: Record<string, Record<string, string[]>>;
+  /** Detailed hall sync replaces only polygon route entries in these targets.
+   * Each destination day retains its own simple/unassigned groups and visits. */
+  polygonHallSyncTargets?: Record<string, string[]>;
+  /** Target days sharing the source map use its mixed route as input, while
+   * retaining their own simple entries. The source day still saves its full draft. */
+  polygonHallSyncTargetDays?: Record<string, Record<string, string[]>>;
 }
 
 export interface ApplicationSnapshotCommitPort {

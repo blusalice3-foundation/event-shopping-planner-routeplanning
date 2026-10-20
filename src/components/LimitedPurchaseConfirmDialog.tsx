@@ -1,3 +1,4 @@
+import { useModalFocusBoundary } from "../hooks/useModalFocusBoundary";
 import React, { useEffect, useId, useRef } from "react";
 
 type LimitedPurchaseConfirmDialogProps = {
@@ -28,6 +29,8 @@ export default function LimitedPurchaseConfirmDialog({
   onCancel,
   onConfirm,
 }: LimitedPurchaseConfirmDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocusBoundary({ isOpen: isOpen && isModal, dialogRef });
   const titleId = useId();
   const descriptionId = useId();
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -65,6 +68,7 @@ export default function LimitedPurchaseConfirmDialog({
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal={isModal}
       aria-labelledby={titleId}
@@ -75,6 +79,10 @@ export default function LimitedPurchaseConfirmDialog({
       onMouseUp={stopDialogEvent}
       onPointerDown={stopDialogEvent}
       onPointerUp={stopDialogEvent}
+      onTouchStart={stopDialogEvent}
+      onTouchMove={stopDialogEvent}
+      onTouchEnd={stopDialogEvent}
+      onTouchCancel={stopDialogEvent}
       onKeyDown={handleKeyDown}
     >
       <div

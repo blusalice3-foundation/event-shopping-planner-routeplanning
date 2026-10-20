@@ -1,0 +1,1624 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\esp-op18\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/shopping-cross-column-drag.spec.ts",
+      "--grep-invert",
+      "@shopping-performance",
+      "--workers=1",
+      "--reporter=list,json",
+      "--output",
+      "artifacts/playwright-drag-functional-39-final"
+    ],
+    "configFile": "D:\\esp-op18\\playwright.config.ts",
+    "rootDir": "D:/esp-op18/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/esp-op18/artifacts/playwright-drag-functional-39-final",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/esp-op18/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "shopping-cross-column-drag.spec.ts",
+      "file": "shopping-cross-column-drag.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "execution group boundary and durable order: native",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1758,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:44:47.376Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-8154ed24975f1bdfebf9",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 421,
+          "column": 3
+        },
+        {
+          "title": "candidate null keeps existing save and reload rules: native",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2154,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:44:49.254Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-065056265ebb361efd63",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 453,
+          "column": 5
+        },
+        {
+          "title": "candidate asc keeps existing save and reload rules: native",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2235,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:44:51.418Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-932957a832b23876b22c",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 453,
+          "column": 5
+        },
+        {
+          "title": "candidate desc keeps existing save and reload rules: native",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3241,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:44:53.665Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-3472ee1365e6201b9b88",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 453,
+          "column": 5
+        },
+        {
+          "title": "execution group boundary and durable order: touch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2042,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:44:56.915Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-4a1a57d0a263033eb986",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 421,
+          "column": 3
+        },
+        {
+          "title": "candidate null keeps existing save and reload rules: touch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2522,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:44:58.970Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-3b7aaf8aae4b057323e2",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 453,
+          "column": 5
+        },
+        {
+          "title": "candidate asc keeps existing save and reload rules: touch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2556,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:01.505Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-548e9d8fdb1240d3333a",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 453,
+          "column": 5
+        },
+        {
+          "title": "candidate desc keeps existing save and reload rules: touch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2585,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:04.073Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-d3a58e566d57a23a75b9",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 453,
+          "column": 5
+        },
+        {
+          "title": "mixed insertion and multiple durable merges: native grouping true",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1935,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:06.670Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-69d82729d5dead8c3821",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 563,
+          "column": 5
+        },
+        {
+          "title": "offscreen merge follows its own destination: native grouping true",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2252,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:08.615Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-51eca507640673734ec5",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 593,
+          "column": 5
+        },
+        {
+          "title": "mixed insertion and multiple durable merges: native grouping false",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1669,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:10.878Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-5f5c4d6198d985cdcd7d",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 563,
+          "column": 5
+        },
+        {
+          "title": "offscreen merge follows its own destination: native grouping false",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1949,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:12.558Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-fa0be93830414e300bb7",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 593,
+          "column": 5
+        },
+        {
+          "title": "mixed insertion and multiple durable merges: touch grouping true",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2063,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:14.516Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-bfd76250b9dd24367c04",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 563,
+          "column": 5
+        },
+        {
+          "title": "offscreen merge follows its own destination: touch grouping true",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2352,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:16.589Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-d7e633ac261bd8489f39",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 593,
+          "column": 5
+        },
+        {
+          "title": "mixed insertion and multiple durable merges: touch grouping false",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1823,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:18.950Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-afb5a828ab9da6cc7e62",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 563,
+          "column": 5
+        },
+        {
+          "title": "offscreen merge follows its own destination: touch grouping false",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2176,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:20.783Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-0931ab5fe15b7a942f49",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 593,
+          "column": 5
+        },
+        {
+          "title": "impossible OFF boundary rejects a mixed drop atomically: native",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 882,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:22.970Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-8cfe9d689df391f530de",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 626,
+          "column": 3
+        },
+        {
+          "title": "impossible OFF boundary rejects a mixed drop atomically: touch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1085,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:23.861Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-993b7067fc70a9031d23",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 626,
+          "column": 3
+        },
+        {
+          "title": "actual Chromium native drag uses the shared column owner",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1112,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:24.954Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-ee3eb1cbff22f8ad83be",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 648,
+          "column": 1
+        },
+        {
+          "title": "actual Chromium touch drag resolves the target column",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1425,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:26.075Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-0c31098358bfdc8568e7",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 670,
+          "column": 1
+        },
+        {
+          "title": "empty execute accepts a scoped native drop",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1423,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:27.509Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-4721658c5323fdc6f093",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 718,
+          "column": 5
+        },
+        {
+          "title": "empty candidate accepts a scoped native drop",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1153,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:28.941Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-bd077e613e21664466b7",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 718,
+          "column": 5
+        },
+        {
+          "title": "empty execute accepts a scoped touch drop",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1498,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:30.104Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-20315d29487370eda9ec",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 718,
+          "column": 5
+        },
+        {
+          "title": "empty candidate accepts a scoped touch drop",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1458,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:31.613Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-b97dc92adf76871caf93",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 718,
+          "column": 5
+        },
+        {
+          "title": "collapsed destination uses its complete header boundary: native",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1201,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:33.081Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-6a465a89bc3302c9837e",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 785,
+          "column": 3
+        },
+        {
+          "title": "collapsed destination uses its complete header boundary: touch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1247,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:34.292Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-02728fbb63300c15f3aa",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 785,
+          "column": 3
+        },
+        {
+          "title": "candidate filter keeps a hidden selected visit out of the native drag",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1483,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:35.548Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-9fb44d794e2b9a48cdaf",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 851,
+          "column": 3
+        },
+        {
+          "title": "candidate filter keeps a hidden selected visit out of the touch drag",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1783,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:37.039Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-91448c07084b8b2bbf2f",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 851,
+          "column": 3
+        },
+        {
+          "title": "candidate lower-half hover preserves the existing next-row insertion: native",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 774,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:38.833Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-a0fc085d475be6978ffd",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 881,
+          "column": 3
+        },
+        {
+          "title": "candidate lower-half hover preserves the existing next-row insertion: touch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 957,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:39.616Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-ca5419594b3b225ad670",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 881,
+          "column": 3
+        },
+        {
+          "title": "collapsed source group moves every frozen member: native",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1743,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:40.581Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-550d994922340148d1fe",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 917,
+          "column": 3
+        },
+        {
+          "title": "collapsed source group moves every frozen member: touch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1824,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:42.336Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-874b44d53bd573c7e23b",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 917,
+          "column": 3
+        },
+        {
+          "title": "same-column candidate drag keeps its start selection: native",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2116,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:44.171Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-d7f09516178284cff3e6",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 956,
+          "column": 3
+        },
+        {
+          "title": "same-column candidate drag keeps its start selection: touch",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 990,
+                  "error": {
+                    "message": "Error: locator.evaluate: Error: strict mode violation: locator('[data-item-id=\"one\"]:not([data-space-group-key])').getByRole('checkbox') resolved to 2 elements:\n    1) <input type=\"checkbox\" data-no-long-press=\"true\" aria-label=\"Select item one - ユーザー登録\" class=\"w-5 h-5 rounded text-blue-600 focus:ring-blue-500\"/> aka getByRole('listitem', { name: 'A1 one ユーザー登録' }).getByLabel('Select item one - ユーザー登録')\n    2) <input type=\"checkbox\" data-no-long-press=\"true\" aria-label=\"Select item one - ユーザー登録\" class=\"w-5 h-5 rounded text-blue-600 focus:ring-blue-500\"/> aka getByRole('checkbox', { name: 'Select item one - ユーザー登録' }).nth(1)\n\nCall log:\n\u001b[2m  - waiting for locator('[data-item-id=\"one\"]:not([data-space-group-key])').getByRole('checkbox')\u001b[22m\n",
+                    "stack": "Error: locator.evaluate: Error: strict mode violation: locator('[data-item-id=\"one\"]:not([data-space-group-key])').getByRole('checkbox') resolved to 2 elements:\n    1) <input type=\"checkbox\" data-no-long-press=\"true\" aria-label=\"Select item one - ユーザー登録\" class=\"w-5 h-5 rounded text-blue-600 focus:ring-blue-500\"/> aka getByRole('listitem', { name: 'A1 one ユーザー登録' }).getByLabel('Select item one - ユーザー登録')\n    2) <input type=\"checkbox\" data-no-long-press=\"true\" aria-label=\"Select item one - ユーザー登録\" class=\"w-5 h-5 rounded text-blue-600 focus:ring-blue-500\"/> aka getByRole('checkbox', { name: 'Select item one - ユーザー登録' }).nth(1)\n\nCall log:\n\u001b[2m  - waiting for locator('[data-item-id=\"one\"]:not([data-space-group-key])').getByRole('checkbox')\u001b[22m\n\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:966:8",
+                    "location": {
+                      "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                      "column": 8,
+                      "line": 966
+                    },
+                    "snippet": "  964 |       .locator(rowSelector(\"one\"))\n  965 |       .getByRole(\"checkbox\")\n> 966 |       .evaluate((element) => (element as HTMLInputElement).click());\n      |        ^\n  967 |     await page\n  968 |       .locator(rowSelector(\"three\"))\n  969 |       .getByRole(\"checkbox\")"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                        "column": 8,
+                        "line": 966
+                      },
+                      "message": "Error: locator.evaluate: Error: strict mode violation: locator('[data-item-id=\"one\"]:not([data-space-group-key])').getByRole('checkbox') resolved to 2 elements:\n    1) <input type=\"checkbox\" data-no-long-press=\"true\" aria-label=\"Select item one - ユーザー登録\" class=\"w-5 h-5 rounded text-blue-600 focus:ring-blue-500\"/> aka getByRole('listitem', { name: 'A1 one ユーザー登録' }).getByLabel('Select item one - ユーザー登録')\n    2) <input type=\"checkbox\" data-no-long-press=\"true\" aria-label=\"Select item one - ユーザー登録\" class=\"w-5 h-5 rounded text-blue-600 focus:ring-blue-500\"/> aka getByRole('checkbox', { name: 'Select item one - ユーザー登録' }).nth(1)\n\nCall log:\n\u001b[2m  - waiting for locator('[data-item-id=\"one\"]:not([data-space-group-key])').getByRole('checkbox')\u001b[22m\n\n\n  964 |       .locator(rowSelector(\"one\"))\n  965 |       .getByRole(\"checkbox\")\n> 966 |       .evaluate((element) => (element as HTMLInputElement).click());\n      |        ^\n  967 |     await page\n  968 |       .locator(rowSelector(\"three\"))\n  969 |       .getByRole(\"checkbox\")\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:966:8"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:46.294Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-functional-39-final\\shopping-cross-column-drag-95a7a-s-its-start-selection-touch-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-functional-39-final\\shopping-cross-column-drag-95a7a-s-its-start-selection-touch-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                    "column": 8,
+                    "line": 966
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-fc97305b5b38846b7e3a",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 956,
+          "column": 3
+        },
+        {
+          "title": "touch leaving the viewport cancels its last valid cross-column target",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1392,
+                  "error": {
+                    "message": "Error: locator.evaluate: Error: strict mode violation: locator('[data-item-id=\"new-x\"]:not([data-space-group-key])') resolved to 2 elements:\n    1) <div draggable=\"false\" data-item-id=\"new-x\" data-is-selected=\"false\" data-space-navigation-anchor=\"item\" data-space-navigation-visit-id=\"A-04a:none\" class=\"transition-opacity duration-200 relative opacity-40\">…</div> aka locator('.transition-opacity.duration-200.relative.opacity-40').first()\n    2) <div draggable=\"false\" data-item-id=\"new-x\" data-is-selected=\"false\" data-layout-left=\"448px\" data-layout-width=\"600px\" data-layout-top=\"588.84375px\" data-space-navigation-anchor=\"item\" data-space-navigation-visit-id=\"A-04a:none\" class=\"transition-opacity duration-200 relative opacity-40 esp-shopping-touch-clone esp-layout-left esp-layout-top esp-layout-width\">…</div> aka locator('.transition-opacity.duration-200.relative.opacity-40.esp-shopping-touch-clone')\n\nCall log:\n\u001b[2m  - waiting for locator('[data-item-id=\"new-x\"]:not([data-space-group-key])')\u001b[22m\n",
+                    "stack": "Error: locator.evaluate: Error: strict mode violation: locator('[data-item-id=\"new-x\"]:not([data-space-group-key])') resolved to 2 elements:\n    1) <div draggable=\"false\" data-item-id=\"new-x\" data-is-selected=\"false\" data-space-navigation-anchor=\"item\" data-space-navigation-visit-id=\"A-04a:none\" class=\"transition-opacity duration-200 relative opacity-40\">…</div> aka locator('.transition-opacity.duration-200.relative.opacity-40').first()\n    2) <div draggable=\"false\" data-item-id=\"new-x\" data-is-selected=\"false\" data-layout-left=\"448px\" data-layout-width=\"600px\" data-layout-top=\"588.84375px\" data-space-navigation-anchor=\"item\" data-space-navigation-visit-id=\"A-04a:none\" class=\"transition-opacity duration-200 relative opacity-40 esp-shopping-touch-clone esp-layout-left esp-layout-top esp-layout-width\">…</div> aka locator('.transition-opacity.duration-200.relative.opacity-40.esp-shopping-touch-clone')\n\nCall log:\n\u001b[2m  - waiting for locator('[data-item-id=\"new-x\"]:not([data-space-group-key])')\u001b[22m\n\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:999:44",
+                    "location": {
+                      "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                      "column": 44,
+                      "line": 999
+                    },
+                    "snippet": "   997 |     \"accepted\",\n   998 |   );\n>  999 |   await page.locator(rowSelector(\"new-x\")).evaluate((source) => {\n       |                                            ^\n  1000 |     const touch = new Touch({\n  1001 |       identifier: 1,\n  1002 |       target: source,"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                        "column": 44,
+                        "line": 999
+                      },
+                      "message": "Error: locator.evaluate: Error: strict mode violation: locator('[data-item-id=\"new-x\"]:not([data-space-group-key])') resolved to 2 elements:\n    1) <div draggable=\"false\" data-item-id=\"new-x\" data-is-selected=\"false\" data-space-navigation-anchor=\"item\" data-space-navigation-visit-id=\"A-04a:none\" class=\"transition-opacity duration-200 relative opacity-40\">…</div> aka locator('.transition-opacity.duration-200.relative.opacity-40').first()\n    2) <div draggable=\"false\" data-item-id=\"new-x\" data-is-selected=\"false\" data-layout-left=\"448px\" data-layout-width=\"600px\" data-layout-top=\"588.84375px\" data-space-navigation-anchor=\"item\" data-space-navigation-visit-id=\"A-04a:none\" class=\"transition-opacity duration-200 relative opacity-40 esp-shopping-touch-clone esp-layout-left esp-layout-top esp-layout-width\">…</div> aka locator('.transition-opacity.duration-200.relative.opacity-40.esp-shopping-touch-clone')\n\nCall log:\n\u001b[2m  - waiting for locator('[data-item-id=\"new-x\"]:not([data-space-group-key])')\u001b[22m\n\n\n   997 |     \"accepted\",\n   998 |   );\n>  999 |   await page.locator(rowSelector(\"new-x\")).evaluate((source) => {\n       |                                            ^\n  1000 |     const touch = new Touch({\n  1001 |       identifier: 1,\n  1002 |       target: source,\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:999:44"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:47.868Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-functional-39-final\\shopping-cross-column-drag-38508-t-valid-cross-column-target-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-functional-39-final\\shopping-cross-column-drag-38508-t-valid-cross-column-target-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                    "column": 44,
+                    "line": 999
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-a2d0cf94de9b55eb6316",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 989,
+          "column": 1
+        },
+        {
+          "title": "OFF merge hall segment has the actual durable endpoint: native compatible true",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 761,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"accepted\"\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"accepted\"\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:1047:29",
+                    "location": {
+                      "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                      "column": 29,
+                      "line": 1047
+                    },
+                    "snippet": "  1045 |       await start(page, input, \"x\");\n  1046 |       const result = await hover(page, input, \"b\", \"after\", false);\n> 1047 |       expect(result.status).toBe(compatible ? \"accepted\" : \"rejected\");\n       |                             ^\n  1048 |       expect(result.guides).toEqual(\n  1049 |         compatible ? [{ kind: \"merge\", edge: \"after\", owner: \"a1\" }] : [],\n  1050 |       );"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                        "column": 29,
+                        "line": 1047
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"accepted\"\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m\n\n  1045 |       await start(page, input, \"x\");\n  1046 |       const result = await hover(page, input, \"b\", \"after\", false);\n> 1047 |       expect(result.status).toBe(compatible ? \"accepted\" : \"rejected\");\n       |                             ^\n  1048 |       expect(result.guides).toEqual(\n  1049 |         compatible ? [{ kind: \"merge\", edge: \"after\", owner: \"a1\" }] : [],\n  1050 |       );\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:1047:29"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:49.946Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-functional-39-final\\shopping-cross-column-drag-0b0cd-oint-native-compatible-true-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-functional-39-final\\shopping-cross-column-drag-0b0cd-oint-native-compatible-true-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                    "column": 29,
+                    "line": 1047
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-d563dc29c3b21d69d3b9",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 1022,
+          "column": 5
+        },
+        {
+          "title": "OFF merge hall segment has the actual durable endpoint: native compatible false",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 794,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"\u001b[7mrejec\u001b[27mted\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7maccep\u001b[27mted\"\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"\u001b[7mrejec\u001b[27mted\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7maccep\u001b[27mted\"\u001b[39m\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:1047:29",
+                    "location": {
+                      "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                      "column": 29,
+                      "line": 1047
+                    },
+                    "snippet": "  1045 |       await start(page, input, \"x\");\n  1046 |       const result = await hover(page, input, \"b\", \"after\", false);\n> 1047 |       expect(result.status).toBe(compatible ? \"accepted\" : \"rejected\");\n       |                             ^\n  1048 |       expect(result.guides).toEqual(\n  1049 |         compatible ? [{ kind: \"merge\", edge: \"after\", owner: \"a1\" }] : [],\n  1050 |       );"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                        "column": 29,
+                        "line": 1047
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"\u001b[7mrejec\u001b[27mted\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7maccep\u001b[27mted\"\u001b[39m\n\n  1045 |       await start(page, input, \"x\");\n  1046 |       const result = await hover(page, input, \"b\", \"after\", false);\n> 1047 |       expect(result.status).toBe(compatible ? \"accepted\" : \"rejected\");\n       |                             ^\n  1048 |       expect(result.guides).toEqual(\n  1049 |         compatible ? [{ kind: \"merge\", edge: \"after\", owner: \"a1\" }] : [],\n  1050 |       );\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:1047:29"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:51.350Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-functional-39-final\\shopping-cross-column-drag-04727-int-native-compatible-false-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-functional-39-final\\shopping-cross-column-drag-04727-int-native-compatible-false-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                    "column": 29,
+                    "line": 1047
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-09e7d405fe259ce84a58",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 1022,
+          "column": 5
+        },
+        {
+          "title": "OFF merge hall segment has the actual durable endpoint: touch compatible true",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1017,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"accepted\"\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"accepted\"\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:1047:29",
+                    "location": {
+                      "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                      "column": 29,
+                      "line": 1047
+                    },
+                    "snippet": "  1045 |       await start(page, input, \"x\");\n  1046 |       const result = await hover(page, input, \"b\", \"after\", false);\n> 1047 |       expect(result.status).toBe(compatible ? \"accepted\" : \"rejected\");\n       |                             ^\n  1048 |       expect(result.guides).toEqual(\n  1049 |         compatible ? [{ kind: \"merge\", edge: \"after\", owner: \"a1\" }] : [],\n  1050 |       );"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                        "column": 29,
+                        "line": 1047
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"accepted\"\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m\n\n  1045 |       await start(page, input, \"x\");\n  1046 |       const result = await hover(page, input, \"b\", \"after\", false);\n> 1047 |       expect(result.status).toBe(compatible ? \"accepted\" : \"rejected\");\n       |                             ^\n  1048 |       expect(result.guides).toEqual(\n  1049 |         compatible ? [{ kind: \"merge\", edge: \"after\", owner: \"a1\" }] : [],\n  1050 |       );\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:1047:29"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:52.780Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-functional-39-final\\shopping-cross-column-drag-18b5a-point-touch-compatible-true-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-functional-39-final\\shopping-cross-column-drag-18b5a-point-touch-compatible-true-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                    "column": 29,
+                    "line": 1047
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-eea47b71916565c8781b",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 1022,
+          "column": 5
+        },
+        {
+          "title": "OFF merge hall segment has the actual durable endpoint: touch compatible false",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1018,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"\u001b[7mrejec\u001b[27mted\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7maccep\u001b[27mted\"\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"\u001b[7mrejec\u001b[27mted\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7maccep\u001b[27mted\"\u001b[39m\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:1047:29",
+                    "location": {
+                      "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                      "column": 29,
+                      "line": 1047
+                    },
+                    "snippet": "  1045 |       await start(page, input, \"x\");\n  1046 |       const result = await hover(page, input, \"b\", \"after\", false);\n> 1047 |       expect(result.status).toBe(compatible ? \"accepted\" : \"rejected\");\n       |                             ^\n  1048 |       expect(result.guides).toEqual(\n  1049 |         compatible ? [{ kind: \"merge\", edge: \"after\", owner: \"a1\" }] : [],\n  1050 |       );"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                        "column": 29,
+                        "line": 1047
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"\u001b[7mrejec\u001b[27mted\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7maccep\u001b[27mted\"\u001b[39m\n\n  1045 |       await start(page, input, \"x\");\n  1046 |       const result = await hover(page, input, \"b\", \"after\", false);\n> 1047 |       expect(result.status).toBe(compatible ? \"accepted\" : \"rejected\");\n       |                             ^\n  1048 |       expect(result.guides).toEqual(\n  1049 |         compatible ? [{ kind: \"merge\", edge: \"after\", owner: \"a1\" }] : [],\n  1050 |       );\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:1047:29"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:45:54.470Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-functional-39-final\\shopping-cross-column-drag-8871e-oint-touch-compatible-false-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-functional-39-final\\shopping-cross-column-drag-8871e-oint-touch-compatible-false-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts",
+                    "column": 29,
+                    "line": 1047
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-fab2a78b94a8a4b46559",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 1022,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-18T15:44:46.637Z",
+    "duration": 69061.591,
+    "expected": 33,
+    "skipped": 0,
+    "unexpected": 6,
+    "flaky": 0
+  }
+}

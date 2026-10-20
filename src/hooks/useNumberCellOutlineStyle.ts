@@ -22,7 +22,11 @@ export function useNumberCellOutlineStyle(
     });
 
   useEffect(() => {
-    preferences.savePreference(STORAGE_KEY, numberCellOutlineStyle);
+    try {
+      preferences.savePreference(STORAGE_KEY, numberCellOutlineStyle);
+    } catch {
+      // Ignore storage failures; the in-memory setting still updates.
+    }
   }, [numberCellOutlineStyle, preferences]);
 
   return {

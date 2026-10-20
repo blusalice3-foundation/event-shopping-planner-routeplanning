@@ -1,8 +1,16 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import SingleQuantityLimitedPurchaseChoiceDialog from "./SingleQuantityLimitedPurchaseChoiceDialog";
+import { requestModalSafeFocus } from "../utils/modalFocusBoundary";
 
 const renderDialog = () => {
   const onPurchased = vi.fn();
@@ -78,6 +86,70 @@ describe("SingleQuantityLimitedPurchaseChoiceDialog", () => {
 
     fireEvent.keyDown(dialog, { key: "Tab", shiftKey: true });
     expect(purchasedButton).toHaveFocus();
+  });
+
+  it("registers only while open, releases listeners and restores focus across reopening", async () => {
+    const firstCancel = vi.fn();
+    const reopenedCancel = vi.fn();
+    const latestCancel = vi.fn();
+    const content = (isOpen: boolean, onCancel: () => void) => (
+      <>
+        <button>起点</button>
+        <button>保留の再試行</button>
+        <SingleQuantityLimitedPurchaseChoiceDialog
+          isOpen={isOpen}
+          onPurchased={vi.fn()}
+          onLimited={vi.fn()}
+          onCancel={onCancel}
+        />
+      </>
+    );
+    const view = render(content(false, firstCancel));
+    const opener = screen.getByRole("button", { name: "起点" });
+    const retry = screen.getByRole("button", { name: "保留の再試行" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    opener.focus();
+    view.rerender(content(true, firstCancel));
+    const firstDialog = screen.getByRole("dialog");
+    const purchased = within(firstDialog).getByRole("button", {
+      name: "購入済",
+    });
+    expect(purchased).toHaveFocus();
+    act(() =>
+      requestModalSafeFocus(
+        () => retry,
+        () => true,
+      ),
+    );
+    expect(purchased).toHaveFocus();
+
+    view.rerender(content(false, firstCancel));
+    expect(firstDialog.isConnected).toBe(false);
+    await waitFor(() => expect(retry).toHaveFocus());
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(firstCancel).not.toHaveBeenCalled();
+
+    opener.focus();
+    view.rerender(content(true, reopenedCancel));
+    const reopened = screen.getByRole("dialog");
+    expect(
+      within(reopened).getByRole("button", { name: "購入済" }),
+    ).toHaveFocus();
+    view.rerender(content(true, latestCancel));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(reopenedCancel).not.toHaveBeenCalled();
+    expect(latestCancel).toHaveBeenCalledOnce();
+    view.rerender(content(false, latestCancel));
+    expect(opener).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(latestCancel).toHaveBeenCalledOnce();
+    act(() =>
+      requestModalSafeFocus(
+        () => retry,
+        () => true,
+      ),
+    );
+    expect(retry).toHaveFocus();
   });
 
   it("stops dialog mouse events from React parents and document bubble listeners", () => {

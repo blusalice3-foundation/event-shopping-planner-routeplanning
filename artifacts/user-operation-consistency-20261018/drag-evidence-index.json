@@ -1,0 +1,122 @@
+{
+  "schema": "shopping-drag-final-evidence-v1",
+  "description": "専用ドラッグ試験の最終証跡。各パスはこの索引からの相対パスです。",
+  "verifiedAtUtc": "2026-10-18T18:08:50.7813820Z",
+  "baselineCommit": "5bf82a364d5b656cfa1e67c5233cfac0564840cf",
+  "postBundleSha256": "A554A5A960F6D3D82A62B381AF7E1D1EC4634310FFD7A5B55E0AA3E8367517DD",
+  "reports": {
+    "baseline": "drag-baseline-final-report.json",
+    "post": "drag-post-a554-final-report.json"
+  },
+  "logs": {
+    "baseline": "drag-baseline-final.log",
+    "post": "drag-post-a554-final.log"
+  },
+  "summary": "drag-final-evidence/drag-performance-summary.json",
+  "verification": {
+    "baselinePassedConditions": 8,
+    "postPassedConditions": 8,
+    "operationConditions": 60,
+    "responseSamples": 1200,
+    "minimumSamplesPerOperation": 20,
+    "thresholdMedianMs": 55,
+    "thresholdP95Ms": 100,
+    "maxMedianMs": 52.5,
+    "maxP95Ms": 60.5,
+    "baselineIndependentStartAndEndSamplesEach": 160,
+    "postIndependentStartAndEndSamplesEach": 160,
+    "pointerOperationConditions": 52,
+    "existingKeyUpdates": 0,
+    "existingKeyRemounts": 0,
+    "staticGuideNewMounts": 0,
+    "pointerMutationRequests": 0,
+    "completedPointerReadwriteTransactions": 0,
+    "actualAutoScrollSamples": 160,
+    "embeddedReportBodies": 16,
+    "externalReportAttachmentFiles": 0
+  },
+  "saveConfirmation": "入力から保存済みIDのpoll確認までの上限値。操作応答とは別に記録。",
+  "copyNote": "このfolder全体をコピーしてください。索引の相対参照だけでraw16件とreport/logを参照できます。summary.rawCases.rawの絶対値は測定時のprovenanceです。",
+  "rawCases": [
+    {
+      "build": "baseline",
+      "condition": "150-native-on",
+      "path": "drag-final-evidence/baseline-150-native-on-raw.json"
+    },
+    {
+      "build": "baseline",
+      "condition": "150-native-off",
+      "path": "drag-final-evidence/baseline-150-native-off-raw.json"
+    },
+    {
+      "build": "baseline",
+      "condition": "150-touch-on",
+      "path": "drag-final-evidence/baseline-150-touch-on-raw.json"
+    },
+    {
+      "build": "baseline",
+      "condition": "150-touch-off",
+      "path": "drag-final-evidence/baseline-150-touch-off-raw.json"
+    },
+    {
+      "build": "baseline",
+      "condition": "500-native-on",
+      "path": "drag-final-evidence/baseline-500-native-on-raw.json"
+    },
+    {
+      "build": "baseline",
+      "condition": "500-native-off",
+      "path": "drag-final-evidence/baseline-500-native-off-raw.json"
+    },
+    {
+      "build": "baseline",
+      "condition": "500-touch-on",
+      "path": "drag-final-evidence/baseline-500-touch-on-raw.json"
+    },
+    {
+      "build": "baseline",
+      "condition": "500-touch-off",
+      "path": "drag-final-evidence/baseline-500-touch-off-raw.json"
+    },
+    {
+      "build": "post",
+      "condition": "150-native-on",
+      "path": "drag-final-evidence/post-150-native-on-raw.json"
+    },
+    {
+      "build": "post",
+      "condition": "150-native-off",
+      "path": "drag-final-evidence/post-150-native-off-raw.json"
+    },
+    {
+      "build": "post",
+      "condition": "150-touch-on",
+      "path": "drag-final-evidence/post-150-touch-on-raw.json"
+    },
+    {
+      "build": "post",
+      "condition": "150-touch-off",
+      "path": "drag-final-evidence/post-150-touch-off-raw.json"
+    },
+    {
+      "build": "post",
+      "condition": "500-native-on",
+      "path": "drag-final-evidence/post-500-native-on-raw.json"
+    },
+    {
+      "build": "post",
+      "condition": "500-native-off",
+      "path": "drag-final-evidence/post-500-native-off-raw.json"
+    },
+    {
+      "build": "post",
+      "condition": "500-touch-on",
+      "path": "drag-final-evidence/post-500-touch-on-raw.json"
+    },
+    {
+      "build": "post",
+      "condition": "500-touch-off",
+      "path": "drag-final-evidence/post-500-touch-off-raw.json"
+    }
+  ]
+}

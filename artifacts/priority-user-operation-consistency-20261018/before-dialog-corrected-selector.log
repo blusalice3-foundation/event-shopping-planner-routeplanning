@@ -1,0 +1,86 @@
+[WebServer] (node:14080) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:33336) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: pc (6.3s)
+(node:33116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  2 [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: smartphone (6.5s)
+
+
+  1) [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: pc 
+
+    Error: expect(locator).toBeFocused() failed
+
+    Locator:  getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })
+    Expected: focused
+    Received: inactive
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeFocused" with timeout 5000ms
+      - waiting for getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })
+        14 × locator resolved to <input value="" inputmode="numeric" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"/>
+           - unexpected value "inactive"
+
+
+      138 |     });
+      139 |     const actual = main.getByRole("textbox", { name: "実購入数", exact: true });
+    > 140 |     await expect(actual).toBeFocused();
+          |                          ^
+      141 |     await swipe(page, '[aria-labelledby="limited-purchase-dialog-title"]');
+      142 |     await expect(
+      143 |       main.getByText("対象: 最初の入力", { exact: true }),
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-dialog-interaction.spec.ts:140:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-dialog-corrected-selector\priority-dialog-interactio-4d6b2-ations-and-the-next-item-pc-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-dialog-corrected-selector\priority-dialog-interactio-4d6b2-ations-and-the-next-item-pc-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\before-dialog-corrected-selector\priority-dialog-interactio-4d6b2-ations-and-the-next-item-pc-chromium\error-context.md
+
+  2) [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: smartphone 
+
+    Error: expect(locator).toBeFocused() failed
+
+    Locator:  getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })
+    Expected: focused
+    Received: inactive
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeFocused" with timeout 5000ms
+      - waiting for getByRole('dialog', { name: '限数購入の数量', exact: true }).getByRole('textbox', { name: '実購入数', exact: true })
+        14 × locator resolved to <input value="" inputmode="numeric" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"/>
+           - unexpected value "inactive"
+
+
+      138 |     });
+      139 |     const actual = main.getByRole("textbox", { name: "実購入数", exact: true });
+    > 140 |     await expect(actual).toBeFocused();
+          |                          ^
+      141 |     await swipe(page, '[aria-labelledby="limited-purchase-dialog-title"]');
+      142 |     await expect(
+      143 |       main.getByText("対象: 最初の入力", { exact: true }),
+        at D:\event-shopping-planner-routeplanning-1.9.6.7\tests\browser\priority-dialog-interaction.spec.ts:140:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-dialog-corrected-selector\priority-dialog-interactio-e3166-nd-the-next-item-smartphone-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    artifacts\priority-user-operation-consistency-20261018\before-dialog-corrected-selector\priority-dialog-interactio-e3166-nd-the-next-item-smartphone-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\priority-user-operation-consistency-20261018\before-dialog-corrected-selector\priority-dialog-interactio-e3166-nd-the-next-item-smartphone-chromium\error-context.md
+
+  2 failed
+    [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: pc 
+    [chromium] › tests\browser\priority-dialog-interaction.spec.ts:113:3 › bulk limited input contains touch and keyboard across confirmations and the next item: smartphone 

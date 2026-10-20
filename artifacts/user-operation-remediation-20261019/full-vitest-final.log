@@ -1,0 +1,202 @@
+
+ RUN  v4.1.10 D:/esp-op18
+
+stderr | src/utils/indexedDB.resilience.integration.test.ts > db open resilience > times out a blocked open with a dedicated recovery error and permits retry
+IndexedDB open failed.
+
+stderr | src/persistence/db/consistencyMigration.integration.test.ts > consistency migration transaction > rejects both reads and writes through the actual previous database opener
+IndexedDB open failed.
+
+stderr | src/persistence/db/consistencyMigration.integration.test.ts > consistency migration transaction > rejects both reads and writes through the actual previous database opener
+IndexedDB open failed.
+
+stderr | src/persistence/db/consistencyMigration.integration.test.ts > pre-upgrade boundary > closes an already-open old client on versionchange and refuses its reconnect
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.mapData.integration.test.tsx > db.loadMapData > reports an error after both IndexedDB reads fail without a legacy fallback
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.mapData.integration.test.tsx > db.loadMapData > does not use the legacy localStorage key after both IndexedDB reads fail
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.mapData.integration.test.tsx > db.loadMapData > does not use the legacy localStorage key after both IndexedDB reads fail
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > does not modify a current version database with a missing required store
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > does not modify a current version database with a missing required store
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > refuses an unknown newer database without modifying it
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > refuses an unknown newer database without modifying it
+IndexedDB open failed.
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > related settings and manifest corruption > rejects a missing declared related-settings sheet instead of falling back to legacy
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > closed full-workbook declarations > rejects duplicate-metadata without falling back
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > closed full-workbook declarations > rejects future-workbook without falling back
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > closed full-workbook declarations > rejects future-schema without falling back
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/utils/exportImport.restoreSettings.test.ts > event XLSX restore settings > rejects malformed restore settings before any event can be replaced
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 B2 (参加日)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 C3 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in マップデータ A2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in マップデータ B2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in ルート情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in ルート情報 B2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in ルート情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 B2 (参加日)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 C3 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in マップデータ A2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in マップデータ B2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in ルート情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in ルート情報 B2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in ルート情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in 配置情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in マップデータ B2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in ルート情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in 配置情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in マップデータ B2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in ルート情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > rejects unsupported event names instead of creating object strings {"formula":"\"ユーザー登録\""}
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > rejects unsupported event names instead of creating object strings {"error":"#VALUE!"}
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > does not reinterpret structured contentManifest metadata as decorated JSON
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > does not reinterpret structured eventMetadata metadata as decorated JSON
+Spreadsheet import failed (spreadsheet-import-failed).
+
+·························································································································································································································································································································································································································································x·······························································································································································································································································----------------------------------------------------------------------------------------····································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································x···································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |integration| src/app/commands/useMapEditorCommands.integration.test.tsx > keeps target-day simple hall order, visits and assignment when syncing detailed halls
+AssertionError: expected { hall: { kind: 'map', …(2) }, …(1) } to deeply equal { Object (hall, priority) }
+
+- Expected
++ Received
+
+  {
+    "hall": {
+-     "dayKey": "2日目",
+-     "hallId": "simple",
+-     "kind": "simple",
++     "hallId": "hall-1792336635001-h4ksa2",
++     "kind": "map",
++     "mapKey": "2日目マップ",
+    },
+    "priority": "none",
+  }
+
+ ❯ src/app/commands/useMapEditorCommands.integration.test.tsx:861:31
+    859|   }
+    860|   await act(async () => pending);
+    861|   const saved = (await readApplicationSnapshot()).snapshot;
+       |                               ^
+    862|   const target = saved.eventConsistency[EVENT].days[OTHER_DAY].maps[OT…
+    863|   expect(target.hallOrder[0]).toEqual({ hall: simpleRef, priority: "no…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  |unit| src/app/commands/useMapEditorCommands.test.tsx > atomically saves the displayed draft and allocates one clone per actual destination
+AssertionError: expected { …(2) } to deeply equal { routeDays: { 'イベントA': { …(3) } } }
+
+- Expected
++ Received
+
+@@ -1,6 +1,11 @@
+  {
++   "polygonHallSyncTargets": {
++     "イベントA": [
++       "shared-target",
++     ],
++   },
+    "routeDays": {
+      "イベントA": {
+        "__mapless__:1日目": [
+          "1日目",
+        ],
+
+ ❯ src/app/commands/useMapEditorCommands.test.tsx:968:73
+    966|     maplessHall("manual"),
+    967|   ]);
+    968|   expect(harness.spies.commitApplicationSnapshotPatch.mock.calls[0][2]…
+       |                                                                         ^
+    969|     {
+    970|       routeDays: {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed | 256 passed | 1 skipped (259)
+      Tests  2 failed | 3039 passed | 88 skipped (3129)
+   Start at  00:16:29
+   Duration  210.07s (transform 13.09s, setup 68.94s, import 43.44s, tests 113.91s, environment 140.42s)
+

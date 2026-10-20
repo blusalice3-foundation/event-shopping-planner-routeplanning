@@ -183,3 +183,45 @@ it.each(["url", "file"] as const)(
     ).toHaveTextContent("取込対象: 1件、必須項目不足による除外: 1行");
   },
 );
+
+it("reports CSV read errors and can reselect the same file without erasing newer input", async () => {
+  const add = setup(sheetCsv(1));
+  const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+  const file = new File([""], "same.csv", { type: "text/csv" });
+  Object.defineProperty(file, "text", {
+    value: vi
+      .fn()
+      .mockRejectedValueOnce(new DOMException("denied", "NotReadableError"))
+      .mockResolvedValue(sheetCsv(1)),
+  });
+  fireEvent.change(input, { target: { files: [file] } });
+  await waitFor(() =>
+    expect(window.alert).toHaveBeenCalledWith(
+      expect.stringContaining("CSVファイルを読み取れませんでした"),
+    ),
+  );
+  expect(input.value).toBe("");
+  expect(add).not.toHaveBeenCalled();
+  fireEvent.change(input, { target: { files: [file] } });
+  await waitFor(() => expect(add).toHaveBeenCalledOnce());
+});
+it("ignores a replaced CSV read failure before parsing the newer CSV", async () => {
+  const add = setup(sheetCsv(1));
+  const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+  let reject!: (reason: unknown) => void;
+  const old = new File([""], "old.csv");
+  Object.defineProperty(old, "text", {
+    value: () =>
+      new Promise((_resolve, rejectRead) => {
+        reject = rejectRead;
+      }),
+  });
+  const latest = new File([""], "latest.csv");
+  Object.defineProperty(latest, "text", { value: async () => sheetCsv(1) });
+  fireEvent.change(input, { target: { files: [old] } });
+  fireEvent.change(input, { target: { files: [latest] } });
+  await waitFor(() => expect(add).toHaveBeenCalledOnce());
+  reject(new DOMException("stale", "NotReadableError"));
+  await new Promise<void>((resolve) => queueMicrotask(resolve));
+  expect(window.alert).not.toHaveBeenCalled();
+});

@@ -1,3 +1,9 @@
+import type { MapEditorSession } from "../../features/map/domain/mapEditorSession";
+import type {
+  HallEditorSave,
+  HallEditorSync,
+} from "../../app/ports/HallEditorCommandPort";
+import { useHallEditorWrite } from "./useHallEditorWrite";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { BlockDefinition, DayMapData, HallDefinition } from "../../types/map";
 import { isPointInPolygonInclusive } from "../../utils/mapRoutePolygon";
@@ -6,12 +12,14 @@ import { useModalDialogBehavior } from "../../hooks/useModalDialogBehavior";
 
 interface HallDefinitionPanelProps {
   isOpen: boolean;
+  session?: MapEditorSession;
   onClose: () => void;
   mapData: DayMapData;
   halls: HallDefinition[];
-  onUpdateHalls: (halls: HallDefinition[]) => void;
+  onUpdateHalls: HallEditorSave;
   onStartVertexSelection: (editingData?: unknown) => void;
   pendingVertexSelection?: {
+    session?: MapEditorSession;
     vertices: { row: number; col: number }[];
     editingData?: unknown;
   } | null;
@@ -19,7 +27,7 @@ interface HallDefinitionPanelProps {
   eventDates?: string[];
   activeEventDate?: string;
   mapTabDates?: string[];
-  onSyncToOtherDates?: (targetDates: string[]) => void;
+  onSyncToOtherDates?: HallEditorSync;
 }
 
 const HALL_COLORS = [
@@ -42,10 +50,13 @@ interface EditingHallData {
   isAddingNew: boolean;
   selectedIndex: number | null;
   currentHalls: HallDefinition[];
+  showSyncUI?: boolean;
+  syncTargetDates?: string[];
 }
 
 const HallDefinitionPanel: React.FC<HallDefinitionPanelProps> = ({
   isOpen,
+  session,
   onClose,
   mapData,
   halls,
@@ -69,10 +80,19 @@ const HallDefinitionPanel: React.FC<HallDefinitionPanelProps> = ({
   const [syncTargetDates, setSyncTargetDates] = useState<Set<string>>(
     new Set(),
   );
+  const { busy, error, requiresReload, submit, canClose } =
+    useHallEditorWrite(session);
   const handleClose = useCallback(() => {
-    setLocalHalls(halls);
-    onClose();
-  }, [halls, onClose]);
+    if (canClose()) onClose();
+  }, [canClose, onClose]);
+  const handleApply = useCallback(async () => {
+    if (editingHall) return;
+    const saved = await submit(
+      () => onUpdateHalls(localHalls, session),
+      setLocalHalls,
+    );
+    if (saved) onClose();
+  }, [editingHall, localHalls, onClose, onUpdateHalls, session, submit]);
   const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
     isOpen,
     onEscape: handleClose,
@@ -120,13 +140,22 @@ const HallDefinitionPanel: React.FC<HallDefinitionPanelProps> = ({
   ]);
 
   useEffect(() => {
-    if (!pendingVertexSelection || !isOpen) return;
+    if (
+      !pendingVertexSelection ||
+      !isOpen ||
+      (session &&
+        pendingVertexSelection.session?.sessionId !== session.sessionId)
+    )
+      return;
 
     const { vertices, editingData } = pendingVertexSelection;
     const data = editingData as EditingHallData | undefined;
 
     if (data) {
       if (data.currentHalls) setLocalHalls(data.currentHalls);
+      if (data.showSyncUI !== undefined) setShowSyncUI(data.showSyncUI);
+      if (data.syncTargetDates)
+        setSyncTargetDates(new Set(data.syncTargetDates));
       setEditingHall(data.hall);
       setIsAddingNew(data.isAddingNew);
       setSelectedHallIndex(data.selectedIndex);
@@ -139,7 +168,7 @@ const HallDefinitionPanel: React.FC<HallDefinitionPanelProps> = ({
     }
 
     onClearPendingVertexSelection?.();
-  }, [isOpen, onClearPendingVertexSelection, pendingVertexSelection]);
+  }, [isOpen, onClearPendingVertexSelection, pendingVertexSelection, session]);
 
   const handleCreateNewHall = useCallback(() => {
     setIsAddingNew(true);
@@ -168,6 +197,8 @@ const HallDefinitionPanel: React.FC<HallDefinitionPanelProps> = ({
       isAddingNew,
       selectedIndex: selectedHallIndex,
       currentHalls: localHalls,
+      showSyncUI,
+      syncTargetDates: [...syncTargetDates],
     };
     onStartVertexSelection(editingData);
   }, [
@@ -176,6 +207,8 @@ const HallDefinitionPanel: React.FC<HallDefinitionPanelProps> = ({
     selectedHallIndex,
     localHalls,
     onStartVertexSelection,
+    showSyncUI,
+    syncTargetDates,
   ]);
 
   const handleSaveHall = useCallback(() => {
@@ -300,31 +333,74 @@ const HallDefinitionPanel: React.FC<HallDefinitionPanelProps> = ({
     });
   }, []);
 
-  const handleSyncExecute = useCallback(() => {
-    if (syncTargetDates.size === 0 || !onSyncToOtherDates) return;
+  const handleSyncExecute = useCallback(async () => {
+    if (
+      editingHall ||
+      busy ||
+      requiresReload ||
+      syncTargetDates.size === 0 ||
+      !onSyncToOtherDates
+    )
+      return;
     if (
       !confirm(
         `選択した${syncTargetDates.size}日分のホール定義を上書きします。よろしいですか？`,
       )
     )
       return;
-    onSyncToOtherDates(Array.from(syncTargetDates));
-    setShowSyncUI(false);
-    setSyncTargetDates(new Set());
-  }, [syncTargetDates, onSyncToOtherDates]);
+    const saved = await submit(
+      () =>
+        onSyncToOtherDates(Array.from(syncTargetDates), localHalls, session),
+      setLocalHalls,
+    );
+    if (saved) {
+      setShowSyncUI(false);
+      setSyncTargetDates(new Set());
+    }
+  }, [
+    busy,
+    editingHall,
+    localHalls,
+    onSyncToOtherDates,
+    requiresReload,
+    session,
+    submit,
+    syncTargetDates,
+  ]);
 
-  const handleSyncAll = useCallback(() => {
-    if (!onSyncToOtherDates || otherMapDates.length === 0) return;
+  const handleSyncAll = useCallback(async () => {
+    if (
+      editingHall ||
+      busy ||
+      requiresReload ||
+      !onSyncToOtherDates ||
+      otherMapDates.length === 0
+    )
+      return;
     if (
       !confirm(
         `全ての他の日付（${otherMapDates.length}日分）のホール定義を上書きします。よろしいですか？`,
       )
     )
       return;
-    onSyncToOtherDates(otherMapDates);
-    setShowSyncUI(false);
-    setSyncTargetDates(new Set());
-  }, [onSyncToOtherDates, otherMapDates]);
+    const saved = await submit(
+      () => onSyncToOtherDates(otherMapDates, localHalls, session),
+      setLocalHalls,
+    );
+    if (saved) {
+      setShowSyncUI(false);
+      setSyncTargetDates(new Set());
+    }
+  }, [
+    busy,
+    editingHall,
+    localHalls,
+    onSyncToOtherDates,
+    otherMapDates,
+    requiresReload,
+    session,
+    submit,
+  ]);
 
   if (!isOpen) return null;
 
@@ -337,7 +413,10 @@ const HallDefinitionPanel: React.FC<HallDefinitionPanelProps> = ({
       onKeyDown={onDialogKeyDown}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
     >
-      <div className="flex w-full max-w-4xl max-h-[90vh] flex-col overflow-hidden rounded-lg bg-white shadow-xl dark:bg-slate-800">
+      <fieldset
+        disabled={busy}
+        className="m-0 min-w-0 border-0 p-0 flex w-full max-w-4xl max-h-[90vh] flex-col overflow-hidden rounded-lg bg-white shadow-xl dark:bg-slate-800"
+      >
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
           <h2
             id="hall-definition-title"
@@ -355,6 +434,19 @@ const HallDefinitionPanel: React.FC<HallDefinitionPanelProps> = ({
           </button>
         </div>
 
+        {error && (
+          <p
+            role="alert"
+            className="px-6 py-2 text-sm text-red-700 dark:text-red-300"
+          >
+            {error}
+          </p>
+        )}
+        {editingHall && (
+          <p className="px-6 py-2 text-sm text-amber-800 dark:text-amber-200">
+            先に個別編集を「保存」または「キャンセル」してください。同期・適用はその後に行えます。
+          </p>
+        )}
         <div className="flex-1 overflow-auto p-6">
           <div className="mb-4 flex gap-2">
             <button
@@ -665,14 +757,23 @@ const HallDefinitionPanel: React.FC<HallDefinitionPanelProps> = ({
                 {otherMapDates.length > 0 && (
                   <>
                     <button
-                      onClick={handleSyncAll}
+                      disabled={!!editingHall || requiresReload}
+                      onClick={() => {
+                        void handleSyncAll();
+                      }}
                       className="flex-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-800/40 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800/60"
                     >
                       全日付に適用
                     </button>
                     <button
-                      onClick={handleSyncExecute}
-                      disabled={syncTargetDates.size === 0}
+                      onClick={() => {
+                        void handleSyncExecute();
+                      }}
+                      disabled={
+                        !!editingHall ||
+                        requiresReload ||
+                        syncTargetDates.size === 0
+                      }
                       className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       選択した日に同期 ({syncTargetDates.size})
@@ -703,6 +804,7 @@ const HallDefinitionPanel: React.FC<HallDefinitionPanelProps> = ({
               otherMapDates.length > 0 &&
               localHalls.length > 0 && (
                 <button
+                  disabled={!!editingHall || requiresReload}
                   onClick={() => setShowSyncUI((v) => !v)}
                   className={`rounded px-4 py-2 text-sm transition-colors ${
                     showSyncUI
@@ -714,9 +816,9 @@ const HallDefinitionPanel: React.FC<HallDefinitionPanelProps> = ({
                 </button>
               )}
             <button
+              disabled={!!editingHall || requiresReload}
               onClick={() => {
-                onUpdateHalls(localHalls);
-                onClose();
+                void handleApply();
               }}
               className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
             >
@@ -724,7 +826,7 @@ const HallDefinitionPanel: React.FC<HallDefinitionPanelProps> = ({
             </button>
           </div>
         </div>
-      </div>
+      </fieldset>
     </div>
   );
 };

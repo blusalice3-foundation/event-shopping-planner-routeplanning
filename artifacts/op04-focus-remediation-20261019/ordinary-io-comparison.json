@@ -1,0 +1,26 @@
+[
+  {
+    "operation": "purchase",
+    "matches": true,
+    "workerRequests": 1,
+    "transactions": 1,
+    "mutationRequests": 9,
+    "stores": 12
+  },
+  {
+    "operation": "planned-quantity",
+    "matches": true,
+    "workerRequests": 1,
+    "transactions": 1,
+    "mutationRequests": 9,
+    "stores": 12
+  },
+  {
+    "operation": "memo",
+    "matches": true,
+    "workerRequests": 1,
+    "transactions": 1,
+    "mutationRequests": 9,
+    "stores": 12
+  }
+]

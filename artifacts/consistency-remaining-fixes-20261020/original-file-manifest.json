@@ -1,0 +1,83 @@
+[
+  {
+    "path": "docs/user-operation-consistency-remediation-plan-20261018.md",
+    "sha256": "D466D6C3F20824C3ADA9E38A7904D828D4F5014C9B82082B1709B884BC73584A",
+    "bom": false,
+    "crlf": 0,
+    "lf": 521,
+    "replacement": 0,
+    "questionMarks": 0
+  },
+  {
+    "path": "artifacts/consistency-independent-audit-20261020-024614/review-report.txt",
+    "sha256": "D1C28CE802622BDB8021A7C3A7B806D25EE647D26D973C25C50C34125A74C750",
+    "bom": false,
+    "crlf": 0,
+    "lf": 141,
+    "replacement": 0,
+    "questionMarks": 0
+  },
+  {
+    "path": "src/utils/modalFocusBoundary.ts",
+    "sha256": "00791D3E65AC763D4FB065C82CF2CFB4657A56279ED8334E95D2360802882FF8",
+    "bom": false,
+    "crlf": 0,
+    "lf": 78,
+    "replacement": 0,
+    "questionMarks": 9
+  },
+  {
+    "path": "src/hooks/useModalDialogBehavior.ts",
+    "sha256": "7C51FC9B938158E486E905204AB74BDD6378151EC131789B78F566E53B7BA1E7",
+    "bom": false,
+    "crlf": 0,
+    "lf": 144,
+    "replacement": 0,
+    "questionMarks": 23
+  },
+  {
+    "path": "src/hooks/useModalDialogBehavior.integration.test.tsx",
+    "sha256": "02E177E6049218BC88E00D1BB9885F0B9CEA75982767B193C60FF7767655AE8D",
+    "bom": false,
+    "crlf": 0,
+    "lf": 207,
+    "replacement": 0,
+    "questionMarks": 6
+  },
+  {
+    "path": "src/features/app-shell/components/MutationConfirmationDialog.integration.test.tsx",
+    "sha256": "9C81A61FA73A3D5FFE4F34265FBED3164B7DEE44368C405E7A0CE115EF70B7D1",
+    "bom": false,
+    "crlf": 0,
+    "lf": 282,
+    "replacement": 0,
+    "questionMarks": 1
+  },
+  {
+    "path": "src/components/map/MapImportDialog.tsx",
+    "sha256": "F0B262374FA3C32A8CAABC14392151EFED0E38D4DB43513BC808D6E0298370DE",
+    "bom": false,
+    "crlf": 0,
+    "lf": 1235,
+    "replacement": 0,
+    "questionMarks": 35
+  },
+  {
+    "path": "src/components/map/MapImportDialog.previewRace.test.tsx",
+    "sha256": "4D900FE8BD76ADDF07B0C4D7123915027DA070D482D863CC6A6F304213AAD69A",
+    "bom": false,
+    "crlf": 0,
+    "lf": 387,
+    "replacement": 0,
+    "questionMarks": 3
+  },
+  {
+    "path": "tests/browser/map-import-delayed-cancel.spec.ts",
+    "sha256": "918E1FBFFB5EE77D3468C7C71D9946DFF4CFE262E78BA69AF46DEAD58279B9B3",
+    "bom": false,
+    "crlf": 0,
+    "lf": 423,
+    "replacement": 0,
+    "questionMarks": 11
+  }
+]

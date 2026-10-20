@@ -1,0 +1,26 @@
+[
+  {
+    "Path": "src/persistence/db/atomicRestoreTransaction.ts",
+    "SHA256": "4DFDD23C1951D419125E86121399FA3B203B01CCEF79F3C39E0ECFA1F2C9512D"
+  },
+  {
+    "Path": "src/persistence/adapters/indexedDbPersistenceCommandAdapter.test.ts",
+    "SHA256": "D54F7F3742569438D4FCCD51E79ECFC40182E7278A75E8D355603FB739F07673"
+  },
+  {
+    "Path": "src/app/state/fallbackTerminalStop.integration.test.tsx",
+    "SHA256": "6641D6107085624E5F3E2736027871095E2967496D10ED6AA7AB38D068301C5B"
+  },
+  {
+    "Path": "tests/browser/user-operation-final-contracts.spec.ts",
+    "SHA256": "DDD4032C431D0EFE957B8A01530F4486566F967AAE3125B51C446958F79D937B"
+  },
+  {
+    "Path": "tests/browser/restore-committed-ui-failure.spec.ts",
+    "SHA256": "A8205B8CEDEFB85D7E9F28F7FF635193982B3591D2D7B0936826ED6BF2543410"
+  },
+  {
+    "Path": "docs/user-operation-consistency-terminal-stop-results-20261019.md",
+    "SHA256": "818A36D5EA7995251C04B674599B6FE15518A9C2FA87DE2728ECE95292EBEBF6"
+  }
+]

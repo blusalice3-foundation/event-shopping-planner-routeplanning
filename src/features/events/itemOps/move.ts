@@ -1,3 +1,9 @@
+import {
+  sameDragIds,
+  validateShoppingDragPlacement,
+  type ShoppingDragMoveContext,
+} from "../../shopping-list/drag/shoppingDrag";
+import { buildMovePlan } from "../../lists/domain/movePlan";
 import { existingDayKey } from "../../consistency/domain/context";
 import { recordEntry } from "../../../utils/ownRecord";
 import type {
@@ -40,6 +46,7 @@ export function computeMoveItem(params: {
   dayName: string;
   selectedBlockFilters: Set<string>;
   areItemsInSameHall?: (id1: string, id2: string) => boolean;
+  dragContext?: ShoppingDragMoveContext;
 }): MoveItemResult {
   const {
     dragId,
@@ -53,6 +60,7 @@ export function computeMoveItem(params: {
     dayName,
     selectedBlockFilters,
     areItemsInSameHall,
+    dragContext,
   } = params;
 
   const isDragInEffectiveSelection = effectiveSelectedIds.has(dragId);
@@ -63,6 +71,65 @@ export function computeMoveItem(params: {
   );
   const normalizedDayName = normalizeExecutionVisitDay(dayName);
 
+  if (dragContext) {
+    if (
+      !dragContext.isCurrent() ||
+      mode !== "edit" ||
+      dragContext.day !== dayName ||
+      dragContext.sourceColumn !== sourceColumn ||
+      dragContext.targetColumn !== targetColumn
+    )
+      return {};
+    const sourceItems = allItems.filter(
+      (item) =>
+        normalizeExecutionVisitDay(item.eventDate) === normalizedDayName &&
+        (sourceColumn === "execute"
+          ? executeIdsSet.has(item.id)
+          : !executeIdsSet.has(item.id) &&
+            (selectedBlockFilters.size === 0 ||
+              selectedBlockFilters.has(item.block))),
+    );
+    const plan = buildMovePlan({
+      requestedIds: dragContext.requestedIds,
+      sourceOrderedIds: sourceItems.map((item) => item.id),
+      allItems,
+      dayName,
+      expansionPolicy:
+        sourceColumn === "candidate" && targetColumn === "candidate"
+          ? "exact"
+          : "same-visit",
+    });
+    if (
+      !sameDragIds(plan.requested, dragContext.requestedIds) ||
+      !sameDragIds(plan.effective, dragContext.effectiveIds) ||
+      !plan.effective.includes(dragId)
+    )
+      return {};
+    const currentVisits = new Map(
+      projectItemsToExecutionVisits(sourceItems).map((visit) => [
+        visit.key,
+        visit,
+      ]),
+    );
+    if (
+      dragContext.sourceVisits.some((expected) => {
+        const current = currentVisits.get(expected.key);
+        return !current || !sameDragIds(expected.ids, current.itemIds);
+      })
+    )
+      return {};
+    if (targetColumn === "candidate" && hoverId !== "__END_OF_LIST__") {
+      const target = allItems.find((item) => item.id === hoverId);
+      if (
+        !target ||
+        executeIdsSet.has(hoverId) ||
+        normalizeExecutionVisitDay(target.eventDate) !== normalizedDayName ||
+        (selectedBlockFilters.size > 0 &&
+          !selectedBlockFilters.has(target.block))
+      )
+        return {};
+    }
+  }
   // ---- editモード列間移動 ----
   if (
     mode === "edit" &&
@@ -145,23 +212,44 @@ export function computeMoveItem(params: {
         const hoverVisitKey = hoverItem
           ? buildExecutionVisitProjectionKey(hoverItem)
           : null;
-        const hoverIndex = isAppendToEnd
-          ? -1
-          : hoverVisitKey
-            ? dayItems.findIndex((id) => {
-                const item = itemsMap.get(id);
-                return (
-                  item !== undefined &&
-                  buildExecutionVisitProjectionKey(item) === hoverVisitKey
-                );
-              })
-            : dayItems.findIndex((id) => id === hoverId);
+        const explicitAnchor = dragContext?.placement?.anchorId;
+        const hoverIndex = explicitAnchor
+          ? explicitAnchor === "__END_OF_LIST__"
+            ? -1
+            : dayItems.indexOf(explicitAnchor)
+          : isAppendToEnd
+            ? -1
+            : hoverVisitKey
+              ? dayItems.findIndex((id) => {
+                  const item = itemsMap.get(id);
+                  return (
+                    item !== undefined &&
+                    buildExecutionVisitProjectionKey(item) === hoverVisitKey
+                  );
+                })
+              : dayItems.findIndex((id) => id === hoverId);
         if (hoverIndex < 0) {
           dayItems.push(...positionedItemIds);
         } else {
           dayItems.splice(hoverIndex, 0, ...positionedItemIds);
         }
       }
+
+      if (
+        dragContext?.placement &&
+        !validateShoppingDragPlacement(
+          dragContext.placement,
+          (recordEntry(executeModeItems, savedDayName) || []).flatMap((id) => {
+            const item = itemsMap.get(id);
+            return item ? [item] : [];
+          }),
+          dayItems.flatMap((id) => {
+            const item = itemsMap.get(id);
+            return item ? [item] : [];
+          }),
+        )
+      )
+        return {};
 
       const placement: ExecuteInsertPlacement =
         mergedIntoVisitItemIds.length === 0

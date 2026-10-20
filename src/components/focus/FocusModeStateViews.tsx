@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import { useModalFocusBoundary } from "../../hooks/useModalFocusBoundary";
 import type { ShoppingItem } from "../../types/item";
 import type React from "react";
 import { createPortal } from "react-dom";
@@ -26,12 +28,15 @@ export function ResumeChoiceDialogView({
     choice: "lastChange" | "pointer" | "phaseStart" | "normalStart",
   ) => void;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocusBoundary({ isOpen: true, dialogRef });
   const lastPhaseName = resumePhaseNameMap[dialog.lastPhase];
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
       <div
         className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800"
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="resume-choice-title"

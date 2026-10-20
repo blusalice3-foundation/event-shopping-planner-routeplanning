@@ -1,3 +1,6 @@
+import { isPersistenceWriteStopReason } from "../ports/PersistenceCommandPort";
+import { CommittedStateApplyError } from "./applicationMutationCoordinator";
+import type { AppOverlayOpenReceipt } from "../state/useAppOverlayController";
 import { recordEntry } from "../../utils/ownRecord";
 import type { ApplicationMutationPort } from "../ports/ApplicationMutationPort";
 import type { EventConsistencyStore } from "../../types/consistency";
@@ -107,8 +110,11 @@ export interface EventTransferCommandPorts extends ApplicationMutationPort {
   openBackupRestore(
     backup: AppBackupV1,
     xlsxCompletion: PendingXlsxRestoreCompletion | null,
-  ): void;
-  confirmBackupRestore(): void;
+    onReceipt?: (receipt: AppOverlayOpenReceipt) => void,
+  ): string | void;
+  confirmBackupRestore(requestId?: string): void;
+  closeBackupRestore?(requestId?: string): void;
+  stopWrites?(reason: CommittedStateApplyError): void;
   startXlsxOperation(activity: XlsxOperationActivity): string;
   updateXlsxOperation(requestId: string, activity: XlsxOperationActivity): void;
   clearXlsxOperation(requestId: string): void;
@@ -126,6 +132,7 @@ export interface EventTransferCommandPorts extends ApplicationMutationPort {
 
 export interface EventTransferCommands {
   backupFileInputRef: RefObject<HTMLInputElement>;
+  isBackupRestoreStopped: boolean;
   cancelXlsxOperation(): void;
   handleExportEvent(eventName: string): Promise<void>;
   previewEventExport(
@@ -134,6 +141,7 @@ export interface EventTransferCommands {
   handleBackupExport(): void;
   handlePersistenceRecoveryExport(): PersistenceRecoveryExportResult;
   handleBackupRestoreRequest(): void;
+  handleBackupRestoreCancel(requestId?: string): boolean;
   handleBackupFileImport(event: ChangeEvent<HTMLInputElement>): Promise<void>;
   handleBackupRestore(
     sourceEventName: string,
@@ -171,12 +179,20 @@ export const useEventTransferCommands = ({
   confirmEventOverlay,
   openBackupRestore,
   confirmBackupRestore,
+  closeBackupRestore,
+  stopWrites,
   startXlsxOperation,
   updateXlsxOperation,
   clearXlsxOperation,
 }: EventTransferCommandPorts): EventTransferCommands => {
   const backupFileInputRef = useRef<HTMLInputElement>(null);
+  const [isBackupRestoreStopped, setBackupRestoreStopped] = useState(false);
   const xlsxOperationRef = useRef<ActiveXlsxOperation | null>(null);
+  const restoreOwnerRef = useRef<{
+    phase: "reading" | "candidate" | "restoring" | "stopped";
+    requestId?: string;
+    backup?: AppBackupV1;
+  } | null>(null);
   const exportRequestRef = useRef(0);
   const [exportSession, setExportSession] = useState<{
     eventName: string;
@@ -185,6 +201,7 @@ export const useEventTransferCommands = ({
 
   useEffect(
     () => () => {
+      restoreOwnerRef.current = null;
       xlsxOperationRef.current?.controller.abort();
     },
     [],
@@ -277,96 +294,172 @@ export const useEventTransferCommands = ({
     backupFileInputRef.current?.click();
   }, []);
 
+  const handleBackupRestoreCancel = useCallback(
+    (requestId?: string) => {
+      const owner = restoreOwnerRef.current;
+      if (
+        owner &&
+        (owner.phase === "restoring" ||
+          owner.phase === "stopped" ||
+          (requestId !== undefined && owner.requestId !== requestId))
+      )
+        return false;
+      restoreOwnerRef.current = null;
+      closeBackupRestore?.(requestId);
+      return true;
+    },
+    [closeBackupRestore],
+  );
+
   const handleBackupFileImport = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      event.target.value = "";
-      if (!file) return;
-
+      const input = event.currentTarget ?? event.target;
+      const file = input.files?.[0];
+      input.value = "";
+      if (
+        !file ||
+        pendingBackup ||
+        (restoreOwnerRef.current && restoreOwnerRef.current.phase !== "reading")
+      )
+        return;
+      const previousXlsx = xlsxOperationRef.current;
+      if (previousXlsx?.activity.kind === "import") {
+        previousXlsx.controller.abort();
+        xlsxOperationRef.current = null;
+        clearXlsxOperation(previousXlsx.requestId);
+      }
+      const owner = { phase: "reading" as const } as NonNullable<
+        typeof restoreOwnerRef.current
+      >;
+      restoreOwnerRef.current = owner;
       try {
-        const result = parseAppBackup(await file.text());
+        const text = await file.text();
+        if (restoreOwnerRef.current !== owner) return;
+        const result = parseAppBackup(text);
         if (!result.ok) {
+          restoreOwnerRef.current = null;
           alert(
             `バックアップを読み込めませんでした。\n${result.errors.join("\n")}`,
           );
           return;
         }
         if (Object.keys(result.data.eventLists).length === 0) {
+          restoreOwnerRef.current = null;
           alert("このバックアップには復元できるイベントがありません。");
           return;
         }
-        openBackupRestore(result.backup, null);
+        owner.phase = "candidate";
+        owner.backup = result.backup;
+        const requestId = openBackupRestore(result.backup, null, (receipt) => {
+          if (restoreOwnerRef.current !== owner) return;
+          if (receipt.accepted) owner.requestId = receipt.requestId;
+          else restoreOwnerRef.current = null;
+        });
+        if (typeof requestId === "string") owner.requestId = requestId;
       } catch {
+        if (restoreOwnerRef.current !== owner) return;
+        restoreOwnerRef.current = null;
         console.error("Backup import failed (backup-import-failed).");
         alert(
           "バックアップを読み込めませんでした。JSONバックアップファイルを選び直してください。",
         );
       }
     },
-    [openBackupRestore],
+    [openBackupRestore, pendingBackup, clearXlsxOperation],
   );
-
   const handleBackupRestore = useCallback(
     async (sourceEventName: string, targetEventName: string) => {
       if (!pendingBackup) {
         throw new Error("復元するバックアップをもう一度選んでください。");
       }
 
-      const currentData = await readExportSnapshot();
-      const isUpdate = Object.prototype.hasOwnProperty.call(
-        currentData.eventLists,
-        targetEventName,
-      );
-      const nextData = await requestMutation({
-        events: [targetEventName],
-        plan: (snapshot, choices) =>
-          planEventRestore(
-            snapshot,
-            pendingBackup.data,
-            sourceEventName,
-            targetEventName,
-            pendingBackup.notices?.map(
-              (change) => `${change.path}: ${change.message}`,
-            ),
-            choices,
-          ),
-      });
-      const restoredItems = recordEntry(
-        nextData.eventLists,
-        targetEventName,
-      ) as ShoppingItem[];
-      const restoredTab = resolveEventListTab(restoredItems);
-      const deferLargeXlsxOpen = shouldDeferLargeXlsxRestoreOpen({
-        isXlsxRestore: pendingXlsxRestoreCompletion !== null,
-        itemCount: restoredItems.length,
-      });
-      if (deferLargeXlsxOpen) {
-        navigationCommands.showEventList();
-      } else if (restoredTab) {
-        navigationCommands.openEvent(targetEventName, restoredTab);
-      } else {
-        navigationCommands.showEventList();
+      let owner = restoreOwnerRef.current;
+      if (
+        owner &&
+        (owner.phase !== "candidate" ||
+          (owner.backup && owner.backup !== pendingBackup))
+      )
+        return;
+      if (!owner) {
+        owner = { phase: "candidate", backup: pendingBackup };
+        restoreOwnerRef.current = owner;
       }
-      clearSelection();
-      confirmBackupRestore();
-
-      if (pendingXlsxRestoreCompletion) {
-        const completionMessage = buildImportCompletionMessage({
-          errors: pendingXlsxRestoreCompletion.errors,
-          eventName: targetEventName,
-          isUpdate,
-          itemCount: pendingXlsxRestoreCompletion.itemCount,
-        });
-        alert(
-          deferLargeXlsxOpen
-            ? `${completionMessage}\n${buildLargeXlsxRestoreDeferredNotice(
-                restoredItems.length,
-              )}`
-            : completionMessage,
+      owner.phase = "restoring";
+      let committed = false;
+      try {
+        const currentData = await readExportSnapshot();
+        const isUpdate = Object.prototype.hasOwnProperty.call(
+          currentData.eventLists,
+          targetEventName,
         );
+        const nextData = await requestMutation({
+          events: [targetEventName],
+          plan: (snapshot, choices) =>
+            planEventRestore(
+              snapshot,
+              pendingBackup.data,
+              sourceEventName,
+              targetEventName,
+              pendingBackup.notices?.map(
+                (change) => `${change.path}: ${change.message}`,
+              ),
+              choices,
+            ),
+        });
+        committed = true;
+        const restoredItems = recordEntry(
+          nextData.eventLists,
+          targetEventName,
+        ) as ShoppingItem[];
+        const restoredTab = resolveEventListTab(restoredItems);
+        const deferLargeXlsxOpen = shouldDeferLargeXlsxRestoreOpen({
+          isXlsxRestore: pendingXlsxRestoreCompletion !== null,
+          itemCount: restoredItems.length,
+        });
+        if (deferLargeXlsxOpen) {
+          navigationCommands.showEventList();
+        } else if (restoredTab) {
+          navigationCommands.openEvent(targetEventName, restoredTab);
+        } else {
+          navigationCommands.showEventList();
+        }
+        clearSelection();
+        confirmBackupRestore(owner.requestId);
+
+        if (pendingXlsxRestoreCompletion) {
+          const completionMessage = buildImportCompletionMessage({
+            errors: pendingXlsxRestoreCompletion.errors,
+            eventName: targetEventName,
+            isUpdate,
+            itemCount: pendingXlsxRestoreCompletion.itemCount,
+          });
+          alert(
+            deferLargeXlsxOpen
+              ? `${completionMessage}\n${buildLargeXlsxRestoreDeferredNotice(
+                  restoredItems.length,
+                )}`
+              : completionMessage,
+          );
+        }
+        if (restoreOwnerRef.current === owner) restoreOwnerRef.current = null;
+      } catch (error) {
+        if (restoreOwnerRef.current === owner) {
+          owner.phase =
+            !committed && !isPersistenceWriteStopReason(error)
+              ? "candidate"
+              : "stopped";
+          if (owner.phase === "stopped") setBackupRestoreStopped(true);
+        }
+        if (committed) {
+          const failure = new CommittedStateApplyError(error);
+          stopWrites?.(failure);
+          throw failure;
+        }
+        throw error;
       }
     },
     [
+      stopWrites,
       pendingBackup,
       requestMutation,
       readExportSnapshot,
@@ -467,9 +560,17 @@ export const useEventTransferCommands = ({
   const handleExportFileImport = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (!file) return;
-
       e.target.value = "";
+      if (
+        !file ||
+        pendingBackup ||
+        (restoreOwnerRef.current && restoreOwnerRef.current.phase !== "reading")
+      )
+        return;
+      const owner: NonNullable<typeof restoreOwnerRef.current> = {
+        phase: "reading",
+      };
+      restoreOwnerRef.current = owner;
 
       xlsxOperationRef.current?.controller.abort();
       const controller = new AbortController();
@@ -487,7 +588,8 @@ export const useEventTransferCommands = ({
       xlsxOperationRef.current = operation;
       try {
         const input = await file.arrayBuffer();
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || restoreOwnerRef.current !== owner)
+          return;
         const response = await appRuntime.xlsxCommands.importWorkbook(
           { kind: "event-import", input, fileName: file.name },
           controller.signal,
@@ -497,6 +599,8 @@ export const useEventTransferCommands = ({
             updateXlsxOperation(requestId, operation.activity);
           },
         );
+        if (controller.signal.aborted || restoreOwnerRef.current !== owner)
+          return;
         if (response.kind !== "event-import") {
           throw new Error("XLSX Worker returned an unexpected result kind.");
         }
@@ -610,7 +714,8 @@ export const useEventTransferCommands = ({
           return;
         }
 
-        openBackupRestore(
+        owner.phase = "candidate";
+        const restoreRequestId = openBackupRestore(
           {
             ...validation.backup,
             notices: [
@@ -622,14 +727,27 @@ export const useEventTransferCommands = ({
             errors: importedData.errors,
             itemCount: importedData.items.length,
           },
+          (receipt) => {
+            if (restoreOwnerRef.current !== owner) return;
+            if (receipt.accepted) owner.requestId = receipt.requestId;
+            else restoreOwnerRef.current = null;
+          },
         );
+        if (typeof restoreRequestId === "string")
+          owner.requestId = restoreRequestId;
       } catch (error) {
-        if (isAbortError(error)) return;
+        if (isAbortError(error) || restoreOwnerRef.current !== owner) return;
         console.error("Item import failed (item-import-failed).");
         alert(
           "アイテムの取り込みに失敗しました。ファイル形式を確認してください。",
         );
       } finally {
+        if (
+          typeof owner !== "undefined" &&
+          restoreOwnerRef.current === owner &&
+          owner.phase === "reading"
+        )
+          restoreOwnerRef.current = null;
         if (xlsxOperationRef.current === operation) {
           xlsxOperationRef.current = null;
           clearXlsxOperation(requestId);
@@ -637,6 +755,7 @@ export const useEventTransferCommands = ({
       }
     },
     [
+      pendingBackup,
       appRuntime.xlsxCommands,
       clearXlsxOperation,
       openBackupRestore,
@@ -647,12 +766,14 @@ export const useEventTransferCommands = ({
 
   return {
     backupFileInputRef,
+    isBackupRestoreStopped,
     cancelXlsxOperation,
     handleExportEvent,
     previewEventExport,
     handleBackupExport,
     handlePersistenceRecoveryExport,
     handleBackupRestoreRequest,
+    handleBackupRestoreCancel,
     handleBackupFileImport,
     handleBackupRestore,
     handleConfirmExport,

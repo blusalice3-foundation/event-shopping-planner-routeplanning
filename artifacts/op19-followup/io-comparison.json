@@ -1,0 +1,420 @@
+{
+  "Result": "passed",
+  "Notes": "Physical completed readwrite transactions and issued objectStore mutation requests are compared separately from diagnostic events. Single-observation response/save timings are not performance acceptance; memo save includes debounce.",
+  "Baseline": {
+    "Path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\esp-op19-baseline-io.json",
+    "Sha256": "F2C4E4E80C3555C5A506679793CB87568686F59449C518AD59403C9BC6B14F9E",
+    "TestTitle": "ordinary purchase, planned quantity and memo retain the same physical persistence boundary"
+  },
+  "Final": {
+    "Path": "D:\\esp-op19-fix\\artifacts\\op19-followup\\browser-report.json",
+    "Sha256": "8EFCA60DC76CA3FB18B08A2EC31D74F96DAB4FAD54FB5C9B4D2C6BE4E49DB97E",
+    "TestTitle": "ordinary purchase, planned quantity and memo retain the same physical persistence boundary"
+  },
+  "Fixture": "3 items, 3x3 map; isolated ordinary operations",
+  "FixtureMatches": true,
+  "Comparisons": [
+    {
+      "Operation": "purchase",
+      "StructuralMatch": true,
+      "Baseline": {
+        "WorkerRoundTripsByMethod": {
+          "items": 1
+        },
+        "PhysicalCommittedTransactions": 1,
+        "CommittedObjectStoreMutationRequests": 9,
+        "TransactionStores": [
+          [
+            "dayModes",
+            "eventConsistency",
+            "eventLists",
+            "eventMetadata",
+            "executeModeItems",
+            "hallDefinitions",
+            "hallRouteSettings",
+            "mapData",
+            "mapRotationSettings",
+            "mapViewportSettings",
+            "routeSettings",
+            "syncQueue"
+          ]
+        ],
+        "Mutations": [
+          {
+            "Store": "eventLists",
+            "Method": "delete"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "delete"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "put"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "delete"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          }
+        ]
+      },
+      "Final": {
+        "WorkerRoundTripsByMethod": {
+          "items": 1
+        },
+        "PhysicalCommittedTransactions": 1,
+        "CommittedObjectStoreMutationRequests": 9,
+        "TransactionStores": [
+          [
+            "dayModes",
+            "eventConsistency",
+            "eventLists",
+            "eventMetadata",
+            "executeModeItems",
+            "hallDefinitions",
+            "hallRouteSettings",
+            "mapData",
+            "mapRotationSettings",
+            "mapViewportSettings",
+            "routeSettings",
+            "syncQueue"
+          ]
+        ],
+        "Mutations": [
+          {
+            "Store": "eventLists",
+            "Method": "delete"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "delete"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "put"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "delete"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          }
+        ]
+      },
+      "TimingObservationOnly": {
+        "SamplesPerBuild": 1,
+        "PerformanceAcceptance": false,
+        "BaselineResponseMs": 12,
+        "FinalResponseMs": 11.100000000093132,
+        "BaselineSaveCompletionMs": 16.899999998509884,
+        "FinalSaveCompletionMs": 17.399999999906868
+      }
+    },
+    {
+      "Operation": "planned-quantity",
+      "StructuralMatch": true,
+      "Baseline": {
+        "WorkerRoundTripsByMethod": {
+          "items": 1
+        },
+        "PhysicalCommittedTransactions": 1,
+        "CommittedObjectStoreMutationRequests": 9,
+        "TransactionStores": [
+          [
+            "dayModes",
+            "eventConsistency",
+            "eventLists",
+            "eventMetadata",
+            "executeModeItems",
+            "hallDefinitions",
+            "hallRouteSettings",
+            "mapData",
+            "mapRotationSettings",
+            "mapViewportSettings",
+            "routeSettings",
+            "syncQueue"
+          ]
+        ],
+        "Mutations": [
+          {
+            "Store": "eventLists",
+            "Method": "delete"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "delete"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "put"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "delete"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          }
+        ]
+      },
+      "Final": {
+        "WorkerRoundTripsByMethod": {
+          "items": 1
+        },
+        "PhysicalCommittedTransactions": 1,
+        "CommittedObjectStoreMutationRequests": 9,
+        "TransactionStores": [
+          [
+            "dayModes",
+            "eventConsistency",
+            "eventLists",
+            "eventMetadata",
+            "executeModeItems",
+            "hallDefinitions",
+            "hallRouteSettings",
+            "mapData",
+            "mapRotationSettings",
+            "mapViewportSettings",
+            "routeSettings",
+            "syncQueue"
+          ]
+        ],
+        "Mutations": [
+          {
+            "Store": "eventLists",
+            "Method": "delete"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "delete"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "put"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "delete"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          }
+        ]
+      },
+      "TimingObservationOnly": {
+        "SamplesPerBuild": 1,
+        "PerformanceAcceptance": false,
+        "BaselineResponseMs": 8.300000000745058,
+        "FinalResponseMs": 7.5,
+        "BaselineSaveCompletionMs": 13.5,
+        "FinalSaveCompletionMs": 11.600000000093132
+      }
+    },
+    {
+      "Operation": "memo",
+      "StructuralMatch": true,
+      "Baseline": {
+        "WorkerRoundTripsByMethod": {
+          "items": 1
+        },
+        "PhysicalCommittedTransactions": 1,
+        "CommittedObjectStoreMutationRequests": 9,
+        "TransactionStores": [
+          [
+            "dayModes",
+            "eventConsistency",
+            "eventLists",
+            "eventMetadata",
+            "executeModeItems",
+            "hallDefinitions",
+            "hallRouteSettings",
+            "mapData",
+            "mapRotationSettings",
+            "mapViewportSettings",
+            "routeSettings",
+            "syncQueue"
+          ]
+        ],
+        "Mutations": [
+          {
+            "Store": "eventLists",
+            "Method": "delete"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "delete"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "put"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "delete"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          }
+        ]
+      },
+      "Final": {
+        "WorkerRoundTripsByMethod": {
+          "items": 1
+        },
+        "PhysicalCommittedTransactions": 1,
+        "CommittedObjectStoreMutationRequests": 9,
+        "TransactionStores": [
+          [
+            "dayModes",
+            "eventConsistency",
+            "eventLists",
+            "eventMetadata",
+            "executeModeItems",
+            "hallDefinitions",
+            "hallRouteSettings",
+            "mapData",
+            "mapRotationSettings",
+            "mapViewportSettings",
+            "routeSettings",
+            "syncQueue"
+          ]
+        ],
+        "Mutations": [
+          {
+            "Store": "eventLists",
+            "Method": "delete"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "delete"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "put"
+          },
+          {
+            "Store": "eventLists",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "delete"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          },
+          {
+            "Store": "syncQueue",
+            "Method": "put"
+          }
+        ]
+      },
+      "TimingObservationOnly": {
+        "SamplesPerBuild": 1,
+        "PerformanceAcceptance": false,
+        "BaselineResponseMs": 10.800000000745058,
+        "FinalResponseMs": 8.200000000186265,
+        "BaselineSaveCompletionMs": 319.69999999925494,
+        "FinalSaveCompletionMs": 322.20000000018626
+      }
+    }
+  ]
+}

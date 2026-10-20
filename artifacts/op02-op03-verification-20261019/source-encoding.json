@@ -1,0 +1,126 @@
+[
+  {
+    "Path": "src/app/commands/applicationMutationCoordinator.test.ts",
+    "Version": "original",
+    "SHA256": "B4AC5F57F0DF37B9074BFA248A9DAF4DF5BF1BF596FF9E1E0E2DAF2EFD0CEF4D",
+    "UTF8Valid": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 866,
+    "Replacement": 0,
+    "QuestionMarks": 11,
+    "JapaneseLines": [
+      "    current.eventMetadata.unsaved = { memo: \"ユーザー登録\" };",
+      "    expect(exported.eventMetadata.unsaved).toEqual({ memo: \"ユーザー登録\" });",
+      "      remarks: { present: true, value: \"ユーザー登録\" },",
+      "        remarks: \"ユーザー登録\",",
+      "    remarks: \"ユーザー登録\","
+    ]
+  },
+  {
+    "Path": "src/app/commands/applicationMutationCoordinator.test.ts",
+    "Version": "final",
+    "SHA256": "688B7B62209D25207956830E28EA25A4DE42B4280E0AACA3E5B9BE171C5BD30E",
+    "UTF8Valid": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 1054,
+    "Replacement": 0,
+    "QuestionMarks": 21,
+    "JapaneseLines": [
+      "    current.eventMetadata.unsaved = { memo: \"ユーザー登録\" };",
+      "    expect(exported.eventMetadata.unsaved).toEqual({ memo: \"ユーザー登録\" });",
+      "      remarks: { present: true, value: \"ユーザー登録\" },",
+      "        remarks: \"ユーザー登録\",",
+      "    remarks: \"ユーザー登録\",",
+      "        remarks: \"ユーザー登録\",",
+      "    const fault = new Error(\"エラーが発生しました\");",
+      "                  fields: { remarks: { present: true, value: \"ユーザー登録\" } },"
+    ]
+  },
+  {
+    "Path": "src/app/state/useApplicationSnapshot.persistence.integration.test.tsx",
+    "Version": "original",
+    "SHA256": "DC9361007A05FCFC79AE00FA0731B4CE2E38C5E0472AEF7D2DEEAC28DAE72417",
+    "UTF8Valid": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 824,
+    "Replacement": 0,
+    "QuestionMarks": 15,
+    "JapaneseLines": [
+      "  remarks: \"ユーザー登録\",",
+      "        item.id === \"2\" ? { ...item, remarks: \"停止前に受理した入力\" } : item,",
+      "    \"停止前に受理した入力\",",
+      "  ).toMatchObject({ remarks: \"ユーザー登録\" });"
+    ]
+  },
+  {
+    "Path": "src/app/state/useApplicationSnapshot.persistence.integration.test.tsx",
+    "Version": "final",
+    "SHA256": "01F5A4942D6825C04C591742A84AA5D6374DD48221F3C0171B6901DB1116C562",
+    "UTF8Valid": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 996,
+    "Replacement": 0,
+    "QuestionMarks": 18,
+    "JapaneseLines": [
+      "  remarks: \"ユーザー登録\",",
+      "        item.id === \"2\" ? { ...item, remarks: \"停止前に受理した入力\" } : item,",
+      "    \"停止前に受理した入力\",",
+      "  ).toMatchObject({ remarks: \"ユーザー登録\" });",
+      "        changes: { remarks: \"停止前に受理した入力\" },",
+      "        \"停止前に受理した入力\",",
+      "      ).toBe(\"停止前に受理した入力\");"
+    ]
+  },
+  {
+    "Path": "src/app/state/routeApplyFailure.integration.test.tsx",
+    "Version": "final",
+    "SHA256": "971716438BB510BFCB31CA7F121DCC2B393A4AB07F39F7A277A405EB29AA63C3",
+    "UTF8Valid": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 360,
+    "Replacement": 0,
+    "QuestionMarks": 18,
+    "JapaneseLines": [
+      "  remarks: \"ユーザー登録\",",
+      "            ? { ...item, remarks: \"保存待ちに受理したメモ\" }",
+      "    const fault = new Error(\"エラーが発生しました\");",
+      "    ).toBe(\"保存待ちに受理したメモ\");",
+      "      \"保存待ちに受理したメモ\","
+    ]
+  },
+  {
+    "Path": "tests/browser/hall-sync-worker-atomicity.spec.ts",
+    "Version": "final",
+    "SHA256": "5F91AC5E3CB84ED674711AB495A6DF75D1EE69DC6C73AF57770B06F35E2EEF8E",
+    "UTF8Valid": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 645,
+    "Replacement": 0,
+    "QuestionMarks": 40,
+    "JapaneseLines": [
+      "const draftName = \"ユーザー登録・同期する下書き\";",
+      "    remarks: \"エラーが発生しました・この購入記録は保持\","
+    ]
+  },
+  {
+    "Path": "tests/browser/map-import-delayed-cancel.spec.ts",
+    "Version": "final",
+    "SHA256": "918E1FBFFB5EE77D3468C7C71D9946DFF4CFE262E78BA69AF46DEAD58279B9B3",
+    "UTF8Valid": true,
+    "BOM": false,
+    "CRLF": 0,
+    "LF": 423,
+    "Replacement": 0,
+    "QuestionMarks": 11,
+    "JapaneseLines": [
+      "            circle: \"ユーザー登録\",",
+      "            remarks: \"エラーが発生しました・この記録は変更しない\","
+    ]
+  }
+]

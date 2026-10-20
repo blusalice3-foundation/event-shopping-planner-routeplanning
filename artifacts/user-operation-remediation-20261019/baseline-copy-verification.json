@@ -1,0 +1,167 @@
+[
+  {
+    "Path": "ordinary-io-baseline-report.json",
+    "SHA256": "6A6BF3B9153281917B593EA4762C4124DEA87A1D10E9C272E03DDDD289241542",
+    "Bytes": 9659
+  },
+  {
+    "Path": "shopping-baseline-report.json",
+    "SHA256": "29299B88BBCEAD17BC8E3B7BB2B7126009DFED2DE234CC4C6B4094DB58FBD3B4",
+    "Bytes": 3778285
+  },
+  {
+    "Path": "shopping-baseline-smoke-report.json",
+    "SHA256": "962843742C60BAF5B1569C288799C2C5F0B5D95BC83B78259D08B8DCD839FFD1",
+    "Bytes": 163318
+  },
+  {
+    "Path": "shopping-baseline.log",
+    "SHA256": "B23B7E96FCF953A53B84016B6D73EB7890A013FD7BD63D525451FCFE81F7C952",
+    "Bytes": 5170
+  },
+  {
+    "Path": "ordinary-io-baseline\\.last-run.json",
+    "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+    "Bytes": 45
+  },
+  {
+    "Path": "ordinary-io-baseline-json\\.last-run.json",
+    "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+    "Bytes": 45
+  },
+  {
+    "Path": "shopping-baseline\\.last-run.json",
+    "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+    "Bytes": 45
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-037a3-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "6047D329FB4DF062BE92EE68E1E7214B8890973437A2934EDD3664FC3E75E5D7",
+    "Bytes": 120336
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-06835-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "3B662C3B9A391B1245B10DCEF99B433958516DB037DC1657D8E0727AAF16FAF6",
+    "Bytes": 120206
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-11b90-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "E961561DCC313C0258326D77FFEB5FAE19F7466F2A10D41D18512FC682F17961",
+    "Bytes": 114268
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-1c261-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "1B3AA8B2BCAAA60BADA409033E7067B5171BEA6DC59D81BD2295B66238FA0264",
+    "Bytes": 120699
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-1fd1d-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "66F53F75C8CE9D3AC60825AD45B9E0EBF7331EB5AD346410864EAB62FC099019",
+    "Bytes": 120561
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-290a0-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "ABBCC4C87686800D52294C1385F86BD9B03DB53253092CBD3303CC03537AE85E",
+    "Bytes": 119850
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-302a9-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "0F1DE2CE63D254E79A1EF4DB7C1E59A142EF50F71B9C9232288AEE42B2A02B53",
+    "Bytes": 113820
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-3ceed-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "212AD4FF80358FD362BD53F35348DE049B41D7396BA46504D74ECCF0AB8A69B5",
+    "Bytes": 113919
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-44a37-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "011F63925A267E69331C568BE32B7588AB6F436E0F93ACC08AC4F2626FD6699A",
+    "Bytes": 114086
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-456a7-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "43B0273D555699EFA4FCB1A11FA49A81074BB333CF2D95BFDDF8B8F0D9AA1392",
+    "Bytes": 113851
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-5005a-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "A3ACEC944497B96817BDCE45BF305F59D4646CEB45011632342EFFA76F927F83",
+    "Bytes": 113632
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-5b858-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "A444F425A334B0102E4615EFF232FFA832B3D96559662141066F972A5DAD8189",
+    "Bytes": 114035
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-65ffd-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "A66CBCF8EFE8608CD2D03E31F87719B05F7B673929E2AC5E685987F568F4DB03",
+    "Bytes": 113511
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-76418-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "8F0480DAF6C83F8CD56C83B71B25FE02CD257FDCBF2F8F6FD1DF9ADA64A38A48",
+    "Bytes": 120426
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-8937c-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "8C90346519EF5DAC231F199138DC2E4D635A592A9BE36E4237E1AE6B264FD824",
+    "Bytes": 119038
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-a5908-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "615C9AE1932374A7FDD41C893811380FE03A5490C32D8346C38AAA9E9E367CE5",
+    "Bytes": 119731
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-a77e3-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "7DD2153313EAE056CC66AB3D39AC6D775B3AC9452FB750FF098D099DA6D26C62",
+    "Bytes": 119602
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-c046c-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "33DBE4E8AF8B6ED45E310DF5D1D601D795F2BEF11D5362AA0BE72B9D422AD963",
+    "Bytes": 120300
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-c1ee7-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "18D386EB6A7A47CE3A44FDA2667C50221181AE491AAFB3DF987215C646F09D09",
+    "Bytes": 120276
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-c6302-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "597143749DAAAA3EDA936B13AE945895F6A0CBFD431A0A7079BFB966CEF270E7",
+    "Bytes": 113721
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-c9f3f-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "F88B3BDD1155B3907754F918741024745C5BA757CDC2CA70724DDAECAFC22054",
+    "Bytes": 113205
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-ddae0-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "8D553A7489F0EFA260C91F6BAE66E10F89C809EC5FF87D57F91FE354B0CDBE70",
+    "Bytes": 119851
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-f6958-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "F6368EDFB32FA85EC86D13A169F13F916FEF295D41FE5DCD2C1515ADB09F3437",
+    "Bytes": 113498
+  },
+  {
+    "Path": "shopping-baseline\\responsive-performance-loc-f80a9-tphone-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "6DDE3FBD54F0F3FD1305B5C19549F7902FE3C1967BAF4DE74ECD6F1C0AC0366A",
+    "Bytes": 114788
+  },
+  {
+    "Path": "shopping-baseline-smoke\\.last-run.json",
+    "SHA256": "91D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903",
+    "Bytes": 45
+  },
+  {
+    "Path": "shopping-baseline-smoke\\responsive-performance-loc-290a0-out-pc-shopping-performance-chromium\\shopping-operation-timings.json",
+    "SHA256": "CAC3072C698327882B22E573BF6F057885CD1D47F7235D1AA57270C401968D10",
+    "Bytes": 119884
+  }
+]

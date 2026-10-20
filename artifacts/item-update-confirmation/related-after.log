@@ -1,0 +1,10 @@
+node node_modules/vitest/vitest.mjs run src/features/events/sheetMatching.test.ts src/features/events/updateDiff.test.ts src/features/events/updateApply.test.ts src/features/events/updateFlow.test.ts src/features/events/duplicateEvent.test.ts src/app/commands/useEventUpdateCommands.test.tsx src/app/commands/useEventUpdateCommands.modal.integration.test.tsx src/app/state/useAppOverlayController.test.tsx src/components/UpdateConfirmationModal.test.tsx src/app/commands/useShoppingItemMutationCommands.test.tsx src/app/commands/useShoppingItemMutationCommands.optionalFields.integration.test.tsx src/app/commands/eventUpdateOperation.test.ts src/app/commands/eventUpdateInvalidation.integration.test.tsx src/components/UrlUpdateDialog.test.tsx src/features/app-shell/components/AppOverlayLayer.sheetImport.integration.test.tsx
+
+ RUN  v4.1.10 D:/ciuc-1018
+
+
+ Test Files  15 passed (15)
+      Tests  271 passed (271)
+   Start at  11:32:01
+   Duration  6.98s (transform 6.59s, setup 9.08s, import 11.60s, tests 4.22s, environment 18.43s)
+

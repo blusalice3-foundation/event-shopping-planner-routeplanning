@@ -1,0 +1,1048 @@
+{
+  "commit": "5bf82a364d5b656cfa1e67c5233cfac0564840cf",
+  "probeCounting": {
+    "positiveControl": true,
+    "comparableStartEnd": false
+  },
+  "count": 150,
+  "input": "native",
+  "grouped": true,
+  "browser": "chromium",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+  "start": [
+    {
+      "totalMs": 17.600000001490116,
+      "fallbackMs": 17.600000001490116,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.600000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 18.299999997019768,
+      "fallbackMs": 18.299999997019768,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 18.299999997019768,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17,
+      "fallbackMs": 17,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 18.700000002980232,
+      "fallbackMs": 18.700000002980232,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 18.700000002980232,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 16.599999994039536,
+      "fallbackMs": 16.599999994039536,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16.599999994039536,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 16.899999998509884,
+      "fallbackMs": 16.899999998509884,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16.899999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17.099999994039536,
+      "fallbackMs": 17.099999994039536,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.099999994039536,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17.5,
+      "fallbackMs": 17.5,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.5,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17.100000001490116,
+      "fallbackMs": 17.100000001490116,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.100000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 16,
+      "fallbackMs": 16,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17,
+      "fallbackMs": 17,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 16.900000005960464,
+      "fallbackMs": 16.900000005960464,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16.900000005960464,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17.299999997019768,
+      "fallbackMs": 17.299999997019768,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.299999997019768,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 16.400000005960464,
+      "fallbackMs": 16.400000005960464,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16.400000005960464,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17.5,
+      "fallbackMs": 17.5,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.5,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17.5,
+      "fallbackMs": 17.5,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.5,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17.5,
+      "fallbackMs": 17.5,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.5,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17.299999997019768,
+      "fallbackMs": 17.299999997019768,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.299999997019768,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 17.200000002980232,
+      "fallbackMs": 17.200000002980232,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.200000002980232,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    },
+    {
+      "totalMs": 16.100000001490116,
+      "fallbackMs": 16.100000001490116,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16.100000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 6
+        }
+      ]
+    }
+  ],
+  "end": [
+    11.399999998509884,
+    11.700000002980232,
+    13.799999997019768,
+    12,
+    12.600000001490116,
+    12,
+    12.5,
+    12.299999997019768,
+    13.100000001490116,
+    12.899999998509884,
+    12.5,
+    11.600000001490116,
+    4.100000001490116,
+    12.700000002980232,
+    12,
+    12.700000002980232,
+    11.5,
+    12.5,
+    12,
+    12.700000002980232
+  ],
+  "fixtureControl": [
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"A-03a:priority\"",
+        "A-03a:priority",
+        "group:\"A-01a\"",
+        "A-01a",
+        "group:\"A-02a\"",
+        "A-02a",
+        "group:\"B-10\"",
+        "B-10",
+        "group:\"A-11\"",
+        "A-11",
+        "group:\"A-12\"",
+        "group:\"A-13\"",
+        "group:\"A-14\"",
+        "group:\"B-15\"",
+        "group:\"A-16\"",
+        "group:\"A-17\"",
+        "group:\"A-18\"",
+        "group:\"A-19\"",
+        "group:\"B-20\"",
+        "group:\"A-21\"",
+        "group:\"A-22\"",
+        "group:\"A-23\"",
+        "group:\"A-24\"",
+        "group:\"B-25\"",
+        "group:\"A-26\"",
+        "group:\"A-27\"",
+        "group:\"A-28\"",
+        "group:\"A-29\"",
+        "group:\"B-30\"",
+        "group:\"A-31\"",
+        "group:\"A-32\"",
+        "group:\"A-33\"",
+        "group:\"A-34\"",
+        "group:\"B-35\"",
+        "group:\"A-36\"",
+        "group:\"A-37\"",
+        "group:\"A-38\"",
+        "group:\"A-39\"",
+        "group:\"B-40\"",
+        "group:\"A-41\"",
+        "group:\"A-42\"",
+        "group:\"A-43\"",
+        "group:\"A-44\"",
+        "group:\"B-45\"",
+        "group:\"A-46\"",
+        "group:\"A-47\"",
+        "group:\"A-48\"",
+        "group:\"A-49\"",
+        "group:\"B-50\"",
+        "group:\"A-51\"",
+        "group:\"A-52\"",
+        "group:\"A-53\"",
+        "group:\"A-54\"",
+        "group:\"B-55\"",
+        "group:\"A-56\"",
+        "group:\"A-57\"",
+        "group:\"A-58\"",
+        "group:\"A-59\"",
+        "group:\"B-60\"",
+        "group:\"A-61\"",
+        "group:\"A-62\"",
+        "group:\"A-63\"",
+        "group:\"A-64\"",
+        "group:\"B-65\"",
+        "group:\"A-66\"",
+        "group:\"A-67\"",
+        "group:\"A-68\"",
+        "group:\"A-69\"",
+        "group:\"B-70\"",
+        "group:\"A-71\"",
+        "group:\"A-72\"",
+        "group:\"A-73\"",
+        "group:\"A-74\"",
+        "group:\"B-75\"",
+        "group:\"A-76\"",
+        "group:\"A-77\"",
+        "group:\"A-78\"",
+        "group:\"A-79\"",
+        "group:\"B-999a\""
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "B-10:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "B-15:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "B-20:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "B-25:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "B-30:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "B-35:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "B-40:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "B-45:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "B-50:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "B-55:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "B-60:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "B-65:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "B-70:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "B-75:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-999a:none"
+      ]
+    },
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"A-03a:priority\"",
+        "group:\"A-01a\"",
+        "group:\"A-02a\"",
+        "group:\"B-10\"",
+        "group:\"A-11\"",
+        "group:\"A-12\"",
+        "group:\"A-13\"",
+        "group:\"A-14\"",
+        "group:\"B-15\"",
+        "group:\"A-16\"",
+        "group:\"A-17\"",
+        "group:\"A-18\"",
+        "group:\"A-19\"",
+        "group:\"B-20\"",
+        "group:\"A-21\"",
+        "group:\"A-22\"",
+        "group:\"A-23\"",
+        "group:\"A-24\"",
+        "group:\"B-25\"",
+        "group:\"A-26\"",
+        "group:\"A-27\"",
+        "group:\"A-28\"",
+        "group:\"A-29\"",
+        "group:\"B-30\"",
+        "group:\"A-31\"",
+        "group:\"A-32\"",
+        "group:\"A-33\"",
+        "group:\"A-34\"",
+        "group:\"B-35\"",
+        "group:\"A-36\"",
+        "group:\"A-37\"",
+        "group:\"A-38\"",
+        "group:\"A-39\"",
+        "group:\"B-40\"",
+        "group:\"A-41\"",
+        "group:\"A-42\"",
+        "group:\"A-43\"",
+        "group:\"A-44\"",
+        "group:\"B-45\"",
+        "group:\"A-46\"",
+        "group:\"A-47\"",
+        "group:\"A-48\"",
+        "group:\"A-49\"",
+        "group:\"B-50\"",
+        "group:\"A-51\"",
+        "group:\"A-52\"",
+        "group:\"A-53\"",
+        "group:\"A-54\"",
+        "group:\"B-55\"",
+        "group:\"A-56\"",
+        "group:\"A-57\"",
+        "group:\"A-58\"",
+        "group:\"A-59\"",
+        "group:\"B-60\"",
+        "group:\"A-61\"",
+        "group:\"A-62\"",
+        "group:\"A-63\"",
+        "group:\"A-64\"",
+        "group:\"B-65\"",
+        "group:\"A-66\"",
+        "group:\"A-67\"",
+        "group:\"A-68\"",
+        "group:\"A-69\"",
+        "group:\"B-70\"",
+        "group:\"A-71\"",
+        "group:\"A-72\"",
+        "group:\"A-73\"",
+        "group:\"A-74\"",
+        "group:\"B-75\"",
+        "B-75",
+        "group:\"A-76\"",
+        "A-76",
+        "group:\"A-77\"",
+        "A-77",
+        "group:\"A-78\"",
+        "A-78",
+        "group:\"A-79\"",
+        "A-79",
+        "group:\"B-999a\"",
+        "B-999a"
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "B-10:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "B-15:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "B-20:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "B-25:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "B-30:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "B-35:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "B-40:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "B-45:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "B-50:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "B-55:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "B-60:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "B-65:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "B-70:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "B-75:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-999a:none"
+      ]
+    },
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"A-03a:priority\"",
+        "A-03a:priority",
+        "group:\"A-01a\"",
+        "A-01a",
+        "group:\"A-02a\"",
+        "A-02a",
+        "group:\"B-10\"",
+        "B-10",
+        "group:\"A-11\"",
+        "A-11",
+        "group:\"A-12\"",
+        "group:\"A-13\"",
+        "group:\"A-14\"",
+        "group:\"B-15\"",
+        "group:\"A-16\"",
+        "group:\"A-17\"",
+        "group:\"A-18\"",
+        "group:\"A-19\"",
+        "group:\"B-20\"",
+        "group:\"A-21\"",
+        "group:\"A-22\"",
+        "group:\"A-23\"",
+        "group:\"A-24\"",
+        "group:\"B-25\"",
+        "group:\"A-26\"",
+        "group:\"A-27\"",
+        "group:\"A-28\"",
+        "group:\"A-29\"",
+        "group:\"B-30\"",
+        "group:\"A-31\"",
+        "group:\"A-32\"",
+        "group:\"A-33\"",
+        "group:\"A-34\"",
+        "group:\"B-35\"",
+        "group:\"A-36\"",
+        "group:\"A-37\"",
+        "group:\"A-38\"",
+        "group:\"A-39\"",
+        "group:\"B-40\"",
+        "group:\"A-41\"",
+        "group:\"A-42\"",
+        "group:\"A-43\"",
+        "group:\"A-44\"",
+        "group:\"B-45\"",
+        "group:\"A-46\"",
+        "group:\"A-47\"",
+        "group:\"A-48\"",
+        "group:\"A-49\"",
+        "group:\"B-50\"",
+        "group:\"A-51\"",
+        "group:\"A-52\"",
+        "group:\"A-53\"",
+        "group:\"A-54\"",
+        "group:\"B-55\"",
+        "group:\"A-56\"",
+        "group:\"A-57\"",
+        "group:\"A-58\"",
+        "group:\"A-59\"",
+        "group:\"B-60\"",
+        "group:\"A-61\"",
+        "group:\"A-62\"",
+        "group:\"A-63\"",
+        "group:\"A-64\"",
+        "group:\"B-65\"",
+        "group:\"A-66\"",
+        "group:\"A-67\"",
+        "group:\"A-68\"",
+        "group:\"A-69\"",
+        "group:\"B-70\"",
+        "group:\"A-71\"",
+        "group:\"A-72\"",
+        "group:\"A-73\"",
+        "group:\"A-74\"",
+        "group:\"B-75\"",
+        "group:\"A-76\"",
+        "group:\"A-77\"",
+        "group:\"A-78\"",
+        "group:\"A-79\"",
+        "group:\"B-999a\""
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "B-10:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "B-15:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "B-20:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "B-25:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "B-30:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "B-35:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "B-40:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "B-45:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "B-50:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "B-55:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "B-60:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "B-65:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "B-70:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "B-75:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-999a:none"
+      ]
+    }
+  ],
+  "positiveControl": {
+    "counts": {
+      "group:group:\"A-03a:priority\"": 6,
+      "item:priority": 4,
+      "group:group:\"A-01a\"": 10,
+      "group:group:\"A-02a\"": 10,
+      "group:group:\"B-10\"": 6,
+      "group:group:\"A-11\"": 6,
+      "group:group:\"A-04a\"": 4,
+      "group:group:\"A-05a\"": 4,
+      "group:group:\"A-1000\"": 4,
+      "group:group:\"A-1001\"": 4
+    },
+    "mounts": {},
+    "known": [
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+      "item:merge-a",
+      "item:merge-b",
+      "item:new-x",
+      "item:bad-priority",
+      "item:new-0",
+      "item:new-1",
+      "item:priority",
+      "item:a1",
+      "item:a2",
+      "item:b1",
+      "item:execute-1",
+      "item:new-2",
+      "group:group:\"A-03a:priority\"",
+      "group:group:\"A-01a\"",
+      "group:group:\"A-02a\"",
+      "group:group:\"B-10\"",
+      "group:group:\"A-04a\"",
+      "group:group:\"A-05a\"",
+      "group:group:\"A-1000\"",
+      "item:execute-0",
+      "group:group:\"A-11\"",
+      "group:group:\"A-1001\"",
+      "group:group:\"B-75\"",
+      "group:group:\"A-76\"",
+      "group:group:\"A-77\"",
+      "group:group:\"A-78\"",
+      "group:group:\"A-79\"",
+      "group:group:\"B-999a\"",
+      "group:group:\"A-1066\"",
+      "group:group:\"A-1067\"",
+      "group:group:\"A-1068\"",
+      "group:group:\"A-1069\"",
+      "item:execute-65",
+      "item:execute-66",
+      "item:execute-67",
+      "item:execute-68",
+      "item:execute-69",
+      "item:offscreen",
+      "item:new-66",
+      "item:new-67",
+      "item:new-68",
+      "item:new-69",
+      "item:merge-offscreen",
+      "group:group:\"A-74\"",
+      "group:group:\"A-1065\"",
+      "item:new-65"
+    ],
+    "mounted": [
+      "group:group:\"A-03a:priority\"",
+      "item:priority",
+      "group:group:\"A-01a\"",
+      "item:a1",
+      "item:a2",
+      "group:group:\"A-02a\"",
+      "item:b1",
+      "group:group:\"B-10\"",
+      "item:execute-0",
+      "group:group:\"A-11\"",
+      "item:merge-a",
+      "item:merge-b",
+      "group:group:\"A-04a\"",
+      "item:new-x",
+      "group:group:\"A-05a\"",
+      "item:bad-priority",
+      "group:group:\"A-1000\"",
+      "item:new-0",
+      "group:group:\"A-1001\"",
+      "item:new-1"
+    ]
+  },
+  "rendererBefore": [
+    {
+      "column": "execute",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 5,
+      "mountedGroups": 5
+    },
+    {
+      "column": "candidate",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 6,
+      "mountedGroups": 6
+    }
+  ],
+  "rendererAfter": [
+    {
+      "column": "execute",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 5,
+      "mountedGroups": 5
+    },
+    {
+      "column": "candidate",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 6,
+      "mountedGroups": 6
+    }
+  ],
+  "crossColumn": "not functioning; guide/drop baseline timings unavailable"
+}

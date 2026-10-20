@@ -1,0 +1,787 @@
+{
+  "commit": "5bf82a364d5b656cfa1e67c5233cfac0564840cf",
+  "probeCounting": {
+    "positiveControl": true,
+    "comparableStartEnd": false
+  },
+  "count": 150,
+  "input": "native",
+  "grouped": false,
+  "browser": "chromium",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+  "start": [
+    {
+      "totalMs": 17.100000001490116,
+      "fallbackMs": 17.100000001490116,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.100000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 17.30000000447035,
+      "fallbackMs": 17.30000000447035,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.30000000447035,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 16.700000002980232,
+      "fallbackMs": 16.700000002980232,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16.700000002980232,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 17.299999997019768,
+      "fallbackMs": 17.299999997019768,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.299999997019768,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 17,
+      "fallbackMs": 17,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 17.399999998509884,
+      "fallbackMs": 17.399999998509884,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.399999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 17,
+      "fallbackMs": 17,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 17.700000002980232,
+      "fallbackMs": 17.700000002980232,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.700000002980232,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 16.100000001490116,
+      "fallbackMs": 16.200000002980232,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16.200000002980232,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 17,
+      "fallbackMs": 17,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 16.899999998509884,
+      "fallbackMs": 16.899999998509884,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16.899999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 17.899999998509884,
+      "fallbackMs": 17.899999998509884,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.899999998509884,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 15.699999995529652,
+      "fallbackMs": 15.699999995529652,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 15.699999995529652,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 17.600000001490116,
+      "fallbackMs": 17.600000001490116,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.600000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 16.5,
+      "fallbackMs": 16.5,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16.5,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 17.400000005960464,
+      "fallbackMs": 17.400000005960464,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.400000005960464,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 16.700000002980232,
+      "fallbackMs": 16.700000002980232,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16.700000002980232,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 17.700000002980232,
+      "fallbackMs": 17.700000002980232,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 17.700000002980232,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 16.600000001490116,
+      "fallbackMs": 16.600000001490116,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16.600000001490116,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    },
+    {
+      "totalMs": 16.5,
+      "fallbackMs": 16.5,
+      "intentionalLongPressMs": 0,
+      "postClonePaintMs": 16.5,
+      "renderer": [
+        {
+          "column": "execute",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 5
+        },
+        {
+          "column": "candidate",
+          "engine": "virtual",
+          "strategy": "retained-viewport",
+          "mounted": 7
+        }
+      ]
+    }
+  ],
+  "end": [
+    13.399999998509884,
+    13.600000001490116,
+    12.5,
+    12.5,
+    12.300000004470348,
+    12.5,
+    12.5,
+    12.899999998509884,
+    12.700000002980232,
+    13.699999995529652,
+    12.599999994039536,
+    12.099999994039536,
+    13.600000001490116,
+    12.700000002980232,
+    13,
+    13.199999995529652,
+    11.899999998509884,
+    12,
+    12.5,
+    12
+  ],
+  "fixtureControl": [
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\""
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-10:none",
+        "B-15:none",
+        "B-20:none",
+        "B-25:none",
+        "B-30:none",
+        "B-35:none",
+        "B-40:none",
+        "B-45:none",
+        "B-50:none",
+        "B-55:none",
+        "B-60:none",
+        "B-65:none",
+        "B-70:none",
+        "B-75:none",
+        "B-999a:none"
+      ]
+    },
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\""
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-10:none",
+        "B-15:none",
+        "B-20:none",
+        "B-25:none",
+        "B-30:none",
+        "B-35:none",
+        "B-40:none",
+        "B-45:none",
+        "B-50:none",
+        "B-55:none",
+        "B-60:none",
+        "B-65:none",
+        "B-70:none",
+        "B-75:none",
+        "B-999a:none"
+      ]
+    },
+    {
+      "hallLabels": [
+        "Aホール",
+        "Bホール"
+      ],
+      "groupKeys": [
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+        "group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\""
+      ],
+      "visitIds": [
+        "A-03a:priority",
+        "A-01a:none",
+        "A-02a:none",
+        "A-11:none",
+        "A-12:none",
+        "A-13:none",
+        "A-14:none",
+        "A-16:none",
+        "A-17:none",
+        "A-18:none",
+        "A-19:none",
+        "A-21:none",
+        "A-22:none",
+        "A-23:none",
+        "A-24:none",
+        "A-26:none",
+        "A-27:none",
+        "A-28:none",
+        "A-29:none",
+        "A-31:none",
+        "A-32:none",
+        "A-33:none",
+        "A-34:none",
+        "A-36:none",
+        "A-37:none",
+        "A-38:none",
+        "A-39:none",
+        "A-41:none",
+        "A-42:none",
+        "A-43:none",
+        "A-44:none",
+        "A-46:none",
+        "A-47:none",
+        "A-48:none",
+        "A-49:none",
+        "A-51:none",
+        "A-52:none",
+        "A-53:none",
+        "A-54:none",
+        "A-56:none",
+        "A-57:none",
+        "A-58:none",
+        "A-59:none",
+        "A-61:none",
+        "A-62:none",
+        "A-63:none",
+        "A-64:none",
+        "A-66:none",
+        "A-67:none",
+        "A-68:none",
+        "A-69:none",
+        "A-71:none",
+        "A-72:none",
+        "A-73:none",
+        "A-74:none",
+        "A-76:none",
+        "A-77:none",
+        "A-78:none",
+        "A-79:none",
+        "B-10:none",
+        "B-15:none",
+        "B-20:none",
+        "B-25:none",
+        "B-30:none",
+        "B-35:none",
+        "B-40:none",
+        "B-45:none",
+        "B-50:none",
+        "B-55:none",
+        "B-60:none",
+        "B-65:none",
+        "B-70:none",
+        "B-75:none",
+        "B-999a:none"
+      ]
+    }
+  ],
+  "positiveControl": {
+    "counts": {
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"": 6,
+      "item:priority": 4,
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"": 6
+    },
+    "mounts": {},
+    "known": [
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+      "item:merge-a",
+      "item:merge-b",
+      "item:new-x",
+      "item:bad-priority",
+      "item:new-0",
+      "item:new-1",
+      "item:priority",
+      "item:a1",
+      "item:a2",
+      "item:b1",
+      "item:execute-1",
+      "item:new-2",
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-b\\\"]\"",
+      "item:new-65",
+      "item:new-66",
+      "item:new-67",
+      "item:new-68",
+      "item:new-69",
+      "item:merge-offscreen",
+      "item:execute-40",
+      "item:execute-45",
+      "item:execute-50",
+      "item:execute-55",
+      "item:execute-60",
+      "item:execute-65",
+      "item:offscreen",
+      "item:execute-35"
+    ],
+    "mounted": [
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]:priority\"",
+      "item:priority",
+      "group:group:\"@hall:[\\\"map\\\",\\\"1日目マップ\\\",\\\"hall-a\\\"]\"",
+      "item:a1",
+      "item:a2",
+      "item:b1",
+      "item:execute-1",
+      "item:merge-a",
+      "item:merge-b",
+      "item:new-x",
+      "item:bad-priority",
+      "item:new-0",
+      "item:new-1",
+      "item:new-2"
+    ]
+  },
+  "rendererBefore": [
+    {
+      "column": "execute",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 5,
+      "mountedGroups": 0
+    },
+    {
+      "column": "candidate",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 7,
+      "mountedGroups": 0
+    }
+  ],
+  "rendererAfter": [
+    {
+      "column": "execute",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 5,
+      "mountedGroups": 0
+    },
+    {
+      "column": "candidate",
+      "engine": "virtual",
+      "strategy": "retained-viewport",
+      "mounted": 7,
+      "mountedGroups": 0
+    }
+  ],
+  "crossColumn": "not functioning; guide/drop baseline timings unavailable"
+}

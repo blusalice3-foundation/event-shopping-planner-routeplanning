@@ -1,0 +1,22 @@
+[
+  {
+    "path": "src/features/shopping-list/drag/ShoppingDragWorkspace.tsx",
+    "sha256": "D46C50FAD5C92E1C00EFEF09781A266EF3C19A025C3BFB0D2AA46BBE02326EFE"
+  },
+  {
+    "path": "src/features/shopping-list/drag/ShoppingDragWorkspace.integration.test.tsx",
+    "sha256": "2BC37461387865B1E91A8E4A45B69D5C2F73B5E3BAA986CB720DBDE9655F1C6B"
+  },
+  {
+    "path": "src/hooks/useModalDialogBehavior.ts",
+    "sha256": "4527DF0EE1CD9CE40F640E81ACEBD1ACED7ABD2D797F6B4A5D5DF4FEBBCF7D1E"
+  },
+  {
+    "path": "src/utils/modalFocusBoundary.ts",
+    "sha256": "7D8A811BA974169C906DCF7C8CA8EF9937F65877A67149FC046B87052E24783D"
+  },
+  {
+    "path": "tests/browser/shopping-cross-column-drag.spec.ts",
+    "sha256": "CD295BE3821697C217F7096D94B7AB341F63936735F23917C0670816D952CFFE"
+  }
+]

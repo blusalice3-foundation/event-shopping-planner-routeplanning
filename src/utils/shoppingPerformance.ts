@@ -37,7 +37,10 @@ export const shoppingPerformance = {
             key,
             {
               count: values.length,
-              medianMs: values[Math.ceil(values.length * 0.5) - 1],
+              medianMs:
+                (values[Math.floor((values.length - 1) / 2)] +
+                  values[Math.floor(values.length / 2)]) /
+                2,
               p95Ms: values[Math.ceil(values.length * 0.95) - 1],
             },
           ];

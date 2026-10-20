@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { ShoppingItem } from "../../types/item";
 import { createEventUpdateDiff, type SheetItem } from "./updateDiff";
+import { applyEventUpdateToItems } from "./updateApply";
+import { createSheetRowExclusionSummary } from "./sheetRowSelection";
 
 const currentItem = (overrides: Partial<ShoppingItem> = {}): ShoppingItem => ({
   id: "item-1",
@@ -340,5 +342,135 @@ describe("createEventUpdateDiff quantity and field allowlist", () => {
     expect(diff.itemsToUpdate).toEqual([]);
     expect(diff.pendingPurchasedQuantityChanges).toEqual([]);
     expect(diff.protectedFromUpdate).toBe(1);
+  });
+});
+
+describe("additional rows alone are deduplicated after matching", () => {
+  it.each(["", "1", "2"])(
+    "stays stable across repeated updates with raw quantity %j",
+    (rawQuantity) => {
+      const row = sheetItem({ quantity: 1, rawQuantity });
+      const input = [row, { ...row }];
+      const initial = createEventUpdateDiff([], input);
+      expect(initial.itemsToAdd).toHaveLength(1);
+      expect(initial.itemsToAdd[0].quantity).toBe(rawQuantity === "2" ? 2 : 1);
+      expect(initial.duplicateItemCount).toBe(1);
+      let saved = applyEventUpdateToItems([], initial);
+      const firstId = saved[0].id;
+      for (let repeat = 0; repeat < 3; repeat++) {
+        const diff = createEventUpdateDiff(saved, input);
+        expect(diff.itemsToAdd).toEqual([]);
+        expect(diff.itemsToDelete).toEqual([]);
+        expect(diff.duplicateItemCount).toBe(1);
+        saved = applyEventUpdateToItems(saved, diff);
+        expect(saved).toHaveLength(1);
+        expect(saved[0].id).toBe(firstId);
+      }
+      expect(input.map((item) => item.quantity)).toEqual([1, 1]);
+    },
+  );
+
+  it("uses evaluated quantities rather than CSV parser placeholders in the complete key", () => {
+    const rows = ["", "1", "2"].map((rawQuantity) =>
+      sheetItem({ quantity: 1, rawQuantity }),
+    );
+    const diff = createEventUpdateDiff([], rows);
+    expect(diff.itemsToAdd.map((item) => item.quantity)).toEqual([1, 2]);
+    expect(diff.duplicateItemCount).toBe(1);
+    const existing = currentItem({ quantity: 7 });
+    const blankDiff = createEventUpdateDiff([existing], [rows[0], rows[1]]);
+    expect(blankDiff.itemsToAdd).toEqual([]);
+    expect(blankDiff.duplicateItemCount).toBe(1);
+    expect(applyEventUpdateToItems([existing], blankDiff)[0].quantity).toBe(7);
+  });
+
+  it.each([0, 1])(
+    "does not let invalid quantity rows suppress valid later rows with %s existing IDs",
+    (count) => {
+      const existing = count ? [currentItem()] : [];
+      const rows = ["invalid", "2", "2"].map((rawQuantity) =>
+        sheetItem({ quantity: 1, rawQuantity }),
+      );
+      const diff = createEventUpdateDiff(existing, rows);
+      expect(diff.itemsToAdd).toHaveLength(1);
+      expect(diff.itemsToAdd[0].quantity).toBe(2);
+      expect(diff.duplicateItemCount).toBe(1);
+      expect(diff.quantityWarnings).toMatchObject([
+        {
+          kind: count ? "existing-quantity-not-updated" : "new-item-skipped",
+          receivedValue: "invalid",
+        },
+      ]);
+    },
+  );
+
+  it("preserves both separate IDs and purchase records for identical matched input", () => {
+    const before = [
+      currentItem({ purchaseStatus: "Purchased" }),
+      currentItem({
+        id: "item-2",
+        purchaseStatus: "LimitedPurchase",
+        limitedPurchasedQuantity: 1,
+      }),
+    ];
+    const row = sheetItem({ rawQuantity: "" });
+    const diff = createEventUpdateDiff(before, [row, { ...row }]);
+    expect(diff.itemsToAdd).toEqual([]);
+    expect(diff.itemsToDelete).toEqual([]);
+    expect(diff.duplicateItemCount).toBe(0);
+    expect(
+      applyEventUpdateToItems(before, diff).map(
+        ({ id, purchaseStatus, limitedPurchasedQuantity, price, remarks }) => ({
+          id,
+          purchaseStatus,
+          limitedPurchasedQuantity,
+          price,
+          remarks,
+        }),
+      ),
+    ).toEqual(
+      before.map(
+        ({ id, purchaseStatus, limitedPurchasedQuantity, price, remarks }) => ({
+          id,
+          purchaseStatus,
+          limitedPurchasedQuantity,
+          price,
+          remarks,
+        }),
+      ),
+    );
+  });
+
+  it.each(["none", "deletable", "full"] as const)(
+    "retains normal reduction and %s protection rules",
+    (protectionLevel) => {
+      const before = [
+        currentItem(),
+        currentItem({
+          id: "item-2",
+          protectionLevel,
+          purchaseStatus: "Purchased",
+        }),
+      ];
+      const diff = createEventUpdateDiff(before, [sheetItem()]);
+      expect(diff.itemsToDelete.map((item) => item.id)).toEqual(
+        protectionLevel === "full" ? [] : ["item-2"],
+      );
+      expect(diff.protectedFromDelete).toBe(protectionLevel === "full" ? 1 : 0);
+      expect(diff.duplicateItemCount).toBe(0);
+    },
+  );
+
+  it("reports actual accepted, invalid-new, duplicate-addition and missing-field counts separately", () => {
+    const rowExclusions = createSheetRowExclusionSummary();
+    rowExclusions.excludedCount = 2;
+    const rows = ["1", "1", "bad"].map((rawQuantity) =>
+      sheetItem({ rawQuantity }),
+    );
+    const diff = createEventUpdateDiff([], rows, {}, rowExclusions);
+    expect(diff.sheetImport).toEqual({ acceptedCount: 1, rowExclusions });
+    expect(diff.quantityWarnings).toHaveLength(1);
+    expect(diff.duplicateItemCount).toBe(1);
+    expect(diff.itemsToAdd).toHaveLength(1);
   });
 });

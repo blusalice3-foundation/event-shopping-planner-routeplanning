@@ -1,0 +1,129 @@
+{
+  "kind": "independent-existing-performance-evidence-audit",
+  "dateJst": "2026-10-19",
+  "newMeasurements": false,
+  "head": "53e05faae59ed8972c0e574a027f137275131f77",
+  "method": "Decode passed Playwright result attachment bodies; ignore saved summaries; sort raw samples ascending; nearest-rank median ceil(n*0.5), P95 ceil(n*0.95), 1-based.",
+  "thresholds": {
+    "p95Ms": 100,
+    "medianMs": 55,
+    "minimumSamples": 20
+  },
+  "saveTimePolicy": "Save completion and drag lifecycle remain separate from operation reaction gates.",
+  "sources": [
+    {
+      "root": "D:\\opverify-20261019",
+      "manifestFiles": 377,
+      "nonTestSrcFiles": 373,
+      "uncoveredNonTestSrc": [],
+      "missing": [],
+      "mismatches": [],
+      "pass": true
+    },
+    {
+      "root": "D:\\event-shopping-planner-routeplanning-1.9.6.7",
+      "manifestFiles": 377,
+      "nonTestSrcFiles": 373,
+      "uncoveredNonTestSrc": [],
+      "missing": [],
+      "mismatches": [],
+      "pass": true
+    }
+  ],
+  "reportStatus": [
+    {
+      "report": "shopping",
+      "expected": 24,
+      "unexpected": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "errors": 0,
+      "pass": true
+    },
+    {
+      "report": "drag",
+      "expected": 8,
+      "unexpected": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "errors": 0,
+      "pass": true
+    }
+  ],
+  "conditionCounts": {
+    "drag": 8,
+    "shopping": 24
+  },
+  "shoppingRuntimeErrors": 0,
+  "gates": {
+    "required150500": {
+      "categories": 96,
+      "expectedCategories": 96,
+      "minimumSamples": 20.0,
+      "maximumMedianMs": 32.099999997764826,
+      "maximumP95Ms": 46.099999997764826,
+      "failures": [],
+      "pass": true
+    },
+    "existing1500": {
+      "categories": 48,
+      "expectedCategories": 48,
+      "minimumSamples": 20.0,
+      "maximumMedianMs": 49.5,
+      "maximumP95Ms": 64.60000000149012,
+      "failures": [],
+      "pass": true
+    },
+    "drag": {
+      "categories": 60,
+      "expectedCategories": 60,
+      "minimumSamples": 20.0,
+      "maximumMedianMs": 54.30000000074506,
+      "maximumP95Ms": 67.69999999925494,
+      "failures": [],
+      "pass": true
+    }
+  },
+  "differenceFromPriorRecalculatedRows": [],
+  "preservedInitialDragFailures": [
+    {
+      "key": "items=500|input=native|grouped=True|drop",
+      "resultStatus": "failed",
+      "samples": 20,
+      "medianMs": 55.399999998509884,
+      "p95Ms": 73.40000000223517
+    }
+  ],
+  "limitation": "Latest accepted repeated drag run has only 0.7 ms median headroom; initial native grouped 500 item drop median 55.4 ms failure remains preserved. No claim of newly measured performance.",
+  "evidenceHashes": [
+    {
+      "path": "artifacts/op03-terminal-stop-20261019/product-source-manifest.json",
+      "sha256": "7116564f158a5c582ee90fa90872238adfa9d0a575198ee9cdc9292f24885c52"
+    },
+    {
+      "path": "artifacts/op03-terminal-stop-20261019/shopping-performance.json",
+      "sha256": "213403aeed1fce0e6ea3f50040cabfcdd731ea8b441d057fcc8b60e6d514ed34"
+    },
+    {
+      "path": "artifacts/op03-terminal-stop-20261019/drag-performance.json",
+      "sha256": "2e659261418bb29afcbfacffb20a974074ac3eb95e4e1d08a70e9d9e7dfbf088"
+    },
+    {
+      "path": "artifacts/op03-terminal-stop-20261019/drag-initial.json",
+      "sha256": "d7df9cecfe6ab7df1ddd35246347bcf0c9ed988c5f9fbcc824488a1163751f93"
+    },
+    {
+      "path": "artifacts/op03-terminal-stop-20261019/performance-summary.json",
+      "sha256": "a060aaa7476da4772da9a7a66d91a60cc9e515e9bfdb4270f523393e9247b3d2"
+    }
+  ],
+  "overallPass": true,
+  "initialDragReportStatus": {
+    "startTime": "2026-10-19T10:15:09.688Z",
+    "duration": 150779.492,
+    "expected": 7,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

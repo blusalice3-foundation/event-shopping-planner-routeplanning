@@ -1,3 +1,4 @@
+import { useModalFocusBoundary } from "../hooks/useModalFocusBoundary";
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ShoppingItem } from "../types/item";
@@ -30,6 +31,8 @@ const getItemLabel = (item: ShoppingItem): string => {
 const PostEventDistributionCheckDialog: React.FC<
   PostEventDistributionCheckDialogProps
 > = ({ open, mode, targets, onCancel, onApply }) => {
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  useModalFocusBoundary({ isOpen: open && targets.length > 0, dialogRef });
   const targetIds = useMemo(() => targets.map((item) => item.id), [targets]);
   const [selectedAnswer, setSelectedAnswer] = useState("");
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(
@@ -102,6 +105,7 @@ const PostEventDistributionCheckDialog: React.FC<
   const dialog = (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="post-event-distribution-check-title"

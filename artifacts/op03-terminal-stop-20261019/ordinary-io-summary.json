@@ -1,0 +1,172 @@
+{
+  "kind": "ordinary-persistence-io-comparison",
+  "report": {
+    "path": "D:\\esp-op03-evidence\\browser-final.json",
+    "sha256": "46ab446211cb3d9ecb5d5211f45d3052b3239580509f971f35945fca1c72007a",
+    "startTime": "2026-10-19T09:50:30.828Z",
+    "suiteStats": {
+      "startTime": "2026-10-19T09:50:30.828Z",
+      "duration": 333947.635,
+      "expected": 236,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  },
+  "historicalBaseline": {
+    "path": "D:\\esp-op03-final\\artifacts\\user-operation-remediation-20261019\\ordinary-io-baseline.json",
+    "sha256": "46ee48108c41b1fa764356f163934d351573bb98d366018771f46a560c667146",
+    "label": "baseline-5bf82a3"
+  },
+  "currentLabel": "fallback-fix-final-3908b13",
+  "fixture": "3 items, 3x3 map; isolated ordinary operations",
+  "browserTest": {
+    "file": "ordinary-persistence-io.spec.ts",
+    "title": "ordinary purchase, planned quantity and memo retain the same physical persistence boundary",
+    "status": "expected",
+    "retry": 0,
+    "unaffectedItemsAssertionPassed": true
+  },
+  "notes": "Historical baseline is preserved and separately identified. One sample per operation verifies physical I/O only; response and save completion are separate observations, not performance acceptance. The existing passed browser test asserts unrelated items unchanged.",
+  "operations": [
+    {
+      "operation": "purchase",
+      "sampleCount": 1,
+      "unchangedPhysicalBoundary": true,
+      "expectedOneRpcOneRwNineMutationsTwelveStores": true,
+      "fieldsEqualToHistoricalBaseline": {
+        "workerRoundTripsByMethod": true,
+        "physicalCommittedTransactions": true,
+        "committedObjectStoreMutationRequests": true,
+        "transactionStores": true,
+        "mutations": true
+      },
+      "workerRoundTripsByMethod": {
+        "items": 1
+      },
+      "physicalCommittedTransactions": 1,
+      "committedObjectStoreMutationRequests": 9,
+      "transactionStoreCount": 12,
+      "transactionStores": [
+        [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ]
+      ],
+      "mutationBreakdown": {
+        "eventLists.delete": 2,
+        "eventLists.put": 2,
+        "syncQueue.delete": 1,
+        "syncQueue.put": 4
+      },
+      "historicalResponseMs": 14.600000001490116,
+      "currentResponseMs": 11.600000001490116,
+      "historicalSaveRpcReplyMs": 18.400000005960464,
+      "currentSaveRpcReplyMs": 18.100000001490116,
+      "passed": true
+    },
+    {
+      "operation": "planned-quantity",
+      "sampleCount": 1,
+      "unchangedPhysicalBoundary": true,
+      "expectedOneRpcOneRwNineMutationsTwelveStores": true,
+      "fieldsEqualToHistoricalBaseline": {
+        "workerRoundTripsByMethod": true,
+        "physicalCommittedTransactions": true,
+        "committedObjectStoreMutationRequests": true,
+        "transactionStores": true,
+        "mutations": true
+      },
+      "workerRoundTripsByMethod": {
+        "items": 1
+      },
+      "physicalCommittedTransactions": 1,
+      "committedObjectStoreMutationRequests": 9,
+      "transactionStoreCount": 12,
+      "transactionStores": [
+        [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ]
+      ],
+      "mutationBreakdown": {
+        "eventLists.delete": 2,
+        "eventLists.put": 2,
+        "syncQueue.delete": 1,
+        "syncQueue.put": 4
+      },
+      "historicalResponseMs": 5.899999998509884,
+      "currentResponseMs": 10.399999998509884,
+      "historicalSaveRpcReplyMs": 12.600000001490116,
+      "currentSaveRpcReplyMs": 11.5,
+      "passed": true
+    },
+    {
+      "operation": "memo",
+      "sampleCount": 1,
+      "unchangedPhysicalBoundary": true,
+      "expectedOneRpcOneRwNineMutationsTwelveStores": true,
+      "fieldsEqualToHistoricalBaseline": {
+        "workerRoundTripsByMethod": true,
+        "physicalCommittedTransactions": true,
+        "committedObjectStoreMutationRequests": true,
+        "transactionStores": true,
+        "mutations": true
+      },
+      "workerRoundTripsByMethod": {
+        "items": 1
+      },
+      "physicalCommittedTransactions": 1,
+      "committedObjectStoreMutationRequests": 9,
+      "transactionStoreCount": 12,
+      "transactionStores": [
+        [
+          "dayModes",
+          "eventConsistency",
+          "eventLists",
+          "eventMetadata",
+          "executeModeItems",
+          "hallDefinitions",
+          "hallRouteSettings",
+          "mapData",
+          "mapRotationSettings",
+          "mapViewportSettings",
+          "routeSettings",
+          "syncQueue"
+        ]
+      ],
+      "mutationBreakdown": {
+        "eventLists.delete": 2,
+        "eventLists.put": 2,
+        "syncQueue.delete": 1,
+        "syncQueue.put": 4
+      },
+      "historicalResponseMs": 14.099999994039536,
+      "currentResponseMs": 9.199999999254942,
+      "historicalSaveRpcReplyMs": 312.5,
+      "currentSaveRpcReplyMs": 324.80000000074506,
+      "passed": true
+    }
+  ],
+  "passed": true
+}

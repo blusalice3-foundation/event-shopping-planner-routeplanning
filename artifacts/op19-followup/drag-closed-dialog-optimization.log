@@ -1,0 +1,69 @@
+
+[WebServer] (node:22108) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:28120) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/2] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1940:7 › @shopping-performance @shopping-drag-performance 500 native grouping on
+  1) [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1940:7 › @shopping-performance @shopping-drag-performance 500 native grouping on 
+
+    Error: drop
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 55
+    Received:    58.69999999925494
+
+      2461 |         for (const [operation, value] of Object.entries(records)) {
+      2462 |           expect(value.samples.length, operation).toBeGreaterThanOrEqual(20);
+    > 2463 |           expect(value.medianMs, operation).toBeLessThanOrEqual(55);
+           |                                             ^
+      2464 |           expect(value.p95Ms, operation).toBeLessThanOrEqual(100);
+      2465 |         }
+      2466 |       });
+        at D:\esp-op19-fix\tests\browser\shopping-cross-column-drag.spec.ts:2463:45
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\op19-followup\drag-closed-dialog-optimization\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\op19-followup\drag-closed-dialog-optimization\shopping-cross-column-drag-85da7-ance-500-native-grouping-on-chromium\error-context.md
+
+
+
+(node:6476) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[2/2] [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1940:7 › @shopping-performance @shopping-drag-performance 500 touch grouping on
+  2) [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1940:7 › @shopping-performance @shopping-drag-performance 500 touch grouping on 
+
+    Error: drop
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 55
+    Received:    56.399999998509884
+
+      2461 |         for (const [operation, value] of Object.entries(records)) {
+      2462 |           expect(value.samples.length, operation).toBeGreaterThanOrEqual(20);
+    > 2463 |           expect(value.medianMs, operation).toBeLessThanOrEqual(55);
+           |                                             ^
+      2464 |           expect(value.p95Ms, operation).toBeLessThanOrEqual(100);
+      2465 |         }
+      2466 |       });
+        at D:\esp-op19-fix\tests\browser\shopping-cross-column-drag.spec.ts:2463:45
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    artifacts\op19-followup\drag-closed-dialog-optimization\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: artifacts\op19-followup\drag-closed-dialog-optimization\shopping-cross-column-drag-827e3-mance-500-touch-grouping-on-chromium\error-context.md
+
+
+  2 failed
+    [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1940:7 › @shopping-performance @shopping-drag-performance 500 native grouping on 
+    [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1940:7 › @shopping-performance @shopping-drag-performance 500 touch grouping on 

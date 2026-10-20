@@ -1,0 +1,56 @@
+{
+  "RecordedAt": "2026-10-19T02:44:41.4161770+09:00",
+  "ModifiedBundleSHA256": "A554A5A960F6D3D82A62B381AF7E1D1EC4634310FFD7A5B55E0AA3E8367517DD",
+  "BaselineRaw": "ordinary-io-baseline.json",
+  "ModifiedRaw": "ordinary-io-final-source.json",
+  "Notes": "One observation per operation; physical boundary comparison, not performance acceptance. Timing includes the concurrent functional/quality run. Save completion is the successful items RPC reply.",
+  "FieldsCompared": [
+    "workerRoundTripsByMethod",
+    "physicalCommittedTransactions",
+    "committedObjectStoreMutationRequests",
+    "transactionStores",
+    "mutations"
+  ],
+  "Operations": [
+    {
+      "Operation": "purchase",
+      "PhysicalBoundaryUnchanged": true,
+      "RPC": {
+        "items": 1
+      },
+      "PhysicalCommittedTransactions": 1,
+      "CommittedMutationRequests": 9,
+      "BaselineResponseMs": 14.600000001490116,
+      "ModifiedResponseMs": 12.300000004470348,
+      "BaselineSaveRpcReplyMs": 18.400000005960464,
+      "ModifiedSaveRpcReplyMs": 18.200000002980232
+    },
+    {
+      "Operation": "planned-quantity",
+      "PhysicalBoundaryUnchanged": true,
+      "RPC": {
+        "items": 1
+      },
+      "PhysicalCommittedTransactions": 1,
+      "CommittedMutationRequests": 9,
+      "BaselineResponseMs": 5.899999998509884,
+      "ModifiedResponseMs": 8.100000001490116,
+      "BaselineSaveRpcReplyMs": 12.600000001490116,
+      "ModifiedSaveRpcReplyMs": 12.100000001490116
+    },
+    {
+      "Operation": "memo",
+      "PhysicalBoundaryUnchanged": true,
+      "RPC": {
+        "items": 1
+      },
+      "PhysicalCommittedTransactions": 1,
+      "CommittedMutationRequests": 9,
+      "BaselineResponseMs": 14.099999994039536,
+      "ModifiedResponseMs": 15.300000004470348,
+      "BaselineSaveRpcReplyMs": 312.5,
+      "ModifiedSaveRpcReplyMs": 321
+    }
+  ],
+  "Passed": true
+}

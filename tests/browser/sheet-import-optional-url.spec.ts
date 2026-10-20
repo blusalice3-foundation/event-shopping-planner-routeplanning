@@ -476,3 +476,211 @@ for (const storage of ["direct", "worker"])
       ).toBe(false);
     });
   });
+
+test("OP06: edited planned quantity survives limited status and real save/reload", async ({
+  page,
+}) => {
+  page.on("dialog", (dialog) => dialog.accept());
+  await restore(page, 2);
+  const card = page
+    .locator('[data-item-id="item-0"]')
+    .first()
+    .locator(":scope > div.rounded-lg")
+    .first();
+  await card.dispatchEvent("pointerdown", {
+    button: 0,
+    isPrimary: true,
+    pointerType: "mouse",
+  });
+  await expect(
+    page.getByRole("button", { name: "編集", exact: true }),
+  ).toBeVisible();
+  await card.dispatchEvent("pointerup", {
+    button: 0,
+    isPrimary: true,
+    pointerType: "mouse",
+  });
+  await page.getByRole("button", { name: "編集", exact: true }).click();
+  const editor = page.getByRole("dialog", {
+    name: "アイテム編集",
+    exact: true,
+  });
+  await editor.getByLabel("数量", { exact: true }).selectOption("3");
+  await editor
+    .getByLabel("購入状態", { exact: true })
+    .selectOption("LimitedPurchase");
+  await expect(editor.getByLabel("購入予定量", { exact: true })).toHaveValue(
+    "3",
+  );
+  await editor.getByLabel("実購入数", { exact: true }).fill("2");
+  await editor.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(editor).toBeHidden();
+  await expect
+    .poll(async () =>
+      (
+        (await stored(page, "eventLists"))[SHEET_EVENT] as Array<{
+          id: string;
+          quantity: number;
+          limitedPurchasedQuantity: number;
+        }>
+      ).find((i) => i.id === "item-0"),
+    )
+    .toMatchObject({
+      quantity: 3,
+      limitedPurchasedQuantity: 2,
+      purchaseStatus: "LimitedPurchase",
+    });
+  await page.reload();
+  expect(
+    ((await stored(page, "eventLists"))[SHEET_EVENT] as object[])[0],
+  ).toMatchObject({ quantity: 3, limitedPurchasedQuantity: 2 });
+});
+
+test("OP11: failed URL update reopens with submitted URL and empty sheet name", async ({
+  page,
+}) => {
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.route("**/api/google-sheets-csv", (route) =>
+    route.fulfill({ status: 503, body: "unavailable" }),
+  );
+  await restore(page, 2, "edit", true);
+  await page.getByRole("button", { name: "イベント一覧", exact: true }).click();
+  await page.getByRole("button", { name: "メニュー", exact: true }).click();
+  await page
+    .getByRole("button", { name: "🔄 アイテム更新", exact: true })
+    .click();
+  const url = page.getByLabel("スプレッドシートURL", { exact: true });
+  await expect(url).toBeVisible();
+  await url.fill("https://docs.google.com/spreadsheets/d/retried/edit");
+  await page.getByLabel("シート名（オプション）", { exact: true }).fill("");
+  await page.getByRole("button", { name: "更新", exact: true }).click();
+  await expect(url).toHaveValue(
+    "https://docs.google.com/spreadsheets/d/retried/edit",
+  );
+  await expect(
+    page.getByLabel("シート名（オプション）", { exact: true }),
+  ).toHaveValue("");
+  expect((await stored(page, "eventMetadata"))[SHEET_EVENT]).toMatchObject({
+    spreadsheetUrl: "https://docs.google.com/spreadsheets/d/original/edit",
+    spreadsheetSheetName: "品目表",
+  });
+});
+
+test("OP10: CSV read failure is reported and same file selection retries", async ({
+  page,
+}) => {
+  const alerts: string[] = [];
+  page.on("dialog", async (dialog) => {
+    alerts.push(dialog.message());
+    await dialog.accept();
+  });
+  await page.addInitScript(() => {
+    const original = File.prototype.text;
+    let failed = false;
+    File.prototype.text = function () {
+      if (this.name === "retry.csv" && !failed) {
+        failed = true;
+        return Promise.reject(
+          new DOMException("unreadable", "NotReadableError"),
+        );
+      }
+      return original.call(this);
+    };
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "新規リスト作成", exact: true })
+    .click();
+  await page.getByLabel("即売会名", { exact: true }).fill(SHEET_EVENT);
+  const input = page.locator('input[type="file"][accept=".csv"]');
+  const file = {
+    name: "retry.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(sheetCsv(2), "utf8"),
+  };
+  await input.setInputFiles(file);
+  await expect
+    .poll(() =>
+      alerts.some((message) =>
+        message.includes("CSVファイルを読み取れませんでした"),
+      ),
+    )
+    .toBe(true);
+  expect(await input.inputValue()).toBe("");
+  await input.setInputFiles(file);
+  const review = page.getByRole("dialog", {
+    name: "所属・配置の変更を確認",
+    exact: true,
+  });
+  await expect(review).toBeVisible();
+  await review
+    .getByRole("button", { name: "確認して保存", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: SHEET_EVENT, exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  expect((await stored(page, "eventLists"))[SHEET_EVENT]).toHaveLength(2);
+});
+
+test("OP07: late JSON cannot reopen after newer candidate cancellation", async ({
+  page,
+}) => {
+  const alerts: string[] = [];
+  page.on("dialog", async (dialog) => {
+    alerts.push(dialog.message());
+    await dialog.accept();
+  });
+  await page.addInitScript(() => {
+    const original = File.prototype.text;
+    File.prototype.text = function () {
+      if (this.name === "late.json")
+        return new Promise<string>((resolve) => {
+          (window as unknown as { releaseOldJson: () => void }).releaseOldJson =
+            () => {
+              void original.call(this).then(resolve);
+            };
+        });
+      return original.call(this);
+    };
+  });
+  await page.goto("/");
+  const fixture = Buffer.from(
+    JSON.stringify({
+      kind: "event-shopping-planner-backup",
+      version: 2,
+      exportedAt: "2026-10-18T00:00:00.000Z",
+      data: sheetSnapshot(2),
+    }),
+    "utf8",
+  );
+  const input = page.getByLabel("バックアップファイルを選択");
+  await input.setInputFiles({
+    name: "late.json",
+    mimeType: "application/json",
+    buffer: fixture,
+  });
+  await input.setInputFiles({
+    name: "new.json",
+    mimeType: "application/json",
+    buffer: fixture,
+  });
+  const candidate = page.getByRole("dialog", {
+    name: "バックアップからイベントを復元",
+    exact: true,
+  });
+  await expect(candidate).toBeVisible();
+  await candidate
+    .getByRole("button", { name: "キャンセル", exact: true })
+    .click();
+  await expect(candidate).toBeHidden();
+  await page.evaluate(() => {
+    (window as unknown as { releaseOldJson: () => void }).releaseOldJson();
+  });
+  await page.evaluate(async () => {
+    await new Promise(requestAnimationFrame);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  await expect(candidate).toBeHidden();
+  expect(alerts).toEqual([]);
+});

@@ -1,0 +1,22 @@
+{
+  "Date": "2026-10-19",
+  "OS": "Windows 11",
+  "Shell": "7.6.3",
+  "Node": "24.19.0",
+  "Npm": "11.19.0",
+  "Playwright": "1.62.1",
+  "Build": "standard build:app / release-a, dirty source (normal editable checkout)",
+  "PerformanceWorkers": 1,
+  "EarlierMeasuredSourceHashMatches": 92,
+  "EarlierMeasurementIsFresh": false,
+  "NormalFixtureUnchanged": true,
+  "DragMeasurementTailUnchanged": true,
+  "FinalAcceptedPerformanceHeavyTestsConcurrent": false,
+  "TestedBundleSHA256": "729425339A9C9796D505C73B79A8CEC837A8A904162512C6D841678DB6FDC8FD",
+  "FinalFunctionalChromiumWorkers": 2,
+  "AbandonedHeightKeyMemoTrial": {
+    "SuiteStartupOverlapWithFocusedVitestMs": 972,
+    "UsedForFinalAcceptance": false,
+    "Note": "Overlap was at suite startup; final accepted measurements were strictly serial with no heavy tests"
+  }
+}

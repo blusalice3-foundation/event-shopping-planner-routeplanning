@@ -1,3 +1,4 @@
+import type { ShoppingDragMoveContext } from "../../features/shopping-list/drag/shoppingDrag";
 import { bulkImportFailureStatus } from "../../utils/importOutcome";
 import { itemUpdateGuard } from "../../utils/itemContentGuard";
 import type { BulkImportResult } from "../../types/import";
@@ -55,6 +56,7 @@ import {
   normalizeExecutionVisitDay,
 } from "../../utils/visitProjection";
 import type { ApplicationSnapshotCommitPort } from "./ApplicationSnapshotCommitPort";
+import type { EventUpdateOperationRegistry } from "./eventUpdateOperation";
 
 type EventLists = Record<string, ShoppingItem[]>;
 type ExecuteModeItemsByEvent = Record<string, ExecuteModeItems>;
@@ -87,6 +89,7 @@ export interface ShoppingItemMutationStatePort {
     readonly string[] | null
   >;
   readonly eventUpdatePreviewEpochRef: MutableCommandValue<number>;
+  readonly eventUpdateOperationsRef?: MutableCommandValue<EventUpdateOperationRegistry>;
 }
 
 import { indexedItem } from "../../utils/itemIndex";
@@ -101,7 +104,7 @@ export interface ShoppingItemMutationActionPort {
   setDayModes(updater: StateUpdater<DayModesByEvent>): void;
   updateExecuteModeItems(updater: StateUpdater<ExecuteModeItemsByEvent>): void;
   setRecentlyChangedItemIds(updater: StateUpdater<Set<string>>): void;
-  openDuplicateEvent(value: PendingDuplicateEventImport): void;
+  openDuplicateEvent(value: PendingDuplicateEventImport): string | void;
   clearRangeSelection(): void;
   clearSelection(): void;
   setSortState(value: Extract<SortState, "Manual">): void;
@@ -164,6 +167,7 @@ export interface ShoppingItemMutationCommands {
     hoverId: string,
     targetColumn?: ShoppingListColumn,
     sourceColumn?: ShoppingListColumn,
+    dragContext?: ShoppingDragMoveContext,
   ): void;
   moveItemUp(itemId: string, targetColumn?: ShoppingListColumn): void;
   moveItemDown(itemId: string, targetColumn?: ShoppingListColumn): void;
@@ -275,6 +279,7 @@ export const useShoppingItemMutationCommands = ({
   const {
     activeEventName,
     activeEventDate,
+    getEventGeneration,
     eventLists,
     eventListsRef,
     eventMetadata,
@@ -382,13 +387,30 @@ export const useShoppingItemMutationCommands = ({
       }
 
       try {
-        await commitApplicationSnapshotPatch({
-          eventLists: nextEventLists,
-          eventMetadata: nextEventMetadata,
-          executeModeItems: nextExecuteModeItems,
-          dayModes: nextDayModes,
-        });
+        await commitApplicationSnapshotPatch(
+          {
+            eventLists: nextEventLists,
+            eventMetadata: nextEventMetadata,
+            executeModeItems: nextExecuteModeItems,
+            dayModes: nextDayModes,
+          },
+          undefined,
+          undefined,
+          metadata?.request?.isCurrent
+            ? () => {
+                if (metadata.request?.isCurrent?.() === false)
+                  throw Object.assign(
+                    new Error(
+                      "取込み元の入力が変更されたため、保存していません。",
+                    ),
+                    { name: "BulkImportInvalidated" },
+                  );
+              }
+            : undefined,
+        );
       } catch (error) {
+        if (error instanceof Error && error.name === "BulkImportInvalidated")
+          return { status: "invalidated" };
         const status = bulkImportFailureStatus(error);
         if (status === "committed-ui-failed" || status === "cancelled")
           return { status };
@@ -440,7 +462,8 @@ export const useShoppingItemMutationCommands = ({
       newItemsData: BulkAddItemInput[],
       metadata?: BulkAddMetadata,
     ): Promise<BulkImportResult> => {
-      eventUpdatePreviewEpochRef.current += 1;
+      if (metadata?.request?.isCurrent?.() === false)
+        return Promise.resolve({ status: "invalidated" });
       const normalizedEventName = eventName.trim();
       const isExplicitAddToOpenEvent =
         metadata?.source === "app" &&
@@ -450,6 +473,19 @@ export const useShoppingItemMutationCommands = ({
       if (isExplicitAddToOpenEvent) {
         return applyBulkAdd(normalizedEventName, newItemsData, metadata);
       }
+
+      const registry = state.eventUpdateOperationsRef?.current;
+      if (registry?.isSaving()) {
+        notify(
+          "アイテム更新を保存中です。保留中の保存を再試行または取り消してから、次の取込みを開始してください。",
+        );
+        return Promise.resolve({ status: "invalidated" });
+      }
+      if (registry?.current) {
+        registry.finish(registry.current.id, { status: "invalidated" });
+        if (registry.current) return Promise.resolve({ status: "invalidated" });
+      }
+      eventUpdatePreviewEpochRef.current += 1;
 
       const analysis = analyzeDuplicateEventImport({
         eventName: normalizedEventName,
@@ -469,14 +505,28 @@ export const useShoppingItemMutationCommands = ({
       }
 
       metadata?.request?.progress?.("review");
-      return new Promise((complete) =>
-        openDuplicateEvent({
+      return new Promise((complete) => {
+        const eventGeneration = state.getEventGeneration?.(normalizedEventName);
+        const operation = registry?.start({
+          eventName: analysis.eventName,
+          complete,
+          isCurrentInput: metadata?.request?.isCurrent,
+          eventGeneration,
+          phase: "selection",
+        });
+        if (registry && !operation) return;
+        const requestId = openDuplicateEvent({
           analysis,
           metadata,
           complete,
-          eventGeneration: state.getEventGeneration?.(normalizedEventName),
-        }),
-      );
+          eventGeneration,
+          ...(operation ? { updateOperationId: operation.id } : {}),
+        });
+        if (operation && registry?.current === operation) {
+          operation.requestId = requestId || undefined;
+          operation.ownsUntrackedOverlay = !requestId;
+        }
+      });
     },
     [
       activeEventName,
@@ -485,6 +535,7 @@ export const useShoppingItemMutationCommands = ({
       eventMetadata,
       eventUpdatePreviewEpochRef,
       openDuplicateEvent,
+      notify,
       state,
     ],
   );
@@ -674,16 +725,34 @@ export const useShoppingItemMutationCommands = ({
       hoverId: string,
       targetColumn?: ShoppingListColumn,
       sourceColumn?: ShoppingListColumn,
+      dragContext?: ShoppingDragMoveContext,
     ) => {
       if (!activeEventName) return;
-      clearRangeSelection();
-      setSortState("Manual");
-      setBlockSortDirection(null);
+      if (!dragContext) {
+        clearRangeSelection();
+        setSortState("Manual");
+        setBlockSortDirection(null);
+      }
 
       const mode = recordEntry(dayModes, activeEventName)?.[activeEventDate];
-      const spaceGroupIds = spaceGroupDragItemIdsRef.current;
-      const effectiveSelectedIds = new Set(spaceGroupIds ?? selectedItemIds);
-      spaceGroupDragItemIdsRef.current = null;
+      if (
+        dragContext &&
+        (!dragContext.isCurrent() ||
+          dragContext.eventName !== activeEventName ||
+          dragContext.day !== activeEventDate ||
+          (getEventGeneration &&
+            dragContext.generation !== getEventGeneration(activeEventName)))
+      )
+        return;
+      const spaceGroupIds = dragContext
+        ? dragContext.operation === "space-group"
+          ? dragContext.effectiveIds
+          : null
+        : spaceGroupDragItemIdsRef.current;
+      const effectiveSelectedIds = new Set(
+        dragContext?.requestedIds ?? spaceGroupIds ?? selectedItemIds,
+      );
+      if (!dragContext) spaceGroupDragItemIdsRef.current = null;
 
       const currentEventExecuteItems =
         recordEntry(executeModeItemsRef.current, activeEventName) || {};
@@ -723,12 +792,20 @@ export const useShoppingItemMutationCommands = ({
         sourceColumn,
         mode: mode as ViewMode | undefined,
         effectiveSelectedIds,
-        allItems: recordEntry(eventLists, activeEventName) || [],
+        allItems: recordEntry(eventListsRef.current, activeEventName) || [],
         executeModeItems: currentExecuteItems,
         dayName: activeEventDate,
         selectedBlockFilters: new Set(selectedBlockFilters),
         areItemsInSameHall: hallCheck,
+        dragContext,
       });
+      if (dragContext) {
+        if (!result.eventListItems && !result.executeModeItems) return;
+        clearRangeSelection();
+        setSortState("Manual");
+        setBlockSortDirection(null);
+        spaceGroupDragItemIdsRef.current = null;
+      }
       if (result.eventListItems) {
         setEventLists((current) => ({
           ...current,
@@ -756,6 +833,8 @@ export const useShoppingItemMutationCommands = ({
       clearRangeSelection,
       dayModes,
       eventLists,
+      eventListsRef,
+      getEventGeneration,
       executeModeItemsRef,
       selectedBlockFilters,
       selectedItemIds,

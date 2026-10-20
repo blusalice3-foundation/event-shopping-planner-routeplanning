@@ -1,0 +1,17 @@
+
+[WebServer] (node:27200) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 1 worker
+
+(node:32716) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/6] [chromium] › tests\browser\priority-relay-diagnostics.spec.ts:281:7 › popup map relay invalidation 150 A to B to A @priority-operation-performance
+[2/6] [chromium] › tests\browser\priority-relay-diagnostics.spec.ts:281:7 › popup preview relay invalidation 150 A to B to A @priority-operation-performance
+[3/6] [chromium] › tests\browser\priority-relay-diagnostics.spec.ts:281:7 › popup waiting relay invalidation 150 A to B to A @priority-operation-performance
+[4/6] [chromium] › tests\browser\priority-relay-diagnostics.spec.ts:281:7 › popup map relay invalidation 500 A to B to A @priority-operation-performance
+[5/6] [chromium] › tests\browser\priority-relay-diagnostics.spec.ts:281:7 › popup preview relay invalidation 500 A to B to A @priority-operation-performance
+[6/6] [chromium] › tests\browser\priority-relay-diagnostics.spec.ts:281:7 › popup waiting relay invalidation 500 A to B to A @priority-operation-performance
+  6 passed (50.0s)

@@ -56,6 +56,42 @@ describe("map workspace state", () => {
     );
   });
 
+  it("keeps smart insert failure notifications and in-memory choices", () => {
+    const failure = new Error("storage unavailable");
+    const preferenceCommands = {
+      loadPreference: vi.fn(() => null),
+      savePreference: vi.fn(() => {
+        throw failure;
+      }),
+    };
+    const notify = vi.fn();
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const { result } = renderHook(() =>
+        useMapWorkspaceState(preferenceCommands, notify),
+      );
+      expect(notify).toHaveBeenCalledWith(
+        "スマート挿入設定の保存に失敗しました。",
+        "error",
+      );
+      expect(notify).toHaveBeenCalledWith(
+        "スマート挿入モードの保存に失敗しました。",
+        "error",
+      );
+      notify.mockClear();
+
+      act(() => result.current.setMapSmartInsertEnabled(false));
+
+      expect(result.current.mapSmartInsertEnabled).toBe(false);
+      expect(notify).toHaveBeenCalledExactlyOnceWith(
+        "スマート挿入設定の保存に失敗しました。",
+        "error",
+      );
+    } finally {
+      log.mockRestore();
+    }
+  });
+
   it("does not resave preferences when the injected overlay notifier changes", () => {
     const preferenceCommands = {
       loadPreference: vi.fn(() => null),

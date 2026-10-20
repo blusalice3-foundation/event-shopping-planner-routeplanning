@@ -65,10 +65,14 @@ export function useUIVisibilitySettings(
     });
 
   useEffect(() => {
-    preferences.savePreference(
-      "uiVisibilitySettings",
-      JSON.stringify(uiVisibilitySettings),
-    );
+    try {
+      preferences.savePreference(
+        "uiVisibilitySettings",
+        JSON.stringify(uiVisibilitySettings),
+      );
+    } catch {
+      // Ignore storage failures; the in-memory setting still updates.
+    }
   }, [preferences, uiVisibilitySettings]);
 
   return { uiVisibilitySettings, setUiVisibilitySettings } as const;

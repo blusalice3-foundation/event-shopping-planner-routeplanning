@@ -1,0 +1,10 @@
+
+Running 6 tests using 1 worker
+
+(node:40856) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:956:3 › same-column candidate drag keeps its start selection: touch (2.4s)
+  ok 2 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:989:1 › touch leaving the viewport cancels its last valid cross-column target (1.2s)
+  x  3 [chromium] › tests\browser\shopping-cross-column-drag.spec.ts:1022:5 › OFF merge hall segment has the actual durable endpoint: native compatible true (30.1s)
+(node:45144) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

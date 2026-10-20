@@ -1,0 +1,6 @@
+
+D:\esp-remain-261020\tests\browser\modal-layer-order.spec.ts
+  97:13  error  Unexpected aliasing of 'this' to local variable  @typescript-eslint/no-this-alias
+
+✖ 1 problem (1 error, 0 warnings)
+

@@ -1,0 +1,37 @@
+[WebServer] (node:18688) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 24 tests using 1 worker
+
+
+(node:25328) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=false, mapVisible=false, layout=pc @shopping-performance
+[2/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=false, mapVisible=false, layout=smartphone @shopping-performance
+[3/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=false, mapVisible=true, layout=pc @shopping-performance
+[4/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=false, mapVisible=true, layout=smartphone @shopping-performance
+[5/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=true, mapVisible=false, layout=pc @shopping-performance
+[6/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=true, mapVisible=false, layout=smartphone @shopping-performance
+[7/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=true, mapVisible=true, layout=pc @shopping-performance
+[8/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 150 items, concentrated=true, mapVisible=true, layout=smartphone @shopping-performance
+[9/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=false, mapVisible=false, layout=pc @shopping-performance
+[10/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=false, mapVisible=false, layout=smartphone @shopping-performance
+[11/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=false, mapVisible=true, layout=pc @shopping-performance
+[12/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=false, mapVisible=true, layout=smartphone @shopping-performance
+[13/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=true, mapVisible=false, layout=pc @shopping-performance
+[14/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=true, mapVisible=false, layout=smartphone @shopping-performance
+[15/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=true, mapVisible=true, layout=pc @shopping-performance
+[16/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 500 items, concentrated=true, mapVisible=true, layout=smartphone @shopping-performance
+[17/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 1500 items, concentrated=false, mapVisible=false, layout=pc @shopping-performance
+[18/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 1500 items, concentrated=false, mapVisible=false, layout=smartphone @shopping-performance
+[19/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 1500 items, concentrated=false, mapVisible=true, layout=pc @shopping-performance
+[20/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 1500 items, concentrated=false, mapVisible=true, layout=smartphone @shopping-performance
+[21/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 1500 items, concentrated=true, mapVisible=false, layout=pc @shopping-performance
+[22/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 1500 items, concentrated=true, mapVisible=false, layout=smartphone @shopping-performance
+[23/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 1500 items, concentrated=true, mapVisible=true, layout=pc @shopping-performance
+[24/24] [chromium] › tests\browser\responsive-performance.spec.ts:659:5 › local shopping operations: 1500 items, concentrated=true, mapVisible=true, layout=smartphone @shopping-performance
+  Slow test file: [chromium] › tests\browser\responsive-performance.spec.ts (17.8m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  24 passed (17.9m)

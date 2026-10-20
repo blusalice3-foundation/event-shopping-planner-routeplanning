@@ -7,7 +7,13 @@ import {
   normalizeMapDay,
 } from "../../features/consistency/domain/context";
 import { planMapReimport } from "../../features/consistency/domain/mapReimport";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  CommittedStateApplyError,
+  type MutationIntent,
+} from "./applicationMutationCoordinator";
+import type { PersistenceSnapshot } from "../ports/PersistenceCommandPort";
+import { isHallWriteTerminalError } from "../ports/HallEditorCommandPort";
 import type { ChangeEvent } from "react";
 import type { ShoppingItem } from "../../types/item";
 import type {
@@ -38,6 +44,7 @@ export interface MapImportFileInputPort {
 
 export interface MapImportStatePort extends MapReimportState {
   readonly eventConsistency?: EventConsistencyStore;
+  readonly importSessionId?: string | null;
   readonly pendingEventName: string;
   readonly pendingReimport: PreparedMapImport | null;
   readonly mapViewActive: boolean;
@@ -58,7 +65,21 @@ export interface MapImportActionPort {
   confirmReimport(): void;
 }
 
+export interface MapImportMutationState {
+  readonly requestPending: boolean;
+  readonly canCancel: boolean;
+}
+export interface MapImportMutationHandle {
+  readonly result: Promise<PersistenceSnapshot>;
+  cancel(): boolean;
+  getState(): MapImportMutationState;
+  subscribe(listener: () => void): () => void;
+}
+
 export interface MapImportSettingsPort {
+  startImportMutation?(
+    intent: Omit<MutationIntent, "id">,
+  ): MapImportMutationHandle;
   requestMutation?: ApplicationMutationPort["requestMutation"];
   commitApplicationSnapshotPatch(
     patch: Pick<
@@ -83,6 +104,7 @@ export interface MapImportNavigationPort {
 }
 
 export interface MapImportEffectPort {
+  onCommittedFailure?(error: Error): void;
   notify(message: string): void;
   reportDiagnostic(message: string): void;
 }
@@ -97,8 +119,11 @@ export interface MapImportCommandPorts {
 }
 
 export interface MapImportCommands {
+  readonly requestPending: boolean;
+  readonly canCancel: boolean;
   requestFileSelection(eventName: string): void;
   selectFile(event: ChangeEvent<HTMLInputElement>): void;
+  selectCapturedFile(file: File, eventName?: string): void;
   prepareImport(
     parsedData: Record<string, DayMapData>,
     settings: BlockDetectionSettings,
@@ -144,12 +169,61 @@ export const useMapImportCommands = ({
     cancelReimport: cancelReimportOverlay,
     confirmReimport: confirmReimportOverlay,
   } = actions;
-  const { commitApplicationSnapshotPatch, requestMutation } = settings;
+  const {
+    commitApplicationSnapshotPatch,
+    requestMutation,
+    startImportMutation,
+  } = settings;
   const { openEvent } = navigation;
   const { notify, reportDiagnostic } = effects;
+  const [, refreshRequestState] = useState(0);
+  type Owner = {
+    token: object;
+    request: MapImportMutationHandle | null;
+    pending: boolean;
+    stopped: boolean;
+    release: (() => void) | null;
+  };
+  const ownerRef = useRef<Owner | null>(null);
+  useEffect(
+    () => () => {
+      const owner = ownerRef.current;
+      owner?.release?.();
+      if (owner) owner.release = null;
+      ownerRef.current = null;
+    },
+    [],
+  );
+  const liveImportSession = useRef(state.importSessionId);
+  liveImportSession.current = state.importSessionId;
+  const ensureOwner = useCallback(() => {
+    if (!ownerRef.current)
+      ownerRef.current = {
+        token: {},
+        request: null,
+        pending: false,
+        stopped: false,
+        release: null,
+      };
+    return ownerRef.current;
+  }, []);
+  const isCurrentOwner = useCallback(
+    (owner: Owner) => ownerRef.current === owner,
+    [],
+  );
+  const readRequestState = (): MapImportMutationState => {
+    const owner = ownerRef.current;
+    return {
+      requestPending: !!owner?.pending,
+      canCancel:
+        !owner?.stopped &&
+        (!owner?.pending || !!owner.request?.getState().canCancel),
+    };
+  };
 
   const requestFileSelection = useCallback(
     (eventName: string) => {
+      if (ownerRef.current?.pending || ownerRef.current?.stopped) return;
       const input = fileInput.current;
       if (!input) return;
       input.dataset.eventName = eventName;
@@ -158,18 +232,30 @@ export const useMapImportCommands = ({
     [fileInput],
   );
 
+  const selectCapturedFile = useCallback(
+    (file: File, eventName?: string): void => {
+      if (!eventName || ownerRef.current?.pending || ownerRef.current?.stopped)
+        return;
+      ownerRef.current = {
+        token: {},
+        request: null,
+        pending: false,
+        stopped: false,
+        release: null,
+      };
+      openImport(file, eventName);
+    },
+    [openImport],
+  );
   const selectFile = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       const eventName = event.target.dataset.eventName;
-      if (!file || !eventName) return;
-
-      openImport(file, eventName);
       event.target.value = "";
+      if (file) selectCapturedFile(file, eventName);
     },
-    [openImport],
+    [selectCapturedFile],
   );
-
   const finishImport = useCallback(() => {
     if (pendingReimport) {
       confirmReimportOverlay();
@@ -183,11 +269,25 @@ export const useMapImportCommands = ({
       preparedImport: PreparedMapImport,
       options: MapReimportOptions,
     ): Promise<void> => {
+      const sessionId = state.importSessionId;
+      if (liveImportSession.current !== sessionId) return;
+      const owner = ensureOwner();
+      if (owner.pending || owner.stopped) return;
+      owner.pending = true;
+      refreshRequestState((value) => value + 1);
+      let committed = false;
       try {
-        if (requestMutation) {
+        if (requestMutation || startImportMutation) {
           const name = preparedImport.plan.eventName;
-          await requestMutation({
+          const intent: Omit<MutationIntent, "id"> = {
             events: [name],
+            assertApplicable: () => {
+              if (
+                !isCurrentOwner(owner) ||
+                liveImportSession.current !== sessionId
+              )
+                throw new Error("取り込み要求は終了しています。");
+            },
             plan: (snapshot) =>
               planMapReimport(
                 snapshot,
@@ -196,7 +296,20 @@ export const useMapImportCommands = ({
                 options,
                 preparedImport.settings,
               ),
-          });
+          };
+          if (startImportMutation) {
+            owner.request = startImportMutation(intent);
+            owner.release = owner.request.subscribe(() => {
+              if (
+                isCurrentOwner(owner) &&
+                liveImportSession.current === sessionId
+              )
+                refreshRequestState((value) => value + 1);
+            });
+            await owner.request.result;
+          } else await requestMutation!(intent);
+          committed = true;
+          if (!isCurrentOwner(owner)) return;
           const first = preparedImport.plan.targets[0];
           if (first)
             openEvent(name, first.eventDate, mapViewActive ? "map" : "list");
@@ -240,18 +353,45 @@ export const useMapImportCommands = ({
           },
         });
       } catch (error) {
+        if (!isCurrentOwner(owner)) return;
+        if (isHallWriteTerminalError(error) || committed) owner.stopped = true;
+        if (committed) {
+          const failure = new CommittedStateApplyError(error);
+          effects.onCommittedFailure?.(failure);
+          notify(failure.message);
+          return;
+        }
+        if (
+          error instanceof Error &&
+          (error.name === "MutationCancelled" ||
+            error.name === "MutationCancelledError")
+        )
+          return;
         notify(
           error instanceof Error
             ? error.message
             : "マップを保存できませんでした。",
         );
+      } finally {
+        owner.release?.();
+        owner.release = null;
+        if (isCurrentOwner(owner)) {
+          owner.pending = false;
+          owner.request = null;
+          refreshRequestState((value) => value + 1);
+        }
       }
     },
     [
       eventLists,
       executeModeItems,
+      effects,
       commitApplicationSnapshotPatch,
       requestMutation,
+      startImportMutation,
+      state.importSessionId,
+      ensureOwner,
+      isCurrentOwner,
       finishImport,
       hallDefinitions,
       hallRouteSettings,
@@ -278,7 +418,14 @@ export const useMapImportCommands = ({
       blockDetectionSettings: BlockDetectionSettings,
       initialAngles: Record<string, number>,
     ): Promise<void> => {
-      if (!pendingEventName) return;
+      if (
+        liveImportSession.current !== state.importSessionId ||
+        !pendingEventName ||
+        ownerRef.current?.pending ||
+        ownerRef.current?.stopped
+      )
+        return;
+      const owner = ensureOwner();
 
       try {
         const eventDates = extractEventDates(
@@ -360,6 +507,7 @@ export const useMapImportCommands = ({
         };
         await dispatchPreparedMapImport(preparedImport, {
           requestConfirmation: (pendingImport) => {
+            if (!isCurrentOwner(owner)) return;
             requestReimport(pendingImport);
           },
           commit: commitImport,
@@ -375,6 +523,8 @@ export const useMapImportCommands = ({
     },
     [
       commitImport,
+      ensureOwner,
+      isCurrentOwner,
       eventLists,
       executeModeItems,
       hallDefinitions,
@@ -385,6 +535,7 @@ export const useMapImportCommands = ({
       notify,
       pendingEventName,
       state.eventConsistency,
+      state.importSessionId,
       reportDiagnostic,
       closeImportDialog,
       requestReimport,
@@ -400,17 +551,33 @@ export const useMapImportCommands = ({
     [commitImport, pendingReimport],
   );
 
+  const endOwner = useCallback((): boolean => {
+    const owner = ownerRef.current;
+    if (owner?.stopped) return false;
+    if (owner?.pending) {
+      if (!owner.request?.getState().canCancel || !owner.request.cancel())
+        return false;
+    }
+    owner?.release?.();
+    if (owner) owner.release = null;
+    ownerRef.current = null;
+    refreshRequestState((value) => value + 1);
+    return true;
+  }, []);
   const cancelReimport = useCallback(() => {
-    cancelReimportOverlay();
-  }, [cancelReimportOverlay]);
-
+    if (liveImportSession.current === state.importSessionId && endOwner())
+      cancelReimportOverlay();
+  }, [cancelReimportOverlay, endOwner, state.importSessionId]);
   const closeImport = useCallback(() => {
-    closeImportDialog();
-  }, [closeImportDialog]);
+    if (liveImportSession.current === state.importSessionId && endOwner())
+      closeImportDialog();
+  }, [closeImportDialog, endOwner, state.importSessionId]);
 
   return {
+    ...readRequestState(),
     requestFileSelection,
     selectFile,
+    selectCapturedFile,
     prepareImport,
     confirmReimport,
     cancelReimport,

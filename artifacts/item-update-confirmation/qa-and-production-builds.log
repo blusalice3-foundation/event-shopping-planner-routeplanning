@@ -1,0 +1,165 @@
+
+> event-shopping-planner@1.0.0 test:qa-builds
+> npm run build:qa:xlsx-main && npm run build:qa:list-force-full
+
+
+> event-shopping-planner@1.0.0 build:qa:xlsx-main
+> node scripts/build-release-vite.mjs --qa-profile xlsx-main && node scripts/verify-release-a-build.mjs --allow-nonpromotable-qa
+
+vite v8.2.0 building client environment for release-a...
+[2K
+transforming...✓ 325 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/release-capabilities.cb2b22b974a50a0e3cbaae979bfad8789533493c.json      0.34 kB │ gzip:   0.22 kB
+dist/release-capabilities.json                                               0.34 kB │ gzip:   0.22 kB
+dist/manifest.webmanifest                                                    0.58 kB
+dist/outer-agent-graph.json                                                  1.72 kB │ gzip:   0.45 kB
+dist/index.html                                                              1.82 kB │ gzip:   0.84 kB
+dist/assets/route.worker-vkpwhvUq.js                                        19.92 kB
+dist/assets/outer-recovery-agent.js                                         19.93 kB
+dist/release-role-graph.json                                                93.97 kB │ gzip:   8.87 kB
+dist/assets/backup.worker-CmLUrcml.js                                      256.07 kB
+dist/assets/persistence.worker-Dgzz1Tkn.js                                 318.44 kB
+dist/assets/app-BWWXoYAW.css                                                91.83 kB │ gzip:  17.14 kB
+dist/assets/rolldown-runtime-ClPy5LxC.js                                     0.98 kB │ gzip:   0.56 kB
+dist/assets/ImportScreen-Dy-R4N9k.js                                        19.93 kB │ gzip:   6.43 kB
+dist/assets/FocusModeContainer-BAGzo2WX.js                                 157.63 kB │ gzip:  47.44 kB
+dist/assets/xlsx-main-vendor-fQV_JNrq.js                                   947.28 kB │ gzip: 272.34 kB
+dist/assets/release-role.js                                              1,349.23 kB │ gzip: 391.19 kB
+
+✓ built in 2.21s
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+PWA v1.3.0
+Building src/sw.ts service worker ("es" format)...
+vite v8.2.0 building client environment for release-a...
+
+ WARN  inlineDynamicImports option is deprecated, please use codeSplitting: false instead.
+
+[2K
+transforming...✓ 3 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/sw.mjs  4.03 kB │ gzip: 1.69 kB
+
+✓ built in 30ms
+PWA v1.3.0
+mode      injectManifest
+format:   es
+precache  28 entries (4268.43 KiB)
+files generated
+  dist/sw.js
+Built qa-xlsx-main standard release cb2b22b974a50a0e3cbaae979bfad8789533493c/830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611; identity dc9123e492258febce952475f36a6e7aef7c6bf59e19658a97c76d7d6a86466a; source clean.
+Release A artifact cb2b22b974a50a0e3cbaae979bfad8789533493c verified: exact source; cleanup forced OFF; PWA artifacts and /sw.js headers present.
+
+> event-shopping-planner@1.0.0 build:qa:list-force-full
+> node scripts/build-release-vite.mjs --qa-profile list-force-full && node scripts/verify-release-a-build.mjs --allow-nonpromotable-qa
+
+vite v8.2.0 building client environment for release-a...
+[2K
+transforming...✓ 322 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/release-capabilities.cb2b22b974a50a0e3cbaae979bfad8789533493c.json      0.34 kB │ gzip:   0.23 kB
+dist/release-capabilities.json                                               0.34 kB │ gzip:   0.23 kB
+dist/manifest.webmanifest                                                    0.58 kB
+dist/outer-agent-graph.json                                                  1.72 kB │ gzip:   0.45 kB
+dist/index.html                                                              1.82 kB │ gzip:   0.84 kB
+dist/assets/route.worker-vkpwhvUq.js                                        19.92 kB
+dist/assets/outer-recovery-agent.js                                         19.93 kB
+dist/release-role-graph.json                                                92.73 kB │ gzip:   8.58 kB
+dist/assets/backup.worker-CmLUrcml.js                                      256.07 kB
+dist/assets/persistence.worker-Dgzz1Tkn.js                                 318.44 kB
+dist/assets/xlsx.worker-DA2gqYv7.js                                      1,589.34 kB
+dist/assets/app-BWWXoYAW.css                                                91.83 kB │ gzip:  17.14 kB
+dist/assets/ImportScreen-BLazLck-.js                                        19.89 kB │ gzip:   6.40 kB
+dist/assets/FocusModeContainer-DNLqF-1r.js                                 157.59 kB │ gzip:  47.41 kB
+dist/assets/release-role.js                                              1,319.47 kB │ gzip: 380.94 kB
+
+✓ built in 2.66s
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+PWA v1.3.0
+Building src/sw.ts service worker ("es" format)...
+vite v8.2.0 building client environment for release-a...
+
+ WARN  inlineDynamicImports option is deprecated, please use codeSplitting: false instead.
+
+[2K
+transforming...✓ 3 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/sw.mjs  4.03 kB │ gzip: 1.69 kB
+
+✓ built in 19ms
+PWA v1.3.0
+mode      injectManifest
+format:   es
+precache  27 entries (4864.15 KiB)
+files generated
+  dist/sw.js
+Built qa-list-force-full standard release cb2b22b974a50a0e3cbaae979bfad8789533493c/830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611; identity 70209e513408117efdc003acf4fdee70fd4bd122d4e4287428eceb1df91ff3b2; source clean.
+Release A artifact cb2b22b974a50a0e3cbaae979bfad8789533493c verified: exact source; cleanup forced OFF; PWA artifacts and /sw.js headers present.
+
+> event-shopping-planner@1.0.0 build:release-a
+> npm run build:app && node scripts/verify-release-a-build.mjs
+
+
+> event-shopping-planner@1.0.0 build:app
+> tsc --noEmit && node scripts/build-release-vite.mjs
+
+vite v8.2.0 building client environment for release-a...
+[2K
+transforming...✓ 322 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/release-capabilities.cb2b22b974a50a0e3cbaae979bfad8789533493c.json      0.29 kB │ gzip:   0.19 kB
+dist/release-capabilities.json                                               0.29 kB │ gzip:   0.19 kB
+dist/manifest.webmanifest                                                    0.58 kB
+dist/outer-agent-graph.json                                                  1.72 kB │ gzip:   0.45 kB
+dist/index.html                                                              1.82 kB │ gzip:   0.84 kB
+dist/assets/route.worker-vkpwhvUq.js                                        19.92 kB
+dist/assets/outer-recovery-agent.js                                         19.93 kB
+dist/release-role-graph.json                                                92.73 kB │ gzip:   8.58 kB
+dist/assets/backup.worker-CmLUrcml.js                                      256.07 kB
+dist/assets/persistence.worker-Dgzz1Tkn.js                                 318.44 kB
+dist/assets/xlsx.worker-DA2gqYv7.js                                      1,589.34 kB
+dist/assets/app-BWWXoYAW.css                                                91.83 kB │ gzip:  17.14 kB
+dist/assets/ImportScreen-BLazLck-.js                                        19.89 kB │ gzip:   6.40 kB
+dist/assets/FocusModeContainer-DNLqF-1r.js                                 157.59 kB │ gzip:  47.41 kB
+dist/assets/release-role.js                                              1,319.63 kB │ gzip: 380.99 kB
+
+✓ built in 2.62s
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+PWA v1.3.0
+Building src/sw.ts service worker ("es" format)...
+vite v8.2.0 building client environment for release-a...
+
+ WARN  inlineDynamicImports option is deprecated, please use codeSplitting: false instead.
+
+[2K
+transforming...✓ 3 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/sw.mjs  4.03 kB │ gzip: 1.69 kB
+
+✓ built in 21ms
+PWA v1.3.0
+mode      injectManifest
+format:   es
+precache  27 entries (4864.19 KiB)
+files generated
+  dist/sw.js
+Built production standard release cb2b22b974a50a0e3cbaae979bfad8789533493c/830c778527db396f98105dce5047c7e370da3d43dccd71b915dccc3e204b2611; identity 4bc7302ff8c83e608b5eebab950c218376e7f6293c7f280bfecba7599a351e87; source clean.
+Release A artifact cb2b22b974a50a0e3cbaae979bfad8789533493c verified: exact source; cleanup forced OFF; PWA artifacts and /sw.js headers present.

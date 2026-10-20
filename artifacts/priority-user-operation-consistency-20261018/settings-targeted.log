@@ -1,0 +1,19 @@
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+
+
+ Test Files  7 passed (7)
+      Tests  29 passed (29)
+   Start at  18:16:18
+   Duration  4.13s (transform 1.76s, setup 3.34s, import 3.17s, tests 672ms, environment 10.25s)
+
+Selector type correction: use anchored name expressions for Testing Library.
+
+ RUN  v4.1.10 D:/event-shopping-planner-routeplanning-1.9.6.7
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  18:16:41
+   Duration  4.17s (transform 1.08s, setup 312ms, import 2.19s, tests 342ms, environment 1.10s)
+

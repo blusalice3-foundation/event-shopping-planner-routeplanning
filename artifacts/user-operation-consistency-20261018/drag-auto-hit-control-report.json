@@ -1,0 +1,159 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\esp-op18\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/browser/shopping-cross-column-drag.spec.ts",
+      "--grep",
+      "@shopping-drag-performance 150 native grouping on",
+      "--workers=1",
+      "--reporter=list,json",
+      "--output",
+      "D:/esp-op18/artifacts/playwright-drag-auto-hit-control"
+    ],
+    "configFile": "D:\\esp-op18\\playwright.config.ts",
+    "rootDir": "D:/esp-op18/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/esp-op18/artifacts/playwright-drag-auto-hit-control",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/esp-op18/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "shopping-cross-column-drag.spec.ts",
+      "file": "shopping-cross-column-drag.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "@shopping-performance @shopping-drag-performance 150 native grouping on",
+          "ok": false,
+          "tags": [
+            "shopping-performance",
+            "shopping-drag-performance"
+          ],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 8330,
+                  "error": {
+                    "message": "Error: page.evaluate: Error: No mounted execution card in the native/touch auto-scroll trigger region\n    at eval (eval at evaluate (:311:30), <anonymous>:23:24)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+                    "stack": "Error: page.evaluate: Error: No mounted execution card in the native/touch auto-scroll trigger region\n    at eval (eval at evaluate (:311:30), <anonymous>:23:24)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at eval (eval at evaluate (:311:30), <anonymous>:23:24)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at autoScroll (D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:370:15)\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:1998:25",
+                    "location": {
+                      "file": "eval at evaluate (:311:30), <anonymous>",
+                      "column": 24,
+                      "line": 23
+                    }
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "eval at evaluate (:311:30), <anonymous>",
+                        "column": 24,
+                        "line": 23
+                      },
+                      "message": "Error: page.evaluate: Error: No mounted execution card in the native/touch auto-scroll trigger region\n    at eval (eval at evaluate (:311:30), <anonymous>:23:24)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at eval (eval at evaluate (:311:30), <anonymous>:23:24)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at autoScroll (D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:370:15)\n    at D:\\esp-op18\\tests\\browser\\shopping-cross-column-drag.spec.ts:1998:25"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T17:03:50.821Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-auto-hit-control\\shopping-cross-column-drag-98d3d-ance-150-native-grouping-on-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\esp-op18\\artifacts\\playwright-drag-auto-hit-control\\shopping-cross-column-drag-98d3d-ance-150-native-grouping-on-chromium\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "eval at evaluate (:311:30), <anonymous>",
+                    "column": 24,
+                    "line": 23
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bc0de945a176bc7153a7-0819c1933c65c0972d88",
+          "file": "shopping-cross-column-drag.spec.ts",
+          "line": 1794,
+          "column": 7
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-18T17:03:50.007Z",
+    "duration": 9387.243999999999,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

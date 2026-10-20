@@ -1,0 +1,149 @@
+
+ RUN  v4.1.10 D:/esp-remain-261020
+
+stderr | src/utils/indexedDB.resilience.integration.test.ts > db open resilience > times out a blocked open with a dedicated recovery error and permits retry
+IndexedDB open failed.
+
+Not implemented: Window's scrollBy() method
+Not implemented: Window's scrollBy() method
+Not implemented: Window's scrollBy() method
+Not implemented: Window's scrollBy() method
+Not implemented: Window's scrollBy() method
+Not implemented: Window's scrollBy() method
+stderr | src/persistence/db/consistencyMigration.integration.test.ts > consistency migration transaction > rejects both reads and writes through the actual previous database opener
+IndexedDB open failed.
+
+stderr | src/persistence/db/consistencyMigration.integration.test.ts > consistency migration transaction > rejects both reads and writes through the actual previous database opener
+IndexedDB open failed.
+
+stderr | src/persistence/db/consistencyMigration.integration.test.ts > pre-upgrade boundary > closes an already-open old client on versionchange and refuses its reconnect
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.mapData.integration.test.tsx > db.loadMapData > reports an error after both IndexedDB reads fail without a legacy fallback
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.mapData.integration.test.tsx > db.loadMapData > does not use the legacy localStorage key after both IndexedDB reads fail
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.mapData.integration.test.tsx > db.loadMapData > does not use the legacy localStorage key after both IndexedDB reads fail
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > does not modify a current version database with a missing required store
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > does not modify a current version database with a missing required store
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > refuses an unknown newer database without modifying it
+IndexedDB open failed.
+
+stderr | src/utils/indexedDB.versionCompatibility.integration.test.ts > IndexedDB version compatibility > refuses an unknown newer database without modifying it
+IndexedDB open failed.
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > related settings and manifest corruption > rejects a missing declared related-settings sheet instead of falling back to legacy
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > closed full-workbook declarations > rejects duplicate-metadata without falling back
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > closed full-workbook declarations > rejects future-workbook without falling back
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/domain/consistencyWorkbook.test.ts > closed full-workbook declarations > rejects future-schema without falling back
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/utils/exportImport.restoreSettings.test.ts > event XLSX restore settings > rejects malformed restore settings before any event can be replaced
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 B2 (参加日)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in 配置情報 C3 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in マップデータ A2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in マップデータ B2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in ルート情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in ルート情報 B2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"formula":"\"missing result\""} in ルート情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 B2 (参加日)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in 配置情報 C3 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in マップデータ A2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in マップデータ B2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in ルート情報 A2 (種別)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in ルート情報 B2 (マップ名)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > rejects unsupported {"error":"#VALUE!"} in ルート情報 C2 (データ)
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in 配置情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in マップデータ B2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in ルート情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in 配置情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in マップデータ B2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/layoutText.worker.test.ts > layout text through production ZIP preflight, Worker and JSON restore > does not reinterpret structured JSON in ルート情報 C2 as text
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > rejects unsupported event names instead of creating object strings {"formula":"\"ユーザー登録\""}
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > rejects unsupported event names instead of creating object strings {"error":"#VALUE!"}
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > does not reinterpret structured contentManifest metadata as decorated JSON
+Spreadsheet import failed (spreadsheet-import-failed).
+
+stderr | src/xlsx/worker/sheetIdentity.worker.test.ts > event metadata text through production ZIP preflight and Worker engine > does not reinterpret structured eventMetadata metadata as decorated JSON
+Spreadsheet import failed (spreadsheet-import-failed).
+
+·····················································································································································································································································································································································································································································································································································································································································································································································································································································----------------------------------------------------------------------------------------··································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································
+
+ Test Files  266 passed | 1 skipped (267)
+      Tests  3255 passed | 88 skipped (3343)
+   Start at  08:40:34
+   Duration  220.54s (transform 8.74s, setup 71.96s, import 27.91s, tests 139.13s, environment 155.34s)
+
+JSON report written to D:/esp-remain-261020/artifacts/consistency-remaining-fixes-20261020/vitest-final.json
