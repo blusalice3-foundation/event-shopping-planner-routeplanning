@@ -123,6 +123,10 @@ const itemPlaceholder = (
 type PlaceholderLabel = {
   readonly rowKey: string;
   readonly text: string;
+  readonly accessibleName: string;
+  readonly remarks: ShoppingListItemRow["item"]["remarks"];
+  readonly price: number | string;
+  readonly quantity: number;
   readonly element: React.ReactElement;
 };
 type PlaceholderStaticParts = {
@@ -291,22 +295,38 @@ const currentPlaceholderStaticParts = (
     ? undefined
     : [];
   props.items.forEach(({ row }, index) => {
-    const text = [
-      row.accessibleName,
-      row.item.remarks,
-      row.item.price ?? "価格未定",
-      row.item.quantity,
-    ].join(" ");
+    const price = row.item.price ?? "価格未定";
     const cached = sameOrder ? previous!.labels[index] : undefined;
-    if (cached?.text === text) {
+    if (
+      cached &&
+      Object.is(cached.accessibleName, row.accessibleName) &&
+      Object.is(cached.remarks, row.item.remarks) &&
+      Object.is(cached.price, price) &&
+      Object.is(cached.quantity, row.item.quantity)
+    ) {
       changedLabels?.push(cached);
       return;
     }
+    const text = [
+      row.accessibleName,
+      row.item.remarks,
+      price,
+      row.item.quantity,
+    ].join(" ");
     changedLabels ??= previous!.labels.slice(0, index);
     changedLabels.push({
       rowKey: row.rowKey,
       text,
-      element: <span className="esp-viewport-placeholder-label">{text}</span>,
+      accessibleName: row.accessibleName,
+      remarks: row.item.remarks,
+      price,
+      quantity: row.item.quantity,
+      element:
+        cached?.text === text ? (
+          cached.element
+        ) : (
+          <span className="esp-viewport-placeholder-label">{text}</span>
+        ),
     });
   });
   const labels = changedLabels ?? previous!.labels;

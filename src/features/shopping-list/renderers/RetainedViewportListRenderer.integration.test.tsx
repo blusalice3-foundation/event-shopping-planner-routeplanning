@@ -2257,6 +2257,167 @@ it("keeps reordered multi-item placeholder labels and their ARIA equivalent to t
   }
 });
 
+it("does not rejoin 500 unchanged labels when only their ARIA positions change", () => {
+  const source = Array.from({ length: 500 }, (_, index) => ({
+    ...items[0],
+    id: `primitive-${index}`,
+    remarks: `primitive-label-${index}`,
+  }));
+  const content = (
+    mode: (typeof fixedSlotModes)[number],
+    members: ShoppingItem[],
+  ) => (
+    <RetainedViewportListRenderer
+      groupSlotMode={mode}
+      model={buildListRows({
+        items: members,
+        groups: members.map((item) => ({
+          key: item.id,
+          label: item.id,
+          items: [item],
+        })),
+      })}
+      accessibleLabel="ラベルの元データ"
+      renderGroup={(_group, rows) => (
+        <>{rows.map((child) => child.render(<input />))}</>
+      )}
+    />
+  );
+  const originalJoin = Array.prototype.join;
+  let labelJoins = 0;
+  const join = vi.spyOn(Array.prototype, "join").mockImplementation(function (
+    this: unknown[],
+    separator?: string,
+  ) {
+    if (
+      separator === " " &&
+      this.length === 4 &&
+      typeof this[1] === "string" &&
+      this[1].startsWith("primitive-label-")
+    )
+      labelJoins++;
+    return originalJoin.call(this, separator);
+  });
+  try {
+    const view = render(content("current-model", source));
+    expect(labelJoins).toBe(500);
+    const firstLabel = view.container.querySelectorAll(
+      ".esp-viewport-placeholder-label",
+    )[1];
+    const inserted = { ...items[0], id: "primitive-new", remarks: "new label" };
+    for (const members of [[inserted, ...source], source]) {
+      labelJoins = 0;
+      view.rerender(content("current-model", members));
+      expect(labelJoins).toBe(0);
+      const position = members === source ? 1 : 2;
+      const firstRow = [
+        ...view.container.querySelectorAll<HTMLElement>("[aria-posinset]"),
+      ].find(
+        (row) => row.dataset.rowKey === `item:${JSON.stringify(source[0].id)}`,
+      )!;
+      expect(firstRow).toHaveAttribute("aria-posinset", String(position));
+      expect(firstRow).toHaveAttribute("aria-setsize", String(members.length));
+      expect(firstRow.querySelector(".esp-viewport-placeholder-label")).toBe(
+        firstLabel,
+      );
+      const reference = render(content(undefined, members));
+      expect(view.container.innerHTML).toBe(reference.container.innerHTML);
+      reference.unmount();
+    }
+    expect(view.container.querySelector("input")).toBeNull();
+  } finally {
+    join.mockRestore();
+  }
+}, 15000);
+
+it("records changed label primitives even when their joined text and JSX stay equal", () => {
+  const source = {
+    ...items[0],
+    id: "primitive-equivalent",
+    remarks: "",
+    price: null,
+  };
+  const content = (
+    mode: (typeof fixedSlotModes)[number],
+    member: ShoppingItem,
+    includePrefix = false,
+  ) => {
+    const members = includePrefix
+      ? [{ ...items[1], id: "primitive-prefix" }, member]
+      : [member];
+    return (
+      <RetainedViewportListRenderer
+        groupSlotMode={mode}
+        model={buildListRows({
+          items: members,
+          groups: members.map((item) => ({
+            key: item.id,
+            label: item.id,
+            items: [item],
+          })),
+        })}
+        accessibleLabel="同じ文字列のラベル"
+        renderGroup={(_group, rows) => (
+          <>{rows.map((child) => child.render(<input />))}</>
+        )}
+      />
+    );
+  };
+  type Node = React.ReactElement<Record<string, unknown>>;
+  const readContext = vi.spyOn(React, "useContext");
+  const labelElement = () => {
+    const group = readContext.mock.results
+      .map((result) => result.value)
+      .filter(
+        (value) =>
+          React.isValidElement<Record<string, unknown>>(value) &&
+          value.props["data-row-key"] === `group:${JSON.stringify(source.id)}`,
+      )
+      .at(-1) as Node;
+    const list = (group.props.children as Node[])[1];
+    const item = (list.props.children as Node[])[0].props.children as Node;
+    return item.props.children;
+  };
+  const name = buildListRows({ items: [source] }).itemRows[0].accessibleName;
+  const originalJoin = Array.prototype.join;
+  let labelJoins = 0;
+  const join = vi.spyOn(Array.prototype, "join").mockImplementation(function (
+    this: unknown[],
+    separator?: string,
+  ) {
+    if (separator === " " && this.length === 4 && this[0] === name)
+      labelJoins++;
+    return originalJoin.call(this, separator);
+  });
+  try {
+    const view = render(content("current-model", source));
+    const initial = labelElement();
+    // The renderer accepts item snapshots directly; exercise equivalent join values
+    // explicitly, including malformed/null input without broadening item validation.
+    for (const remarks of [null, undefined, ""]) {
+      const member = {
+        ...source,
+        remarks: remarks as unknown as ShoppingItem["remarks"],
+      };
+      labelJoins = 0;
+      view.rerender(content("current-model", member));
+      expect(labelJoins).toBe(1);
+      expect(labelElement()).toBe(initial);
+      for (const includePrefix of [true, false]) {
+        labelJoins = 0;
+        view.rerender(content("current-model", member, includePrefix));
+        expect(labelJoins).toBe(0);
+        expect(labelElement()).toBe(initial);
+        const reference = render(content(undefined, member, includePrefix));
+        expect(view.container.innerHTML).toBe(reference.container.innerHTML);
+        reference.unmount();
+      }
+    }
+  } finally {
+    join.mockRestore();
+    readContext.mockRestore();
+  }
+});
 describe("forced viewport activation keeps unknown visibility private", () => {
   const noSynchronousHeightRead = () =>
     vi.stubGlobal(
