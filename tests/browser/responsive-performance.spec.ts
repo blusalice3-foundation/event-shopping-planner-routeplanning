@@ -1,6 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
+import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import {
   measureShoppingResponse,
   shoppingEvidenceIdentity,
@@ -217,31 +218,10 @@ async function restore(
   }
   await expect
     .poll(
-      () =>
-        page.evaluate(async () => {
-          const db = await new Promise<IDBDatabase>((resolve, reject) => {
-            const request = indexedDB.open("EventShoppingPlannerDB");
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          });
-          try {
-            return await new Promise<number>((resolve, reject) => {
-              const request = db
-                .transaction("eventLists")
-                .objectStore("eventLists")
-                .get("data");
-              request.onsuccess = () =>
-                resolve(
-                  Object.entries(request.result as Record<string, unknown[]>)
-                    .filter(([name]) => name.startsWith("過去イベント"))
-                    .reduce((sum, [, items]) => sum + items.length, 0),
-                );
-              request.onerror = () => reject(request.error);
-            });
-          } finally {
-            db.close();
-          }
-        }),
+      async () =>
+        Object.entries(await readBrowserEventLists(page))
+          .filter(([name]) => name.startsWith("過去イベント"))
+          .reduce((sum, [, items]) => sum + items.length, 0),
       { timeout: 60000 },
     )
     .toBe(historicalCount);
@@ -250,33 +230,10 @@ async function restore(
   await expect(page.locator('[data-item-id="perf-0"]')).toBeVisible();
 }
 async function durableItem(page: Page, id: string) {
-  return page.evaluate(
-    async ({ eventName, id }) => {
-      const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open("EventShoppingPlannerDB");
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-      try {
-        return await new Promise<Record<string, unknown>>((resolve, reject) => {
-          const request = db
-            .transaction("eventLists", "readonly")
-            .objectStore("eventLists")
-            .get("data");
-          request.onsuccess = () =>
-            resolve(
-              request.result[eventName].find(
-                (item: { id: string }) => item.id === id,
-              ),
-            );
-          request.onerror = () => reject(request.error);
-        });
-      } finally {
-        db.close();
-      }
-    },
-    { eventName, id },
-  );
+  const lists = await readBrowserEventLists(page);
+  const item = lists[eventName]?.find((item) => item.id === id);
+  if (!item) throw new Error(`Missing durable item ${id}`);
+  return item;
 }
 for (const count of [150, 500, 1500]) {
   test(`bounded DOM and response timings: ${count} items, 40000 cells, 10000 historical items`, async ({
