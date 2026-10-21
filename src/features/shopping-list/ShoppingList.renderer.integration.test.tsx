@@ -14,8 +14,11 @@ import type { ShoppingItem } from "../../types/item";
 import { getSpaceKey } from "../../utils/spaceGrouping";
 import { useListInteractionState } from "../lists/hooks/useListInteractionState";
 import { revealViewportContent } from "./renderers/ViewportContent";
+import * as rowModels from "./model/buildListRows";
+import * as listController from "./controller/listController";
 import {
   buildListRows,
+  type BuildListRowsInput,
   type ShoppingListReadModel,
 } from "./model/buildListRows";
 import type {
@@ -283,6 +286,246 @@ describe("ShoppingList renderer integration", () => {
     expect(root.querySelectorAll('[role="list"]')).toHaveLength(2);
   });
 
+  it("shares the visible model while selection is empty and refreshes the nonempty display model after structural changes", () => {
+    const createProjector = rowModels.createListRowsProjector;
+    const observedInputs: BuildListRowsInput[] = [];
+    const projectorSpy = vi
+      .spyOn(rowModels, "createListRowsProjector")
+      .mockImplementation(() => {
+        const project = createProjector();
+        return (input) => {
+          observedInputs.push(input);
+          return project(input);
+        };
+      });
+    const baseItems = [item(1), item(2), item(3), item(4)];
+    const props: React.ComponentProps<typeof ShoppingList> = {
+      items: baseItems,
+      onUpdateItem: vi.fn(),
+      onMoveItem: vi.fn(),
+      onEditRequest: vi.fn(),
+      onDeleteRequest: vi.fn(),
+      selectedItemIds: new Set(),
+      onSelectItem: vi.fn(),
+      skipLimitedPurchaseForSingleQuantity: false,
+      columnType: "execute",
+      forceFullListRenderer: true,
+    };
+    const view = render(<ShoppingList {...props} />);
+    const expectRows = (input: BuildListRowsInput) => {
+      const model = buildListRows(input);
+      expectExactCanonicalRows(view.container, model);
+      model.itemRows.forEach((row) => {
+        const card = view.container.querySelector<HTMLElement>(
+          `[data-item-id="${row.itemId}"]`,
+        );
+        expect(card).toHaveAttribute(
+          "data-is-selected",
+          `${row.flags.selected}`,
+        );
+        expect(
+          card?.querySelector<HTMLInputElement>('input[type="checkbox"]')
+            ?.checked,
+        ).toBe(row.flags.selected);
+      });
+    };
+
+    try {
+      expect(observedInputs).toHaveLength(1);
+      expect(observedInputs[0].selectedItemIds).toBeUndefined();
+      expectRows({ items: baseItems, column: "execute" });
+
+      view.rerender(
+        <ShoppingList {...props} selectedItemIds={new Set(["item-1"])} />,
+      );
+      expectRows({
+        items: baseItems,
+        column: "execute",
+        selectedItemIds: new Set(["item-1"]),
+      });
+      expect(
+        observedInputs.some((input) => input.selectedItemIds?.has("item-1")),
+      ).toBe(true);
+
+      view.rerender(<ShoppingList {...props} />);
+      expectRows({ items: baseItems, column: "execute" });
+      const selectedProjectionCount = observedInputs.filter(
+        (input) => input.selectedItemIds !== undefined,
+      ).length;
+      const changedItems = [
+        { ...baseItems[3], title: "更新された新刊", quantity: 3 },
+        baseItems[1],
+      ];
+      const changedProps = {
+        ...props,
+        items: changedItems,
+        highlightedItemId: "item-4",
+        duplicateCircleItemIds: new Set(["item-2"]),
+      };
+      const expectedInput = {
+        items: changedItems,
+        column: "execute" as const,
+        highlightedItemId: "item-4",
+        duplicateCircleItemIds: changedProps.duplicateCircleItemIds,
+      };
+      view.rerender(<ShoppingList {...changedProps} />);
+      expectRows(expectedInput);
+      expect(view.getByText("更新された新刊")).toBeInTheDocument();
+      expect(
+        observedInputs.filter((input) => input.selectedItemIds !== undefined),
+      ).toHaveLength(selectedProjectionCount);
+
+      const selectedItemIds = new Set(["item-2"]);
+      view.rerender(
+        <ShoppingList {...changedProps} selectedItemIds={selectedItemIds} />,
+      );
+      expectRows({ ...expectedInput, selectedItemIds });
+      expect(observedInputs.at(-1)).toMatchObject(expectedInput);
+      expect(baseItems[3].title).toBe("新刊4");
+    } finally {
+      view.unmount();
+      projectorSpy.mockRestore();
+    }
+  });
+
+  it("keeps collapsed item membership and current canonical rows across empty selection, regrouping, and filtering", () => {
+    const controllerSpy = vi.spyOn(
+      listController,
+      "shoppingListControllerReducer",
+    );
+    try {
+      const baseItems = [item(1), item(2), item(3)];
+      const hiddenKey = getSpaceKey(baseItems[1].block, baseItems[1].number);
+      const props: React.ComponentProps<typeof ShoppingList> = {
+        items: baseItems,
+        onUpdateItem: vi.fn(),
+        onMoveItem: vi.fn(),
+        onEditRequest: vi.fn(),
+        onDeleteRequest: vi.fn(),
+        selectedItemIds: new Set(),
+        onSelectItem: vi.fn(),
+        skipLimitedPurchaseForSingleQuantity: false,
+        showSpaceGroups: true,
+        collapsedSpaces: new Set([hiddenKey]),
+        forceFullListRenderer: true,
+      };
+      const groups = baseItems.map((entry) => {
+        const key = getSpaceKey(entry.block, entry.number);
+        return {
+          key,
+          label: key,
+          items: [entry],
+          collapsed: key === hiddenKey,
+        };
+      });
+      const view = render(<ShoppingList {...props} />);
+      expectExactCanonicalRows(
+        view.container,
+        buildListRows({ items: baseItems, groups }),
+      );
+      expect(
+        view.container.querySelector(
+          '[data-item-id="item-2"][data-is-selected]',
+        ),
+      ).toBeNull();
+      const collapsedControllerModel = controllerSpy.mock.calls.at(-1)?.[0];
+      expect(collapsedControllerModel?.itemIds).toEqual(
+        baseItems.map((entry) => entry.id),
+      );
+      expect(
+        collapsedControllerModel?.itemRows.map((row) => row.itemId),
+      ).toEqual(["item-1", "item-3"]);
+
+      const hiddenSelection = new Set(["item-2"]);
+      view.rerender(
+        <ShoppingList {...props} selectedItemIds={hiddenSelection} />,
+      );
+      view.rerender(
+        <ShoppingList
+          {...props}
+          selectedItemIds={hiddenSelection}
+          collapsedSpaces={new Set()}
+        />,
+      );
+      expectExactCanonicalRows(
+        view.container,
+        buildListRows({
+          items: baseItems,
+          groups: groups.map((group) => ({ ...group, collapsed: false })),
+          selectedItemIds: hiddenSelection,
+        }),
+      );
+      expect(
+        view.container.querySelector(
+          '[data-item-id="item-2"][data-is-selected] input[type="checkbox"]',
+        ),
+      ).toBeChecked();
+
+      view.rerender(<ShoppingList {...props} />);
+      const highest = { ...item(4), priorityLevel: "highest" as const };
+      const regroupedItems = [highest, baseItems[2], baseItems[1]];
+      const hallProps = {
+        ...props,
+        items: regroupedItems,
+        showSpaceGroups: false,
+        showHallGroups: true,
+      };
+      const hallGroups = [
+        {
+          key: "undefined:highest",
+          label: "ホール未定義最優先",
+          items: [highest],
+        },
+        {
+          key: "ungrouped:1",
+          label: "ホール未定義",
+          items: [baseItems[2], baseItems[1]],
+        },
+      ];
+      view.rerender(<ShoppingList {...hallProps} />);
+      expectExactCanonicalRows(
+        view.container,
+        buildListRows({ items: regroupedItems, groups: hallGroups }),
+      );
+      const selectedItemIds = new Set(["item-3"]);
+      view.rerender(
+        <ShoppingList {...hallProps} selectedItemIds={selectedItemIds} />,
+      );
+      const expectedModel = buildListRows({
+        items: regroupedItems,
+        groups: hallGroups,
+        selectedItemIds,
+      });
+      expectExactCanonicalRows(view.container, expectedModel);
+      expect(
+        view.container.querySelector(
+          '[data-item-id="item-3"] input[type="checkbox"]',
+        ),
+      ).toBeChecked();
+
+      view.rerender(
+        <ShoppingList
+          {...hallProps}
+          items={[highest, baseItems[1]]}
+          selectedItemIds={selectedItemIds}
+        />,
+      );
+      expect(
+        view.container.querySelector('[data-item-id="item-3"]'),
+      ).toBeNull();
+      view.rerender(
+        <ShoppingList {...hallProps} selectedItemIds={selectedItemIds} />,
+      );
+      expectExactCanonicalRows(view.container, expectedModel);
+      expect(
+        view.container.querySelector(
+          '[data-item-id="item-3"] input[type="checkbox"]',
+        ),
+      ).toBeChecked();
+    } finally {
+      controllerSpy.mockRestore();
+    }
+  });
   it.each([
     {
       engine: "full",

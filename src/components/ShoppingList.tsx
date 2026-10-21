@@ -1718,26 +1718,28 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   );
   const projectControllerRows = useMemo(createListRowsProjector, []);
   const projectDisplayRows = useMemo(createListRowsProjector, []);
-  const listControllerModel = useMemo(() => {
-    const visibleModel = projectControllerRows({
-      items,
-      groups: listRowGroups,
-      column: columnType,
+  const listVisibleModel = useMemo(
+    () =>
+      projectControllerRows({
+        items,
+        groups: listRowGroups,
+        column: columnType,
+        duplicateCircleItemIds,
+        highlightedItemId,
+      }),
+    [
+      columnType,
       duplicateCircleItemIds,
       highlightedItemId,
-    });
-    return {
-      ...visibleModel,
-      itemIds: stableItemIds(items),
-    };
-  }, [
-    columnType,
-    duplicateCircleItemIds,
-    highlightedItemId,
-    items,
-    listRowGroups,
-    projectControllerRows,
-  ]);
+      items,
+      listRowGroups,
+      projectControllerRows,
+    ],
+  );
+  const listControllerModel = useMemo(
+    () => ({ ...listVisibleModel, itemIds: stableItemIds(items) }),
+    [items, listVisibleModel],
+  );
   const listControllerModelMembershipKey = useMemo(
     () =>
       JSON.stringify([
@@ -1777,14 +1779,16 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
   const listReadModel = useMemo(
     () =>
-      projectDisplayRows({
-        items,
-        groups: listRowGroups,
-        column: columnType,
-        selectedItemIds,
-        duplicateCircleItemIds,
-        highlightedItemId,
-      }),
+      selectedItemIds.size === 0
+        ? listVisibleModel
+        : projectDisplayRows({
+            items,
+            groups: listRowGroups,
+            column: columnType,
+            selectedItemIds,
+            duplicateCircleItemIds,
+            highlightedItemId,
+          }),
     [
       columnType,
       duplicateCircleItemIds,
@@ -1793,6 +1797,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       listRowGroups,
       selectedItemIds,
       projectDisplayRows,
+      listVisibleModel,
     ],
   );
 
