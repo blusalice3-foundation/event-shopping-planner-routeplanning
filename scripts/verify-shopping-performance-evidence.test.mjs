@@ -36,6 +36,16 @@ const browserEnvironment = {
 const raw = () => Array.from({ length: 20 }, (_, i) => 10 + i / 10);
 const metric = (kind = "response", operation = "response", condition = {}) => {
   const noSave = ["noop", "reject", "cancel"].includes(condition.scenario);
+  const preparedNextInput =
+    kind === "response" &&
+    !["noop", "reject", "cancel", "same-column"].includes(condition.scenario);
+  const hit = {
+    itemId: "anchor-1",
+    column: (condition.direction ?? "candidate-to-execute").split("-to-")[1],
+    tagName: "INPUT",
+    type: "checkbox",
+    exactInput: true,
+  };
   const values = operation === "save" ? raw().map(() => 2) : raw();
   return {
     raw: values,
@@ -52,9 +62,35 @@ const metric = (kind = "response", operation = "response", condition = {}) => {
       physicalWriteCount: noSave ? 0 : 1,
       operationId: null,
       operationIdUnavailableReason: "Fixture has no operation ID",
+      ...(preparedNextInput
+        ? {
+            nextInputId: "anchor-1",
+            nextInputStrategy:
+              (condition.scenario ?? "single") === "single"
+                ? "anchor"
+                : "topmost-visible-unmoved-destination",
+            expectedTransferredIds: ["item-1"],
+          }
+        : {}),
       ...(operation.startsWith("next")
         ? {
             trusted: true,
+            ...(preparedNextInput
+              ? {
+                  inputPreparation: {
+                    targetId: "anchor-1",
+                    point: { x: 110, y: 130 },
+                    rect: { x: 100, y: 120, width: 20, height: 20 },
+                    checked: operation === "nextApplied",
+                    viewport: { width: 1440, height: 1000 },
+                    actualHit: { ...hit },
+                    hitTestMatched: true,
+                  },
+                  inputPoint: { x: 110, y: 130 },
+                  actualHit: { ...hit },
+                  queueDelayMs: 0.25,
+                }
+              : {}),
             eventEpoch:
               1000000 + i * 1000 + (operation === "nextPending" ? 1 : 3),
           }
@@ -1152,4 +1188,151 @@ test("transfer operation IDs must match the observed transaction and cannot be f
     () => validateEvidenceArtifact(a, "transfer", identity),
     /observed save transaction/,
   );
+});
+
+for (const [name, mutate] of [
+  [
+    "missing frozen next-input ID",
+    (a) => {
+      delete a.metrics.response.samples[0].nextInputId;
+    },
+  ],
+  [
+    "changed next-input strategy",
+    (a) => {
+      a.metrics.nextApplied.samples[0].nextInputStrategy =
+        "topmost-visible-unmoved-destination";
+    },
+  ],
+  [
+    "moved target reused for next input",
+    (a) => {
+      a.metrics.response.samples[0].expectedTransferredIds.push("anchor-1");
+    },
+  ],
+  [
+    "mixed next-input IDs",
+    (a) => {
+      a.metrics.save.samples[0].nextInputId = "other";
+    },
+  ],
+  [
+    "missing checkbox preparation",
+    (a) => {
+      delete a.metrics.nextPending.samples[0].inputPreparation;
+    },
+  ],
+  [
+    "wrong preparation target",
+    (a) => {
+      a.metrics.nextApplied.samples[0].inputPreparation.targetId = "other";
+    },
+  ],
+  [
+    "failed center hit test",
+    (a) => {
+      a.metrics.nextPending.samples[0].inputPreparation.hitTestMatched = false;
+    },
+  ],
+  [
+    "already checked pending target",
+    (a) => {
+      a.metrics.nextPending.samples[0].inputPreparation.checked = true;
+    },
+  ],
+  [
+    "unchecked applied target",
+    (a) => {
+      a.metrics.nextApplied.samples[0].inputPreparation.checked = false;
+    },
+  ],
+  [
+    "label instead of exact checkbox",
+    (a) => {
+      a.metrics.nextPending.samples[0].inputPreparation.actualHit.exactInput = false;
+    },
+  ],
+  [
+    "actual event wrong item",
+    (a) => {
+      a.metrics.nextApplied.samples[0].actualHit.itemId = "other";
+    },
+  ],
+  [
+    "actual event wrong column",
+    (a) => {
+      a.metrics.nextPending.samples[0].actualHit.column = "candidate";
+    },
+  ],
+  [
+    "actual event wrong control",
+    (a) => {
+      a.metrics.nextApplied.samples[0].actualHit.type = "button";
+    },
+  ],
+  [
+    "nonfinite checkbox geometry",
+    (a) => {
+      a.metrics.nextPending.samples[0].inputPreparation.rect.width = Infinity;
+    },
+  ],
+  [
+    "offscreen prepared point",
+    (a) => {
+      a.metrics.nextPending.samples[0].inputPreparation.point.y = -1;
+    },
+  ],
+  [
+    "noncenter prepared point",
+    (a) => {
+      a.metrics.nextPending.samples[0].inputPreparation.point.x += 2;
+    },
+  ],
+  [
+    "foreign viewport",
+    (a) => {
+      a.metrics.nextApplied.samples[0].inputPreparation.viewport.height = 999;
+    },
+  ],
+  [
+    "actual click missed prepared point",
+    (a) => {
+      a.metrics.nextPending.samples[0].inputPoint.x += 2;
+    },
+  ],
+  [
+    "missing actual click hit",
+    (a) => {
+      delete a.metrics.nextApplied.samples[0].actualHit;
+    },
+  ],
+  [
+    "negative event queue delay",
+    (a) => {
+      a.metrics.nextPending.samples[0].queueDelayMs = -1;
+    },
+  ],
+  [
+    "event queue delay exceeds response",
+    (a) => {
+      a.metrics.nextPending.samples[0].queueDelayMs = 100;
+    },
+  ],
+])
+  test(`prepared next-input proof rejects ${name}`, () => {
+    const a = artifact("transfer");
+    mutate(a);
+    assert.throws(() => validateEvidenceArtifact(a, "transfer", identity));
+  });
+test("prepared next-input proof accepts CDP event integer rounding and scenario-specific strategy", () => {
+  const condition = expectedConditions("transfer").find(
+    (c) => c.scenario === "multiple",
+  );
+  const a = artifact("transfer", condition);
+  for (const name of ["nextPending", "nextApplied"])
+    for (const sample of a.metrics[name].samples) {
+      sample.inputPoint.x += 1;
+      sample.inputPoint.y -= 1;
+    }
+  validateEvidenceArtifact(a, "transfer", identity);
 });

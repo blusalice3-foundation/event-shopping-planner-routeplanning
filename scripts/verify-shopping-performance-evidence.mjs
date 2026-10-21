@@ -183,7 +183,83 @@ function validateFrameVisualProof(sample, condition) {
     );
   else throw new Error("Unknown frame visualTarget");
 }
+function validatePreparedNextInput(sample, metric, condition, environment) {
+  const expectedStrategy =
+    (condition.scenario ?? "single") === "single"
+      ? "anchor"
+      : "topmost-visible-unmoved-destination";
+  assert(
+    typeof sample.nextInputId === "string" &&
+      sample.nextInputId.length > 0 &&
+      sample.nextInputStrategy === expectedStrategy &&
+      Array.isArray(sample.expectedTransferredIds) &&
+      sample.expectedTransferredIds.length > 0 &&
+      sample.expectedTransferredIds.every(
+        (id) => typeof id === "string" && id.length > 0,
+      ) &&
+      new Set(sample.expectedTransferredIds).size ===
+        sample.expectedTransferredIds.length &&
+      !sample.expectedTransferredIds.includes(sample.nextInputId),
+    `${metric}: missing or invalid frozen unmoved next-input target/strategy`,
+  );
+  if (!["nextPending", "nextApplied"].includes(metric)) return;
+  const prepared = sample.inputPreparation;
+  const finite = (value) => typeof value === "number" && Number.isFinite(value);
+  const destination = condition.direction.split("-to-")[1];
+  const validHit = (hit) =>
+    hit?.itemId === sample.nextInputId &&
+    hit.column === destination &&
+    hit.tagName === "INPUT" &&
+    hit.type === "checkbox" &&
+    hit.exactInput === true;
+  assert(
+    sample.targetId === sample.nextInputId &&
+      prepared?.targetId === sample.nextInputId &&
+      prepared.hitTestMatched === true &&
+      prepared.checked === (metric === "nextApplied") &&
+      validHit(prepared.actualHit) &&
+      validHit(sample.actualHit),
+    `${metric}: prepared/event checkbox identity, column or checked state mismatch`,
+  );
+  assert(
+    prepared.rect &&
+      [
+        prepared.rect.x,
+        prepared.rect.y,
+        prepared.rect.width,
+        prepared.rect.height,
+      ].every(finite) &&
+      prepared.rect.width > 0 &&
+      prepared.rect.height > 0 &&
+      finite(prepared.viewport?.width) &&
+      finite(prepared.viewport?.height) &&
+      prepared.viewport.width === environment.viewport.width &&
+      prepared.viewport.height === environment.viewport.height &&
+      finite(prepared.point?.x) &&
+      finite(prepared.point?.y) &&
+      prepared.point.x > 0 &&
+      prepared.point.x < prepared.viewport.width &&
+      prepared.point.y > 0 &&
+      prepared.point.y < prepared.viewport.height &&
+      sameNumber(prepared.point.x, prepared.rect.x + prepared.rect.width / 2) &&
+      sameNumber(prepared.point.y, prepared.rect.y + prepared.rect.height / 2),
+    `${metric}: prepared checkbox center/viewport geometry is invalid`,
+  );
+  assert(
+    finite(sample.inputPoint?.x) &&
+      finite(sample.inputPoint?.y) &&
+      Math.abs(sample.inputPoint.x - prepared.point.x) <= 1 &&
+      Math.abs(sample.inputPoint.y - prepared.point.y) <= 1 &&
+      finite(sample.queueDelayMs) &&
+      sample.queueDelayMs >= 0 &&
+      sample.queueDelayMs <= sample.durationMs,
+    `${metric}: actual click point or event queue delay does not match preparation`,
+  );
+}
 function validateTransferPhaseProofs(artifact, condition) {
+  const preparedNextInput =
+    artifact.measurementKind === "response" &&
+    !["noop", "reject", "cancel", "same-column"].includes(condition.scenario);
   const noSave = ["noop", "reject", "cancel"].includes(condition.scenario);
   if (noSave) {
     assert(
@@ -206,6 +282,13 @@ function validateTransferPhaseProofs(artifact, condition) {
     for (const sample of values.samples) {
       if (!byId.has(sample.measurementId)) byId.set(sample.measurementId, {});
       byId.get(sample.measurementId)[metric] = sample;
+      if (preparedNextInput)
+        validatePreparedNextInput(
+          sample,
+          metric,
+          condition,
+          artifact.environment,
+        );
 
       assert(
         typeof sample.startEpoch === "number" &&
@@ -308,6 +391,15 @@ function validateTransferPhaseProofs(artifact, condition) {
             JSON.stringify(sample.commits) === JSON.stringify(first.commits) &&
             sample.operationId === first.operationId,
           "Metric samples mixed different moves or save transactions",
+        );
+    if (preparedNextInput)
+      for (const sample of Object.values(samples))
+        assert(
+          sample.nextInputId === first.nextInputId &&
+            sample.nextInputStrategy === first.nextInputStrategy &&
+            JSON.stringify(sample.expectedTransferredIds) ===
+              JSON.stringify(first.expectedTransferredIds),
+          "Metric samples mixed different next-input preparations or moved IDs",
         );
     if (samples.nextPending && samples.nextApplied)
       assert(
