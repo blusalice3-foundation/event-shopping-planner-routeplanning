@@ -25,6 +25,7 @@ import {
   dayRecordStores,
   partitionDayRecordStore,
   patchDayRecordStore,
+  patchEventListRecordStore,
   enqueueDayRecordWrite,
   enqueueDayRootDigests,
   sidecarRecordStores,
@@ -910,6 +911,22 @@ export async function commitApplicationSnapshotAtomically(
         )
           throw new Error("Day commands cannot modify another event.");
     }
+    if (
+      storeName === STORES.EVENT_LISTS &&
+      (shoppingMove || observation.dayRecords.has(storeName))
+    ) {
+      const previous = observation.dayRecords.get(storeName);
+      const write = previous
+        ? await patchEventListRecordStore(
+            previous,
+            observation.snapshot.eventLists,
+            stableData.eventLists,
+          )
+        : await partitionDayRecordStore(storeName, stableData.eventLists);
+      dayRecordWrites.set(storeName, write);
+      restorePayloads.set(storeName, write.state.head);
+      continue;
+    }
     if (!dayRecordStores.includes(storeName)) continue;
     const state = observation.dayRecords.get(storeName);
 
@@ -1048,6 +1065,7 @@ export async function commitApplicationSnapshotAtomically(
   >();
   if (!dayTarget || shoppingMove)
     for (const store of sidecarRecordStores) {
+      if (dayRecordWrites.has(store)) continue;
       if (shoppingMove && !changedStores.has(store)) continue;
       if (
         changedStores.has(store) ||
@@ -1231,6 +1249,13 @@ export async function commitApplicationSnapshotAtomically(
             write,
             observation.dayRecords.get(store)?.records,
             trackRequest,
+          );
+        if (dayRecordWrites.has(STORES.EVENT_LISTS))
+          trackRequest(
+            controlStore.put(
+              preparedMetadata.get(STORES.EVENT_LISTS)!.revision,
+              scopeReadyKey(STORES.EVENT_LISTS),
+            ),
           );
         APPLICATION_SNAPSHOT_STORE_NAMES.forEach((storeName) => {
           const observed = observation.roots.get(storeName);
@@ -1507,6 +1532,14 @@ export async function commitApplicationSnapshotAtomically(
                     observation.roots.get(store)!.revision,
                 ] as const,
             ),
+            ...(dayRecordWrites.has(STORES.EVENT_LISTS)
+              ? [
+                  [
+                    STORES.EVENT_LISTS,
+                    preparedMetadata.get(STORES.EVENT_LISTS)!.revision,
+                  ] as const,
+                ]
+              : []),
             ...(mapScopeRoots ? [[STORES.MAP_DATA, mapRevision] as const] : []),
           ]),
           dayRecords: nextDayRecords,

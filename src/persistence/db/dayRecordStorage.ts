@@ -123,7 +123,7 @@ export async function decodeDayRecords(
     value.kind !== HEAD_KIND ||
     value.version !== 1 ||
     value.storeName !== store ||
-    !dayRecordStores.includes(store) ||
+    !(dayRecordStores.includes(store) || store === STORES.EVENT_LISTS) ||
     !Number.isSafeInteger(value.count) ||
     (value.count as number) < 0 ||
     typeof value.checksum !== "string" ||
@@ -381,6 +381,38 @@ export async function patchDayRecordStore(
   };
 }
 
+/** Event-wide item roots share the existing authenticated head without rewriting other events. */
+export async function patchEventListRecordStore(
+  previous: DayRecordState,
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): Promise<DayRecordWrite> {
+  let state = previous;
+  const puts = new Map<string, DayRecord>();
+  const deletes: string[] = [];
+  for (const eventName of new Set([
+    ...Object.keys(before),
+    ...Object.keys(after),
+  ])) {
+    if (semanticEqual(before[eventName], after[eventName])) continue;
+    const write = await patchDayRecordStore(
+      STORES.EVENT_LISTS,
+      state,
+      eventName,
+      [
+        {
+          path: [],
+          present: Object.prototype.hasOwnProperty.call(after, eventName),
+          value: after[eventName],
+        },
+      ],
+    );
+    state = write.state;
+    for (const [key, entry] of write.puts) puts.set(key, entry);
+    deletes.push(...write.deletes);
+  }
+  return { state, puts, deletes, replace: false };
+}
 export function enqueueDayRecordWrite(
   store: IDBObjectStore,
   write: DayRecordWrite,

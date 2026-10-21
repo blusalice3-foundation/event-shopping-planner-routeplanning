@@ -1412,7 +1412,7 @@ function shoppingCommand() {
     executeIds: [],
   };
 }
-async function setupShopping() {
+async function setupShopping(historyCount = 1) {
   const data = seed();
   data.eventLists.event = [
     item,
@@ -1426,7 +1426,11 @@ async function setupShopping() {
     },
     { ...item, id: "other-day", eventDate: "2日目" },
   ];
-  data.eventLists.past = [{ ...item, id: "past", quantity: 9 }];
+  data.eventLists.past = Array.from({ length: historyCount }, (_, index) => ({
+    ...item,
+    id: historyCount === 1 ? "past" : `past-${index}`,
+    quantity: 9,
+  }));
   data.eventConsistency.past = createEventConsistency();
   data.executeModeItems.event["1日目"] = ["1"];
   data.executeModeItems.event["2日目"] = ["other-day"];
@@ -1825,3 +1829,267 @@ it("keeps virtual hall assignments during repeated forward, reverse and candidat
     ).toEqual({ kind: "simple", dayKey: "1日目", hallId: "hall-a" });
   }
 });
+
+async function physicalShoppingRecords() {
+  const database = await openDatabase();
+  const names = [
+    "eventLists",
+    "executeModeItems",
+    "eventConsistency",
+    "syncQueue",
+  ];
+  const transaction = database.transaction(names, "readonly");
+  return Object.fromEntries(
+    await Promise.all(
+      names.map(async (name) => {
+        const store = transaction.objectStore(name);
+        const keys = store.getAllKeys(),
+          values = store.getAll();
+        const result = await Promise.all(
+          [keys, values].map(
+            (request) =>
+              new Promise<unknown[]>((resolve, reject) => {
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+              }),
+          ),
+        );
+        return [
+          name,
+          new Map(
+            result[0].map((key, index) => [String(key), result[1][index]]),
+          ),
+        ] as const;
+      }),
+    ),
+  );
+}
+function nextShoppingOrder(snapshot: PersistenceSnapshot, reverse = false) {
+  return {
+    ...shoppingCommand(),
+    sourceColumn: "candidate" as const,
+    targetColumn: "candidate" as const,
+    baselineVisits: shoppingMoveVisitBaseline(snapshot, "event", "1日目"),
+    baselineItemIds: snapshot.eventLists.event.map(
+      (value) => (value as { id: string }).id,
+    ),
+    itemIds: reverse ? ["2", "1", "other-day"] : ["1", "2", "other-day"],
+    baselineExecuteIds: snapshot.executeModeItems.event["1日目"],
+    executeIds: snapshot.executeModeItems.event["1日目"],
+  };
+}
+it("keeps authenticated event roots bounded across warm order, quantity/memo, direct save and warm order", async () => {
+  const h = await setupShopping(10000);
+  await h.server.shopping(shoppingCommand(), "head:convert", {});
+  const converted = await physicalShoppingRecords();
+  expect(converted.eventLists.get("data")).toMatchObject({
+    kind: "event-shopping-planner-day-records",
+    version: 1,
+    storeName: "eventLists",
+    count: 2,
+    authenticatedRoots: true,
+  });
+  const historyKey = '__esp_internal__:day-record:v1:["past",[]]';
+  const historyRoot = converted.eventLists.get(historyKey);
+  const originalPut = IDBObjectStore.prototype.put;
+  const written: Array<{ store: string; key: unknown; value: unknown }> = [];
+  const puts = vi
+    .spyOn(IDBObjectStore.prototype, "put")
+    .mockImplementation(function (
+      this: IDBObjectStore,
+      ...args: Parameters<typeof originalPut>
+    ) {
+      written.push({ store: this.name, key: args[1], value: args[0] });
+      return originalPut.apply(this, args);
+    });
+  let current = (await db.readDayCommandSnapshot()).snapshot;
+  const clone = vi.spyOn(globalThis, "structuredClone");
+  expect(
+    (await h.server.shopping(nextShoppingOrder(current), "head:warm1", {}))
+      .status,
+  ).toBe("committed");
+  expect(
+    clone.mock.calls.some(
+      ([value]) =>
+        value &&
+        typeof value === "object" &&
+        "event" in value &&
+        "past" in value,
+    ),
+  ).toBe(false);
+  clone.mockRestore();
+  current = (await db.readDayCommandSnapshot()).snapshot;
+  const edited = current.eventLists.event.find(
+    (value) => (value as { id: string }).id === "2",
+  )!;
+  expect(
+    (
+      await h.server.items(
+        [
+          {
+            eventName: "event",
+            itemId: "2",
+            baseline: edited as ItemContentEdit["baseline"],
+            fields: {
+              quantity: { present: true, value: 11 },
+              remarks: { present: true, value: "更新メモ" },
+            },
+          },
+        ],
+        ["head:content"],
+        {},
+      )
+    ).status,
+  ).toBe("committed");
+  current = (await db.readDayCommandSnapshot()).snapshot;
+  expect(
+    (
+      await h.server.shopping(
+        nextShoppingOrder(current, true),
+        "head:warm2",
+        {},
+      )
+    ).status,
+  ).toBe("committed");
+  current = (await db.readDayCommandSnapshot()).snapshot;
+  const direct = structuredClone(current.eventLists);
+  Object.assign(direct.event[0] as object, { remarks: "直接保存メモ" });
+  await db.saveEventLists(direct);
+  await h.server.read();
+  current = (await db.readDayCommandSnapshot()).snapshot;
+  expect(
+    (await h.server.shopping(nextShoppingOrder(current), "head:warm3", {}))
+      .status,
+  ).toBe("committed");
+  puts.mockRestore();
+  const itemWrites = written.filter((entry) => entry.store === "eventLists");
+  expect(itemWrites.length).toBeGreaterThan(0);
+  expect(
+    itemWrites.every(
+      (entry) =>
+        entry.key === "data" ||
+        entry.key === '__esp_internal__:day-record:v1:["event",[]]',
+    ),
+  ).toBe(true);
+  expect(
+    itemWrites
+      .filter((entry) => entry.key === "data")
+      .every(
+        (entry) =>
+          (entry.value as { kind?: string }).kind ===
+          "event-shopping-planner-day-records",
+      ),
+  ).toBe(true);
+  const durable = await physicalShoppingRecords();
+  expect(durable.eventLists.get(historyKey)).toEqual(historyRoot);
+  resetDatabaseConnection();
+  const readOnly = vi.spyOn(IDBObjectStore.prototype, "put");
+  const full = (await db.readApplicationSnapshot()).snapshot;
+  expect(readOnly).not.toHaveBeenCalled();
+  readOnly.mockRestore();
+  expect(full.eventLists.past).toHaveLength(10000);
+  expect(full.eventLists.past[9999]).toMatchObject({
+    id: "past-9999",
+    quantity: 9,
+  });
+  expect(
+    full.eventLists.event.map((value) => (value as { id: string }).id),
+  ).toEqual(["1", "2", "other-day"]);
+  expect(
+    full.eventLists.event.find((value) => (value as { id: string }).id === "2"),
+  ).toMatchObject({
+    quantity: 11,
+    remarks: "直接保存メモ",
+    customField: { keep: true },
+  });
+  expect((await db.getAllData("eventLists")).data).toEqual(full.eventLists);
+  const day = await db.readDayCommandSnapshot({
+    eventName: "event",
+    day: "1日目",
+  });
+  const invalid = {
+    ...day.snapshot,
+    eventLists: {
+      ...day.snapshot.eventLists,
+      event: [...day.snapshot.eventLists.event].reverse(),
+    },
+  };
+  await expect(
+    db.commitDayCommandSnapshot(invalid, day.expectedRoots, {
+      eventName: "event",
+      day: "1日目",
+    }),
+  ).rejects.toThrow("Day commands cannot modify");
+});
+it("rolls an existing event head, roots, execute IDs and checkpoints back together", async () => {
+  const h = await setupShopping();
+  await h.server.shopping(shoppingCommand(), "head:convert", {});
+  const before = await physicalShoppingRecords();
+  const current = (await db.readDayCommandSnapshot()).snapshot;
+  const original = IDBObjectStore.prototype.put;
+  const fault = vi
+    .spyOn(IDBObjectStore.prototype, "put")
+    .mockImplementation(function (
+      this: IDBObjectStore,
+      ...args: Parameters<typeof original>
+    ) {
+      if (
+        this.name === "syncQueue" &&
+        String(args[1]).includes("meta:v1") &&
+        String(args[1]).includes("eventLists")
+      )
+        throw new DOMException("quota", "QuotaExceededError");
+      return original.apply(this, args);
+    });
+  await expect(
+    h.server.shopping(
+      {
+        ...nextShoppingOrder(current),
+        targetColumn: "execute",
+        executeIds: ["1"],
+      },
+      "head:abort",
+      {},
+    ),
+  ).rejects.toThrow();
+  fault.mockRestore();
+  expect(await physicalShoppingRecords()).toEqual(before);
+});
+it.each(["history-root", "metadata", "checkpoint"])(
+  "rejects a corrupt %s on a cold authenticated item reload",
+  async (corruption) => {
+    const h = await setupShopping();
+    await h.server.shopping(shoppingCommand(), "head:convert", {});
+    const all = await physicalShoppingRecords();
+    const store = corruption === "history-root" ? "eventLists" : "syncQueue";
+    const key =
+      corruption === "history-root"
+        ? '__esp_internal__:day-record:v1:["past",[]]'
+        : [...all.syncQueue.keys()].find(
+            (key) =>
+              key.includes("eventLists") &&
+              key.includes(
+                corruption === "metadata" ? "meta:v1" : "checkpoint:v1",
+              ),
+          )!;
+    const value = structuredClone(all[store].get(key)) as Record<
+      string,
+      unknown
+    >;
+    if (corruption === "history-root")
+      (value.value as Array<{ quantity: number }>)[0].quantity = 999;
+    else if (corruption === "metadata") value.revision = "tampered-root";
+    else
+      (value.committedRoot as { revision: string }).revision =
+        "tampered-checkpoint";
+    const database = await openDatabase();
+    const transaction = database.transaction(store, "readwrite");
+    transaction.objectStore(store).put(value, key);
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onabort = () => reject(transaction.error);
+    });
+    resetDatabaseConnection();
+    await expect(db.readApplicationSnapshot()).rejects.toThrow();
+  },
+);

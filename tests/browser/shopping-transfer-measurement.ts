@@ -1,3 +1,4 @@
+import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import {
@@ -322,7 +323,8 @@ export async function restoreTransferFixture(
     await group.click();
   await expect(transferRow(page, "e0")).toBeVisible();
   await expect(transferRow(page, "c0")).toBeVisible();
-  const size = await page.evaluate(
+  const all = await readBrowserEventLists(page);
+  const mapCells = await page.evaluate(
     async ({ eventName, day }) => {
       const db = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open("EventShoppingPlannerDB");
@@ -330,26 +332,12 @@ export async function restoreTransferFixture(
         request.onerror = () => reject(request.error);
       });
       try {
-        return await new Promise<{
-          count: number;
-          historicalItems: number;
-          mapCells: number;
-        }>((resolve, reject) => {
-          const tx = db.transaction(["eventLists", "mapData"]);
-          const lists = tx.objectStore("eventLists").get("data");
+        return await new Promise<number>((resolve, reject) => {
+          const tx = db.transaction("mapData", "readonly");
           const map = tx
             .objectStore("mapData")
             .get(`mapData:${JSON.stringify([eventName, `${day}マップ`])}`);
-          tx.oncomplete = () => {
-            const all = lists.result as Record<string, unknown[]>;
-            resolve({
-              count: all[eventName].length,
-              historicalItems: Object.entries(all)
-                .filter(([name]) => name.startsWith("過去イベント"))
-                .reduce((sum, [, items]) => sum + items.length, 0),
-              mapCells: map.result?.cells?.length ?? 0,
-            });
-          };
+          tx.oncomplete = () => resolve(map.result?.cells?.length ?? 0);
           tx.onerror = () => reject(tx.error);
           tx.onabort = () => reject(tx.error);
         });
@@ -359,6 +347,13 @@ export async function restoreTransferFixture(
     },
     { eventName: transferEventName, day },
   );
+  const size = {
+    count: all[transferEventName].length,
+    historicalItems: Object.entries(all)
+      .filter(([name]) => name.startsWith("過去イベント"))
+      .reduce((sum, [, items]) => sum + items.length, 0),
+    mapCells,
+  };
   expect(size).toEqual({
     count: condition.count,
     historicalItems: condition.load === "practical" ? 10000 : 0,
@@ -645,7 +640,7 @@ export async function beginGesture(
     );
     if (blocked) {
       const handle = await transferRow(page, id)
-        .locator("[data-drag-handle]")
+        .locator("[data-drag-handle] > svg")
         .boundingBox();
       expect(
         handle,
@@ -1578,43 +1573,32 @@ export async function compareFrameContent(
 }
 
 export async function readTransferDurable(page: Page) {
-  return page.evaluate(async (eventName) => {
+  const all = await readBrowserEventLists<{
+    id: string;
+    number: string;
+    [key: string]: unknown;
+  }>(page);
+  const executeIds = await page.evaluate(async (eventName) => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("EventShoppingPlannerDB");
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
     try {
-      return await new Promise<{
-        items: Array<{ id: string; number: string; [key: string]: unknown }>;
-        executeIds: string[];
-        historicalItems: number;
-      }>((resolve, reject) => {
-        const tx = db.transaction(["eventLists", "executeModeItems"]);
-        const lists = tx.objectStore("eventLists").get("data");
-        const execute = tx.objectStore("executeModeItems").get("data");
-        const scoped = tx
-          .objectStore("executeModeItems")
-          .get(
-            "__esp_internal__:day-record:v1:" +
-              JSON.stringify([eventName, ["1日目"]]),
-          );
-        tx.oncomplete = () => {
-          const all = lists.result as Record<
-            string,
-            Array<{ id: string; number: string; [key: string]: unknown }>
-          >;
-          resolve({
-            items: all[eventName],
-            executeIds:
-              scoped.result?.value ??
+      return await new Promise<string[]>((resolve, reject) => {
+        const tx = db.transaction("executeModeItems", "readonly");
+        const store = tx.objectStore("executeModeItems");
+        const execute = store.get("data");
+        const scoped = store.get(
+          "__esp_internal__:day-record:v1:" +
+            JSON.stringify([eventName, ["1日目"]]),
+        );
+        tx.oncomplete = () =>
+          resolve(
+            scoped.result?.value ??
               execute.result?.[eventName]?.["1日目"] ??
               [],
-            historicalItems: Object.entries(all)
-              .filter(([name]) => name.startsWith("過去イベント"))
-              .reduce((sum, [, items]) => sum + items.length, 0),
-          });
-        };
+          );
         tx.onerror = () => reject(tx.error);
         tx.onabort = () => reject(tx.error);
       });
@@ -1622,6 +1606,13 @@ export async function readTransferDurable(page: Page) {
       db.close();
     }
   }, transferEventName);
+  return {
+    items: all[transferEventName],
+    executeIds,
+    historicalItems: Object.entries(all)
+      .filter(([name]) => name.startsWith("過去イベント"))
+      .reduce((sum, [, items]) => sum + items.length, 0),
+  };
 }
 export async function verifyContinuousTransferResult(
   page: Page,
