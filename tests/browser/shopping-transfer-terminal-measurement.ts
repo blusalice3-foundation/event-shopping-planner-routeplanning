@@ -577,6 +577,11 @@ export async function measureTerminal(
       commits,
       physicalWriteCount: commits.length,
       operationId: saving ? (commits[0].operationId ?? null) : null,
+      operationIdUnavailableReason:
+        saving && !commits[0].operationId
+          ? "Persistence request did not expose an operation ID"
+          : undefined,
+      trusted: state.trusted,
     };
     if (!frame) {
       let pending: (typeof state.clicks)[number] | undefined;
