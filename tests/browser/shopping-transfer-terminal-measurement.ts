@@ -125,7 +125,11 @@ async function gesture(
   expect(source).not.toBeNull();
   expect(target).not.toBeNull();
   const from = { x: source!.x + 4, y: source!.y + 35 };
-  const to = { x: target!.x + 4, y: target!.y + target!.height * 0.8 };
+  const fraction =
+    condition.scenario === "noop" || condition.scenario === "reject"
+      ? 0.2
+      : 0.8;
+  const to = { x: target!.x + 4, y: target!.y + target!.height * fraction };
   if (condition.input === "native") {
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
@@ -201,7 +205,7 @@ async function arm(
               const without = beforeOrder.filter(
                 (id) => !selected.includes(id),
               );
-              const target = without.indexOf("e4");
+              const target = without.indexOf("e3");
               without.splice(target + 1, 0, ...selected);
               return without;
             })()
@@ -441,13 +445,13 @@ export async function measureTerminal(
 ): Promise<Record<string, TransferSample>> {
   const source = condition.scenario === "reject" ? "candidate" : "execute",
     prefix = source === "candidate" ? "c" : "e";
-  const selected = [1, 2, 3].map((n) => prefix + n),
+  const selected = [0, 1, 2].map((n) => prefix + n),
     id = selected[0],
-    nextId = prefix + "0",
-    anchor = condition.scenario === "same-column" ? "e4" : "e0";
+    nextId = source === "execute" ? "c0" : "e0",
+    anchor = "e3";
   const measurementId = `terminal-${condition.scenario}-${index}`;
   await selectRange(page, selected);
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(() => window.scrollTo(0, 100));
   await waitForTransferIdle(page);
   const beforeOrder = await page
     .locator(
@@ -554,6 +558,30 @@ export async function measureTerminal(
       { timeout: 16000 },
     );
     let state = await readState(page);
+    if (state.failure)
+      await testInfo.attach(measurementId + "-terminal-failure", {
+        body: JSON.stringify({
+          state,
+          current: await page.evaluate(() => ({
+            order: [
+              ...document.querySelectorAll(
+                '[data-shopping-drag-column="execute"] [data-item-id]:not([data-space-group-key])',
+              ),
+            ]
+              .slice(0, 8)
+              .map((row) => (row as HTMLElement).dataset.itemId),
+            endpoints: document.querySelectorAll(
+              '[title="範囲内のチェックを外す"]',
+            ).length,
+            guide: !!document.querySelector(
+              "[data-shopping-drag-guide],[data-shopping-drag-status]",
+            ),
+            clone: !!document.querySelector(".esp-shopping-touch-clone"),
+            scrollY,
+          })),
+        }),
+        contentType: "application/json",
+      });
     expect(state.failure).toBeUndefined();
     expect(state.trusted).toBe(true);
     expect(state.response.sourceInteractive).toBe(true);

@@ -22,13 +22,12 @@ for (const condition of terminalConditions)
     ? (["response", "frame"] as const)
     : (["response"] as const)) {
     test(`@shopping-performance @shopping-transfer-rendering-performance terminal ${condition.input} ${condition.scenario} ${measurementKind}`, async ({
-      page,
-      context,
+      browser,
     }, testInfo) => {
       test.setTimeout(600000);
-      page.setDefaultTimeout(15000);
+
       const errors: string[] = [];
-      page.on("pageerror", (e) => errors.push(e.message));
+
       const frame = measurementKind === "frame",
         saving = condition.scenario === "same-column";
       const names = frame
@@ -41,35 +40,71 @@ for (const condition of terminalConditions)
       );
       let failure: unknown;
       let fixture: unknown;
+      let environment: unknown;
       try {
         for (let index = 0; index < 20; index++) {
-          // A fresh fixture is explicit preparation, never part of a sample's clock.
-          fixture = await restoreTerminalFixture(
-            page,
-            condition,
-            frame && index === 0,
-          );
-          const worker = await installCommitProbe(page);
-          const session = await context.newCDPSession(page);
+          // Context isolation closes every previous Worker/IDB connection before reseeding.
+          // Preparation is identical before/after and outside every measured clock.
+          const context = await browser.newContext({
+            baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173",
+            viewport: { width: 1440, height: 1000 },
+            hasTouch: true,
+            serviceWorkers: "allow",
+          });
+          const page = await context.newPage();
+          page.setDefaultTimeout(15000);
+          page.on("pageerror", (e) => errors.push(e.message));
           try {
-            if (condition.input === "touch")
-              await session.send("Emulation.setTouchEmulationEnabled", {
-                enabled: true,
-                maxTouchPoints: 1,
-              });
-            const measured = await measureTerminal(
-              page,
-              session,
-              worker,
-              condition,
-              index,
-              frame,
-              testInfo,
-            );
-            for (const [name, sample] of Object.entries(measured))
-              samples[name].push(sample);
+            environment ??= {
+              browserVersion: browser.version(),
+              userAgent: await page.evaluate(() => navigator.userAgent),
+              viewport: page.viewportSize(),
+              devicePixelRatio: await page.evaluate(() => devicePixelRatio),
+              browserChannel:
+                process.env.PERFORMANCE_BROWSER_CHANNEL ?? "bundled-chromium",
+              headed: process.env.PERFORMANCE_HEADED === "1",
+              workers: 1,
+              retries: testInfo.retry,
+            };
+            fixture = await restoreTerminalFixture(page, condition, frame);
+            const worker = await installCommitProbe(page);
+            const session = await context.newCDPSession(page);
+            try {
+              if (condition.input === "touch")
+                await session.send("Emulation.setTouchEmulationEnabled", {
+                  enabled: true,
+                  maxTouchPoints: 1,
+                });
+              const measured = await measureTerminal(
+                page,
+                session,
+                worker,
+                condition,
+                index,
+                frame,
+                testInfo,
+              );
+              for (const [name, sample] of Object.entries(measured))
+                samples[name].push(sample);
+            } finally {
+              await session.detach();
+            }
+          } catch (error) {
+            await testInfo
+              .attach(`terminal-${index}-failure-screenshot`, {
+                body: await page.screenshot(),
+                contentType: "image/png",
+              })
+              .catch(() => {});
+            await testInfo
+              .attach(`terminal-${index}-failure-dom`, {
+                body: await page.locator("body").ariaSnapshot(),
+                contentType: "text/yaml",
+              })
+              .catch(() => {});
+            throw error;
           } finally {
-            await session.detach();
+            await context.close();
           }
         }
       } catch (error) {
@@ -94,11 +129,13 @@ for (const condition of terminalConditions)
         ...shoppingEvidenceIdentity("transfer", measurementKind),
         condition,
         fixture,
+        environment,
         metrics,
         errors,
         method: {
           repetitions: 20,
           freshFixturePerSample: true,
+          isolation: "new-browser-context-per-sample",
           warmupMoves: 0,
           trace: frame,
           video: false,
