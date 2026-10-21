@@ -1,3 +1,4 @@
+import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import { expect, test } from "@playwright/test";
 
 test.use({ serviceWorkers: "block", video: "off", trace: "off" });
@@ -151,28 +152,8 @@ test("ordinary purchase, planned quantity and memo retain the same physical pers
     }
     Object.assign(self, { __ordinaryIoTake: () => completed.splice(0) });
   });
-  const readItems = () =>
-    page.evaluate(async () => {
-      const database = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open("EventShoppingPlannerDB");
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-      try {
-        return await new Promise<Array<Record<string, unknown>>>(
-          (resolve, reject) => {
-            const request = database
-              .transaction("eventLists", "readonly")
-              .objectStore("eventLists")
-              .get("data");
-            request.onsuccess = () => resolve(request.result["通常保存I/O"]);
-            request.onerror = () => reject(request.error);
-          },
-        );
-      } finally {
-        database.close();
-      }
-    });
+  const readItems = async () =>
+    (await readBrowserEventLists(page))["通常保存I/O"];
   const originalItems = await readItems();
   const row = page.locator('[data-item-id="1"]').first();
   await expect(row).toBeVisible();

@@ -1,3 +1,4 @@
+import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -52,27 +53,7 @@ async function seed(page: Page) {
   await expect(page.locator(`[data-item-id="${sourceItem.id}"]`)).toBeVisible();
 }
 async function storedItems(page: Page) {
-  return page.evaluate(async () => {
-    const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open("EventShoppingPlannerDB");
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-    try {
-      return await new Promise<Record<string, (typeof sourceItem)[]>>(
-        (resolve, reject) => {
-          const request = database
-            .transaction("eventLists", "readonly")
-            .objectStore("eventLists")
-            .get("data");
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        },
-      );
-    } finally {
-      database.close();
-    }
-  });
+  return readBrowserEventLists<typeof sourceItem>(page);
 }
 
 test("localStorage quota failures preserve the app, current settings, item persistence and JSON backup", async ({

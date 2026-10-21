@@ -1,3 +1,4 @@
+import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import {
   expect,
   test,
@@ -133,37 +134,15 @@ async function changeQuantityResponse(
   }, value);
 }
 async function durableItem(page: Page, id: string) {
-  return page.evaluate(
-    async ({ eventName, id }) => {
-      const database = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open("EventShoppingPlannerDB");
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-      try {
-        return await new Promise<{
-          purchaseStatus: string;
-          limitedPurchasedQuantity?: number;
-          quantity: number;
-        }>((resolve, reject) => {
-          const request = database
-            .transaction("eventLists", "readonly")
-            .objectStore("eventLists")
-            .get("data");
-          request.onsuccess = () =>
-            resolve(
-              request.result[eventName].find(
-                (item: { id: string }) => item.id === id,
-              ),
-            );
-          request.onerror = () => reject(request.error);
-        });
-      } finally {
-        database.close();
-      }
-    },
-    { eventName, id },
-  );
+  const items = await readBrowserEventLists<{
+    id: string;
+    purchaseStatus: string;
+    limitedPurchasedQuantity?: number;
+    quantity: number;
+  }>(page);
+  const item = items[eventName]?.find((entry) => entry.id === id);
+  if (!item) throw new Error("Persisted diagnostic item is missing: " + id);
+  return item;
 }
 function add(timings: Timings, group: string, value: number) {
   (timings[group] ??= []).push(value);
