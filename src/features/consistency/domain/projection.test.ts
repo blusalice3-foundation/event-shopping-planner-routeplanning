@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
 import type { ShoppingItem } from "../../../types/item";
 import type { DayMapData, HallDefinition } from "../../../types/map";
+import { changedItemPositions } from "../../../utils/itemIndex";
 import {
   createEventConsistency,
   createDayConsistency,
@@ -465,6 +466,56 @@ function instrumentedMapSnapshot() {
 }
 
 describe("pure immutable item reordering", () => {
+  it.each([false, true])(
+    "reuses reordered objects after raw snapshot adoption (preceding registered content edit: %s)",
+    (editFirst) => {
+      const { source, lookup } = instrumentedMapSnapshot();
+      const project = createConsistencySnapshotProjector();
+      let raw = source;
+      let displayed = project(raw, "event", "1日目");
+      if (editFirst) {
+        const edited = reuseEqualReferences(raw, {
+          ...raw,
+          eventLists: {
+            ...raw.eventLists,
+            event: (raw.eventLists.event as ShoppingItem[]).map(
+              (value, index) =>
+                index
+                  ? value
+                  : { ...value, quantity: 4, remarks: "採用済みのメモ" },
+            ),
+          },
+        });
+        expect(
+          changedItemPositions(raw.eventLists.event, edited.eventLists.event),
+        ).toEqual([0]);
+        raw = edited;
+        displayed = project(raw, "event", "1日目");
+      }
+      const reordered = {
+        ...raw,
+        eventLists: {
+          ...raw.eventLists,
+          event: [...raw.eventLists.event].reverse(),
+        },
+      };
+      const adopted = reuseEqualReferences(raw, reordered);
+      expect(adopted.eventLists.event).not.toBe(reordered.eventLists.event);
+      expect(adopted.eventLists.event[0]).toBe(raw.eventLists.event[1]);
+      expect(adopted.eventLists.event[1]).toBe(raw.eventLists.event[0]);
+      // Item deltas reject changed IDs even when raw adoption attempts to register them.
+      expect(
+        changedItemPositions(raw.eventLists.event, adopted.eventLists.event),
+      ).toBeNull();
+      lookup.mockClear();
+      const after = project(adopted, "event", "1日目");
+      expect(lookup).not.toHaveBeenCalled();
+      expect(after.eventLists.event[0]).toBe(displayed.eventLists.event[1]);
+      expect(after.eventLists.event[1]).toBe(displayed.eventLists.event[0]);
+      expectProjection(after, adopted);
+    },
+  );
+
   it("reorders current projected objects without geometry lookups and preserves current optional fields", () => {
     const { source, lookup } = instrumentedMapSnapshot();
     const members = source.eventLists.event as ShoppingItem[];
