@@ -11,6 +11,7 @@ import {
   summarizeSamples,
   validateEvidenceArtifact,
   verifyGroupEvidence,
+  verifyFrameFiles,
 } from "./verify-shopping-performance-evidence.mjs";
 
 const identity = { phase: "after", runId: "fixture-run" };
@@ -526,4 +527,201 @@ for (const [label, mutate] of [
     attachment.body = Buffer.from(JSON.stringify(data)).toString("base64");
     await f.save();
     assert.equal((await f.verify()).status, "failed");
+  });
+
+async function screencastProofFixture(t) {
+  const root = await mkdtemp(path.join(os.tmpdir(), "esp screencast proof "));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const outputRoot = path.join(root, "test-results");
+  const directory = path.join(outputRoot, "frame with spaces");
+  await mkdir(directory, { recursive: true });
+  const image = Buffer.from("fixture-screencast-png-bytes");
+  const sample = {
+    measurementId: "screencast-1",
+    targetId: "target-1",
+    captureMethod: "Page.startScreencast(png)",
+    captureTimestampKind: "frame-swap-upper-bound",
+    startEpoch: 1700000000000,
+    markerDelayMs: 1,
+    durationMs: 20,
+    frameTimestampMs: 20,
+    paintCorrelated: true,
+    drawFrameCorrelated: true,
+    correlation: {
+      input: { pid: 7, ts: 100000 },
+      dom: { pid: 7, ts: 101000 },
+      paint: { pid: 7, ts: 102000 },
+      sourcePaint: { pid: 7, ts: 102500 },
+      drawFrame: { pid: 7, ts: 103000 },
+      frame: { epochMs: 1700000000020, traceTs: 119000, sessionId: 42 },
+      targetRect: { x: 100, y: 100, width: 40, height: 60 },
+      sourceRect: { x: 20, y: 100, width: 40, height: 60 },
+      comparison: {
+        matched: true,
+        scores: [
+          { frameError: 0.01, baselineError: 0.1, controlErrors: [0.01, 0.01] },
+          { frameError: 0.01, baselineError: 0.1, controlErrors: [0.01, 0.01] },
+        ],
+      },
+    },
+  };
+  const metadata = {
+    method: "Page.startScreencast",
+    format: "png",
+    maxWidth: 1440,
+    maxHeight: 1000,
+    everyNthFrame: 1,
+    acknowledged: true,
+    sessionId: 42,
+    metadata: { timestamp: 1700000000.02 },
+    frameSha256: createHash("sha256").update(image).digest("hex"),
+  };
+  const events = [
+    { name: "screencast-1:input", ...sample.correlation.input },
+    { name: "screencast-1:dom", ...sample.correlation.dom },
+    {
+      name: "Paint",
+      ...sample.correlation.paint,
+      args: { data: { clip: [100, 100, 140, 100, 140, 160, 100, 160] } },
+    },
+    {
+      name: "Paint",
+      ...sample.correlation.sourcePaint,
+      args: { data: { clip: [20, 100, 60, 100, 60, 160, 20, 160] } },
+    },
+    { name: "DrawFrame", ...sample.correlation.drawFrame },
+  ];
+  const hashes = {};
+  const data = { metrics: { frame: { samples: [sample] } } };
+  const save = async () => {
+    const files = {
+      trace: Buffer.from(JSON.stringify({ traceEvents: events })),
+      frame: image,
+      reference: image,
+      baseline: image,
+      frameMetadata: Buffer.from(JSON.stringify(metadata)),
+    };
+    for (const [name, bytes] of Object.entries(files)) {
+      const filename = path.join(directory, `${name}.fixture`);
+      await writeFile(filename, bytes);
+      sample[`${name}Path`] = filename;
+      sample[`${name}Sha256`] = createHash("sha256")
+        .update(bytes)
+        .digest("hex");
+    }
+  };
+  await save();
+  return {
+    data,
+    sample,
+    metadata,
+    events,
+    hashes,
+    outputRoot,
+    save,
+    verify: () => verifyFrameFiles(data, outputRoot, hashes),
+  };
+}
+test("screencast proof accepts matched swap timestamps, source Paint and recorded controls", async (t) => {
+  const f = await screencastProofFixture(t);
+  await assert.doesNotReject(f.verify());
+  assert.equal(Object.keys(f.hashes).length, 5);
+  assert.ok(
+    Object.values(f.hashes).every((hash) => /^[a-f0-9]{64}$/.test(hash)),
+  );
+});
+for (const [label, mutate, afterSave] of [
+  [
+    "incompatible metadata",
+    (f) => {
+      f.metadata.format = "jpeg";
+    },
+  ],
+  [
+    "unacknowledged frame",
+    (f) => {
+      f.metadata.acknowledged = false;
+    },
+  ],
+  [
+    "embedded frame hash mismatch",
+    (f) => {
+      f.metadata.frameSha256 = "0".repeat(64);
+    },
+  ],
+  [
+    "metadata file hash mismatch",
+    () => {},
+    (f) => {
+      f.sample.frameMetadataSha256 = "0".repeat(64);
+    },
+  ],
+  [
+    "foreign session",
+    (f) => {
+      f.metadata.sessionId++;
+    },
+  ],
+  [
+    "wrong swap timestamp",
+    (f) => {
+      f.metadata.metadata.timestamp += 0.001;
+    },
+  ],
+  [
+    "wrong frame duration",
+    (f) => {
+      f.sample.durationMs++;
+    },
+  ],
+  [
+    "unrelated source Paint",
+    (f) => {
+      f.sample.correlation.sourcePaint.pid++;
+    },
+  ],
+  [
+    "source Paint after selected frame",
+    (f) => {
+      f.sample.correlation.sourcePaint.ts = 120000;
+      f.events[3].ts = 120000;
+    },
+  ],
+  [
+    "source Paint misses source card",
+    (f) => {
+      f.events[3].args.data.clip = [0, 0, 10, 0, 10, 10, 0, 10];
+    },
+  ],
+  [
+    "target Paint misses destination card",
+    (f) => {
+      f.events[2].args.data.clip = [0, 0, 10, 0, 10, 10, 0, 10];
+    },
+  ],
+  [
+    "missing control comparisons",
+    (f) => {
+      f.sample.correlation.comparison.scores[0].controlErrors = [];
+    },
+  ],
+  [
+    "nonfinite control comparison",
+    (f) => {
+      f.sample.correlation.comparison.scores[0].controlErrors[0] = Infinity;
+    },
+  ],
+  [
+    "wrong controls",
+    (f) => {
+      f.sample.correlation.comparison.scores[0].controlErrors[0] = 0.026;
+    },
+  ],
+])
+  test(`screencast proof rejects ${label}`, async (t) => {
+    const f = await screencastProofFixture(t);
+    mutate(f);
+    await f.save();
+    afterSave?.(f);
+    await assert.rejects(f.verify());
   });
