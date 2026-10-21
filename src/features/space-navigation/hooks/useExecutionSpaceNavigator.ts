@@ -378,13 +378,21 @@ export function useExecutionSpaceNavigator(
   );
 
   const revealEntry = useCallback(
-    async (entry: NavigatorEntry, behavior: ScrollBehavior = "smooth") => {
+    async (
+      entry: NavigatorEntry,
+      behavior: ScrollBehavior = "smooth",
+      canContinue?: () => boolean,
+    ) => {
+      if (canContinue && !canContinue()) return;
       await ensureEntryExpanded(entry);
+      if (canContinue && !canContinue()) return;
       await nextFrame();
+      if (canContinue && !canContinue()) return;
       let anchor = findPreferredAnchor(entry.id);
       if (!anchor) return;
       revealViewportContent(anchor);
       await nextFrame();
+      if (canContinue && !canContinue()) return;
       anchor = findPreferredAnchor(entry.id) ?? anchor;
 
       if (typeof anchor.scrollIntoView === "function") {
@@ -722,18 +730,20 @@ export function useExecutionSpaceNavigator(
     formalVisitIdRef.current = entries[nextFormalIndex].id;
     setFormalIndex(nextFormalIndex);
 
-    if (currentWasRemoved || formalWasRemoved) {
+    if (enabled && (currentWasRemoved || formalWasRemoved)) {
       notify?.(
         "絞り込みにより表示中の訪問先が対象外になったため、最も近い訪問先へ移動しました",
       );
     }
-    if (currentWasRemoved) {
+    if (enabled && currentWasRemoved) {
       const targetEntry = entries[nextCurrentIndex];
       const operation = beginProgrammaticNavigation(targetEntry.id);
       void (async () => {
         let keepTargetLock = false;
         try {
-          await revealEntry(targetEntry);
+          await revealEntry(targetEntry, "smooth", () =>
+            isCurrentProgrammaticNavigation(operation),
+          );
           if (
             isCurrentProgrammaticNavigation(operation) &&
             setDisplayedVisit(
@@ -752,6 +762,7 @@ export function useExecutionSpaceNavigator(
     beginProgrammaticNavigation,
     cancelProgrammaticNavigation,
     completeProgrammaticNavigation,
+    enabled,
     entries,
     isCurrentProgrammaticNavigation,
     notify,
