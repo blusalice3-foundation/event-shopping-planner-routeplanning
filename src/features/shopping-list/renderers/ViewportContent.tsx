@@ -55,11 +55,12 @@ function initiallyVisible(
   root: HTMLElement,
   registry: ViewportRegistry,
   height: number,
-): boolean {
+  measureVisibility = true,
+): boolean | undefined {
   const parent =
     root.closest<HTMLElement>("[data-viewport-list]") ?? root.parentElement;
   if (!parent || !root.closest("[data-list-renderer], [data-viewport-list]"))
-    return withinViewport(root);
+    return measureVisibility ? withinViewport(root) : undefined;
   let position = registry.initialOffsets.get(parent);
   if (
     position &&
@@ -82,10 +83,11 @@ function initiallyVisible(
     });
   } else if (!position.initialBatch) {
     // Insertions beside existing rows use their committed position, not the old list's end offset.
-    return withinViewport(root);
+    return measureVisibility ? withinViewport(root) : undefined;
   }
   const top = position.top + position.offset;
   position.offset += height;
+  if (!measureVisibility) return undefined;
   const bottom =
     (root.ownerDocument.defaultView?.innerHeight ?? 0) + PRELOAD_MARGIN_PX;
   return (
@@ -264,6 +266,10 @@ export const ViewportContent = ({
   const heightRef = useRef<number>();
   const [, setHeightRevision] = useState(0);
   const updateRef = useRef<() => void>();
+  const initialVisibility = useRef<{
+    registry?: ViewportRegistry;
+    unknown: boolean;
+  }>({ unknown: false });
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -289,6 +295,31 @@ export const ViewportContent = ({
       if (cachedHeight !== undefined)
         setHeightRevision((revision) => revision + 1);
     }
+    const forcedActive = !defer || retain || registry.printing;
+    let visible = registry.visibility.get(root);
+    if (visible === undefined) {
+      if (initialVisibility.current.unknown) {
+        // A new registry needs the same offset bookkeeping; the same one must
+        // not count this root twice during a forced-to-deferred transition.
+        if (initialVisibility.current.registry !== registry)
+          initiallyVisible(
+            root,
+            registry,
+            cachedHeight ?? estimatedHeight,
+            false,
+          );
+        if (!forcedActive) visible = withinViewport(root);
+      } else {
+        visible = initiallyVisible(
+          root,
+          registry,
+          cachedHeight ?? estimatedHeight,
+          !forcedActive,
+        );
+      }
+    }
+    initialVisibility.current.registry = registry;
+    initialVisibility.current.unknown = visible === undefined;
     const subscription: Subscription = {
       resetHeight: () => {
         heightRef.current = heightCache(root.ownerDocument).get(
@@ -296,9 +327,8 @@ export const ViewportContent = ({
         );
         setHeightRevision((revision) => revision + 1);
       },
-      visible:
-        registry.visibility.get(root) ??
-        initiallyVisible(root, registry, cachedHeight ?? estimatedHeight),
+      // Unknown is local bookkeeping only; forced activation does not require it.
+      visible: visible ?? false,
       update: () => {
         if (!defer || retain || registry.printing || subscription.visible) {
           setActivated(true);
@@ -326,7 +356,7 @@ export const ViewportContent = ({
         setActivated(requested);
       },
     };
-    registry.visibility.set(root, subscription.visible);
+    if (visible !== undefined) registry.visibility.set(root, visible);
     updateRef.current = subscription.update;
     registry.subscribers.set(root, subscription);
     registry.observer.observe(root);

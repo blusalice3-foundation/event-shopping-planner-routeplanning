@@ -2256,3 +2256,237 @@ it("keeps reordered multi-item placeholder labels and their ARIA equivalent to t
     expect(view.container.querySelector("input")).toBeNull();
   }
 });
+
+describe("forced viewport activation keeps unknown visibility private", () => {
+  const noSynchronousHeightRead = () =>
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+  const row = (key: string, defer: boolean, retain = false) => (
+    <ViewportContent
+      key={key}
+      rowKey={key}
+      defer={defer}
+      retain={retain}
+      placeholder={<span>pending-{key}</span>}
+      render={() => <input aria-label={key} defaultValue="draft" />}
+    />
+  );
+  const rootOf = (view: ReturnType<typeof render>, key: string) =>
+    view.container.querySelector<HTMLElement>(
+      '[data-viewport-row-key="' + key + '"]',
+    )!;
+  const measuredCount = (root: HTMLElement) =>
+    vi
+      .mocked(HTMLElement.prototype.getBoundingClientRect)
+      .mock.instances.filter((element) => element === root).length;
+
+  it.each(["nondeferred", "retained"] as const)(
+    "does not measure a new %s root merely to force its body active",
+    (reason) => {
+      noSynchronousHeightRead();
+      const key = "unknown-initial-" + reason;
+      const view = render(
+        row(key, reason !== "nondeferred", reason === "retained"),
+      );
+      const root = rootOf(view, key);
+      expect(root).toHaveAttribute("data-viewport-active", "true");
+      expect(root.querySelector("input")).not.toBeNull();
+      expect(measuredCount(root)).toBe(0);
+    },
+  );
+
+  it.each([
+    ["nondeferred", true],
+    ["nondeferred", false],
+    ["retained", true],
+    ["retained", false],
+  ] as const)(
+    "measures unknown %s visibility when forcing ends (visible=%s)",
+    (reason, visible) => {
+      noSynchronousHeightRead();
+      const key = "unknown-transition-" + reason + "-" + visible;
+      if (visible) visibleKeys.add(key);
+      const view = render(
+        <>
+          {row("unknown-transition-registry", false)}
+          {row(key, reason !== "nondeferred", reason === "retained")}
+        </>,
+      );
+      const root = rootOf(view, key);
+      const input = root.querySelector("input");
+      expect(measuredCount(root)).toBe(0);
+      view.rerender(
+        <>
+          {row("unknown-transition-registry", false)}
+          {row(key, true)}
+        </>,
+      );
+      expect(measuredCount(root)).toBe(1);
+      expect(root).toHaveAttribute("data-viewport-active", String(visible));
+      expect(root.querySelector("input")).toBe(visible ? input : null);
+    },
+  );
+
+  it.each([true, false])(
+    "uses an actual IO boolean after forced activation (intersecting=%s)",
+    (intersecting) => {
+      noSynchronousHeightRead();
+      const key = "known-io-" + intersecting;
+      const view = render(
+        <>
+          {row("known-io-registry", false)}
+          {row(key, false)}
+        </>,
+      );
+      const root = rootOf(view, key);
+      act(() =>
+        callback(
+          [
+            {
+              target: root,
+              isIntersecting: intersecting,
+              boundingClientRect: new DOMRect(
+                0,
+                intersecting ? 20 : 10000,
+                400,
+                136,
+              ),
+              intersectionRect: intersecting
+                ? new DOMRect(0, 20, 400, 136)
+                : new DOMRect(),
+              intersectionRatio: Number(intersecting),
+              rootBounds: null,
+              time: 0,
+            },
+          ] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        ),
+      );
+      expect(root).toHaveAttribute("data-viewport-active", "true");
+      view.rerender(
+        <>
+          {row("known-io-registry", false)}
+          {row(key, true)}
+        </>,
+      );
+      expect(measuredCount(root)).toBe(0);
+      expect(root).toHaveAttribute(
+        "data-viewport-active",
+        String(intersecting),
+      );
+    },
+  );
+
+  it.each([true, false])(
+    "preserves forced-prefix offsets through synchronous registration changes (keepRegistry=%s)",
+    (keepRegistry) => {
+      noSynchronousHeightRead();
+      const measure = vi.mocked(HTMLElement.prototype.getBoundingClientRect);
+      const originalMeasure = measure.getMockImplementation()!;
+      measure.mockImplementation(function (this: HTMLElement) {
+        const original = originalMeasure.call(this);
+        if (this.dataset.testid === "unknown-offset-list")
+          return {
+            ...original,
+            top: -1000,
+            bottom: 636,
+            height: 1636,
+            y: -1000,
+          };
+        if (this.dataset.viewportRowKey === "unknown-offset-first")
+          return {
+            ...original,
+            top: -1000,
+            bottom: 500,
+            height: 1500,
+            y: -1000,
+          };
+        if (this.dataset.viewportRowKey === "unknown-offset-next")
+          return { ...original, top: 500, bottom: 636, height: 136, y: 500 };
+        return original;
+      });
+      function Harness() {
+        const [next, setNext] = React.useState(false);
+        React.useLayoutEffect(() => setNext(true), []);
+        return (
+          <>
+            {keepRegistry && row("unknown-offset-registry", false)}
+            <div data-viewport-list data-testid="unknown-offset-list">
+              <ViewportContent
+                rowKey="unknown-offset-first"
+                defer={keepRegistry && next}
+                layoutKey={!keepRegistry && next ? "changed" : "original"}
+                estimatedHeight={1500}
+                placeholder={<span>pending-first</span>}
+                render={() => <input aria-label="unknown-offset-first" />}
+              />
+              {next && (
+                <ViewportContent
+                  rowKey="unknown-offset-next"
+                  estimatedHeight={136}
+                  placeholder={<span>pending-next</span>}
+                  render={() => <input aria-label="unknown-offset-next" />}
+                />
+              )}
+            </div>
+          </>
+        );
+      }
+      const view = render(<Harness />);
+      const first = rootOf(view, "unknown-offset-first");
+      const following = rootOf(view, "unknown-offset-next");
+      expect(first).toHaveAttribute("data-viewport-active", "true");
+      expect(following).toHaveAttribute("data-viewport-active", "true");
+      expect(following.querySelector("input")).not.toBeNull();
+      expect(measuredCount(first)).toBe(keepRegistry ? 1 : 0);
+      expect(measuredCount(following)).toBe(1);
+    },
+  );
+
+  it("keeps focus and requested activation, then measures correctly after printing", async () => {
+    noSynchronousHeightRead();
+    const key = "unknown-focus-print";
+    const view = render(
+      <>
+        {row("unknown-focus-registry", false)}
+        {row(key, true, true)}
+      </>,
+    );
+    const root = rootOf(view, key);
+    const input = root.querySelector("input")!;
+    input.focus();
+    fireEvent.change(input, { target: { value: "still editing" } });
+    view.rerender(
+      <>
+        {row("unknown-focus-registry", false)}
+        {row(key, true)}
+      </>,
+    );
+    expect(measuredCount(root)).toBe(1);
+    expect(root.querySelector("input")).toBe(input);
+    expect(input).toHaveFocus();
+    expect(input).toHaveValue("still editing");
+    input.blur();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(root.querySelector("input")).toBeNull();
+    let release = () => {};
+    act(() => {
+      release = prewarmViewportContent(root);
+    });
+    expect(root.querySelector("input")).not.toBeNull();
+    act(() => release());
+    expect(root.querySelector("input")).toBeNull();
+    fireEvent(window, new Event("beforeprint"));
+    expect(root.querySelector("input")).not.toBeNull();
+    fireEvent(window, new Event("afterprint"));
+    expect(root.querySelector("input")).toBeNull();
+  });
+});
