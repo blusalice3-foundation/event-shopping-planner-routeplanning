@@ -842,8 +842,6 @@ for (const sourceColumn of ["candidate", "execute"] as const) {
       await grouping(page, false);
       const targetColumn =
         sourceColumn === "candidate" ? "execute" : "candidate";
-      // The other column's check must survive the first transfer.
-      await selectionBox(page, "outside").check();
       const moving =
         kind === "single"
           ? ["move-1"]
@@ -866,7 +864,12 @@ for (const sourceColumn of ["candidate", "execute"] as const) {
       await expect(headerMove(page, sourceColumn)).toHaveText(
         new RegExp(`\\(${moving.length}件\\)$`, "u"),
       );
-      await expect(headerMove(page, targetColumn)).toHaveText(/\(1件\)$/u);
+      await expect(headerMove(page, targetColumn)).toHaveCount(0);
+      // Mixed-column selection intentionally hides both header move buttons.
+      // After transfer, the unrelated target check must be the only one left.
+      await selectionBox(page, "outside").check();
+      await expect(headerMove(page, sourceColumn)).toHaveCount(0);
+      await expect(headerMove(page, targetColumn)).toHaveCount(0);
       for (const id of moving)
         await expect(selectionBox(page, id)).toBeChecked();
       const before = await savedExecuteIds(page);
@@ -982,7 +985,13 @@ for (const column of ["candidate", "execute"] as const) {
           ).map((item) => item.id);
     const before = await readOrder();
     await start(page, "native", "move-1");
-    await hover(page, "native", "source-stay", "after", false);
+    await hover(
+      page,
+      "native",
+      "source-stay",
+      column === "candidate" ? "before" : "after",
+      false,
+    );
     await finish(page, "native", true, column);
     await expect.poll(readOrder).not.toEqual(before);
     expect((await readOrder()).slice().sort()).toEqual(before.slice().sort());
