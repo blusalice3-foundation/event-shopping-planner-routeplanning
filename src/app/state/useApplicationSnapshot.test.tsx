@@ -1992,6 +1992,8 @@ function hydrateShopping(h: ReturnType<typeof harness>) {
 const moveInput = (
   patch: Partial<ShoppingMovePatch> = {},
 ): ShoppingMovePatch => ({
+  baselineItemIds: ["1", "2", "3"],
+  baselineExecuteIds: [],
   eventName: "event",
   day: "1日目",
   sourceColumn: "candidate",
@@ -2080,6 +2082,7 @@ it("keeps both frozen moves and prior edits when a physical batch uses the gener
     second = h.result.current.queueShoppingMovePatch(
       moveInput({
         requestedIds: ["2"],
+        baselineExecuteIds: ["1"],
         effectiveIds: ["2"],
         executeModeItems: { "1日目": ["1", "2"] },
       }),
@@ -2279,3 +2282,60 @@ it("reprojects later accepted quantity input while a dedicated move acknowledgem
   expect(h.result.current.values.eventLists.event[0].quantity).toBe(9);
   expect(h.durable().eventLists.event[0]).toMatchObject({ quantity: 9 });
 });
+
+it.each(["same task", "pending save"])(
+  "rejects a stale second order without undoing the first accepted move (%s)",
+  async (timing) => {
+    const h = harness();
+    hydrateShopping(h);
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const save = h.commit.getMockImplementation()!;
+    if (timing === "pending save")
+      h.commit.mockImplementationOnce(async (snapshot) => {
+        await barrier;
+        await save(snapshot);
+      });
+    const first = moveInput({
+      sourceColumn: "candidate",
+      targetColumn: "candidate",
+      executeModeItems: undefined,
+      eventListItems: [shoppingItem("2"), shoppingItem("3"), shoppingItem("1")],
+    });
+    act(() => {
+      expect(h.result.current.queueShoppingMovePatch(first)).toMatchObject({
+        status: "accepted",
+      });
+    });
+    if (timing === "pending save")
+      await waitFor(() => expect(h.commit).toHaveBeenCalledOnce());
+    act(() => {
+      expect(
+        h.result.current.queueShoppingMovePatch(
+          moveInput({
+            sourceColumn: "candidate",
+            targetColumn: "candidate",
+            executeModeItems: undefined,
+            requestedIds: ["2"],
+            effectiveIds: ["2"],
+            eventListItems: [
+              shoppingItem("1"),
+              shoppingItem("3"),
+              shoppingItem("2"),
+            ],
+          }),
+        ),
+      ).toMatchObject({ status: "blocked" });
+    });
+    await act(async () => {
+      release();
+      await h.result.current.flush();
+    });
+    expect(
+      h.durable().eventLists.event.map((item) => (item as { id: string }).id),
+    ).toEqual(["2", "3", "1"]);
+    expect(h.commit).toHaveBeenCalledOnce();
+  },
+);

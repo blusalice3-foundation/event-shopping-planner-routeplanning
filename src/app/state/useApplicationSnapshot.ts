@@ -1159,6 +1159,15 @@ export function useApplicationSnapshot(
           input.eventName,
           input.day,
         );
+        if (
+          !semanticEqual(input.baselineItemIds, baselineItemIds) ||
+          !semanticEqual(input.baselineExecuteIds, baselineExecuteIds)
+        )
+          return {
+            status: "blocked",
+            reason:
+              "移動の計算後に品目の順序が変わりました。もう一度移動してください。",
+          };
         const requestedDays =
           input.executeModeItems ??
           recordEntry(latest.executeModeItems, input.eventName) ??

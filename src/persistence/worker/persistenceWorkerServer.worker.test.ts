@@ -1477,6 +1477,20 @@ it("atomically commits shopping order and references without full reads or item 
     "2日目": ["other-day"],
   });
   expect(durable.eventLists.past[0]).toMatchObject({ quantity: 9 });
+  // A cold scoped read authenticates the persisted event sidecar, root and checkpoints.
+  resetDatabaseConnection();
+  const cold = await db.readDayCommandSnapshot({
+    eventName: "event",
+    day: "1日目",
+  });
+  expect(
+    cold.snapshot.eventLists.event.map((item) => (item as { id: string }).id),
+  ).toEqual(["2", "1", "other-day"]);
+  expect(cold.snapshot.eventLists.event[0]).toMatchObject({
+    quantity: 7,
+    customField: { keep: true },
+  });
+  expect(cold.snapshot.executeModeItems.event["1日目"]).toEqual([]);
 });
 it("rolls all shopping stores back on abort and falls back before writing stale order", async () => {
   const h = await setupShopping();
@@ -1692,4 +1706,16 @@ it("preserves later quantities but refuses stale source identity and reviews cha
   Object.assign(changedTarget.eventLists.event[1] as object, { number: "8" });
   expect(planShoppingMove(changedTarget, command).confirmation).toBeDefined();
   expect(h.commit).not.toHaveBeenCalled();
+});
+
+it("constructs recovery full snapshots without consulting the normal previous-based delta function", async () => {
+  const h = await setupShopping();
+  const delta = vi
+    .spyOn(snapshotDeltas, "snapshotDelta")
+    .mockImplementation(() => {
+      throw new Error("previous-based delta is unavailable");
+    });
+  const full = await h.server.readFull();
+  expect(full.delta.full?.eventLists.event).toHaveLength(3);
+  expect(delta).not.toHaveBeenCalled();
 });

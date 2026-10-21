@@ -36,6 +36,9 @@ export interface ApplicationSnapshotCommitPort {
 
 /** Synchronous acceptance of a frozen drag; saving remains on the normal queue. */
 export interface ShoppingMovePatch {
+  /** Orders used by the UI calculation, checked against the accepted preview. */
+  baselineItemIds: readonly string[];
+  baselineExecuteIds: readonly string[];
   eventName: string;
   day: string;
   eventGeneration?: number;

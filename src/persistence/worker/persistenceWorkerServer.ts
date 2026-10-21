@@ -76,6 +76,7 @@ export function createPersistenceWorkerServer(
     read: ApplicationSnapshotRead,
     retainObservation = true,
     dayEvent?: string,
+    forceFull = false,
   ): WorkerSnapshotRead => {
     const observationId = ++sequence;
     if (retainObservation) {
@@ -90,8 +91,9 @@ export function createPersistenceWorkerServer(
     const next = read.scopeTarget
       ? adoptScopedDaySnapshot(previous, read.snapshot, read.scopeTarget)
       : read.snapshot;
-    const delta =
-      read.scopeTarget && (!previous || retainObservation)
+    const delta = forceFull
+      ? { full: next }
+      : read.scopeTarget && (!previous || retainObservation)
         ? { scope: { target: read.scopeTarget, snapshot: read.snapshot } }
         : dayEvent || read.scopeTarget
           ? daySnapshotDelta(
@@ -135,9 +137,7 @@ export function createPersistenceWorkerServer(
           "Recovery requires verified complete persistent state.",
         );
       validate(read.snapshot);
-      const result = publish(read);
-      result.delta = { full: read.snapshot };
-      return result;
+      return publish(read, true, undefined, true);
     },
     async shopping(
       command: ApplicationShoppingMove,
@@ -225,6 +225,11 @@ export function createPersistenceWorkerServer(
             throw new Error("Committed shopping roots unavailable.");
           observations.set(observationId, committedRead.expectedRoots);
           observedSnapshots.set(observationId, committedRead.snapshot);
+          while (observations.size > 8) {
+            const expired = observations.keys().next().value!;
+            observations.delete(expired);
+            observedSnapshots.delete(expired);
+          }
           const delta = daySnapshotDelta(
             base,
             { ...plan.snapshot, eventLists: base.eventLists },
