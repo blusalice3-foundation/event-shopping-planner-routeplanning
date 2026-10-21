@@ -225,6 +225,13 @@ const getSpaceDisplayLabel = (item: ShoppingItem): string => {
   return `${normalizeSpaceBlock(item.block)}-${normalizeBaseSpaceNumber(item.number).toUpperCase()}`;
 };
 
+const preserveEqualItemIds = (previous: Set<string>, next: Set<string>) => {
+  if (previous === next) return previous;
+  if (previous.size !== next.size) return next;
+  for (const id of next) if (!previous.has(id)) return next;
+  return previous;
+};
+
 const FocusMode: React.FC<FocusModeProps> = ({
   items,
   executeModeItemIds,
@@ -267,7 +274,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     isNextButtonBlinking,
     setIsNextButtonBlinking,
     blinkingPriceItemIds,
-    setBlinkingPriceItemIds,
+    setBlinkingPriceItemIds: setBlinkingPriceItemIdsState,
     notification,
     setNotification,
     isCompleted,
@@ -285,8 +292,20 @@ const FocusMode: React.FC<FocusModeProps> = ({
   } = useFocusSessionState(resumeState);
   const [notificationRevision, setNotificationRevision] = useState(0);
   const clearAutoAdvanceTimer = useCallback(() => {}, []);
-  const [blinkingLimitedMissingItemIds, setBlinkingLimitedMissingItemIds] =
+  const [blinkingLimitedMissingItemIds, setBlinkingLimitedMissingItemIdsState] =
     useState<Set<string>>(new Set());
+  const setBlinkingPriceItemIds = useCallback(
+    (next: Set<string>) =>
+      setBlinkingPriceItemIdsState((previous) =>
+        preserveEqualItemIds(previous, next),
+      ),
+    [setBlinkingPriceItemIdsState],
+  );
+  const setBlinkingLimitedMissingItemIds = useCallback((next: Set<string>) => {
+    setBlinkingLimitedMissingItemIdsState((previous) =>
+      preserveEqualItemIds(previous, next),
+    );
+  }, []);
   const [
     deferredLimitedItemIdsByVisitKey,
     setDeferredLimitedItemIdsByVisitKey,
@@ -735,7 +754,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
           : new Set(),
       );
     },
-    [setBlinkingPriceItemIds],
+    [setBlinkingPriceItemIds, setBlinkingLimitedMissingItemIds],
   );
   const getNavigatorDeferredLimitedItemIds = useCallback(
     (entry: NavigatorEntry) => {
@@ -1706,6 +1725,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     currentVisitLimitedMissingItems,
     currentVisitUndefinedPriceItems,
     setBlinkingPriceItemIds,
+    setBlinkingLimitedMissingItemIds,
     setIsNextButtonBlinking,
   ]);
   // 通知を自動で消す
@@ -1944,6 +1964,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     moveToNext,
     formalTransitionReady,
     setBlinkingPriceItemIds,
+    setBlinkingLimitedMissingItemIds,
     setNotification,
   ]);
   // 前の訪問先へ

@@ -1,9 +1,35 @@
 import React from "react";
-import { fireEvent, render, within } from "@testing-library/react";
+import { act, fireEvent, render, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ShoppingItem } from "../../types/item";
 import { FocusModeItemList } from "./FocusModePanels";
 import { createFocusVisitDisplayItemsProjector } from "./focusVisitDisplayItems";
+import FocusMode from "../FocusMode";
+import { minimalProps } from "../FocusMode.fixtures";
+
+const callerLists = vi.hoisted(() => ({
+  values: [] as Array<{
+    items: readonly ShoppingItem[];
+    price: Set<string>;
+    limited: Set<string>;
+  }>,
+}));
+vi.mock("./FocusModePanels", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./FocusModePanels")>();
+  return {
+    ...actual,
+    FocusModeItemList: (
+      props: React.ComponentProps<typeof actual.FocusModeItemList>,
+    ) => {
+      callerLists.values.push({
+        items: props.currentVisitDisplayItems,
+        price: props.blinkingPriceItemIds,
+        limited: props.blinkingLimitedMissingItemIds!,
+      });
+      return <actual.FocusModeItemList {...props} />;
+    },
+  };
+});
 
 const counters = vi.hoisted(() => ({
   mounts: new Map<string, number>(),
@@ -55,6 +81,7 @@ const makeItem = (id: string): ShoppingItem => ({
 
 describe("focus visit visibility and rows-only memo boundary", () => {
   beforeEach(() => {
+    callerLists.values = [];
     counters.mounts.clear();
     counters.unmounts.clear();
   });
@@ -165,5 +192,176 @@ describe("focus visit visibility and rows-only memo boundary", () => {
     expect(latest).toHaveBeenLastCalledWith(
       expect.objectContaining({ id: "large-0", quantity: 6 }),
     );
+  });
+});
+
+describe("real FocusMode caller preserves unchanged warning membership", () => {
+  const latestList = () => callerLists.values.at(-1)!;
+  const clickVisit = (
+    view: ReturnType<typeof render>,
+    direction: "next" | "back",
+  ) => {
+    const label =
+      direction === "next" ? "次の訪問先へ移動" : "前の訪問先へ移動";
+    const button = view.baseElement.querySelector<HTMLButtonElement>(
+      `button[aria-label="${label}"]`,
+    );
+    expect(button).not.toBeNull();
+    fireEvent.click(button!);
+  };
+
+  it("restores a 1490-item visit without remapping it after the caller's empty-warning effect", () => {
+    const large = Array.from({ length: 1490 }, (_, index) =>
+      makeItem(`caller-large-${index}`),
+    );
+    const small = { ...makeItem("caller-small"), number: "2" };
+    const items = [...large, small];
+    const view = render(
+      <FocusMode
+        {...minimalProps({
+          items,
+          executeModeItemIds: items.map((item) => item.id),
+        })}
+      />,
+    );
+    const first = latestList();
+    expect(first.items).toHaveLength(1490);
+    expect(first.price.size).toBe(0);
+    expect(first.limited.size).toBe(0);
+    const priceHas = vi.spyOn(first.price, "has");
+    const limitedHas = vi.spyOn(first.limited, "has");
+    try {
+      clickVisit(view, "next");
+      expect(latestList().items.map((item) => item.id)).toEqual([small.id]);
+      expect(latestList().price).toBe(first.price);
+      expect(latestList().limited).toBe(first.limited);
+      priceHas.mockClear();
+      limitedHas.mockClear();
+      clickVisit(view, "back");
+      expect(latestList().items).toBe(first.items);
+      expect(latestList().price).toBe(first.price);
+      expect(latestList().limited).toBe(first.limited);
+      expect(
+        priceHas.mock.calls.some(([id]) => id.startsWith("caller-large-")),
+      ).toBe(false);
+      expect(
+        limitedHas.mock.calls.some(([id]) => id.startsWith("caller-large-")),
+      ).toBe(false);
+      const row = view.container.querySelector<HTMLElement>(
+        '[data-item-id="caller-large-0"]',
+      )!;
+      expect(row.closest<HTMLElement>("[data-viewport-list]")!.hidden).toBe(
+        false,
+      );
+      expect(counters.mounts.get("caller-large-0")).toBe(1);
+    } finally {
+      priceHas.mockRestore();
+      limitedHas.mockRestore();
+      view.unmount();
+    }
+  });
+
+  it("still updates real price/limited warning membership and clears the corresponding row rings", () => {
+    const price = {
+      ...makeItem("caller-price"),
+      purchaseStatus: "Purchased" as const,
+      price: null,
+    };
+    const limited = {
+      ...makeItem("caller-limited"),
+      purchaseStatus: "LimitedPurchase" as const,
+      quantity: 5,
+    };
+    const ids = [price.id, limited.id];
+    const base = minimalProps({
+      items: [price, limited],
+      executeModeItemIds: ids,
+    });
+    const view = render(<FocusMode {...base} />);
+    const first = latestList();
+    expect([...first.price]).toEqual([price.id]);
+    expect([...first.limited]).toEqual([limited.id]);
+    expect(
+      view.container.querySelector('[data-item-id="caller-price"]'),
+    ).toHaveClass("ring-red-500");
+    expect(
+      view.container.querySelector('[data-item-id="caller-limited"]'),
+    ).toHaveClass("ring-orange-500");
+    view.rerender(
+      <FocusMode {...base} items={[{ ...price, quantity: 2 }, limited]} />,
+    );
+    expect(latestList().price).toBe(first.price);
+    expect(latestList().limited).toBe(first.limited);
+    view.rerender(
+      <FocusMode
+        {...base}
+        items={[
+          { ...price, price: 500 },
+          { ...limited, limitedPurchasedQuantity: 2 },
+        ]}
+      />,
+    );
+    expect(latestList().price.size).toBe(0);
+    expect(latestList().limited.size).toBe(0);
+    expect(latestList().price).not.toBe(first.price);
+    expect(latestList().limited).not.toBe(first.limited);
+    expect(
+      view.container.querySelector('[data-item-id="caller-price"]'),
+    ).not.toHaveClass("ring-red-500");
+    expect(
+      view.container.querySelector('[data-item-id="caller-limited"]'),
+    ).not.toHaveClass("ring-orange-500");
+  });
+
+  it("keeps the unchecked-visit notification delay and expiry while equal warning Sets stay unchanged", async () => {
+    const first = makeItem("caller-timer-first");
+    const second = { ...makeItem("caller-timer-second"), number: "2" };
+    const items = [first, second];
+    const view = render(
+      <FocusMode
+        {...minimalProps({
+          items,
+          executeModeItemIds: items.map((item) => item.id),
+        })}
+      />,
+    );
+    vi.useFakeTimers();
+    try {
+      const initial = latestList();
+      clickVisit(view, "next");
+      expect(latestList().price).toBe(initial.price);
+      expect(latestList().limited).toBe(initial.limited);
+      expect(
+        view.queryByText("前のサークルでチェック漏れがあります"),
+      ).toBeNull();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(99);
+      });
+      expect(
+        view.queryByText("前のサークルでチェック漏れがあります"),
+      ).toBeNull();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      expect(
+        view.getByText("前のサークルでチェック漏れがあります"),
+      ).toBeInTheDocument();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1999);
+      });
+      expect(
+        view.getByText("前のサークルでチェック漏れがあります"),
+      ).toBeInTheDocument();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      expect(
+        view.queryByText("前のサークルでチェック漏れがあります"),
+      ).toBeNull();
+    } finally {
+      view.unmount();
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
   });
 });
