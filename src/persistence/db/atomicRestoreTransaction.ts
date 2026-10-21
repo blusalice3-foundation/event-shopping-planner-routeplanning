@@ -692,7 +692,11 @@ export async function readShoppingCommandSnapshot(
   target: DayStorageTarget,
 ): Promise<ApplicationSnapshotRead | undefined> {
   const read = await readDayCommandSnapshot(target);
-  return read.scopeTarget ? undefined : read;
+  const observation = applicationSnapshotObservations.get(read.expectedRoots);
+  return read.scopeTarget ||
+    !observation?.dayRecords.get(STORES.EVENT_LISTS)?.head.authenticatedRoots
+    ? undefined
+    : read;
 }
 /** Separate capability: ordinary day commands still cannot modify item order. */
 export async function commitShoppingCommandSnapshot(
@@ -704,10 +708,11 @@ export async function commitShoppingCommandSnapshot(
   if (
     !observation ||
     observation.scopeTarget ||
+    !observation.dayRecords.get(STORES.EVENT_LISTS)?.head.authenticatedRoots ||
     !dayCommandObservations.has(expectedRoots)
   )
     throw new PersistenceConflictError(
-      "Shopping move requires a verified complete item root.",
+      "Shopping move requires a verified complete authoritative item root.",
     );
   const before = observation.snapshot.eventLists[target.eventName] as Array<
     Record<string, unknown>
@@ -740,9 +745,10 @@ export async function readApplicationSnapshot(
     options.prepareScopedCommands &&
     !observation.consistencyMissing &&
     !observation.runtimeCandidates.length &&
-    (dayRecordStores.some(
-      (store) => !observation.dayRecords.get(store)?.head.authenticatedRoots,
-    ) ||
+    (!observation.dayRecords.get(STORES.EVENT_LISTS)?.head.authenticatedRoots ||
+      dayRecordStores.some(
+        (store) => !observation.dayRecords.get(store)?.head.authenticatedRoots,
+      ) ||
       [...sidecarRecordStores, STORES.MAP_DATA].some(
         (store) =>
           observation.scopeReady.get(store) !==
@@ -750,10 +756,16 @@ export async function readApplicationSnapshot(
       ))
   ) {
     const captured = rememberObservation(observation);
-    await commitApplicationSnapshotAtomically(captured.snapshot, {
-      expectedRoots: captured.expectedRoots,
-      changedStoresOnly: true,
-    });
+    await commitApplicationSnapshotAtomically(
+      captured.snapshot,
+      {
+        expectedRoots: captured.expectedRoots,
+        changedStoresOnly: true,
+      },
+      undefined,
+      false,
+      true,
+    );
     observation = verifiedCommandCache!.observation;
   }
   verifiedCommandCache = {
@@ -768,6 +780,7 @@ export async function commitApplicationSnapshotAtomically(
   options: AtomicSnapshotOptions = {},
   dayTarget?: DayStorageTarget,
   shoppingMove = false,
+  prepareEventListRoots = false,
 ): Promise<void> {
   const verifiedCommand =
     !!dayTarget &&
@@ -777,6 +790,21 @@ export async function commitApplicationSnapshotAtomically(
   const ownedObservation = options.expectedRoots
     ? applicationSnapshotObservations.get(options.expectedRoots)
     : undefined;
+  if (
+    shoppingMove &&
+    !ownedObservation?.dayRecords.get(STORES.EVENT_LISTS)?.head
+      .authenticatedRoots
+  )
+    throw new PersistenceConflictError(
+      "Shopping move requires prepared authoritative item roots.",
+    );
+  // Legacy conversion belongs to explicit startup preparation or an existing
+  // structural restore/import/migration write, never an interactive shopping write.
+  const prepareItemRoots =
+    !dayTarget &&
+    (prepareEventListRoots ||
+      options.migration !== undefined ||
+      !!options.invalidatedEvents?.length);
   const mapDescriptor = Object.getOwnPropertyDescriptor(data, "mapData");
   const reuseUnchangedMap =
     options.changedStoresOnly &&
@@ -867,6 +895,9 @@ export async function commitApplicationSnapshotAtomically(
       (storeName) =>
         !options.changedStoresOnly ||
         options.migration ||
+        (prepareItemRoots &&
+          storeName === STORES.EVENT_LISTS &&
+          !observation.dayRecords.get(storeName)?.head.authenticatedRoots) ||
         (!dayTarget &&
           dayRecordStores.includes(storeName) &&
           !observation.dayRecords.get(storeName)?.head.authenticatedRoots) ||
@@ -913,7 +944,7 @@ export async function commitApplicationSnapshotAtomically(
     }
     if (
       storeName === STORES.EVENT_LISTS &&
-      (shoppingMove || observation.dayRecords.has(storeName))
+      (prepareItemRoots || observation.dayRecords.has(storeName))
     ) {
       const previous = observation.dayRecords.get(storeName);
       const write = previous

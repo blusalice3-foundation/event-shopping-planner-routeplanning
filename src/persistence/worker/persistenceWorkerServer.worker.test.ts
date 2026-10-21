@@ -1,5 +1,8 @@
 import {
   decodeDayRecords,
+  patchDayRecordStore,
+  patchEventListRecordStore,
+  adoptDayRecordWrite,
   partitionDayRecordStore,
   prepareDayRecord,
 } from "../db/dayRecordStorage";
@@ -1417,7 +1420,7 @@ function shoppingCommand() {
     executeIds: [],
   };
 }
-async function setupShopping(historyCount = 1) {
+async function setupShopping(historyCount = 1, prepare = true) {
   const data = seed();
   data.eventLists.event = [
     item,
@@ -1451,7 +1454,7 @@ async function setupShopping(historyCount = 1) {
     readApplicationSnapshot: read,
     commitShoppingCommandSnapshot: commit,
   });
-  const baseline = await server.read();
+  const baseline = prepare ? await server.read() : await server.readFull();
   read.mockClear();
   return { server, baseline, commit, read };
 }
@@ -2141,3 +2144,147 @@ it.each(["unauthenticated", "object-root", "child-path", "children"])(
     ).toEqual({ event: { "1日目": ["1"] } });
   },
 );
+
+it("keeps legacy recovery read-only and declines dedicated writes until explicit startup preparation", async () => {
+  const h = await setupShopping(10000, false);
+  const legacy = await physicalShoppingRecords();
+  expect(legacy.eventLists.get("data")).not.toHaveProperty("kind");
+  const writes = vi.spyOn(IDBObjectStore.prototype, "put");
+  const full = await h.server.readFull();
+  expect(full.delta.full?.eventLists.past).toHaveLength(10000);
+  expect(writes).not.toHaveBeenCalled();
+  expect(
+    await h.server.shopping(shoppingCommand(), "cold:unprepared", {}),
+  ).toEqual({ status: "review-required" });
+  expect(h.commit).not.toHaveBeenCalled();
+  expect(writes).not.toHaveBeenCalled();
+  const cold = await db.readDayCommandSnapshot();
+  const plan = planShoppingMove(cold.snapshot, shoppingCommand());
+  await expect(
+    db.commitShoppingCommandSnapshot(plan.snapshot, cold.expectedRoots, {
+      eventName: "event",
+      day: "1日目",
+    }),
+  ).rejects.toThrow("authoritative item root");
+  expect(writes).not.toHaveBeenCalled();
+  const started = await h.server.read();
+  expect(started.eventGenerations).toEqual(h.baseline.eventGenerations);
+  expect(
+    (await physicalShoppingRecords()).eventLists.get("data"),
+  ).toMatchObject({
+    kind: "event-shopping-planner-day-records",
+    storeName: "eventLists",
+    count: 2,
+  });
+  expect(h.read).toHaveBeenCalledWith({
+    shareVerified: true,
+    prepareScopedCommands: true,
+  });
+  writes.mockClear();
+  const clone = vi.spyOn(globalThis, "structuredClone");
+  expect(
+    (await h.server.shopping(shoppingCommand(), "cold:first-prepared", {}))
+      .status,
+  ).toBe("committed");
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(
+    clone.mock.calls.some(
+      ([value]) =>
+        value &&
+        typeof value === "object" &&
+        "event" in value &&
+        "past" in value,
+    ),
+  ).toBe(false);
+  clone.mockRestore();
+  expect(
+    writes.mock.calls.filter(([, key]) => String(key).includes('["past",[]]')),
+  ).toEqual([]);
+  writes.mockRestore();
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.eventLists.past,
+  ).toHaveLength(10000);
+});
+it.each(["restore", "new-event"])(
+  "prepares item roots inside the existing %s transaction before its first move",
+  async (kind) => {
+    const h = await setupShopping(1, false);
+    const snapshot = structuredClone(h.baseline.delta.full!);
+    if (kind === "new-event") {
+      snapshot.eventLists.new = [{ ...item, id: "new-item" }];
+      snapshot.eventConsistency.new = createEventConsistency();
+    } else
+      Object.assign(snapshot.eventLists.event[1] as object, {
+        remarks: "復元後メモ",
+      });
+    await h.server.commit(snapshot, {
+      observationId: h.baseline.observationId,
+      invalidatedEvents: kind === "new-event" ? ["new"] : ["event"],
+      changedStoresOnly: true,
+    });
+    const physical = await physicalShoppingRecords();
+    expect(physical.eventLists.get("data")).toMatchObject({
+      kind: "event-shopping-planner-day-records",
+      storeName: "eventLists",
+      count: kind === "new-event" ? 3 : 2,
+    });
+    const writes = vi.spyOn(IDBObjectStore.prototype, "put");
+    expect(
+      (
+        await h.server.shopping(
+          shoppingCommand(),
+          `first:${kind}`,
+          kind === "restore" ? { event: 1 } : {},
+        )
+      ).status,
+    ).toBe("committed");
+    expect(h.commit).toHaveBeenCalledOnce();
+    expect(
+      writes.mock.calls.filter(([, key]) =>
+        String(key).includes('["past",[]]'),
+      ),
+    ).toEqual([]);
+    writes.mockRestore();
+    expect(
+      (await db.readApplicationSnapshot()).snapshot.eventLists.event.find(
+        (value) => (value as { id: string }).id === "2",
+      ),
+    ).toMatchObject({
+      remarks: kind === "restore" ? "復元後メモ" : "後発メモ",
+      quantity: 7,
+    });
+  },
+);
+
+it("prepares one changed item root once and retains mixed root/child authentication", async () => {
+  const items = Array.from({ length: 500 }, (_, index) => ({
+    ...item,
+    id: `item-${index}`,
+  }));
+  const before = { event: items };
+  const initial = await partitionDayRecordStore("eventLists", before);
+  const after = { event: [...items].reverse() };
+  const clone = vi.spyOn(globalThis, "structuredClone");
+  const write = await patchEventListRecordStore(initial.state, before, after);
+  expect(
+    clone.mock.calls.filter(([value]) => value === after.event),
+  ).toHaveLength(1);
+  clone.mockRestore();
+  const adopted = adoptDayRecordWrite(write);
+  expect(
+    (await decodeDayRecords("eventLists", adopted.head, adopted.records)).data,
+  ).toEqual(after);
+  const days = await partitionDayRecordStore("executeModeItems", {
+    event: { "1日目": ["1"], "2日目": ["other"] },
+  });
+  const mixed = adoptDayRecordWrite(
+    await patchDayRecordStore("executeModeItems", days.state, "event", [
+      { path: [], present: true, value: {} },
+      { path: ["1日目"], present: true, value: ["2"] },
+    ]),
+  );
+  expect(
+    (await decodeDayRecords("executeModeItems", mixed.head, mixed.records))
+      .data,
+  ).toEqual({ event: { "1日目": ["2"], "2日目": ["other"] } });
+});

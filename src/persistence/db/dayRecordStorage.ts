@@ -350,7 +350,11 @@ export async function patchDayRecordStore(
   const rootKey = dayRecordKey(eventName, []);
   const oldRoot = previous.records.get(rootKey);
   let root = puts.get(rootKey) ?? oldRoot;
-  if (root && !deletes.includes(rootKey)) {
+  if (
+    root &&
+    !deletes.includes(rootKey) &&
+    changes.some((change) => change.path.length > 0)
+  ) {
     const children = new Map(
       (root.children ?? []).map((child) => [JSON.stringify(child.path), child]),
     );
