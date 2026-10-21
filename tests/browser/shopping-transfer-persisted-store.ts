@@ -1,6 +1,9 @@
 import type { Page } from "@playwright/test";
 import {
   isPersistenceDigestDescriptor,
+  isPersistenceSynchronousFingerprint,
+  isPersistenceCheckpoint,
+  createPersistenceIntegrityDescriptors,
   verifyPersistenceDigest,
 } from "../../src/utils/persistenceResilience";
 
@@ -18,8 +21,15 @@ export async function readBrowserEventLists<
       return await new Promise<{
         payload: unknown;
         entries: Array<[string, unknown]>;
+        metadata: unknown;
+        checkpoint: unknown;
       }>((resolve, reject) => {
-        const tx = db.transaction("eventLists", "readonly");
+        const tx = db.transaction(["eventLists", "syncQueue"], "readonly");
+        const queue = tx.objectStore("syncQueue");
+        const metadata = queue.get("__esp_internal__:meta:v1:eventLists:data");
+        const checkpoint = queue.get(
+          "__esp_internal__:checkpoint:v1:eventLists:data",
+        );
         const store = tx.objectStore("eventLists");
         const request = store.get("data");
         const entries: Array<[string, unknown]> = [];
@@ -47,7 +57,13 @@ export async function readBrowserEventLists<
             cursor.result.continue();
           };
         };
-        tx.oncomplete = () => resolve({ payload, entries });
+        tx.oncomplete = () =>
+          resolve({
+            payload,
+            entries,
+            metadata: metadata.result,
+            checkpoint: checkpoint.result,
+          });
         tx.onerror = () => reject(tx.error);
         tx.onabort = () => reject(tx.error);
       });
@@ -58,6 +74,55 @@ export async function readBrowserEventLists<
   const record = (value: unknown): value is Record<string, unknown> =>
     !!value && typeof value === "object" && !Array.isArray(value);
   if (!record(read.payload)) throw new Error("Missing eventLists readback");
+  const metadata = read.metadata;
+  const checkpoint = read.checkpoint;
+  if (
+    !record(metadata) ||
+    metadata.kind !== "event-shopping-planner-persistence-metadata" ||
+    metadata.version !== 1 ||
+    metadata.storeName !== "eventLists" ||
+    metadata.key !== "data" ||
+    typeof metadata.revision !== "string" ||
+    !metadata.revision ||
+    !(
+      metadata.baseRevision === null ||
+      (typeof metadata.baseRevision === "string" && !!metadata.baseRevision)
+    ) ||
+    typeof metadata.writerId !== "string" ||
+    !metadata.writerId ||
+    typeof metadata.committedAt !== "string" ||
+    !Number.isFinite(Date.parse(metadata.committedAt)) ||
+    !isPersistenceDigestDescriptor(metadata.payloadDigest) ||
+    !isPersistenceSynchronousFingerprint(metadata.payloadFingerprint) ||
+    !isPersistenceCheckpoint(checkpoint, {
+      storeName: "eventLists",
+      key: "data",
+    })
+  )
+    throw new Error(
+      "Missing or invalid eventLists metadata/checkpoint readback",
+    );
+  const { digest, fingerprint } = await createPersistenceIntegrityDescriptors(
+    read.payload,
+  );
+  const committed = checkpoint.committedRoot;
+  if (
+    digest.value !== metadata.payloadDigest.value ||
+    fingerprint.algorithm !== metadata.payloadFingerprint.algorithm ||
+    fingerprint.canonicalization !==
+      metadata.payloadFingerprint.canonicalization ||
+    fingerprint.canonicalLength !==
+      metadata.payloadFingerprint.canonicalLength ||
+    fingerprint.value !== metadata.payloadFingerprint.value ||
+    committed.revision !== metadata.revision ||
+    committed.baseRevision !== metadata.baseRevision ||
+    committed.writerId !== metadata.writerId ||
+    committed.committedAt !== metadata.committedAt ||
+    committed.digest.value !== digest.value
+  )
+    throw new Error(
+      "eventLists payload, metadata and checkpoint do not identify the same committed root",
+    );
   if (read.payload.kind !== "event-shopping-planner-day-records") {
     if (Object.values(read.payload).some((items) => !Array.isArray(items)))
       throw new Error("Invalid legacy eventLists readback");
