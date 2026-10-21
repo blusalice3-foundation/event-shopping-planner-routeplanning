@@ -15,6 +15,7 @@ import {
   readApplicationSnapshot,
   readDayCommandSnapshot,
   readShoppingCommandSnapshot,
+  readCachedShoppingCommandSnapshot,
   commitShoppingCommandSnapshot,
   commitDayCommandSnapshot,
   commitApplicationSnapshotAtomically,
@@ -71,6 +72,7 @@ export const db = {
   readApplicationSnapshot,
   readDayCommandSnapshot,
   readShoppingCommandSnapshot,
+  readCachedShoppingCommandSnapshot,
   commitShoppingCommandSnapshot,
   commitDayCommandSnapshot,
   saveEventConsistency(data: AppData["eventConsistency"]): Promise<void> {

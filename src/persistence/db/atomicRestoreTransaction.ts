@@ -699,11 +699,43 @@ export async function commitDayCommandSnapshot(
     target,
   );
 }
+/** Optimistic shopping plans use private complete state; the write transaction validates every head. */
+export async function readCachedShoppingCommandSnapshot(
+  target: DayStorageTarget,
+): Promise<ApplicationSnapshotRead | undefined> {
+  const cached = verifiedCommandCache;
+  if (
+    !cached ||
+    cached.database !== (await openDB()) ||
+    cached.fallbackKey !== runtimeFallbackKey() ||
+    cached.observation.scopeTarget ||
+    cached.observation.consistencyMissing ||
+    cached.observation.runtimeCandidates.length ||
+    !recordEntry(cached.observation.snapshot.eventLists, target.eventName) ||
+    ![STORES.EVENT_LISTS, ...dayRecordStores].every(
+      (store) =>
+        cached.observation.dayRecords.get(store)?.head.authenticatedRoots,
+    ) ||
+    !APPLICATION_SNAPSHOT_STORE_NAMES.every(
+      (store) =>
+        !cached.observation.roots.get(store)?.synthetic &&
+        cached.observation.checkpoints.get(store) != null,
+    )
+  )
+    return undefined;
+  return prepareObservationRead(cached.observation, true);
+}
 /** Shopping moves require the complete verified item root; never synthesize it from a day. */
 export async function readShoppingCommandSnapshot(
   target: DayStorageTarget,
+  options: { freshComplete?: boolean } = {},
 ): Promise<ApplicationSnapshotRead | undefined> {
-  const read = await readDayCommandSnapshot(target);
+  const read = options.freshComplete
+    ? await readApplicationSnapshot({
+        shareVerified: true,
+        prepareScopedCommands: false,
+      })
+    : await readDayCommandSnapshot(target);
   const observation = applicationSnapshotObservations.get(read.expectedRoots);
   return read.scopeTarget ||
     !observation?.dayRecords.get(STORES.EVENT_LISTS)?.head.authenticatedRoots
@@ -743,14 +775,20 @@ export async function commitShoppingCommandSnapshot(
   )
     throw new Error("Shopping move cannot change item content or membership.");
   const receipt: ShoppingCommitReceiptOutput = {};
-  await commitApplicationSnapshotAtomically(
-    data,
-    { expectedRoots, changedStoresOnly: true },
-    target,
-    true,
-    false,
-    receipt,
-  );
+  try {
+    await commitApplicationSnapshotAtomically(
+      data,
+      { expectedRoots, changedStoresOnly: true },
+      target,
+      true,
+      false,
+      receipt,
+    );
+  } catch (error) {
+    if (error instanceof PersistenceConflictError)
+      verifiedCommandCache = undefined;
+    throw error;
+  }
   return receipt.read!;
 }
 export async function readApplicationSnapshot(
@@ -1300,6 +1338,28 @@ export async function commitApplicationSnapshotAtomically(
           throw new PersistenceConflictError(
             "計算後にイベントの操作世代が変更されました。",
           );
+        if (shoppingMove && verifiedCommand) {
+          // Optimistic shopping reads defer all head checks to this transaction.
+          // Validate every store before even queueing a sidecar/root/payload put.
+          for (const storeName of APPLICATION_SNAPSHOT_STORE_NAMES) {
+            const observed = observation.roots.get(storeName);
+            const metadata = currentMetadata.get(storeName);
+            if (
+              !observed ||
+              !isStoredPersistenceMetadata(metadata, storeName, DATA_KEY) ||
+              !immutableObservedRootFieldsMatch(metadata, observed)
+            )
+              throw new PersistenceConflictError(
+                `${storeName} changed after the cached shopping read.`,
+              );
+            assertCurrentCheckpointMatchesExpected(
+              storeName,
+              DATA_KEY,
+              currentCheckpoints.get(storeName),
+              observation.checkpoints.get(storeName) ?? null,
+            );
+          }
+        }
         if (options.invalidatedEvents?.length) {
           const generations = { ...observation.eventGenerations };
           for (const event of new Set(options.invalidatedEvents)) {
@@ -1390,8 +1450,9 @@ export async function commitApplicationSnapshotAtomically(
           if (verifiedCommand) {
             const metadata = currentMetadata.get(storeName);
             if (
-              !isStoredPersistenceMetadata(metadata, storeName, DATA_KEY) ||
-              !immutableObservedRootFieldsMatch(metadata, observed)
+              !shoppingMove &&
+              (!isStoredPersistenceMetadata(metadata, storeName, DATA_KEY) ||
+                !immutableObservedRootFieldsMatch(metadata, observed))
             )
               throw new PersistenceConflictError(
                 `${storeName} changed after the verified command read.`,
@@ -1460,12 +1521,13 @@ export async function commitApplicationSnapshotAtomically(
                 );
             }
           }
-          assertCurrentCheckpointMatchesExpected(
-            storeName,
-            DATA_KEY,
-            currentCheckpoints.get(storeName),
-            observation.checkpoints.get(storeName) ?? null,
-          );
+          if (!(shoppingMove && verifiedCommand))
+            assertCurrentCheckpointMatchesExpected(
+              storeName,
+              DATA_KEY,
+              currentCheckpoints.get(storeName),
+              observation.checkpoints.get(storeName) ?? null,
+            );
           // Unchanged stores are still observed and checked inside this same transaction.
           if (!changed) return;
           const metadata = preparedMetadata.get(storeName);
