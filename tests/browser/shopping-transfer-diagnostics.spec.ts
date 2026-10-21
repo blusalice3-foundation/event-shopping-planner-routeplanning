@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import {
   shoppingBrowserEnvironment,
   shoppingEvidenceIdentity,
@@ -13,6 +13,7 @@ import {
   resetWorkerTransferDiagnostics,
   readWorkerTransferDiagnostics,
   createWorkerCpuProfiler,
+  selectWorkerDispatchWindow,
   type DiagnosticCpuProfile,
 } from "./shopping-transfer-diagnostics";
 import {
@@ -257,39 +258,11 @@ for (const profile of [
           contentType: "application/json",
         });
         // The original product uses commit, while the new product uses shopping.
-        // Select an actual request/reply pair covering the measured durable write.
-        const writeMethods = new Set([
-          "shopping",
-          "commit",
-          "commitDay",
-          "day",
-          "items",
-        ]);
-        const durableCommits = frame?.commits ?? [];
-        const commands = workerDiagnostics.events.flatMap((message) => {
-          if (
-            message.stage !== "message-observed" ||
-            message.id === undefined ||
-            !writeMethods.has(message.method ?? "")
-          )
-            return [];
-          const reply = workerDiagnostics.events.find(
-            (row) =>
-              row.stage === "reply-posted" &&
-              row.id === message.id &&
-              row.at >= message.at,
-          );
-          return reply &&
-            durableCommits.length > 0 &&
-            durableCommits.every(
-              (commit) => commit.at >= message.at && commit.at <= reply.at,
-            )
-            ? [{ message, reply }]
-            : [];
-        });
-        const command = commands.length === 1 ? commands[0] : undefined;
-        const message = command?.message;
-        const reply = command?.reply;
+        const command = selectWorkerDispatchWindow(
+          workerDiagnostics.events,
+          frame?.commits ?? [],
+          workerDiagnostics.handlerHook,
+        );
         const epochToTrace = (epoch: number) =>
           (frame?.correlation?.input.ts ?? NaN) +
           (epoch - start - (frame?.markerDelayMs ?? NaN)) * 1000;
@@ -305,35 +278,23 @@ for (const profile of [
             frame?.correlation?.frame.traceTs ?? NaN,
           ),
           commandWindow: {
-            messageObservedEpoch: message?.at,
-            replyPostedEpoch: reply?.at,
-            requestId: message?.id,
-            method: message?.method,
-            operationId: message?.operationId ?? null,
-            ...(!message?.operationId
-              ? {
-                  operationIdUnavailableReason:
-                    "The actual Worker request does not expose an operation ID",
-                }
-              : {}),
-            durableCommitEpochs: durableCommits.map((commit) => commit.at),
-            matchingWriteCommands: commands.length,
-            selection:
-              "A unique actual write request/reply ID pair surrounding every measured durable commit; no method or operation ID is invented",
+            ...command,
             epochToTrace: {
               inputMarkTraceTs: frame?.correlation?.input.ts,
               inputStartEpoch: start,
               inputMarkerDelayMs: frame?.markerDelayMs,
               method: "same input-mark/epoch mapping as the verified frame",
             },
-            ...sampledSelfTimes(
-              rawWorkerCpuProfile,
-              epochToTrace(message?.at ?? NaN),
-              epochToTrace(reply?.at ?? NaN),
-            ),
+            ...(command.status === "available"
+              ? sampledSelfTimes(
+                  rawWorkerCpuProfile,
+                  epochToTrace(command.handlerDispatchEpoch),
+                  epochToTrace(command.replyPostedEpoch),
+                )
+              : {}),
           },
           interpretation:
-            "V8 Worker samples clipped to the renderer input/frame window and independently to actual shopping message-observed/reply-posted timestamps; timestamps, idle/GC samples and observer overhead are retained; estimates are not exact callee durations",
+            "V8 Worker samples clipped to the renderer input/frame window and independently to actual request handler-dispatch/reply-posted timestamps including Worker queue wait; timestamps, idle/GC samples and observer overhead are retained; estimates are not exact callee durations",
         };
       }
       let mainThreadLongTasks: {
@@ -415,7 +376,7 @@ for (const profile of [
             instrumentation:
               "Test-only React commit/PerformedWork fiber counts, shopping geometry getters with product/observer call-stack attribution, Long Tasks API, actual Worker message/reply observation, plus content-verified renderer trace/frame, 1000us renderer and Worker CPU profiles, and armed native Worker cost wrappers",
             lifecycle:
-              "message-observed is the registered listener's observation, not an invented handler-start or queue receipt; reply-posted is the actual Worker postMessage call",
+              "handler-dispatch is recorded synchronously immediately before Reflect.apply invokes the existing onmessage handler; the window includes its tail queue wait; reply-posted is the actual Worker postMessage call",
             window:
               "trusted drop through content-verified first frame; overlapping long tasks are included and raw epoch timestamps are retained",
             workerCosts:
@@ -470,7 +431,10 @@ for (const profile of [
           },
           workerEvents: workerDiagnostics.events,
           workerCosts: workerDiagnostics.costs,
-          workerInstrumentation: { installed: workerDiagnostics.installed },
+          workerInstrumentation: {
+            installed: workerDiagnostics.installed,
+            handlerHook: workerDiagnostics.handlerHook,
+          },
           cpuProfile,
           workerCpuProfile,
           mainThreadLongTasks,
@@ -500,6 +464,7 @@ for (const profile of [
       expect(workerDiagnostics.events.length).toBeGreaterThan(0);
       expect(workerDiagnostics.installed.sort()).toEqual([
         "digest",
+        "onmessage",
         "postMessage",
         "put",
         "structuredClone",
@@ -525,3 +490,315 @@ for (const profile of [
         "Actual shopping command must contain measured Worker bundle samples",
       ).toBe(true);
     });
+
+// These toy Workers test diagnostic boundaries only. They never use product
+// data, acceptance clocks, a response budget or the normal 100-case sampler.
+async function miniDiagnosticWorker(page: Page, source: string) {
+  await page.goto("/release-capabilities.json");
+  // Honor the product's worker-src 'self' policy; only this toy script request is
+  // fulfilled by the fixture, without changing CSP or the product worker.
+  const pattern = "**" + "/__shopping_worker_probe_fixture__.js";
+  await page.context().unroute(pattern);
+  await page.context().route(pattern, (route) =>
+    route.fulfill({
+      contentType: "text/javascript",
+      body: `${source}\nself.__miniReady = true;`,
+    }),
+  );
+  const pending = page.waitForEvent("worker");
+  await page.evaluate(() => {
+    const worker = new Worker("/__shopping_worker_probe_fixture__.js");
+    Object.assign(globalThis, {
+      __miniDiagnosticWorker: worker,
+      __miniReplies: [],
+    });
+    worker.addEventListener("message", (event) => {
+      (
+        globalThis as unknown as { __miniReplies: unknown[] }
+      ).__miniReplies.push(event.data);
+    });
+  });
+  const worker = await pending;
+  await expect
+    .poll(() =>
+      worker.evaluate(
+        () => (globalThis as unknown as { __miniReady?: boolean }).__miniReady,
+      ),
+    )
+    .toBe(true);
+  await installWorkerTransferDiagnostics(worker);
+  await resetWorkerTransferDiagnostics(worker);
+  return worker;
+}
+async function postMiniRequest(page: Page, id: number) {
+  await page.evaluate((id) => {
+    (
+      globalThis as unknown as { __miniDiagnosticWorker: Worker }
+    ).__miniDiagnosticWorker.postMessage({
+      id,
+      method: "shopping",
+      args: [{}, `op-${id}`],
+    });
+  }, id);
+}
+async function waitMiniReplies(page: Page, count: number) {
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (globalThis as unknown as { __miniReplies: unknown[] }).__miniReplies
+            .length,
+      ),
+    )
+    .toBe(count);
+}
+const allWorkerDiagnostics = (
+  worker: Parameters<typeof readWorkerTransferDiagnostics>[0],
+) => readWorkerTransferDiagnostics(worker, 0, Number.MAX_SAFE_INTEGER);
+
+test("Worker dispatch contract records before the original synchronous body and same-ID reply @shopping-performance @shopping-transfer-worker-probe-contract", async ({
+  page,
+}) => {
+  const worker = await miniDiagnosticWorker(
+    page,
+    `
+    self.onmessage = function(event) {
+      structuredClone({id:event.data.id});
+      self.postMessage({id:event.data.id,result:true});
+    };
+  `,
+  );
+  await postMiniRequest(page, 1);
+  await waitMiniReplies(page, 1);
+  const data = await allWorkerDiagnostics(worker);
+  const dispatch = data.events.find(
+    (event) => event.stage === "handler-dispatch",
+  )!;
+  const clone = data.costs.find((cost) => cost.method === "structuredClone")!;
+  const reply = data.events.find((event) => event.stage === "reply-posted")!;
+  expect(data.handlerHook.status).toBe("installed");
+  expect(dispatch.actualMessageEvent).toBe(true);
+  expect(dispatch.eventTimestampEpoch).toBeGreaterThan(0);
+  expect(dispatch.at).toBeLessThanOrEqual(clone.at);
+  expect(clone.at).toBeLessThanOrEqual(reply.at);
+  const window = selectWorkerDispatchWindow(
+    data.events,
+    [{ at: clone.at }],
+    data.handlerHook,
+  );
+  expect(window.status).toBe("available");
+  if (window.status === "available") {
+    expect(window.requestId).toBe(1);
+    expect(window.operationId).toBe("op-1");
+    expect(window.handlerDispatchEpoch).toBe(dispatch.at);
+    expect(window.replyPostedEpoch).toBe(reply.at);
+  }
+});
+
+test("Worker dispatch contract covers a fulfilled tail's synchronous microtask work @shopping-performance @shopping-transfer-worker-probe-contract", async ({
+  page,
+}) => {
+  const worker = await miniDiagnosticWorker(
+    page,
+    `
+    let tail = Promise.resolve();
+    self.onmessage = function(event) {
+      tail = tail.then(async () => {
+        structuredClone({id:event.data.id});
+        await Promise.resolve();
+        self.postMessage({id:event.data.id,result:true});
+      });
+    };
+  `,
+  );
+  await postMiniRequest(page, 2);
+  await waitMiniReplies(page, 1);
+  const data = await allWorkerDiagnostics(worker);
+  const dispatch = data.events.find(
+    (event) => event.stage === "handler-dispatch",
+  )!;
+  const clone = data.costs.find((cost) => cost.method === "structuredClone")!;
+  expect(dispatch.at).toBeLessThanOrEqual(clone.at);
+  expect(
+    selectWorkerDispatchWindow(
+      data.events,
+      [{ at: clone.at }],
+      data.handlerHook,
+    ).status,
+  ).toBe("available");
+});
+
+test("Worker dispatch contract includes blocked tail queue wait without inventing body start @shopping-performance @shopping-transfer-worker-probe-contract", async ({
+  page,
+}) => {
+  const worker = await miniDiagnosticWorker(
+    page,
+    `
+    let release;
+    let tail = new Promise(resolve => { release = resolve; });
+    self.__miniReceived=0;
+    self.__releaseMiniTail = () => release();
+    self.onmessage = function(event) {
+      self.__miniReceived++;
+      tail = tail.then(async () => {
+        structuredClone({id:event.data.id});
+        // One millisecond of deliberate toy body work separates the queued
+        // requests' completion markers; this fixture has no performance budget.
+        const until=performance.now()+1;
+        while(performance.now()<until){}
+        self.postMessage({id:event.data.id,bodyMarkerEpoch:performance.timeOrigin+performance.now()});
+      });
+    };
+  `,
+  );
+  await postMiniRequest(page, 3);
+  await postMiniRequest(page, 4);
+  await expect
+    .poll(() =>
+      worker.evaluate(
+        () =>
+          (globalThis as unknown as { __miniReceived: number }).__miniReceived,
+      ),
+    )
+    .toBe(2);
+  await worker.evaluate(() =>
+    (
+      globalThis as unknown as { __releaseMiniTail(): void }
+    ).__releaseMiniTail(),
+  );
+  await waitMiniReplies(page, 2);
+  const data = await allWorkerDiagnostics(worker);
+  const dispatch = data.events.find(
+    (event) => event.stage === "handler-dispatch" && event.id === 4,
+  )!;
+  const firstCost = data.costs[0]!;
+  const reply3 = data.events.find(
+    (event) => event.stage === "reply-posted" && event.id === 3,
+  )!;
+  const lastCost = data.costs.at(-1)!;
+  const bodyMarker = await page.evaluate(
+    () =>
+      (
+        globalThis as unknown as {
+          __miniReplies: Array<{ id: number; bodyMarkerEpoch: number }>;
+        }
+      ).__miniReplies.find((reply) => reply.id === 4)!.bodyMarkerEpoch,
+  );
+  expect(dispatch.at).toBeLessThanOrEqual(firstCost.at);
+  expect(dispatch.at).toBeLessThanOrEqual(reply3.at);
+  expect(reply3.at).toBeLessThanOrEqual(lastCost.at);
+  const window = selectWorkerDispatchWindow(
+    data.events,
+    [{ at: bodyMarker }],
+    data.handlerHook,
+  );
+  expect(window.status).toBe("available");
+  if (window.status === "available") {
+    expect(window.requestId).toBe(4);
+    expect(window.interpretation).toContain("tail queue wait");
+    expect(window).not.toHaveProperty("bodyStartEpoch");
+  }
+});
+test("Worker dispatch contract preserves receiver, exact arguments, return and thrown values @shopping-performance @shopping-transfer-worker-probe-contract", async ({
+  page,
+}) => {
+  const worker = await miniDiagnosticWorker(
+    page,
+    `
+    self.__returnToken={token:true};
+    self.__throwToken=new Error("original");
+    self.onmessage=function(...args){
+      self.__lastCall={receiver:this,args};
+      if(args[0].data.mode==="throw") throw self.__throwToken;
+      return self.__returnToken;
+    };
+  `,
+  );
+  const result = await worker.evaluate(() => {
+    const state = globalThis as unknown as {
+      onmessage: (...args: unknown[]) => unknown;
+      __returnToken: unknown;
+      __throwToken: unknown;
+      __lastCall: { receiver: unknown; args: unknown[] };
+    };
+    const receiver = { originalReceiver: true },
+      first = { data: { id: 7, method: "shopping", args: [] } },
+      second = { extra: true };
+    const returned = Reflect.apply(state.onmessage, receiver, [first, second]);
+    const receiverPreserved = state.__lastCall.receiver === receiver;
+    const argsPreserved =
+      state.__lastCall.args.length === 2 &&
+      state.__lastCall.args[0] === first &&
+      state.__lastCall.args[1] === second;
+    let thrownPreserved = false;
+    try {
+      Reflect.apply(state.onmessage, receiver, [{ data: { mode: "throw" } }]);
+    } catch (error) {
+      thrownPreserved = error === state.__throwToken;
+    }
+    return {
+      receiverPreserved,
+      argsPreserved,
+      returnPreserved: returned === state.__returnToken,
+      thrownPreserved,
+    };
+  });
+  expect(result).toEqual({
+    receiverPreserved: true,
+    argsPreserved: true,
+    returnPreserved: true,
+    thrownPreserved: true,
+  });
+});
+
+test("Worker dispatch contract fails closed for missing, replaced and ambiguous hooks or identity @shopping-performance @shopping-transfer-worker-probe-contract", async ({
+  page,
+}) => {
+  const missing = await miniDiagnosticWorker(page, `self.onmessage=null;`);
+  const missingData = await allWorkerDiagnostics(missing);
+  expect(missingData.handlerHook.status).toBe("unavailable");
+  expect(
+    selectWorkerDispatchWindow([], [], missingData.handlerHook).status,
+  ).toBe("unavailable");
+  const replaced = await miniDiagnosticWorker(
+    page,
+    `self.onmessage=event=>self.postMessage({id:event.data.id});`,
+  );
+  await replaced.evaluate(() => {
+    globalThis.onmessage = () => {};
+  });
+  const replacedData = await allWorkerDiagnostics(replaced);
+  expect(replacedData.handlerHook.reason).toContain("replaced");
+  expect(
+    selectWorkerDispatchWindow([], [], replacedData.handlerHook).status,
+  ).toBe("unavailable");
+  const real = await miniDiagnosticWorker(
+    page,
+    `self.onmessage=event=>{structuredClone({});self.postMessage({id:event.data.id});};`,
+  );
+  await postMiniRequest(page, 8);
+  await waitMiniReplies(page, 1);
+  const data = await allWorkerDiagnostics(real),
+    cost = data.costs[0];
+  expect(
+    selectWorkerDispatchWindow(
+      [...data.events, ...data.events],
+      [{ at: cost.at }],
+      data.handlerHook,
+    ).status,
+  ).toBe("unavailable");
+  expect(
+    selectWorkerDispatchWindow(
+      data.events.map((event) => ({ ...event, id: undefined })),
+      [{ at: cost.at }],
+      data.handlerHook,
+    ).status,
+  ).toBe("unavailable");
+  expect(
+    selectWorkerDispatchWindow(
+      data.events,
+      [{ at: cost.at - 1000 }],
+      data.handlerHook,
+    ).status,
+  ).toBe("unavailable");
+});

@@ -267,9 +267,14 @@ export async function readTransferDiagnostics(
     { start, end },
   );
 }
-type WorkerDiagnosticEvent = {
+export type WorkerDiagnosticEvent = {
   at: number;
-  stage: "message-observed" | "reply-posted";
+  stage: "handler-dispatch" | "reply-posted";
+  actualMessageEvent?: boolean;
+  eventTimeStamp?: number;
+  eventTimeOrigin?: number;
+  eventTimestampEpoch?: number;
+  metadataOverheadMs?: number;
   id?: unknown;
   method?: string;
   operationId?: string;
@@ -294,6 +299,10 @@ type WorkerCost = {
   keyKind?: string;
   metadataUnavailable?: string;
 };
+type WorkerHandlerHook = {
+  status: "installed" | "unavailable";
+  reason?: string;
+};
 type WorkerProbe = {
   reset(): void;
   read(
@@ -303,6 +312,7 @@ type WorkerProbe = {
     events: WorkerDiagnosticEvent[];
     costs: WorkerCost[];
     installed: string[];
+    handlerHook: WorkerHandlerHook;
   };
 };
 export async function installWorkerTransferDiagnostics(worker: Worker) {
@@ -437,29 +447,87 @@ export async function installWorkerTransferDiagnostics(worker: Worker) {
         }),
       ),
     );
-    globalThis.addEventListener(
-      "message",
-      (
-        event: MessageEvent<{
-          id?: unknown;
-          method?: string;
-          args?: unknown[];
-        }>,
-      ) => {
-        if (enabled)
-          events.push({
-            at: epoch(),
-            stage: "message-observed",
-            id: event.data?.id,
-            method: event.data?.method,
-            operationId:
-              typeof event.data?.args?.[1] === "string"
-                ? event.data.args[1]
-                : undefined,
-          });
-      },
-      true,
-    );
+    const handlerHook: WorkerHandlerHook = {
+      status: "unavailable",
+      reason: "The existing Worker onmessage handler is not callable",
+    };
+    const originalHandler = globalThis.onmessage;
+    let wrappedHandler: typeof originalHandler;
+    if (typeof originalHandler === "function") {
+      wrappedHandler = new Proxy(originalHandler, {
+        apply(target, receiver, args) {
+          if (enabled) {
+            const began = performance.now();
+            try {
+              const event = args[0] as MessageEvent<{
+                id?: unknown;
+                method?: string;
+                args?: unknown[];
+              }>;
+              const data = event?.data;
+              const eventTimeStamp = Number.isFinite(event?.timeStamp)
+                ? event.timeStamp
+                : undefined;
+              const record: WorkerDiagnosticEvent = {
+                at: 0,
+                stage: "handler-dispatch",
+                id: data?.id,
+                method:
+                  typeof data?.method === "string" ? data.method : undefined,
+                operationId:
+                  Array.isArray(data?.args) && typeof data.args[1] === "string"
+                    ? data.args[1]
+                    : undefined,
+                actualMessageEvent:
+                  event instanceof MessageEvent &&
+                  event.type === "message" &&
+                  event.isTrusted,
+                eventTimeStamp,
+                eventTimeOrigin: performance.timeOrigin,
+                eventTimestampEpoch:
+                  eventTimeStamp === undefined
+                    ? undefined
+                    : performance.timeOrigin + eventTimeStamp,
+                metadataOverheadMs: performance.now() - began,
+              };
+              // Same call stack, immediately before the existing handler. Its
+              // tail queue wait belongs to this window; no task/promise is added.
+              record.at = epoch();
+              events.push(record);
+            } catch {
+              handlerHook.status = "unavailable";
+              handlerHook.reason =
+                "Worker dispatch metadata could not be recorded";
+            }
+          }
+          return Reflect.apply(target, receiver, args);
+        },
+      });
+      try {
+        globalThis.onmessage = wrappedHandler;
+        if (globalThis.onmessage === wrappedHandler) {
+          handlerHook.status = "installed";
+          delete handlerHook.reason;
+          installed.push("onmessage");
+        } else {
+          handlerHook.reason =
+            "Worker onmessage proxy assignment did not persist";
+        }
+      } catch {
+        handlerHook.reason = "Worker onmessage proxy assignment was rejected";
+      }
+    }
+    const inspectHandlerHook = () => {
+      if (
+        handlerHook.status === "installed" &&
+        globalThis.onmessage !== wrappedHandler
+      ) {
+        handlerHook.status = "unavailable";
+        handlerHook.reason =
+          "The diagnostic Worker onmessage proxy was replaced";
+      }
+      return { ...handlerHook };
+    };
     patch(globalThis, "postMessage", (target, receiver, args) => {
       if (enabled)
         events.push({
@@ -471,6 +539,7 @@ export async function installWorkerTransferDiagnostics(worker: Worker) {
     });
     state.__shoppingWorkerDiagnosticProbe = {
       reset() {
+        inspectHandlerHook();
         events = [];
         costs = [];
         enabled = true;
@@ -483,10 +552,88 @@ export async function installWorkerTransferDiagnostics(worker: Worker) {
           events: events.filter(inWindow),
           costs: costs.filter(inWindow),
           installed: [...installed],
+          handlerHook: inspectHandlerHook(),
         };
       },
     };
   });
+}
+export function selectWorkerDispatchWindow(
+  events: readonly WorkerDiagnosticEvent[],
+  durableCommits: readonly { at: number }[],
+  handlerHook: WorkerHandlerHook,
+) {
+  const unavailable = (reason: string) => ({
+    status: "unavailable" as const,
+    reason,
+    matchingWriteCommands: 0,
+  });
+  if (handlerHook.status !== "installed")
+    return unavailable(
+      handlerHook.reason ?? "Worker dispatch hook is unavailable",
+    );
+  const writes = new Set(["shopping", "commit", "commitDay", "day", "items"]);
+  const candidates = events.flatMap((dispatch) => {
+    if (
+      dispatch.stage !== "handler-dispatch" ||
+      dispatch.actualMessageEvent !== true ||
+      typeof dispatch.id !== "number" ||
+      !Number.isSafeInteger(dispatch.id) ||
+      !Number.isFinite(dispatch.at) ||
+      !writes.has(dispatch.method ?? "")
+    )
+      return [];
+    const starts = events.filter(
+      (event) => event.stage === "handler-dispatch" && event.id === dispatch.id,
+    );
+    const replies = events.filter(
+      (event) => event.stage === "reply-posted" && event.id === dispatch.id,
+    );
+    const reply = replies[0];
+    return starts.length === 1 &&
+      replies.length === 1 &&
+      Number.isFinite(reply?.at) &&
+      reply.at >= dispatch.at &&
+      durableCommits.length > 0 &&
+      durableCommits.every(
+        (commit) =>
+          Number.isFinite(commit.at) &&
+          commit.at >= dispatch.at &&
+          commit.at <= reply.at,
+      )
+      ? [{ dispatch, reply }]
+      : [];
+  });
+  if (candidates.length !== 1)
+    return {
+      ...unavailable(
+        "No unique actual dispatch/reply pair covers every durable commit",
+      ),
+      matchingWriteCommands: candidates.length,
+    };
+  const { dispatch, reply } = candidates[0];
+  return {
+    status: "available" as const,
+    handlerDispatchEpoch: dispatch.at,
+    replyPostedEpoch: reply.at,
+    requestId: dispatch.id,
+    method: dispatch.method,
+    operationId: dispatch.operationId ?? null,
+    ...(!dispatch.operationId
+      ? {
+          operationIdUnavailableReason:
+            "The actual Worker request does not expose an operation ID",
+        }
+      : {}),
+    eventTimeStamp: dispatch.eventTimeStamp,
+    eventTimeOrigin: dispatch.eventTimeOrigin,
+    eventTimestampEpoch: dispatch.eventTimestampEpoch,
+    dispatchMetadataOverheadMs: dispatch.metadataOverheadMs,
+    durableCommitEpochs: durableCommits.map((commit) => commit.at),
+    matchingWriteCommands: candidates.length,
+    interpretation:
+      "Existing onmessage handler dispatch through same-request reply, including Worker tail queue wait, synchronous/asynchronous work and diagnostic overhead; this is not a separate planner/body-start timestamp",
+  };
 }
 export async function resetWorkerTransferDiagnostics(worker: Worker) {
   await worker.evaluate(() =>
