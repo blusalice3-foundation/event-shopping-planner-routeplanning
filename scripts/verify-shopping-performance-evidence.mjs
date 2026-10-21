@@ -691,41 +691,82 @@ export async function verifyFrameFiles(artifact, outputRoot, hashes) {
       );
       if ((sample.visualTarget ?? "card") === "card") {
         const visible = sample.visibleTransferredIds;
+        const sources = sample.visibleSourceIds;
         const proofs = correlation.targetProofs;
+        const sourceProofs = correlation.sourceProofs;
         const scores = correlation.comparison?.scores;
+        const uniqueIds = (ids) =>
+          Array.isArray(ids) &&
+          ids.length > 0 &&
+          ids.every((id) => typeof id === "string" && id.length > 0) &&
+          new Set(ids).size === ids.length;
+        const insideRect = (outer, inner) =>
+          inner &&
+          [inner.x, inner.y, inner.width, inner.height].every(
+            Number.isFinite,
+          ) &&
+          inner.width > 0 &&
+          inner.height > 0 &&
+          inner.x >= outer.x &&
+          inner.y >= outer.y &&
+          inner.x + inner.width <= outer.x + outer.width &&
+          inner.y + inner.height <= outer.y + outer.height;
+        const checkedProof = (proof, id, scoreIndex, role, field) => {
+          const actualPaint = find("Paint", proof.paint);
+          const score = scores[proof.scoreIndex];
+          return (
+            proof[field] === id &&
+            proof.scoreIndex === scoreIndex &&
+            proof.paint?.itemId === id &&
+            actualPaint?.pid === dom.pid &&
+            dom.ts <= actualPaint.ts &&
+            actualPaint.ts <= draw.ts &&
+            covers(actualPaint, proof.rect) &&
+            score?.itemId === id &&
+            score.role === role &&
+            ["x", "y", "width", "height"].every((key) =>
+              sameNumber(score.rect?.[key], proof.rect?.[key]),
+            ) &&
+            insideRect(proof.rect, score.identityRect) &&
+            Array.isArray(score.controlRects) &&
+            score.controlRects.length === 2 &&
+            score.controlRects.every((rect) => insideRect(proof.rect, rect))
+          );
+        };
         assert(
           sample.allVisibleDestinationCardsVerified === true &&
-            Array.isArray(visible) &&
-            visible.length > 0 &&
-            visible.every((id) => typeof id === "string" && id.length > 0) &&
-            new Set(visible).size === visible.length &&
+            uniqueIds(sample.expectedTransferredIds) &&
+            uniqueIds(visible) &&
+            uniqueIds(sources) &&
             Array.isArray(proofs) &&
             proofs.length === visible.length &&
+            Array.isArray(sourceProofs) &&
+            sourceProofs.length === sources.length &&
             Array.isArray(scores) &&
-            scores.length === visible.length + 1 &&
-            proofs.every((proof, index) => {
-              const actualPaint = find("Paint", proof.paint);
-              const score = scores[proof.scoreIndex];
-              return (
-                proof.targetId === visible[index] &&
-                proof.scoreIndex === index + 1 &&
-                proof.paint?.itemId === proof.targetId &&
-                actualPaint?.pid === dom.pid &&
-                dom.ts <= actualPaint.ts &&
-                actualPaint.ts <= draw.ts &&
-                covers(actualPaint, proof.rect) &&
-                score?.itemId === proof.targetId &&
-                score.role === "destination-card" &&
-                ["x", "y", "width", "height"].every((key) =>
-                  sameNumber(score.rect?.[key], proof.rect?.[key]),
-                )
-              );
-            }) &&
+            scores.length === sources.length + visible.length &&
+            sourceProofs.every((proof, index) =>
+              checkedProof(
+                proof,
+                sources[index],
+                index,
+                "source-gap",
+                "sourceId",
+              ),
+            ) &&
+            proofs.every((proof, index) =>
+              checkedProof(
+                proof,
+                visible[index],
+                sources.length + index,
+                "destination-card",
+                "targetId",
+              ),
+            ) &&
             (!Array.isArray(sample.expectedTransferredIds) ||
-              visible.every((id) =>
+              [...sources, ...visible].every((id) =>
                 sample.expectedTransferredIds.includes(id),
               )),
-          "Every visible moved destination requires its own identity/control image and covering Paint proof",
+          "Every visible moved source/destination requires its own identity/control image and covering Paint proof",
         );
       }
       assert(
@@ -844,7 +885,8 @@ export async function verifyFrameFiles(artifact, outputRoot, hashes) {
         scores.length ===
           (sample.captureMethod === "Page.startScreencast(png)" &&
           (sample.visualTarget ?? "card") === "card"
-            ? sample.visibleTransferredIds.length + 1
+            ? sample.visibleSourceIds.length +
+              sample.visibleTransferredIds.length
             : 2) &&
         scores.every(
           (score) =>

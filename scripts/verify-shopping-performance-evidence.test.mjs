@@ -628,7 +628,9 @@ async function screencastProofFixture(t) {
       },
     },
   };
+  sample.expectedTransferredIds = [sample.targetId];
   sample.visibleTransferredIds = [sample.targetId];
+  sample.visibleSourceIds = [sample.targetId];
   sample.allVisibleDestinationCardsVerified = true;
   sample.correlation.targetProofs = [
     {
@@ -638,10 +640,33 @@ async function screencastProofFixture(t) {
       scoreIndex: 1,
     },
   ];
+  sample.correlation.sourceProofs = [
+    {
+      sourceId: sample.targetId,
+      rect: sample.correlation.sourceRect,
+      paint: { ...sample.correlation.sourcePaint, itemId: sample.targetId },
+      scoreIndex: 0,
+    },
+  ];
+  Object.assign(sample.correlation.comparison.scores[0], {
+    itemId: sample.targetId,
+    role: "source-gap",
+    rect: sample.correlation.sourceRect,
+    identityRect: { x: 25, y: 105, width: 20, height: 20 },
+    controlRects: [
+      { x: 22, y: 102, width: 5, height: 5 },
+      { x: 50, y: 102, width: 5, height: 5 },
+    ],
+  });
   Object.assign(sample.correlation.comparison.scores[1], {
     itemId: sample.targetId,
     role: "destination-card",
     rect: sample.correlation.targetRect,
+    identityRect: { x: 105, y: 105, width: 20, height: 20 },
+    controlRects: [
+      { x: 102, y: 102, width: 5, height: 5 },
+      { x: 130, y: 102, width: 5, height: 5 },
+    ],
   });
   const metadata = {
     method: "Page.startScreencast",
@@ -969,6 +994,11 @@ test("screencast requires proof for each visible moved target and excludes genui
     itemId: "target-2",
     role: "destination-card",
     rect,
+    identityRect: { x: 205, y: 105, width: 20, height: 20 },
+    controlRects: [
+      { x: 202, y: 102, width: 5, height: 5 },
+      { x: 230, y: 102, width: 5, height: 5 },
+    ],
   });
   await f.save();
   await assert.doesNotReject(f.verify());
@@ -991,4 +1021,19 @@ test("transfer phase proof cannot be bypassed by omitting every raw phase field"
     () => validateEvidenceArtifact(a, "transfer", identity),
     /phase proof/,
   );
+});
+
+test("screencast requires every visible source origin and rejects borrowed image crops", async (t) => {
+  const f = await screencastProofFixture(t);
+  f.sample.visibleSourceIds.push("second-source");
+  await assert.rejects(f.verify(), /Every visible moved/);
+  f.sample.visibleSourceIds.pop();
+  f.sample.correlation.comparison.scores[1].identityRect.x = 20;
+  await assert.rejects(f.verify(), /Every visible moved/);
+  f.sample.correlation.comparison.scores[1].identityRect.x = 105;
+  f.sample.correlation.sourceProofs[0].paint = {
+    ...f.sample.correlation.paint,
+    itemId: f.sample.targetId,
+  };
+  await assert.rejects(f.verify(), /Every visible moved/);
 });
