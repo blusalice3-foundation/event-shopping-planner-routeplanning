@@ -124,6 +124,7 @@ export async function decodeDayRecords(
     value.version !== 1 ||
     value.storeName !== store ||
     !(dayRecordStores.includes(store) || store === STORES.EVENT_LISTS) ||
+    (store === STORES.EVENT_LISTS && value.authenticatedRoots !== true) ||
     !Number.isSafeInteger(value.count) ||
     (value.count as number) < 0 ||
     typeof value.checksum !== "string" ||
@@ -147,6 +148,11 @@ export async function decodeDayRecords(
           ? entry.path.length === 0 ||
             (entry.path.length === 2 && entry.path[0] === "days")
           : entry.path.length <= 1) ||
+        (store === STORES.EVENT_LISTS &&
+          (entry.path.length !== 0 ||
+            !Array.isArray(entry.value) ||
+            !Array.isArray(entry.children) ||
+            entry.children.length !== 0)) ||
         key !== dayRecordKey(entry.eventName, entry.path) ||
         !isPersistenceDigestDescriptor(entry.digest) ||
         !(await verifyPersistenceDigest(

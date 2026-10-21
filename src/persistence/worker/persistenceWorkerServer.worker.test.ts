@@ -1,3 +1,8 @@
+import {
+  decodeDayRecords,
+  partitionDayRecordStore,
+  prepareDayRecord,
+} from "../db/dayRecordStorage";
 import { projectConsistencySnapshot } from "../../features/consistency/domain/projection";
 import * as snapshotDeltas from "./snapshotDelta";
 import {
@@ -2091,5 +2096,48 @@ it.each(["history-root", "metadata", "checkpoint"])(
     });
     resetDatabaseConnection();
     await expect(db.readApplicationSnapshot()).rejects.toThrow();
+  },
+);
+
+it.each(["unauthenticated", "object-root", "child-path", "children"])(
+  "rejects the unsupported %s item-head shape without changing ordinary day formats",
+  async (shape) => {
+    const partition = await partitionDayRecordStore("eventLists", {
+      event: [item],
+    });
+    const original = [...partition.state.records.values()][0];
+    const [key, entry] = await prepareDayRecord(
+      "eventLists",
+      "event",
+      shape === "child-path" ? ["1日目"] : [],
+      shape === "object-root" ? { invalid: true } : [item],
+      shape === "children"
+        ? [{ path: ["1日目"], digest: original.digest }]
+        : [],
+    );
+    const head = {
+      ...partition.state.head,
+      checksum: entry.digest.value,
+      ...(shape === "unauthenticated" ? { authenticatedRoots: undefined } : {}),
+    };
+    await expect(
+      decodeDayRecords("eventLists", head, new Map([[key, entry]])),
+    ).rejects.toThrow();
+    const ordinary = await partitionDayRecordStore("executeModeItems", {
+      event: { "1日目": ["1"] },
+    });
+    const compatible = {
+      ...ordinary.state.head,
+      authenticatedRoots: undefined,
+    };
+    expect(
+      (
+        await decodeDayRecords(
+          "executeModeItems",
+          compatible,
+          ordinary.state.records,
+        )
+      ).data,
+    ).toEqual({ event: { "1日目": ["1"] } });
   },
 );
