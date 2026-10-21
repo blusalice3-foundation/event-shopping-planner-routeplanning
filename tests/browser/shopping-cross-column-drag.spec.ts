@@ -2320,7 +2320,9 @@ test.describe("held touch drag cleanup", () => {
       ).toBeVisible();
       const before = (await stored(page, "executeModeItems"))[eventName];
       const source = page.locator(rowSelector(selected[0]));
-      const handle = await source.locator("[data-drag-handle]").boundingBox();
+      const handle = await source
+        .locator("[data-drag-handle] > svg")
+        .boundingBox();
       const target = await page.locator(rowSelector("held-3")).boundingBox();
       expect(handle).not.toBeNull();
       expect(target).not.toBeNull();

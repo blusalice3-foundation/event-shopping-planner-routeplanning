@@ -129,7 +129,9 @@ async function gesture(
   // Candidate range chains occupy the outer left edge; use its actual drag handle.
   const handle =
     condition.scenario === "reject"
-      ? await transferRow(page, id).locator("[data-drag-handle]").boundingBox()
+      ? await transferRow(page, id)
+          .locator("[data-drag-handle] > svg")
+          .boundingBox()
       : null;
   if (condition.scenario === "reject") expect(handle).not.toBeNull();
   const from = handle
