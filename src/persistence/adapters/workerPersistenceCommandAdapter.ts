@@ -4,6 +4,7 @@ import {
 } from "../../features/consistency/domain/context";
 import { MAPLESS_HALL_KEY } from "../../types/map";
 import {
+  validateSnapshot,
   validateSnapshotStructure,
   validateSnapshotReferences,
 } from "../../utils/appBackup";
@@ -343,10 +344,7 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
               (value): value is object => !!value && typeof value === "object",
             ),
           );
-          const errors = [
-            ...validateSnapshotStructure(scoped, true, maps),
-            ...validateSnapshotReferences(scoped, maps),
-          ];
+          const errors = validateSnapshot(scoped, maps);
           if (errors.length) throw new Error(errors.join("\n"));
         }
         // Publish a fully validated candidate once. Failed deltas cannot pollute recovery.

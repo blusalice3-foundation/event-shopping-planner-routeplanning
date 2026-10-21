@@ -26,6 +26,7 @@ import { MutationTargetMissingError } from "../../app/commands/applicationMutati
 import { planItemContentMutation } from "../../app/state/itemFieldMutation";
 import {
   validateSnapshotReferences,
+  validateSnapshot,
   validateSnapshotStructure,
 } from "../../utils/appBackup";
 import {
@@ -224,10 +225,7 @@ export function createPersistenceWorkerServer(
                       !!value && typeof value === "object",
                   ),
                 );
-                const errors = [
-                  ...validateSnapshotStructure(scoped, true, maps),
-                  ...validateSnapshotReferences(scoped, maps),
-                ];
+                const errors = validateSnapshot(scoped, maps);
                 if (errors.length) throw new Error(errors.join("\n"));
                 plan = candidate;
                 break;

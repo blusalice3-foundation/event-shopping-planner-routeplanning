@@ -1,12 +1,20 @@
 import { describe, expect, it } from "vitest";
 import type { LegacySnapshot as AppData } from "../features/consistency/domain/migration";
 import type { AppBackupEventSettings } from "./appBackup";
-import { DEFAULT_BLOCK_DETECTION_SETTINGS } from "../types/map";
+import {
+  DEFAULT_BLOCK_DETECTION_SETTINGS,
+  type DayMapData,
+  type RouteSettings,
+} from "../types/map";
+import type { ShoppingItem } from "../types/item";
 import {
   APP_BACKUP_SECTION_KEYS,
   createAppBackup,
   parseAppBackup,
   serializeAppBackup,
+  validateSnapshot,
+  validateSnapshotStructure,
+  validateSnapshotReferences,
 } from "./appBackup";
 
 const createLegacyBackup = (
@@ -954,3 +962,184 @@ it.each(["constructor", "toString", "hasOwnProperty", "__proto__"])(
     }
   },
 );
+
+describe("one-pass stable snapshot validation", () => {
+  type Snapshot = ReturnType<typeof createAppBackup>["data"];
+  const snapshot = (): Snapshot => createAppBackup(makeAppData()).data;
+  const twoPass = (data: Snapshot, maps?: WeakSet<object>) => [
+    ...validateSnapshotStructure(data, true, maps),
+    ...validateSnapshotReferences(data, maps),
+  ];
+  const cases: Array<[string, (data: Snapshot) => void]> = [
+    [
+      "missing item field",
+      (data) => delete asRecord(data.eventLists[EVENT_NAME][0]).title,
+    ],
+    [
+      "invalid price",
+      (data) =>
+        ((data.eventLists[EVENT_NAME][0] as ShoppingItem).price = Infinity),
+    ],
+    [
+      "invalid quantity",
+      (data) => ((data.eventLists[EVENT_NAME][0] as ShoppingItem).quantity = 0),
+    ],
+    [
+      "invalid purchase enum",
+      (data) =>
+        (asRecord(data.eventLists[EVENT_NAME][0]).purchaseStatus = "unknown"),
+    ],
+    [
+      "invalid optional URL",
+      (data) => (asRecord(data.eventLists[EVENT_NAME][0]).url = undefined),
+    ],
+    [
+      "invalid optional assignee",
+      (data) => (asRecord(data.eventLists[EVENT_NAME][0]).assignedTo = null),
+    ],
+    [
+      "invalid optional priority",
+      (data) =>
+        (asRecord(data.eventLists[EVENT_NAME][0]).priorityLevel = "unknown"),
+    ],
+    [
+      "invalid limited purchase",
+      (data) => {
+        const item = data.eventLists[EVENT_NAME][0] as ShoppingItem;
+        item.purchaseStatus = "LimitedPurchase";
+        item.limitedPurchasedQuantity = item.quantity;
+      },
+    ],
+    [
+      "duplicate item IDs",
+      (data) =>
+        data.eventLists[EVENT_NAME].push(
+          structuredClone(data.eventLists[EVENT_NAME][0]),
+        ),
+    ],
+    [
+      "changed item day references",
+      (data) =>
+        ((data.eventLists[EVENT_NAME][0] as ShoppingItem).eventDate = "2日目"),
+    ],
+    [
+      "missing execution reference",
+      (data) => data.executeModeItems[EVENT_NAME][EVENT_DATE].push("missing"),
+    ],
+    [
+      "invalid day mode",
+      (data) => (asRecord(data.dayModes[EVENT_NAME])[EVENT_DATE] = "unknown"),
+    ],
+    [
+      "invalid map structure",
+      (data) => (asRecord(data.mapData[EVENT_NAME][MAP_NAME]).rows = "two"),
+    ],
+    [
+      "out-of-bounds map cell",
+      (data) =>
+        ((data.mapData[EVENT_NAME][MAP_NAME] as DayMapData).cells[0].row = 999),
+    ],
+    [
+      "invalid display settings",
+      (data) =>
+        (asRecord(data.mapViewportSettings[EVENT_NAME][MAP_NAME]).zoomLevel =
+          "bad"),
+    ],
+    [
+      "invalid route reference",
+      (data) => {
+        const route = structuredClone(
+          makeAppData().routeSettings[EVENT_NAME][MAP_NAME] as RouteSettings,
+        );
+        route.visitOrder[0].itemIds.push("missing");
+        data.eventConsistency[EVENT_NAME].days[EVENT_DATE].maps[
+          MAP_NAME
+        ].route = route;
+      },
+    ],
+    [
+      "unknown event reference",
+      (data) => (data.executeModeItems.missing = { [EVENT_DATE]: ["item-1"] }),
+    ],
+    [
+      "invalid consistency structure",
+      (data) => (asRecord(data.eventConsistency[EVENT_NAME]).version = 99),
+    ],
+    [
+      "missing consistency assignment reference",
+      (data) => {
+        const day = data.eventConsistency[EVENT_NAME].days[EVENT_DATE];
+        const context = day.maps[MAP_NAME];
+        context.assignments.missing = structuredClone(
+          Object.values(context.assignments)[0],
+        );
+      },
+    ],
+    [
+      "errors across multiple stores",
+      (data) => {
+        (data.eventLists[EVENT_NAME][0] as ShoppingItem).quantity = 0;
+        data.executeModeItems[EVENT_NAME][EVENT_DATE].push("missing");
+        asRecord(data.eventMetadata[EVENT_NAME]).spreadsheetUrl = 4;
+        (data.mapData[EVENT_NAME][MAP_NAME] as DayMapData).cells[0].row = 999;
+        asRecord(data.mapViewportSettings[EVENT_NAME][MAP_NAME]).zoomLevel = -1;
+      },
+    ],
+  ];
+
+  it("preserves valid data, optional payloads and both existing public APIs", () => {
+    const data = snapshot();
+    const before = structuredClone(data);
+    expect(validateSnapshot(data)).toEqual(twoPass(data));
+    expect(validateSnapshot(data)).toEqual([]);
+    expect(data).toEqual(before);
+    expect(
+      asRecord(data.eventLists[EVENT_NAME][0]).futureOptionalField,
+    ).toEqual({ preserved: true });
+  });
+
+  it.each(cases)("retains the exact ordered errors for %s", (_name, mutate) => {
+    const data = snapshot();
+    mutate(data);
+    const before = structuredClone(data);
+    const expected = twoPass(data);
+    expect(expected.length).toBeGreaterThan(0);
+    expect(validateSnapshot(data)).toEqual(expected);
+    expect(data).toEqual(before);
+  });
+
+  it("retains validated-map behavior without skipping other store or reference errors", () => {
+    const data = snapshot();
+    const map = data.mapData[EVENT_NAME][MAP_NAME] as DayMapData;
+    asRecord(map).rows = "already validated immutable geometry";
+    (data.eventLists[EVENT_NAME][0] as ShoppingItem).quantity = 0;
+    data.executeModeItems[EVENT_NAME][EVENT_DATE].push("missing");
+    const maps = new WeakSet<object>([map]);
+    const expected = twoPass(data, maps);
+    expect(expected.length).toBeGreaterThan(0);
+    expect(validateSnapshot(data, maps)).toEqual(expected);
+    expect(expected.join("\n")).not.toContain(`${MAP_NAME}.rows`);
+    expect(expected.join("\n")).toContain("quantity");
+    expect(expected.join("\n")).toContain("missing");
+  });
+
+  it("traverses item-local fields once while retaining all errors", () => {
+    const data = snapshot();
+    const item = data.eventLists[EVENT_NAME][0] as ShoppingItem;
+    const title = item.title;
+    let reads = 0;
+    Object.defineProperty(item, "title", {
+      enumerable: true,
+      get: () => {
+        reads++;
+        return title;
+      },
+    });
+    const actual = validateSnapshot(data);
+    const onePassReads = reads;
+    reads = 0;
+    expect(twoPass(data)).toEqual(actual);
+    expect(onePassReads).toBeGreaterThan(0);
+    expect(reads).toBe(onePassReads * 2);
+  });
+});
