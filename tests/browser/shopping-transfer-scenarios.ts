@@ -179,6 +179,7 @@ export async function prepareAcceptedScenario(
     sourceId: scenario.sourceId,
     anchorId: scenario.anchorId,
     expectedTransferredIds: scenario.effectiveIds,
+    nextInputTarget: "topmost-visible-unmoved-destination",
     anchorPosition: scenario.anchorPosition,
     guideKind: "either",
   };

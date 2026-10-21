@@ -34,6 +34,8 @@ export type TransferMeasurementOptions = {
   gestureTargetSelector?: string;
   guideKind?: "insert" | "merge" | "either";
   pendingInput?: boolean;
+  nextInputId?: string;
+  nextInputTarget?: "anchor" | "topmost-visible-unmoved-destination";
   gesture?: () => Promise<Record<string, unknown> | void>;
   recaptureAfterGesture?: boolean;
   scenarioEvidence?: Record<string, unknown>;
@@ -43,6 +45,22 @@ export type FrameRect = Rect & {
   itemId: string;
   role: "source-gap" | "source-origin" | "destination-card";
 };
+type InputHit = {
+  itemId: string | null;
+  column: string | null;
+  tagName: string | null;
+  type: string | null;
+  exactInput: boolean;
+};
+type InputPreparation = {
+  targetId: string;
+  point: { x: number; y: number };
+  rect: Rect;
+  checked: boolean;
+  viewport: { width: number; height: number };
+  actualHit: InputHit;
+  hitTestMatched: boolean;
+};
 type ClickObservation = {
   durationMs: number;
   eventEpoch: number;
@@ -50,10 +68,13 @@ type ClickObservation = {
   matched: boolean;
   trusted: boolean;
   queueDelayMs: number;
+  inputPoint: { x: number; y: number };
+  actualHit: InputHit;
 };
 type Probe = {
   id: string;
   anchor: string;
+  nextInputId: string;
   source: string;
   destination: string;
   startMs: number;
@@ -449,6 +470,7 @@ async function armProbe(
     | "expectedTransferredIds"
     | "anchorPosition"
     | "pendingInput"
+    | "nextInputId"
   > = {},
 ) {
   return page.evaluate(
@@ -460,6 +482,7 @@ async function armProbe(
       const state: Probe = {
         id,
         anchor,
+        nextInputId: options.nextInputId ?? anchor,
         source,
         destination,
         startMs: 0,
@@ -564,6 +587,16 @@ async function armProbe(
         if (!target.matches('input[type="checkbox"]')) return;
         const targetId =
           target.closest<HTMLElement>("[data-item-id]")?.dataset.itemId ?? "";
+        const inputPoint = { x: event.clientX, y: event.clientY };
+        const actualHit = {
+          itemId: targetId || null,
+          column:
+            target.closest<HTMLElement>("[data-shopping-drag-column]")?.dataset
+              .shoppingDragColumn ?? null,
+          tagName: target.tagName,
+          type: (target as HTMLInputElement).type,
+          exactInput: target.matches("input[type=checkbox]"),
+        };
         const expected = state.clicks++ === 0;
         const field =
           options.pendingInput === false
@@ -580,10 +613,12 @@ async function armProbe(
               eventEpoch,
               targetId,
               matched:
-                targetId === anchor &&
+                targetId === state.nextInputId &&
                 (target as HTMLInputElement).checked === expected,
               trusted: event.isTrusted,
               queueDelayMs,
+              inputPoint,
+              actualHit,
             };
           }, 0),
         );
@@ -696,6 +731,84 @@ export async function beginGesture(
       .first(),
   ).toBeVisible();
   return { ...to, sourcePoint: from, sourceOrigin };
+}
+/** Resolve one real checkbox before input. Never scroll, wait, or retarget a fixed ID. */
+async function prepareNextInput(
+  page: Page,
+  destination: string,
+  excludedIds: readonly string[],
+  targetId: string | undefined,
+  expectedChecked: boolean,
+): Promise<InputPreparation> {
+  const result = await page.evaluate(
+    ({ destination, excludedIds, targetId, expectedChecked }) => {
+      const root = document.querySelector<HTMLElement>(
+        `[data-shopping-drag-column="${destination}"]`,
+      );
+      const candidates = [
+        ...(root?.querySelectorAll<HTMLInputElement>(
+          'input[type="checkbox"]',
+        ) ?? []),
+      ].flatMap((input) => {
+        const row = input.closest<HTMLElement>(
+          "[data-item-id]:not([data-space-group-key]):not(.esp-shopping-touch-clone)",
+        );
+        const id = row?.dataset.itemId;
+        if (!id || (targetId && id !== targetId)) return [];
+        const r = input.getBoundingClientRect();
+        const point = { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+        const hit = document.elementFromPoint(point.x, point.y);
+        const actualHit = {
+          itemId:
+            hit?.closest<HTMLElement>("[data-item-id]")?.dataset.itemId ?? null,
+          column:
+            hit?.closest<HTMLElement>("[data-shopping-drag-column]")?.dataset
+              .shoppingDragColumn ?? null,
+          tagName: hit?.tagName ?? null,
+          type: hit instanceof HTMLInputElement ? hit.type : null,
+          exactInput: hit === input,
+        };
+        return [
+          {
+            targetId: id,
+            point,
+            rect: { x: r.x, y: r.y, width: r.width, height: r.height },
+            checked: input.checked,
+            viewport: { width: innerWidth, height: innerHeight },
+            actualHit,
+            hitTestMatched:
+              !excludedIds.includes(id) &&
+              !input.disabled &&
+              input.checked === expectedChecked &&
+              r.width > 0 &&
+              r.height > 0 &&
+              point.x > 0 &&
+              point.x < innerWidth &&
+              point.y > 0 &&
+              point.y < innerHeight &&
+              hit === input,
+          },
+        ];
+      });
+      candidates.sort((a, b) => a.point.y - b.point.y || a.point.x - b.point.x);
+      return {
+        selected: targetId
+          ? candidates[0]
+          : candidates.find((candidate) => candidate.hitTestMatched),
+        candidates,
+      };
+    },
+    { destination, excludedIds: [...excludedIds], targetId, expectedChecked },
+  );
+  expect(
+    result.selected,
+    `No eligible next-input checkbox: ${JSON.stringify(result.candidates)}`,
+  ).toBeDefined();
+  expect(
+    result.selected!.hitTestMatched,
+    `Next-input hit-test failed: ${JSON.stringify(result.selected)}`,
+  ).toBe(true);
+  return result.selected!;
 }
 const clickAt = (session: CDPSession, point: { x: number; y: number }) => {
   const down = session.send("Input.dispatchMouseEvent", {
@@ -850,6 +963,18 @@ export async function measureTransfer(
           `${rect.itemId}: source identity must be observable before drop`,
         ).toBeGreaterThan(20);
     }
+    const nextInputStrategy = options.nextInputTarget ?? "anchor";
+    const nextInput = !frame
+      ? await prepareNextInput(
+          page,
+          destination,
+          options.expectedTransferredIds ?? [id],
+          options.nextInputId ??
+            (nextInputStrategy === "anchor" ? anchor : undefined),
+          false,
+        )
+      : undefined;
+    const nextInputId = nextInput?.targetId ?? anchor;
     await armProbe(
       page,
       id,
@@ -864,16 +989,10 @@ export async function measureTransfer(
         anchorPosition:
           options.anchorPosition ?? (prefix === "e" ? "before" : "after"),
         pendingInput: options.pendingInput,
+        nextInputId,
       },
     );
-    const checkbox = await transferRow(page, anchor)
-      .locator('input[type="checkbox"]')
-      .boundingBox();
-    expect(checkbox).not.toBeNull();
-    const nextPoint = {
-      x: checkbox!.x + checkbox!.width / 2,
-      y: checkbox!.y + checkbox!.height / 2,
-    };
+
     // Playwright completes the browser's native drag dispatch; it does not await application persistence.
     if (condition.input === "native") await page.mouse.up();
     else
@@ -884,7 +1003,7 @@ export async function measureTransfer(
       });
     // Do not wait for UI or save completion before sending the next trusted input.
     if (!frame && options.pendingInput !== false)
-      await clickAt(session, nextPoint);
+      await clickAt(session, nextInput!.point);
     await page.waitForFunction(
       () =>
         window.__shoppingTransferProbe?.responseMs !== null ||
@@ -955,6 +1074,7 @@ export async function measureTransfer(
       scenarioEvidence: options.scenarioEvidence,
       expectedTransferredIds: options.expectedTransferredIds ?? [id],
       visibleTransferredIds: observedVisibleIds,
+      ...(!frame ? { nextInputId, nextInputStrategy } : {}),
     };
     if (!frame) {
       if (options.pendingInput !== false) {
@@ -976,14 +1096,14 @@ export async function measureTransfer(
           "pending input must occur before this move's save complete",
         ).toBeLessThan(saved.at);
       }
-      const afterCheckbox = await transferRow(page, anchor)
-        .locator('input[type="checkbox"]')
-        .boundingBox();
-      expect(afterCheckbox).not.toBeNull();
-      await clickAt(session, {
-        x: afterCheckbox!.x + afterCheckbox!.width / 2,
-        y: afterCheckbox!.y + afterCheckbox!.height / 2,
-      });
+      const appliedInput = await prepareNextInput(
+        page,
+        destination,
+        options.expectedTransferredIds ?? [id],
+        nextInputId,
+        options.pendingInput !== false,
+      );
+      await clickAt(session, appliedInput.point);
       await page.waitForFunction(
         () => !!window.__shoppingTransferProbe?.applied,
       );
@@ -997,9 +1117,21 @@ export async function measureTransfer(
       return {
         response: { ...common, durationMs: state.responseMs! },
         ...(options.pendingInput !== false
-          ? { nextPending: { ...common, ...state.pending!, targetId: anchor } }
+          ? {
+              nextPending: {
+                ...common,
+                ...state.pending!,
+                targetId: nextInputId,
+                inputPreparation: nextInput,
+              },
+            }
           : {}),
-        nextApplied: { ...common, ...state.applied!, targetId: anchor },
+        nextApplied: {
+          ...common,
+          ...state.applied!,
+          targetId: nextInputId,
+          inputPreparation: appliedInput,
+        },
         save: { ...common, durationMs: saved.at - state.startEpoch },
       };
     }
