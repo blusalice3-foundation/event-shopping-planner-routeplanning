@@ -602,7 +602,7 @@ export async function verifyFrameFiles(artifact, outputRoot, hashes) {
   }
   for (const sample of artifact.metrics.frame.samples) {
     const traceBytes = await checkedFile(sample, "trace");
-    const frame = await checkedFile(sample, "frame");
+    await checkedFile(sample, "frame");
     await checkedFile(sample, "reference");
     await checkedFile(sample, "baseline");
     const events = JSON.parse(traceBytes.toString("utf8")).traceEvents;
@@ -625,6 +625,10 @@ export async function verifyFrameFiles(artifact, outputRoot, hashes) {
     const dom = find(`${sample.measurementId}:dom`, correlation.dom);
     const paint = find("Paint", correlation.paint);
     const draw = find("DrawFrame", correlation.drawFrame);
+    assert(
+      sample.captureMethod === "Page.startScreencast(png)",
+      "Acceptance frame captureMethod must be Page.startScreencast(png)",
+    );
     if (sample.captureMethod === "Page.startScreencast(png)") {
       const metadataBytes = await checkedFile(sample, "frameMetadata");
       const savedMetadata = JSON.parse(metadataBytes.toString("utf8"));
@@ -791,93 +795,6 @@ export async function verifyFrameFiles(artifact, outputRoot, hashes) {
               ),
           ),
         "Screencast controls were not verified",
-      );
-    } else if (
-      sample.captureMethod === "Page.captureScreenshot(fromSurface:true)"
-    ) {
-      assert(
-        sample.captureTimestampKind === "upper-bound",
-        "Captured compositor frames require conservative upper-bound timestamps",
-      );
-      const capture = find(correlation.capture?.name, correlation.capture);
-      const sourcePaint = find("Paint", correlation.sourcePaint);
-      const covers = (event, rect) => {
-        const clip = event?.args?.data?.clip;
-        if (
-          !Array.isArray(clip) ||
-          clip.length < 8 ||
-          !rect ||
-          ![rect.x, rect.y, rect.width, rect.height].every(Number.isFinite) ||
-          rect.width <= 0 ||
-          rect.height <= 0
-        )
-          return false;
-        const xs = clip.filter((_, i) => i % 2 === 0),
-          ys = clip.filter((_, i) => i % 2 === 1);
-        return (
-          Math.min(...xs) <= rect.x &&
-          Math.max(...xs) >= rect.x + rect.width &&
-          Math.min(...ys) <= rect.y &&
-          Math.max(...ys) >= rect.y + rect.height
-        );
-      };
-      assert(
-        input &&
-          dom &&
-          paint &&
-          sourcePaint &&
-          draw &&
-          capture &&
-          correlation.capture.name.startsWith(
-            `${sample.measurementId}:captured:`,
-          ) &&
-          input.pid === dom.pid &&
-          dom.pid === paint.pid &&
-          paint.pid === sourcePaint.pid &&
-          sourcePaint.pid === draw.pid &&
-          draw.pid === capture.pid &&
-          input.ts <= dom.ts &&
-          dom.ts <= Math.min(paint.ts, sourcePaint.ts) &&
-          Math.max(paint.ts, sourcePaint.ts) <= draw.ts &&
-          draw.ts <= capture.ts &&
-          covers(paint, correlation.targetRect) &&
-          covers(sourcePaint, correlation.sourceRect),
-        "Captured frame DOM/Paint/DrawFrame correlation mismatch",
-      );
-      assert(
-        sameNumber(
-          sample.durationMs,
-          (capture.ts - input.ts) / 1000 + sample.markerDelayMs,
-        ) && sameNumber(sample.durationMs, sample.frameTimestampMs),
-        "Captured frame upper-bound timing mismatch",
-      );
-    } else {
-      const screenshot = find("Screenshot", correlation.screenshot);
-      assert(
-        input &&
-          dom &&
-          paint &&
-          draw &&
-          screenshot &&
-          input.pid === dom.pid &&
-          dom.pid === paint.pid &&
-          paint.pid === draw.pid &&
-          input.ts <= dom.ts &&
-          dom.ts <= paint.ts &&
-          paint.ts <= draw.ts &&
-          draw.ts <= screenshot.ts,
-        "Frame trace event correlation mismatch",
-      );
-      assert(
-        Buffer.from(screenshot.args?.snapshot ?? "", "base64").equals(frame),
-        "Selected frame does not match the trace screenshot",
-      );
-      assert(
-        sameNumber(
-          sample.durationMs,
-          (screenshot.ts - input.ts) / 1000 + sample.markerDelayMs,
-        ) && sameNumber(sample.durationMs, sample.frameTimestampMs),
-        "Frame timing does not match trace input/screenshot timestamps",
       );
     }
     const scores = correlation.comparison?.scores;

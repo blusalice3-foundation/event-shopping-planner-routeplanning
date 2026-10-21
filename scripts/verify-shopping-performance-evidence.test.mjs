@@ -265,32 +265,104 @@ async function fixture(t, group = "shopping") {
           dom: { pid: 1, ts: began + 1000 },
           paint: { pid: 1, ts: began + 2000 },
           drawFrame: { pid: 1, ts: began + 3000 },
-          screenshot: { pid: 1, ts: began + sample.durationMs * 1000 },
         };
         trace.push(
           { name: `${sample.measurementId}:input`, ...points.input },
           { name: `${sample.measurementId}:dom`, ...points.dom },
-          { name: "Paint", ...points.paint },
-          { name: "DrawFrame", ...points.drawFrame },
           {
-            name: "Screenshot",
-            ...points.screenshot,
-            args: { snapshot: image.toString("base64") },
+            name: "Paint",
+            ...points.paint,
+            args: { data: { clip: [0, 0, 1440, 0, 1440, 1000, 0, 1000] } },
           },
+          { name: "DrawFrame", ...points.drawFrame },
         );
+        const sourceRect = { x: 20, y: 100, width: 400, height: 100 };
+        const targetRect = { x: 700, y: 100, width: 400, height: 100 };
+        const sourceRole =
+          sample.visualTarget === "source-origin"
+            ? "source-origin"
+            : "source-gap";
+        const score = (rect, role) => ({
+          itemId: sample.targetId,
+          role,
+          rect,
+          frameError: 0,
+          baselineError: 1,
+          controlErrors: [0, 0],
+          identityRect: {
+            x: rect.x + 70,
+            y: rect.y + 5,
+            width: 300,
+            height: 90,
+          },
+          controlRects: [
+            { x: rect.x + 7, y: rect.y + 7, width: 38, height: 30 },
+            { x: rect.x + 200, y: rect.y + 5, width: 190, height: 75 },
+          ],
+        });
         sample.markerDelayMs = 0;
         sample.paintCorrelated = true;
         sample.drawFrameCorrelated = true;
+        sample.captureMethod = "Page.startScreencast(png)";
+        sample.captureTimestampKind = "frame-swap-upper-bound";
+        sample.expectedTransferredIds = [sample.targetId];
+        sample.visibleSourceIds = [sample.targetId];
+        sample.visibleTransferredIds = [sample.targetId];
+        sample.allVisibleDestinationCardsVerified = true;
+        const timestamp = (sample.startEpoch + sample.durationMs) / 1000;
         sample.correlation = {
           ...points,
+          sourcePaint: points.paint,
+          sourceRect,
+          targetRect,
+          sourceProofs: [
+            {
+              sourceId: sample.targetId,
+              rect: sourceRect,
+              paint: { ...points.paint, itemId: sample.targetId },
+              scoreIndex: 0,
+            },
+          ],
+          targetProofs: [
+            {
+              targetId: sample.targetId,
+              rect: targetRect,
+              paint: { ...points.paint, itemId: sample.targetId },
+              scoreIndex: 1,
+            },
+          ],
+          frame: {
+            epochMs: timestamp * 1000,
+            traceTs: began + (timestamp * 1000 - sample.startEpoch) * 1000,
+            sessionId: i + 1,
+          },
           comparison: {
             matched: true,
             scores: [
-              { frameError: 0, baselineError: 1 },
-              { frameError: 0, baselineError: 1 },
+              score(sourceRect, sourceRole),
+              score(targetRect, "destination-card"),
             ],
           },
         };
+        const bytes = Buffer.from(
+          JSON.stringify({
+            method: "Page.startScreencast",
+            format: "png",
+            maxWidth: 1440,
+            maxHeight: 1000,
+            everyNthFrame: 1,
+            acknowledged: true,
+            sessionId: i + 1,
+            metadata: { timestamp },
+            frameSha256: createHash("sha256").update(image).digest("hex"),
+          }),
+        );
+        const filename = path.join(directory, `metadata-${i}.json`);
+        await writeFile(filename, bytes);
+        sample.frameMetadataPath = filename;
+        sample.frameMetadataSha256 = createHash("sha256")
+          .update(bytes)
+          .digest("hex");
       }
       const files = {
         trace: Buffer.from(JSON.stringify({ traceEvents: trace })),
@@ -561,9 +633,9 @@ for (const [label, mutate] of [
     },
   ],
   [
-    "wrong screenshot",
+    "wrong selected frame",
     (sample) => {
-      sample.correlation.screenshot.ts += 1;
+      sample.correlation.frame.traceTs += 1;
     },
   ],
   [
@@ -1046,3 +1118,14 @@ test("same-column frames require every retained source origin and moved target i
   f.sample.visibleTransferredIds.push("second-selected-item");
   await assert.rejects(f.verify(), /Every visible moved/);
 });
+
+for (const method of [
+  undefined,
+  "Screenshot",
+  "Page.captureScreenshot(fromSurface:true)",
+])
+  test(`acceptance rejects unsupported frame capture method ${method}`, async (t) => {
+    const f = await screencastProofFixture(t);
+    f.sample.captureMethod = method;
+    await assert.rejects(f.verify(), /captureMethod/);
+  });
