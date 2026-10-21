@@ -8,6 +8,7 @@ import { scopeDaySnapshot } from "../../features/consistency/domain/dayMutation"
 import type {
   ApplicationSnapshotRead,
   ApplicationDayMutation,
+  ApplicationShoppingMove,
   ApplicationDayScope,
   ApplicationBackupFile,
   PersistenceSnapshot,
@@ -54,6 +55,7 @@ export interface MutationIntent {
   expectedGenerations?: Record<string, number>;
   itemContentEdits?: readonly ItemContentEdit[];
   dayMutation?: ApplicationDayMutation;
+  shoppingMove?: ApplicationShoppingMove;
   /** Check ephemeral UI sessions before taking a worker fast path or retrying a review. */
   assertApplicable?(): void;
   /** Keep ordinary accepted edits visible after persistence failures or exhausted CAS retries. */
@@ -130,6 +132,11 @@ export interface MutationCoordinatorPorts {
     base: PersistenceSnapshot,
     accepted: PersistenceSnapshot,
   ): Promise<ApplicationBackupFile>;
+  commitShoppingMove?(
+    command: ApplicationShoppingMove,
+    operationId: string,
+    expectedEventGenerations: Readonly<Record<string, number>>,
+  ): Promise<ApplicationItemEditsResult>;
   commitDayMutation?(
     command: ApplicationDayMutation,
     operationId: string,
@@ -320,19 +327,27 @@ export function createApplicationMutationCoordinator(
     const afterDrain = validity();
     if (afterDrain) return afterDrain;
     if (
-      operation.intent.dayMutation &&
-      ports.commitDayMutation &&
+      (operation.intent.shoppingMove || operation.intent.dayMutation) &&
+      (operation.intent.shoppingMove
+        ? ports.commitShoppingMove
+        : ports.commitDayMutation) &&
       !operation.confirmation &&
       !confirmation &&
       !ports.hasPendingAcceptedChanges?.(id)
     ) {
       setCommitting(operation, true);
       try {
-        const result = await ports.commitDayMutation(
-          operation.intent.dayMutation,
-          id,
-          durableGenerations,
-        );
+        const result = operation.intent.shoppingMove
+          ? await ports.commitShoppingMove!(
+              operation.intent.shoppingMove,
+              id,
+              durableGenerations,
+            )
+          : await ports.commitDayMutation!(
+              operation.intent.dayMutation!,
+              id,
+              durableGenerations,
+            );
         if (result.status === "committed") {
           const nextGenerations =
             result.read.eventGenerations ?? durableGenerations;

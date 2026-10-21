@@ -139,6 +139,23 @@ export type ApplicationDayMutation =
       mapKey: string;
       viewport: MapViewportState;
     };
+/** Serializable, order-only intent. Item content is always taken from current storage. */
+export interface ApplicationShoppingMove {
+  version: 1;
+  eventName: string;
+  day: string;
+  sourceColumn: "execute" | "candidate";
+  targetColumn: "execute" | "candidate";
+  requestedIds: readonly string[];
+  effectiveIds: readonly string[];
+  hoverId: string;
+  candidateSortMode?: string;
+  baselineVisits: readonly { id: string; key: string }[];
+  baselineItemIds: readonly string[];
+  itemIds: readonly string[];
+  baselineExecuteIds: readonly string[];
+  executeIds: readonly string[];
+}
 export type ApplicationItemEditsResult =
   | { status: "committed"; read: ApplicationSnapshotRead }
   | { status: "review-required" };
@@ -256,6 +273,11 @@ export interface PersistenceCommandPort extends PreferencePersistencePort {
   ): Promise<ApplicationBackupFile>;
   commitDayMutation?(
     command: ApplicationDayMutation,
+    operationId: string,
+    expectedEventGenerations: Readonly<Record<string, number>>,
+  ): Promise<ApplicationItemEditsResult>;
+  commitShoppingMove?(
+    command: ApplicationShoppingMove,
     operationId: string,
     expectedEventGenerations: Readonly<Record<string, number>>,
   ): Promise<ApplicationItemEditsResult>;

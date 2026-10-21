@@ -686,6 +686,51 @@ export async function commitDayCommandSnapshot(
     target,
   );
 }
+/** Shopping moves require the complete verified item root; never synthesize it from a day. */
+export async function readShoppingCommandSnapshot(
+  target: DayStorageTarget,
+): Promise<ApplicationSnapshotRead | undefined> {
+  const read = await readDayCommandSnapshot(target);
+  return read.scopeTarget ? undefined : read;
+}
+/** Separate capability: ordinary day commands still cannot modify item order. */
+export async function commitShoppingCommandSnapshot(
+  data: AppData,
+  expectedRoots: object,
+  target: DayStorageTarget,
+): Promise<void> {
+  const observation = applicationSnapshotObservations.get(expectedRoots);
+  if (
+    !observation ||
+    observation.scopeTarget ||
+    !dayCommandObservations.has(expectedRoots)
+  )
+    throw new PersistenceConflictError(
+      "Shopping move requires a verified complete item root.",
+    );
+  const before = observation.snapshot.eventLists[target.eventName] as Array<
+    Record<string, unknown>
+  >;
+  const after = data.eventLists[target.eventName] as Array<
+    Record<string, unknown>
+  >;
+  const byId = new Map(before.map((item) => [item.id, item]));
+  if (
+    byId.size !== before.length ||
+    after.length !== before.length ||
+    new Set(after.map((item) => item.id)).size !== after.length ||
+    after.some(
+      (item) => !byId.has(item.id) || !semanticEqual(byId.get(item.id), item),
+    )
+  )
+    throw new Error("Shopping move cannot change item content or membership.");
+  await commitApplicationSnapshotAtomically(
+    data,
+    { expectedRoots, changedStoresOnly: true },
+    target,
+    true,
+  );
+}
 export async function readApplicationSnapshot(
   options: { shareVerified?: boolean; prepareScopedCommands?: boolean } = {},
 ): Promise<ApplicationSnapshotRead> {
@@ -721,6 +766,7 @@ export async function commitApplicationSnapshotAtomically(
   data: AppData,
   options: AtomicSnapshotOptions = {},
   dayTarget?: DayStorageTarget,
+  shoppingMove = false,
 ): Promise<void> {
   const verifiedCommand =
     !!dayTarget &&
@@ -848,7 +894,11 @@ export async function commitApplicationSnapshotAtomically(
     if (dayTarget) {
       const before = observation.snapshot[storeName];
       const after = stableData[storeName];
-      if (!dayRecordStores.includes(storeName) && !semanticEqual(before, after))
+      if (
+        !dayRecordStores.includes(storeName) &&
+        !(shoppingMove && storeName === STORES.EVENT_LISTS) &&
+        !semanticEqual(before, after)
+      )
         throw new Error("Day commands cannot modify this store.");
       for (const eventName of new Set([
         ...Object.keys(before),
@@ -996,8 +1046,9 @@ export async function commitApplicationSnapshotAtomically(
     StoreName,
     Awaited<ReturnType<typeof prepareSidecarRecords>>
   >();
-  if (!dayTarget)
+  if (!dayTarget || shoppingMove)
     for (const store of sidecarRecordStores) {
+      if (shoppingMove && !changedStores.has(store)) continue;
       if (
         changedStores.has(store) ||
         observation.scopeReady.get(store) !==

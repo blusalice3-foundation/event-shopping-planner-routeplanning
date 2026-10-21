@@ -1,4 +1,14 @@
 import {
+  sameDay,
+  normalizeMapDay,
+} from "../../features/consistency/domain/context";
+import { MAPLESS_HALL_KEY } from "../../types/map";
+import {
+  validateSnapshotStructure,
+  validateSnapshotReferences,
+} from "../../utils/appBackup";
+import { scopeDaySnapshot } from "../../features/consistency/domain/dayMutation";
+import {
   PersistenceOutcomeUnknownError,
   isPersistenceWriteStopReason,
 } from "../../app/ports/PersistenceCommandPort";
@@ -12,6 +22,7 @@ import type {
 } from "../../app/ports/PersistenceCommandPort";
 import {
   MutationConflictError,
+  CommittedStateApplyError,
   MutationTargetMissingError,
 } from "../../app/commands/applicationMutationCoordinator";
 import { applyItemContentEdits } from "../../app/state/itemContentEdits";
@@ -24,6 +35,7 @@ import {
 } from "./indexedDbPersistenceCommandAdapter";
 import {
   applySnapshotBranches,
+  applyShoppingOrderDelta,
   type WorkerSnapshotRead,
 } from "../worker/snapshotDelta";
 
@@ -34,6 +46,7 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
   let worker: Worker | undefined;
   let sequence = 0;
   let mirror: PersistenceSnapshot | undefined;
+  let mirrorObservation = 0;
   let applicationAccess:
     | Parameters<PersistenceCommandPort["bindApplicationSettings"]>[0]
     | undefined;
@@ -62,6 +75,7 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
       mirror = applySnapshotBranches(mirror, value.delta.branches);
     if (applicationAccess)
       mirror = reuseEqualReferences(applicationAccess.read(), mirror);
+    mirrorObservation = value.observationId;
     return {
       snapshot: mirror,
       expectedRoots: { workerObservation: value.observationId },
@@ -78,7 +92,7 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
   };
   const call = (method: string, args: unknown[]): Promise<unknown> => {
     const write =
-      ["commit", "commitDay", "day", "items"].includes(method) ||
+      ["commit", "commitDay", "day", "items", "shopping"].includes(method) ||
       method.startsWith("save");
     const stopped = adapter.getWriteStopReason?.();
     if (write && stopped) return Promise.reject(stopped);
@@ -226,6 +240,144 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
       return result.status === "committed"
         ? { ...result, read: readCommitted(result.read) }
         : result;
+    },
+    commitShoppingMove: async (command, operationId, expectedGenerations) => {
+      const result = (await call("shopping", [
+        command,
+        operationId,
+        expectedGenerations,
+      ])) as
+        | { status: "review-required" }
+        | {
+            status: "committed";
+            read?: WorkerSnapshotRead;
+            deltaError?: boolean;
+          };
+      if (result.status !== "committed") return result;
+      const adopt = (
+        value: WorkerSnapshotRead,
+        full: boolean,
+      ): ApplicationSnapshotRead => {
+        if (
+          !Number.isSafeInteger(value.observationId) ||
+          value.observationId <= mirrorObservation
+        )
+          throw new Error("Invalid shopping observation.");
+        let candidate: PersistenceSnapshot;
+        if (full) {
+          if (value.consistencyMissing || value.scopeTarget)
+            throw new Error("Recovery state is incomplete.");
+          if (
+            !value.delta.full ||
+            value.delta.scope ||
+            value.delta.shoppingOrder ||
+            value.delta.items?.length ||
+            value.delta.branches?.length ||
+            Object.keys(value.delta.stores ?? {}).length
+          )
+            throw new Error("Recovery requires a complete snapshot.");
+          candidate = value.delta.full;
+          const errors = [
+            ...validateSnapshotStructure(candidate),
+            ...validateSnapshotReferences(candidate),
+          ];
+          if (errors.length) throw new Error(errors.join("\n"));
+        } else {
+          const order = value.delta.shoppingOrder;
+          if (
+            !mirror ||
+            !order ||
+            order.eventName !== command.eventName ||
+            order.day !== command.day ||
+            value.delta.full ||
+            value.delta.scope ||
+            value.delta.items?.length ||
+            Object.keys(value.delta.stores ?? {}).length ||
+            value.delta.branches?.some(
+              (branch) =>
+                branch.eventName !== command.eventName ||
+                branch.store === "eventLists" ||
+                branch.store === "mapData" ||
+                branch.store === "eventMetadata",
+            )
+          )
+            throw new Error("Invalid shopping order delta.");
+          for (const branch of value.delta.branches ?? []) {
+            const path = branch.path;
+            const key = path[0];
+            const valid =
+              branch.store === "eventConsistency"
+                ? path[0] === "days" &&
+                  typeof path[1] === "string" &&
+                  sameDay(path[1], command.day)
+                : branch.store === "executeModeItems" ||
+                    branch.store === "dayModes"
+                  ? typeof key === "string" && sameDay(key, command.day)
+                  : branch.store === "routeSettings" ||
+                      branch.store === "hallRouteSettings"
+                    ? typeof key === "string" &&
+                      (key.startsWith(MAPLESS_HALL_KEY + ":")
+                        ? sameDay(
+                            key.slice(MAPLESS_HALL_KEY.length + 1),
+                            command.day,
+                          )
+                        : normalizeMapDay(key) === normalizeMapDay(command.day))
+                    : false;
+            if (!valid)
+              throw new Error(
+                "Shopping delta changed an unvalidated day or store.",
+              );
+          }
+          candidate = applyShoppingOrderDelta(mirror, order, mirrorObservation);
+          candidate = applySnapshotBranches(
+            candidate,
+            value.delta.branches ?? [],
+          );
+          const scoped = scopeDaySnapshot(
+            candidate,
+            command.eventName,
+            command.day,
+          );
+          const maps = new WeakSet<object>(
+            Object.values(scoped.mapData[command.eventName] ?? {}).filter(
+              (value): value is object => !!value && typeof value === "object",
+            ),
+          );
+          const errors = [
+            ...validateSnapshotStructure(scoped, true, maps),
+            ...validateSnapshotReferences(scoped, maps),
+          ];
+          if (errors.length) throw new Error(errors.join("\n"));
+        }
+        // Publish a fully validated candidate once. Failed deltas cannot pollute recovery.
+        mirror = candidate;
+        mirrorObservation = value.observationId;
+        return {
+          snapshot: candidate,
+          expectedRoots: { workerObservation: value.observationId },
+          consistencyMissing: value.consistencyMissing,
+          eventGenerations: value.eventGenerations,
+        };
+      };
+      try {
+        if (result.deltaError || !result.read)
+          throw new Error("Shopping delta construction failed.");
+        return { status: "committed", read: adopt(result.read, false) };
+      } catch {
+        try {
+          return {
+            status: "committed",
+            read: adopt(
+              (await call("readFull", [])) as WorkerSnapshotRead,
+              true,
+            ),
+          };
+        } catch (error) {
+          const failure = new CommittedStateApplyError(error);
+          adapter.stopWrites?.(failure);
+          throw failure;
+        }
+      }
     },
     commitItemContentEdits: async (
       edits,

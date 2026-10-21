@@ -1215,3 +1215,56 @@ it.each([false, true])(
     }
   },
 );
+
+it("keeps a shopping UI apply failure terminal without recovery reads or resending its known commit", async () => {
+  const h = setup();
+  const snapshot = h.read();
+  const readDurable = vi.fn(async () => {
+    throw new Error("must not reread");
+  });
+  const commitShoppingMove = vi.fn(async () => ({
+    status: "committed" as const,
+    read: { snapshot, expectedRoots: {}, consistencyMissing: false },
+  }));
+  const coordinator = createApplicationMutationCoordinator({
+    readCurrent: () => snapshot,
+    drain: async () => {},
+    readDurable,
+    commit: vi.fn(),
+    commitShoppingMove,
+    apply: () => {
+      throw new Error("UI failed");
+    },
+  });
+  const intent: MutationIntent = {
+    id: "move:1",
+    events: ["event"],
+    shoppingMove: {
+      version: 1,
+      eventName: "event",
+      day: "1日目",
+      sourceColumn: "candidate",
+      targetColumn: "execute",
+      requestedIds: ["A"],
+      effectiveIds: ["A"],
+      hoverId: "__END_OF_LIST__",
+      baselineVisits: [],
+      baselineItemIds: ["A"],
+      itemIds: ["A"],
+      baselineExecuteIds: [],
+      executeIds: ["A"],
+    },
+    plan: () => {
+      throw new Error("must not replan");
+    },
+  };
+  await expect(coordinator.request(intent)).rejects.toBeInstanceOf(
+    CommittedStateApplyError,
+  );
+  expect(commitShoppingMove).toHaveBeenCalledOnce();
+  expect(readDurable).not.toHaveBeenCalled();
+  await expect(
+    coordinator.request({ ...intent, id: "move:2" }),
+  ).rejects.toBeInstanceOf(CommittedStateApplyError);
+  expect(commitShoppingMove).toHaveBeenCalledOnce();
+});
