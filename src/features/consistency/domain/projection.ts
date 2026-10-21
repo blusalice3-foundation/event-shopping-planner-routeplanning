@@ -380,15 +380,50 @@ function sameMembershipContext(
     })
   );
 }
-function projectCachedItemContent(
+/** Reordering immutable objects cannot change a uniquely determined membership. */
+function projectCachedItemOrder(
   previous: ShoppingItem[],
   items: ShoppingItem[],
   projected: ShoppingItem[],
 ): ShoppingItem[] | undefined {
+  if (previous.length !== items.length) return undefined;
+  const positions = itemPositions(previous);
+  if (positions.size !== previous.length) return undefined;
+  const seen = new Set<string>();
+  const result: ShoppingItem[] = [];
+  for (const item of items) {
+    const index = positions.get(item.id);
+    if (index === undefined || seen.has(item.id) || previous[index] !== item)
+      return undefined;
+    const value = projected[index];
+    const membership = membershipByItem.get(value);
+    // Multiple candidates can inherit their order from the peer item order.
+    if (
+      !membership ||
+      membership.candidates.length > 1 ||
+      membership.status === "confirmation-required" ||
+      membership.status === "map-selection-required" ||
+      membership.location?.status === "ambiguous"
+    )
+      return undefined;
+    seen.add(item.id);
+    result.push(value);
+  }
+  return result;
+}
+function projectCachedItemContent(
+  previous: ShoppingItem[],
+  items: ShoppingItem[],
+  projected: ShoppingItem[],
+  allowReorder: boolean,
+): ShoppingItem[] | undefined {
   if (previous === items) return projected;
   const changed = changedItemPositions(previous, items);
+  if (changed === null)
+    return allowReorder
+      ? projectCachedItemOrder(previous, items, projected)
+      : undefined;
   if (
-    changed === null ||
     changed.some(
       (index) =>
         items[index].id !== previous[index].id ||
@@ -467,6 +502,7 @@ export function createConsistencySnapshotProjector() {
               cached.items as ShoppingItem[],
               rawItems as ShoppingItem[],
               recordEntry(cached.projection.eventLists, name) as ShoppingItem[],
+              activeEvent === previousEvent && activeDay === previousDay,
             )
           : undefined;
       const projection =

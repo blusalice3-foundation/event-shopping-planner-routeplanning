@@ -464,6 +464,148 @@ function instrumentedMapSnapshot() {
   return { source, lookup };
 }
 
+describe("pure immutable item reordering", () => {
+  it("reorders current projected objects without geometry lookups and preserves current optional fields", () => {
+    const { source, lookup } = instrumentedMapSnapshot();
+    const members = source.eventLists.event as ShoppingItem[];
+    members[1] = { ...members[1], number: "1" };
+    const project = createConsistencySnapshotProjector();
+    project(source, "event", "1日目");
+    const latest = {
+      ...source,
+      eventLists: {
+        ...source.eventLists,
+        event: [
+          {
+            ...members[0],
+            quantity: 7,
+            remarks: "更新済みのメモ",
+            url: "https://example.test/latest",
+            sheetRemarks: "最新の備考",
+            sheetIdentityVerified: true,
+            limitedPurchasedQuantity: 2,
+            priorityLevel: "highest" as const,
+            protectionLevel: "full" as const,
+            assignedTo: "担当者",
+            lastSyncedAt: "2026-10-21T12:00:00Z",
+          },
+          members[1],
+        ],
+      },
+    };
+    const current = project(latest, "event", "1日目");
+    const consistency = structuredClone(source.eventConsistency);
+    const context = consistency.event.days["1日目"].maps["1日目マップ"];
+    const group = {
+      hall: { kind: "map" as const, mapKey: "1日目マップ", hallId: "hall" },
+      priority: "none" as const,
+    };
+    context.hallOrder = [group];
+    context.hallVisitLists = [{ group, itemIds: ["2", "1"] }];
+    const next = {
+      ...latest,
+      eventLists: {
+        ...latest.eventLists,
+        event: [...latest.eventLists.event].reverse(),
+      },
+      eventConsistency: consistency,
+    };
+    lookup.mockClear();
+    const after = project(next, "event", "1日目");
+    expect(lookup).not.toHaveBeenCalled();
+    expect(after.eventLists.event[0]).toBe(current.eventLists.event[1]);
+    expect(after.eventLists.event[1]).toBe(current.eventLists.event[0]);
+    expect(after.hallRouteSettings).not.toBe(current.hallRouteSettings);
+    expect(
+      projectedMembership(after.eventLists.event[1] as ShoppingItem)?.memberIds,
+    ).toEqual(["1", "2"]);
+    expectProjection(after, next);
+  });
+
+  it.each([
+    "add",
+    "remove",
+    "new-object",
+    "duplicate-next",
+    "duplicate-base",
+    "content",
+    "multiple-candidates",
+    "ambiguous-location",
+    "assignment",
+    "geometry",
+    "definitions",
+    "scope-day",
+    "scope-event",
+  ] as const)(
+    "uses the uncached geometry path for %s changes during a reorder",
+    (kind) => {
+      const { source, lookup } = instrumentedMapSnapshot();
+      if (kind === "duplicate-base")
+        source.eventLists.event = [
+          source.eventLists.event[0],
+          source.eventLists.event[0],
+          source.eventLists.event[1],
+        ];
+      if (kind === "multiple-candidates") {
+        const halls = source.hallDefinitions.event["1日目マップ"];
+        halls.push({ ...(halls[0] as HallDefinition), id: "second-hall" });
+      }
+      if (kind === "ambiguous-location") {
+        const map = source.mapData.event["1日目マップ"] as DayMapData;
+        map.blocks.push({
+          ...map.blocks[0],
+          numberCells: [
+            { row: 4, col: 4, value: 1 },
+            { row: 4, col: 5, value: 2 },
+          ],
+        });
+      }
+      const project = createConsistencySnapshotProjector();
+      project(source, "event", "1日目");
+      let members = [...source.eventLists.event].reverse() as ShoppingItem[];
+      if (kind === "add") members.push(item("3"));
+      if (kind === "remove") members = members.slice(0, 1);
+      if (kind === "new-object") members[0] = { ...members[0] };
+      if (kind === "duplicate-next") members[1] = members[0];
+      if (kind === "content")
+        members[0] = {
+          ...members[0],
+          quantity: 3,
+          url: "https://example.test/new",
+        };
+      const next = {
+        ...source,
+        eventLists: { ...source.eventLists, event: members },
+      };
+      if (kind === "assignment") {
+        next.eventConsistency = structuredClone(source.eventConsistency);
+        next.eventConsistency.event.days["1日目"].maps[
+          "1日目マップ"
+        ].assignments["1"] = {
+          kind: "map",
+          mapKey: "1日目マップ",
+          hallId: "hall",
+        };
+      }
+      if (kind === "geometry")
+        next.mapData = {
+          ...source.mapData,
+          event: { ...source.mapData.event },
+        };
+      if (kind === "definitions")
+        next.hallDefinitions = {
+          ...source.hallDefinitions,
+          event: { ...source.hallDefinitions.event },
+        };
+      const event = kind === "scope-event" ? "other" : "event";
+      const day = kind === "scope-day" ? "2日目" : "1日目";
+      lookup.mockClear();
+      const after = project(next, event, day);
+      expect(lookup.mock.calls.length).toBeGreaterThan(0);
+      expectProjection(after, next, event, day);
+    },
+  );
+});
 it("skips geometry lookups for route-only context changes while freshly projecting route settings", () => {
   const { source, lookup } = instrumentedMapSnapshot();
   const project = createConsistencySnapshotProjector();
@@ -501,7 +643,6 @@ it.each([
   "day-key",
   "definitions",
   "peer-add",
-  "peer-order",
   "number",
   "block",
   "day",
@@ -528,10 +669,9 @@ it.each([
         ...source.hallDefinitions,
         event: structuredClone(source.hallDefinitions.event),
       };
-    if (["peer-add", "peer-order", "number", "block", "day"].includes(kind)) {
-      let members = [...source.eventLists.event] as ShoppingItem[];
+    if (["peer-add", "number", "block", "day"].includes(kind)) {
+      const members = [...source.eventLists.event] as ShoppingItem[];
       if (kind === "peer-add") members.push({ ...item("3"), number: "1" });
-      if (kind === "peer-order") members = members.reverse();
       if (kind === "number") members[0] = { ...members[0], number: "3" };
       if (kind === "block") members[0] = { ...members[0], block: "B" };
       if (kind === "day") members[0] = { ...members[0], eventDate: "2日目" };
