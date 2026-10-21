@@ -396,21 +396,67 @@ export async function installCommitProbe(page: Page) {
     const state = globalThis as unknown as {
       __transferCommits: Commit[];
       __transferCurrentOperation?: string;
+      __shoppingWorkerDiagnosticProbe?: unknown;
+      __transferCommitProbe?: {
+        marker: symbol;
+        identity: object;
+        transaction: typeof IDBDatabase.prototype.transaction;
+      };
     };
-    state.__transferCommits = [];
-    globalThis.addEventListener(
-      "message",
-      (event: MessageEvent<{ method?: string; args?: unknown[] }>) => {
-        if (["shopping", "commitDay", "day"].includes(event.data?.method ?? ""))
+    const installed = state.__transferCommitProbe;
+    if (installed) {
+      // Transparent outer diagnostic Proxies forward this private marker.
+      // Reinstallation resets records without adding another dispatch/tx wrapper.
+      if (
+        typeof globalThis.onmessage !== "function" ||
+        Reflect.get(globalThis.onmessage, installed.marker) !==
+          installed.identity ||
+        IDBDatabase.prototype.transaction !== installed.transaction
+      )
+        throw new Error("Transfer commit probe hooks were replaced");
+      state.__transferCommits = [];
+      state.__transferCurrentOperation = undefined;
+      return;
+    }
+    if (state.__shoppingWorkerDiagnosticProbe)
+      throw new Error(
+        "Install the transfer commit probe before the Worker diagnostic dispatcher",
+      );
+    const originalHandler = globalThis.onmessage;
+    if (typeof originalHandler !== "function")
+      throw new Error("The existing Worker onmessage handler is not callable");
+    const marker = Symbol("transfer-commit-probe");
+    const identity = {};
+    const handler = new Proxy(originalHandler, {
+      apply(target, receiver, args) {
+        try {
+          const event = args[0] as
+            | MessageEvent<{ method?: string; args?: unknown[] }>
+            | undefined;
+          const data = event?.data;
+          const method = data?.method;
           state.__transferCurrentOperation =
-            typeof event.data.args?.[1] === "string"
-              ? event.data.args[1]
+            (method === "shopping" ||
+              method === "commitDay" ||
+              method === "day") &&
+            typeof data?.args?.[1] === "string"
+              ? data.args[1]
               : undefined;
+        } catch {
+          state.__transferCurrentOperation = undefined;
+        }
+        // Same call stack, before the original handler can queue cached-first work.
+        // Preserve the original receiver, arguments, return and thrown error.
+        return Reflect.apply(target, receiver, args);
       },
-      true,
-    );
+      get(target, key, receiver) {
+        if (key === marker) return identity;
+        return Reflect.get(target, key, receiver);
+      },
+    });
     const original = IDBDatabase.prototype.transaction;
-    IDBDatabase.prototype.transaction = function (
+    const transaction: typeof original = function (
+      this: IDBDatabase,
       ...args: Parameters<IDBDatabase["transaction"]>
     ) {
       const tx = original.apply(this, args);
@@ -445,9 +491,31 @@ export async function installCommitProbe(page: Page) {
       }
       return tx;
     };
+    state.__transferCommits = [];
+    state.__transferCurrentOperation = undefined;
+    try {
+      globalThis.onmessage = handler;
+      if (globalThis.onmessage !== handler)
+        throw new Error(
+          "Transfer commit dispatch Proxy assignment did not persist",
+        );
+      IDBDatabase.prototype.transaction = transaction;
+      if (IDBDatabase.prototype.transaction !== transaction)
+        throw new Error(
+          "Transfer commit transaction wrapper assignment did not persist",
+        );
+      state.__transferCommitProbe = { marker, identity, transaction };
+    } catch (error) {
+      if (globalThis.onmessage === handler)
+        globalThis.onmessage = originalHandler;
+      if (IDBDatabase.prototype.transaction === transaction)
+        IDBDatabase.prototype.transaction = original;
+      throw error;
+    }
   });
   return worker!;
 }
+
 export async function waitForTransferIdle(page: Page) {
   await page.evaluate(async () => {
     await document.fonts.ready;

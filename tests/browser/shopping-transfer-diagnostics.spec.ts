@@ -484,9 +484,11 @@ for (const profile of [
       expect(workerCpuProfile?.commandWindow.status).toBe("available");
       expect(workerCpuProfile?.target?.identityVerified).toBe(true);
       expect(
-        workerCpuProfile?.commandWindow.topSelfTimeFrames?.some(
-          (row) => row.url === workerProfiler?.target.url,
-        ),
+        workerCpuProfile &&
+          "topSelfTimeFrames" in workerCpuProfile.commandWindow &&
+          workerCpuProfile.commandWindow.topSelfTimeFrames?.some(
+            (row) => row.url === workerProfiler?.target.url,
+          ),
         "Actual shopping command must contain measured Worker bundle samples",
       ).toBe(true);
     });
@@ -801,4 +803,305 @@ test("Worker dispatch contract fails closed for missing, replaced and ambiguous 
       data.handlerHook,
     ).status,
   ).toBe("unavailable");
+});
+
+const source = `
+let database;
+self.__returnSentinel = { original: true };
+self.__errorSentinel = new Error("original handler error");
+const opened = indexedDB.open("transfer-commit-probe-contract", 1);
+opened.onupgradeneeded = () => opened.result.createObjectStore("rows");
+opened.onsuccess = () => {
+  database = opened.result;
+  self.postMessage({ ready: true });
+};
+self.onmessage = function(event) {
+  const message = event.data;
+  if (message.method === "return-check" || message.method === "throw-check") {
+    self.__lastOriginalCall = { receiver: this, args: Array.from(arguments) };
+    if (message.method === "throw-check") throw self.__errorSentinel;
+    return self.__returnSentinel;
+  }
+  if (message.method === "read") {
+    self.postMessage({ id: message.id, ok: true });
+    return;
+  }
+  const run = () => {
+    const transaction = database.transaction("rows", "readwrite");
+    transaction.objectStore("rows").put(
+      { operation: message.args[1] },
+      String(message.id),
+    );
+    transaction.oncomplete = () => self.postMessage({ id: message.id, ok: true });
+    transaction.onabort = () => self.postMessage({ id: message.id, ok: false });
+    return transaction;
+  };
+  if (message.mode === "blocked") {
+    self.__resumeMiniWrite = run;
+    self.postMessage({ waiting: message.id });
+    return;
+  }
+  if (message.mode === "cached") {
+    void Promise.resolve().then(run);
+    return;
+  }
+  if (message.mode === "async") {
+    setTimeout(run, 0);
+    return;
+  }
+  return run();
+};
+`;
+type MiniMessage = {
+  id: number;
+  method: string;
+  mode: "sync" | "cached" | "async" | "blocked";
+  args: unknown[];
+};
+type MiniWindow = Window & {
+  __miniReady: boolean;
+  __miniWaiting?: number;
+  __miniCompleted: number[];
+  __miniSend(message: MiniMessage): Promise<{ id: number; ok: boolean }>;
+};
+async function harness(page: Page) {
+  await page.route("**/__commit-probe__/harness", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      headers: {
+        "Content-Security-Policy":
+          "default-src 'self'; script-src 'self'; worker-src 'self'; object-src 'none'",
+      },
+      body: "<!doctype html><title>Commit probe contract fixture</title>",
+    }),
+  );
+  await page.route("**/__commit-probe__/persistence.worker.js", (route) =>
+    route.fulfill({ contentType: "application/javascript", body: source }),
+  );
+  await page.goto("/__commit-probe__/harness");
+  const created = page.waitForEvent("worker");
+  await page.evaluate(() => {
+    const state = window as unknown as MiniWindow;
+    const worker = new Worker("/__commit-probe__/persistence.worker.js");
+    const pending = new Map<
+      number,
+      (reply: { id: number; ok: boolean }) => void
+    >();
+    state.__miniReady = false;
+    state.__miniCompleted = [];
+    worker.addEventListener("message", (event) => {
+      if (event.data.ready) state.__miniReady = true;
+      else if (event.data.waiting) state.__miniWaiting = event.data.waiting;
+      else {
+        state.__miniCompleted.push(event.data.id);
+        const resolve = pending.get(event.data.id);
+        pending.delete(event.data.id);
+        resolve?.(event.data);
+      }
+    });
+    state.__miniSend = (message) =>
+      new Promise((resolve) => {
+        pending.set(message.id, resolve);
+        worker.postMessage(message);
+      });
+  });
+  const worker = await created;
+  await page.waitForFunction(
+    () => (window as unknown as MiniWindow).__miniReady,
+  );
+  return worker;
+}
+async function exchange(
+  page: Page,
+  id: number,
+  operation: unknown,
+  mode: MiniMessage["mode"],
+  method = "shopping",
+) {
+  return page.evaluate(
+    (message) => (window as unknown as MiniWindow).__miniSend(message),
+    { id, method, mode, args: [{}, operation] },
+  );
+}
+test("@shopping-performance @shopping-transfer-worker-probe-contract @shopping-transfer-commit-probe-contract binds current sync/cached and async transactions", async ({
+  page,
+}) => {
+  const worker = await harness(page);
+  await installCommitProbe(page);
+  expect((await exchange(page, 1, "operation:old", "sync")).ok).toBe(true);
+  expect((await exchange(page, 2, "operation:current", "cached")).ok).toBe(
+    true,
+  );
+  expect((await exchange(page, 3, "operation:async", "async")).ok).toBe(true);
+  expect((await exchange(page, 4, { revision: 1 }, "async", "commit")).ok).toBe(
+    true,
+  );
+  // An unknown RPC during an outstanding async write must not inherit a stale ID.
+  // This deliberately exceeds the normal benchmark's serialized request contract.
+  await page.evaluate(() => {
+    void (window as unknown as MiniWindow).__miniSend({
+      id: 5,
+      method: "shopping",
+      mode: "blocked",
+      args: [{}, "operation:blocked"],
+    });
+  });
+  await page.waitForFunction(
+    () => (window as unknown as MiniWindow).__miniWaiting === 5,
+  );
+  expect((await exchange(page, 6, undefined, "sync", "read")).ok).toBe(true);
+  await worker.evaluate(() => {
+    (
+      globalThis as unknown as { __resumeMiniWrite(): void }
+    ).__resumeMiniWrite();
+  });
+  await page.waitForFunction(() =>
+    (window as unknown as MiniWindow).__miniCompleted.includes(5),
+  );
+  const commits = await worker.evaluate(
+    () =>
+      (
+        globalThis as unknown as {
+          __transferCommits: Array<{
+            at: number;
+            operationId?: string;
+            stores: string[];
+            writes: Array<{ store: string; method: string }>;
+          }>;
+        }
+      ).__transferCommits,
+  );
+  expect(commits.map((commit) => commit.operationId)).toEqual([
+    "operation:old",
+    "operation:current",
+    "operation:async",
+    undefined,
+    undefined,
+  ]);
+  expect(commits).toHaveLength(5);
+  for (const commit of commits) {
+    expect(commit.stores).toEqual(["rows"]);
+    expect(commit.writes).toEqual([{ store: "rows", method: "put" }]);
+    expect(Number.isFinite(commit.at) && commit.at > 0).toBe(true);
+  }
+});
+test("@shopping-performance @shopping-transfer-worker-probe-contract @shopping-transfer-commit-probe-contract preserves original receiver arguments return and throw", async ({
+  page,
+}) => {
+  const worker = await harness(page);
+  await installCommitProbe(page);
+  const result = await worker.evaluate(() => {
+    const state = globalThis as unknown as {
+      __returnSentinel: object;
+      __errorSentinel: Error;
+      __lastOriginalCall: { receiver: object; args: unknown[] };
+    };
+    const receiver = { exact: true };
+    const event = { data: { method: "return-check" } };
+    const extra = { original: true };
+    const returned = Reflect.apply(globalThis.onmessage!, receiver, [
+      event,
+      extra,
+    ]);
+    const receiverMatched = state.__lastOriginalCall.receiver === receiver;
+    const argsMatched =
+      state.__lastOriginalCall.args[0] === event &&
+      state.__lastOriginalCall.args[1] === extra &&
+      state.__lastOriginalCall.args.length === 2;
+    let thrownMatched = false;
+    try {
+      Reflect.apply(globalThis.onmessage!, receiver, [
+        { data: { method: "throw-check" } },
+      ]);
+    } catch (error) {
+      thrownMatched = error === state.__errorSentinel;
+    }
+    return {
+      receiverMatched,
+      argsMatched,
+      returnMatched: returned === state.__returnSentinel,
+      thrownMatched,
+    };
+  });
+  expect(result).toEqual({
+    receiverMatched: true,
+    argsMatched: true,
+    returnMatched: true,
+    thrownMatched: true,
+  });
+});
+test("@shopping-performance @shopping-transfer-worker-probe-contract @shopping-transfer-commit-probe-contract does not duplicate wrappers under outer diagnostic Proxy", async ({
+  page,
+}) => {
+  const worker = await harness(page);
+  await installCommitProbe(page);
+  await worker.evaluate(() => {
+    const state = globalThis as unknown as {
+      __outerDiagnosticCalls: number;
+      __shoppingWorkerDiagnosticProbe: unknown;
+    };
+    state.__outerDiagnosticCalls = 0;
+    state.__shoppingWorkerDiagnosticProbe = {};
+    const original = globalThis.onmessage!;
+    globalThis.onmessage = new Proxy(original, {
+      apply(target, receiver, args) {
+        state.__outerDiagnosticCalls++;
+        return Reflect.apply(target, receiver, args);
+      },
+    });
+  });
+  await installCommitProbe(page);
+  expect((await exchange(page, 5, "operation:one-wrapper", "cached")).ok).toBe(
+    true,
+  );
+  const state = await worker.evaluate(() => {
+    const observed = globalThis as unknown as {
+      __outerDiagnosticCalls: number;
+      __transferCommits: Array<{ operationId?: string; writes: unknown[] }>;
+    };
+    return {
+      dispatches: observed.__outerDiagnosticCalls,
+      commits: observed.__transferCommits,
+    };
+  });
+  expect(state.dispatches).toBe(1);
+  expect(state.commits).toHaveLength(1);
+  expect(state.commits[0].operationId).toBe("operation:one-wrapper");
+  expect(state.commits[0].writes).toHaveLength(1);
+  await worker.evaluate(() => {
+    globalThis.onmessage = () => {};
+  });
+  await expect(installCommitProbe(page)).rejects.toThrow("hooks were replaced");
+});
+test("@shopping-performance @shopping-transfer-worker-probe-contract @shopping-transfer-commit-probe-contract fails closed on reversed first-install order", async ({
+  page,
+}) => {
+  const worker = await harness(page);
+  const original = await worker.evaluate(() => {
+    const state = globalThis as unknown as {
+      __shoppingWorkerDiagnosticProbe: unknown;
+      __originalTransaction: typeof IDBDatabase.prototype.transaction;
+      __originalHandler: typeof globalThis.onmessage;
+    };
+    state.__shoppingWorkerDiagnosticProbe = {};
+    state.__originalTransaction = IDBDatabase.prototype.transaction;
+    state.__originalHandler = globalThis.onmessage;
+    return true;
+  });
+  expect(original).toBe(true);
+  await expect(installCommitProbe(page)).rejects.toThrow(
+    "before the Worker diagnostic dispatcher",
+  );
+  expect(
+    await worker.evaluate(() => {
+      const state = globalThis as unknown as {
+        __originalTransaction: typeof IDBDatabase.prototype.transaction;
+        __originalHandler: typeof globalThis.onmessage;
+      };
+      return (
+        IDBDatabase.prototype.transaction === state.__originalTransaction &&
+        globalThis.onmessage === state.__originalHandler
+      );
+    }),
+  ).toBe(true);
 });
