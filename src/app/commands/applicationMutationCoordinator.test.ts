@@ -1268,3 +1268,88 @@ it("keeps a shopping UI apply failure terminal without recovery reads or resendi
   ).rejects.toBeInstanceOf(CommittedStateApplyError);
   expect(commitShoppingMove).toHaveBeenCalledOnce();
 });
+
+describe("optional apply lifecycle prototype (source only; not yet executed)", () => {
+  const command: NonNullable<MutationIntent["shoppingMove"]> = {
+    version: 1,
+    eventName: "event",
+    day: "1日目",
+    sourceColumn: "candidate",
+    targetColumn: "execute",
+    requestedIds: ["A"],
+    effectiveIds: ["A"],
+    hoverId: "__END_OF_LIST__",
+    baselineVisits: [],
+    baselineItemIds: ["A"],
+    itemIds: ["A"],
+    baselineExecuteIds: [],
+    executeIds: ["A"],
+  };
+  it.each([
+    { dedicated: false, observerThrows: false, applyThrows: false },
+    { dedicated: true, observerThrows: false, applyThrows: false },
+    { dedicated: false, observerThrows: true, applyThrows: false },
+    { dedicated: true, observerThrows: true, applyThrows: false },
+    { dedicated: false, observerThrows: true, applyThrows: true },
+    { dedicated: true, observerThrows: true, applyThrows: true },
+  ])(
+    "preserves commit/apply/stop order for $dedicated/$observerThrows/$applyThrows",
+    async ({ dedicated, observerThrows, applyThrows }) => {
+      const snapshot = setup().read();
+      const calls: string[] = [];
+      const read = { snapshot, expectedRoots: {}, consistencyMissing: false };
+      const commit = vi.fn(async () => {
+        calls.push("commit");
+      });
+      const coordinator = createApplicationMutationCoordinator({
+        readCurrent: () => snapshot,
+        drain: async () => {},
+        readDurable: async () => read,
+        commit,
+        ...(dedicated
+          ? {
+              commitShoppingMove: async () => {
+                calls.push("commit");
+                return { status: "committed" as const, read };
+              },
+            }
+          : {}),
+        onApplyLifecycle(operationId, phase) {
+          calls.push("observe:" + operationId + ":" + phase);
+          if (observerThrows) throw new Error("optional observer failed");
+        },
+        apply() {
+          calls.push("apply");
+          if (applyThrows) throw new Error("existing UI apply failure");
+        },
+        onApplyFailure() {
+          calls.push("stop");
+        },
+      });
+      const result = coordinator.request({
+        id: "actual-request-id",
+        events: ["event"],
+        ...(dedicated ? { shoppingMove: command } : {}),
+        plan: (current) => ({ snapshot: current }),
+      });
+      if (applyThrows) {
+        await expect(result).rejects.toBeInstanceOf(CommittedStateApplyError);
+        expect(calls).toEqual([
+          "commit",
+          "observe:actual-request-id:start",
+          "apply",
+          "observe:actual-request-id:failure",
+          "stop",
+        ]);
+      } else {
+        expect((await result).status).toBe("committed");
+        expect(calls).toEqual([
+          "commit",
+          "observe:actual-request-id:start",
+          "apply",
+          "observe:actual-request-id:success",
+        ]);
+      }
+    },
+  );
+});

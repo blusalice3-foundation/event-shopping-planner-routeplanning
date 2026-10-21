@@ -96,7 +96,11 @@ import {
   collectDayMutation,
   dayMutationStores,
 } from "../../features/consistency/domain/dayMutation";
-import { measureShoppingOperation } from "../../utils/shoppingPerformance";
+import {
+  measureShoppingOperation,
+  recordAcceptedShoppingMove,
+  recordShoppingMoveUiApply,
+} from "../../utils/shoppingPerformance";
 
 export const MEMO_SAVE_DELAY_MS = 300;
 export const MEMO_SAVE_MAX_WAIT_MS = 1000;
@@ -505,6 +509,7 @@ export function useApplicationSnapshot(
     () =>
       createApplicationMutationCoordinator({
         onPendingStateChanged: notifyPendingMutationState,
+        onApplyLifecycle: recordShoppingMoveUiApply,
         readCurrent: () => rawRef.current,
         readExportCurrent: readAcceptedSnapshot,
         readMutationCurrent: (snapshot, id) =>
@@ -1328,6 +1333,7 @@ export function useApplicationSnapshot(
         draft.current = batch;
         previewRef.current = next;
         previewInputs.current = { raw: rawRef.current, ...context };
+        recordAcceptedShoppingMove(id, moveId);
         return { status: "accepted", operationId: id, moveId };
       } catch (error) {
         return {

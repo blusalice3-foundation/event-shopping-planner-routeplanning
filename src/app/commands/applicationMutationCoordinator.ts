@@ -149,6 +149,11 @@ export interface MutationCoordinatorPorts {
     invalidatedEvents?: readonly string[],
   ): Promise<void>;
   apply(snapshot: PersistenceSnapshot, invalidatedEvents: string[]): void;
+  /** Optional diagnostics; success is apply-port return, not React commit. */
+  onApplyLifecycle?(
+    operationId: string,
+    phase: "start" | "success" | "failure",
+  ): void;
   onApplyFailure?(error: PersistenceWriteStopReason): void;
   onExpired?(operationIds: string[]): void;
   onPendingStateChanged?(operationId: string): void;
@@ -205,6 +210,16 @@ export function createApplicationMutationCoordinator(
   let tail: Promise<unknown> = Promise.resolve();
   let sequence = 0;
   let stopped: PersistenceWriteStopReason | undefined;
+  function notifyApplyLifecycle(
+    operationId: string,
+    phase: "start" | "success" | "failure",
+  ): void {
+    try {
+      ports.onApplyLifecycle?.(operationId, phase);
+    } catch {
+      // A diagnostic observer cannot skip apply or change the persistence result.
+    }
+  }
   function notifyPendingStateChanged(id: string): void {
     try {
       ports.onPendingStateChanged?.(id);
@@ -366,8 +381,11 @@ export function createApplicationMutationCoordinator(
           deletePending(id);
           invalidate(invalidated);
           try {
+            notifyApplyLifecycle(id, "start");
             ports.apply(result.read.snapshot, invalidated);
+            notifyApplyLifecycle(id, "success");
           } catch (error) {
+            notifyApplyLifecycle(id, "failure");
             const failure = new CommittedStateApplyError(error);
             stopWrites(failure);
             throw failure;
@@ -540,8 +558,11 @@ export function createApplicationMutationCoordinator(
       completed.add(id);
       deletePending(id);
       try {
+        notifyApplyLifecycle(id, "start");
         ports.apply(plan.snapshot, plan.invalidatedEvents ?? []);
+        notifyApplyLifecycle(id, "success");
       } catch (error) {
+        notifyApplyLifecycle(id, "failure");
         const failure = new CommittedStateApplyError(error);
         stopWrites(failure);
         throw failure;
