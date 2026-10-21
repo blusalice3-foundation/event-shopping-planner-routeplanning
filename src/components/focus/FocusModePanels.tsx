@@ -345,25 +345,17 @@ type FocusVisitRowsProps = Omit<
   blinkingLimitedMissingItemIds: ReadonlySet<string>;
   retainedItemIds?: ReadonlySet<string>;
 };
-const FocusVisitRows = React.memo(
+type FocusVisitItemsProps = Omit<FocusVisitRowsProps, "hidden">;
+const FocusVisitItems = React.memo(
   ({
     items,
-    hidden,
     prewarm,
     blinkingPriceItemIds,
     blinkingLimitedMissingItemIds,
     retainedItemIds,
     ...rowProps
-  }: FocusVisitRowsProps) => (
-    <div
-      hidden={hidden}
-      aria-hidden={hidden || undefined}
-      data-focus-parked={hidden && !prewarm ? "true" : undefined}
-      data-viewport-list
-      className={
-        rowProps.layoutMode === "smartphone" ? "space-y-2" : "space-y-4"
-      }
-    >
+  }: FocusVisitItemsProps) => (
+    <>
       {items.map((item, index) => (
         <FocusItemRow
           key={item.id}
@@ -377,6 +369,21 @@ const FocusVisitRows = React.memo(
           prewarm={prewarm}
         />
       ))}
+    </>
+  ),
+);
+const FocusVisitRows = React.memo(
+  ({ hidden, ...itemProps }: FocusVisitRowsProps) => (
+    <div
+      hidden={hidden}
+      aria-hidden={hidden || undefined}
+      data-focus-parked={hidden && !itemProps.prewarm ? "true" : undefined}
+      data-viewport-list
+      className={
+        itemProps.layoutMode === "smartphone" ? "space-y-2" : "space-y-4"
+      }
+    >
+      <FocusVisitItems {...itemProps} />
     </div>
   ),
 );

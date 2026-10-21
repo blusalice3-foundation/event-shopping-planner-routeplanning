@@ -19,6 +19,7 @@ import {
 import { createRouteEntriesProjector } from "../features/space-navigation/domain/navigatorEntriesProjector";
 import { indexedItem, indexedItems } from "../utils/itemIndex";
 import { createOrderedItemsProjector } from "../utils/incrementalItems";
+import { createFocusVisitDisplayItemsProjector } from "./focus/focusVisitDisplayItems";
 import {
   createExecutionVisitIndex,
   createPhaseVisitProjector,
@@ -878,7 +879,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
       resolveNavigatorEntryVisit(navigatorEntries[displayNavigatorIndex + 1]),
     [displayNavigatorIndex, navigatorEntries, resolveNavigatorEntryVisit],
   );
-  const projectDisplayItems = useMemo(createOrderedItemsProjector, []);
+  const projectDisplayItems = useMemo(createFocusVisitDisplayItemsProjector, []);
   const currentVisitDisplayItems = projectDisplayItems(items, displayItemIds);
   const prewarmedNavigatorEntry = navigatorEntries[displayNavigatorIndex + 1];
   const prewarmedVisitItems = useMemo(
