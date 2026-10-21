@@ -466,7 +466,7 @@ export async function measureTerminal(
   const selected = [0, 1, 2].map((n) => prefix + n),
     id = selected[0],
     nextId = source === "execute" ? "c0" : "e0",
-    anchor = "e3";
+    anchor = condition.scenario === "reject" ? "e1" : "e3";
   const measurementId = `terminal-${condition.scenario}-${index}`;
   await selectRange(page, selected);
   await page.evaluate(() => window.scrollTo(0, 100));
