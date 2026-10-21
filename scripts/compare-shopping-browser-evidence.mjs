@@ -5,12 +5,15 @@ import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  conditionKey,
-  expectedConditions,
   INSTRUMENT_VERSION,
   validateEvidenceArtifact,
   verifyFrameFiles,
 } from "./verify-shopping-performance-evidence.mjs";
+import {
+  expectedPerformanceCases,
+  performanceGroupSpecs,
+  expectedTransferMetricNames,
+} from "./shopping-performance-evidence-contract.mjs";
 const groups = ["shopping", "range", "drag", "transfer"];
 const names = {
   shopping: "shopping-operation-timings",
@@ -18,12 +21,7 @@ const names = {
   drag: "shopping-drag-response",
   transfer: "shopping-transfer-rendering",
 };
-const specs = {
-  shopping: "responsive-performance.spec.ts",
-  range: "edit-execute-range-selection.spec.ts",
-  drag: "shopping-cross-column-drag.spec.ts",
-  transfer: "shopping-transfer-rendering.performance.spec.ts",
-};
+const specs = performanceGroupSpecs;
 const assert = (value, message) => {
   if (!value) throw new Error(message);
 };
@@ -99,108 +97,181 @@ async function readRun(runRoot, phase) {
   );
   const rows = new Map(),
     artifacts = new Map(),
-    sourceHashes = { "run-result.json": hash(bytes) };
+    sourceHashes = { "run-result.json": hash(bytes) },
+    errors = [];
   for (const group of groups) {
-    const reportBytes = await readFile(
-      path.join(runRoot, group, "report.json"),
-    );
-    sourceHashes[`${group}/report.json`] = hash(reportBytes);
-    const report = JSON.parse(reportBytes.toString("utf8"));
-    assert(
-      Array.isArray(report.errors) && report.errors.length === 0,
-      `${phase}/${group}: incomplete report`,
-    );
-    assert(
-      report.config?.workers === 1 &&
-        report.config.projects?.length === 1 &&
-        report.config.projects[0].retries === 0,
-      `${phase}/${group}: worker/retry mismatch`,
-    );
-    const expected = expectedConditions(group).flatMap((condition) =>
-      (group === "transfer" ? ["response", "frame"] : ["response"]).map(
-        (kind) => `${kind}:${conditionKey(condition, group)}`,
-      ),
-    );
-    const tests = collect(report.suites);
-    assert(
-      tests.length === expected.length,
-      `${phase}/${group}: missing expected tests`,
-    );
-    const seen = new Set();
-    for (const { spec, test } of tests) {
-      assert(
-        path.basename(spec.file ?? "") === specs[group] &&
-          test.expectedStatus === "passed" &&
-          test.results?.length === 1 &&
-          test.results[0].retry === 0 &&
-          ["passed", "failed"].includes(test.results[0].status),
-        `${phase}/${group}: skipped, retried or incomplete test`,
+    const definitions = expectedPerformanceCases(group),
+      expected = definitions.map((row) => row.key),
+      seen = new Set();
+    try {
+      const reportBytes = await readFile(
+        path.join(runRoot, group, "report.json"),
       );
-      const matches = (test.results[0].attachments ?? []).filter(
-        (attachment) => attachment.name === names[group],
+      sourceHashes[`${group}/report.json`] = hash(reportBytes);
+      const report = JSON.parse(reportBytes.toString("utf8"));
+      assert(
+        Array.isArray(report.errors) && report.errors.length === 0,
+        "incomplete report",
       );
       assert(
-        matches.length === 1,
-        `${phase}/${group}: normal artifact missing or duplicated`,
+        report.config?.workers === 1 &&
+          report.config.projects?.length === 1 &&
+          report.config.projects[0].retries === 0,
+        "worker/retry mismatch",
       );
-      const attachment = matches[0];
-      assert(
-        attachment.contentType === "application/json",
-        `${phase}/${group}: wrong attachment content type`,
-      );
-      let body = attachment.body
-        ? Buffer.from(attachment.body, "base64")
-        : undefined;
-      if (attachment.path) {
-        const actual = await realpath(attachment.path),
-          output = await realpath(path.join(runRoot, group, "test-results"));
-        assert(inside(output, actual), `${phase}/${group}: escaped attachment`);
-        const disk = await readFile(actual);
-        assert(
-          !body || body.equals(disk),
-          `${phase}/${group}: attachment mismatch`,
+      const tests = collect(report.suites);
+      if (tests.length !== expected.length)
+        errors.push(
+          `${phase}/${group}: expected ${expected.length} tests, found ${tests.length}`,
         );
-        body = disk;
-        sourceHashes[`${group}/${path.relative(output, actual)}`] = hash(body);
-      }
-      assert(body, `${phase}/${group}: empty artifact`);
-      const artifact = JSON.parse(body.toString("utf8"));
-      const checked = validateEvidenceArtifact(
-        artifact,
-        group,
-        { phase, runId: run.runId },
-        { enforceBudgets: false },
+      for (const { spec, test } of tests)
+        try {
+          assert(
+            specs[group].includes(path.basename(spec.file ?? "")) &&
+              test.expectedStatus === "passed" &&
+              test.results?.length === 1 &&
+              test.results[0].retry === 0 &&
+              ["passed", "failed"].includes(test.results[0].status),
+            "skipped, retried or incomplete test",
+          );
+          const matches = (test.results[0].attachments ?? []).filter(
+            (attachment) => attachment.name === names[group],
+          );
+          assert(matches.length === 1, "normal artifact missing or duplicated");
+          const attachment = matches[0];
+          assert(
+            attachment.contentType === "application/json",
+            "wrong attachment content type",
+          );
+          let body = attachment.body
+            ? Buffer.from(attachment.body, "base64")
+            : undefined;
+          if (attachment.path) {
+            const actual = await realpath(attachment.path),
+              output = await realpath(
+                path.join(runRoot, group, "test-results"),
+              );
+            assert(inside(output, actual), "escaped attachment");
+            const disk = await readFile(actual);
+            assert(!body || body.equals(disk), "attachment mismatch");
+            body = disk;
+            sourceHashes[`${group}/${path.relative(output, actual)}`] =
+              hash(body);
+          }
+          assert(body, "empty artifact");
+          const artifact = JSON.parse(body.toString("utf8"));
+          const checked = validateEvidenceArtifact(
+            artifact,
+            group,
+            { phase, runId: run.runId },
+            { enforceBudgets: false },
+          );
+          assert(
+            expected.includes(checked.key) &&
+              definitions.find((row) => row.key === checked.key)?.spec ===
+                path.basename(spec.file ?? "") &&
+              !seen.has(checked.key),
+            "duplicate, foreign condition or wrong spec",
+          );
+          if (group === "transfer" && artifact.measurementKind === "frame")
+            await verifyFrameFiles(
+              artifact,
+              path.join(runRoot, group, "test-results"),
+              sourceHashes,
+            );
+          seen.add(checked.key);
+          const artifactKey = `${group}:${checked.key}`;
+          artifacts.set(artifactKey, artifact);
+          for (const metric of comparableMetrics(artifact, group)) {
+            const key = `${artifactKey}:${metric.operation}:${metric.metric}`;
+            assert(!rows.has(key), "duplicate metric");
+            rows.set(key, {
+              group,
+              condition: checked.condition,
+              measurementKind: artifact.measurementKind,
+              ...metric,
+            });
+          }
+        } catch (error) {
+          errors.push(
+            `${phase}/${group}/${spec.title ?? spec.file ?? "unknown"}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+    } catch (error) {
+      errors.push(
+        `${phase}/${group}: ${error instanceof Error ? error.message : String(error)}`,
       );
-      assert(
-        expected.includes(checked.key) && !seen.has(checked.key),
-        `${phase}/${group}: duplicate or foreign condition`,
-      );
-      seen.add(checked.key);
-      if (group === "transfer" && artifact.measurementKind === "frame")
-        await verifyFrameFiles(
-          artifact,
-          path.join(runRoot, group, "test-results"),
-          sourceHashes,
-        );
-      const artifactKey = `${group}:${checked.key}`;
-      artifacts.set(artifactKey, artifact);
-      for (const metric of comparableMetrics(artifact, group)) {
-        const key = `${artifactKey}:${metric.operation}:${metric.metric}`;
-        assert(!rows.has(key), `${phase}: duplicate metric`);
-        rows.set(key, {
-          group,
-          condition: checked.condition,
-          measurementKind: artifact.measurementKind,
-          ...metric,
-        });
-      }
     }
-    assert(
-      expected.every((key) => seen.has(key)),
-      `${phase}/${group}: incomplete conditions`,
-    );
+    for (const key of expected)
+      if (!seen.has(key))
+        errors.push(`${phase}/${group}: unavailable normal evidence ${key}`);
   }
-  return { run, rows, artifacts, sourceHashes };
+  return { run, rows, artifacts, sourceHashes, errors };
+}
+function expectedMetricRows() {
+  return groups.flatMap((group) =>
+    expectedPerformanceCases(group).flatMap((testCase) => {
+      let metrics;
+      if (group === "shopping")
+        metrics = [
+          "execute",
+          "executeRecord",
+          "focus",
+          "record",
+          "next",
+          "back",
+        ].flatMap((operation) =>
+          ["legacy", "ui"].map((metric) => ({
+            operation,
+            metric,
+            auxiliary: false,
+          })),
+        );
+      else if (group === "range")
+        metrics = [
+          "firstEndpoint",
+          "secondEndpoint",
+          "selectRange",
+          "clearRange",
+        ].map((operation) => ({
+          operation,
+          metric: "response",
+          auxiliary: false,
+        }));
+      else if (group === "drag")
+        metrics = [
+          "same-boundary",
+          "boundary-switch",
+          "multiple-merges",
+          "mixed",
+          "offscreen-merge",
+          "auto-scroll",
+          ...(!testCase.condition.grouped ? ["rejected"] : []),
+          "drop",
+        ].map((operation) => ({
+          operation,
+          metric: "response",
+          auxiliary: false,
+        }));
+      else
+        metrics = expectedTransferMetricNames(
+          testCase.condition,
+          testCase.measurementKind,
+        ).map((operation) => ({
+          operation,
+          metric: testCase.measurementKind,
+          auxiliary: operation === "save",
+        }));
+      return metrics.map((metric) => ({
+        key: `${group}:${testCase.key}:${metric.operation}:${metric.metric}`,
+        artifactKey: `${group}:${testCase.key}`,
+        group,
+        condition: testCase.condition,
+        measurementKind: testCase.measurementKind,
+        ...metric,
+      }));
+    }),
+  );
 }
 export async function compareBrowserEvidence({
   beforeRoot,
@@ -218,16 +289,12 @@ export async function compareBrowserEvidence({
   try {
     const before = await readRun(path.resolve(beforeRoot), "before"),
       after = await readRun(path.resolve(afterRoot), "after");
-    for (const field of ["instrumentVersion"])
-      assert(
-        before.run[field] === after.run[field],
-        `Before/after ${field} mismatch`,
-      );
+    const compatibility = [];
+    if (before.run.instrumentVersion !== after.run.instrumentVersion)
+      compatibility.push("instrumentVersion mismatch");
     for (const field of ["instrumentPatch", "fixtureSources"])
-      assert(
-        before.run[field].sha256 === after.run[field].sha256,
-        `Before/after ${field} mismatch`,
-      );
+      if (before.run[field].sha256 !== after.run[field].sha256)
+        compatibility.push(`${field} mismatch`);
     for (const field of [
       "platform",
       "arch",
@@ -238,106 +305,125 @@ export async function compareBrowserEvidence({
       "headed",
       "build",
       "workerCount",
-    ]) {
-      assert(
-        Object.hasOwn(before.run.environment, field) &&
-          Object.hasOwn(after.run.environment, field),
-        `Environment ${field} missing`,
-      );
-      assert(
-        before.run.environment[field] === after.run.environment[field],
-        `Before/after environment ${field} mismatch`,
-      );
-    }
-    assert(
-      before.rows.size === after.rows.size,
-      "Before/after metric coverage differs",
-    );
-    for (const [key, oldArtifact] of before.artifacts) {
-      const newArtifact = after.artifacts.get(key);
-      assert(newArtifact, `Missing after artifact ${key}`);
-      assert(
-        oldArtifact.fixture?.fixtureHash === newArtifact.fixture?.fixtureHash,
-        `Fixture mismatch ${key}`,
-      );
-      for (const field of [
-        "browserVersion",
-        "userAgent",
-        "viewport",
-        "devicePixelRatio",
-        "browserChannel",
-        "headed",
-      ]) {
-        const a = oldArtifact.environment?.[field] ?? oldArtifact[field],
-          b = newArtifact.environment?.[field] ?? newArtifact[field];
-        assert(
-          JSON.stringify(a) === JSON.stringify(b),
-          `Artifact environment ${field} mismatch ${key}`,
+    ])
+      if (
+        !Object.hasOwn(before.run.environment, field) ||
+        !Object.hasOwn(after.run.environment, field) ||
+        before.run.environment[field] !== after.run.environment[field]
+      )
+        compatibility.push(`environment ${field} mismatch or missing`);
+    result.errors.push(...before.errors, ...after.errors, ...compatibility);
+    for (const descriptor of expectedMetricRows()) {
+      const oldMetric = before.rows.get(descriptor.key),
+        current = after.rows.get(descriptor.key),
+        reasons = [...compatibility];
+      if (!oldMetric)
+        reasons.push(
+          "before: complete matching normal metric unavailable; see before source errors",
         );
+      if (!current)
+        reasons.push(
+          "after: complete matching normal metric unavailable; see after source errors",
+        );
+      const oldArtifact = before.artifacts.get(descriptor.artifactKey),
+        newArtifact = after.artifacts.get(descriptor.artifactKey);
+      if (oldArtifact && newArtifact) {
+        if (
+          oldArtifact.fixture?.fixtureHash !== newArtifact.fixture?.fixtureHash
+        )
+          reasons.push("fixture hash mismatch");
+        for (const field of [
+          "browserVersion",
+          "userAgent",
+          "viewport",
+          "devicePixelRatio",
+          "browserChannel",
+          "headed",
+        ]) {
+          const a = oldArtifact.environment?.[field] ?? oldArtifact[field],
+            b = newArtifact.environment?.[field] ?? newArtifact[field];
+          if (JSON.stringify(a) !== JSON.stringify(b))
+            reasons.push(`artifact environment ${field} mismatch`);
+        }
       }
-    }
-    for (const [key, oldMetric] of before.rows) {
-      const current = after.rows.get(key);
-      assert(current, `Missing after metric ${key}`);
-      const auxiliary = current.auxiliary;
+      const absolute = (metric) =>
+        !metric
+          ? "missing"
+          : descriptor.auxiliary
+            ? "not-applicable"
+            : metric.summary.medianMs <= 55 && metric.summary.p95Ms <= 100
+              ? "passed"
+              : "failed";
+      const compared = reasons.length === 0;
+      const delta = compared
+        ? {
+            median: current.summary.medianMs - oldMetric.summary.medianMs,
+            p95: current.summary.p95Ms - oldMetric.summary.p95Ms,
+          }
+        : null;
       result.rows.push({
-        group: current.group,
-        condition: current.condition,
-        measurementKind: current.measurementKind,
-        operation: current.operation,
-        metric: current.metric,
-        auxiliary,
-        before: oldMetric.summary,
-        after: current.summary,
-        deltaMs: {
-          median: current.summary.medianMs - oldMetric.summary.medianMs,
-          p95: current.summary.p95Ms - oldMetric.summary.p95Ms,
-        },
-        beforeAbsolute: auxiliary
-          ? "not-applicable"
-          : oldMetric.summary.medianMs <= 55 && oldMetric.summary.p95Ms <= 100
-            ? "passed"
-            : "failed",
-        afterAbsolute: auxiliary
-          ? "not-applicable"
-          : current.summary.medianMs <= 55 && current.summary.p95Ms <= 100
-            ? "passed"
-            : "failed",
-        deltaReview:
-          current.summary.medianMs > oldMetric.summary.medianMs ||
-          current.summary.p95Ms > oldMetric.summary.p95Ms
+        group: descriptor.group,
+        condition: descriptor.condition,
+        measurementKind: descriptor.measurementKind,
+        operation: descriptor.operation,
+        metric: descriptor.metric,
+        auxiliary: descriptor.auxiliary,
+        status: compared ? "compared" : "uncomparable",
+        before: oldMetric?.summary ?? null,
+        after: current?.summary ?? null,
+        deltaMs: delta,
+        beforeAbsolute: absolute(oldMetric),
+        afterAbsolute: absolute(current),
+        deltaReview: !compared
+          ? "uncomparable"
+          : delta.median > 0 || delta.p95 > 0
             ? "increase-needs-review"
             : "no-increase",
+        ...(reasons.length ? { reasons } : {}),
       });
     }
+    const uncomparable = result.rows.filter(
+      (row) => row.status === "uncomparable",
+    ).length;
     result.absoluteStatus = result.rows.some(
-      (row) => row.afterAbsolute === "failed",
+      (row) => row.afterAbsolute === "missing",
     )
-      ? "failed"
-      : "passed";
-    result.deltaStatus = result.rows.some(
-      (row) => row.deltaReview === "increase-needs-review",
-    )
-      ? "review-required"
-      : "no-increase";
-    result.status = "complete";
+      ? "incomplete"
+      : result.rows.some((row) => row.afterAbsolute === "failed")
+        ? "failed"
+        : "passed";
+    result.deltaStatus = uncomparable
+      ? "incomplete"
+      : result.rows.some((row) => row.deltaReview === "increase-needs-review")
+        ? "review-required"
+        : "no-increase";
+    result.status =
+      uncomparable || result.errors.length ? "incomplete" : "complete";
+    result.coverage = {
+      expectedMetrics: result.rows.length,
+      compared: result.rows.length - uncomparable,
+      uncomparable,
+    };
     result.before = {
       runRoot: path.resolve(beforeRoot),
       runId: before.run.runId,
       productCommit: before.run.productCommit,
       sourceHashes: before.sourceHashes,
+      errors: before.errors,
     };
     result.after = {
       runRoot: path.resolve(afterRoot),
       runId: after.run.runId,
       productCommit: after.run.productCommit,
       sourceHashes: after.sourceHashes,
+      errors: after.errors,
     };
     result.comparison = {
       instrumentVersion: before.run.instrumentVersion,
       instrumentPatch: before.run.instrumentPatch,
       fixtureSources: before.run.fixtureSources,
       environment: before.run.environment,
+      compatibilityErrors: compatibility,
     };
   } catch (error) {
     result.errors.push(error instanceof Error ? error.message : String(error));

@@ -14,14 +14,19 @@ import {
   verifyFrameFiles,
 } from "./verify-shopping-performance-evidence.mjs";
 
+import {
+  expectedPerformanceCases,
+  expectedTransferMetricNames,
+} from "./shopping-performance-evidence-contract.mjs";
 const identity = { phase: "after", runId: "fixture-run" };
 const env = {
   ESP_EVIDENCE_PHASE: identity.phase,
   ESP_EVIDENCE_RUN_ID: identity.runId,
 };
 const raw = () => Array.from({ length: 20 }, (_, i) => 10 + i / 10);
-const metric = (kind = "response") => {
-  const values = raw();
+const metric = (kind = "response", operation = "response", condition = {}) => {
+  const noSave = ["noop", "reject", "cancel"].includes(condition.scenario);
+  const values = operation === "save" ? raw().map(() => 2) : raw();
   return {
     raw: values,
     summary: summarizeSamples(values),
@@ -29,7 +34,32 @@ const metric = (kind = "response") => {
       durationMs,
       matched: true,
       measurementId: `sample-${i}`,
-      targetId: "item-1",
+      targetId: operation.startsWith("next") ? "anchor-1" : "item-1",
+      startEpoch: 1000000 + i * 1000,
+      commits: noSave
+        ? []
+        : [{ at: 1000002 + i * 1000, stores: ["eventLists"] }],
+      physicalWriteCount: noSave ? 0 : 1,
+      operationId: null,
+      operationIdUnavailableReason: "Fixture has no operation ID",
+      ...(operation.startsWith("next")
+        ? {
+            trusted: true,
+            eventEpoch:
+              1000000 + i * 1000 + (operation === "nextPending" ? 1 : 3),
+          }
+        : {}),
+      ...(noSave && operation === "response"
+        ? {
+            selectionBeforeIds: ["t0", "t1", "t2"],
+            selectionAfterIds: ["t0", "t1", "t2"],
+            guideCleared: true,
+            cloneCleared: true,
+            sourceInteractive: true,
+            endpointsCleared: condition.scenario === "noop",
+            endpointsRetained: condition.scenario !== "noop",
+          }
+        : {}),
       ...(kind === "frame"
         ? {
             frameVerified: true,
@@ -122,11 +152,17 @@ function artifact(
   return {
     ...base,
     condition,
+    ...(["noop", "reject", "cancel"].includes(condition.scenario)
+      ? {
+          notApplicable: { save: "No write", nextPending: "No save" },
+          persistence: { writeCount: 0, operationId: null, commits: [] },
+        }
+      : {}),
     metrics: Object.fromEntries(
-      (kind === "response"
-        ? ["response", "nextPending", "nextApplied", "save"]
-        : ["frame"]
-      ).map((op) => [op, metric(kind)]),
+      expectedTransferMetricNames(condition, kind).map((op) => [
+        op,
+        metric(kind, op, condition),
+      ]),
     ),
   };
 }
@@ -135,12 +171,6 @@ const names = {
   range: "edit-execute-range-selection-timings",
   drag: "shopping-drag-response",
   transfer: "shopping-transfer-rendering",
-};
-const specs = {
-  shopping: "responsive-performance.spec.ts",
-  range: "edit-execute-range-selection.spec.ts",
-  drag: "shopping-cross-column-drag.spec.ts",
-  transfer: "shopping-transfer-rendering.performance.spec.ts",
 };
 async function fixture(t, group = "shopping") {
   const runRoot = await mkdtemp(path.join(os.tmpdir(), "esp evidence "));
@@ -152,34 +182,32 @@ async function fixture(t, group = "shopping") {
     config: { workers: 1, projects: [{ retries: 0 }] },
     suites: [
       {
-        specs: expectedConditions(group).flatMap((condition) =>
-          (group === "transfer" ? ["response", "frame"] : ["response"]).map(
-            (kind) => ({
-              file: specs[group],
-              ok: true,
-              tests: [
-                {
-                  expectedStatus: "passed",
-                  status: "expected",
-                  results: [
-                    {
-                      retry: 0,
-                      status: "passed",
-                      attachments: [
-                        {
-                          name: names[group],
-                          contentType: "application/json",
-                          body: Buffer.from(
-                            JSON.stringify(artifact(group, condition, kind)),
-                          ).toString("base64"),
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            }),
-          ),
+        specs: expectedPerformanceCases(group).map(
+          ({ condition, measurementKind: kind, spec: expectedSpec }) => ({
+            file: expectedSpec,
+            ok: true,
+            tests: [
+              {
+                expectedStatus: "passed",
+                status: "expected",
+                results: [
+                  {
+                    retry: 0,
+                    status: "passed",
+                    attachments: [
+                      {
+                        name: names[group],
+                        contentType: "application/json",
+                        body: Buffer.from(
+                          JSON.stringify(artifact(group, condition, kind)),
+                        ).toString("base64"),
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          }),
         ),
       },
     ],
@@ -283,7 +311,7 @@ test("known normal matrices pass with exact expected coverage and response/frame
     ["shopping", "range", "drag", "transfer"].map(
       (g) => expectedConditions(g).length,
     ),
-    [24, 20, 8, 24],
+    [24, 20, 8, 52],
   );
   for (const group of ["shopping", "range", "drag", "transfer"]) {
     const f = await fixture(t, group);
@@ -724,4 +752,105 @@ for (const [label, mutate, afterSave] of [
     await f.save();
     afterSave?.(f);
     await assert.rejects(f.verify());
+  });
+for (const [name, mutate] of [
+  [
+    "pending input after commit",
+    (a) => {
+      a.metrics.nextPending.samples[0].eventEpoch =
+        a.metrics.nextPending.samples[0].commits[0].at + 1;
+    },
+  ],
+  [
+    "pending input before input acceptance",
+    (a) => {
+      a.metrics.nextPending.samples[0].eventEpoch =
+        a.metrics.nextPending.samples[0].startEpoch - 1;
+    },
+  ],
+  [
+    "applied input before commit",
+    (a) => {
+      a.metrics.nextApplied.samples[0].eventEpoch =
+        a.metrics.nextApplied.samples[0].startEpoch + 1;
+    },
+  ],
+  [
+    "missing save transaction",
+    (a) => {
+      a.metrics.response.samples[0].commits = [];
+    },
+  ],
+  [
+    "multiple save transactions",
+    (a) => {
+      a.metrics.response.samples[0].commits.push({
+        ...a.metrics.response.samples[0].commits[0],
+      });
+    },
+  ],
+  [
+    "fabricated save duration",
+    (a) => {
+      const sample = a.metrics.save.samples[0];
+      sample.commits[0].at += 1;
+    },
+  ],
+  [
+    "mixed move IDs",
+    (a) => {
+      a.metrics.nextApplied.samples[0].startEpoch += 1;
+    },
+  ],
+  [
+    "wrong next-input target",
+    (a) => {
+      a.metrics.nextApplied.samples[0].targetId = "other-item";
+    },
+  ],
+])
+  test(`response phase proof rejects ${name}`, () => {
+    const a = artifact("transfer");
+    mutate(a);
+    assert.throws(() => validateEvidenceArtifact(a, "transfer", identity));
+  });
+for (const [name, mutate] of [
+  [
+    "fabricated operation ID",
+    (a) => {
+      a.persistence.operationId = "fake";
+    },
+  ],
+  [
+    "physical write",
+    (a) => {
+      a.metrics.response.samples[0].physicalWriteCount = 1;
+    },
+  ],
+  [
+    "lost selection",
+    (a) => {
+      a.metrics.response.samples[0].selectionAfterIds = [];
+    },
+  ],
+  [
+    "uncleared guide",
+    (a) => {
+      a.metrics.response.samples[0].guideCleared = false;
+    },
+  ],
+  [
+    "lost endpoints on cancel",
+    (a) => {
+      a.metrics.response.samples[0].endpointsRetained = false;
+    },
+  ],
+])
+  test(`no-save phase proof rejects ${name}`, () => {
+    const condition = expectedConditions("transfer").find(
+      (c) => c.scenario === "cancel",
+    );
+    const a = artifact("transfer", condition);
+    mutate(a);
+    assert.throws(() => validateEvidenceArtifact(a, "transfer", identity));
   });

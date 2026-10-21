@@ -5,21 +5,19 @@ import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  expectedPerformanceCases,
+  expectedPerformanceConditions,
+  expectedTransferMetricNames,
+  performanceConditionKey,
+  performanceGroupSpecs,
+  performanceAttachmentNames,
+} from "./shopping-performance-evidence-contract.mjs";
 export const SCHEMA_VERSION = 1;
 export const INSTRUMENT_VERSION = "shopping-rendering-v1";
 const ownPath = fileURLToPath(import.meta.url);
-const groupSpecs = {
-  shopping: "responsive-performance.spec.ts",
-  range: "edit-execute-range-selection.spec.ts",
-  drag: "shopping-cross-column-drag.spec.ts",
-  transfer: "shopping-transfer-rendering.performance.spec.ts",
-};
-const attachmentNames = {
-  shopping: "shopping-operation-timings",
-  range: "edit-execute-range-selection-timings",
-  drag: "shopping-drag-response",
-  transfer: "shopping-transfer-rendering",
-};
+const groupSpecs = performanceGroupSpecs;
+const attachmentNames = performanceAttachmentNames;
 const forbiddenNames = new Set([
   "ESP_RANGE_CONTINUOUS_DIAGNOSTIC",
   "ESP_RANGE_INVALIDATION_DIAGNOSTIC",
@@ -107,40 +105,7 @@ function validateMetric(raw, summary, label, threshold = true) {
     assert(calculated.p95Ms <= 100, `${label}: p95 exceeds 100ms`);
   }
 }
-export function expectedConditions(group) {
-  const rows = [];
-  if (group === "shopping")
-    for (const count of [150, 500, 1500])
-      for (const concentrated of [false, true])
-        for (const mapVisible of [false, true])
-          for (const layout of ["pc", "smartphone"])
-            rows.push({ count, concentrated, mapVisible, layout });
-  if (group === "range")
-    for (const renderer of ["auto", "full", "virtual"])
-      for (const count of [150, 500])
-        for (const layout of renderer === "virtual"
-          ? ["smartphone"]
-          : ["pc", "smartphone"])
-          for (const rangeLength of ["short", "long"])
-            rows.push({ count, layout, renderer, rangeLength });
-  if (group === "drag")
-    for (const count of [150, 500])
-      for (const input of ["native", "touch"])
-        for (const grouped of [false, true])
-          rows.push({ count, input, grouped });
-  if (group === "transfer")
-    for (const load of ["light", "practical"])
-      for (const count of load === "light" ? [150, 500] : [500])
-        for (const input of ["native", "touch"])
-          for (const grouped of [false, true])
-            for (const direction of [
-              "candidate-to-execute",
-              "execute-to-candidate",
-            ])
-              rows.push({ count, input, grouped, load, direction });
-  assert(rows.length > 0, `Unknown performance group: ${group}`);
-  return rows;
-}
+export const expectedConditions = expectedPerformanceConditions;
 function conditionOf(artifact, group) {
   if (group === "range")
     return {
@@ -155,13 +120,141 @@ function conditionOf(artifact, group) {
     };
   return group === "transfer" ? artifact.condition : artifact;
 }
-export function conditionKey(condition, group) {
-  return JSON.stringify(
-    Object.keys(expectedConditions(group)[0]).map((key) => [
-      key,
-      condition?.[key],
-    ]),
-  );
+export const conditionKey = performanceConditionKey;
+function validateTransferPhaseProofs(artifact, condition) {
+  const noSave = ["noop", "reject", "cancel"].includes(condition.scenario);
+  if (noSave) {
+    assert(
+      typeof artifact.notApplicable?.save === "string" &&
+        artifact.notApplicable.save.length > 0 &&
+        typeof artifact.notApplicable?.nextPending === "string" &&
+        artifact.notApplicable.nextPending.length > 0,
+      "No-save cases must explicitly mark save/pending timings not applicable",
+    );
+    assert(
+      artifact.persistence?.writeCount === 0 &&
+        artifact.persistence.operationId === null &&
+        Array.isArray(artifact.persistence.commits) &&
+        artifact.persistence.commits.length === 0,
+      "No-save case contains a write or fabricated operation ID",
+    );
+  }
+  const byId = new Map();
+  for (const [metric, values] of Object.entries(artifact.metrics))
+    for (const sample of values.samples) {
+      if (!byId.has(sample.measurementId)) byId.set(sample.measurementId, {});
+      byId.get(sample.measurementId)[metric] = sample;
+      const hasPhase =
+        noSave ||
+        Object.hasOwn(sample, "commits") ||
+        Object.hasOwn(sample, "startEpoch") ||
+        Object.hasOwn(sample, "eventEpoch");
+      if (!hasPhase) continue; // Historical fixture schemas may omit phase details; present raw proof is always checked.
+      assert(
+        typeof sample.startEpoch === "number" &&
+          Number.isFinite(sample.startEpoch) &&
+          sample.startEpoch >= 0 &&
+          Array.isArray(sample.commits),
+        `${metric}: missing input/commit phase proof`,
+      );
+      if (noSave) {
+        assert(
+          sample.commits.length === 0 &&
+            sample.physicalWriteCount === 0 &&
+            sample.operationId === null,
+          `${metric}: no-save sample wrote persistence or fabricated an operation ID`,
+        );
+        if (metric === "response") {
+          assert(
+            Array.isArray(sample.selectionBeforeIds) &&
+              sample.selectionBeforeIds.length > 0 &&
+              JSON.stringify(sample.selectionBeforeIds) ===
+                JSON.stringify(sample.selectionAfterIds),
+            "No-save sample lost its frozen selection",
+          );
+          assert(
+            sample.guideCleared === true &&
+              sample.cloneCleared === true &&
+              sample.sourceInteractive === true,
+            "No-save sample did not restore interactive drag state",
+          );
+          assert(
+            condition.scenario === "noop"
+              ? sample.endpointsCleared === true
+              : sample.endpointsRetained === true,
+            "No-save sample has incorrect endpoint state",
+          );
+        }
+        if (metric === "nextApplied")
+          assert(
+            typeof sample.eventEpoch === "number" &&
+              Number.isFinite(sample.eventEpoch) &&
+              sample.eventEpoch > sample.startEpoch &&
+              sample.trusted === true,
+            "No-save next input did not follow cleanup",
+          );
+      } else {
+        assert(
+          sample.commits.length === 1 &&
+            typeof sample.commits[0].at === "number" &&
+            Number.isFinite(sample.commits[0].at) &&
+            sample.commits[0].at >= sample.startEpoch,
+          `${metric}: expected exactly one attributable save transaction`,
+        );
+        const saved = sample.commits[0].at;
+        assert(
+          (typeof sample.operationId === "string" &&
+            sample.operationId.length > 0) ||
+            (sample.operationId === null &&
+              typeof sample.operationIdUnavailableReason === "string" &&
+              sample.operationIdUnavailableReason.length > 0),
+          `${metric}: missing operation ID attribution or unavailability reason`,
+        );
+        if (metric === "nextPending")
+          assert(
+            sample.trusted === true &&
+              typeof sample.eventEpoch === "number" &&
+              Number.isFinite(sample.eventEpoch) &&
+              sample.eventEpoch > sample.startEpoch &&
+              sample.eventEpoch < saved,
+            "Pending input was not sent/received during this move's save",
+          );
+        if (metric === "nextApplied")
+          assert(
+            sample.trusted === true &&
+              typeof sample.eventEpoch === "number" &&
+              Number.isFinite(sample.eventEpoch) &&
+              sample.eventEpoch > saved,
+            "Applied input preceded this move's save completion",
+          );
+        if (metric === "save")
+          assert(
+            sameNumber(sample.durationMs, saved - sample.startEpoch),
+            "Save timing does not match its transaction completion",
+          );
+      }
+    }
+  for (const samples of byId.values()) {
+    const first = Object.values(samples)[0];
+    for (const sample of Object.values(samples))
+      if (first.startEpoch !== undefined)
+        assert(
+          sample.startEpoch === first.startEpoch &&
+            JSON.stringify(sample.commits) === JSON.stringify(first.commits) &&
+            sample.operationId === first.operationId,
+          "Metric samples mixed different moves or save transactions",
+        );
+    if (samples.nextPending && samples.nextApplied)
+      assert(
+        samples.nextPending.targetId === samples.nextApplied.targetId,
+        "Next inputs targeted different items",
+      );
+    if (samples.response && samples.save)
+      assert(
+        samples.response.targetId === samples.save.targetId,
+        "Save timing belongs to a different moved target",
+      );
+  }
 }
 // Budget reporting is used only by before/after comparison; acceptance verification always enforces budgets.
 export function validateEvidenceArtifact(
@@ -318,10 +411,7 @@ export function validateEvidenceArtifact(
       "Drag start/end details missing",
     );
   } else {
-    const ops =
-      kind === "response"
-        ? ["response", "nextPending", "nextApplied", "save"]
-        : ["frame"];
+    const ops = expectedTransferMetricNames(condition, kind);
     keysEqual(artifact.metrics, ops, "metrics");
     for (const op of ops) {
       const metric = artifact.metrics[op];
@@ -364,6 +454,7 @@ export function validateEvidenceArtifact(
       );
     }
   }
+  if (group === "transfer") validateTransferPhaseProofs(artifact, condition);
   return { key: `${kind}:${key}`, condition, measurementKind: kind };
 }
 function collectTests(suites, list = []) {
@@ -709,11 +800,7 @@ export async function verifyGroupEvidence({
       "Performance retries must be zero",
     );
     const tests = collectTests(report.suites);
-    const expected = expectedConditions(group).flatMap((condition) =>
-      (group === "transfer" ? ["response", "frame"] : ["response"]).map(
-        (kind) => `${kind}:${conditionKey(condition, group)}`,
-      ),
-    );
+    const expected = expectedPerformanceCases(group).map((row) => row.key);
     assert(
       tests.length === expected.length,
       `Expected ${expected.length} tests, found ${tests.length}`,
@@ -721,7 +808,7 @@ export async function verifyGroupEvidence({
     const seen = new Set();
     for (const { spec, test } of tests) {
       assert(
-        path.basename(spec.file ?? "") === groupSpecs[group],
+        groupSpecs[group].includes(path.basename(spec.file ?? "")),
         "Unexpected test spec in performance group",
       );
       assert(
@@ -761,7 +848,11 @@ export async function verifyGroupEvidence({
         runId,
       });
       assert(
-        expected.includes(validated.key) && !seen.has(validated.key),
+        expected.includes(validated.key) &&
+          expectedPerformanceCases(group).find(
+            (row) => row.key === validated.key,
+          )?.spec === path.basename(spec.file ?? "") &&
+          !seen.has(validated.key),
         "Duplicate or unexpected evidence condition",
       );
       seen.add(validated.key);

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -12,6 +12,7 @@ import {
   summarizeSamples,
   validateEvidenceArtifact,
 } from "./verify-shopping-performance-evidence.mjs";
+import { expectedPerformanceConditions } from "./shopping-performance-evidence-contract.mjs";
 function shopping(base = 10) {
   const raw = Array.from({ length: 20 }, (_, i) => base + i / 10),
     ops = ["execute", "executeRecord", "focus", "record", "next", "back"];
@@ -95,4 +96,158 @@ test("incomplete source produces a retained nonzero comparison artifact and refu
     }),
     /EEXIST/,
   );
+});
+async function partialShoppingRun(directory, phase, base = 10, options = {}) {
+  const runRoot = path.join(directory, phase);
+  await mkdir(path.join(runRoot, "shopping"), { recursive: true });
+  const runId = `${phase}-run`;
+  const metadata = {
+    phase,
+    runId,
+    instrumentVersion: "shopping-rendering-v1",
+    instrumentPatch: { sha256: (options.instrumentHash ?? "a").repeat(64) },
+    fixtureSources: { sha256: "b".repeat(64) },
+    productCommit: `${phase}-product`,
+    environment: {
+      platform: "win32",
+      arch: "x64",
+      node: process.version,
+      ci: null,
+      baseURL: "http://127.0.0.1:4173",
+      browserChannel: "bundled-chromium",
+      headed: false,
+      build: "npm run build:release-a",
+      workerCount: 1,
+    },
+  };
+  const report = {
+    errors: [],
+    config: { workers: 1, projects: [{ retries: 0 }] },
+    suites: [
+      {
+        specs: expectedPerformanceConditions("shopping").map(
+          (condition, index) => {
+            const data = {
+              ...shopping(base),
+              ...condition,
+              ...evidenceIdentity("shopping", "response", {
+                ESP_EVIDENCE_PHASE: phase,
+                ESP_EVIDENCE_RUN_ID: runId,
+              }),
+            };
+            if (index === 0 && options.omitUi) delete data.uiSummary;
+            return {
+              file: "responsive-performance.spec.ts",
+              title: `shopping-${index}`,
+              ok: phase === "after",
+              tests: [
+                {
+                  expectedStatus: "passed",
+                  status: phase === "after" ? "expected" : "unexpected",
+                  results: [
+                    {
+                      retry: 0,
+                      status: phase === "after" ? "passed" : "failed",
+                      attachments: [
+                        {
+                          name: "shopping-operation-timings",
+                          contentType: "application/json",
+                          body: Buffer.from(JSON.stringify(data)).toString(
+                            "base64",
+                          ),
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            };
+          },
+        ),
+      },
+    ],
+  };
+  await writeFile(
+    path.join(runRoot, "run-result.json"),
+    JSON.stringify(metadata),
+    "utf8",
+  );
+  await writeFile(
+    path.join(runRoot, "shopping/report.json"),
+    JSON.stringify(report),
+    "utf8",
+  );
+  return runRoot;
+}
+test("missing extra categories retain every valid core before/after row and explicit incomparable rows", async (t) => {
+  const directory = await mkdtemp(
+    path.join(os.tmpdir(), "esp partial compare "),
+  );
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const beforeRoot = await partialShoppingRun(directory, "before", 80),
+    afterRoot = await partialShoppingRun(directory, "after", 10);
+  const { exitCode, result } = await compareBrowserEvidence({
+    beforeRoot,
+    afterRoot,
+    output: path.join(directory, "comparison.json"),
+  });
+  assert.equal(exitCode, 1);
+  assert.equal(result.status, "incomplete");
+  assert.deepEqual(result.coverage, {
+    expectedMetrics: 672,
+    compared: 288,
+    uncomparable: 384,
+  });
+  const core = result.rows.find(
+    (row) => row.group === "shopping" && row.metric === "ui",
+  );
+  assert.equal(core.status, "compared");
+  assert.equal(core.before.count, 20);
+  assert.equal(core.after.count, 20);
+  assert.equal(core.beforeAbsolute, "failed");
+  assert.equal(core.afterAbsolute, "passed");
+  assert.ok(core.deltaMs.median < 0);
+  assert.ok(
+    result.rows.some(
+      (row) =>
+        row.group === "transfer" &&
+        row.status === "uncomparable" &&
+        row.before === null &&
+        row.after === null &&
+        row.reasons.length > 0,
+    ),
+  );
+});
+test("a missing UI condition leaves its rows incomparable while other valid condition pairs survive", async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "esp ui compare "));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const beforeRoot = await partialShoppingRun(directory, "before", 10, {
+      omitUi: true,
+    }),
+    afterRoot = await partialShoppingRun(directory, "after", 12);
+  const { result } = await compareBrowserEvidence({ beforeRoot, afterRoot });
+  assert.equal(result.coverage.compared, 276);
+  assert.ok(result.before.errors.some((error) => error.includes("uiSummary")));
+  assert.ok(
+    result.rows.some(
+      (row) =>
+        row.group === "shopping" &&
+        row.status === "uncomparable" &&
+        row.after !== null,
+    ),
+  );
+});
+test("instrument mismatches show both raw summaries but never compute misleading deltas", async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "esp drift compare "));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const beforeRoot = await partialShoppingRun(directory, "before", 10),
+    afterRoot = await partialShoppingRun(directory, "after", 12, {
+      instrumentHash: "c",
+    });
+  const { result } = await compareBrowserEvidence({ beforeRoot, afterRoot });
+  const core = result.rows.find((row) => row.group === "shopping");
+  assert.equal(core.status, "uncomparable");
+  assert.ok(core.before && core.after);
+  assert.equal(core.deltaMs, null);
+  assert.ok(core.reasons.includes("instrumentPatch mismatch"));
 });

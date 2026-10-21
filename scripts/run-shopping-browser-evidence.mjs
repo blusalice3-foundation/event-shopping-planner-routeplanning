@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -131,14 +131,24 @@ export async function collectBrowserProvenance(cwd, env) {
     "tests/browser/edit-execute-range-selection.spec.ts",
     "tests/browser/shopping-cross-column-drag.spec.ts",
     "tests/browser/shopping-transfer-rendering.performance.spec.ts",
+    "tests/browser/shopping-transfer-accepted.performance.spec.ts",
+    "tests/browser/shopping-transfer-terminal.performance.spec.ts",
   ];
+  const transferSources = (await readdir(path.join(cwd, "tests/browser")))
+    .filter((name) => /^shopping-transfer-.*\.ts$/.test(name))
+    .sort()
+    .map((name) => `tests/browser/${name}`);
   const instruments = [
-    ...specs,
-    "tests/browser/performance-summary.ts",
-    "tests/browser/shopping-performance-evidence.ts",
-    "tests/browser/shopping-transfer-measurement.ts",
-    "scripts/verify-shopping-performance-evidence.mjs",
-    "scripts/run-shopping-browser-evidence.mjs",
+    ...new Set([
+      ...specs,
+      "tests/browser/performance-summary.ts",
+      "tests/browser/shopping-performance-evidence.ts",
+      "tests/browser/shopping-transfer-measurement.ts",
+      "scripts/verify-shopping-performance-evidence.mjs",
+      "scripts/run-shopping-browser-evidence.mjs",
+      "scripts/shopping-performance-evidence-contract.mjs",
+      ...transferSources,
+    ]),
   ];
   return {
     productCommit: execFileSync("git", ["rev-parse", "HEAD"], {
@@ -153,8 +163,7 @@ export async function collectBrowserProvenance(cwd, env) {
     instrumentVersion: INSTRUMENT_VERSION,
     instrumentPatch: await sourceHashes(cwd, instruments),
     fixtureSources: await sourceHashes(cwd, [
-      ...specs,
-      "tests/browser/shopping-transfer-measurement.ts",
+      ...new Set([...specs, ...transferSources]),
     ]),
     environment: {
       platform: process.platform,
