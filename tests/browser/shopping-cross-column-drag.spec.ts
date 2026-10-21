@@ -792,6 +792,208 @@ async function ids(page: Page, column: string) {
       rows.map((row) => (row as HTMLElement).dataset.itemId),
     );
 }
+function selectionFixture(sourceColumn: "candidate" | "execute") {
+  const backup = fixture(6);
+  backup.data.eventLists[eventName] = [
+    makeItem("move-1", "11"),
+    makeItem("move-2", "12"),
+    makeItem("move-3", "13"),
+    makeItem("source-stay", "14"),
+    makeItem("target", "21"),
+    makeItem("outside", "22"),
+  ];
+  backup.data.executeModeItems[eventName][day] =
+    sourceColumn === "execute"
+      ? ["move-1", "move-2", "move-3", "source-stay"]
+      : ["target", "outside"];
+  return backup;
+}
+const selectionBox = (page: Page, id: string) =>
+  page.locator(rowSelector(id)).getByRole("checkbox");
+const headerMove = (page: Page, column: "candidate" | "execute") =>
+  page.getByRole("button", {
+    name:
+      column === "candidate"
+        ? /^選択したアイテムを実行列に移動 /u
+        : /^選択したアイテムを実行列から戻す /u,
+  });
+async function actualSelectionDrag(page: Page, id: string, targetId: string) {
+  await page
+    .locator(rowSelector(id))
+    .dragTo(page.locator(rowSelector(targetId)), {
+      sourcePosition: { x: 4, y: 40 },
+      targetPosition: { x: 4, y: 30 },
+    });
+}
+async function savedExecuteIds(page: Page): Promise<string[]> {
+  return (
+    (await stored(page, "executeModeItems"))[eventName] as Record<
+      string,
+      string[]
+    >
+  )[day];
+}
+for (const sourceColumn of ["candidate", "execute"] as const) {
+  for (const kind of ["single", "multiple", "range"] as const) {
+    test(`selection after actual native cross-column transfer: ${sourceColumn} ${kind}`, async ({
+      page,
+    }) => {
+      await restore(page, selectionFixture(sourceColumn));
+      await grouping(page, false);
+      const targetColumn =
+        sourceColumn === "candidate" ? "execute" : "candidate";
+      // The other column's check must survive the first transfer.
+      await selectionBox(page, "outside").check();
+      const moving =
+        kind === "single"
+          ? ["move-1"]
+          : kind === "multiple"
+            ? ["move-1", "move-3"]
+            : ["move-1", "move-2", "move-3"];
+      if (kind === "range") {
+        const displayed = (await ids(page, sourceColumn)).filter(
+          (id): id is string => !!id && moving.includes(id),
+        );
+        await selectionBox(page, displayed[0]).check();
+        await selectionBox(page, displayed.at(-1)!).check();
+        await page
+          .getByTitle("範囲内のチェックを入れる", { exact: true })
+          .first()
+          .click();
+      } else {
+        for (const id of moving) await selectionBox(page, id).check();
+      }
+      await expect(headerMove(page, sourceColumn)).toHaveText(
+        new RegExp(`\\(${moving.length}件\\)$`, "u"),
+      );
+      await expect(headerMove(page, targetColumn)).toHaveText(/\(1件\)$/u);
+      for (const id of moving)
+        await expect(selectionBox(page, id)).toBeChecked();
+      const before = await savedExecuteIds(page);
+      const afterFirst =
+        sourceColumn === "candidate"
+          ? [...before, ...moving]
+          : before.filter((id) => !moving.includes(id));
+
+      await actualSelectionDrag(page, moving[0], "target");
+      await expect
+        .poll(async () => (await savedExecuteIds(page)).slice().sort())
+        .toEqual(afterFirst.slice().sort());
+      for (const id of moving) {
+        await expect(
+          page.locator(
+            `[data-shopping-drag-column="${targetColumn}"] ${rowSelector(id)}`,
+          ),
+        ).toBeVisible();
+        await expect(selectionBox(page, id)).not.toBeChecked();
+      }
+      await expect(selectionBox(page, "outside")).toBeChecked();
+      await expect(headerMove(page, sourceColumn)).toHaveCount(0);
+      await expect(headerMove(page, targetColumn)).toHaveText(/\(1件\)$/u);
+      await expect(
+        page.getByTitle("範囲内のチェックを外す", { exact: true }),
+      ).toHaveCount(0);
+
+      // A single new click must check only that card, and the next drag must use
+      // exactly the two IDs shown by the parent header count.
+      await selectionBox(page, moving[0]).check();
+      await expect(selectionBox(page, moving[0])).toBeChecked();
+      for (const id of moving.slice(1))
+        await expect(selectionBox(page, id)).not.toBeChecked();
+      await expect(headerMove(page, targetColumn)).toHaveText(/\(2件\)$/u);
+      await actualSelectionDrag(page, moving[0], "source-stay");
+      const nextIds = [moving[0], "outside"];
+      const afterSecond =
+        sourceColumn === "execute"
+          ? [...afterFirst, ...nextIds]
+          : afterFirst.filter((id) => !nextIds.includes(id));
+      await expect
+        .poll(async () => (await savedExecuteIds(page)).slice().sort())
+        .toEqual(afterSecond.slice().sort());
+      for (const id of nextIds) {
+        await expect(
+          page.locator(
+            `[data-shopping-drag-column="${sourceColumn}"] ${rowSelector(id)}`,
+          ),
+        ).toBeVisible();
+        await expect(selectionBox(page, id)).not.toBeChecked();
+      }
+      for (const id of moving.slice(1))
+        await expect(
+          page.locator(
+            `[data-shopping-drag-column="${targetColumn}"] ${rowSelector(id)}`,
+          ),
+        ).toBeVisible();
+      await expect(headerMove(page, "candidate")).toHaveCount(0);
+      await expect(headerMove(page, "execute")).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: "選択を解除", exact: true }),
+      ).toHaveCount(0);
+    });
+  }
+}
+
+test("selection restores a hidden candidate check and excludes it from the visible drag", async ({
+  page,
+}) => {
+  const backup = selectionFixture("candidate");
+  backup.data.eventLists[eventName].find(
+    (item) => item.id === "move-3",
+  )!.block = "B";
+  await restore(page, backup);
+  await grouping(page, false);
+  await selectionBox(page, "move-1").check();
+  await selectionBox(page, "move-3").check();
+  await expect(headerMove(page, "candidate")).toHaveText(/\(2件\)$/u);
+  const filter = page.getByRole("button", { name: "A", exact: true });
+  await filter.click();
+  await expect(page.locator(rowSelector("move-3"))).toHaveCount(0);
+  await expect(headerMove(page, "candidate")).toHaveText(/\(2件\)$/u);
+  await filter.click();
+  await expect(selectionBox(page, "move-3")).toBeChecked();
+  await expect(selectionBox(page, "move-1")).toBeChecked();
+  await filter.click();
+  await actualSelectionDrag(page, "move-1", "target");
+  await expect
+    .poll(async () => (await savedExecuteIds(page)).includes("move-1"))
+    .toBe(true);
+  expect(await savedExecuteIds(page)).not.toContain("move-3");
+  await expect(headerMove(page, "candidate")).toHaveText(/\(1件\)$/u);
+  await expect(headerMove(page, "execute")).toHaveCount(0);
+  await filter.click();
+  await expect(selectionBox(page, "move-3")).toBeChecked();
+  await expect(selectionBox(page, "move-1")).not.toBeChecked();
+});
+
+for (const column of ["candidate", "execute"] as const) {
+  test(`selection survives same-column native reorder: ${column}`, async ({
+    page,
+  }) => {
+    await restore(page, selectionFixture(column));
+    await grouping(page, false);
+    await selectionBox(page, "move-1").check();
+    await selectionBox(page, "move-2").check();
+    await expect(headerMove(page, column)).toHaveText(/\(2件\)$/u);
+    const readOrder = async () =>
+      column === "execute"
+        ? savedExecuteIds(page)
+        : (
+            (await stored(page, "eventLists"))[eventName] as { id: string }[]
+          ).map((item) => item.id);
+    const before = await readOrder();
+    await start(page, "native", "move-1");
+    await hover(page, "native", "source-stay", "after", false);
+    await finish(page, "native", true, column);
+    await expect.poll(readOrder).not.toEqual(before);
+    expect((await readOrder()).slice().sort()).toEqual(before.slice().sort());
+    await expect(selectionBox(page, "move-1")).toBeChecked();
+    await expect(selectionBox(page, "move-2")).toBeChecked();
+    await expect(headerMove(page, column)).toHaveText(/\(2件\)$/u);
+    await expect(
+      page.getByTitle("範囲内のチェックを入れる", { exact: true }),
+    ).toHaveCount(0);
+  });
+}
 for (const input of ["native", "touch"] as const) {
   test(`execution group boundary and durable order: ${input}`, async ({
     page,

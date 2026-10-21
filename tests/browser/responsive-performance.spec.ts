@@ -10,6 +10,46 @@ import {
 // Keep response timings free from video and trace capture on every attempt.
 test.use({ video: "off", trace: "off" });
 
+const incompleteShoppingEvidence = new Map<
+  string,
+  () => Record<string, unknown>
+>();
+test.afterEach(async ({ page }, testInfo) => {
+  const snapshot = incompleteShoppingEvidence.get(testInfo.testId);
+  incompleteShoppingEvidence.delete(testInfo.testId);
+  if (
+    !snapshot ||
+    testInfo.status === "passed" ||
+    testInfo.attachments.some(
+      (attachment) => attachment.name === "shopping-operation-timings",
+    )
+  )
+    return;
+  const body = JSON.stringify(
+    {
+      ...snapshot(),
+      ...shoppingEvidenceIdentity("shopping"),
+      acceptanceMeasurement: false,
+      completed: false,
+      failureStatus: testInfo.status,
+      failureReasons: testInfo.errors.map(
+        (error) => error.message ?? String(error),
+      ),
+      pageClosed: page.isClosed(),
+    },
+    null,
+    2,
+  );
+  await writeFile(
+    testInfo.outputPath("shopping-operation-incomplete.json"),
+    body,
+    "utf8",
+  );
+  await testInfo.attach("shopping-operation-incomplete", {
+    body,
+    contentType: "application/json",
+  });
+});
 const eventName = "応答速度検証";
 const makeBackup = (
   count: number,
@@ -739,6 +779,17 @@ for (const count of [150, 500, 1500])
           reason?: string;
         }>
       > = Object.fromEntries(Object.keys(timings).map((key) => [key, []]));
+      // Keep a failure-only snapshot of collected samples if later preparation
+      // fails before the ordinary evidence artifact is emitted.
+      incompleteShoppingEvidence.set(testInfo.testId, () => ({
+        count,
+        concentrated,
+        mapVisible,
+        layout,
+        timings,
+        uiTimings,
+        uiSamples,
+      }));
       const recordResponse = (
         group: string,
         result: Awaited<ReturnType<typeof measureShoppingResponse>>,
@@ -831,7 +882,7 @@ for (const count of [150, 500, 1500])
         } else {
           await page
             .getByTestId("focus-mode-scroll-region")
-            .evaluate((root, direction) => {
+            .evaluate(async (root, direction) => {
               for (const type of ["touchstart", "touchmove", "touchend"]) {
                 const point = {
                   clientX:
@@ -849,6 +900,8 @@ for (const count of [150, 500, 1500])
                 });
                 root.dispatchEvent(event);
               }
+              await new Promise(requestAnimationFrame);
+              await new Promise((resolve) => setTimeout(resolve, 0));
             }, direction);
         }
         focusVisitIndex = nextIndex;
