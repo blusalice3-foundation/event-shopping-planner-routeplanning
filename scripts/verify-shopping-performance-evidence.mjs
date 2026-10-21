@@ -163,7 +163,13 @@ export function conditionKey(condition, group) {
     ]),
   );
 }
-export function validateEvidenceArtifact(artifact, group, identity = {}) {
+// Budget reporting is used only by before/after comparison; acceptance verification always enforces budgets.
+export function validateEvidenceArtifact(
+  artifact,
+  group,
+  identity = {},
+  { enforceBudgets = true } = {},
+) {
   assert(
     artifact?.schemaVersion === SCHEMA_VERSION,
     "Unsupported or missing evidence schemaVersion",
@@ -217,11 +223,13 @@ export function validateEvidenceArtifact(artifact, group, identity = {}) {
         artifact.timings[op],
         artifact.summary[op],
         `${op}/legacy`,
+        enforceBudgets,
       );
       validateMetric(
         artifact.uiTimings[op],
         artifact.uiSummary[op],
         `${op}/ui`,
+        enforceBudgets,
       );
       const samples = artifact.uiSamples[op];
       assert(
@@ -264,7 +272,12 @@ export function validateEvidenceArtifact(artifact, group, identity = {}) {
     keysEqual(artifact.timings, ops, "timings");
     keysEqual(artifact.summary, ops, "summary");
     for (const op of ops) {
-      validateMetric(artifact.timings[op], artifact.summary[op], op);
+      validateMetric(
+        artifact.timings[op],
+        artifact.summary[op],
+        op,
+        enforceBudgets,
+      );
       assert(
         Array.isArray(artifact.samples) &&
           artifact.samples.length === artifact.timings[op].length,
@@ -291,7 +304,12 @@ export function validateEvidenceArtifact(artifact, group, identity = {}) {
     ];
     keysEqual(artifact.records, ops, "records");
     for (const op of ops)
-      validateMetric(artifact.records[op]?.samples, artifact.records[op], op);
+      validateMetric(
+        artifact.records[op]?.samples,
+        artifact.records[op],
+        op,
+        enforceBudgets,
+      );
     assert(
       Array.isArray(artifact.start) &&
         artifact.start.length >= 20 &&
@@ -307,7 +325,12 @@ export function validateEvidenceArtifact(artifact, group, identity = {}) {
     keysEqual(artifact.metrics, ops, "metrics");
     for (const op of ops) {
       const metric = artifact.metrics[op];
-      validateMetric(metric?.raw, metric?.summary, op, op !== "save");
+      validateMetric(
+        metric?.raw,
+        metric?.summary,
+        op,
+        op !== "save" && enforceBudgets,
+      );
       assert(
         Array.isArray(metric.samples) &&
           metric.samples.length === metric.raw.length,

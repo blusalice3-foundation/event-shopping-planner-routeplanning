@@ -125,7 +125,7 @@ async function sourceHashes(cwd, files) {
   }
   return { sha256: hash.digest("hex"), files: entries };
 }
-async function provenance(cwd, env) {
+export async function collectBrowserProvenance(cwd, env) {
   const specs = [
     "tests/browser/responsive-performance.spec.ts",
     "tests/browser/edit-execute-range-selection.spec.ts",
@@ -217,7 +217,10 @@ export async function runBrowserEvidence(options = {}) {
       throw new Error(
         `Acceptance preflight rejected: ${checked.rejected.map((r) => r.name).join(", ")}`,
       );
-    Object.assign(result, options.provenance ?? (await provenance(cwd, env)));
+    Object.assign(
+      result,
+      options.provenance ?? (await collectBrowserProvenance(cwd, env)),
+    );
     const npmCli = options.npmCli ?? (await resolveNpmCli(env));
     for (const definition of GROUPS) {
       const entry = result.groups.find((row) => row.group === definition.group);
