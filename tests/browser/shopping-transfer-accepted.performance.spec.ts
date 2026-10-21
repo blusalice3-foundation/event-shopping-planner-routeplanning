@@ -5,13 +5,17 @@ import { shoppingEvidenceIdentity } from "./shopping-performance-evidence";
 import {
   installCommitProbe,
   measureTransfer,
+  prepareTransferSourceOrigin,
   readTransferDurable,
   transferRow,
   type TransferSample,
 } from "./shopping-transfer-measurement";
 import {
   acceptedTransferConditions,
+  acceptedRangeFrameGeometry,
   prepareAcceptedScenario,
+  prepareAcceptedRangeFrame,
+  verifyAcceptedRangeFramePreparation,
   restoreAcceptedScenario,
   verifyAcceptedScenario,
 } from "./shopping-transfer-scenarios";
@@ -110,6 +114,62 @@ for (const condition of acceptedTransferConditions)
                 scenario,
               );
               const measurementId = `accepted-${condition.scenario}-${condition.input}-${condition.direction}-${measurementKind}-${index}`;
+              let rangeFramePreparation:
+                | Awaited<ReturnType<typeof prepareAcceptedRangeFrame>>
+                | undefined;
+              if (
+                measurementKind === "frame" &&
+                condition.scenario === "range"
+              ) {
+                const preparation = await prepareAcceptedRangeFrame(
+                  page,
+                  scenario.effectiveIds,
+                  scenario.anchorId,
+                );
+                rangeFramePreparation = preparation;
+                const preparationPath = testInfo.outputPath(
+                  `${measurementId}-preclock-preparation.json`,
+                );
+                await writeFile(
+                  preparationPath,
+                  JSON.stringify(preparation, null, 2),
+                  "utf8",
+                );
+                await testInfo.attach(`${measurementId}-preclock-preparation`, {
+                  path: preparationPath,
+                  contentType: "application/json",
+                });
+                // Persist actual geometry before any preparation guard can fail.
+                verifyAcceptedRangeFramePreparation(preparation);
+                const origin = await prepareTransferSourceOrigin(
+                  page,
+                  scenario.sourceId,
+                );
+                const originPath = testInfo.outputPath(
+                  `${measurementId}-preclock-source-origin.json`,
+                );
+                await writeFile(
+                  originPath,
+                  JSON.stringify(origin, null, 2),
+                  "utf8",
+                );
+                await testInfo.attach(
+                  `${measurementId}-preclock-source-origin`,
+                  {
+                    path: originPath,
+                    contentType: "application/json",
+                  },
+                );
+                options.scenarioEvidence = {
+                  ...options.scenarioEvidence,
+                  framePreparation: {
+                    ...preparation,
+                    origin,
+                    preparationPath,
+                    originPath,
+                  },
+                };
+              }
               const measured = await measureTransfer(
                 page,
                 session,
@@ -120,6 +180,73 @@ for (const condition of acceptedTransferConditions)
                 testInfo,
                 { ...options, measurementId },
               );
+              if (rangeFramePreparation) {
+                const geometry = await acceptedRangeFrameGeometry(
+                  page,
+                  scenario.effectiveIds,
+                  scenario.anchorId,
+                );
+                const observationPath = testInfo.outputPath(
+                  `${measurementId}-post-frame-observation.json`,
+                );
+                await writeFile(
+                  observationPath,
+                  JSON.stringify({ geometry, measured }, null, 2),
+                  "utf8",
+                );
+                await testInfo.attach(
+                  `${measurementId}-post-frame-observation`,
+                  {
+                    path: observationPath,
+                    contentType: "application/json",
+                  },
+                );
+                // Physical observations precede every additional range-frame guard.
+                expect("frame" in measured).toBe(true);
+                if (!("frame" in measured))
+                  throw new Error("Range frame missing");
+                const frame = measured.frame;
+                expect(frame).toBeDefined();
+                if (!frame) throw new Error("Range frame missing");
+                const actualOrigin = frame.gestureObservation as
+                  | Awaited<ReturnType<typeof prepareTransferSourceOrigin>>
+                  | undefined;
+                const primary = rangeFramePreparation.after.source.find(
+                  (row) => row.id === scenario.sourceId,
+                );
+                expect(actualOrigin?.sourceHitTest.selectedHit?.matched).toBe(
+                  true,
+                );
+                expect(actualOrigin?.sourceHitTest.sourceId).toBe(
+                  scenario.sourceId,
+                );
+                expect(
+                  Math.abs(
+                    (actualOrigin?.sourceHitTest.sourceRect.y ?? Infinity) -
+                      primary!.rect!.y,
+                  ),
+                  "The frozen engine must preserve the prepared source position",
+                ).toBeLessThanOrEqual(1);
+                expect(frame.visibleSourceIds).toHaveLength(3);
+                expect(frame.visibleSourceIds).toEqual(
+                  expect.arrayContaining(scenario.effectiveIds),
+                );
+                expect(frame.visibleTransferredIds).toHaveLength(3);
+                expect(frame.visibleTransferredIds).toEqual(
+                  expect.arrayContaining(scenario.effectiveIds),
+                );
+                expect(frame.correlation.sourceProofs).toHaveLength(3);
+                expect(frame.correlation.targetProofs).toHaveLength(3);
+                expect(
+                  geometry.source.every(
+                    (row) =>
+                      row.fullyVisible &&
+                      row.controls.length > 0 &&
+                      row.controls.every((control) => control.fullyVisible),
+                  ),
+                  "All three destination cards and visible controls must fully fit",
+                ).toBe(true);
+              }
               const durableProof = await verifyAcceptedScenario(
                 page,
                 before,

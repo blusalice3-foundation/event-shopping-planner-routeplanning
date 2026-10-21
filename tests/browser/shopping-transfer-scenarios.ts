@@ -7,6 +7,7 @@ import {
   restoreTransferFixture,
   transferEventName,
   transferRow,
+  waitForTransferIdle,
   type TransferCondition,
   type TransferMeasurementOptions,
 } from "./shopping-transfer-measurement";
@@ -265,6 +266,168 @@ export async function restoreAcceptedScenario(
   );
   return { ...scenario, fixture };
 }
+export async function acceptedRangeFrameGeometry(
+  page: Page,
+  ids: readonly string[],
+  anchorId: string,
+) {
+  return page.evaluate(
+    ({ ids, anchorId }) => {
+      const box = (r: DOMRect) => ({
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+        top: r.top,
+        right: r.right,
+        bottom: r.bottom,
+        left: r.left,
+      });
+      const header = document.querySelector<HTMLElement>(
+        '[data-testid="app-shell-header"]',
+      );
+      const headerRect = header?.getBoundingClientRect();
+      const headerBottom = headerRect?.bottom ?? null;
+      const row = (id: string) => {
+        const element = document.querySelector<HTMLElement>(
+          `[data-item-id="${id}"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
+        );
+        if (!element)
+          return {
+            id,
+            mounted: false,
+            rect: null,
+            fullyVisible: false,
+            controls: [],
+            dropHit: null,
+          };
+        const r = element.getBoundingClientRect();
+        const point = {
+          x: r.x + 4,
+          y: r.y + Math.min(r.height - 4, r.height * 0.8),
+        };
+        const hit = document.elementFromPoint(point.x, point.y);
+        const owner = hit?.closest<HTMLElement>("[data-item-id]");
+        const controls = [
+          ...element.querySelectorAll<HTMLElement>(
+            'input[type="checkbox"], select, button',
+          ),
+        ]
+          .map((control) => {
+            const cr = control.getBoundingClientRect();
+            const style = getComputedStyle(control);
+            return {
+              tag: control.tagName,
+              type: control.getAttribute("type"),
+              title: control.title,
+              label: control.getAttribute("aria-label"),
+              rect: box(cr),
+              visible:
+                cr.width > 0 &&
+                cr.height > 0 &&
+                style.visibility !== "hidden" &&
+                style.display !== "none",
+              fullyVisible:
+                cr.width > 0 &&
+                cr.height > 0 &&
+                cr.left >= 0 &&
+                cr.right <= innerWidth &&
+                cr.top >= (headerBottom ?? Infinity) &&
+                cr.bottom <= innerHeight,
+            };
+          })
+          .filter((control) => control.visible);
+        return {
+          id,
+          mounted: true,
+          rect: box(r),
+          fullyVisible:
+            headerBottom !== null &&
+            r.left >= 0 &&
+            r.right <= innerWidth &&
+            r.top >= headerBottom &&
+            r.bottom <= innerHeight,
+          controls,
+          dropHit: {
+            point,
+            tagName: hit?.tagName ?? null,
+            ownerId: owner?.dataset.itemId ?? null,
+            sourceContainsHit: !!hit && element.contains(hit),
+            ownerMatched: owner === element,
+          },
+        };
+      };
+      return {
+        epoch: performance.timeOrigin + performance.now(),
+        scrollY,
+        viewport: { width: innerWidth, height: innerHeight },
+        header: headerRect ? box(headerRect) : null,
+        source: ids.map(row),
+        anchor: row(anchorId),
+      };
+    },
+    { ids: [...ids], anchorId },
+  );
+}
+
+export async function prepareAcceptedRangeFrame(
+  page: Page,
+  sourceIds: readonly string[],
+  anchorId: string,
+) {
+  const before = await acceptedRangeFrameGeometry(page, sourceIds, anchorId);
+  // Fixture preparation only; all response/frame clocks remain in measureTransfer.
+  await page.evaluate(() => window.scrollBy(0, 180));
+  await waitForTransferIdle(page);
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+    );
+  });
+  const after = await acceptedRangeFrameGeometry(page, sourceIds, anchorId);
+  return {
+    method: "real-window-scrollBy-preclock" as const,
+    requestedDeltaY: 180,
+    expectedSourceIds: [...sourceIds],
+    anchorId,
+    before,
+    after,
+  };
+}
+
+export function verifyAcceptedRangeFramePreparation(
+  preparation: Awaited<ReturnType<typeof prepareAcceptedRangeFrame>>,
+) {
+  const { before, after, expectedSourceIds, anchorId } = preparation;
+  expect(expectedSourceIds).toHaveLength(3);
+  expect(after.source.map((row) => row.id)).toEqual(expectedSourceIds);
+  expect(
+    Math.abs(after.scrollY - before.scrollY - preparation.requestedDeltaY),
+    "Range frame preparation must move the actual window by +180px",
+  ).toBeLessThanOrEqual(1);
+  expect(
+    after.header,
+    "Actual sticky header must be observable",
+  ).not.toBeNull();
+  expect(
+    after.source.every(
+      (row) =>
+        row.fullyVisible &&
+        row.controls.length > 0 &&
+        row.controls.every((control) => control.fullyVisible),
+    ),
+    "All three original cards and visible controls must fit below the header",
+  ).toBe(true);
+  expect(after.anchor.id).toBe(anchorId);
+  expect(after.anchor.fullyVisible, "Actual drop anchor must fully fit").toBe(
+    true,
+  );
+  expect(after.anchor.dropHit?.sourceContainsHit).toBe(true);
+  expect(after.anchor.dropHit?.ownerMatched).toBe(true);
+}
+
 export async function prepareAcceptedScenario(
   page: Page,
   session: CDPSession,
