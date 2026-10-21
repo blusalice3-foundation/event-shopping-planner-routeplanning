@@ -115,6 +115,15 @@ export function reuseEqualReferences<T>(previous: T, next: T): T {
   const after = next as Record<string, unknown>;
   const keys = Object.keys(after);
   const previousKeys = Object.keys(before);
+  // Order deltas already carry immutable objects from this array. Keep their
+  // identity when they move to another index instead of cloning their fields.
+  const existingObjects = arrays
+    ? new Set(
+        Object.values(before).filter(
+          (value) => value !== null && typeof value === "object",
+        ),
+      )
+    : undefined;
   const result = (
     arrays ? new Array((next as unknown[]).length) : {}
   ) as Record<string, unknown>;
@@ -122,7 +131,9 @@ export function reuseEqualReferences<T>(previous: T, next: T): T {
     previousKeys.length === keys.length &&
     (!arrays || (previous as unknown[]).length === (next as unknown[]).length);
   for (const [index, key] of keys.entries()) {
-    const value = reuseEqualReferences(recordEntry(before, key), after[key]);
+    const value = existingObjects?.has(after[key])
+      ? after[key]
+      : reuseEqualReferences(recordEntry(before, key), after[key]);
     Object.defineProperty(result, key, {
       value,
       enumerable: true,
