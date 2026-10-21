@@ -957,8 +957,15 @@ export async function measureTransfer(
         beforeFrame!.toString("base64"),
         [sourceRect, targetRect],
       );
+      const candidatePath = testInfo.outputPath(
+        `${measurementId}-candidate-${candidateComparisons.length}.png`,
+      );
+      const candidateBytes = Buffer.from(captured.data, "base64");
+      await writeFile(candidatePath, candidateBytes);
       candidateComparisons.push({
         frameSwapEpochMs: frameEpochMs,
+        framePath: candidatePath,
+        frameSha256: sha256(candidateBytes),
         captureTs: frameTraceTs,
         checked,
         sourceRect,
@@ -1129,7 +1136,10 @@ async function compareFrameContent(
         image(baseline, "image/png"),
       ]);
       const crop = (bitmap: ImageBitmap, rect: Rect) => {
-        const canvas = new OffscreenCanvas(128, 64),
+        const canvas = new OffscreenCanvas(
+            Math.ceil(rect.width),
+            Math.ceil(rect.height),
+          ),
           context = canvas.getContext("2d")!;
         context.drawImage(
           bitmap,
@@ -1139,17 +1149,31 @@ async function compareFrameContent(
           (rect.height * bitmap.height) / innerHeight,
           0,
           0,
-          128,
-          64,
+          canvas.width,
+          canvas.height,
         );
-        return context.getImageData(0, 0, 128, 64).data;
+        return context.getImageData(0, 0, canvas.width, canvas.height).data;
       };
+      // Compare dark foreground ink, preserving glyph shape and opacity while excluding
+      // the allowed striping/hover background color transition from readiness.
       const difference = (a: Uint8ClampedArray, b: Uint8ClampedArray) => {
-        let total = 0;
-        for (let i = 0; i < a.length; i += 4)
-          for (let c = 0; c < 3; c++)
-            total += Math.abs(a[i + c] - b[i + c]) / 255;
-        return total / ((a.length / 4) * 3);
+        let disagreement = 0,
+          inkWeight = 0;
+        for (let i = 0; i < a.length; i += 4) {
+          const ink = (pixels: Uint8ClampedArray) =>
+            Math.max(
+              0,
+              170 -
+                (0.2126 * pixels[i] +
+                  0.7152 * pixels[i + 1] +
+                  0.0722 * pixels[i + 2]),
+            ) / 170;
+          const actualInk = ink(a),
+            expectedInk = ink(b);
+          disagreement += Math.abs(actualInk - expectedInk);
+          inkWeight += Math.max(actualInk, expectedInk);
+        }
+        return inkWeight > 0 ? disagreement / inkWeight : 1;
       };
       try {
         // Normalize complete images to the trace screenshot raster before comparing glyphs.
@@ -1171,10 +1195,10 @@ async function compareFrameContent(
           };
           const controls = [
             {
-              x: rect.x + 5,
-              y: rect.y + 5,
-              width: 45,
-              height: Math.min(140, rect.height - 5),
+              x: rect.x + 7,
+              y: rect.y + 7,
+              width: 38,
+              height: 30,
             },
             {
               x: rect.x + rect.width - 200,
@@ -1201,6 +1225,7 @@ async function compareFrameContent(
         normalizedExpected.close();
         normalizedBefore.close();
         return {
+          method: "dark-ink-shape-native-v2",
           matched: scores.every(
             (score) =>
               score.baselineError > 0.001 &&

@@ -120,7 +120,7 @@ for (const condition of transferConditions)
             "first content-verified full-resolution PNG screencast frame, armed before input; its frame-swap timestamp follows the same-renderer DOM marker, covering Paint and DrawFrame; includes actual capture load",
           save: "Worker readwrite transaction complete epoch minus input timestamp; auxiliary with no response threshold",
           frameComparison:
-            "source gap and destination identity crops must match final reference and discriminate the pre-drop baseline; checkbox/status controls are compared separately; no frame timing substitution",
+            "source gap and destination dark-ink glyph shapes/opacity must match final reference and discriminate pre-drop identities; checkbox/status control ink is checked separately; allowed striping/hover background color is excluded",
           actualMoveIds:
             "measurementId identifies only the test sample; actual persistence operationId is reported separately when exposed",
           thresholds: { minimumCount: 20, medianMs: 55, p95Ms: 100 },
