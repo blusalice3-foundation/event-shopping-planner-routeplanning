@@ -1,5 +1,6 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
+import { shoppingEvidenceIdentity } from "./shopping-performance-evidence";
 
 test.use({
   video: "off",
@@ -2633,6 +2634,7 @@ for (const count of [150, 500])
         if (cdp) await cdp.detach();
         records.drop = summary(drops);
         await attach(testInfo, "shopping-drag-response", {
+          ...shoppingEvidenceIdentity("drag"),
           build: "npm run build:app",
           fixture: {
             count,

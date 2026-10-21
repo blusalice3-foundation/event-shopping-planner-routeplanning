@@ -1,6 +1,11 @@
 import { writeFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
+import {
+  measureShoppingResponse,
+  shoppingEvidenceIdentity,
+  type ShoppingUiExpectation,
+} from "./shopping-performance-evidence";
 
 // Keep response timings free from video and trace capture on every attempt.
 test.use({ video: "off", trace: "off" });
@@ -719,58 +724,134 @@ for (const count of [150, 500, 1500])
           )
           .toBe(true);
       };
+      const uiTimings: Record<string, number[]> = Object.fromEntries(
+        Object.keys(timings).map((key) => [key, []]),
+      );
+      const uiSamples: Record<
+        string,
+        Array<{
+          sampleId: string;
+          targetId: string;
+          expected: ShoppingUiExpectation;
+          legacyMs: number;
+          uiMs: number;
+          matched: boolean;
+          reason?: string;
+        }>
+      > = Object.fromEntries(Object.keys(timings).map((key) => [key, []]));
+      const recordResponse = (
+        group: string,
+        result: Awaited<ReturnType<typeof measureShoppingResponse>>,
+      ) => {
+        timings[group].push(result.legacyMs);
+        uiTimings[group].push(result.uiMs);
+        uiSamples[group].push({
+          sampleId: `${group}:${uiSamples[group].length}`,
+          ...result,
+        });
+        expect
+          .soft(result.matched, result.reason ?? `${group}: ${result.targetId}`)
+          .toBe(true);
+      };
+      let focusVisitIndex = 0;
+      let recordTarget = "perf-19";
       const clickResponse = async (
         locator: ReturnType<Page["locator"]>,
         button: string,
         group: string,
+        expected?: ShoppingUiExpectation,
       ) => {
         await locator.scrollIntoViewIfNeeded();
-        const duration = await locator.evaluate(async (root, selector) => {
-          const button = root.matches(selector)
-            ? (root as HTMLButtonElement)
-            : root.querySelector<HTMLButtonElement>(selector)!;
-          const start = performance.now();
-          button.click();
-          await new Promise(requestAnimationFrame);
-          await new Promise((resolve) => setTimeout(resolve, 0));
-          return performance.now() - start;
-        }, button);
-        timings[group].push(duration);
+        if (!expected) {
+          if (group === "record" || group === "executeRecord") {
+            expected = {
+              targetId: recordTarget,
+              status: "売切",
+              dialog: "hidden",
+            };
+          } else {
+            const before = await locator.evaluate((root) => ({
+              id: (root as HTMLElement).dataset.itemId!,
+              status: root
+                .querySelector('button[aria-label^="Current status:"]')
+                ?.getAttribute("aria-label"),
+            }));
+            const soldOut = before.status?.includes("購入済") ?? false;
+            expected = {
+              targetId: before.id,
+              status: soldOut ? "売切" : "購入済",
+              ...(soldOut ? { dialog: "visible" as const } : {}),
+            };
+          }
+        }
+        recordResponse(
+          group,
+          await measureShoppingResponse(locator, button, expected),
+        );
       };
       const navigateResponse = async (
         direction: "next" | "back",
         record = true,
       ) => {
+        const nextIndex = focusVisitIndex + (direction === "next" ? 1 : -1);
+        const itemIndex =
+          concentrated && nextIndex > 0 ? count - 11 + nextIndex : nextIndex;
+        const expected: ShoppingUiExpectation = {
+          targetId: `perf-${itemIndex}`,
+          ...(concentrated && nextIndex === 0
+            ? {
+                visitItemIds: Array.from(
+                  { length: count - 10 },
+                  (_, index) => `perf-${index}`,
+                ),
+              }
+            : {}),
+          visitNumber: String(
+            concentrated && nextIndex === 0 ? 1 : itemIndex + 1,
+          ),
+        };
         if (layout === "pc") {
           const button = page.getByTitle(
             direction === "next" ? "次の訪問先" : "前の訪問先",
             { exact: true },
           );
-          if (record) await clickResponse(button, "button", direction);
+          if (record)
+            await clickResponse(button, "button", direction, expected);
           else await button.click();
-          return;
+        } else if (record) {
+          recordResponse(
+            direction,
+            await measureShoppingResponse(
+              page.getByTestId("focus-mode-scroll-region"),
+              "div",
+              expected,
+              direction,
+            ),
+          );
+        } else {
+          await page
+            .getByTestId("focus-mode-scroll-region")
+            .evaluate((root, direction) => {
+              for (const type of ["touchstart", "touchmove", "touchend"]) {
+                const point = {
+                  clientX:
+                    type === "touchstart"
+                      ? 200
+                      : direction === "next"
+                        ? 80
+                        : 320,
+                  clientY: 200,
+                };
+                const event = new Event(type, { bubbles: true });
+                Object.defineProperties(event, {
+                  touches: { value: type === "touchend" ? [] : [point] },
+                  changedTouches: { value: [point] },
+                });
+                root.dispatchEvent(event);
+              }
+            }, direction);
         }
-        const duration = await page
-          .getByTestId("focus-mode-scroll-region")
-          .evaluate(async (root, direction) => {
-            const emit = (type: string, x: number) => {
-              const point = { clientX: x, clientY: 200 };
-              const event = new Event(type, { bubbles: true });
-              Object.defineProperties(event, {
-                touches: { value: type === "touchend" ? [] : [point] },
-                changedTouches: { value: [point] },
-              });
-              root.dispatchEvent(event);
-            };
-            const start = performance.now();
-            emit("touchstart", 200);
-            emit("touchmove", direction === "next" ? 80 : 320);
-            emit("touchend", direction === "next" ? 80 : 320);
-            await new Promise(requestAnimationFrame);
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            return performance.now() - start;
-          }, direction);
-        if (record) timings[direction].push(duration);
+        focusVisitIndex = nextIndex;
       };
       // Scroll across the complete list before measuring, so old cards must be released.
       const visitedIds = await page.evaluate(async () => {
@@ -904,6 +985,7 @@ for (const count of [150, 500, 1500])
         if (!concentrated) await navigateResponse("next");
       }
       const target = concentrated ? "perf-39" : "perf-40";
+      recordTarget = target;
       const row = page.locator(`[data-item-id="${target}"]`);
       if (!concentrated)
         await clickResponse(
@@ -982,6 +1064,12 @@ for (const count of [150, 500, 1500])
           summarizePerformanceSamples(values),
         ]),
       );
+      const uiSummary = Object.fromEntries(
+        Object.entries(uiTimings).map(([operation, values]) => [
+          operation,
+          summarizePerformanceSamples(values),
+        ]),
+      );
       await writeFile(
         testInfo.outputPath("shopping-operation-timings.json"),
         JSON.stringify(
@@ -990,7 +1078,11 @@ for (const count of [150, 500, 1500])
             concentrated,
             mapVisible,
             layout,
+            ...shoppingEvidenceIdentity("shopping"),
             visitedCount,
+            uiTimings,
+            uiSummary,
+            uiSamples,
             timings,
             summary,
             diagnostic,
@@ -1010,7 +1102,11 @@ for (const count of [150, 500, 1500])
             concentrated,
             mapVisible,
             layout,
+            ...shoppingEvidenceIdentity("shopping"),
             visitedCount,
+            uiTimings,
+            uiSummary,
+            uiSamples,
             timings,
             summary,
             diagnostic,
@@ -1024,7 +1120,12 @@ for (const count of [150, 500, 1500])
         contentType: "application/json",
       });
       expect(errors).toEqual([]);
-      for (const [operation, result] of Object.entries(summary)) {
+      for (const [operation, result] of Object.entries({
+        ...summary,
+        ...Object.fromEntries(
+          Object.entries(uiSummary).map(([key, value]) => [`ui:${key}`, value]),
+        ),
+      })) {
         expect(
           result.count,
           operation + " sample count",

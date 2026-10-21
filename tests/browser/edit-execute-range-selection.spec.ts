@@ -1,3 +1,4 @@
+import { shoppingEvidenceIdentity } from "./shopping-performance-evidence";
 import { writeFile } from "node:fs/promises";
 import {
   expect,
@@ -2187,6 +2188,7 @@ for (const condition of conditions) {
       ]),
     );
     await artifact(testInfo, "edit-execute-range-selection-timings", {
+      ...shoppingEvidenceIdentity("range"),
       environment: actualEnvironment,
       browserVersion: page.context().browser()?.version(),
       fixtureIds: fixture(condition.count).data.executeModeItems[eventName][
