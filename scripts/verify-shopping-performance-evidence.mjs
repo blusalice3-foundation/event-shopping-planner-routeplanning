@@ -121,6 +121,68 @@ function conditionOf(artifact, group) {
   return group === "transfer" ? artifact.condition : artifact;
 }
 export const conditionKey = performanceConditionKey;
+function validateFrameVisualProof(sample, condition) {
+  assert(
+    sample.frameVerified === true &&
+      sample.controlsVerified === true &&
+      typeof sample.frameTimestampMs === "number" &&
+      Number.isFinite(sample.frameTimestampMs),
+    "Frame evidence is missing verified visible content/controls",
+  );
+  const target = sample.visualTarget ?? "card";
+  if (condition.scenario === "noop")
+    assert(
+      target === "endpoints",
+      "Noop frame cannot claim source disappearance",
+    );
+  if (condition.scenario === "same-column")
+    assert(
+      target === "source-origin",
+      "Same-column frame must describe its retained source origin",
+    );
+  if (target === "notice")
+    assert(
+      condition.scenario === "offscreen",
+      "Notice proof is limited to offscreen scenarios",
+    );
+  if (target === "collapsed-header")
+    assert(
+      condition.scenario === "collapsed",
+      "Header proof is limited to collapsed scenarios",
+    );
+  if (target === "card")
+    assert(
+      sample.sourceAbsent === true && sample.destinationOrderVerified === true,
+      "Card frame lacks verified source absence or destination order",
+    );
+  else if (target === "source-origin")
+    assert(
+      sample.sourceAbsent === false &&
+        sample.sourcePresent === true &&
+        sample.sourceOriginVacated === true &&
+        sample.orderVerified === true,
+      "Same-column frame requires the retained item and its vacated origin/order",
+    );
+  else if (target === "endpoints")
+    assert(
+      sample.sourceAbsent === false &&
+        sample.sourcePresent === true &&
+        sample.selectionVerified === true &&
+        sample.endpointsCleared === true,
+      "Noop frame requires retained source/selection and cleared endpoints",
+    );
+  else if (target === "notice")
+    assert(
+      sample.logicalMoveVerified === true && sample.noticeVerified === true,
+      "Offscreen frame lacks verified logical move/visible notice",
+    );
+  else if (target === "collapsed-header")
+    assert(
+      sample.logicalMoveVerified === true && sample.headerVerified === true,
+      "Collapsed frame lacks verified logical move/visible group header",
+    );
+  else throw new Error("Unknown frame visualTarget");
+}
 function validateTransferPhaseProofs(artifact, condition) {
   const noSave = ["noop", "reject", "cancel"].includes(condition.scenario);
   if (noSave) {
@@ -436,16 +498,7 @@ export function validateEvidenceArtifact(
             sameNumber(sample.durationMs, metric.raw[index]),
           `${op}: sample target or duration missing`,
         );
-        if (kind === "frame")
-          assert(
-            sample.frameVerified === true &&
-              sample.sourceAbsent === true &&
-              sample.destinationOrderVerified === true &&
-              sample.controlsVerified === true &&
-              typeof sample.frameTimestampMs === "number" &&
-              Number.isFinite(sample.frameTimestampMs),
-            "Frame evidence is missing verified card content",
-          );
+        if (kind === "frame") validateFrameVisualProof(sample, condition);
       });
       assert(
         new Set(metric.samples.map((sample) => sample.measurementId)).size ===

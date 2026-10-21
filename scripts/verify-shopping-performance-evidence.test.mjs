@@ -67,6 +67,23 @@ const metric = (kind = "response", operation = "response", condition = {}) => {
             destinationOrderVerified: true,
             controlsVerified: true,
             frameTimestampMs: durationMs,
+            ...(condition.scenario === "noop"
+              ? {
+                  visualTarget: "endpoints",
+                  sourceAbsent: false,
+                  sourcePresent: true,
+                  selectionVerified: true,
+                  endpointsCleared: true,
+                }
+              : condition.scenario === "same-column"
+                ? {
+                    visualTarget: "source-origin",
+                    sourceAbsent: false,
+                    sourcePresent: true,
+                    sourceOriginVacated: true,
+                    orderVerified: true,
+                  }
+                : {}),
           }
         : {}),
     })),
@@ -852,5 +869,22 @@ for (const [name, mutate] of [
     );
     const a = artifact("transfer", condition);
     mutate(a);
+    assert.throws(() => validateEvidenceArtifact(a, "transfer", identity));
+  });
+for (const [scenario, target] of [
+  ["noop", "endpoints"],
+  ["same-column", "source-origin"],
+])
+  test(`${scenario} frame retains its source and cannot masquerade as a moved-out card`, () => {
+    const condition = expectedConditions("transfer").find(
+      (row) => row.scenario === scenario,
+    );
+    const a = artifact("transfer", condition, "frame");
+    assert.doesNotThrow(() =>
+      validateEvidenceArtifact(a, "transfer", identity),
+    );
+    assert.equal(a.metrics.frame.samples[0].visualTarget, target);
+    a.metrics.frame.samples[0].visualTarget = "card";
+    a.metrics.frame.samples[0].sourceAbsent = true;
     assert.throws(() => validateEvidenceArtifact(a, "transfer", identity));
   });
