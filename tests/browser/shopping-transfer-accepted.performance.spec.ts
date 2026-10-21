@@ -205,7 +205,7 @@ for (const condition of acceptedTransferConditions)
           video: false,
           gesture: condition.input,
           response:
-            "trusted drop/touchend to every effective source removal and actual visible destination cards/order/controls, then rAF and following task",
+            "trusted drop/touchend to every effective source removal and mounted destination cards/order/controls, then rAF and following task",
           nextInput:
             "trusted pending and applied checkbox input with Worker transaction timestamp phase proof",
           frame:

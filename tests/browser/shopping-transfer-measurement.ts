@@ -633,11 +633,47 @@ export async function beginGesture(
     ).boundingBox();
   expect(source).not.toBeNull();
   expect(target).not.toBeNull();
-  const from = { x: source!.x + 4, y: source!.y + 35 },
-    to = {
-      x: target!.x + 4,
-      y: target!.y + Math.min(target!.height - 4, target!.height * 0.8),
-    };
+  let from = { x: source!.x + 4, y: source!.y + 35 };
+  let sourceOrigin = "card-edge";
+  if (input === "touch") {
+    const blocked = await page.evaluate(
+      (point) =>
+        !!document
+          .elementFromPoint(point.x, point.y)
+          ?.closest("[data-no-long-press],button,input,select,textarea,a"),
+      from,
+    );
+    if (blocked) {
+      const handle = await transferRow(page, id)
+        .locator("[data-drag-handle]")
+        .boundingBox();
+      expect(
+        handle,
+        "selected touch source needs an actual drag handle",
+      ).not.toBeNull();
+      from = {
+        x: handle!.x + handle!.width / 2,
+        y: handle!.y + handle!.height / 2,
+      };
+      expect(
+        await page.evaluate(
+          (point) =>
+            !!document
+              .elementFromPoint(point.x, point.y)
+              ?.closest("[data-drag-handle]") &&
+            !document
+              .elementFromPoint(point.x, point.y)
+              ?.closest("[data-no-long-press]"),
+          from,
+        ),
+      ).toBe(true);
+      sourceOrigin = "drag-handle";
+    }
+  }
+  const to = {
+    x: target!.x + 4,
+    y: target!.y + Math.min(target!.height - 4, target!.height * 0.8),
+  };
   if (input === "native") {
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
@@ -664,7 +700,7 @@ export async function beginGesture(
       )
       .first(),
   ).toBeVisible();
-  return to;
+  return { ...to, sourcePoint: from, sourceOrigin };
 }
 const clickAt = (session: CDPSession, point: { x: number; y: number }) => {
   const down = session.send("Input.dispatchMouseEvent", {
