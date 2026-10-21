@@ -1,6 +1,9 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
-import { shoppingEvidenceIdentity } from "./shopping-performance-evidence";
+import {
+  shoppingEvidenceIdentity,
+  shoppingBrowserEnvironment,
+} from "./shopping-performance-evidence";
 
 test.use({
   video: "off",
@@ -2846,6 +2849,7 @@ for (const count of [150, 500])
         records.drop = summary(drops);
         await attach(testInfo, "shopping-drag-response", {
           ...shoppingEvidenceIdentity("drag"),
+          environment: await shoppingBrowserEnvironment(page, testInfo.retry),
           build: "npm run build:app",
           fixture: {
             count,

@@ -1,4 +1,4 @@
-import type { Locator } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 export const shoppingInstrumentVersion = "shopping-rendering-v1";
 export function shoppingEvidenceIdentity(
@@ -181,4 +181,24 @@ export async function measureShoppingResponse(
     },
     { selector, expected, swipe },
   );
+}
+/** Capture actual case settings after measurement, outside every response clock. */
+export async function shoppingBrowserEnvironment(page: Page, retry: number) {
+  const actual = await page.evaluate(() => ({
+    userAgent: navigator.userAgent,
+    viewport: { width: innerWidth, height: innerHeight },
+    devicePixelRatio,
+  }));
+  const browserVersion = page.context().browser()?.version();
+  if (!browserVersion)
+    throw new Error("Measured browser version is unavailable");
+  return {
+    ...actual,
+    browserVersion,
+    browserChannel:
+      process.env.PERFORMANCE_BROWSER_CHANNEL ?? "bundled-chromium",
+    headed: process.env.PERFORMANCE_HEADED === "1",
+    workers: 1,
+    retries: retry,
+  };
 }

@@ -4,6 +4,7 @@ import { summarizePerformanceSamples } from "./performance-summary";
 import {
   measureShoppingResponse,
   shoppingEvidenceIdentity,
+  shoppingBrowserEnvironment,
   type ShoppingUiExpectation,
 } from "./shopping-performance-evidence";
 
@@ -1123,6 +1124,10 @@ for (const count of [150, 500, 1500])
           summarizePerformanceSamples(values),
         ]),
       );
+      const measuredEnvironment = await shoppingBrowserEnvironment(
+        page,
+        testInfo.retry,
+      );
       await writeFile(
         testInfo.outputPath("shopping-operation-timings.json"),
         JSON.stringify(
@@ -1132,6 +1137,7 @@ for (const count of [150, 500, 1500])
             mapVisible,
             layout,
             ...shoppingEvidenceIdentity("shopping"),
+            environment: measuredEnvironment,
             visitedCount,
             uiTimings,
             uiSummary,
@@ -1156,6 +1162,7 @@ for (const count of [150, 500, 1500])
             mapVisible,
             layout,
             ...shoppingEvidenceIdentity("shopping"),
+            environment: measuredEnvironment,
             visitedCount,
             uiTimings,
             uiSummary,
