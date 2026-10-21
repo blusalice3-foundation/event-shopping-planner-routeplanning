@@ -181,6 +181,7 @@ export function validateEvidenceArtifact(artifact, group, identity = {}) {
   for (const key of ["phase", "runId"])
     if (identity[key] !== undefined)
       assert(artifact[key] === identity[key], `Evidence ${key} mismatch`);
+  assert(!artifact.failure, "Artifact records an incomplete measurement");
   const kind = artifact.measurementKind;
   assert(
     kind === "response" || (group === "transfer" && kind === "frame"),
@@ -384,6 +385,247 @@ async function readAttachment(attachment, outputRoot, hashes) {
   assert(bytes, "Acceptance attachment is missing body/path");
   return JSON.parse(bytes.toString("utf8"));
 }
+export async function verifyFrameFiles(artifact, outputRoot, hashes) {
+  const root = await realpath(outputRoot);
+  const cache = new Map();
+  async function checkedFile(sample, name) {
+    const filename = sample[`${name}Path`];
+    const expectedHash = sample[`${name}Sha256`];
+    assert(
+      typeof filename === "string" && /^[a-f0-9]{64}$/.test(expectedHash ?? ""),
+      `Frame ${name} file/hash is missing`,
+    );
+    const actual = await realpath(path.resolve(filename));
+    assert(
+      inside(root, actual),
+      `Frame ${name} file escaped its group's test-results directory`,
+    );
+    let bytes = cache.get(actual);
+    if (!bytes) {
+      bytes = await readFile(actual);
+      cache.set(actual, bytes);
+    }
+    const digest = createHash("sha256").update(bytes).digest("hex");
+    assert(digest === expectedHash, `Frame ${name} hash mismatch`);
+    hashes[path.relative(outputRoot, actual)] = digest;
+    return bytes;
+  }
+  for (const sample of artifact.metrics.frame.samples) {
+    const traceBytes = await checkedFile(sample, "trace");
+    const frame = await checkedFile(sample, "frame");
+    await checkedFile(sample, "reference");
+    await checkedFile(sample, "baseline");
+    const events = JSON.parse(traceBytes.toString("utf8")).traceEvents;
+    assert(Array.isArray(events), "Frame trace events missing");
+    const correlation = sample.correlation;
+    assert(
+      correlation &&
+        sample.paintCorrelated === true &&
+        sample.drawFrameCorrelated === true,
+      "Frame correlation missing",
+    );
+    const find = (name, point) =>
+      events.find(
+        (event) =>
+          event.name === name &&
+          event.pid === point?.pid &&
+          event.ts === point?.ts,
+      );
+    const input = find(`${sample.measurementId}:input`, correlation.input);
+    const dom = find(`${sample.measurementId}:dom`, correlation.dom);
+    const paint = find("Paint", correlation.paint);
+    const draw = find("DrawFrame", correlation.drawFrame);
+    if (sample.captureMethod === "Page.startScreencast(png)") {
+      const metadataBytes = await checkedFile(sample, "frameMetadata");
+      const savedMetadata = JSON.parse(metadataBytes.toString("utf8"));
+      const timestamp = savedMetadata.metadata?.timestamp;
+      assert(
+        savedMetadata.method === "Page.startScreencast" &&
+          savedMetadata.format === "png" &&
+          savedMetadata.maxWidth === 1440 &&
+          savedMetadata.maxHeight === 1000 &&
+          savedMetadata.everyNthFrame === 1 &&
+          savedMetadata.acknowledged === true &&
+          savedMetadata.frameSha256 === sample.frameSha256 &&
+          typeof timestamp === "number" &&
+          Number.isFinite(timestamp),
+        "Screencast frame metadata is missing or incompatible",
+      );
+      const sourcePaint = find("Paint", correlation.sourcePaint);
+      const framePoint = correlation.frame;
+      const traceTs =
+        input?.ts +
+        (timestamp * 1000 - sample.startEpoch - sample.markerDelayMs) * 1000;
+      const covers = (event, rect) => {
+        const clip = event?.args?.data?.clip;
+        if (
+          !Array.isArray(clip) ||
+          clip.length < 8 ||
+          !rect ||
+          ![rect.x, rect.y, rect.width, rect.height].every(Number.isFinite) ||
+          rect.width <= 0 ||
+          rect.height <= 0
+        )
+          return false;
+        const xs = clip.filter((_, i) => i % 2 === 0),
+          ys = clip.filter((_, i) => i % 2 === 1);
+        return (
+          Math.min(...xs) <= rect.x &&
+          Math.max(...xs) >= rect.x + rect.width &&
+          Math.min(...ys) <= rect.y &&
+          Math.max(...ys) >= rect.y + rect.height
+        );
+      };
+      assert(
+        sample.captureTimestampKind === "frame-swap-upper-bound" &&
+          input &&
+          dom &&
+          paint &&
+          sourcePaint &&
+          draw &&
+          framePoint &&
+          savedMetadata.sessionId === framePoint.sessionId &&
+          sameNumber(framePoint.epochMs, timestamp * 1000) &&
+          sameNumber(framePoint.traceTs, traceTs) &&
+          input.pid === dom.pid &&
+          dom.pid === paint.pid &&
+          paint.pid === sourcePaint.pid &&
+          sourcePaint.pid === draw.pid &&
+          input.ts <= dom.ts &&
+          dom.ts <= Math.min(paint.ts, sourcePaint.ts) &&
+          Math.max(paint.ts, sourcePaint.ts) <= draw.ts &&
+          draw.ts <= framePoint.traceTs &&
+          covers(paint, correlation.targetRect) &&
+          covers(sourcePaint, correlation.sourceRect),
+        "Screencast frame DOM/Paint/DrawFrame correlation mismatch",
+      );
+      assert(
+        sameNumber(sample.durationMs, timestamp * 1000 - sample.startEpoch) &&
+          sameNumber(sample.durationMs, sample.frameTimestampMs),
+        "Screencast frame timestamp mismatch",
+      );
+      assert(
+        Array.isArray(correlation.comparison?.scores) &&
+          correlation.comparison.scores.every(
+            (score) =>
+              Array.isArray(score.controlErrors) &&
+              score.controlErrors.length === 2 &&
+              score.controlErrors.every(
+                (error) =>
+                  typeof error === "number" &&
+                  Number.isFinite(error) &&
+                  error >= 0 &&
+                  error <= 0.025,
+              ),
+          ),
+        "Screencast controls were not verified",
+      );
+    } else if (
+      sample.captureMethod === "Page.captureScreenshot(fromSurface:true)"
+    ) {
+      assert(
+        sample.captureTimestampKind === "upper-bound",
+        "Captured compositor frames require conservative upper-bound timestamps",
+      );
+      const capture = find(correlation.capture?.name, correlation.capture);
+      const sourcePaint = find("Paint", correlation.sourcePaint);
+      const covers = (event, rect) => {
+        const clip = event?.args?.data?.clip;
+        if (
+          !Array.isArray(clip) ||
+          clip.length < 8 ||
+          !rect ||
+          ![rect.x, rect.y, rect.width, rect.height].every(Number.isFinite) ||
+          rect.width <= 0 ||
+          rect.height <= 0
+        )
+          return false;
+        const xs = clip.filter((_, i) => i % 2 === 0),
+          ys = clip.filter((_, i) => i % 2 === 1);
+        return (
+          Math.min(...xs) <= rect.x &&
+          Math.max(...xs) >= rect.x + rect.width &&
+          Math.min(...ys) <= rect.y &&
+          Math.max(...ys) >= rect.y + rect.height
+        );
+      };
+      assert(
+        input &&
+          dom &&
+          paint &&
+          sourcePaint &&
+          draw &&
+          capture &&
+          correlation.capture.name.startsWith(
+            `${sample.measurementId}:captured:`,
+          ) &&
+          input.pid === dom.pid &&
+          dom.pid === paint.pid &&
+          paint.pid === sourcePaint.pid &&
+          sourcePaint.pid === draw.pid &&
+          draw.pid === capture.pid &&
+          input.ts <= dom.ts &&
+          dom.ts <= Math.min(paint.ts, sourcePaint.ts) &&
+          Math.max(paint.ts, sourcePaint.ts) <= draw.ts &&
+          draw.ts <= capture.ts &&
+          covers(paint, correlation.targetRect) &&
+          covers(sourcePaint, correlation.sourceRect),
+        "Captured frame DOM/Paint/DrawFrame correlation mismatch",
+      );
+      assert(
+        sameNumber(
+          sample.durationMs,
+          (capture.ts - input.ts) / 1000 + sample.markerDelayMs,
+        ) && sameNumber(sample.durationMs, sample.frameTimestampMs),
+        "Captured frame upper-bound timing mismatch",
+      );
+    } else {
+      const screenshot = find("Screenshot", correlation.screenshot);
+      assert(
+        input &&
+          dom &&
+          paint &&
+          draw &&
+          screenshot &&
+          input.pid === dom.pid &&
+          dom.pid === paint.pid &&
+          paint.pid === draw.pid &&
+          input.ts <= dom.ts &&
+          dom.ts <= paint.ts &&
+          paint.ts <= draw.ts &&
+          draw.ts <= screenshot.ts,
+        "Frame trace event correlation mismatch",
+      );
+      assert(
+        Buffer.from(screenshot.args?.snapshot ?? "", "base64").equals(frame),
+        "Selected frame does not match the trace screenshot",
+      );
+      assert(
+        sameNumber(
+          sample.durationMs,
+          (screenshot.ts - input.ts) / 1000 + sample.markerDelayMs,
+        ) && sameNumber(sample.durationMs, sample.frameTimestampMs),
+        "Frame timing does not match trace input/screenshot timestamps",
+      );
+    }
+    const scores = correlation.comparison?.scores;
+    assert(
+      correlation.comparison?.matched === true &&
+        Array.isArray(scores) &&
+        scores.length === 2 &&
+        scores.every(
+          (score) =>
+            Number.isFinite(score.frameError) &&
+            Number.isFinite(score.baselineError) &&
+            score.baselineError > 0.001 &&
+            score.frameError >= 0 &&
+            score.frameError <= 0.025 &&
+            score.frameError < score.baselineError * 0.55,
+        ),
+      "Frame source/destination image comparison is missing or invalid",
+    );
+  }
+}
 async function writeResult(filename, value) {
   await mkdir(path.dirname(filename), { recursive: true });
   await writeFile(filename, `${JSON.stringify(value, null, 2)}\n`, {
@@ -485,6 +727,12 @@ export async function verifyGroupEvidence({
         path.join(groupRoot, "test-results"),
         result.hashes,
       );
+      if (group === "transfer" && artifact.measurementKind === "frame")
+        await verifyFrameFiles(
+          artifact,
+          path.join(groupRoot, "test-results"),
+          result.hashes,
+        );
       const validated = validateEvidenceArtifact(artifact, group, {
         phase,
         runId,

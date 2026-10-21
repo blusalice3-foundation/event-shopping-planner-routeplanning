@@ -136,6 +136,7 @@ async function provenance(cwd, env) {
     ...specs,
     "tests/browser/performance-summary.ts",
     "tests/browser/shopping-performance-evidence.ts",
+    "tests/browser/shopping-transfer-measurement.ts",
     "scripts/verify-shopping-performance-evidence.mjs",
     "scripts/run-shopping-browser-evidence.mjs",
   ];
@@ -151,7 +152,10 @@ async function provenance(cwd, env) {
       .digest("hex"),
     instrumentVersion: INSTRUMENT_VERSION,
     instrumentPatch: await sourceHashes(cwd, instruments),
-    fixtureSources: await sourceHashes(cwd, specs),
+    fixtureSources: await sourceHashes(cwd, [
+      ...specs,
+      "tests/browser/shopping-transfer-measurement.ts",
+    ]),
     environment: {
       platform: process.platform,
       arch: process.arch,

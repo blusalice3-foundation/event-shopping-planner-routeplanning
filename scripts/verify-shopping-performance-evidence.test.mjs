@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -182,6 +183,70 @@ async function fixture(t, group = "shopping") {
       },
     ],
   };
+  if (group === "transfer") {
+    for (const [index, spec] of report.suites[0].specs.entries()) {
+      const attachment = spec.tests[0].results[0].attachments[0];
+      const data = JSON.parse(
+        Buffer.from(attachment.body, "base64").toString("utf8"),
+      );
+      if (data.measurementKind !== "frame") continue;
+      const directory = path.join(root, "test-results", `frame-${index}`);
+      await mkdir(directory, { recursive: true });
+      const image = Buffer.from("fixture-screenshot-bytes");
+      const trace = [];
+      for (const [i, sample] of data.metrics.frame.samples.entries()) {
+        const began = 100000 + i * 100000;
+        const points = {
+          input: { pid: 1, ts: began },
+          dom: { pid: 1, ts: began + 1000 },
+          paint: { pid: 1, ts: began + 2000 },
+          drawFrame: { pid: 1, ts: began + 3000 },
+          screenshot: { pid: 1, ts: began + sample.durationMs * 1000 },
+        };
+        trace.push(
+          { name: `${sample.measurementId}:input`, ...points.input },
+          { name: `${sample.measurementId}:dom`, ...points.dom },
+          { name: "Paint", ...points.paint },
+          { name: "DrawFrame", ...points.drawFrame },
+          {
+            name: "Screenshot",
+            ...points.screenshot,
+            args: { snapshot: image.toString("base64") },
+          },
+        );
+        sample.markerDelayMs = 0;
+        sample.paintCorrelated = true;
+        sample.drawFrameCorrelated = true;
+        sample.correlation = {
+          ...points,
+          comparison: {
+            matched: true,
+            scores: [
+              { frameError: 0, baselineError: 1 },
+              { frameError: 0, baselineError: 1 },
+            ],
+          },
+        };
+      }
+      const files = {
+        trace: Buffer.from(JSON.stringify({ traceEvents: trace })),
+        frame: image,
+        reference: image,
+        baseline: image,
+      };
+      for (const [name, bytes] of Object.entries(files)) {
+        const filename = path.join(directory, `${name}.fixture`);
+        await writeFile(filename, bytes);
+        for (const sample of data.metrics.frame.samples) {
+          sample[`${name}Path`] = filename;
+          sample[`${name}Sha256`] = createHash("sha256")
+            .update(bytes)
+            .digest("hex");
+        }
+      }
+      attachment.body = Buffer.from(JSON.stringify(data)).toString("base64");
+    }
+  }
   const save = () =>
     writeFile(path.join(root, "report.json"), JSON.stringify(report), "utf8");
   await save();
@@ -406,3 +471,59 @@ test("summaries use even median and nearest-rank p95", () => {
     p95Ms: 18,
   });
 });
+for (const [label, mutate] of [
+  [
+    "frame hash mismatch",
+    (sample) => {
+      sample.frameSha256 = "0".repeat(64);
+    },
+  ],
+  [
+    "foreign frame path",
+    (sample) => {
+      sample.framePath = sample.framePath.replace("test-results", "outside");
+    },
+  ],
+  [
+    "unrelated Paint",
+    (sample) => {
+      sample.correlation.paint.pid = 99;
+    },
+  ],
+  [
+    "unrelated DrawFrame",
+    (sample) => {
+      sample.correlation.drawFrame.ts += 1;
+    },
+  ],
+  [
+    "wrong screenshot",
+    (sample) => {
+      sample.correlation.screenshot.ts += 1;
+    },
+  ],
+  [
+    "unverified image content",
+    (sample) => {
+      sample.correlation.comparison.matched = false;
+    },
+  ],
+  [
+    "unrelated image content",
+    (sample) => {
+      sample.correlation.comparison.scores[0].frameError = 1;
+    },
+  ],
+])
+  test(`frame collection rejects ${label}`, async (t) => {
+    const f = await fixture(t, "transfer");
+    const attachment =
+      f.report.suites[0].specs[1].tests[0].results[0].attachments[0];
+    const data = JSON.parse(
+      Buffer.from(attachment.body, "base64").toString("utf8"),
+    );
+    mutate(data.metrics.frame.samples[0]);
+    attachment.body = Buffer.from(JSON.stringify(data)).toString("base64");
+    await f.save();
+    assert.equal((await f.verify()).status, "failed");
+  });
