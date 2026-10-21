@@ -1129,3 +1129,27 @@ for (const method of [
     f.sample.captureMethod = method;
     await assert.rejects(f.verify(), /captureMethod/);
   });
+
+test("transfer operation IDs must match the observed transaction and cannot be fabricated when unavailable", () => {
+  const a = artifact("transfer");
+  for (const values of Object.values(a.metrics))
+    for (const sample of values.samples) {
+      sample.operationId = "invented";
+    }
+  assert.throws(
+    () => validateEvidenceArtifact(a, "transfer", identity),
+    /observed save transaction/,
+  );
+  for (const values of Object.values(a.metrics))
+    for (const sample of values.samples) {
+      sample.commits[0].operationId = "actual-worker-operation";
+      sample.operationId = "actual-worker-operation";
+    }
+  assert.doesNotThrow(() => validateEvidenceArtifact(a, "transfer", identity));
+  for (const values of Object.values(a.metrics))
+    values.samples[0].operationId = "different-worker-operation";
+  assert.throws(
+    () => validateEvidenceArtifact(a, "transfer", identity),
+    /observed save transaction/,
+  );
+});

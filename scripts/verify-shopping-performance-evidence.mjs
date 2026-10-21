@@ -267,6 +267,14 @@ function validateTransferPhaseProofs(artifact, condition) {
               sample.operationIdUnavailableReason.length > 0),
           `${metric}: missing operation ID attribution or unavailability reason`,
         );
+        const committedOperationId = sample.commits[0].operationId;
+        assert(
+          typeof committedOperationId === "string" &&
+            committedOperationId.length > 0
+            ? sample.operationId === committedOperationId
+            : sample.operationId === null,
+          `${metric}: operation ID does not match its observed save transaction`,
+        );
         if (metric === "nextPending")
           assert(
             sample.trusted === true &&
