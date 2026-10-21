@@ -1998,7 +1998,7 @@ describe("single-item current-model activation", () => {
         callback(
           [
             { target: outer, isIntersecting: true },
-          ] as IntersectionObserverEntry[],
+          ] as unknown as IntersectionObserverEntry[],
           {} as IntersectionObserver,
         ),
       );
@@ -2050,7 +2050,7 @@ describe("single-item current-model activation", () => {
       callback(
         [
           { target: outer, isIntersecting: true },
-        ] as IntersectionObserverEntry[],
+        ] as unknown as IntersectionObserverEntry[],
         {} as IntersectionObserver,
       ),
     );
@@ -2065,7 +2065,7 @@ describe("single-item current-model activation", () => {
       callback(
         [
           { target: outer, isIntersecting: false },
-        ] as IntersectionObserverEntry[],
+        ] as unknown as IntersectionObserverEntry[],
         {} as IntersectionObserver,
       ),
     );
