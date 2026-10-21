@@ -23,6 +23,16 @@ const env = {
   ESP_EVIDENCE_PHASE: identity.phase,
   ESP_EVIDENCE_RUN_ID: identity.runId,
 };
+const browserEnvironment = {
+  browserVersion: "140.0.0.0",
+  userAgent: "fixture-browser",
+  browserChannel: "bundled-chromium",
+  viewport: { width: 1440, height: 1000 },
+  devicePixelRatio: 1,
+  headed: false,
+  workers: 1,
+  retries: 0,
+};
 const raw = () => Array.from({ length: 20 }, (_, i) => 10 + i / 10);
 const metric = (kind = "response", operation = "response", condition = {}) => {
   const noSave = ["noop", "reject", "cancel"].includes(condition.scenario);
@@ -94,7 +104,11 @@ function artifact(
   condition = expectedConditions(group)[0],
   kind = "response",
 ) {
-  const base = { ...evidenceIdentity(group, kind, env), errors: [] };
+  const base = {
+    ...evidenceIdentity(group, kind, env),
+    environment: browserEnvironment,
+    errors: [],
+  };
   if (group === "shopping") {
     const ops = ["execute", "executeRecord", "focus", "record", "next", "back"];
     return {
@@ -132,7 +146,11 @@ function artifact(
     ];
     return {
       ...base,
-      environment: { ...condition, requestedRenderer: condition.renderer },
+      environment: {
+        ...browserEnvironment,
+        ...condition,
+        requestedRenderer: condition.renderer,
+      },
       timings: Object.fromEntries(ops.map((op) => [op, raw()])),
       summary: Object.fromEntries(
         ops.map((op) => [op, summarizeSamples(raw())]),
@@ -610,6 +628,21 @@ async function screencastProofFixture(t) {
       },
     },
   };
+  sample.visibleTransferredIds = [sample.targetId];
+  sample.allVisibleDestinationCardsVerified = true;
+  sample.correlation.targetProofs = [
+    {
+      targetId: sample.targetId,
+      rect: sample.correlation.targetRect,
+      paint: { ...sample.correlation.paint, itemId: sample.targetId },
+      scoreIndex: 1,
+    },
+  ];
+  Object.assign(sample.correlation.comparison.scores[1], {
+    itemId: sample.targetId,
+    role: "destination-card",
+    rect: sample.correlation.targetRect,
+  });
   const metadata = {
     method: "Page.startScreencast",
     format: "png",
@@ -888,3 +921,74 @@ for (const [scenario, target] of [
     a.metrics.frame.samples[0].sourceAbsent = true;
     assert.throws(() => validateEvidenceArtifact(a, "transfer", identity));
   });
+for (const field of [
+  "browserVersion",
+  "userAgent",
+  "viewport",
+  "devicePixelRatio",
+  "browserChannel",
+  "headed",
+  "workers",
+  "retries",
+])
+  test(`acceptance rejects missing actual environment ${field}`, () => {
+    const a = artifact("shopping");
+    a.environment = { ...a.environment };
+    delete a.environment[field];
+    assert.throws(
+      () => validateEvidenceArtifact(a, "shopping", identity),
+      /environment/,
+    );
+  });
+test("screencast requires proof for each visible moved target and excludes genuinely hidden targets", async (t) => {
+  const f = await screencastProofFixture(t);
+  f.sample.expectedTransferredIds = [
+    "target-1",
+    "target-2",
+    "offscreen-target",
+  ];
+  f.sample.visibleTransferredIds.push("target-2");
+  await assert.rejects(f.verify(), /Every visible moved/);
+  const rect = { x: 200, y: 100, width: 40, height: 60 };
+  const paint = { pid: 7, ts: 102600 };
+  f.events.push({
+    name: "Paint",
+    ...paint,
+    args: { data: { clip: [200, 100, 240, 100, 240, 160, 200, 160] } },
+  });
+  f.sample.correlation.targetProofs.push({
+    targetId: "target-2",
+    rect,
+    paint: { ...paint, itemId: "target-2" },
+    scoreIndex: 2,
+  });
+  f.sample.correlation.comparison.scores.push({
+    frameError: 0.01,
+    baselineError: 0.1,
+    controlErrors: [0.01, 0.01],
+    itemId: "target-2",
+    role: "destination-card",
+    rect,
+  });
+  await f.save();
+  await assert.doesNotReject(f.verify());
+  f.sample.correlation.targetProofs[1].targetId = "target-1";
+  await assert.rejects(f.verify(), /Every visible moved/);
+  f.sample.correlation.targetProofs[1].targetId = "target-2";
+  f.sample.correlation.targetProofs[1].rect = { ...rect, x: 201 };
+  await assert.rejects(f.verify(), /Every visible moved/);
+});
+
+test("transfer phase proof cannot be bypassed by omitting every raw phase field", () => {
+  const a = artifact("transfer");
+  for (const values of Object.values(a.metrics))
+    for (const sample of values.samples) {
+      delete sample.commits;
+      delete sample.startEpoch;
+      delete sample.eventEpoch;
+    }
+  assert.throws(
+    () => validateEvidenceArtifact(a, "transfer", identity),
+    /phase proof/,
+  );
+});

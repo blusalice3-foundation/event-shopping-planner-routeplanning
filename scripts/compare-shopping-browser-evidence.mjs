@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   INSTRUMENT_VERSION,
   validateEvidenceArtifact,
+  validateBrowserArtifactEnvironment,
   verifyFrameFiles,
 } from "./verify-shopping-performance-evidence.mjs";
 import {
@@ -94,6 +95,38 @@ async function readRun(runRoot, phase) {
   assert(
     run.productCommit && run.environment,
     `${phase}: provenance is incomplete`,
+  );
+  for (const field of [
+    "platform",
+    "osRelease",
+    "osVersion",
+    "arch",
+    "node",
+    "baseURL",
+    "build",
+  ])
+    assert(
+      typeof run.environment[field] === "string" &&
+        run.environment[field].length > 0,
+      `${phase}: actual environment ${field} is missing`,
+    );
+  validateBrowserArtifactEnvironment({
+    ...run.environment,
+    workers: run.environment.workerCount,
+    retries: 0,
+  });
+  const capability = run.releaseCapability;
+  assert(
+    capability?.kind === "event-shopping-planner-release-capabilities" &&
+      capability.version === 1 &&
+      capability.buildMode === "release-a" &&
+      capability.releaseChannel === "release-a" &&
+      capability.legacyLocalStorageCleanup === "forced-off" &&
+      capability.sourceState === "clean" &&
+      /^[a-f0-9]{40}$/.test(capability.sourceSha ?? "") &&
+      /^[a-f0-9]{40}$/.test(capability.buildId ?? "") &&
+      /^[a-f0-9]{64}$/.test(run.releaseCapabilitySha256 ?? ""),
+    `${phase}: actual clean release-a capability is missing or invalid`,
   );
   const rows = new Map(),
     artifacts = new Map(),
@@ -297,6 +330,12 @@ export async function compareBrowserEvidence({
         compatibility.push(`${field} mismatch`);
     for (const field of [
       "platform",
+      "osRelease",
+      "osVersion",
+      "browserVersion",
+      "userAgent",
+      "viewport",
+      "devicePixelRatio",
       "arch",
       "node",
       "ci",
@@ -309,7 +348,8 @@ export async function compareBrowserEvidence({
       if (
         !Object.hasOwn(before.run.environment, field) ||
         !Object.hasOwn(after.run.environment, field) ||
-        before.run.environment[field] !== after.run.environment[field]
+        JSON.stringify(before.run.environment[field]) !==
+          JSON.stringify(after.run.environment[field])
       )
         compatibility.push(`environment ${field} mismatch or missing`);
     result.errors.push(...before.errors, ...after.errors, ...compatibility);
@@ -340,8 +380,8 @@ export async function compareBrowserEvidence({
           "browserChannel",
           "headed",
         ]) {
-          const a = oldArtifact.environment?.[field] ?? oldArtifact[field],
-            b = newArtifact.environment?.[field] ?? newArtifact[field];
+          const a = oldArtifact.environment[field],
+            b = newArtifact.environment[field];
           if (JSON.stringify(a) !== JSON.stringify(b))
             reasons.push(`artifact environment ${field} mismatch`);
         }

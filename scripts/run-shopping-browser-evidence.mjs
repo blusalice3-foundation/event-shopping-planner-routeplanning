@@ -3,6 +3,8 @@ import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import {
@@ -125,6 +127,71 @@ async function sourceHashes(cwd, files) {
   }
   return { sha256: hash.digest("hex"), files: entries };
 }
+export async function collectBrowserEnvironment(cwd, env) {
+  const capabilityBytes = await readFile(
+    path.join(cwd, "dist/release-capabilities.json"),
+  );
+  const releaseCapability = JSON.parse(capabilityBytes.toString("utf8"));
+  if (
+    releaseCapability.kind !== "event-shopping-planner-release-capabilities" ||
+    releaseCapability.version !== 1 ||
+    releaseCapability.buildMode !== "release-a" ||
+    releaseCapability.releaseChannel !== "release-a" ||
+    releaseCapability.legacyLocalStorageCleanup !== "forced-off" ||
+    releaseCapability.sourceState !== "clean" ||
+    !/^[a-f0-9]{40}$/.test(releaseCapability.sourceSha ?? "") ||
+    !/^[a-f0-9]{40}$/.test(releaseCapability.buildId ?? "")
+  )
+    throw new Error(
+      "Acceptance evidence requires a clean release-a capability",
+    );
+  const require = createRequire(path.join(cwd, "package.json"));
+  const { chromium, devices } = require("@playwright/test");
+  const browser = await chromium.launch({
+    channel: env.PERFORMANCE_BROWSER_CHANNEL || undefined,
+    headless: env.PERFORMANCE_HEADED !== "1",
+  });
+  try {
+    const context = await browser.newContext({
+      ...devices["Desktop Chrome"],
+      userAgent: undefined,
+    });
+    const page = await context.newPage();
+    const actual = await page.evaluate(() => ({
+      userAgent: navigator.userAgent,
+      viewport: {
+        width: globalThis.innerWidth,
+        height: globalThis.innerHeight,
+      },
+      devicePixelRatio: globalThis.devicePixelRatio,
+    }));
+    return {
+      releaseCapability,
+      releaseCapabilitySha256: createHash("sha256")
+        .update(capabilityBytes)
+        .digest("hex"),
+      environment: {
+        platform: process.platform,
+        osRelease: os.release(),
+        osVersion: os.version(),
+        arch: process.arch,
+        node: process.version,
+        ci: env.CI ?? null,
+        baseURL: env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173",
+        browserVersion: browser.version(),
+        ...actual,
+        browserChannel: env.PERFORMANCE_BROWSER_CHANNEL ?? "bundled-chromium",
+        headed: env.PERFORMANCE_HEADED === "1",
+        build: "npm run build:release-a",
+        workerCount: 1,
+        githubRunId: env.GITHUB_RUN_ID ?? null,
+        githubRunAttempt: env.GITHUB_RUN_ATTEMPT ?? null,
+      },
+    };
+  } finally {
+    await browser.close();
+  }
+}
 export async function collectBrowserProvenance(cwd, env) {
   const specs = [
     "tests/browser/responsive-performance.spec.ts",
@@ -165,19 +232,7 @@ export async function collectBrowserProvenance(cwd, env) {
     fixtureSources: await sourceHashes(cwd, [
       ...new Set([...specs, ...transferSources]),
     ]),
-    environment: {
-      platform: process.platform,
-      arch: process.arch,
-      node: process.version,
-      ci: env.CI ?? null,
-      baseURL: env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173",
-      browserChannel: env.PERFORMANCE_BROWSER_CHANNEL ?? "bundled-chromium",
-      headed: env.PERFORMANCE_HEADED === "1",
-      build: "npm run build:release-a",
-      workerCount: 1,
-      githubRunId: env.GITHUB_RUN_ID ?? null,
-      githubRunAttempt: env.GITHUB_RUN_ATTEMPT ?? null,
-    },
+    ...(await collectBrowserEnvironment(cwd, env)),
   };
 }
 export async function runBrowserEvidence(options = {}) {

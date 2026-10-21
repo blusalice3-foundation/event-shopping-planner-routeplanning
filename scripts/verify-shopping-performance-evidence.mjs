@@ -206,12 +206,7 @@ function validateTransferPhaseProofs(artifact, condition) {
     for (const sample of values.samples) {
       if (!byId.has(sample.measurementId)) byId.set(sample.measurementId, {});
       byId.get(sample.measurementId)[metric] = sample;
-      const hasPhase =
-        noSave ||
-        Object.hasOwn(sample, "commits") ||
-        Object.hasOwn(sample, "startEpoch") ||
-        Object.hasOwn(sample, "eventEpoch");
-      if (!hasPhase) continue; // Historical fixture schemas may omit phase details; present raw proof is always checked.
+
       assert(
         typeof sample.startEpoch === "number" &&
           Number.isFinite(sample.startEpoch) &&
@@ -318,6 +313,33 @@ function validateTransferPhaseProofs(artifact, condition) {
       );
   }
 }
+export function validateBrowserArtifactEnvironment(environment) {
+  for (const field of ["browserVersion", "userAgent", "browserChannel"])
+    assert(
+      typeof environment?.[field] === "string" && environment[field].length > 0,
+      `Artifact environment ${field} is missing`,
+    );
+  assert(
+    environment.viewport &&
+      [environment.viewport.width, environment.viewport.height].every(
+        (value) =>
+          typeof value === "number" && Number.isFinite(value) && value > 0,
+      ),
+    "Artifact environment viewport is missing or invalid",
+  );
+  assert(
+    typeof environment.devicePixelRatio === "number" &&
+      Number.isFinite(environment.devicePixelRatio) &&
+      environment.devicePixelRatio > 0,
+    "Artifact environment devicePixelRatio is missing or invalid",
+  );
+  assert(
+    typeof environment.headed === "boolean" &&
+      environment.workers === 1 &&
+      environment.retries === 0,
+    "Artifact environment headed/workers/retries is missing or invalid",
+  );
+}
 // Budget reporting is used only by before/after comparison; acceptance verification always enforces budgets.
 export function validateEvidenceArtifact(
   artifact,
@@ -343,6 +365,7 @@ export function validateEvidenceArtifact(
     if (identity[key] !== undefined)
       assert(artifact[key] === identity[key], `Evidence ${key} mismatch`);
   assert(!artifact.failure, "Artifact records an incomplete measurement");
+  validateBrowserArtifactEnvironment(artifact.environment);
   const kind = artifact.measurementKind;
   assert(
     kind === "response" || (group === "transfer" && kind === "frame"),
@@ -666,6 +689,45 @@ export async function verifyFrameFiles(artifact, outputRoot, hashes) {
           covers(sourcePaint, correlation.sourceRect),
         "Screencast frame DOM/Paint/DrawFrame correlation mismatch",
       );
+      if ((sample.visualTarget ?? "card") === "card") {
+        const visible = sample.visibleTransferredIds;
+        const proofs = correlation.targetProofs;
+        const scores = correlation.comparison?.scores;
+        assert(
+          sample.allVisibleDestinationCardsVerified === true &&
+            Array.isArray(visible) &&
+            visible.length > 0 &&
+            visible.every((id) => typeof id === "string" && id.length > 0) &&
+            new Set(visible).size === visible.length &&
+            Array.isArray(proofs) &&
+            proofs.length === visible.length &&
+            Array.isArray(scores) &&
+            scores.length === visible.length + 1 &&
+            proofs.every((proof, index) => {
+              const actualPaint = find("Paint", proof.paint);
+              const score = scores[proof.scoreIndex];
+              return (
+                proof.targetId === visible[index] &&
+                proof.scoreIndex === index + 1 &&
+                proof.paint?.itemId === proof.targetId &&
+                actualPaint?.pid === dom.pid &&
+                dom.ts <= actualPaint.ts &&
+                actualPaint.ts <= draw.ts &&
+                covers(actualPaint, proof.rect) &&
+                score?.itemId === proof.targetId &&
+                score.role === "destination-card" &&
+                ["x", "y", "width", "height"].every((key) =>
+                  sameNumber(score.rect?.[key], proof.rect?.[key]),
+                )
+              );
+            }) &&
+            (!Array.isArray(sample.expectedTransferredIds) ||
+              visible.every((id) =>
+                sample.expectedTransferredIds.includes(id),
+              )),
+          "Every visible moved destination requires its own identity/control image and covering Paint proof",
+        );
+      }
       assert(
         sameNumber(sample.durationMs, timestamp * 1000 - sample.startEpoch) &&
           sameNumber(sample.durationMs, sample.frameTimestampMs),
@@ -779,7 +841,11 @@ export async function verifyFrameFiles(artifact, outputRoot, hashes) {
     assert(
       correlation.comparison?.matched === true &&
         Array.isArray(scores) &&
-        scores.length === 2 &&
+        scores.length ===
+          (sample.captureMethod === "Page.startScreencast(png)" &&
+          (sample.visualTarget ?? "card") === "card"
+            ? sample.visibleTransferredIds.length + 1
+            : 2) &&
         scores.every(
           (score) =>
             Number.isFinite(score.frameError) &&

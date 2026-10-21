@@ -13,11 +13,22 @@ import {
   validateEvidenceArtifact,
 } from "./verify-shopping-performance-evidence.mjs";
 import { expectedPerformanceConditions } from "./shopping-performance-evidence-contract.mjs";
+const browserEnvironment = {
+  browserVersion: "140.0.0.0",
+  userAgent: "fixture-browser",
+  browserChannel: "bundled-chromium",
+  viewport: { width: 1440, height: 1000 },
+  devicePixelRatio: 1,
+  headed: false,
+  workers: 1,
+  retries: 0,
+};
 function shopping(base = 10) {
   const raw = Array.from({ length: 20 }, (_, i) => base + i / 10),
     ops = ["execute", "executeRecord", "focus", "record", "next", "back"];
   return {
     ...evidenceIdentity("shopping"),
+    environment: browserEnvironment,
     count: 150,
     concentrated: false,
     mapVisible: false,
@@ -108,8 +119,22 @@ async function partialShoppingRun(directory, phase, base = 10, options = {}) {
     instrumentPatch: { sha256: (options.instrumentHash ?? "a").repeat(64) },
     fixtureSources: { sha256: "b".repeat(64) },
     productCommit: `${phase}-product`,
+    releaseCapability: {
+      kind: "event-shopping-planner-release-capabilities",
+      version: 1,
+      buildMode: "release-a",
+      releaseChannel: "release-a",
+      legacyLocalStorageCleanup: "forced-off",
+      sourceState: "clean",
+      sourceSha: "a".repeat(40),
+      buildId: "a".repeat(40),
+    },
+    releaseCapabilitySha256: "c".repeat(64),
     environment: {
+      ...browserEnvironment,
       platform: "win32",
+      osRelease: "10.0.26100",
+      osVersion: "Windows 11",
       arch: "x64",
       node: process.version,
       ci: null,
@@ -250,4 +275,60 @@ test("instrument mismatches show both raw summaries but never compute misleading
   assert.ok(core.before && core.after);
   assert.equal(core.deltaMs, null);
   assert.ok(core.reasons.includes("instrumentPatch mismatch"));
+});
+for (const field of [
+  "osRelease",
+  "osVersion",
+  "browserVersion",
+  "viewport",
+  "devicePixelRatio",
+])
+  test(`comparison rejects missing actual run environment ${field}`, async (t) => {
+    const directory = await mkdtemp(
+      path.join(os.tmpdir(), "esp environment compare "),
+    );
+    t.after(() => rm(directory, { recursive: true, force: true }));
+    const beforeRoot = await partialShoppingRun(directory, "before");
+    const afterRoot = await partialShoppingRun(directory, "after");
+    const file = path.join(beforeRoot, "run-result.json");
+    const run = JSON.parse(await readFile(file, "utf8"));
+    delete run.environment[field];
+    await writeFile(file, JSON.stringify(run), "utf8");
+    const { exitCode, result } = await compareBrowserEvidence({
+      beforeRoot,
+      afterRoot,
+    });
+    assert.equal(exitCode, 1);
+    assert.ok(result.errors.some((error) => error.includes("environment")));
+    assert.equal(
+      result.rows.filter((row) => row.status === "compared").length,
+      0,
+    );
+  });
+test("comparison requires actual clean release capability and allows different product build IDs", async (t) => {
+  const directory = await mkdtemp(
+    path.join(os.tmpdir(), "esp release compare "),
+  );
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const beforeRoot = await partialShoppingRun(directory, "before");
+  const afterRoot = await partialShoppingRun(directory, "after");
+  const file = path.join(afterRoot, "run-result.json");
+  const run = JSON.parse(await readFile(file, "utf8"));
+  run.releaseCapability.buildId = "b".repeat(40);
+  run.releaseCapability.sourceSha = "b".repeat(40);
+  await writeFile(file, JSON.stringify(run), "utf8");
+  assert.equal(
+    (await compareBrowserEvidence({ beforeRoot, afterRoot })).result.coverage
+      .compared,
+    288,
+  );
+  delete run.releaseCapability;
+  await writeFile(file, JSON.stringify(run), "utf8");
+  const result = await compareBrowserEvidence({ beforeRoot, afterRoot });
+  assert.equal(result.exitCode, 1);
+  assert.ok(
+    result.result.errors.some((error) =>
+      error.includes("release-a capability"),
+    ),
+  );
 });
