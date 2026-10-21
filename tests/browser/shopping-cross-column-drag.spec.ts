@@ -88,7 +88,18 @@ function fixture(count = 150, candidateOrder = false) {
             { id: "hall-b", name: "Bホール", vertices: [], blockNames: ["B"] },
           ],
         },
-      },
+      } as Record<
+        string,
+        Record<
+          string,
+          Array<{
+            id: string;
+            name: string;
+            vertices: Array<{ row: number; col: number }>;
+            blockNames: string[];
+          }>
+        >
+      >,
       hallRouteSettings: {},
     },
   };
@@ -2100,9 +2111,7 @@ async function installRenderProbe(page: Page) {
           type: data?.type ?? data?.kind ?? data?.operation ?? data?.method,
         });
       };
-      Worker.prototype.postMessage = function (
-        ...args: Parameters<Worker["postMessage"]>
-      ) {
+      Worker.prototype.postMessage = function (...args: unknown[]) {
         if (!observedWorkers.has(this)) {
           observedWorkers.add(this);
           this.addEventListener("message", (event) =>
@@ -2110,7 +2119,7 @@ async function installRenderProbe(page: Page) {
           );
         }
         recordRpc("send", args[0]);
-        return postMessage.apply(this, args);
+        return Reflect.apply(postMessage, this, args);
       };
       Object.assign(window, { __dragRpcEvents: rpcEvents });
     }
