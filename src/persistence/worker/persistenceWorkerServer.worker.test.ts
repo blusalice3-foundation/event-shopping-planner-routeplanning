@@ -2912,3 +2912,235 @@ it("publishes the native receipt as the next warm baseline and captures caller o
     (await db.readApplicationSnapshot()).snapshot,
   );
 });
+
+async function preparedCaptureOrder(prototypeId = false) {
+  await setupShopping();
+  const initial = await db.readApplicationSnapshot();
+  initial.snapshot.eventLists.event = Array.from(
+    { length: 500 },
+    (_, index) => ({
+      ...item,
+      id: prototypeId && index === 499 ? "__proto__" : String(index + 1),
+      number: String(index + 1),
+      customField: { nested: { keep: true }, optional: undefined },
+    }),
+  );
+  initial.snapshot.executeModeItems.event = { "1日目": ["1"] };
+  await db.commitApplicationSnapshotAtomically(initial.snapshot, {
+    expectedRoots: initial.expectedRoots,
+    changedStoresOnly: true,
+  });
+  await db.readApplicationSnapshot({
+    shareVerified: true,
+    prepareScopedCommands: false,
+  });
+  const target = { eventName: "event", day: "1日目" };
+  const read = (await db.readCachedShoppingCommandSnapshot(target))!;
+  const ids = read.snapshot.eventLists.event.map(
+    (entry) => (entry as { id: string }).id,
+  );
+  const command = {
+    ...shoppingCommand(),
+    baselineItemIds: ids,
+    itemIds: [ids[1], ids[0], ...ids.slice(2)],
+    baselineVisits: shoppingMoveVisitBaseline(read.snapshot, "event", "1日目"),
+  };
+  return { read, target, plan: planShoppingMove(read.snapshot, command), ids };
+}
+function observeItemCaptureClones(incoming: unknown[]) {
+  const clone = globalThis.structuredClone;
+  const rows: Array<{ incoming: boolean; count: number }> = [];
+  const spy = vi
+    .spyOn(globalThis, "structuredClone")
+    .mockImplementation((value, options) => {
+      if (
+        Array.isArray(value) &&
+        value.length === 500 &&
+        value.every(
+          (entry) => entry && typeof entry === "object" && "id" in entry,
+        )
+      )
+        rows.push({ incoming: value === incoming, count: value.length });
+      return clone(value, options);
+    });
+  return { rows, stop: () => spy.mockRestore() };
+}
+
+it("captures a private frozen 500-item permutation without cloning its contents and retains the physical root clone", async () => {
+  const h = await preparedCaptureOrder();
+  const incoming = h.plan.snapshot.eventLists.event;
+  const baselineById = new Map(
+    h.read.snapshot.eventLists.event.map((entry) => [
+      (entry as { id: string }).id,
+      entry,
+    ]),
+  );
+  for (const entry of incoming)
+    expect(entry).toBe(baselineById.get((entry as { id: string }).id));
+  const nested = (incoming[0] as { customField: { nested: { keep: boolean } } })
+    .customField.nested;
+  expect(Object.isFrozen(nested)).toBe(true);
+  expect(Reflect.set(nested, "keep", false)).toBe(false);
+  const clones = observeItemCaptureClones(incoming);
+  const pending = db.commitShoppingCommandSnapshot(
+    h.plan.snapshot,
+    h.read.expectedRoots,
+    h.target,
+  );
+  incoming.reverse();
+  const receipt = await pending;
+  clones.stop();
+  expect(clones.rows).toEqual([{ incoming: false, count: 500 }]);
+  expect(
+    receipt.snapshot.eventLists.event.map(
+      (entry) => (entry as { id: string }).id,
+    ),
+  ).toEqual([h.ids[1], h.ids[0], ...h.ids.slice(2)]);
+  expect(receipt.snapshot.eventLists.event).not.toBe(incoming);
+  expect(receipt.snapshot.eventLists.event[0]).toBe(baselineById.get("2"));
+  expect(receipt.snapshot.eventLists.event[0]).toMatchObject({
+    quantity: 1,
+    customField: { nested: { keep: true } },
+  });
+  expect(receipt.snapshot).toEqual(
+    (await db.readApplicationSnapshot()).snapshot,
+  );
+});
+
+it("deep-captures equal caller item clones and isolates later optional/content mutations", async () => {
+  const h = await preparedCaptureOrder();
+  const incoming = structuredClone(h.plan.snapshot.eventLists.event);
+  const caller = {
+    ...h.plan.snapshot,
+    eventLists: { ...h.plan.snapshot.eventLists, event: incoming },
+  };
+  const clones = observeItemCaptureClones(incoming);
+  const pending = db.commitShoppingCommandSnapshot(
+    caller,
+    h.read.expectedRoots,
+    h.target,
+  );
+  Object.assign(incoming[0] as object, {
+    quantity: 42,
+    remarks: "呼び出し後のメモ",
+  });
+  (
+    incoming[0] as { customField: { nested: { keep: boolean } } }
+  ).customField.nested.keep = false;
+  incoming.reverse();
+  const receipt = await pending;
+  clones.stop();
+  expect(clones.rows).toEqual([
+    { incoming: true, count: 500 },
+    { incoming: false, count: 500 },
+  ]);
+  expect(receipt.snapshot.eventLists.event[0]).toMatchObject({
+    id: "2",
+    quantity: 1,
+    remarks: "",
+    customField: { nested: { keep: true } },
+  });
+  expect(receipt.snapshot.eventLists.event[0]).not.toBe(
+    h.read.snapshot.eventLists.event[1],
+  );
+  expect(receipt.snapshot).toEqual(
+    (await db.readApplicationSnapshot()).snapshot,
+  );
+});
+
+it("keeps general application saves on the original complete capture path", async () => {
+  const h = await preparedCaptureOrder();
+  const caller = h.plan.snapshot;
+  const clone = globalThis.structuredClone;
+  let completeCaptures = 0;
+  const spy = vi
+    .spyOn(globalThis, "structuredClone")
+    .mockImplementation((value, options) => {
+      if (
+        value &&
+        typeof value === "object" &&
+        "eventLists" in value &&
+        value.eventLists === caller.eventLists
+      )
+        completeCaptures++;
+      return clone(value, options);
+    });
+  const pending = db.commitApplicationSnapshotAtomically(caller, {
+    expectedRoots: h.read.expectedRoots,
+    changedStoresOnly: true,
+  });
+  caller.eventLists.event.reverse();
+  await pending;
+  spy.mockRestore();
+  expect(completeCaptures).toBe(1);
+  const durable = (await db.readApplicationSnapshot()).snapshot;
+  expect(
+    durable.eventLists.event.map((entry) => (entry as { id: string }).id),
+  ).toEqual([h.ids[1], h.ids[0], ...h.ids.slice(2)]);
+});
+
+it.each(["duplicate", "hole"])(
+  "keeps %s item order arrays on the ordinary deep-capture failure path before writes",
+  async (kind) => {
+    const h = await preparedCaptureOrder();
+    const incoming = h.plan.snapshot.eventLists.event;
+    if (kind === "duplicate") incoming[5] = incoming[4];
+    else delete incoming[5];
+    const roots = new Map(expectedRevisionRoots);
+    const clone = globalThis.structuredClone;
+    let captured = 0;
+    const spy = vi
+      .spyOn(globalThis, "structuredClone")
+      .mockImplementation((value, options) => {
+        if (value === incoming) {
+          captured++;
+          throw new Error("ordinary item capture failed");
+        }
+        return clone(value, options);
+      });
+    const puts = vi.spyOn(IDBObjectStore.prototype, "put");
+    // Exercise the private shopping flag at the atomic boundary without persisting invalid input.
+    await expect(
+      db.commitApplicationSnapshotAtomically(
+        h.plan.snapshot,
+        { expectedRoots: h.read.expectedRoots, changedStoresOnly: true },
+        h.target,
+        true,
+      ),
+    ).rejects.toThrow("ordinary item capture failed");
+    expect(captured).toBe(1);
+    expect(puts).not.toHaveBeenCalled();
+    expect(expectedRevisionRoots).toEqual(roots);
+    puts.mockRestore();
+    spy.mockRestore();
+    expect(
+      (await db.readApplicationSnapshot()).snapshot.eventLists.event.map(
+        (entry) => (entry as { id: string }).id,
+      ),
+    ).toEqual(h.ids);
+  },
+);
+
+it("deep-captures prototype-like item IDs while preserving the valid saved order", async () => {
+  const h = await preparedCaptureOrder(true);
+  const incoming = h.plan.snapshot.eventLists.event;
+  const clones = observeItemCaptureClones(incoming);
+  const receipt = await db.commitShoppingCommandSnapshot(
+    h.plan.snapshot,
+    h.read.expectedRoots,
+    h.target,
+  );
+  clones.stop();
+  expect(clones.rows).toEqual([
+    { incoming: true, count: 500 },
+    { incoming: false, count: 500 },
+  ]);
+  expect(
+    receipt.snapshot.eventLists.event.map(
+      (entry) => (entry as { id: string }).id,
+    ),
+  ).toEqual([h.ids[1], h.ids[0], ...h.ids.slice(2)]);
+  expect((receipt.snapshot.eventLists.event[499] as { id: string }).id).toBe(
+    "__proto__",
+  );
+});

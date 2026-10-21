@@ -488,8 +488,75 @@ function freezeCommandValue(value: unknown): void {
   for (const entry of Object.values(value)) freezeCommandValue(entry);
   Object.freeze(value);
 }
-function captureCommandChanges(before: unknown, after: unknown): unknown {
+/** Only privately deep-frozen item objects can be shared by an incoming order array. */
+function captureFrozenItemOrder(
+  before: unknown,
+  after: unknown,
+): unknown[] | undefined {
+  if (
+    !Array.isArray(before) ||
+    !Array.isArray(after) ||
+    before.length !== after.length ||
+    Object.getPrototypeOf(before) !== Array.prototype ||
+    Object.getPrototypeOf(after) !== Array.prototype ||
+    !frozenCommandValues.has(before) ||
+    !Object.isFrozen(before) ||
+    Reflect.ownKeys(before).length !== before.length + 1 ||
+    Reflect.ownKeys(after).length !== after.length + 1
+  )
+    return undefined;
+  const byId = new Map<string, object>();
+  for (let index = 0; index < before.length; index++) {
+    const descriptor = Object.getOwnPropertyDescriptor(before, String(index));
+    const item = descriptor?.value;
+    if (
+      !descriptor ||
+      !("value" in descriptor) ||
+      !item ||
+      typeof item !== "object" ||
+      Array.isArray(item) ||
+      !frozenCommandValues.has(item) ||
+      !Object.isFrozen(item) ||
+      !Object.prototype.hasOwnProperty.call(item, "id") ||
+      typeof item.id !== "string" ||
+      !item.id ||
+      item.id === "prototype" ||
+      item.id in Object.prototype ||
+      byId.has(item.id)
+    )
+      return undefined;
+    byId.set(item.id, item);
+  }
+  for (let index = 0; index < after.length; index++) {
+    const descriptor = Object.getOwnPropertyDescriptor(after, String(index));
+    const item = descriptor?.value;
+    if (
+      !descriptor ||
+      !("value" in descriptor) ||
+      !item ||
+      typeof item !== "object" ||
+      byId.get(item.id) !== item
+    )
+      return undefined;
+    byId.delete(item.id);
+  }
+  // Capture the mutable incoming ordering before the first await. Item content is private/frozen.
+  return after.slice();
+}
+function captureCommandChanges(
+  before: unknown,
+  after: unknown,
+  shoppingItems?: { before: unknown; after: unknown },
+): unknown {
   if (before === after) return before;
+  if (
+    shoppingItems &&
+    before === shoppingItems.before &&
+    after === shoppingItems.after
+  ) {
+    const captured = captureFrozenItemOrder(before, after);
+    if (captured) return captured;
+  }
   if (
     before &&
     after &&
@@ -501,7 +568,11 @@ function captureCommandChanges(before: unknown, after: unknown): unknown {
     return Object.fromEntries(
       Object.entries(after).map(([key, value]) => [
         key,
-        captureCommandChanges((before as Record<string, unknown>)[key], value),
+        captureCommandChanges(
+          (before as Record<string, unknown>)[key],
+          value,
+          shoppingItems,
+        ),
       ]),
     );
   }
@@ -880,7 +951,19 @@ export async function commitApplicationSnapshotAtomically(
   // validated and unchanged map may bypass full restore preparation.
   const stableData: AppData =
     verifiedCommand && ownedObservation
-      ? (captureCommandChanges(ownedObservation.snapshot, data) as AppData)
+      ? (captureCommandChanges(
+          ownedObservation.snapshot,
+          data,
+          shoppingMove && dayTarget
+            ? {
+                before: recordEntry(
+                  ownedObservation.snapshot.eventLists,
+                  dayTarget.eventName,
+                ),
+                after: recordEntry(data.eventLists, dayTarget.eventName),
+              }
+            : undefined,
+        ) as AppData)
       : reuseUnchangedMap
         ? {
             ...structuredClone({ ...data, mapData: {} }),
