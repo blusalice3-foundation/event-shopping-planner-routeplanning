@@ -9,12 +9,14 @@ import {
 } from "@playwright/test";
 import {
   createTransferFixture,
+  compareFrameContent,
   installCommitProbe,
   restoreTransferFixture,
   transferEventName,
   transferRow,
   waitForTransferIdle,
   type TransferCondition,
+  type FrameRect,
   type TransferSample,
 } from "./shopping-transfer-measurement";
 
@@ -193,12 +195,6 @@ async function arm(
         !document.querySelector(
           "[data-shopping-drag-guide], [data-shopping-drag-status], .esp-shopping-touch-clone",
         );
-      const order = () =>
-        [
-          ...root.querySelectorAll<HTMLElement>(
-            "[data-item-id]:not([data-space-group-key])",
-          ),
-        ].map((row) => row.dataset.itemId!);
       const expectedOrder =
         condition.scenario === "same-column"
           ? (() => {
@@ -210,13 +206,22 @@ async function arm(
               return without;
             })()
           : beforeOrder;
+      const expectedPrefix = expectedOrder.slice(0, 7);
+      const correctOrder = () => {
+        const rows = root.querySelectorAll<HTMLElement>(
+          "[data-item-id]:not([data-space-group-key])",
+        );
+        return expectedPrefix.every(
+          (id, index) => rows[index]?.dataset.itemId === id,
+        );
+      };
       const correct = () =>
         cleanup() &&
         checked() &&
         (condition.scenario === "noop" || condition.scenario === "same-column"
           ? endpoints() === 0
           : endpoints() > 0) &&
-        expectedOrder.slice(0, 7).every((id, index) => order()[index] === id);
+        correctOrder();
       const observer = new MutationObserver(check);
       let pending = false;
       const timeout = setTimeout(() => {
@@ -374,7 +379,10 @@ async function inkComparison(
         decode(baseline),
       ]);
       const crop = (image: ImageBitmap, rect: Rect) => {
-        const canvas = new OffscreenCanvas(128, 64),
+        const canvas = new OffscreenCanvas(
+            Math.ceil(rect.width),
+            Math.ceil(rect.height),
+          ),
           context = canvas.getContext("2d")!;
         context.drawImage(
           image,
@@ -384,10 +392,10 @@ async function inkComparison(
           (rect.height * image.height) / innerHeight,
           0,
           0,
-          128,
-          64,
+          canvas.width,
+          canvas.height,
         );
-        return context.getImageData(0, 0, 128, 64).data;
+        return context.getImageData(0, 0, canvas.width, canvas.height).data;
       };
       const difference = (a: Uint8ClampedArray, b: Uint8ClampedArray) => {
         let error = 0,
@@ -415,7 +423,7 @@ async function inkComparison(
           controlErrors,
         }));
         return {
-          method: "dark-ink-shape-v1",
+          method: "dark-ink-shape-native-endpoints-v2",
           matched: scores.every(
             (score) =>
               score.baselineError > 0.001 &&
@@ -462,6 +470,20 @@ export async function measureTerminal(
     .evaluateAll((rows) =>
       rows.map((row) => (row as HTMLElement).dataset.itemId!),
     );
+  const readRects = (role: FrameRect["role"]) =>
+    Promise.all(
+      selected.map(async (itemId) => {
+        const box = await transferRow(page, itemId).boundingBox();
+        expect(box).not.toBeNull();
+        expect(box!.y).toBeGreaterThanOrEqual(0);
+        expect(box!.y + Math.min(box!.height, 180)).toBeLessThanOrEqual(1000);
+        return { ...box!, height: Math.min(box!.height, 180), itemId, role };
+      }),
+    );
+  const sourceRects =
+    frame && condition.scenario === "same-column"
+      ? await readRects("source-origin")
+      : [];
   const beforeFrame = frame
     ? await page.screenshot({ animations: "allow" })
     : undefined;
@@ -664,38 +686,38 @@ export async function measureTerminal(
       };
     }
     // This auxiliary final reference never replaces the earliest captured frame.
-    await page.evaluate(async (itemId) => {
-      const row = document.querySelector<HTMLElement>(
-        `[data-item-id="${itemId}"]:not([data-space-group-key])`,
-      )!;
+    await page.evaluate(async (itemIds) => {
+      const rows = itemIds.map(
+        (itemId) =>
+          document.querySelector<HTMLElement>(
+            `[data-item-id="${itemId}"]:not([data-space-group-key])`,
+          )!,
+      );
       let previous = "",
         stable = 0;
       const began = performance.now();
       await new Promise<void>((resolve, reject) => {
         function check() {
-          let opacity = 1;
-          for (
-            let node: HTMLElement | null = row;
-            node;
-            node = node.parentElement
-          )
-            opacity *= Number(getComputedStyle(node).opacity);
-          const rect = row.getBoundingClientRect();
-          const hit = document.elementFromPoint(
-            rect.x + 20,
-            rect.y + Math.min(40, rect.height / 2),
+          let ready = true;
+          const geometry = JSON.stringify(
+            rows.map((row) => {
+              let opacity = 1;
+              for (
+                let node: HTMLElement | null = row;
+                node;
+                node = node.parentElement
+              )
+                opacity *= Number(getComputedStyle(node).opacity);
+              const rect = row.getBoundingClientRect();
+              const hit = document.elementFromPoint(
+                rect.x + 20,
+                rect.y + Math.min(40, rect.height / 2),
+              );
+              ready &&= opacity >= 0.999 && row.contains(hit);
+              return [rect.x, rect.y, rect.width, rect.height, scrollY];
+            }),
           );
-          const geometry = JSON.stringify([
-            rect.x,
-            rect.y,
-            rect.width,
-            rect.height,
-            scrollY,
-          ]);
-          stable =
-            opacity >= 0.999 && row.contains(hit) && geometry === previous
-              ? stable + 1
-              : 0;
+          stable = ready && geometry === previous ? stable + 1 : 0;
           previous = geometry;
           if (stable >= 3) {
             resolve();
@@ -704,7 +726,7 @@ export async function measureTerminal(
           if (performance.now() - began > 10000) {
             reject(
               new Error(
-                "Terminal source never became opaque, hit-testable and stable",
+                "Terminal sources never became opaque, hit-testable and stable",
               ),
             );
             return;
@@ -713,9 +735,8 @@ export async function measureTerminal(
         }
         requestAnimationFrame(check);
       });
-    }, id);
-    const targetBox = await transferRow(page, id).boundingBox();
-    expect(targetBox).not.toBeNull();
+    }, selected);
+    const targetRects = saving ? await readRects("destination-card") : [];
     const reference = await page.screenshot({ animations: "allow" });
     await session.send("Page.stopScreencast");
     session.off("Page.screencastFrame", capture);
@@ -754,7 +775,7 @@ export async function measureTerminal(
             union(rect(sourceBox!), endpointBoxes[0]),
             union(rect(sourceBox!), endpointBoxes.at(-1)!),
           ]
-        : [rect(sourceBox!), rect(targetBox!)];
+        : [...sourceRects, ...targetRects];
     const controlBoxes = await Promise.all(
       [selected[0], nextId].map(async (item) => {
         const box = await transferRow(page, item)
@@ -783,7 +804,10 @@ export async function measureTerminal(
           sourcePaint: Trace;
           paint: Trace;
           draw: Trace;
-          comparison: Awaited<ReturnType<typeof inkComparison>>;
+          comparison:
+            | Awaited<ReturnType<typeof inkComparison>>
+            | Awaited<ReturnType<typeof compareFrameContent>>;
+          regionPaints: Trace[];
         }
       | undefined;
     const comparisons: unknown[] = [];
@@ -806,28 +830,57 @@ export async function measureTerminal(
           e.ts >= dom!.ts &&
           e.ts <= timestamp,
       );
-      const sourcePaint = paints.find((e) => covers(e, regions[0])),
-        paint = paints.find((e) => covers(e, regions[1]));
-      if (!sourcePaint || !paint) continue;
+      const regionPaints = regions.map((region) =>
+        paints.find((e) => covers(e, region)),
+      );
+      if (regionPaints.some((paint) => !paint)) continue;
+      const sourcePaint = regionPaints[0]!,
+        paint = regionPaints[saving ? sourceRects.length : 1]!;
       const draw = trace.find(
         (e) =>
           e.name === "DrawFrame" &&
           e.pid === dom!.pid &&
-          e.ts >= Math.max(sourcePaint.ts, paint.ts) &&
+          e.ts >= Math.max(...regionPaints.map((paint) => paint!.ts)) &&
           e.ts <= timestamp,
       );
       if (!draw) continue;
-      const comparison = await inkComparison(
-        page,
-        captured.data,
-        reference.toString("base64"),
-        beforeFrame!.toString("base64"),
-        regions,
-        controlBoxes,
+      const comparison = saving
+        ? await compareFrameContent(
+            page,
+            captured.data,
+            reference.toString("base64"),
+            beforeFrame!.toString("base64"),
+            [...sourceRects, ...targetRects],
+          )
+        : await inkComparison(
+            page,
+            captured.data,
+            reference.toString("base64"),
+            beforeFrame!.toString("base64"),
+            regions,
+            controlBoxes,
+          );
+      const candidatePath = testInfo.outputPath(
+        `${measurementId}-candidate-${comparisons.length}.png`,
       );
-      comparisons.push({ timestamp, comparison });
+      const candidateBytes = Buffer.from(captured.data, "base64");
+      await writeFile(candidatePath, candidateBytes);
+      comparisons.push({
+        timestamp,
+        comparison,
+        framePath: candidatePath,
+        frameSha256: hash(candidateBytes),
+      });
       if (comparison.matched) {
-        proof = { captured, timestamp, sourcePaint, paint, draw, comparison };
+        proof = {
+          captured,
+          timestamp,
+          sourcePaint,
+          paint,
+          draw,
+          comparison,
+          regionPaints: regionPaints as Trace[],
+        };
         break;
       }
     }
@@ -835,6 +888,35 @@ export async function measureTerminal(
       body: JSON.stringify(comparisons),
       contentType: "application/json",
     });
+    if (!proof) {
+      await testInfo.attach(measurementId + "-failed-trace", {
+        body: JSON.stringify({ traceEvents: trace }),
+        contentType: "application/json",
+      });
+      await testInfo.attach(measurementId + "-failed-reference", {
+        body: reference,
+        contentType: "image/png",
+      });
+      await testInfo.attach(measurementId + "-failed-baseline", {
+        body: beforeFrame!,
+        contentType: "image/png",
+      });
+      await testInfo.attach(measurementId + "-failed-frame-metadata", {
+        body: JSON.stringify(
+          frames.map(({ metadata, sessionId, acknowledged }) => ({
+            metadata,
+            sessionId,
+            acknowledged,
+          })),
+        ),
+        contentType: "application/json",
+      });
+      for (const [index, captured] of frames.entries())
+        await testInfo.attach(`${measurementId}-failed-frame-${index}`, {
+          body: Buffer.from(captured.data, "base64"),
+          contentType: "image/png",
+        });
+    }
     expect(proof, "No content-verified terminal frame").toBeDefined();
     const bytes = Buffer.from(proof!.captured.data, "base64");
     const metadata = Buffer.from(
@@ -884,6 +966,15 @@ export async function measureTerminal(
         sourcePresent: true,
         sourceAbsent: false,
         sourceOriginVacated: saving,
+        ...(saving
+          ? {
+              expectedTransferredIds: selected,
+              visibleSourceIds: sourceRects.map((rect) => rect.itemId),
+              visibleTransferredIds: targetRects.map((rect) => rect.itemId),
+              allVisibleDestinationCardsVerified: true,
+              sourceOriginsVerified: true,
+            }
+          : {}),
         selectionVerified: true,
         visualTarget: saving ? "source-origin" : "endpoints",
         orderVerified: true,
@@ -907,7 +998,36 @@ export async function measureTerminal(
             sessionId: proof!.captured.sessionId,
           },
           sourceRect: regions[0],
-          targetRect: regions[1],
+          targetRect: regions[saving ? sourceRects.length : 1],
+          ...(saving
+            ? {
+                sourceRects,
+                targetRects,
+                sourceProofs: sourceRects.map((rect, index) => ({
+                  sourceId: rect.itemId,
+                  rect,
+                  scoreIndex: index,
+                  paint: {
+                    itemId: rect.itemId,
+                    pid: proof!.regionPaints[index].pid,
+                    ts: proof!.regionPaints[index].ts,
+                    clip: proof!.regionPaints[index].args?.data?.clip,
+                  },
+                })),
+                targetProofs: targetRects.map((rect, index) => ({
+                  targetId: rect.itemId,
+                  rect,
+                  scoreIndex: sourceRects.length + index,
+                  paint: {
+                    itemId: rect.itemId,
+                    pid: proof!.regionPaints[sourceRects.length + index].pid,
+                    ts: proof!.regionPaints[sourceRects.length + index].ts,
+                    clip: proof!.regionPaints[sourceRects.length + index].args
+                      ?.data?.clip,
+                  },
+                })),
+              }
+            : {}),
           comparison: proof!.comparison,
         },
       },
