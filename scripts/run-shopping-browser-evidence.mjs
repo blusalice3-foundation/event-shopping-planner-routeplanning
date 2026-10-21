@@ -145,6 +145,26 @@ export async function collectBrowserEnvironment(cwd, env) {
     throw new Error(
       "Acceptance evidence requires a clean release-a capability",
     );
+  let servedReleaseCapabilityRaw = null;
+  if (env.PLAYWRIGHT_BASE_URL) {
+    const response = await fetch(
+      new URL("/release-capabilities.json", env.PLAYWRIGHT_BASE_URL),
+      {
+        cache: "no-store",
+        signal: AbortSignal.timeout(15000),
+      },
+    );
+    if (!response.ok)
+      throw new Error(
+        `Preview release capability request failed: ${response.status}`,
+      );
+    const served = Buffer.from(await response.arrayBuffer());
+    if (!served.equals(capabilityBytes))
+      throw new Error(
+        "Preview release capability differs from the measured local release build",
+      );
+    servedReleaseCapabilityRaw = served.toString("utf8");
+  }
   const require = createRequire(path.join(cwd, "package.json"));
   const { chromium, devices } = require("@playwright/test");
   const browser = await chromium.launch({
@@ -167,6 +187,14 @@ export async function collectBrowserEnvironment(cwd, env) {
     }));
     return {
       releaseCapability,
+      releaseCapabilityRaw: capabilityBytes.toString("utf8"),
+      servedReleaseCapabilityRaw,
+      servedReleaseCapabilitySha256:
+        servedReleaseCapabilityRaw === null
+          ? null
+          : createHash("sha256")
+              .update(servedReleaseCapabilityRaw)
+              .digest("hex"),
       releaseCapabilitySha256: createHash("sha256")
         .update(capabilityBytes)
         .digest("hex"),
@@ -178,6 +206,9 @@ export async function collectBrowserEnvironment(cwd, env) {
         node: process.version,
         ci: env.CI ?? null,
         baseURL: env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173",
+        previewSource: env.PLAYWRIGHT_BASE_URL
+          ? "explicit"
+          : "playwright-webServer",
         browserVersion: browser.version(),
         ...actual,
         browserChannel: env.PERFORMANCE_BROWSER_CHANNEL ?? "bundled-chromium",

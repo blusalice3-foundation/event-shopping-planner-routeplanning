@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createServer } from "node:http";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   GROUPS,
+  collectBrowserEnvironment,
   groupInvocation,
   runBrowserEvidence,
   spawnInvocation,
@@ -331,4 +333,39 @@ test("performance invocation preserves a spaced npm CLI and forwards exactly one
   });
   assert.equal(call.args[0], "C:/Program Files/npm/npm-cli.js");
   assert.equal(call.args.filter((r) => r === "--").length, 1);
+});
+
+test("browser environment preflight rejects an unrelated explicit preview before launching a browser", async (t) => {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), "esp preview guard "));
+  t.after(() => rm(cwd, { recursive: true, force: true }));
+  await mkdir(path.join(cwd, "dist"));
+  const capability = {
+    kind: "event-shopping-planner-release-capabilities",
+    version: 1,
+    buildMode: "release-a",
+    releaseChannel: "release-a",
+    legacyLocalStorageCleanup: "forced-off",
+    sourceState: "clean",
+    sourceSha: "a".repeat(40),
+    buildId: "a".repeat(40),
+  };
+  await writeFile(
+    path.join(cwd, "dist/release-capabilities.json"),
+    JSON.stringify(capability),
+    "utf8",
+  );
+  const server = createServer((request, response) => {
+    assert.equal(request.url, "/release-capabilities.json");
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ ...capability, buildId: "b".repeat(40) }));
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const address = server.address();
+  await assert.rejects(
+    collectBrowserEnvironment(cwd, {
+      PLAYWRIGHT_BASE_URL: `http://127.0.0.1:${address.port}`,
+    }),
+    /Preview release capability differs/,
+  );
 });

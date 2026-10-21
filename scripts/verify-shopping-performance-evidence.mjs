@@ -689,7 +689,7 @@ export async function verifyFrameFiles(artifact, outputRoot, hashes) {
           covers(sourcePaint, correlation.sourceRect),
         "Screencast frame DOM/Paint/DrawFrame correlation mismatch",
       );
-      if ((sample.visualTarget ?? "card") === "card") {
+      if (["card", "source-origin"].includes(sample.visualTarget ?? "card")) {
         const visible = sample.visibleTransferredIds;
         const sources = sample.visibleSourceIds;
         const proofs = correlation.targetProofs;
@@ -749,7 +749,9 @@ export async function verifyFrameFiles(artifact, outputRoot, hashes) {
                 proof,
                 sources[index],
                 index,
-                "source-gap",
+                sample.visualTarget === "source-origin"
+                  ? "source-origin"
+                  : "source-gap",
                 "sourceId",
               ),
             ) &&
@@ -884,7 +886,7 @@ export async function verifyFrameFiles(artifact, outputRoot, hashes) {
         Array.isArray(scores) &&
         scores.length ===
           (sample.captureMethod === "Page.startScreencast(png)" &&
-          (sample.visualTarget ?? "card") === "card"
+          ["card", "source-origin"].includes(sample.visualTarget ?? "card")
             ? sample.visibleSourceIds.length +
               sample.visibleTransferredIds.length
             : 2) &&

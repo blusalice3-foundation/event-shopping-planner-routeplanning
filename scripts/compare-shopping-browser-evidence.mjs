@@ -128,6 +128,27 @@ async function readRun(runRoot, phase) {
       /^[a-f0-9]{64}$/.test(run.releaseCapabilitySha256 ?? ""),
     `${phase}: actual clean release-a capability is missing or invalid`,
   );
+  assert(
+    typeof run.releaseCapabilityRaw === "string" &&
+      hash(Buffer.from(run.releaseCapabilityRaw, "utf8")) ===
+        run.releaseCapabilitySha256 &&
+      JSON.stringify(JSON.parse(run.releaseCapabilityRaw)) ===
+        JSON.stringify(capability),
+    `${phase}: raw local release capability/hash mismatch`,
+  );
+  assert(
+    ["explicit", "playwright-webServer"].includes(
+      run.environment.previewSource,
+    ),
+    `${phase}: preview source metadata missing`,
+  );
+  if (run.environment.previewSource === "explicit")
+    assert(
+      typeof run.servedReleaseCapabilityRaw === "string" &&
+        run.servedReleaseCapabilityRaw === run.releaseCapabilityRaw &&
+        run.servedReleaseCapabilitySha256 === run.releaseCapabilitySha256,
+      `${phase}: served preview capability differs from the measured release build`,
+    );
   const rows = new Map(),
     artifacts = new Map(),
     sourceHashes = { "run-result.json": hash(bytes) },
@@ -340,6 +361,7 @@ export async function compareBrowserEvidence({
       "node",
       "ci",
       "baseURL",
+      "previewSource",
       "browserChannel",
       "headed",
       "build",

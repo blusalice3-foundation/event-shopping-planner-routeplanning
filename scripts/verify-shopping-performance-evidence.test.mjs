@@ -1037,3 +1037,12 @@ test("screencast requires every visible source origin and rejects borrowed image
   };
   await assert.rejects(f.verify(), /Every visible moved/);
 });
+
+test("same-column frames require every retained source origin and moved target image proof", async (t) => {
+  const f = await screencastProofFixture(t);
+  f.sample.visualTarget = "source-origin";
+  f.sample.correlation.comparison.scores[0].role = "source-origin";
+  await assert.doesNotReject(f.verify());
+  f.sample.visibleTransferredIds.push("second-selected-item");
+  await assert.rejects(f.verify(), /Every visible moved/);
+});

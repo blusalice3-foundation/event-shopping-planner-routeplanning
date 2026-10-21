@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -139,12 +140,19 @@ async function partialShoppingRun(directory, phase, base = 10, options = {}) {
       node: process.version,
       ci: null,
       baseURL: "http://127.0.0.1:4173",
+      previewSource: "explicit",
       browserChannel: "bundled-chromium",
       headed: false,
       build: "npm run build:release-a",
       workerCount: 1,
     },
   };
+  metadata.releaseCapabilityRaw = JSON.stringify(metadata.releaseCapability);
+  metadata.releaseCapabilitySha256 = createHash("sha256")
+    .update(metadata.releaseCapabilityRaw)
+    .digest("hex");
+  metadata.servedReleaseCapabilityRaw = metadata.releaseCapabilityRaw;
+  metadata.servedReleaseCapabilitySha256 = metadata.releaseCapabilitySha256;
   const report = {
     errors: [],
     config: { workers: 1, projects: [{ retries: 0 }] },
@@ -316,6 +324,12 @@ test("comparison requires actual clean release capability and allows different p
   const run = JSON.parse(await readFile(file, "utf8"));
   run.releaseCapability.buildId = "b".repeat(40);
   run.releaseCapability.sourceSha = "b".repeat(40);
+  run.releaseCapabilityRaw = JSON.stringify(run.releaseCapability);
+  run.releaseCapabilitySha256 = createHash("sha256")
+    .update(run.releaseCapabilityRaw)
+    .digest("hex");
+  run.servedReleaseCapabilityRaw = run.releaseCapabilityRaw;
+  run.servedReleaseCapabilitySha256 = run.releaseCapabilitySha256;
   await writeFile(file, JSON.stringify(run), "utf8");
   assert.equal(
     (await compareBrowserEvidence({ beforeRoot, afterRoot })).result.coverage
@@ -330,5 +344,26 @@ test("comparison requires actual clean release capability and allows different p
     result.result.errors.some((error) =>
       error.includes("release-a capability"),
     ),
+  );
+});
+
+test("comparison rejects a mismatched served preview capability even when both local builds are valid", async (t) => {
+  const directory = await mkdtemp(
+    path.join(os.tmpdir(), "esp served compare "),
+  );
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const beforeRoot = await partialShoppingRun(directory, "before");
+  const afterRoot = await partialShoppingRun(directory, "after");
+  const file = path.join(afterRoot, "run-result.json");
+  const run = JSON.parse(await readFile(file, "utf8"));
+  run.servedReleaseCapabilityRaw += "\n";
+  await writeFile(file, JSON.stringify(run), "utf8");
+  const { exitCode, result } = await compareBrowserEvidence({
+    beforeRoot,
+    afterRoot,
+  });
+  assert.equal(exitCode, 1);
+  assert.ok(
+    result.errors.some((error) => error.includes("served preview capability")),
   );
 });
