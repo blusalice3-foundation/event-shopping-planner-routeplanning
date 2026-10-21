@@ -133,7 +133,9 @@ const groupPlaceholder = (
       data-viewport-focus-sentinel
       onFocus={(event) => focusPendingViewportContent(event.currentTarget)}
     >
-      <span className="esp-viewport-placeholder-label">{row.accessibleName}</span>
+      <span className="esp-viewport-placeholder-label">
+        {row.accessibleName}
+      </span>
     </div>
     <div role="list" aria-label={row.label + "の項目"}>
       {items.map(({ row: itemRow }) => (
@@ -178,7 +180,13 @@ const GroupViewport = React.memo(
         estimatedHeight={estimatedHeight}
         retain={retained.some(Boolean)}
         defer={defer}
-        placeholder={groupPlaceholder(row, items, layoutMode, visitIds, getVisitId)}
+        placeholder={groupPlaceholder(
+          row,
+          items,
+          layoutMode,
+          visitIds,
+          getVisitId,
+        )}
         render={() => (
           <GroupContent
             row={row}
@@ -262,8 +270,11 @@ const currentGroupSlot = (
   const sameMetadata =
     previous !== undefined &&
     previous.metadata.length === metadata.length &&
-    metadata.every((value, index) => Object.is(value, previous.metadata[index]));
-  const context = previous?.context ?? React.createContext<React.ReactNode>(null);
+    metadata.every((value, index) =>
+      Object.is(value, previous.metadata[index]),
+    );
+  const context =
+    previous?.context ?? React.createContext<React.ReactNode>(null);
   const config: GroupGateProps = {
     rowKey: props.row.rowKey,
     layoutKey: props.layoutKey,
@@ -378,9 +389,11 @@ export const RetainedViewportListRenderer = (
   const currentBodies = currentModel
     ? new Map<string, GroupContentProps>()
     : undefined;
+  // Adopt the fresh render-local Map after every commit. Reusing a Map during
+  // render could publish slots from an abandoned render; generic is a no-op.
   useLayoutEffect(() => {
     if (nextSlots) committedSlots.current = nextSlots;
-  }, [nextSlots]);
+  });
   const rendered: React.ReactElement[] = [];
   for (let index = 0; index < props.model.rows.length; index += 1) {
     const row = props.model.rows[index];

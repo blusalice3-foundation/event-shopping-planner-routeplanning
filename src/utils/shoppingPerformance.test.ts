@@ -107,19 +107,26 @@ describe("shopping lifecycle prototype (source only; not yet executed)", () => {
       "ui-apply-start",
       "ui-apply-success",
     ]);
-    expect(new Set(records.map((record) => record.diagnosticToken)).size).toBe(1);
+    expect(new Set(records.map((record) => record.diagnosticToken)).size).toBe(
+      1,
+    );
     expect(records[0].diagnosticToken).toMatch(/^shopping-diagnostic:/);
     expect(records[0].operationId).toBeUndefined();
-    expect(records.slice(2).every(
-      (record) =>
-        record.operationId === "actual-operation" &&
-        record.moveId === "actual-operation:move:1",
-    )).toBe(true);
-    expect(records.every(
-      (record) =>
-        record.atMs === 42 &&
-        record.epochMs === performance.timeOrigin + 42,
-    )).toBe(true);
+    expect(
+      records
+        .slice(2)
+        .every(
+          (record) =>
+            record.operationId === "actual-operation" &&
+            record.moveId === "actual-operation:move:1",
+        ),
+    ).toBe(true);
+    expect(
+      records.every(
+        (record) =>
+          record.atMs === 42 && record.epochMs === performance.timeOrigin + 42,
+      ),
+    ).toBe(true);
   });
 
   it("does not infer acceptance from a computed proposal", () => {
@@ -131,11 +138,17 @@ describe("shopping lifecycle prototype (source only; not yet executed)", () => {
       endShoppingMoveLifecycle(scope);
     }
     recordShoppingMoveUiApply("no-such-operation", "start");
-    expect(shoppingPerformance.read().lifecycle.map((record) => record.phase))
-      .toEqual(["move-command-entry", "plan-ready"]);
-    expect(shoppingPerformance.read().lifecycle.every(
-      (record) => record.operationId === undefined && record.moveId === undefined,
-    )).toBe(true);
+    expect(
+      shoppingPerformance.read().lifecycle.map((record) => record.phase),
+    ).toEqual(["move-command-entry", "plan-ready"]);
+    expect(
+      shoppingPerformance
+        .read()
+        .lifecycle.every(
+          (record) =>
+            record.operationId === undefined && record.moveId === undefined,
+        ),
+    ).toBe(true);
   });
 
   it("restores nested contexts in finally and does not leak them after exceptions", () => {
@@ -152,11 +165,13 @@ describe("shopping lifecycle prototype (source only; not yet executed)", () => {
     recordAcceptedShoppingMove("outer", "outer:move:1");
     endShoppingMoveLifecycle(outer);
     recordAcceptedShoppingMove("outside", "outside:move:1");
-    const accepted = shoppingPerformance.read().lifecycle.filter(
-      (record) => record.phase === "queue-accepted",
-    );
+    const accepted = shoppingPerformance
+      .read()
+      .lifecycle.filter((record) => record.phase === "queue-accepted");
     expect(accepted.map((record) => record.draggedItemId)).toEqual([
-      "B", "A", undefined,
+      "B",
+      "A",
+      undefined,
     ]);
     expect(accepted[0].diagnosticToken).not.toBe(accepted[1].diagnosticToken);
     expect(accepted[2].diagnosticToken).toBeUndefined();
@@ -171,11 +186,14 @@ describe("shopping lifecycle prototype (source only; not yet executed)", () => {
     recordShoppingMovePlanReady();
     endShoppingMoveLifecycle(next);
     recordShoppingMoveUiApply("old", "success");
-    expect(shoppingPerformance.read().lifecycle.map((record) => record.phase))
-      .toEqual(["move-command-entry", "plan-ready"]);
-    expect(shoppingPerformance.read().lifecycle.every(
-      (record) => record.draggedItemId === "B",
-    )).toBe(true);
+    expect(
+      shoppingPerformance.read().lifecycle.map((record) => record.phase),
+    ).toEqual(["move-command-entry", "plan-ready"]);
+    expect(
+      shoppingPerformance
+        .read()
+        .lifecycle.every((record) => record.draggedItemId === "B"),
+    ).toBe(true);
   });
 
   it("records each real move in a shared save batch without issuing another ID", () => {
@@ -185,9 +203,12 @@ describe("shopping lifecycle prototype (source only; not yet executed)", () => {
       endShoppingMoveLifecycle(scope);
     }
     recordShoppingMoveUiApply("shared-save", "success");
-    expect(shoppingPerformance.read().lifecycle.filter(
-      (record) => record.phase === "ui-apply-success",
-    ).map((record) => [record.operationId, record.moveId])).toEqual([
+    expect(
+      shoppingPerformance
+        .read()
+        .lifecycle.filter((record) => record.phase === "ui-apply-success")
+        .map((record) => [record.operationId, record.moveId]),
+    ).toEqual([
       ["shared-save", "shared-save:move:1"],
       ["shared-save", "shared-save:move:2"],
     ]);
@@ -199,9 +220,11 @@ describe("shopping lifecycle prototype (source only; not yet executed)", () => {
     }
     expect(shoppingPerformance.read().lifecycle).toHaveLength(500);
     recordShoppingMoveUiApply("save:0", "success");
-    expect(shoppingPerformance.read().lifecycle.some(
-      (record) => record.phase === "ui-apply-success",
-    )).toBe(false);
+    expect(
+      shoppingPerformance
+        .read()
+        .lifecycle.some((record) => record.phase === "ui-apply-success"),
+    ).toBe(false);
     recordShoppingMoveUiApply("save:519", "success");
     const records = shoppingPerformance.read().lifecycle;
     expect(records).toHaveLength(500);
@@ -211,8 +234,9 @@ describe("shopping lifecycle prototype (source only; not yet executed)", () => {
       moveId: "save:519:move:1",
     });
     Object.assign(records[0], { operationId: "caller-tampered" });
-    expect(shoppingPerformance.read().lifecycle[0].operationId)
-      .not.toBe("caller-tampered");
+    expect(shoppingPerformance.read().lifecycle[0].operationId).not.toBe(
+      "caller-tampered",
+    );
   });
 
   it("isolates diagnostic clock failures from the original synchronous action", () => {

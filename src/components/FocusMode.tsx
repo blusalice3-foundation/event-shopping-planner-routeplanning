@@ -879,7 +879,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
       resolveNavigatorEntryVisit(navigatorEntries[displayNavigatorIndex + 1]),
     [displayNavigatorIndex, navigatorEntries, resolveNavigatorEntryVisit],
   );
-  const projectDisplayItems = useMemo(createFocusVisitDisplayItemsProjector, []);
+  const projectDisplayItems = useMemo(
+    createFocusVisitDisplayItemsProjector,
+    [],
+  );
   const currentVisitDisplayItems = projectDisplayItems(items, displayItemIds);
   const prewarmedNavigatorEntry = navigatorEntries[displayNavigatorIndex + 1];
   const prewarmedVisitItems = useMemo(

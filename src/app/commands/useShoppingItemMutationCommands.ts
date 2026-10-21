@@ -795,7 +795,9 @@ export const useShoppingItemMutationCommands = ({
               recordEntry(eventLists, activeEventName) || []
             ).find((candidate) => candidate.id === id);
             if (selectedItem) {
-              spaceKeys.add(getSpaceKey(selectedItem.block, selectedItem.number));
+              spaceKeys.add(
+                getSpaceKey(selectedItem.block, selectedItem.number),
+              );
             }
           });
           return spaceKeys.size > 1;
