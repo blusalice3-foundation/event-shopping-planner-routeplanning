@@ -556,8 +556,9 @@ async function chainGeometry(locator: Locator) {
           overflowY: style.overflowY,
         });
     }
-    const x = (left + right) / 2;
-    const y = (top + bottom) / 2;
+    const x = bounds.left + bounds.width / 2;
+    const y = bounds.top + bounds.height / 2;
+    const centerVisible = x >= left && x < right && y >= top && y < bottom;
     const hit = document.elementFromPoint(x, y);
     const interactiveOverlaps = [
       ...document.querySelectorAll<HTMLElement>(
@@ -635,6 +636,7 @@ async function chainGeometry(locator: Locator) {
         height: bottom - top,
       },
       viewport: { width: innerWidth, height: innerHeight },
+      centerVisible,
       centerHit: Boolean(hit && button.contains(hit)),
       hit: hit
         ? { tag: hit.tagName, title: hit.closest("button")?.title }
@@ -661,6 +663,7 @@ async function assertChainGeometry(locator: Locator) {
     geometry.visible.height,
     "chain has an available click/tap target",
   ).toBeGreaterThanOrEqual(16);
+  expect(geometry.centerVisible, "actual chain center is visible").toBe(true);
   expect(
     geometry.centerHit,
     "chain target is not covered by another element",
@@ -670,59 +673,126 @@ async function assertChainGeometry(locator: Locator) {
 
 async function actionableChain(
   page: Page,
-  condition: Condition,
   preferredId: string,
   selected: boolean,
 ) {
-  const preferred = chain(page, preferredId, selected);
-  await expect(preferred).toBeVisible();
-  const preferredGeometry = await chainGeometry(preferred);
-  const isActionable = (geometry: Awaited<ReturnType<typeof chainGeometry>>) =>
-    geometry.bounds.x >= 0 &&
-    geometry.bounds.right <= geometry.viewport.width &&
-    geometry.visible.width >= 39 &&
-    geometry.visible.height >= 16 &&
-    geometry.centerHit;
-  const resolve = async (id: string, locator: Locator) => {
-    const geometry = await assertChainGeometry(locator);
-    return {
-      locator,
-      position: {
-        x:
-          (geometry.visible.left + geometry.visible.right) / 2 -
-          geometry.bounds.x,
-        y:
-          (geometry.visible.top + geometry.visible.bottom) / 2 -
-          geometry.bounds.y,
-      },
-      evidence: {
-        preferredId,
-        chosenId: id,
-        preferredBlockedGeometry: id === preferredId ? null : preferredGeometry,
-        geometry,
-      },
-    };
+  // A covered endpoint must fail here; another segment cannot stand in for it.
+  const locator = chain(page, preferredId, selected);
+  const geometry = await assertChainGeometry(locator);
+  return {
+    locator,
+    position: {
+      x: geometry.bounds.width / 2,
+      y: geometry.bounds.height / 2,
+    },
+    evidence: {
+      preferredId,
+      chosenId: preferredId,
+      preferredBlockedGeometry: null,
+      geometry,
+    },
   };
-  if (isActionable(preferredGeometry)) return resolve(preferredId, preferred);
-  // Transformed virtual rows may put a top segment beneath the neighboring
-  // empty candidate drop zone. Use an actual unobscured segment in the same
-  // resolved range, retaining the blocked segment's evidence for visual review.
-  const mountedIds = await page
-    .locator("[data-item-id]")
-    .evaluateAll((rows) =>
-      rows.map((entry) => (entry as HTMLElement).dataset.itemId!),
+}
+
+async function assertVisibleChainCenters(page: Page) {
+  const observations = await page
+    .locator(
+      'button[title="範囲内のチェックを入れる"], button[title="範囲内のチェックを外す"]',
+    )
+    .evaluateAll((buttons) =>
+      buttons.flatMap((button) => {
+        const bounds = button.getBoundingClientRect();
+        const x = bounds.left + bounds.width / 2;
+        const y = bounds.top + bounds.height / 2;
+        const style = getComputedStyle(button);
+        if (
+          style.display === "none" ||
+          style.visibility === "hidden" ||
+          bounds.width <= 0 ||
+          bounds.height <= 0 ||
+          x < 0 ||
+          x >= innerWidth ||
+          y < 0 ||
+          y >= innerHeight
+        )
+          return [];
+        for (
+          let parent = button.parentElement;
+          parent;
+          parent = parent.parentElement
+        ) {
+          const rect = parent.getBoundingClientRect();
+          const parentStyle = getComputedStyle(parent);
+          if (
+            (/(hidden|clip|scroll|auto)/.test(parentStyle.overflowX) &&
+              (x < rect.left || x >= rect.right)) ||
+            (/(hidden|clip|scroll|auto)/.test(parentStyle.overflowY) &&
+              (y < rect.top || y >= rect.bottom))
+          )
+            return [];
+        }
+        const hit = document.elementFromPoint(x, y);
+        let coveringChrome: {
+          tag: string;
+          className: string;
+          position: string;
+        } | null = null;
+        if (hit && !button.contains(hit)) {
+          for (
+            let ancestor: Element | null = hit;
+            ancestor;
+            ancestor = ancestor.parentElement
+          ) {
+            // Fixed headers and sticky toolbars mark the viewport's usable
+            // content edge. A relative/absolute candidate drop area does not.
+            if (ancestor.closest("[data-item-id]") || ancestor.contains(button))
+              continue;
+            const position = getComputedStyle(ancestor).position;
+            if (position === "fixed" || position === "sticky") {
+              coveringChrome = {
+                tag: ancestor.tagName,
+                className: ancestor.getAttribute("class") ?? "",
+                position,
+              };
+              break;
+            }
+          }
+        }
+        return [
+          {
+            itemId:
+              button.closest<HTMLElement>("[data-item-id]")?.dataset.itemId ??
+              null,
+            segment: button.classList.contains("esp-flat-range-chain-gap")
+              ? "gap"
+              : "main",
+            center: { x, y },
+            excludedReason: coveringChrome
+              ? `covered by ${coveringChrome.position} application chrome`
+              : null,
+            coveringChrome,
+            centerHit: Boolean(hit && button.contains(hit)),
+            hit: hit ? { tag: hit.tagName, className: hit.className } : null,
+          },
+        ];
+      }),
     );
-  const targets = new Set(targetIds(condition));
-  for (const id of mountedIds) {
-    if (id === preferredId || !targets.has(id)) continue;
-    const candidate = chain(page, id, selected);
-    if (!(await candidate.count())) continue;
-    const geometry = await chainGeometry(candidate);
-    if (isActionable(geometry)) return resolve(id, candidate);
-  }
-  throw new Error(
-    `No unobscured visible chain segment: ${JSON.stringify({ preferredId, preferredGeometry, mountedIds })}`,
+  const visibleCenters = observations.filter(
+    (observation) => !observation.excludedReason,
   );
+  const excludedCenters = observations.filter(
+    (observation) => observation.excludedReason,
+  );
+  expect(
+    visibleCenters.length,
+    "visible mounted chain centers",
+  ).toBeGreaterThan(0);
+  for (const observation of visibleCenters)
+    expect(
+      observation.centerHit,
+      `${observation.itemId} ${observation.segment} center: ${JSON.stringify(observation)}`,
+    ).toBe(true);
+  return { visibleCenters, excludedCenters };
 }
 
 async function rangeCspViolations(page: Page) {
@@ -1082,22 +1152,16 @@ for (const condition of conditions) {
         ),
       );
       await prepareItem(page, condition, second);
-      const selectAction = await actionableChain(
-        page,
-        condition,
-        second,
-        false,
-      );
+      const selectAction = await actionableChain(page, second, false);
       const geometry = selectAction.evidence.geometry;
       const assetReadiness = await cssChainAssetReadiness(
         page,
         selectAction.locator,
       );
-      const screenshotName = !reverse
-        ? "chain-ready-forward"
-        : selectAction.evidence.preferredBlockedGeometry
-          ? "chain-ready-reverse-alternative"
-          : null;
+      const visibleBeforeSelection = await assertVisibleChainCenters(page);
+      const screenshotName = reverse
+        ? "chain-ready-reverse"
+        : "chain-ready-forward";
       if (screenshotName) {
         const screenshot = testInfo.outputPath(`${screenshotName}.png`);
         await page.screenshot({ path: screenshot });
@@ -1122,8 +1186,9 @@ for (const condition of conditions) {
       expect(selected).toEqual(expected);
       await prepareItem(page, condition, second);
       await expect(checkbox(page, second)).toBeChecked();
-      const clearAction = await actionableChain(page, condition, second, true);
+      const clearAction = await actionableChain(page, second, true);
       const selectedGeometry = clearAction.evidence.geometry;
+      const visibleBeforeClear = await assertVisibleChainCenters(page);
       await activate(
         clearAction.locator,
         condition.layout,
@@ -1147,6 +1212,10 @@ for (const condition of conditions) {
         remaining: condition.rangeLength === "short" ? ["r4"] : [],
         geometry,
         selectedGeometry,
+        visibleChainCenters: {
+          beforeSelection: visibleBeforeSelection,
+          beforeClear: visibleBeforeClear,
+        },
         assetReadiness,
         stripeVisibility: {
           first: firstStripeVisibility,
@@ -1859,7 +1928,6 @@ for (const condition of conditions) {
       await expect(chain(page, endpoint(condition), false)).toBeVisible();
       const selectAction = await actionableChain(
         page,
-        condition,
         endpoint(condition),
         false,
       );
@@ -1973,7 +2041,6 @@ for (const condition of conditions) {
       await prepareItem(page, condition, endpoint(condition));
       const clearAction = await actionableChain(
         page,
-        condition,
         endpoint(condition),
         true,
       );
@@ -2252,6 +2319,334 @@ for (const layout of ["pc", "smartphone"] as const) {
   });
 }
 
+for (const width of [320, 390]) {
+  test(`Virtual edit card controls fit their columns: ${width}px @range-selection-regression`, async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(120000);
+    const condition: Condition = {
+      count: 150,
+      layout: "smartphone",
+      renderer: "virtual",
+      rangeLength: "short",
+    };
+    await restore(page, condition, true);
+    await page.setViewportSize({ width, height: 844 });
+    const observations = [];
+    for (const id of ["r1", "c1"]) {
+      await prepareItem(page, condition, id);
+      const card = row(page, id);
+      const controls = [
+        { name: "checkbox", locator: checkbox(page, id) },
+        {
+          name: "memo",
+          locator: card.getByLabel("利用者メモ", { exact: true }),
+        },
+        {
+          name: "quantity",
+          locator: card.getByLabel("購入予定数量", { exact: true }),
+        },
+        {
+          name: "price",
+          locator: card.getByLabel("購入金額", { exact: true }),
+        },
+        {
+          name: "status",
+          locator: card.getByRole("button", { name: /^Current status:/ }),
+        },
+      ];
+      for (const { name, locator } of controls) {
+        await expect(locator).toBeVisible();
+        const geometry = await locator.evaluate((control) => {
+          const card = control.closest<HTMLElement>(".rounded-lg.shadow-md");
+          if (!card) throw new Error("Control has no shopping card frame");
+          const rect = (element: Element) => {
+            const bounds = element.getBoundingClientRect();
+            return {
+              left: bounds.left,
+              right: bounds.right,
+              top: bounds.top,
+              bottom: bounds.bottom,
+              width: bounds.width,
+              height: bounds.height,
+            };
+          };
+          const bounds = rect(control);
+          const center = {
+            x: (bounds.left + bounds.right) / 2,
+            y: (bounds.top + bounds.bottom) / 2,
+          };
+          const hit = document.elementFromPoint(center.x, center.y);
+          return {
+            control: bounds,
+            card: rect(card),
+            cardClientWidth: card.clientWidth,
+            cardScrollWidth: card.scrollWidth,
+            viewport: { width: innerWidth, height: innerHeight },
+            center,
+            centerHit: Boolean(hit && control.contains(hit)),
+            hit: hit ? { tag: hit.tagName, className: hit.className } : null,
+          };
+        });
+        observations.push({ id, name, ...geometry });
+      }
+    }
+    await assertRenderer(page, condition);
+    const screenshot = testInfo.outputPath(
+      `narrow-edit-card-controls-${width}.png`,
+    );
+    await page.screenshot({ path: screenshot });
+    await testInfo.attach("narrow-edit-card-controls", {
+      path: screenshot,
+      contentType: "image/png",
+    });
+    await artifact(testInfo, "virtual-edit-card-control-geometry", {
+      environment: await environment(page, condition),
+      width,
+      observations,
+    });
+    for (const observation of observations) {
+      const description = `${width}px ${observation.id} ${observation.name}: ${JSON.stringify(observation)}`;
+      expect(observation.control.width, description).toBeGreaterThan(0);
+      expect(observation.control.height, description).toBeGreaterThan(0);
+      expect(observation.control.left, description).toBeGreaterThanOrEqual(
+        observation.card.left - 0.5,
+      );
+      expect(observation.control.right, description).toBeLessThanOrEqual(
+        observation.card.right + 0.5,
+      );
+      expect(observation.control.top, description).toBeGreaterThanOrEqual(
+        observation.card.top - 0.5,
+      );
+      expect(observation.control.bottom, description).toBeLessThanOrEqual(
+        observation.card.bottom + 0.5,
+      );
+      expect(observation.control.left, description).toBeGreaterThanOrEqual(0);
+      expect(observation.control.right, description).toBeLessThanOrEqual(width);
+      expect(observation.control.top, description).toBeGreaterThanOrEqual(0);
+      expect(observation.control.bottom, description).toBeLessThanOrEqual(
+        observation.viewport.height,
+      );
+      expect(observation.centerHit, description).toBe(true);
+    }
+  });
+}
+
+for (const { count, rangeLength } of [
+  { count: 150, rangeLength: "short" },
+  { count: 500, rangeLength: "long" },
+] as const) {
+  test(`Virtual reverse chain preserves populated candidate checkbox hits: ${count} items, ${rangeLength} @range-selection-regression`, async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(120000);
+    const condition: Condition = {
+      count,
+      layout: "smartphone",
+      renderer: "virtual",
+      rangeLength,
+    };
+    await restore(page, condition, true);
+    const last = endpoint(condition);
+    const endpointStages = [];
+    const endpointState = () =>
+      page.evaluate(() => ({
+        scrollY,
+        focusedItemId:
+          document.activeElement?.closest<HTMLElement>("[data-item-id]")
+            ?.dataset.itemId ?? null,
+        renderers: [
+          ...document.querySelectorAll<HTMLElement>("[data-list-renderer]"),
+        ].map((root) => ({
+          column: root.dataset.shoppingDragColumn,
+          renderer: root.dataset.listRenderer,
+          rowCount: root.dataset.listRowCount,
+        })),
+        mountedItems: [
+          ...document.querySelectorAll<HTMLElement>("[data-item-id]"),
+        ].map((entry) => ({
+          id: entry.dataset.itemId,
+          column: entry.closest<HTMLElement>("[data-shopping-drag-column]")
+            ?.dataset.shoppingDragColumn,
+          selected: entry.dataset.isSelected,
+          checked: entry.querySelector<HTMLInputElement>(
+            'input[type="checkbox"]',
+          )?.checked,
+          chainCount: entry.querySelectorAll(
+            'button[title="範囲内のチェックを入れる"], button[title="範囲内のチェックを外す"]',
+          ).length,
+        })),
+      }));
+    await assertRenderer(page, condition);
+    for (const id of [last, "r1"]) {
+      await prepareItem(page, condition, id);
+      const beforeActivation = await endpointState();
+      try {
+        await activate(checkbox(page, id), condition.layout);
+        await expect(checkbox(page, id)).toBeChecked();
+        await expect(row(page, id)).toHaveAttribute("data-is-selected", "true");
+        await stablePaint(page);
+        await expect(checkbox(page, id)).toBeChecked();
+      } finally {
+        const stage = {
+          activatedId: id,
+          beforeActivation,
+          afterActivation: await endpointState(),
+        };
+        endpointStages.push(stage);
+        await artifact(testInfo, `virtual-populated-endpoint-${id}`, stage);
+      }
+    }
+    // Preserve both chosen endpoints across virtual unmount/remount before
+    // returning to the same r1 segment whose center must receive the tap.
+    for (const id of [last, "r1"]) {
+      await prepareItem(page, condition, id);
+      await expect(checkbox(page, id)).toBeChecked();
+      await expect(row(page, id)).toHaveAttribute("data-is-selected", "true");
+    }
+    await artifact(testInfo, "virtual-populated-endpoint-readiness", {
+      endpointStages,
+      beforeChain: await endpointState(),
+    });
+    const action = await actionableChain(page, "r1", false);
+    const visibleChainCenters = await assertVisibleChainCenters(page);
+    await prepareItem(page, condition, "c1");
+    const chainBesideCandidate = await chainGeometry(chain(page, "r1", false));
+    const candidate = checkbox(page, "c1");
+    const candidateGeometry = await candidate.evaluate((input) => {
+      const bounds = input.getBoundingClientRect();
+      const center = {
+        x: bounds.left + bounds.width / 2,
+        y: bounds.top + bounds.height / 2,
+      };
+      const hit = document.elementFromPoint(center.x, center.y);
+      return {
+        bounds: {
+          left: bounds.left,
+          right: bounds.right,
+          top: bounds.top,
+          bottom: bounds.bottom,
+        },
+        center,
+        centerHit: Boolean(hit && input.contains(hit)),
+        hit: hit ? { tag: hit.tagName, className: hit.className } : null,
+      };
+    });
+    expect(candidateGeometry.centerHit).toBe(true);
+    expect(
+      chainBesideCandidate.bounds.right,
+      "execute chain and candidate checkbox have separate horizontal targets",
+    ).toBeLessThanOrEqual(candidateGeometry.bounds.left);
+    await activate(candidate, condition.layout);
+    await expect(candidate).toBeChecked();
+    for (const id of ["r1", last]) {
+      await prepareItem(page, condition, id);
+      await expect(checkbox(page, id)).toBeChecked();
+    }
+    await assertRenderer(page, condition);
+    await artifact(testInfo, "virtual-chain-populated-candidate-hit", {
+      environment: await environment(page, condition),
+      endpointStages,
+      chain: action.evidence,
+      visibleChainCenters,
+      chainBesideCandidate,
+      candidateGeometry,
+    });
+  });
+}
+
+test("Virtual empty candidate keeps its drop hit without intercepting the chain during drag/cancel @range-selection-regression", async ({
+  page,
+}, testInfo) => {
+  const condition: Condition = {
+    count: 150,
+    layout: "smartphone",
+    renderer: "virtual",
+    rangeLength: "short",
+  };
+  await restore(page, condition);
+  for (const id of ["r3", "r1"]) {
+    await prepareItem(page, condition, id);
+    await activate(checkbox(page, id), condition.layout);
+  }
+  const candidate = page.locator(
+    '[data-shopping-drag-column="candidate"][data-list-renderer]',
+  );
+  await expect(candidate).toHaveCount(1);
+  await expect(candidate).toHaveCSS("pointer-events", "auto");
+  const beforeDrag = await actionableChain(page, "r1", false);
+  const candidateBoundsBeforeDrag = await candidate.evaluate((root) => {
+    const bounds = root.getBoundingClientRect();
+    return { left: bounds.left, right: bounds.right };
+  });
+  expect(
+    beforeDrag.evidence.geometry.bounds.right,
+    "idle empty candidate does not occupy the execute chain gutter",
+  ).toBeLessThanOrEqual(candidateBoundsBeforeDrag.left);
+  const transfer = await page.evaluateHandle(() => new DataTransfer());
+  try {
+    // Dispatch only the source event. Hit testing below proves the destination
+    // can receive browser input; dispatching dragover on it would bypass that.
+    await row(page, "r1").dispatchEvent("dragstart", {
+      dataTransfer: transfer,
+    });
+    await expect(candidate).toHaveCSS("pointer-events", "auto");
+    const duringDrag = await candidate.evaluate((root) => {
+      const bounds = root.getBoundingClientRect();
+      const center = {
+        x: (Math.max(0, bounds.left) + Math.min(innerWidth, bounds.right)) / 2,
+        y: (Math.max(0, bounds.top) + Math.min(innerHeight, bounds.bottom)) / 2,
+      };
+      const hit = document.elementFromPoint(center.x, center.y);
+      return {
+        center,
+        centerHit: Boolean(hit && root.contains(hit)),
+        hit: hit ? { tag: hit.tagName, className: hit.className } : null,
+      };
+    });
+    expect(duringDrag.centerHit).toBe(true);
+    await row(page, "r1").dispatchEvent("dragend", {
+      dataTransfer: transfer,
+    });
+    await expect(candidate).toHaveCSS("pointer-events", "auto");
+    const afterCancel = await actionableChain(page, "r1", false);
+    const candidateBoundsAfterCancel = await candidate.evaluate((root) => {
+      const bounds = root.getBoundingClientRect();
+      return { left: bounds.left, right: bounds.right };
+    });
+    expect(
+      afterCancel.evidence.geometry.bounds.right,
+      "cancelled drag keeps the empty candidate outside the chain gutter",
+    ).toBeLessThanOrEqual(candidateBoundsAfterCancel.left);
+    await activate(afterCancel.locator, condition.layout, afterCancel.position);
+    for (const id of ["r1", "r2", "r3"]) {
+      await prepareItem(page, condition, id);
+      await expect(checkbox(page, id)).toBeChecked();
+    }
+    await prepareItem(page, condition, "r1");
+    const clearAction = await actionableChain(page, "r1", true);
+    await activate(clearAction.locator, condition.layout, clearAction.position);
+    for (const id of ["r1", "r2", "r3"]) {
+      await prepareItem(page, condition, id);
+      await expect(checkbox(page, id)).not.toBeChecked();
+    }
+    await artifact(testInfo, "virtual-chain-empty-candidate-drag-hit", {
+      environment: await environment(page, condition),
+      beforeDrag: beforeDrag.evidence,
+      candidateBoundsBeforeDrag,
+      duringDrag,
+      afterCancel: afterCancel.evidence,
+      candidateBoundsAfterCancel,
+      clear: clearAction.evidence,
+    });
+  } finally {
+    await row(page, "r1").dispatchEvent("dragend", {
+      dataTransfer: transfer,
+    });
+    await transfer.dispose();
+  }
+});
+
 for (const layout of ["pc", "smartphone"] as const) {
   for (const rangeLength of ["short", "long"] as const) {
     test(`parent candidate CSS chain keeps orientation and range checks: ${layout}, ${rangeLength} @range-selection-regression`, async ({
@@ -2290,7 +2685,7 @@ for (const layout of ["pc", "smartphone"] as const) {
         ),
       );
       await prepareItem(page, condition, last);
-      const selectAction = await actionableChain(page, condition, last, false);
+      const selectAction = await actionableChain(page, last, false);
       await expect(selectAction.locator).toHaveClass(
         /esp-flat-range-chain-candidate/,
       );
@@ -2320,7 +2715,7 @@ for (const layout of ["pc", "smartphone"] as const) {
         ),
       );
       await prepareItem(page, condition, last);
-      const clearAction = await actionableChain(page, condition, last, true);
+      const clearAction = await actionableChain(page, last, true);
       const filterAfter = await clearAction.locator.evaluate((button) => {
         const style = getComputedStyle(button);
         return { opacity: style.opacity, filter: style.filter };

@@ -1568,7 +1568,7 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
                 placeholder="利用者メモ"
                 className="text-xs bg-slate-100 dark:bg-slate-700 rounded py-0.5 px-1.5 w-full focus:ring-2 focus:ring-blue-500 focus:outline-hidden transition"
               />
-              <div className="flex items-center justify-end gap-1">
+              <div className="flex flex-wrap items-center justify-end gap-1">
                 {compactQuantityControl}
                 {compactPriceControl}
                 {compactStatusButton}
