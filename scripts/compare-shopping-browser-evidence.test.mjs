@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
+  comparableFixtureIdentity,
   comparableMetrics,
   compareBrowserEvidence,
 } from "./compare-shopping-browser-evidence.mjs";
@@ -366,4 +367,72 @@ test("comparison rejects a mismatched served preview capability even when both l
   assert.ok(
     result.errors.some((error) => error.includes("served preview capability")),
   );
+});
+
+test("comparison checks each actual isolated fixture and its sample association", () => {
+  const hashes = Array.from({ length: 20 }, (_, index) =>
+    index.toString(16).padStart(64, "0"),
+  );
+  const artifact = {
+    fixtures: hashes.map((fixtureHash, index) => ({
+      index: index + 1,
+      fixtureHash,
+    })),
+    metrics: {
+      response: { samples: hashes.map((fixtureHash) => ({ fixtureHash })) },
+      save: { samples: hashes.map((fixtureHash) => ({ fixtureHash })) },
+    },
+  };
+  const original = structuredClone(artifact);
+  assert.deepEqual(comparableFixtureIdentity(artifact, "transfer"), {
+    kind: "isolated",
+    hashes,
+  });
+  assert.deepEqual(artifact, original);
+  const different = structuredClone(artifact);
+  different.fixtures[7].fixtureHash = "f".repeat(64);
+  different.metrics.response.samples[7].fixtureHash = "f".repeat(64);
+  different.metrics.save.samples[7].fixtureHash = "f".repeat(64);
+  assert.notDeepEqual(
+    comparableFixtureIdentity(different, "transfer"),
+    comparableFixtureIdentity(artifact, "transfer"),
+  );
+  const unlinked = structuredClone(artifact);
+  unlinked.metrics.save.samples[7].fixtureHash = "f".repeat(64);
+  assert.throws(
+    () => comparableFixtureIdentity(unlinked, "transfer"),
+    /sample fixture hash/,
+  );
+  const reordered = structuredClone(artifact);
+  reordered.fixtures.reverse();
+  assert.throws(
+    () => comparableFixtureIdentity(reordered, "transfer"),
+    /index or hash/,
+  );
+  const short = structuredClone(artifact);
+  short.fixtures.pop();
+  assert.throws(
+    () => comparableFixtureIdentity(short, "transfer"),
+    /incomplete/,
+  );
+});
+
+test("comparison requires actual transfer fixture identities without inventing missing values", () => {
+  const first = { fixture: { fixtureHash: "a".repeat(64) } };
+  const second = { fixture: { fixtureHash: "b".repeat(64) } };
+  assert.notDeepEqual(
+    comparableFixtureIdentity(first, "transfer"),
+    comparableFixtureIdentity(second, "transfer"),
+  );
+  assert.throws(() => comparableFixtureIdentity({}, "transfer"), /missing/);
+  assert.throws(
+    () =>
+      comparableFixtureIdentity({ fixture: { fixtureHash: "" } }, "transfer"),
+    /missing/,
+  );
+  assert.throws(
+    () => comparableFixtureIdentity({ ...first, fixtures: [] }, "transfer"),
+    /ambiguous/,
+  );
+  assert.equal(comparableFixtureIdentity(shopping(), "shopping"), null);
 });

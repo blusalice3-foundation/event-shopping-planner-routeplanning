@@ -44,6 +44,54 @@ function inside(root, file) {
     !path.isAbsolute(relative)
   );
 }
+// Compare the actual restored payloads, including every isolated accepted sample.
+// Source hashes alone cannot detect a different fixture supplied at runtime.
+export function comparableFixtureIdentity(artifact, group) {
+  const validHash = (value) =>
+    typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+  const fixture = artifact.fixture;
+  if (group !== "transfer") {
+    if (fixture?.fixtureHash === undefined) return null;
+    assert(validHash(fixture.fixtureHash), "invalid fixture hash");
+    return { kind: "single", hash: fixture.fixtureHash };
+  }
+  if (Object.hasOwn(artifact, "fixtures")) {
+    assert(
+      Array.isArray(artifact.fixtures),
+      "isolated fixtures must be an array",
+    );
+    assert(!fixture, "ambiguous single and isolated fixtures");
+    const fixtures = artifact.fixtures;
+    assert(fixtures.length >= 20, "isolated fixture identities are incomplete");
+    const hashes = fixtures.map((entry, index) => {
+      assert(
+        entry?.index === index + 1 && validHash(entry.fixtureHash),
+        "isolated fixture index or hash is invalid",
+      );
+      return entry.fixtureHash;
+    });
+    for (const [name, metric] of Object.entries(artifact.metrics ?? {})) {
+      assert(
+        Array.isArray(metric.samples) &&
+          metric.samples.length === hashes.length,
+        `${name}: isolated fixture/sample counts differ`,
+      );
+      metric.samples.forEach((sample, index) =>
+        assert(
+          sample.fixtureHash === hashes[index],
+          `${name}: sample fixture hash does not match its restored fixture`,
+        ),
+      );
+    }
+    return { kind: "isolated", hashes };
+  }
+  assert(
+    validHash(fixture?.fixtureHash),
+    "actual transfer fixture hash is missing",
+  );
+  return { kind: "single", hash: fixture.fixtureHash };
+}
+
 export function comparableMetrics(artifact, group) {
   validateEvidenceArtifact(artifact, group, {}, { enforceBudgets: false });
   const metrics = [];
@@ -234,6 +282,7 @@ async function readRun(runRoot, phase) {
               sourceHashes,
             );
           seen.add(checked.key);
+          comparableFixtureIdentity(artifact, group);
           const artifactKey = `${group}:${checked.key}`;
           artifacts.set(artifactKey, artifact);
           for (const metric of comparableMetrics(artifact, group)) {
@@ -391,7 +440,12 @@ export async function compareBrowserEvidence({
         newArtifact = after.artifacts.get(descriptor.artifactKey);
       if (oldArtifact && newArtifact) {
         if (
-          oldArtifact.fixture?.fixtureHash !== newArtifact.fixture?.fixtureHash
+          JSON.stringify(
+            comparableFixtureIdentity(oldArtifact, descriptor.group),
+          ) !==
+          JSON.stringify(
+            comparableFixtureIdentity(newArtifact, descriptor.group),
+          )
         )
           reasons.push("fixture hash mismatch");
         for (const field of [
