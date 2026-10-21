@@ -2466,6 +2466,8 @@ for (const count of [150, 500])
         browserName,
       }, testInfo) => {
         test.setTimeout(240000);
+        const errors: string[] = [];
+        page.on("pageerror", (error) => errors.push(error.message));
         await installRenderProbe(page);
         await restore(page, performanceFixture(count));
         await grouping(page, grouped);
@@ -3022,6 +3024,7 @@ for (const count of [150, 500])
         records.drop = summary(drops);
         await attach(testInfo, "shopping-drag-response", {
           ...shoppingEvidenceIdentity("drag"),
+          errors,
           environment: await shoppingBrowserEnvironment(page, testInfo.retry),
           build: "npm run build:app",
           fixture: {
@@ -3091,6 +3094,7 @@ for (const count of [150, 500])
             startEndComparison: "requires separately built 5bf82a3 run",
           },
         });
+        expect(errors).toEqual([]);
         for (const [operation, value] of Object.entries(records)) {
           expect(value.samples.length, operation).toBeGreaterThanOrEqual(20);
           expect(value.medianMs, operation).toBeLessThanOrEqual(55);
