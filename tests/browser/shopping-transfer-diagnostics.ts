@@ -5,6 +5,15 @@ type DiagnosticCommit = {
   rendered: string[];
   mounted: string[];
   overheadMs: number;
+  propChanges: Array<{
+    componentId: number;
+    componentName: string;
+    functionName: string;
+    tag: number;
+    renders: number;
+    unchangedPropRenders: number;
+    changedKeys: Record<string, number>;
+  }>;
 };
 type GeometryRead = {
   at: number;
@@ -39,10 +48,17 @@ export async function installTransferDiagnostics(page: Page) {
   await page.addInitScript(() => {
     type Fiber = {
       flags: number;
+      tag: number;
+      type?: {
+        name?: string;
+        displayName?: string;
+        render?: { name?: string; displayName?: string };
+      };
       alternate?: Fiber;
       child?: Fiber;
       sibling?: Fiber;
       memoizedProps?: {
+        [key: string]: unknown;
         item?: { id?: string };
         onUpdate?: unknown;
         row?: { kind?: string; rowKey?: string };
@@ -50,6 +66,8 @@ export async function installTransferDiagnostics(page: Page) {
         layoutMode?: unknown;
       };
     };
+    const componentIds = new WeakMap<object, number>();
+    let nextComponentId = 1;
     let enabled = false;
     let rendererInjected = false;
     let commits: DiagnosticCommit[] = [];
@@ -111,6 +129,10 @@ export async function installTransferDiagnostics(page: Page) {
           const began = performance.now();
           const rendered: string[] = [],
             mounted: string[] = [];
+          const propChanges = new Map<
+            string,
+            DiagnosticCommit["propChanges"][number]
+          >();
           const visit = (fiber?: Fiber) => {
             if (!fiber) return;
             const props = fiber.memoizedProps;
@@ -124,6 +146,52 @@ export async function installTransferDiagnostics(page: Page) {
                   : undefined;
             if (key && (fiber.flags & 1) !== 0)
               (fiber.alternate ? rendered : mounted).push(key);
+            if (
+              fiber.alternate &&
+              fiber.flags & 1 &&
+              [0, 11, 15].includes(fiber.tag)
+            ) {
+              const component =
+                fiber.tag === 11 ? fiber.type?.render : fiber.type;
+              if (component) {
+                let componentId = componentIds.get(component);
+                if (!componentId)
+                  componentIds.set(
+                    component,
+                    (componentId = nextComponentId++),
+                  );
+                const groupKey = `${componentId}:${fiber.tag}`;
+                const entry = propChanges.get(groupKey) ?? {
+                  componentId,
+                  componentName:
+                    fiber.type?.displayName ??
+                    component.displayName ??
+                    component.name ??
+                    "(anonymous)",
+                  functionName: component.name ?? "(anonymous)",
+                  tag: fiber.tag,
+                  renders: 0,
+                  unchangedPropRenders: 0,
+                  changedKeys: {} as Record<string, number>,
+                };
+                const before = fiber.alternate.memoizedProps ?? {},
+                  after = props ?? {};
+                let changed = false;
+                for (const prop of new Set([
+                  ...Object.keys(before),
+                  ...Object.keys(after),
+                ])) {
+                  if (Object.is(before[prop], after[prop])) continue;
+                  const change = `${prop}:${typeof before[prop]}->${typeof after[prop]}`;
+                  entry.changedKeys[change] =
+                    (entry.changedKeys[change] ?? 0) + 1;
+                  changed = true;
+                }
+                entry.renders++;
+                if (!changed) entry.unchangedPropRenders++;
+                propChanges.set(groupKey, entry);
+              }
+            }
             if (!fiber.alternate || fiber.child !== fiber.alternate.child)
               visit(fiber.child);
             visit(fiber.sibling);
@@ -133,6 +201,7 @@ export async function installTransferDiagnostics(page: Page) {
             at: epoch(),
             rendered,
             mounted,
+            propChanges: [...propChanges.values()],
             overheadMs: performance.now() - began,
           });
         },
