@@ -7,6 +7,7 @@ import {
   measureTransfer,
   restoreTransferFixture,
   transferConditions,
+  verifyContinuousTransferResult,
   type TransferSample,
 } from "./shopping-transfer-measurement";
 
@@ -41,6 +42,7 @@ for (const condition of transferConditions)
         ).map((name) => [name, []]),
       );
       let failure: unknown;
+      let finalState: unknown;
       try {
         if (condition.input === "touch")
           await session.send("Emulation.setTouchEmulationEnabled", {
@@ -71,6 +73,7 @@ for (const condition of transferConditions)
             if (sample && samples[name])
               samples[name].push(sample as TransferSample);
         }
+        finalState = await verifyContinuousTransferResult(page, condition);
       } catch (error) {
         failure = error;
       } finally {
@@ -126,6 +129,7 @@ for (const condition of transferConditions)
           thresholds: { minimumCount: 20, medianMs: 55, p95Ms: 100 },
         },
         metrics,
+        finalState,
         errors,
         ...(failure
           ? {

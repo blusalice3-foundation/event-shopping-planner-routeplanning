@@ -22,7 +22,26 @@ export type TransferSample = {
   matched: boolean;
   [key: string]: unknown;
 };
+export type TransferMeasurementOptions = {
+  sourceId?: string;
+  anchorId?: string;
+  measurementId?: string;
+  sourceColumn?: "execute" | "candidate";
+  sameColumn?: boolean;
+  expectedTransferredIds?: readonly string[];
+  anchorPosition?: "before" | "after" | "any";
+  gestureTargetSelector?: string;
+  guideKind?: "insert" | "merge" | "either";
+  pendingInput?: boolean;
+  gesture?: () => Promise<Record<string, unknown> | void>;
+  recaptureAfterGesture?: boolean;
+  scenarioEvidence?: Record<string, unknown>;
+};
 type Rect = { x: number; y: number; width: number; height: number };
+export type FrameRect = Rect & {
+  itemId: string;
+  role: "source-gap" | "source-origin" | "destination-card";
+};
 type ClickObservation = {
   durationMs: number;
   eventEpoch: number;
@@ -39,6 +58,8 @@ type Probe = {
   startMs: number;
   startEpoch: number;
   markerDelayMs: number;
+  probeCpuMs: number;
+  probeChecks: number;
   domMs: number | null;
   responseMs: number | null;
   matched: boolean;
@@ -77,7 +98,8 @@ declare global {
       at: number;
       method?: string;
       operationId?: string;
-      bytes: number;
+      bytes?: number;
+      payload?: unknown;
     }>;
   }
 }
@@ -99,7 +121,7 @@ export const transferRow = (page: Page, id: string) =>
   );
 const sha256 = (bytes: Buffer | string) =>
   createHash("sha256").update(bytes).digest("hex");
-function fixture(condition: TransferCondition) {
+export function createTransferFixture(condition: TransferCondition) {
   const half = Math.floor(condition.count / 2);
   const makeItem = (id: string, number: number) => ({
     id,
@@ -115,10 +137,10 @@ function fixture(condition: TransferCondition) {
     priorityLevel: "none",
   });
   const execute = Array.from({ length: half }, (_, i) =>
-    makeItem(`e${i}`, 1000 - i),
+    makeItem(`e${i}`, half - i),
   );
   const candidate = Array.from({ length: condition.count - half }, (_, i) =>
-    makeItem(`c${i}`, i + 1),
+    makeItem(`c${i}`, half + i + 1),
   );
   const items = [...execute, ...candidate];
   const histories =
@@ -203,12 +225,15 @@ function fixture(condition: TransferCondition) {
     },
   };
 }
+const rpcProbePages = new WeakSet<Page>();
 export async function restoreTransferFixture(
   page: Page,
   condition: TransferCondition,
   frame: boolean,
+  customBackup?: ReturnType<typeof createTransferFixture>,
 ) {
-  if (frame)
+  if (frame && !rpcProbePages.has(page)) {
+    rpcProbePages.add(page);
     await page.addInitScript(() => {
       const entries: NonNullable<Window["__shoppingTransferRpc"]> = [];
       window.__shoppingTransferRpc = entries;
@@ -224,7 +249,7 @@ export async function restoreTransferFixture(
             entries.push({
               direction: "receive",
               at: performance.timeOrigin + performance.now(),
-              bytes: new Blob([JSON.stringify(event.data)]).size,
+              payload: event.data,
             }),
           );
         }
@@ -236,13 +261,14 @@ export async function restoreTransferFixture(
             typeof message?.args?.[1] === "string"
               ? message.args[1]
               : undefined,
-          bytes: new Blob([JSON.stringify(message)]).size,
+          payload: message,
         });
         return Reflect.apply(original, this, args);
       };
     });
+  }
   await page.goto("/");
-  const backup = fixture(condition);
+  const backup = customBackup ?? createTransferFixture(condition);
   const fixtureHash = sha256(JSON.stringify(backup));
   for (const [name, items] of Object.entries(backup.data.eventLists)) {
     const one = {
@@ -421,11 +447,21 @@ async function armProbe(
   destination: string,
   input: "native" | "touch",
   measurementId: string,
+  options: Pick<
+    TransferMeasurementOptions,
+    | "sourceColumn"
+    | "sameColumn"
+    | "expectedTransferredIds"
+    | "anchorPosition"
+    | "pendingInput"
+  > = {},
 ) {
   return page.evaluate(
-    ({ id, anchor, destination, input, measurementId }) => {
+    ({ id, anchor, destination, input, measurementId, options }) => {
       window.__shoppingTransferProbe?.stop?.();
-      const source = destination === "execute" ? "candidate" : "execute";
+      const source =
+        options.sourceColumn ??
+        (destination === "execute" ? "candidate" : "execute");
       const state: Probe = {
         id,
         anchor,
@@ -434,6 +470,8 @@ async function armProbe(
         startMs: 0,
         startEpoch: 0,
         markerDelayMs: 0,
+        probeCpuMs: 0,
+        probeChecks: 0,
         domMs: null,
         responseMs: null,
         matched: false,
@@ -445,23 +483,48 @@ async function armProbe(
         (column) =>
           document.querySelector(`[data-shopping-drag-column="${column}"]`)!,
       );
+      const rootByColumn = new Map([
+        [source, roots[0]],
+        [destination, roots[1]],
+      ]);
       const row = (column: string, item: string) =>
-        document.querySelector<HTMLElement>(
-          `[data-shopping-drag-column="${column}"] [data-item-id="${item}"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
-        );
+        rootByColumn
+          .get(column)!
+          .querySelector<HTMLElement>(
+            `[data-item-id="${item}"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
+          );
       const correct = () => {
-        const target = row(destination, id),
-          anchorRow = row(destination, anchor);
-        return (
-          !!target &&
-          !!anchorRow &&
-          !row(source, id) &&
-          !!(
-            anchorRow.compareDocumentPosition(target) &
-            Node.DOCUMENT_POSITION_FOLLOWING
-          ) &&
-          !!target.querySelector('input[type="checkbox"]')
-        );
+        const began = performance.now();
+        state.probeChecks++;
+        try {
+          const target = row(destination, id),
+            anchorRow = row(destination, anchor);
+          if (!target || !anchorRow) return false;
+          const removed = options.expectedTransferredIds ?? [id];
+          if (!options.sameColumn && removed.some((item) => row(source, item)))
+            return false;
+          const position = options.anchorPosition ?? "after";
+          if (
+            position !== "any" &&
+            !(
+              anchorRow.compareDocumentPosition(target) &
+              (position === "after"
+                ? Node.DOCUMENT_POSITION_FOLLOWING
+                : Node.DOCUMENT_POSITION_PRECEDING)
+            )
+          )
+            return false;
+          // DOM response checks every mounted moved card without forcing layout.
+          // Actual viewport visibility and pixels are proved separately by the frame pass.
+          return removed.every((item) => {
+            const element = row(destination, item);
+            return (
+              !element || !!element.querySelector('input[type="checkbox"]')
+            );
+          });
+        } finally {
+          state.probeCpuMs += performance.now() - began;
+        }
       };
       const observer = new MutationObserver(() => {
         if (!state.startEpoch || state.domMs !== null || !correct()) return;
@@ -507,7 +570,12 @@ async function armProbe(
         const targetId =
           target.closest<HTMLElement>("[data-item-id]")?.dataset.itemId ?? "";
         const expected = state.clicks++ === 0;
-        const field = expected ? "pending" : "applied";
+        const field =
+          options.pendingInput === false
+            ? "applied"
+            : expected
+              ? "pending"
+              : "applied";
         const eventEpoch = performance.timeOrigin + event.timeStamp;
         const queueDelayMs = performance.now() - event.timeStamp;
         requestAnimationFrame(() =>
@@ -543,18 +611,26 @@ async function armProbe(
       };
       return { source, destination };
     },
-    { id, anchor, destination, input, measurementId },
+    { id, anchor, destination, input, measurementId, options },
   );
 }
-async function beginGesture(
+export async function beginGesture(
   page: Page,
   session: CDPSession,
   input: "native" | "touch",
   id: string,
   anchor: string,
+  options: Pick<
+    TransferMeasurementOptions,
+    "gestureTargetSelector" | "guideKind"
+  > = {},
 ) {
   const source = await transferRow(page, id).boundingBox(),
-    target = await transferRow(page, anchor).boundingBox();
+    target = await (
+      options.gestureTargetSelector
+        ? page.locator(options.gestureTargetSelector)
+        : transferRow(page, anchor)
+    ).boundingBox();
   expect(source).not.toBeNull();
   expect(target).not.toBeNull();
   const from = { x: source!.x + 4, y: source!.y + 35 },
@@ -580,7 +656,13 @@ async function beginGesture(
     });
   }
   await expect(
-    page.locator('[data-shopping-drag-guide="insert"]').first(),
+    page
+      .locator(
+        options.guideKind === "either"
+          ? `[data-shopping-drag-guide],[data-shopping-drag-status="accepted"]`
+          : `[data-shopping-drag-guide="${options.guideKind ?? "insert"}"],[data-shopping-drag-column="candidate"] [data-shopping-drag-status="accepted"]`,
+      )
+      .first(),
   ).toBeVisible();
   return to;
 }
@@ -609,18 +691,60 @@ export async function measureTransfer(
   index: number,
   frame: boolean,
   testInfo: TestInfo,
+  options: TransferMeasurementOptions = {},
 ) {
   const prefix = condition.direction === "candidate-to-execute" ? "c" : "e",
-    destination = prefix === "c" ? "execute" : "candidate";
-  const id = `${prefix}${index}`,
-    anchor = prefix === "c" ? "e0" : "c0",
-    measurementId = `transfer-${index}`;
+    destination = options.sameColumn
+      ? (options.sourceColumn ?? (prefix === "c" ? "candidate" : "execute"))
+      : prefix === "c"
+        ? "execute"
+        : "candidate";
+  const id = options.sourceId ?? `${prefix}${index}`,
+    anchor =
+      options.anchorId ??
+      (prefix === "c" ? "e0" : index > 0 ? `e${index - 1}` : "c0"),
+    measurementId = options.measurementId ?? `transfer-${index}`;
   await transferRow(page, id).scrollIntoViewIfNeeded();
   await transferRow(page, anchor).scrollIntoViewIfNeeded();
   await waitForTransferIdle(page);
-  const sourceBox = await transferRow(page, id).boundingBox();
+  const collectSourceOrigins = () =>
+    page.evaluate(
+      (ids) =>
+        ids
+          .flatMap((itemId) => {
+            const element = document.querySelector<HTMLElement>(
+              `[data-item-id="${itemId}"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
+            );
+            if (!element) return [];
+            const r = element.getBoundingClientRect();
+            if (
+              r.bottom <= 0 ||
+              r.top >= innerHeight ||
+              r.right <= 0 ||
+              r.left >= innerWidth
+            )
+              return [];
+            return [
+              {
+                itemId,
+                x: Math.max(0, r.x),
+                y: Math.max(0, r.y),
+                width: Math.min(innerWidth, r.right) - Math.max(0, r.x),
+                height: Math.min(
+                  180,
+                  Math.min(innerHeight, r.bottom) - Math.max(0, r.y),
+                ),
+                role: "source-gap" as const,
+              },
+            ];
+          })
+          .sort((a, b) => a.y - b.y || a.x - b.x),
+      [...(options.expectedTransferredIds ?? [id])],
+    );
+  let sourceRects: FrameRect[] = frame ? await collectSourceOrigins() : [];
+  let sourceBox = await transferRow(page, id).boundingBox();
   expect(sourceBox).not.toBeNull();
-  const beforeFrame = frame
+  let beforeFrame = frame
     ? await page.screenshot({ animations: "allow" })
     : undefined;
   const trace: TraceEvent[] = [];
@@ -675,7 +799,26 @@ export async function measureTransfer(
     });
   }
   try {
-    await beginGesture(page, session, condition.input, id, anchor);
+    const gestureObservation = options.gesture
+      ? await options.gesture()
+      : await beginGesture(page, session, condition.input, id, anchor, options);
+    if (frame && options.recaptureAfterGesture) {
+      sourceRects = await collectSourceOrigins();
+      sourceBox = await transferRow(page, id).boundingBox();
+      expect(sourceBox).not.toBeNull();
+      beforeFrame = await page.screenshot({ animations: "allow" });
+    }
+    if (frame) {
+      expect(
+        sourceRects.some((rect) => rect.itemId === id),
+        "primary source origin must remain physically visible before drop",
+      ).toBe(true);
+      for (const rect of sourceRects)
+        expect(
+          rect.height,
+          `${rect.itemId}: source identity must be observable before drop`,
+        ).toBeGreaterThan(20);
+    }
     await armProbe(
       page,
       id,
@@ -683,6 +826,14 @@ export async function measureTransfer(
       destination,
       condition.input,
       measurementId,
+      {
+        sourceColumn: options.sourceColumn,
+        sameColumn: options.sameColumn,
+        expectedTransferredIds: options.expectedTransferredIds,
+        anchorPosition:
+          options.anchorPosition ?? (prefix === "e" ? "before" : "after"),
+        pendingInput: options.pendingInput,
+      },
     );
     const checkbox = await transferRow(page, anchor)
       .locator('input[type="checkbox"]')
@@ -701,7 +852,8 @@ export async function measureTransfer(
         timestamp: Date.now() / 1000,
       });
     // Do not wait for UI or save completion before sending the next trusted input.
-    if (!frame) await clickAt(session, nextPoint);
+    if (!frame && options.pendingInput !== false)
+      await clickAt(session, nextPoint);
     await page.waitForFunction(
       () =>
         window.__shoppingTransferProbe?.responseMs !== null ||
@@ -737,6 +889,23 @@ export async function measureTransfer(
     );
     expect(commits).toHaveLength(1);
     const saved = commits[0];
+    const observedVisibleIds = await page.evaluate(
+      ({ ids, destination }) =>
+        ids.filter((item) => {
+          const element = document.querySelector<HTMLElement>(
+            `[data-shopping-drag-column="${destination}"] [data-item-id="${item}"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
+          );
+          if (!element) return false;
+          const r = element.getBoundingClientRect();
+          return (
+            r.bottom > 0 &&
+            r.top < innerHeight &&
+            r.right > 0 &&
+            r.left < innerWidth
+          );
+        }),
+      { ids: [...(options.expectedTransferredIds ?? [id])], destination },
+    );
     const common = {
       measurementId,
       targetId: id,
@@ -744,30 +913,38 @@ export async function measureTransfer(
       startEpoch: state.startEpoch,
       domMs: state.domMs,
       markerDelayMs: state.markerDelayMs,
+      probeCpuMs: state.probeCpuMs,
+      probeChecks: state.probeChecks,
       operationId: saved.operationId ?? null,
       operationIdUnavailableReason: saved.operationId
         ? undefined
         : "Persistence request did not expose an operation ID",
       commits,
+      gestureObservation,
+      scenarioEvidence: options.scenarioEvidence,
+      expectedTransferredIds: options.expectedTransferredIds ?? [id],
+      visibleTransferredIds: observedVisibleIds,
     };
     if (!frame) {
-      await page.waitForFunction(
-        () => !!window.__shoppingTransferProbe?.pending,
-      );
-      state = await page.evaluate(() => ({
-        ...window.__shoppingTransferProbe!,
-        stop: undefined,
-      }));
-      expect(state.pending?.trusted).toBe(true);
-      expect(state.pending?.matched).toBe(true);
-      expect(
-        state.pending!.eventEpoch,
-        "pending input must follow this move input",
-      ).toBeGreaterThan(state.startEpoch);
-      expect(
-        state.pending!.eventEpoch,
-        "pending input must occur before this move's save complete",
-      ).toBeLessThan(saved.at);
+      if (options.pendingInput !== false) {
+        await page.waitForFunction(
+          () => !!window.__shoppingTransferProbe?.pending,
+        );
+        state = await page.evaluate(() => ({
+          ...window.__shoppingTransferProbe!,
+          stop: undefined,
+        }));
+        expect(state.pending?.trusted).toBe(true);
+        expect(state.pending?.matched).toBe(true);
+        expect(
+          state.pending!.eventEpoch,
+          "pending input must follow this move input",
+        ).toBeGreaterThan(state.startEpoch);
+        expect(
+          state.pending!.eventEpoch,
+          "pending input must occur before this move's save complete",
+        ).toBeLessThan(saved.at);
+      }
       const afterCheckbox = await transferRow(page, anchor)
         .locator('input[type="checkbox"]')
         .boundingBox();
@@ -788,62 +965,108 @@ export async function measureTransfer(
       expect(state.applied!.eventEpoch).toBeGreaterThan(saved.at);
       return {
         response: { ...common, durationMs: state.responseMs! },
-        nextPending: { ...common, ...state.pending!, targetId: anchor },
+        ...(options.pendingInput !== false
+          ? { nextPending: { ...common, ...state.pending!, targetId: anchor } }
+          : {}),
         nextApplied: { ...common, ...state.applied!, targetId: anchor },
         save: { ...common, durationMs: saved.at - state.startEpoch },
       };
     }
     // A final reference is auxiliary: it never substitutes for a captured compositor frame.
-    await page.evaluate(async () => {
-      const row = document.querySelector<HTMLElement>(
-        `[data-shopping-drag-column="${window.__shoppingTransferProbe!.destination}"] [data-item-id="${window.__shoppingTransferProbe!.id}"]:not([data-space-group-key])`,
-      )!;
-      let previous = "",
-        stable = 0;
-      const began = performance.now();
-      await new Promise<void>((resolve, reject) => {
-        function check() {
-          let opacity = 1;
-          for (
-            let node: HTMLElement | null = row;
-            node;
-            node = node.parentElement
-          )
-            opacity *= Number(getComputedStyle(node).opacity);
-          const rect = row.getBoundingClientRect();
-          const hit = document.elementFromPoint(
-            rect.left + 20,
-            rect.top + Math.min(40, rect.height / 2),
-          );
-          const geometry = JSON.stringify([
-            rect.x,
-            rect.y,
-            rect.width,
-            rect.height,
-            scrollY,
-          ]);
-          stable =
-            opacity >= 0.999 && row.contains(hit) && geometry === previous
-              ? stable + 1
-              : 0;
-          previous = geometry;
-          if (stable >= 3) {
-            resolve();
-            return;
-          }
-          if (performance.now() - began > 10000) {
-            reject(
-              new Error("Target never became opaque, hit-testable and stable"),
+    const visibleTargets = await page.evaluate(
+      async ({ ids, destination }) => {
+        const rows = () =>
+          ids.flatMap((itemId) => {
+            const element = document.querySelector<HTMLElement>(
+              `[data-shopping-drag-column="${destination}"] [data-item-id="${itemId}"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
             );
-            return;
+            if (!element) return [];
+            const r = element.getBoundingClientRect();
+            if (
+              r.bottom <= 0 ||
+              r.top >= innerHeight ||
+              r.right <= 0 ||
+              r.left >= innerWidth
+            )
+              return [];
+            return [{ itemId, element, r }];
+          });
+        let previous = "",
+          stable = 0;
+        const began = performance.now();
+        await new Promise<void>((resolve, reject) => {
+          function check() {
+            const entries = rows();
+            const ready =
+              entries.length > 0 &&
+              entries.every(({ element, r }) => {
+                let opacity = 1;
+                for (
+                  let node: HTMLElement | null = element;
+                  node;
+                  node = node.parentElement
+                )
+                  opacity *= Number(getComputedStyle(node).opacity);
+                const y =
+                  Math.max(0, r.top) +
+                  Math.min(
+                    35,
+                    (Math.min(innerHeight, r.bottom) - Math.max(0, r.top)) / 2,
+                  );
+                return (
+                  opacity >= 0.999 &&
+                  element.contains(document.elementFromPoint(r.left + 20, y)) &&
+                  !!element.querySelector('input[type="checkbox"]')
+                );
+              });
+            const geometry = JSON.stringify([
+              scrollY,
+              ...entries.map(({ itemId, r }) => [
+                itemId,
+                r.x,
+                r.y,
+                r.width,
+                r.height,
+              ]),
+            ]);
+            stable = ready && geometry === previous ? stable + 1 : 0;
+            previous = geometry;
+            if (stable >= 3) return resolve();
+            if (performance.now() - began > 10000)
+              return reject(
+                new Error(
+                  "Visible moved cards never became opaque, hit-testable and stable",
+                ),
+              );
+            requestAnimationFrame(check);
           }
           requestAnimationFrame(check);
-        }
-        requestAnimationFrame(check);
-      });
-    });
-    const targetBox = await transferRow(page, id).boundingBox();
-    expect(targetBox).not.toBeNull();
+        });
+        return rows()
+          .sort((a, b) => a.r.y - b.r.y || a.r.x - b.r.x)
+          .map(({ itemId, r }) => ({
+            itemId,
+            x: Math.max(0, r.x),
+            y: Math.max(0, r.y),
+            width: Math.min(innerWidth, r.right) - Math.max(0, r.x),
+            height: Math.min(
+              180,
+              Math.min(innerHeight, r.bottom) - Math.max(0, r.y),
+            ),
+            role: "destination-card" as const,
+          }));
+      },
+      { ids: [...(options.expectedTransferredIds ?? [id])], destination },
+    );
+    expect(
+      visibleTargets.some((row) => row.itemId === id),
+      "primary moved card must be physically visible",
+    ).toBe(true);
+    for (const target of visibleTargets)
+      expect(
+        target.height,
+        `${target.itemId}: card identity must be observable inside viewport`,
+      ).toBeGreaterThan(20);
     const reference = await page.screenshot({ animations: "allow" });
     await session.send("Page.stopScreencast");
     screencastStopped = true;
@@ -882,18 +1105,9 @@ export async function measureTransfer(
     expect(marks).toHaveLength(1);
     expect(dom).toBeDefined();
     const mark = marks[0];
-    const sourceRect = {
-        x: sourceBox!.x,
-        y: sourceBox!.y,
-        width: sourceBox!.width,
-        height: Math.min(sourceBox!.height, 180),
-      },
-      targetRect = {
-        x: targetBox!.x,
-        y: targetBox!.y,
-        width: targetBox!.width,
-        height: Math.min(targetBox!.height, 180),
-      };
+    const sourceRect = sourceRects.find((rect) => rect.itemId === id)!;
+    const targetRects: FrameRect[] = visibleTargets;
+    const targetRect = targetRects.find((rect) => rect.itemId === id)!;
     const covers = (event: TraceEvent, rect: Rect) => {
       const clip = event.args?.data?.clip;
       if (!clip || clip.length < 8) return false;
@@ -924,6 +1138,18 @@ export async function measureTransfer(
     let paint: TraceEvent | undefined;
     let sourcePaint: TraceEvent | undefined;
     let draw: TraceEvent | undefined;
+    let selectedSourcePaints: Array<{
+      itemId: string;
+      pid: number;
+      ts: number;
+      clip?: number[];
+    }> = [];
+    let selectedTargetPaints: Array<{
+      itemId: string;
+      pid: number;
+      ts: number;
+      clip?: number[];
+    }> = [];
     for (const captured of capturedFrames) {
       if (
         !captured.acknowledged ||
@@ -935,18 +1161,40 @@ export async function measureTransfer(
         mark.ts +
         (frameEpochMs - state.startEpoch - state.markerDelayMs) * 1000;
       if (frameTraceTs < dom!.ts) continue;
-      const targetPaint = paints.find(
-        (event) => event.ts <= frameTraceTs && covers(event, targetRect),
-      );
-      const removedSourcePaint = paints.find(
-        (event) => event.ts <= frameTraceTs && covers(event, sourceRect),
-      );
-      if (!targetPaint || !removedSourcePaint) continue;
+      const targetPaints = targetRects.map((rect) => ({
+        itemId: rect.itemId,
+        paint: paints.find(
+          (event) => event.ts <= frameTraceTs && covers(event, rect),
+        ),
+      }));
+      const targetPaint = targetPaints.find(
+        (entry) => entry.itemId === id,
+      )?.paint;
+      const sourcePaints = sourceRects.map((rect) => ({
+        itemId: rect.itemId,
+        paint: paints.find(
+          (event) => event.ts <= frameTraceTs && covers(event, rect),
+        ),
+      }));
+      const removedSourcePaint = sourcePaints.find(
+        (entry) => entry.itemId === id,
+      )?.paint;
+      if (
+        !targetPaint ||
+        !removedSourcePaint ||
+        targetPaints.some((entry) => !entry.paint) ||
+        sourcePaints.some((entry) => !entry.paint)
+      )
+        continue;
       const drawFrame = trace.find(
         (event) =>
           event.name === "DrawFrame" &&
           event.pid === dom!.pid &&
-          event.ts >= Math.max(targetPaint.ts, removedSourcePaint.ts) &&
+          event.ts >=
+            Math.max(
+              ...sourcePaints.map((entry) => entry.paint!.ts),
+              ...targetPaints.map((entry) => entry.paint!.ts),
+            ) &&
           event.ts <= frameTraceTs,
       );
       if (!drawFrame) continue;
@@ -955,7 +1203,7 @@ export async function measureTransfer(
         captured.data,
         reference.toString("base64"),
         beforeFrame!.toString("base64"),
-        [sourceRect, targetRect],
+        [...sourceRects, ...targetRects],
       );
       const candidatePath = testInfo.outputPath(
         `${measurementId}-candidate-${candidateComparisons.length}.png`,
@@ -969,7 +1217,9 @@ export async function measureTransfer(
         captureTs: frameTraceTs,
         checked,
         sourceRect,
+        sourceRects,
         targetRect,
+        targetRects,
       });
       if (checked.matched) {
         selected = { ...captured, traceTs: frameTraceTs };
@@ -977,6 +1227,18 @@ export async function measureTransfer(
         paint = targetPaint;
         sourcePaint = removedSourcePaint;
         draw = drawFrame;
+        selectedSourcePaints = sourcePaints.map(({ itemId, paint }) => ({
+          itemId,
+          pid: paint!.pid,
+          ts: paint!.ts,
+          clip: paint!.args?.data?.clip,
+        }));
+        selectedTargetPaints = targetPaints.map(({ itemId, paint }) => ({
+          itemId,
+          pid: paint!.pid,
+          ts: paint!.ts,
+          clip: paint!.args?.data?.clip,
+        }));
         break;
       }
     }
@@ -1022,7 +1284,12 @@ export async function measureTransfer(
         frameMetadataPath,
         frameMetadataSha256: sha256(metadataBytes),
         frameVerified: true,
-        sourceAbsent: true,
+        visibleTransferredIds: targetRects.map((rect) => rect.itemId),
+        allVisibleDestinationCardsVerified: true,
+        visibleSourceIds: sourceRects.map((rect) => rect.itemId),
+        sourceOriginsVerified: true,
+        sourceAbsent: !options.sameColumn,
+        sourceOriginVacated: !!options.sameColumn,
         destinationOrderVerified: true,
         controlsVerified: true,
         paintCorrelated: true,
@@ -1055,12 +1322,36 @@ export async function measureTransfer(
             clip: sourcePaint!.args?.data?.clip,
           },
           sourceRect,
+          sourceRects,
+          sourceProofs: sourceRects.map((rect, index) => ({
+            sourceId: rect.itemId,
+            rect,
+            paint: selectedSourcePaints.find(
+              (paint) => paint.itemId === rect.itemId,
+            ),
+            scoreIndex: index,
+          })),
           targetRect,
+          targetRects,
+          targetPaints: selectedTargetPaints,
+          targetProofs: targetRects.map((rect, index) => ({
+            targetId: rect.itemId,
+            rect,
+            paint: selectedTargetPaints.find(
+              (paint) => paint.itemId === rect.itemId,
+            ),
+            scoreIndex: sourceRects.length + index,
+          })),
           comparison,
         },
         rpc: await page.evaluate(
           (start) =>
-            window.__shoppingTransferRpc?.filter((event) => event.at >= start),
+            window.__shoppingTransferRpc
+              ?.filter((event) => event.at >= start)
+              .map(({ payload, ...metadata }) => ({
+                ...metadata,
+                bytes: new Blob([JSON.stringify(payload)]).size,
+              })),
           state.startEpoch,
         ),
       },
@@ -1115,12 +1406,12 @@ export async function measureTransfer(
     }
   }
 }
-async function compareFrameContent(
+export async function compareFrameContent(
   page: Page,
   frame: string,
   reference: string,
   baseline: string,
-  rects: Rect[],
+  rects: FrameRect[],
 ) {
   return page.evaluate(
     async ({ frame, reference, baseline, rects }) => {
@@ -1198,7 +1489,7 @@ async function compareFrameContent(
               x: rect.x + 7,
               y: rect.y + 7,
               width: 38,
-              height: 30,
+              height: Math.min(30, rect.height - 7),
             },
             {
               x: rect.x + rect.width - 200,
@@ -1209,6 +1500,11 @@ async function compareFrameContent(
           ];
           const ref = crop(normalizedExpected, identityRect);
           return {
+            itemId: rect.itemId,
+            role: rect.role,
+            rect,
+            identityRect,
+            controlRects: controls,
             frameError: difference(crop(actual, identityRect), ref),
             baselineError: difference(
               crop(normalizedBefore, identityRect),
@@ -1243,4 +1539,133 @@ async function compareFrameContent(
     },
     { frame, reference, baseline, rects },
   );
+}
+
+export async function readTransferDurable(page: Page) {
+  return page.evaluate(async (eventName) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("EventShoppingPlannerDB");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      return await new Promise<{
+        items: Array<{ id: string; number: string; [key: string]: unknown }>;
+        executeIds: string[];
+        historicalItems: number;
+      }>((resolve, reject) => {
+        const tx = db.transaction(["eventLists", "executeModeItems"]);
+        const lists = tx.objectStore("eventLists").get("data");
+        const execute = tx.objectStore("executeModeItems").get("data");
+        const scoped = tx
+          .objectStore("executeModeItems")
+          .get(
+            "__esp_internal__:day-record:v1:" +
+              JSON.stringify([eventName, ["1日目"]]),
+          );
+        tx.oncomplete = () => {
+          const all = lists.result as Record<
+            string,
+            Array<{ id: string; number: string; [key: string]: unknown }>
+          >;
+          resolve({
+            items: all[eventName],
+            executeIds:
+              scoped.result?.value ??
+              execute.result?.[eventName]?.["1日目"] ??
+              [],
+            historicalItems: Object.entries(all)
+              .filter(([name]) => name.startsWith("過去イベント"))
+              .reduce((sum, [, items]) => sum + items.length, 0),
+          });
+        };
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+    } finally {
+      db.close();
+    }
+  }, transferEventName);
+}
+export async function verifyContinuousTransferResult(
+  page: Page,
+  condition: TransferCondition,
+) {
+  const saved = await readTransferDurable(page);
+  const half = Math.floor(condition.count / 2);
+  const execute = Array.from({ length: half }, (_, i) => `e${i}`);
+  const candidates = Array.from(
+    { length: condition.count - half },
+    (_, i) => `c${i}`,
+  );
+  const moved = Array.from({ length: 21 }, (_, i) => i).reverse();
+  let expectedItems = [...execute, ...candidates];
+  if (condition.direction === "execute-to-candidate") {
+    let executing = new Set(execute);
+    const number = (id: string) =>
+      id.startsWith("e")
+        ? half - Number(id.slice(1))
+        : half + Number(id.slice(1)) + 1;
+    // The user-visible candidate order is numeric, while durable order retains
+    // all event slots and uses the next displayed item as the insertion boundary.
+    for (let i = 0; i <= 20; i++) {
+      const id = `e${i}`;
+      const rawCandidates = expectedItems.filter(
+        (item) => !executing.has(item),
+      );
+      const displayed = [...rawCandidates].sort(
+        (a, b) => number(a) - number(b),
+      );
+      const anchor = i === 0 ? "c0" : `e${i - 1}`;
+      const boundary = displayed[displayed.indexOf(anchor) + 1];
+      const insert = boundary
+        ? rawCandidates.indexOf(boundary)
+        : rawCandidates.length;
+      rawCandidates.splice(insert, 0, id);
+      const remaining = expectedItems.filter(
+        (item) => executing.has(item) && item !== id,
+      );
+      let candidateIndex = 0,
+        executeIndex = 0;
+      expectedItems = expectedItems.map((item) =>
+        executing.has(item) && item !== id
+          ? remaining[executeIndex++]
+          : rawCandidates[candidateIndex++],
+      );
+      executing = new Set(remaining);
+    }
+  }
+  const expectedExecute =
+    condition.direction === "candidate-to-execute"
+      ? ["e0", ...moved.map((i) => `c${i}`), ...execute.slice(1)]
+      : execute.slice(21);
+  expect(saved.items.map((item) => item.id)).toEqual(expectedItems);
+  expect(saved.executeIds).toEqual(expectedExecute);
+  const expectedVisible =
+    condition.direction === "execute-to-candidate"
+      ? [...moved.map((i) => `e${i}`), ...candidates]
+      : ["e0", ...moved.map((i) => `c${i}`), ...execute.slice(1)];
+  const visiblePrefix = await page.evaluate(
+    (column) =>
+      [
+        ...document.querySelectorAll<HTMLElement>(
+          `[data-shopping-drag-column="${column}"] [data-item-id]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
+        ),
+      ]
+        .filter((row) => !!row.querySelector('input[type="checkbox"]'))
+        .slice(0, 8)
+        .map((row) => row.dataset.itemId),
+    condition.direction === "execute-to-candidate" ? "candidate" : "execute",
+  );
+  expect(visiblePrefix).toEqual(expectedVisible.slice(0, visiblePrefix.length));
+  expect(saved.historicalItems).toBe(
+    condition.load === "practical" ? 10000 : 0,
+  );
+  return {
+    expectedItems,
+    expectedExecute,
+    actualItems: saved.items.map((item) => item.id),
+    actualExecute: saved.executeIds,
+    historicalItems: saved.historicalItems,
+  };
 }
