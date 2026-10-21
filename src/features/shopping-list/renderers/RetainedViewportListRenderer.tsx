@@ -92,6 +92,7 @@ const itemPlaceholder = (
   row: ShoppingListItemRow,
   layoutMode: "pc" | "smartphone",
   getVisitId: Props["getVisitId"],
+  label?: React.ReactElement,
 ): React.ReactElement => (
   <div
     {...getShoppingListRowAccessibilityAttributes(row)}
@@ -106,41 +107,62 @@ const itemPlaceholder = (
         : "esp-viewport-placeholder esp-viewport-placeholder-phone"
     }
   >
-    <span className="esp-viewport-placeholder-label">
-      {[
-        row.accessibleName,
-        row.item.remarks,
-        row.item.price ?? "価格未定",
-        row.item.quantity,
-      ].join(" ")}
-    </span>
+    {label ?? (
+      <span className="esp-viewport-placeholder-label">
+        {[
+          row.accessibleName,
+          row.item.remarks,
+          row.item.price ?? "価格未定",
+          row.item.quantity,
+        ].join(" ")}
+      </span>
+    )}
   </div>
 );
 
+type PlaceholderLabel = {
+  readonly rowKey: string;
+  readonly text: string;
+  readonly element: React.ReactElement;
+};
+type PlaceholderStaticParts = {
+  readonly headingName: string;
+  readonly headingVisitId: string | undefined;
+  readonly heading: React.ReactElement;
+  readonly labels: readonly PlaceholderLabel[];
+};
+const placeholderHeading = (name: string, visitId: string | undefined) => (
+  <div
+    className="esp-viewport-placeholder-heading"
+    data-space-navigation-visit-id={visitId}
+    data-space-navigation-anchor="heading"
+    tabIndex={0}
+    data-viewport-focus-sentinel
+    onFocus={(event) => focusPendingViewportContent(event.currentTarget)}
+  >
+    <span className="esp-viewport-placeholder-label">{name}</span>
+  </div>
+);
 const groupPlaceholder = (
   row: ShoppingListGroupRow,
   items: readonly FullListRenderedItemRow[],
   layoutMode: "pc" | "smartphone",
   visitIds: readonly (string | undefined)[],
   getVisitId: Props["getVisitId"],
+  staticParts?: PlaceholderStaticParts,
 ): React.ReactElement => (
   <div {...getShoppingListRowAccessibilityAttributes(row)}>
-    <div
-      className="esp-viewport-placeholder-heading"
-      data-space-navigation-visit-id={visitIds[0]}
-      data-space-navigation-anchor="heading"
-      tabIndex={0}
-      data-viewport-focus-sentinel
-      onFocus={(event) => focusPendingViewportContent(event.currentTarget)}
-    >
-      <span className="esp-viewport-placeholder-label">
-        {row.accessibleName}
-      </span>
-    </div>
+    {staticParts?.heading ??
+      placeholderHeading(row.accessibleName, visitIds[0])}
     <div role="list" aria-label={row.label + "の項目"}>
-      {items.map(({ row: itemRow }) => (
+      {items.map(({ row: itemRow }, index) => (
         <React.Fragment key={itemRow.rowKey}>
-          {itemPlaceholder(itemRow, layoutMode, getVisitId)}
+          {itemPlaceholder(
+            itemRow,
+            layoutMode,
+            getVisitId,
+            staticParts?.labels[index].element,
+          )}
         </React.Fragment>
       ))}
     </div>
@@ -242,9 +264,55 @@ const CurrentGroupGate = ({ context, ...gate }: GroupGateProps) => {
 type GroupSlot = {
   readonly metadata: readonly unknown[];
   readonly placeholder: React.ReactElement;
+  readonly staticParts: PlaceholderStaticParts;
   readonly context: React.Context<React.ReactNode>;
   readonly config: GroupGateProps;
   readonly gate: React.ReactElement;
+};
+const currentPlaceholderStaticParts = (
+  previous: PlaceholderStaticParts | undefined,
+  props: GroupViewportProps,
+): PlaceholderStaticParts => {
+  const headingName = props.row.accessibleName;
+  const headingVisitId = props.visitIds[0];
+  const heading =
+    previous?.headingName === headingName &&
+    previous.headingVisitId === headingVisitId
+      ? previous.heading
+      : placeholderHeading(headingName, headingVisitId);
+  const sameOrder =
+    previous !== undefined &&
+    previous.labels.length === props.items.length &&
+    props.items.every(
+      ({ row }, index) => previous.labels[index].rowKey === row.rowKey,
+    );
+  // Copy only changed static parts; a reordered membership takes the linear rebuild path.
+  let changedLabels: PlaceholderLabel[] | undefined = sameOrder
+    ? undefined
+    : [];
+  props.items.forEach(({ row }, index) => {
+    const text = [
+      row.accessibleName,
+      row.item.remarks,
+      row.item.price ?? "価格未定",
+      row.item.quantity,
+    ].join(" ");
+    const cached = sameOrder ? previous!.labels[index] : undefined;
+    if (cached?.text === text) {
+      changedLabels?.push(cached);
+      return;
+    }
+    changedLabels ??= previous!.labels.slice(0, index);
+    changedLabels.push({
+      rowKey: row.rowKey,
+      text,
+      element: <span className="esp-viewport-placeholder-label">{text}</span>,
+    });
+  });
+  const labels = changedLabels ?? previous!.labels;
+  return previous && previous.heading === heading && previous.labels === labels
+    ? previous
+    : { headingName, headingVisitId, heading, labels };
 };
 const currentGroupSlot = (
   previous: GroupSlot | undefined,
@@ -290,8 +358,12 @@ const currentGroupSlot = (
     previous.config.estimatedHeight === config.estimatedHeight &&
     previous.config.defer === config.defer &&
     previous.config.retain === config.retain;
+  const staticParts = sameMetadata
+    ? previous.staticParts
+    : currentPlaceholderStaticParts(previous?.staticParts, props);
   return {
     metadata: sameMetadata ? previous.metadata : metadata,
+    staticParts,
     placeholder: sameMetadata
       ? previous.placeholder
       : groupPlaceholder(
@@ -300,6 +372,7 @@ const currentGroupSlot = (
           props.layoutMode,
           props.visitIds,
           props.getVisitId,
+          staticParts,
         ),
     context,
     config: sameGate ? previous.config : config,

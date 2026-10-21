@@ -1090,6 +1090,8 @@ it.each(fixedSlotModes)(
     };
     const view = render(<Harness />);
     act(() => discard());
+    expect(view.container).toHaveTextContent("committed");
+    expect(view.container).not.toHaveTextContent("discarded");
     act(() =>
       callback(
         [...observed].map((target) => ({
@@ -2125,4 +2127,132 @@ describe("single-item current-model activation", () => {
     fireEvent(window, new Event("afterprint"));
     expect(view.queryByRole("textbox")).toBeNull();
   });
+});
+
+it("reuses only static placeholder parts while keeping current ARIA, text and visit identity", () => {
+  const source = items.slice(0, 2);
+  const readContext = vi.spyOn(React, "useContext");
+  const content = (
+    mode: (typeof fixedSlotModes)[number],
+    members: ShoppingItem[],
+    label = "訪問先",
+    prefix = "old",
+  ) => (
+    <RetainedViewportListRenderer
+      groupSlotMode={mode}
+      model={buildListRows({
+        items: members,
+        groups: members.map((item) => ({
+          key: item.id,
+          label: `${label}-${item.id}`,
+          items: [item],
+        })),
+      })}
+      accessibleLabel="静的ラベル"
+      getVisitId={(item) => `${prefix}-${item.id}`}
+      renderGroup={(_group, rows) => (
+        <>{rows.map((child) => child.render(<input />))}</>
+      )}
+    />
+  );
+  type Node = React.ReactElement<Record<string, unknown>>;
+  const captured = (key: string) => {
+    const result = readContext.mock.results
+      .map((result) => result.value)
+      .filter(
+        (value) =>
+          React.isValidElement<Record<string, unknown>>(value) &&
+          value.props["data-row-key"] === key,
+      )
+      .at(-1) as Node | undefined;
+    expect(result).toBeDefined();
+    const [heading, list] = result!.props.children as Node[];
+    const fragment = (list.props.children as Node[])[0];
+    const item = fragment.props.children as Node;
+    return { heading, item, label: item.props.children as Node };
+  };
+  const reference = render(content(undefined, source));
+  const view = render(content("current-model", source));
+  const key = buildListRows({
+    items: source,
+    groups: [{ key: source[0].id, label: "訪問先", items: [source[0]] }],
+  }).rows[0].rowKey;
+  try {
+    const initial = captured(key);
+    const withInsertion = [{ ...source[0], id: "static-inserted" }, ...source];
+    view.rerender(content("current-model", withInsertion));
+    reference.rerender(content(undefined, withInsertion));
+    const positioned = captured(key);
+    expect(positioned.heading).toBe(initial.heading);
+    expect(positioned.label).toBe(initial.label);
+    expect(positioned.item).not.toBe(initial.item);
+    expect(positioned.item.props["aria-posinset"]).toBe(2);
+    expect(positioned.item.props["aria-setsize"]).toBe(3);
+    expect(view.container.innerHTML).toBe(reference.container.innerHTML);
+    const edited = withInsertion.map((item) =>
+      item.id === source[0].id
+        ? { ...item, remarks: "ユーザー登録・更新", price: null, quantity: 7 }
+        : item,
+    );
+    view.rerender(content("current-model", edited));
+    reference.rerender(content(undefined, edited));
+    const changed = captured(key);
+    expect(changed.heading).toBe(initial.heading);
+    expect(changed.label).not.toBe(initial.label);
+    expect(changed.label.props.children).toContain(
+      "ユーザー登録・更新 価格未定 7",
+    );
+    expect(view.container.innerHTML).toBe(reference.container.innerHTML);
+    view.rerender(content("current-model", edited, "更新した訪問先", "new"));
+    reference.rerender(content(undefined, edited, "更新した訪問先", "new"));
+    const updated = captured(key);
+    expect(updated.heading).not.toBe(initial.heading);
+    expect(updated.heading.props["data-space-navigation-visit-id"]).toBe(
+      `new-${source[0].id}`,
+    );
+    expect(updated.label).toBe(changed.label);
+    expect(view.container.innerHTML).toBe(reference.container.innerHTML);
+  } finally {
+    readContext.mockRestore();
+  }
+});
+
+it("keeps reordered multi-item placeholder labels and their ARIA equivalent to the generic path", () => {
+  const content = (
+    mode: (typeof fixedSlotModes)[number],
+    members: ShoppingItem[],
+  ) => (
+    <RetainedViewportListRenderer
+      groupSlotMode={mode}
+      model={buildListRows({
+        items: members,
+        groups: [{ key: "static-multiple", label: "複数項目", items: members }],
+      })}
+      accessibleLabel="並替えラベル"
+      getVisitId={(item) => item.id}
+      renderGroup={(_group, rows) => (
+        <>{rows.map((child) => child.render(<input />))}</>
+      )}
+    />
+  );
+  const source = items.slice(0, 3);
+  const reference = render(content(undefined, source));
+  const view = render(content("current-model", source));
+  for (const reordered of [
+    [source[2], source[0], source[1]],
+    source.slice(1),
+  ]) {
+    view.rerender(content("current-model", reordered));
+    reference.rerender(content(undefined, reordered));
+    expect(view.container.innerHTML).toBe(reference.container.innerHTML);
+    const rows = [
+      ...view.container.querySelectorAll<HTMLElement>("[aria-posinset]"),
+    ];
+    rows.forEach((row, index) => {
+      expect(row).toHaveAttribute("aria-posinset", String(index + 1));
+      expect(row).toHaveAttribute("aria-setsize", String(reordered.length));
+      expect(row).toHaveTextContent(reordered[index].circle);
+    });
+    expect(view.container.querySelector("input")).toBeNull();
+  }
 });
