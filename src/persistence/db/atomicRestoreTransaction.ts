@@ -517,19 +517,11 @@ function runtimeFallbackKey(): string {
   }
   return JSON.stringify(entries.sort(([a], [b]) => a.localeCompare(b)));
 }
-function rememberObservation(
+/** Prepare private handles without publishing revision/checkpoint expectations. */
+function prepareObservationRead(
   observation: AppDataRestoreObservation,
   share = false,
 ): ApplicationSnapshotRead {
-  observation.roots.forEach((root, store) =>
-    expectedRevisionRoots.set(getObservedRootKey(store, DATA_KEY), root),
-  );
-  observation.checkpoints.forEach((checkpoint, store) =>
-    expectedPersistenceCheckpoints.set(
-      getObservedRootKey(store, DATA_KEY),
-      checkpoint,
-    ),
-  );
   const expectedRoots = { roots: structuredClone(observation.roots) };
   applicationSnapshotObservations.set(expectedRoots, observation);
   if (share) {
@@ -547,6 +539,26 @@ function rememberObservation(
       ? { scopeTarget: observation.scopeTarget }
       : {}),
   };
+}
+
+function rememberObservation(
+  observation: AppDataRestoreObservation,
+  share = false,
+): ApplicationSnapshotRead {
+  observation.roots.forEach((root, store) =>
+    expectedRevisionRoots.set(getObservedRootKey(store, DATA_KEY), root),
+  );
+  observation.checkpoints.forEach((checkpoint, store) =>
+    expectedPersistenceCheckpoints.set(
+      getObservedRootKey(store, DATA_KEY),
+      checkpoint,
+    ),
+  );
+  return prepareObservationRead(observation, share);
+}
+
+interface ShoppingCommitReceiptOutput {
+  read?: ApplicationSnapshotRead;
 }
 
 /** Worker-owned immutable cache. Every transaction still checks all revision/checkpoint heads. */
@@ -703,7 +715,7 @@ export async function commitShoppingCommandSnapshot(
   data: AppData,
   expectedRoots: object,
   target: DayStorageTarget,
-): Promise<void> {
+): Promise<ApplicationSnapshotRead> {
   const observation = applicationSnapshotObservations.get(expectedRoots);
   if (
     !observation ||
@@ -730,12 +742,16 @@ export async function commitShoppingCommandSnapshot(
     )
   )
     throw new Error("Shopping move cannot change item content or membership.");
+  const receipt: ShoppingCommitReceiptOutput = {};
   await commitApplicationSnapshotAtomically(
     data,
     { expectedRoots, changedStoresOnly: true },
     target,
     true,
+    false,
+    receipt,
   );
+  return receipt.read!;
 }
 export async function readApplicationSnapshot(
   options: { shareVerified?: boolean; prepareScopedCommands?: boolean } = {},
@@ -781,6 +797,7 @@ export async function commitApplicationSnapshotAtomically(
   dayTarget?: DayStorageTarget,
   shoppingMove = false,
   prepareEventListRoots = false,
+  shoppingReceipt?: ShoppingCommitReceiptOutput,
 ): Promise<void> {
   const verifiedCommand =
     !!dayTarget &&
@@ -1125,6 +1142,78 @@ export async function commitApplicationSnapshotAtomically(
       observation.scopeReady.get(STORES.MAP_DATA) !== mapRevision)
       ? await prepareMapScopeRoots(stableMapData, mapRevision)
       : undefined;
+
+  const nextObservation = (
+    nextDayRecords: Map<StoreName, DayRecordState>,
+  ): AppDataRestoreObservation => {
+    const roots = new Map(observation.roots),
+      checkpoints = new Map(observation.checkpoints);
+    preparedMetadata.forEach((metadata, store) => {
+      roots.set(store, metadata);
+      checkpoints.set(store, preparedCheckpoints.get(store)!);
+    });
+    return {
+      ...observation,
+      roots,
+      checkpoints,
+      snapshot: stableData,
+      scopeReady: new Map([
+        ...observation.scopeReady,
+        ...[...sidecars.keys()].map(
+          (store) =>
+            [
+              store,
+              preparedMetadata.get(store)?.revision ??
+                observation.roots.get(store)!.revision,
+            ] as const,
+        ),
+        ...(dayRecordWrites.has(STORES.EVENT_LISTS)
+          ? [
+              [
+                STORES.EVENT_LISTS,
+                preparedMetadata.get(STORES.EVENT_LISTS)!.revision,
+              ] as const,
+            ]
+          : []),
+        ...(mapScopeRoots ? [[STORES.MAP_DATA, mapRevision] as const] : []),
+      ]),
+      dayRecords: nextDayRecords,
+      consistencyMissing: false,
+      mapDataNormalized: true,
+      eventGenerations: Object.fromEntries(
+        [
+          ...new Set([
+            ...Object.keys(observation.eventGenerations),
+            ...(options.invalidatedEvents ?? []),
+          ]),
+        ].map((event) => [
+          event,
+          (recordEntry(observation.eventGenerations, event) ?? 0) +
+            (options.invalidatedEvents?.includes(event) ? 1 : 0),
+        ]),
+      ),
+      runtimeCandidates: [],
+    };
+  };
+  // Shopping changes no generation/control records. Its exact durable receipt is
+  // prepared before opening a write transaction and remains private until adoption.
+  let preparedShoppingRead: ApplicationSnapshotRead | undefined;
+  let preparedShoppingObservation: AppDataRestoreObservation | undefined;
+  if (shoppingReceipt) {
+    if (!shoppingMove || options.migration || options.invalidatedEvents?.length)
+      throw new Error(
+        "Shopping receipt requires unchanged generation/control records.",
+      );
+    const nextDayRecords = new Map(observation.dayRecords);
+    dayRecordWrites.forEach((write, store) =>
+      nextDayRecords.set(store, write.state),
+    );
+    preparedShoppingObservation = nextObservation(nextDayRecords);
+    preparedShoppingRead = prepareObservationRead(
+      preparedShoppingObservation,
+      true,
+    );
+  }
 
   await new Promise<void>((resolve, reject) => {
     let transaction: IDBTransaction;
@@ -1540,59 +1629,14 @@ export async function commitApplicationSnapshotAtomically(
     });
     cleanupRuntimeCandidateSnapshots(observation.runtimeCandidates);
     if (!options.migration) {
-      const roots = new Map(observation.roots),
-        checkpoints = new Map(observation.checkpoints);
-      preparedMetadata.forEach((metadata, store) => {
-        roots.set(store, metadata);
-        checkpoints.set(store, preparedCheckpoints.get(store)!);
-      });
       verifiedCommandCache = {
         database,
-        observation: {
-          ...observation,
-          roots,
-          checkpoints,
-          snapshot: stableData,
-          scopeReady: new Map([
-            ...observation.scopeReady,
-            ...[...sidecars.keys()].map(
-              (store) =>
-                [
-                  store,
-                  preparedMetadata.get(store)?.revision ??
-                    observation.roots.get(store)!.revision,
-                ] as const,
-            ),
-            ...(dayRecordWrites.has(STORES.EVENT_LISTS)
-              ? [
-                  [
-                    STORES.EVENT_LISTS,
-                    preparedMetadata.get(STORES.EVENT_LISTS)!.revision,
-                  ] as const,
-                ]
-              : []),
-            ...(mapScopeRoots ? [[STORES.MAP_DATA, mapRevision] as const] : []),
-          ]),
-          dayRecords: nextDayRecords,
-          consistencyMissing: false,
-          mapDataNormalized: true,
-          eventGenerations: Object.fromEntries(
-            [
-              ...new Set([
-                ...Object.keys(observation.eventGenerations),
-                ...(options.invalidatedEvents ?? []),
-              ]),
-            ].map((event) => [
-              event,
-              (recordEntry(observation.eventGenerations, event) ?? 0) +
-                (options.invalidatedEvents?.includes(event) ? 1 : 0),
-            ]),
-          ),
-          runtimeCandidates: [],
-        },
+        observation:
+          preparedShoppingObservation ?? nextObservation(nextDayRecords),
         fallbackKey: runtimeFallbackKey(),
       };
     } else verifiedCommandCache = undefined;
+    if (shoppingReceipt) shoppingReceipt.read = preparedShoppingRead;
   } catch (error) {
     verifiedCommandCache = undefined;
     if (isPersistenceWriteStopReason(error)) throw error;

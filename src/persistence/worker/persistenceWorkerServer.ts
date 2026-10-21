@@ -47,7 +47,7 @@ export interface PersistenceWorkerDelegate {
     snapshot: PersistenceSnapshot,
     expectedRoots: object,
     target: ApplicationDayScope,
-  ): Promise<void>;
+  ): Promise<ApplicationSnapshotRead | void>;
   readDayCommandSnapshot?(
     target?: ApplicationDayScope,
   ): Promise<ApplicationSnapshotRead>;
@@ -197,8 +197,9 @@ export function createPersistenceWorkerServer(
           ...validateSnapshotReferences(scoped, maps),
         ];
         if (errors.length) throw new Error(errors.join("\n"));
+        let committedReceipt: ApplicationSnapshotRead | void;
         try {
-          await delegate.commitShoppingCommandSnapshot(
+          committedReceipt = await delegate.commitShoppingCommandSnapshot(
             plan.snapshot,
             read.expectedRoots,
             target,
@@ -220,7 +221,8 @@ export function createPersistenceWorkerServer(
         const observationId = ++sequence;
         try {
           const committedRead =
-            await delegate.readShoppingCommandSnapshot(target);
+            committedReceipt ??
+            (await delegate.readShoppingCommandSnapshot(target));
           if (!committedRead)
             throw new Error("Committed shopping roots unavailable.");
           observations.set(observationId, committedRead.expectedRoots);

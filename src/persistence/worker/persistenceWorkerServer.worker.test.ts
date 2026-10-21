@@ -16,6 +16,11 @@ import { createWorkerPersistenceCommandAdapter } from "../adapters/workerPersist
 import { IDBFactory, IDBObjectStore, IDBKeyRange } from "fake-indexeddb";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "../facade/indexedDbPersistence";
+import {
+  expectedRevisionRoots,
+  expectedPersistenceCheckpoints,
+  getObservedRootKey,
+} from "../internal/persistenceCore";
 import { resetDatabaseConnection, openDatabase } from "../db/openDatabase";
 import { createPersistenceWorkerServer } from "./persistenceWorkerServer";
 import { createEventConsistency } from "../../types/consistency";
@@ -1449,21 +1454,31 @@ async function setupShopping(historyCount = 1, prepare = true) {
   });
   const commit = vi.fn(db.commitShoppingCommandSnapshot);
   const read = vi.fn(db.readApplicationSnapshot);
+  const shoppingRead = vi.fn(db.readShoppingCommandSnapshot);
   const server = createPersistenceWorkerServer({
     ...db,
     readApplicationSnapshot: read,
+    readShoppingCommandSnapshot: shoppingRead,
     commitShoppingCommandSnapshot: commit,
   });
   const baseline = prepare ? await server.read() : await server.readFull();
   read.mockClear();
-  return { server, baseline, commit, read };
+  return { server, baseline, commit, read, shoppingRead };
 }
 it("atomically commits shopping order and references without full reads or item payload deltas", async () => {
   const h = await setupShopping();
+  const database = await openDatabase();
+  const transactions = vi.spyOn(database, "transaction");
   const result = await h.server.shopping(shoppingCommand(), "move:1", {});
   expect(result.status).toBe("committed");
   expect(h.commit).toHaveBeenCalledOnce();
   expect(h.read).not.toHaveBeenCalled();
+  expect(h.shoppingRead).toHaveBeenCalledOnce();
+  expect(transactions.mock.calls.map(([, mode]) => mode)).toEqual([
+    "readonly",
+    "readwrite",
+  ]);
+  transactions.mockRestore();
   if (result.status !== "committed" || !result.read)
     throw new Error("not committed");
   expect(result.read.delta.shoppingOrder).toMatchObject({
@@ -1476,7 +1491,29 @@ it("atomically commits shopping order and references without full reads or item 
   expect(
     result.read.delta.branches?.some((branch) => branch.store === "eventLists"),
   ).toBe(false);
+  const receipt = await h.commit.mock.results[0].value;
   const durable = (await db.readApplicationSnapshot()).snapshot;
+  expect(receipt.snapshot).toEqual(durable);
+  expect(receipt.eventGenerations).toEqual(h.baseline.eventGenerations);
+  expect(receipt.scopeTarget).toBeUndefined();
+  const receiptRoots = (
+    receipt.expectedRoots as { roots: Map<string, unknown> }
+  ).roots;
+  const physical = await physicalShoppingRecords();
+  for (const store of ["eventLists", "executeModeItems", "eventConsistency"]) {
+    expect(receiptRoots.get(store)).toEqual(
+      [...physical.syncQueue.values()].find(
+        (value) =>
+          value &&
+          typeof value === "object" &&
+          "storeName" in value &&
+          value.storeName === store &&
+          "revision" in value &&
+          "payloadDigest" in value,
+      ),
+    );
+  }
+  expect(Object.isFrozen(receipt.snapshot.eventLists.event)).toBe(true);
   expect(
     durable.eventLists.event.map((item) => (item as { id: string }).id),
   ).toEqual(["2", "1", "other-day"]);
@@ -1507,6 +1544,8 @@ it("atomically commits shopping order and references without full reads or item 
 });
 it("rolls all shopping stores back on abort and falls back before writing stale order", async () => {
   const h = await setupShopping();
+  const rootsBefore = new Map(expectedRevisionRoots);
+  const checkpointsBefore = new Map(expectedPersistenceCheckpoints);
   const original = IDBObjectStore.prototype.put;
   const fault = vi
     .spyOn(IDBObjectStore.prototype, "put")
@@ -1522,6 +1561,8 @@ it("rolls all shopping stores back on abort and falls back before writing stale 
     h.server.shopping(shoppingCommand(), "move:1", {}),
   ).rejects.toThrow();
   fault.mockRestore();
+  expect(expectedRevisionRoots).toEqual(rootsBefore);
+  expect(expectedPersistenceCheckpoints).toEqual(checkpointsBefore);
   const durable = (await db.readApplicationSnapshot()).snapshot;
   expect(
     durable.eventLists.event.map((item) => (item as { id: string }).id),
@@ -1535,6 +1576,26 @@ it("rolls all shopping stores back on abort and falls back before writing stale 
     ),
   ).toEqual({ status: "review-required" });
   expect(h.commit).toHaveBeenCalledOnce();
+  const read = await db.readShoppingCommandSnapshot({
+    eventName: "event",
+    day: "1日目",
+  });
+  const changedItems = structuredClone(read!.snapshot.eventLists);
+  Object.assign(changedItems.event[1] as object, { remarks: "中断後メモ" });
+  await db.commitApplicationSnapshotAtomically(
+    { ...read!.snapshot, eventLists: changedItems },
+    { expectedRoots: read!.expectedRoots, changedStoresOnly: true },
+  );
+  expect(
+    (await h.server.shopping(shoppingCommand(), "move:retry", {})).status,
+  ).toBe("committed");
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.eventLists.event[0],
+  ).toMatchObject({
+    id: "2",
+    remarks: "中断後メモ",
+    quantity: 7,
+  });
 });
 it("full recovery is baseline-independent, validates all stores and never prepares writes", async () => {
   const h = await setupShopping();
@@ -2287,4 +2348,201 @@ it("prepares one changed item root once and retains mixed root/child authenticat
     (await decodeDayRecords("executeModeItems", mixed.head, mixed.records))
       .data,
   ).toEqual({ event: { "1日目": ["2"], "2日目": ["other"] } });
+});
+
+it.each(["clone", "handle"])(
+  "keeps receipt %s failures before writes without publishing new expected roots",
+  async (failure) => {
+    await setupShopping();
+    const initial = await db.readApplicationSnapshot();
+    await db.commitApplicationSnapshotAtomically(initial.snapshot, {
+      expectedRoots: initial.expectedRoots,
+      changedStoresOnly: true,
+      invalidatedEvents: ["event"],
+    });
+    const target = { eventName: "event", day: "1日目" };
+    const read = (await db.readShoppingCommandSnapshot(target))!;
+    const plan = planShoppingMove(read.snapshot, shoppingCommand());
+    const rootsBefore = new Map(expectedRevisionRoots);
+    const checkpointsBefore = new Map(expectedPersistenceCheckpoints);
+    const physicalBefore = await physicalShoppingRecords();
+    const revision = expectedRevisionRoots.get(
+      getObservedRootKey("eventLists", "data"),
+    )!.revision;
+    const isFutureRoots = (value: unknown) =>
+      value instanceof Map &&
+      value.has("eventLists") &&
+      value.get("eventLists").revision !== revision;
+    const clone = globalThis.structuredClone;
+    const set = WeakMap.prototype.set;
+    const fault =
+      failure === "clone"
+        ? vi
+            .spyOn(globalThis, "structuredClone")
+            .mockImplementation((value, options) => {
+              if (isFutureRoots(value)) throw new Error("receipt clone failed");
+              return clone(value, options);
+            })
+        : vi.spyOn(WeakMap.prototype, "set").mockImplementation(function (
+            this: WeakMap<object, unknown>,
+            key: object,
+            value: unknown,
+          ) {
+            if (key && "roots" in key && isFutureRoots(key.roots))
+              throw new Error("receipt handle failed");
+            return set.call(this, key, value);
+          });
+    const writes = vi.spyOn(IDBObjectStore.prototype, "put");
+    await expect(
+      db.commitShoppingCommandSnapshot(
+        plan.snapshot,
+        read.expectedRoots,
+        target,
+      ),
+    ).rejects.toThrow(`receipt ${failure} failed`);
+    expect(writes).not.toHaveBeenCalled();
+    writes.mockRestore();
+    fault.mockRestore();
+    expect(expectedRevisionRoots).toEqual(rootsBefore);
+    expect(expectedPersistenceCheckpoints).toEqual(checkpointsBefore);
+    expect(await physicalShoppingRecords()).toEqual(physicalBefore);
+    // The original handle still authorizes the unchanged durable state.
+    const receipt = await db.commitShoppingCommandSnapshot(
+      plan.snapshot,
+      read.expectedRoots,
+      target,
+    );
+    expect(receipt.eventGenerations).toEqual({ event: 1 });
+    const next = structuredClone(receipt.snapshot);
+    Object.assign(next.eventLists.event[0] as object, { quantity: 8 });
+    await db.commitApplicationSnapshotAtomically(next, {
+      expectedRoots: receipt.expectedRoots,
+      changedStoresOnly: true,
+    });
+    expect(
+      (await db.readApplicationSnapshot()).snapshot.eventLists.event[0],
+    ).toMatchObject({ id: "2", quantity: 8 });
+  },
+);
+
+it("retains postcommit read fallback for shopping delegates that return void", async () => {
+  await setupShopping();
+  const read = vi.fn(db.readShoppingCommandSnapshot);
+  const commit = vi.fn(
+    async (...args: Parameters<typeof db.commitShoppingCommandSnapshot>) => {
+      await db.commitShoppingCommandSnapshot(...args);
+    },
+  );
+  const server = createPersistenceWorkerServer({
+    ...db,
+    readShoppingCommandSnapshot: read,
+    commitShoppingCommandSnapshot: commit,
+  });
+  await server.read();
+  expect(
+    (await server.shopping(shoppingCommand(), "void:move", {})).status,
+  ).toBe("committed");
+  expect(commit).toHaveBeenCalledOnce();
+  expect(read).toHaveBeenCalledTimes(2);
+});
+
+function shoppingStoragePort(h: Awaited<ReturnType<typeof setupShopping>>) {
+  const methods: string[] = [];
+  class StorageWorker {
+    onmessage?: (event: MessageEvent) => void;
+    postMessage(request: { id: number; method: string; args: unknown[] }) {
+      methods.push(request.method);
+      void (async () => {
+        try {
+          const result =
+            request.method === "read"
+              ? h.baseline
+              : request.method === "shopping"
+                ? await h.server.shopping(
+                    request.args[0] as ReturnType<typeof shoppingCommand>,
+                    request.args[1] as string,
+                    {},
+                  )
+                : request.method === "readFull"
+                  ? await h.server.readFull()
+                  : (() => {
+                      throw new Error("Unexpected protocol method");
+                    })();
+          this.onmessage?.({
+            data: { id: request.id, result },
+          } as MessageEvent);
+        } catch (error) {
+          const value = error as Error;
+          this.onmessage?.({
+            data: {
+              id: request.id,
+              error: { name: value.name, message: value.message },
+            },
+          } as MessageEvent);
+        }
+      })();
+    }
+    terminate() {}
+  }
+  vi.stubGlobal("Worker", StorageWorker);
+  return { methods, port: createWorkerPersistenceCommandAdapter() };
+}
+
+it("recovers a native receipt delta failure once without resending or postcommit command reads", async () => {
+  const h = await setupShopping();
+  const { port, methods } = shoppingStoragePort(h);
+  await port.readApplicationSnapshot();
+  const fault = vi
+    .spyOn(snapshotDeltas, "daySnapshotDelta")
+    .mockImplementationOnce(() => {
+      throw new Error("delta build failed");
+    });
+  const result = await port.commitShoppingMove!(
+    shoppingCommand(),
+    "receipt:delta",
+    {},
+  );
+  fault.mockRestore();
+  expect(result.status).toBe("committed");
+  expect(methods).toEqual(["read", "shopping", "readFull"]);
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(h.shoppingRead).toHaveBeenCalledOnce();
+  expect(h.read).toHaveBeenCalledOnce();
+  expect(h.read).toHaveBeenCalledWith({
+    shareVerified: true,
+    prepareScopedCommands: false,
+  });
+  expect(port.getWriteStopReason!()).toBeUndefined();
+});
+
+it("stops after a native durable cache-adoption failure without exposing a receipt or recovering automatically", async () => {
+  const h = await setupShopping();
+  const { port, methods } = shoppingStoragePort(h);
+  await port.readApplicationSnapshot();
+  const key = getObservedRootKey("eventLists", "data");
+  const revision = expectedRevisionRoots.get(key)!.revision;
+  const set = expectedRevisionRoots.set;
+  const fault = vi
+    .spyOn(expectedRevisionRoots, "set")
+    .mockImplementation(function (entryKey, value) {
+      if (entryKey === key && value.revision !== revision)
+        throw new Error("durable cache adoption failed");
+      return set.call(expectedRevisionRoots, entryKey, value);
+    });
+  await expect(
+    port.commitShoppingMove!(shoppingCommand(), "receipt:unknown", {}),
+  ).rejects.toMatchObject({ name: "PersistenceOutcomeUnknownError" });
+  fault.mockRestore();
+  expect(methods).toEqual(["read", "shopping"]);
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(h.shoppingRead).toHaveBeenCalledOnce();
+  expect(h.read).not.toHaveBeenCalled();
+  expect(port.getWriteStopReason!()).toMatchObject({
+    name: "PersistenceOutcomeUnknownError",
+  });
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.eventLists.event.map(
+      (entry) => (entry as { id: string }).id,
+    ),
+  ).toEqual(["2", "1", "other-day"]);
 });
