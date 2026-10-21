@@ -2294,6 +2294,168 @@ async function attach(testInfo: TestInfo, name: string, data: unknown) {
     contentType: "application/json",
   });
 }
+
+test.describe("held touch drag cleanup", () => {
+  test.use({ hasTouch: true, viewport: { width: 1440, height: 1600 } });
+  for (const layout of ["flat", "space", "hall"] as const)
+    test(`held touch same-order drop immediately restores every source: ${layout}`, async ({
+      page,
+      context,
+    }, testInfo) => {
+      const backup = fixture(8);
+      const selected = ["held-0", "held-1", "held-2"];
+      backup.data.eventLists[eventName] = Array.from(
+        { length: 5 },
+        (_, index) => makeItem(`held-${index}`, String(index + 1)),
+      );
+      backup.data.executeModeItems[eventName][day] = backup.data.eventLists[
+        eventName
+      ].map((item) => item.id);
+      if (layout === "flat") backup.data.hallDefinitions = {};
+      await restore(page, backup);
+      await grouping(page, layout === "space");
+      await select(page, selected);
+      await expect(
+        page.getByTitle("範囲内のチェックを外す", { exact: true }).first(),
+      ).toBeVisible();
+      const before = (await stored(page, "executeModeItems"))[eventName];
+      const source = page.locator(rowSelector(selected[0]));
+      const handle = await source.locator("[data-drag-handle]").boundingBox();
+      const target = await page.locator(rowSelector("held-3")).boundingBox();
+      expect(handle).not.toBeNull();
+      expect(target).not.toBeNull();
+      const session = await context.newCDPSession(page);
+      try {
+        await session.send("Emulation.setTouchEmulationEnabled", {
+          enabled: true,
+          maxTouchPoints: 1,
+        });
+        await session.send("Input.dispatchTouchEvent", {
+          type: "touchStart",
+          touchPoints: [
+            {
+              x: handle!.x + handle!.width / 2,
+              y: handle!.y + handle!.height / 2,
+              id: 1,
+            },
+          ],
+        });
+        await expect(page.locator(".esp-shopping-touch-clone")).toBeVisible();
+        // Hold until all dragged sources really reach the dimmed state. This exposes
+        // a 200ms return transition that a quick gesture can otherwise hide.
+        await expect
+          .poll(() =>
+            page.evaluate(
+              (ids) =>
+                ids.map((id) =>
+                  Number(
+                    getComputedStyle(
+                      document.querySelector(
+                        `[data-item-id="${id}"]:not(.esp-shopping-touch-clone)`,
+                      )!,
+                    ).opacity,
+                  ),
+                ),
+              selected,
+            ),
+          )
+          .toEqual([0.4, 0.4, 0.4]);
+        await session.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [
+            { x: target!.x + 4, y: target!.y + target!.height * 0.2, id: 1 },
+          ],
+        });
+        await page.evaluate((ids) => {
+          const state = window as unknown as {
+            __heldTouchCleanup?: Promise<unknown>;
+          };
+          state.__heldTouchCleanup = new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              observer.disconnect();
+              reject(new Error("Touch clone did not clean up"));
+            }, 5000);
+            const sample = () => {
+              if (document.querySelector(".esp-shopping-touch-clone")) return;
+              const rows = ids.map(
+                (id) =>
+                  document.querySelector<HTMLElement>(
+                    `[data-item-id="${id}"]:not(.esp-shopping-touch-clone)`,
+                  )!,
+              );
+              const result = {
+                ids,
+                opacities: rows.map((row) =>
+                  Number(getComputedStyle(row).opacity),
+                ),
+                interactive: rows.map((row) => {
+                  const box = row.getBoundingClientRect();
+                  return row.contains(
+                    document.elementFromPoint(box.x + 20, box.y + 40),
+                  );
+                }),
+              };
+              observer.disconnect();
+              clearTimeout(timeout);
+              resolve(result);
+            };
+            const observer = new MutationObserver(sample);
+            observer.observe(document.body, {
+              subtree: true,
+              childList: true,
+              attributes: true,
+              attributeFilter: ["class"],
+            });
+            document.addEventListener(
+              "touchend",
+              () => queueMicrotask(sample),
+              { once: true, capture: true },
+            );
+          });
+        }, selected);
+        await session.send("Input.dispatchTouchEvent", {
+          type: "touchEnd",
+          touchPoints: [],
+        });
+        const cleanup = await page.evaluate(
+          () =>
+            (
+              window as unknown as {
+                __heldTouchCleanup: Promise<{
+                  ids: string[];
+                  opacities: number[];
+                  interactive: boolean[];
+                }>;
+              }
+            ).__heldTouchCleanup,
+        );
+        await testInfo.attach("held-touch-cleanup", {
+          body: JSON.stringify({ layout, ...cleanup }),
+          contentType: "application/json",
+        });
+        expect(cleanup.opacities).toEqual([1, 1, 1]);
+        expect(cleanup.interactive).toEqual([true, true, true]);
+        for (const id of selected)
+          await expect(
+            page.locator(rowSelector(id)).getByRole("checkbox"),
+          ).toBeChecked();
+        await expect(
+          page.getByTitle("範囲内のチェックを外す", { exact: true }),
+        ).toHaveCount(0);
+        expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
+          before,
+        );
+      } finally {
+        await session
+          .send("Input.dispatchTouchEvent", {
+            type: "touchCancel",
+            touchPoints: [],
+          })
+          .catch(() => {});
+        await session.detach();
+      }
+    });
+});
 for (const count of [150, 500])
   for (const input of ["native", "touch"] as const)
     for (const grouped of [true, false])

@@ -4076,7 +4076,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                       onTouchCancel={
                         !isInspecting ? handleItemTouchCancel : undefined
                       }
-                      className="transition-opacity duration-200 relative"
+                      className="relative"
                       data-is-selected={selectedItemIds.has(item.id)}
                     >
                       <ShoppingItemCard
@@ -4881,7 +4881,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                   onTouchCancel={
                     !isInspecting ? handleItemTouchCancel : undefined
                   }
-                  className={`transition-opacity duration-200 relative ${
+                  className={`relative ${
                     group.priority === "highest"
                       ? "bg-red-50/30 dark:bg-red-950/20"
                       : group.priority === "priority"
@@ -5206,7 +5206,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         onTouchMove={!isInspecting ? handleItemTouchMove : undefined}
         onTouchEnd={!isInspecting ? handleItemTouchEnd : undefined}
         onTouchCancel={!isInspecting ? handleItemTouchCancel : undefined}
-        className="transition-opacity duration-200 relative"
+        className="relative"
         data-is-selected={selectedItemIds.has(item.id)}
       >
         <ShoppingItemCard
