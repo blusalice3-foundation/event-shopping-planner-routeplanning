@@ -198,18 +198,176 @@ export async function readTransferDiagnostics(
     { start, end },
   );
 }
+type WorkerDiagnosticEvent = {
+  at: number;
+  stage: "message-observed" | "reply-posted";
+  id?: unknown;
+  method?: string;
+  operationId?: string;
+};
+type WorkerCost = {
+  at: number;
+  method: "structuredClone" | "crypto.subtle.digest" | "IDBObjectStore.put";
+  syncDurationMs: number;
+  probeOverheadMs: number;
+  threw: boolean;
+  shape?: {
+    kind: string;
+    length?: number;
+    ownKeyCount?: number;
+    keys?: string[];
+    arrayBranches?: Array<{ key: string; length: number }>;
+  };
+  algorithm?: string;
+  inputBytes?: number;
+  store?: string;
+  key?: string | number;
+  keyKind?: string;
+  metadataUnavailable?: string;
+};
+type WorkerProbe = {
+  reset(): void;
+  read(
+    start: number,
+    end: number,
+  ): {
+    events: WorkerDiagnosticEvent[];
+    costs: WorkerCost[];
+    installed: string[];
+  };
+};
 export async function installWorkerTransferDiagnostics(worker: Worker) {
   await worker.evaluate(() => {
     const state = globalThis as unknown as {
-      __shoppingWorkerDiagnosticEvents: Array<{
-        at: number;
-        stage: "message-observed" | "reply-posted";
-        id?: unknown;
-        method?: string;
-        operationId?: string;
-      }>;
+      __shoppingWorkerDiagnosticProbe?: WorkerProbe;
     };
-    state.__shoppingWorkerDiagnosticEvents = [];
+    if (state.__shoppingWorkerDiagnosticProbe) return;
+    let enabled = false;
+    let events: WorkerDiagnosticEvent[] = [];
+    let costs: WorkerCost[] = [];
+    const installed: string[] = [];
+    const epoch = () => performance.timeOrigin + performance.now();
+    const shape = (value: unknown): WorkerCost["shape"] => {
+      if (Array.isArray(value)) return { kind: "array", length: value.length };
+      if (!value || typeof value !== "object")
+        return { kind: value === null ? "null" : typeof value };
+      const keys = Object.keys(value);
+      const arrayBranches = keys.flatMap((key) => {
+        const descriptor = Object.getOwnPropertyDescriptor(value, key);
+        return descriptor &&
+          "value" in descriptor &&
+          Array.isArray(descriptor.value)
+          ? [{ key, length: descriptor.value.length }]
+          : [];
+      });
+      return {
+        kind: "object",
+        ownKeyCount: keys.length,
+        keys: keys.slice(0, 24),
+        arrayBranches,
+      };
+    };
+    const observe = (
+      method: WorkerCost["method"],
+      invoke: () => unknown,
+      metadata: () => Partial<WorkerCost>,
+    ) => {
+      if (!enabled) return invoke();
+      const began = performance.now();
+      const at = performance.timeOrigin + began;
+      let threw = true;
+      try {
+        const result = invoke();
+        threw = false;
+        return result;
+      } finally {
+        const completed = performance.now();
+        let details: Partial<WorkerCost>;
+        try {
+          details = metadata();
+        } catch {
+          details = {
+            metadataUnavailable:
+              "Input metadata could not be inspected without changing native result",
+          };
+        }
+        const record: WorkerCost = {
+          at,
+          method,
+          syncDurationMs: completed - began,
+          probeOverheadMs: 0,
+          threw,
+          ...details,
+        };
+        costs.push(record);
+        record.probeOverheadMs = performance.now() - completed;
+      }
+    };
+    const patch = (
+      object: object,
+      key: string,
+      invoke: (
+        target: (...args: unknown[]) => unknown,
+        receiver: unknown,
+        args: unknown[],
+      ) => unknown,
+    ) => {
+      let owner: object | null = object;
+      while (owner && !Object.prototype.hasOwnProperty.call(owner, key))
+        owner = Object.getPrototypeOf(owner);
+      const descriptor = owner && Object.getOwnPropertyDescriptor(owner, key);
+      if (!owner || !descriptor || typeof descriptor.value !== "function")
+        throw new Error(`Diagnostic native method is unavailable: ${key}`);
+      Object.defineProperty(owner, key, {
+        ...descriptor,
+        value: new Proxy(descriptor.value, { apply: invoke }),
+      });
+      installed.push(key);
+    };
+    patch(globalThis, "structuredClone", (target, receiver, args) =>
+      observe(
+        "structuredClone",
+        () => Reflect.apply(target, receiver, args),
+        () => ({ shape: shape(args[0]) }),
+      ),
+    );
+    patch(crypto.subtle, "digest", (target, receiver, args) =>
+      observe(
+        "crypto.subtle.digest",
+        () => Reflect.apply(target, receiver, args),
+        () => {
+          const algorithm =
+            typeof args[0] === "string"
+              ? args[0]
+              : args[0] && typeof args[0] === "object"
+                ? Object.getOwnPropertyDescriptor(args[0], "name")?.value
+                : undefined;
+          const bytes = args[1];
+          return {
+            algorithm: typeof algorithm === "string" ? algorithm : undefined,
+            inputBytes:
+              bytes instanceof ArrayBuffer || ArrayBuffer.isView(bytes)
+                ? bytes.byteLength
+                : undefined,
+          };
+        },
+      ),
+    );
+    patch(IDBObjectStore.prototype, "put", (target, receiver, args) =>
+      observe(
+        "IDBObjectStore.put",
+        () => Reflect.apply(target, receiver, args),
+        () => ({
+          store: (receiver as IDBObjectStore).name,
+          key:
+            typeof args[1] === "string" || typeof args[1] === "number"
+              ? args[1]
+              : undefined,
+          keyKind: args.length < 2 ? "omitted" : typeof args[1],
+          shape: shape(args[0]),
+        }),
+      ),
+    );
     globalThis.addEventListener(
       "message",
       (
@@ -219,30 +377,54 @@ export async function installWorkerTransferDiagnostics(worker: Worker) {
           args?: unknown[];
         }>,
       ) => {
-        state.__shoppingWorkerDiagnosticEvents.push({
-          at: performance.timeOrigin + performance.now(),
-          stage: "message-observed",
-          id: event.data?.id,
-          method: event.data?.method,
-          operationId:
-            typeof event.data?.args?.[1] === "string"
-              ? event.data.args[1]
-              : undefined,
-        });
+        if (enabled)
+          events.push({
+            at: epoch(),
+            stage: "message-observed",
+            id: event.data?.id,
+            method: event.data?.method,
+            operationId:
+              typeof event.data?.args?.[1] === "string"
+                ? event.data.args[1]
+                : undefined,
+          });
       },
       true,
     );
-    const post = globalThis.postMessage;
-    globalThis.postMessage = function (...args: unknown[]) {
-      const message = args[0] as { id?: unknown } | undefined;
-      state.__shoppingWorkerDiagnosticEvents.push({
-        at: performance.timeOrigin + performance.now(),
-        stage: "reply-posted",
-        id: message?.id,
-      });
-      return Reflect.apply(post, globalThis, args);
+    patch(globalThis, "postMessage", (target, receiver, args) => {
+      if (enabled)
+        events.push({
+          at: epoch(),
+          stage: "reply-posted",
+          id: (args[0] as { id?: unknown } | undefined)?.id,
+        });
+      return Reflect.apply(target, receiver, args);
+    });
+    state.__shoppingWorkerDiagnosticProbe = {
+      reset() {
+        events = [];
+        costs = [];
+        enabled = true;
+      },
+      read(start, end) {
+        enabled = false;
+        const inWindow = (entry: { at: number }) =>
+          entry.at >= start && entry.at <= end;
+        return {
+          events: events.filter(inWindow),
+          costs: costs.filter(inWindow),
+          installed: [...installed],
+        };
+      },
     };
   });
+}
+export async function resetWorkerTransferDiagnostics(worker: Worker) {
+  await worker.evaluate(() =>
+    (
+      globalThis as unknown as { __shoppingWorkerDiagnosticProbe: WorkerProbe }
+    ).__shoppingWorkerDiagnosticProbe.reset(),
+  );
 }
 export async function readWorkerTransferDiagnostics(
   worker: Worker,
@@ -253,11 +435,9 @@ export async function readWorkerTransferDiagnostics(
     ({ start, end }) =>
       (
         globalThis as unknown as {
-          __shoppingWorkerDiagnosticEvents: Array<{ at: number }>;
+          __shoppingWorkerDiagnosticProbe: WorkerProbe;
         }
-      ).__shoppingWorkerDiagnosticEvents.filter(
-        (event) => event.at >= start && event.at <= end,
-      ),
+      ).__shoppingWorkerDiagnosticProbe.read(start, end),
     { start, end },
   );
 }
