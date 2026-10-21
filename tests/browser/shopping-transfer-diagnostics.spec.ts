@@ -226,6 +226,7 @@ for (const profile of [
                 startEpoch?: number;
                 durationMs?: number;
                 markerDelayMs?: number;
+                commits?: Array<{ at: number; operationId?: string }>;
                 tracePath?: string;
                 correlation?: {
                   input: { pid: number; ts: number };
@@ -255,15 +256,40 @@ for (const profile of [
           path: profilePath,
           contentType: "application/json",
         });
-        const message = workerDiagnostics.events.find(
-          (row) =>
-            row.stage === "message-observed" && row.method === "shopping",
-        );
-        const reply =
-          message &&
-          workerDiagnostics.events.find(
-            (row) => row.stage === "reply-posted" && row.id === message.id,
+        // The original product uses commit, while the new product uses shopping.
+        // Select an actual request/reply pair covering the measured durable write.
+        const writeMethods = new Set([
+          "shopping",
+          "commit",
+          "commitDay",
+          "day",
+          "items",
+        ]);
+        const durableCommits = frame?.commits ?? [];
+        const commands = workerDiagnostics.events.flatMap((message) => {
+          if (
+            message.stage !== "message-observed" ||
+            message.id === undefined ||
+            !writeMethods.has(message.method ?? "")
+          )
+            return [];
+          const reply = workerDiagnostics.events.find(
+            (row) =>
+              row.stage === "reply-posted" &&
+              row.id === message.id &&
+              row.at >= message.at,
           );
+          return reply &&
+            durableCommits.length > 0 &&
+            durableCommits.every(
+              (commit) => commit.at >= message.at && commit.at <= reply.at,
+            )
+            ? [{ message, reply }]
+            : [];
+        });
+        const command = commands.length === 1 ? commands[0] : undefined;
+        const message = command?.message;
+        const reply = command?.reply;
         const epochToTrace = (epoch: number) =>
           (frame?.correlation?.input.ts ?? NaN) +
           (epoch - start - (frame?.markerDelayMs ?? NaN)) * 1000;
@@ -281,7 +307,19 @@ for (const profile of [
           commandWindow: {
             messageObservedEpoch: message?.at,
             replyPostedEpoch: reply?.at,
-            operationId: message?.operationId,
+            requestId: message?.id,
+            method: message?.method,
+            operationId: message?.operationId ?? null,
+            ...(!message?.operationId
+              ? {
+                  operationIdUnavailableReason:
+                    "The actual Worker request does not expose an operation ID",
+                }
+              : {}),
+            durableCommitEpochs: durableCommits.map((commit) => commit.at),
+            matchingWriteCommands: commands.length,
+            selection:
+              "A unique actual write request/reply ID pair surrounding every measured durable commit; no method or operation ID is invented",
             epochToTrace: {
               inputMarkTraceTs: frame?.correlation?.input.ts,
               inputStartEpoch: start,
