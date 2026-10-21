@@ -55,7 +55,10 @@ import {
   buildExecutionVisitProjectionKey,
   normalizeExecutionVisitDay,
 } from "../../utils/visitProjection";
-import type { ApplicationSnapshotCommitPort } from "./ApplicationSnapshotCommitPort";
+import type {
+  ApplicationSnapshotCommitPort,
+  QueueShoppingMovePatch,
+} from "./ApplicationSnapshotCommitPort";
 import type { EventUpdateOperationRegistry } from "./eventUpdateOperation";
 
 type EventLists = Record<string, ShoppingItem[]>;
@@ -107,6 +110,8 @@ export interface ShoppingItemMutationActionPort {
   openDuplicateEvent(value: PendingDuplicateEventImport): string | void;
   clearRangeSelection(): void;
   clearSelection(): void;
+  removeSelectedItemIds(itemIds: readonly string[]): void;
+  queueShoppingMovePatch: QueueShoppingMovePatch;
   setSortState(value: Extract<SortState, "Manual">): void;
   setBlockSortDirection(value: BlockSortDirection | null): void;
   setCandidateNumberSortDirection(value: BlockSortDirection | null): void;
@@ -302,6 +307,8 @@ export const useShoppingItemMutationCommands = ({
     openDuplicateEvent,
     clearRangeSelection,
     clearSelection,
+    removeSelectedItemIds,
+    queueShoppingMovePatch,
     setSortState,
     setBlockSortDirection,
     setCandidateNumberSortDirection,
@@ -737,7 +744,9 @@ export const useShoppingItemMutationCommands = ({
       const mode = recordEntry(dayModes, activeEventName)?.[activeEventDate];
       if (
         dragContext &&
-        (!dragContext.isCurrent() ||
+        (!sourceColumn ||
+          !targetColumn ||
+          !dragContext.isCurrent() ||
           dragContext.eventName !== activeEventName ||
           dragContext.day !== activeEventDate ||
           (getEventGeneration &&
@@ -801,18 +810,35 @@ export const useShoppingItemMutationCommands = ({
       });
       if (dragContext) {
         if (!result.eventListItems && !result.executeModeItems) return;
+        const receipt = queueShoppingMovePatch({
+          eventName: activeEventName,
+          day: activeEventDate,
+          eventGeneration: dragContext.generation,
+          sourceColumn: sourceColumn!,
+          targetColumn: targetColumn!,
+          requestedIds: dragContext.requestedIds,
+          effectiveIds: dragContext.effectiveIds,
+          hoverId,
+          eventListItems: result.eventListItems,
+          executeModeItems: result.executeModeItems,
+        });
+        if (receipt.status === "blocked") return;
+        if (receipt.status === "accepted" && result.transferredItemIds) {
+          removeSelectedItemIds(result.transferredItemIds);
+        }
         clearRangeSelection();
         setSortState("Manual");
         setBlockSortDirection(null);
         spaceGroupDragItemIdsRef.current = null;
+        if (receipt.status === "noop") return;
       }
-      if (result.eventListItems) {
+      if (!dragContext && result.eventListItems) {
         setEventLists((current) => ({
           ...current,
           [activeEventName]: result.eventListItems!,
         }));
       }
-      if (result.executeModeItems) {
+      if (!dragContext && result.executeModeItems) {
         updateExecuteModeItems((current) => ({
           ...current,
           [activeEventName]: result.executeModeItems!,
@@ -831,6 +857,8 @@ export const useShoppingItemMutationCommands = ({
       areItemsInSameHall,
       areItemsInSameHallGroup,
       clearRangeSelection,
+      removeSelectedItemIds,
+      queueShoppingMovePatch,
       dayModes,
       eventLists,
       eventListsRef,

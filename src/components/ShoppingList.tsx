@@ -1764,7 +1764,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         JSON.parse(controlledSelectedItemIdsSignature) as string[],
       ),
     );
-  }, [controlledSelectedItemIdsSignature]);
+  }, [controlledSelectedItemIdsSignature, listControllerModelMembershipKey]);
 
   useEffect(() => {
     dispatchListController(shoppingListCommand.reconcileModel());

@@ -153,6 +153,11 @@ function harness(review?: "conflict" | "day-merge") {
         openDuplicateEvent: overlay.commands.event.openDuplicate,
         clearRangeSelection: vi.fn(),
         clearSelection: vi.fn(),
+        removeSelectedItemIds: vi.fn(),
+        queueShoppingMovePatch: vi.fn(() => ({
+          status: "blocked" as const,
+          reason: "unused",
+        })),
         setSortState: vi.fn(),
         setBlockSortDirection: vi.fn(),
         setCandidateNumberSortDirection: vi.fn(),

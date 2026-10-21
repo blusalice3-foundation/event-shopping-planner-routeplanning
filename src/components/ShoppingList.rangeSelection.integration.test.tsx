@@ -158,6 +158,43 @@ const SpaceRangeHarness = () => {
 };
 
 describe("ShoppingList range selection integration", () => {
+  it.each(["candidate", "execute"] as const)(
+    "restores parent checks when %s model members return after filtering",
+    (columnType) => {
+      const listProps = {
+        columnType,
+        showSpaceGroups: false,
+        items,
+      };
+      const view = render(<RangeHarness listProps={listProps} />);
+      fireEvent.click(itemCheckbox("first"));
+      fireEvent.click(itemCheckbox("last"));
+      const selected = readRangeState().selected;
+
+      view.rerender(
+        <RangeHarness listProps={{ ...listProps, items: items.slice(1, 3) }} />,
+      );
+      expect(readRangeState().selected).toEqual(selected);
+      expect(
+        screen.queryByRole("checkbox", {
+          name: "Select item Circle first - Title first",
+        }),
+      ).not.toBeInTheDocument();
+      expect(itemCheckbox("middle-a")).not.toBeChecked();
+
+      view.rerender(<RangeHarness listProps={listProps} />);
+      expect(itemCheckbox("first")).toBeChecked();
+      expect(itemCheckbox("last")).toBeChecked();
+      expect(itemCheckbox("middle-a")).not.toBeChecked();
+      expect(readRangeState().selected).toEqual(selected);
+
+      fireEvent.click(itemCheckbox("first"));
+      expect(itemCheckbox("first")).not.toBeChecked();
+      expect(itemCheckbox("last")).toBeChecked();
+      expect(readRangeState().selected).toEqual(["last"]);
+    },
+  );
+
   it("uses the same rendered range for the chain and the actual check state", () => {
     render(<RangeHarness />);
 

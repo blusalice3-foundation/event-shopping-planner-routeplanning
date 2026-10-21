@@ -47,6 +47,15 @@ export const useListInteractionState = () => {
     setRangeEnd(null);
   }, []);
 
+  const removeSelectedItemIds = useCallback((itemIds: readonly string[]) => {
+    setSelectedItemIds((previous) => {
+      if (!itemIds.some((id) => previous.has(id))) return previous;
+      const next = new Set(previous);
+      itemIds.forEach((id) => next.delete(id));
+      return next;
+    });
+  }, []);
+
   const clearRangeSelection = useCallback(() => {
     setRangeStart(null);
     setRangeEnd(null);
@@ -240,6 +249,7 @@ export const useListInteractionState = () => {
     executeCollapsedSpaces,
     setExecuteCollapsedSpaces,
     clearSelection,
+    removeSelectedItemIds,
     clearRangeSelection,
     clearBlockFilters,
     toggleBlockFilter,
