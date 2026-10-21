@@ -305,6 +305,72 @@ export async function verifyAcceptedScenario(
       targetMembership: true,
     };
   });
+  const beforeDestinationIds =
+    condition.direction === "candidate-to-execute"
+      ? before.executeIds
+      : before.items
+          .filter((item) => !before.executeIds.includes(item.id))
+          .map((item) => item.id);
+  const afterDestinationIds =
+    condition.direction === "candidate-to-execute"
+      ? after.executeIds
+      : after.items
+          .filter((item) => !after.executeIds.includes(item.id))
+          .map((item) => item.id);
+  const sourceIds =
+    condition.direction === "candidate-to-execute"
+      ? before.items
+          .filter((item) => !before.executeIds.includes(item.id))
+          .map((item) => item.id)
+      : before.executeIds;
+  const visitKey = (id: string) => {
+    const item = beforeById.get(id)!;
+    return JSON.stringify([item.eventDate, item.block, space(item.number)]);
+  };
+  const mergedVisits = new Map(
+    scenario.mergePairs.map((pair) => [visitKey(pair.target), pair.target]),
+  );
+  const destination = scenario.targetPrefix === "e" ? "execute" : "candidate";
+  const mountedDestinationIds = await page.evaluate(
+    (column) =>
+      [
+        ...document.querySelectorAll<HTMLElement>(
+          `[data-shopping-drag-column="${column}"] [data-item-id]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
+        ),
+      ].map((row) => row.dataset.itemId!),
+    destination,
+  );
+  const mergeTailProof = [...mergedVisits].map(([key, targetId]) => {
+    const existingIds = beforeDestinationIds.filter(
+      (id) => visitKey(id) === key,
+    );
+    const appendedIds = sourceIds.filter(
+      (id) => scenario.effectiveIds.includes(id) && visitKey(id) === key,
+    );
+    const expectedIds = [...existingIds, ...appendedIds];
+    const durableIds = afterDestinationIds.filter((id) => visitKey(id) === key);
+    expect(
+      durableIds,
+      `${key}: merge appends after the existing visit tail`,
+    ).toEqual(expectedIds);
+    const mountedIds = mountedDestinationIds.filter((id) =>
+      expectedIds.includes(id),
+    );
+    expect(
+      mountedIds,
+      `${key}: mounted member order follows the durable merge tail`,
+    ).toEqual(expectedIds.filter((id) => mountedDestinationIds.includes(id)));
+    return {
+      key,
+      targetId,
+      existingIds,
+      appendedIds,
+      expectedIds,
+      durableIds,
+      mountedIds,
+      allMembersMounted: mountedIds.length === expectedIds.length,
+    };
+  });
   const visibleTransferredIds = await page.evaluate((ids) => {
     return ids
       .filter((id) => {
@@ -325,7 +391,9 @@ export async function verifyAcceptedScenario(
       .sort((a, b) => {
         const rect = (id: string) =>
           document
-            .querySelector<HTMLElement>(`[data-item-id="${id}"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`)!
+            .querySelector<HTMLElement>(
+              `[data-item-id="${id}"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
+            )!
             .getBoundingClientRect();
         return rect(a).y - rect(b).y || rect(a).x - rect(b).x;
       });
@@ -336,6 +404,7 @@ export async function verifyAcceptedScenario(
     expectedExecuteMembership: [...wanted],
     fullItemContentPreserved: true,
     mergeProof,
+    mergeTailProof,
     visibleTransferredIds,
     offscreenTransferredIds: scenario.effectiveIds.filter(
       (id) => !visibleTransferredIds.includes(id),
