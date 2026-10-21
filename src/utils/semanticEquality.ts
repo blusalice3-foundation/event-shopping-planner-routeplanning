@@ -118,7 +118,7 @@ export function reuseEqualReferences<T>(previous: T, next: T): T {
   // Order deltas already carry immutable objects from this array. Keep their
   // identity when they move to another index instead of cloning their fields.
   const existingObjects = arrays
-    ? new Set(
+    ? new Set<unknown>(
         Object.values(before).filter(
           (value) => value !== null && typeof value === "object",
         ),

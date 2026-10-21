@@ -137,7 +137,7 @@ it("keeps every existing object and its optional metadata through a structural r
   result.forEach((item, index) => {
     expect(item).toBe(next[index]);
     expect(metadata.get(item)).toEqual({ visit: item.id });
-    expect(Object.hasOwn(item, "optional")).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(item, "optional")).toBe(true);
   });
   expect(changedItemPositions(previous, result)).toBeNull();
   expect([...itemPositions(result)]).toEqual([
@@ -172,12 +172,16 @@ it("keeps shared reordered objects while applying a genuinely changed clone and 
 it("preserves sparse array keys and own properties when existing object references move", () => {
   const first = { id: "first" },
     second = { id: "second" };
-  const previous = Object.assign(new Array<{ id: string }>(4), {
-    0: first,
-    3: second,
-    note: "before",
-  });
-  const next = Object.assign(new Array<{ id: string }>(4), {
+  type SparseItemArray = Array<{ id: string }> & { note: string };
+  const previous: SparseItemArray = Object.assign(
+    new Array<{ id: string }>(4),
+    {
+      0: first,
+      3: second,
+      note: "before",
+    },
+  );
+  const next: SparseItemArray = Object.assign(new Array<{ id: string }>(4), {
     0: second,
     2: first,
     note: "after",
