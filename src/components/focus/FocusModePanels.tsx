@@ -365,7 +365,7 @@ const FocusVisitItems = React.memo(
           size={items.length}
           blinkPrice={blinkingPriceItemIds.has(item.id)}
           blinkLimited={blinkingLimitedMissingItemIds.has(item.id)}
-          retain={retainedItemIds?.has(item.id)}
+          retain={index === 0 || retainedItemIds?.has(item.id)}
           prewarm={prewarm}
         />
       ))}
