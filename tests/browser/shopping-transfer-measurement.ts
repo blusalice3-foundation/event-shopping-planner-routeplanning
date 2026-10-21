@@ -644,6 +644,117 @@ async function armProbe(
     { id, anchor, destination, input, measurementId, options },
   );
 }
+/** Validate the actual source owner before any trusted drag input or measured clock. */
+export async function prepareTransferSourceOrigin(page: Page, id: string) {
+  const proof = await transferRow(page, id).evaluate((source, sourceId) => {
+    const bounds = source.getBoundingClientRect();
+    const sourceRect = {
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+    };
+    const candidates = [
+      {
+        origin: "card-edge",
+        point: { x: bounds.x + 4, y: bounds.y + 35 },
+      },
+    ];
+    const handle = source.querySelector("[data-drag-handle] > svg");
+    if (handle) {
+      const box = handle.getBoundingClientRect();
+      candidates.push({
+        origin: "drag-handle",
+        point: { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+      });
+    }
+    for (const [x, y] of [
+      [80, 35],
+      [bounds.width * 0.3, bounds.height * 0.4],
+      [bounds.width * 0.5, 24],
+      [bounds.width * 0.6, bounds.height * 0.65],
+    ])
+      candidates.push({
+        origin: "card-body",
+        point: { x: bounds.x + x, y: bounds.y + y },
+      });
+    const describe = (candidate: (typeof candidates)[number]) => {
+      const { point } = candidate;
+      const hit = document.elementFromPoint(point.x, point.y);
+      const owner = hit?.closest<HTMLElement>("[data-item-id]");
+      const sourceContainsHit = !!hit && source.contains(hit);
+      const sourceOwnerMatched = owner === source;
+      const interactive = !!hit?.closest(
+        '[data-no-long-press],button,input,select,textarea,a,[contenteditable="true"]',
+      );
+      const withinSource =
+        bounds.width > 0 &&
+        bounds.height > 0 &&
+        point.x > bounds.left &&
+        point.x < bounds.right &&
+        point.y > bounds.top &&
+        point.y < bounds.bottom;
+      const withinViewport =
+        point.x > 0 &&
+        point.x < innerWidth &&
+        point.y > 0 &&
+        point.y < innerHeight;
+      const hitBounds = hit?.getBoundingClientRect();
+      return {
+        ...candidate,
+        hitTagName: hit?.tagName ?? null,
+        hitTitle: hit?.getAttribute("title") ?? null,
+        hitItemId: owner?.dataset.itemId ?? null,
+        sourceContainsHit,
+        sourceOwnerMatched,
+        interactive,
+        withinSource,
+        withinViewport,
+        matched:
+          sourceContainsHit &&
+          sourceOwnerMatched &&
+          !interactive &&
+          withinSource &&
+          withinViewport &&
+          source.getAttribute("draggable") === "true",
+        hitRect: hitBounds
+          ? {
+              x: hitBounds.x,
+              y: hitBounds.y,
+              width: hitBounds.width,
+              height: hitBounds.height,
+            }
+          : null,
+      };
+    };
+    const attempts: ReturnType<typeof describe>[] = [];
+    let selectedHit: ReturnType<typeof describe> | null = null;
+    for (const candidate of candidates) {
+      const attempt = describe(candidate);
+      attempts.push(attempt);
+      if (attempt.matched) {
+        selectedHit = attempt;
+        break;
+      }
+    }
+    return {
+      sourceId,
+      sourceRect,
+      attempts,
+      initialRejection: attempts[0].matched ? null : attempts[0],
+      selectedHit,
+    };
+  }, id);
+  expect(
+    proof.selectedHit,
+    `No eligible real source origin: ${JSON.stringify(proof)}`,
+  ).not.toBeNull();
+  return {
+    sourcePoint: proof.selectedHit!.point,
+    sourceOrigin: proof.selectedHit!.origin,
+    sourceHitTest: proof,
+  };
+}
 export async function beginGesture(
   page: Page,
   session: CDPSession,
@@ -655,51 +766,14 @@ export async function beginGesture(
     "gestureTargetSelector" | "guideKind"
   > = {},
 ) {
-  const source = await transferRow(page, id).boundingBox(),
-    target = await (
-      options.gestureTargetSelector
-        ? page.locator(options.gestureTargetSelector)
-        : transferRow(page, anchor)
-    ).boundingBox();
-  expect(source).not.toBeNull();
+  const origin = await prepareTransferSourceOrigin(page, id);
+  const target = await (
+    options.gestureTargetSelector
+      ? page.locator(options.gestureTargetSelector)
+      : transferRow(page, anchor)
+  ).boundingBox();
   expect(target).not.toBeNull();
-  let from = { x: source!.x + 4, y: source!.y + 35 };
-  let sourceOrigin = "card-edge";
-  if (input === "touch") {
-    const blocked = await page.evaluate(
-      (point) =>
-        !!document
-          .elementFromPoint(point.x, point.y)
-          ?.closest("[data-no-long-press],button,input,select,textarea,a"),
-      from,
-    );
-    if (blocked) {
-      const handle = await transferRow(page, id)
-        .locator("[data-drag-handle] > svg")
-        .boundingBox();
-      expect(
-        handle,
-        "selected touch source needs an actual drag handle",
-      ).not.toBeNull();
-      from = {
-        x: handle!.x + handle!.width / 2,
-        y: handle!.y + handle!.height / 2,
-      };
-      expect(
-        await page.evaluate(
-          (point) =>
-            !!document
-              .elementFromPoint(point.x, point.y)
-              ?.closest("[data-drag-handle]") &&
-            !document
-              .elementFromPoint(point.x, point.y)
-              ?.closest("[data-no-long-press]"),
-          from,
-        ),
-      ).toBe(true);
-      sourceOrigin = "drag-handle";
-    }
-  }
+  const from = origin.sourcePoint;
   const to = {
     x: target!.x + 4,
     y: target!.y + Math.min(target!.height - 4, target!.height * 0.8),
@@ -730,7 +804,7 @@ export async function beginGesture(
       )
       .first(),
   ).toBeVisible();
-  return { ...to, sourcePoint: from, sourceOrigin };
+  return { ...to, ...origin };
 }
 /** Resolve one real checkbox before input. Never scroll, wait, or retarget a fixed ID. */
 async function prepareNextInput(
