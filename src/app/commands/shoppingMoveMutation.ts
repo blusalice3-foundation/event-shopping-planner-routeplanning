@@ -22,7 +22,7 @@ import {
   applyChangedFields,
   changedFieldConflicts,
   confirmChangedFieldConflicts,
-  planProjectedMutation,
+  planShoppingOrderMutation,
 } from "../../features/consistency/domain/mutations";
 import { recordEntry } from "../../utils/ownRecord";
 import { semanticEqual } from "../../utils/semanticEquality";
@@ -238,7 +238,7 @@ export function planShoppingMove(
   );
   const days = recordEntry(projected.executeModeItems, eventName) ?? {};
   const dayKey = existingDayKey(days, day) ?? day;
-  const plan = planProjectedMutation(
+  const plan = planShoppingOrderMutation(
     scoped,
     {
       ...(ordered === items
@@ -261,7 +261,6 @@ export function planShoppingMove(
     { eventName, day },
     choices,
     projected,
-    true,
   );
   const next = mergeDaySnapshot(
     snapshot,
