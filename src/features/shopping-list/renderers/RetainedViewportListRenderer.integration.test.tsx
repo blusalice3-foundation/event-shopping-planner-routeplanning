@@ -5,7 +5,9 @@ import { act, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildListRows } from "../model/buildListRows";
 import type { ShoppingItem } from "../../../types/item";
+import { getSpaceKey } from "../../../utils/spaceGrouping";
 import { RetainedViewportListRenderer } from "./RetainedViewportListRenderer";
+import { useCardExpansion } from "./ViewportRowState";
 import {
   prewarmViewportContent,
   revealViewportContent,
@@ -104,6 +106,8 @@ const items: ShoppingItem[] = Array.from({ length: 100 }, (_, index) => ({
   purchaseStatus: "None",
   remarks: "エラーが発生しました",
 }));
+
+const fixedSlotModes = [undefined, "current-model"] as const;
 
 describe("retained viewport rendering", () => {
   it("keeps all canonical accessible rows while generating only visible controls", () => {
@@ -511,13 +515,13 @@ describe("retained viewport rendering", () => {
     expect(input).toHaveFocus();
   });
 
-  it("reveals an offscreen grouped target and its ancestor before navigation", () => {
+  it.each(fixedSlotModes)("reveals an offscreen grouped target and its ancestor before navigation (%s)", (groupSlotMode) => {
     const model = buildListRows({
       items,
       groups: [{ key: "A1", label: "A1", items }],
     });
     const view = render(
-      <RetainedViewportListRenderer
+      <RetainedViewportListRenderer groupSlotMode={groupSlotMode}
         model={model}
         accessibleLabel="買い物リスト"
         getVisitId={(item) => "visit-" + item.id}
@@ -547,13 +551,13 @@ describe("retained viewport rendering", () => {
     expect(view.container.querySelectorAll("input")).toHaveLength(1);
   });
 
-  it("keeps collapsed group navigation anchors without creating hidden item controls", () => {
+  it.each(fixedSlotModes)("keeps collapsed group navigation anchors without creating hidden item controls (%s)", (groupSlotMode) => {
     const model = buildListRows({
       items,
       groups: [{ key: "A1", label: "A1", items, collapsed: true }],
     });
     const view = render(
-      <RetainedViewportListRenderer
+      <RetainedViewportListRenderer groupSlotMode={groupSlotMode}
         model={model}
         accessibleLabel="買い物リスト"
         getGroupVisitId={() => "collapsed-visit"}
@@ -568,13 +572,13 @@ describe("retained viewport rendering", () => {
     expect(view.getByRole("button", { name: "展開する" })).toBeInTheDocument();
   });
 
-  it("activates every item, including deferred children of groups, before printing", () => {
+  it.each(fixedSlotModes)("activates every item, including deferred children of groups, before printing (%s)", (groupSlotMode) => {
     const model = buildListRows({
       items,
       groups: [{ key: "A1", label: "A1", items }],
     });
     const view = render(
-      <RetainedViewportListRenderer
+      <RetainedViewportListRenderer groupSlotMode={groupSlotMode}
         model={model}
         accessibleLabel="買い物リスト"
         renderGroup={(_group, rows) => (
@@ -888,7 +892,7 @@ it.each([75, 125, 150, 200])(
   },
 );
 
-it("renders only the changed execution group and uses the latest render closure", () => {
+it.each(fixedSlotModes)("renders only the changed execution group and uses the latest render closure (%s)", (groupSlotMode) => {
   const groupItems = [items[0], items[1]];
   const makeModel = (members: ShoppingItem[]) =>
     buildListRows({
@@ -926,7 +930,7 @@ it("renders only the changed execution group and uses the latest render closure"
       );
     };
   const view = render(
-    <RetainedViewportListRenderer
+    <RetainedViewportListRenderer groupSlotMode={groupSlotMode}
       defer={false}
       model={makeModel(groupItems)}
       accessibleLabel="buy"
@@ -942,7 +946,7 @@ it("renders only the changed execution group and uses the latest render closure"
     groupItems[1],
   ];
   view.rerender(
-    <RetainedViewportListRenderer
+    <RetainedViewportListRenderer groupSlotMode={groupSlotMode}
       defer={false}
       model={makeModel(next)}
       accessibleLabel="buy"
@@ -950,7 +954,7 @@ it("renders only the changed execution group and uses the latest render closure"
       renderGroup={renderGroups(next)}
     />,
   );
-  expect(shoppingPerformance.read().renders["execution-viewport"]).toBe(1);
+  expect(shoppingPerformance.read().renders["execution-viewport"] ?? 0).toBe(groupSlotMode ? 0 : 1);
   expect(rendered).toHaveBeenCalledTimes(1);
   expect(rendered).toHaveBeenCalledWith("space-0");
   expect(view.getByText("Purchased")).toBeVisible();
@@ -982,7 +986,7 @@ it("keeps overlapping prewarm requests until both navigation owners release them
   expect(view.queryByRole("textbox")).toBeNull();
 });
 
-it("updates a collapsed space summary without rendering unrelated collapsed spaces", () => {
+it.each(fixedSlotModes)("updates a collapsed space summary without rendering unrelated collapsed spaces (%s)", (groupSlotMode) => {
   const sources = [items[0], items[1]];
   const model = buildListRows({
     items: sources,
@@ -1009,10 +1013,10 @@ it("updates a collapsed space summary without rendering unrelated collapsed spac
       );
     },
   });
-  const view = render(<RetainedViewportListRenderer {...props(sources)} />);
+  const view = render(<RetainedViewportListRenderer groupSlotMode={groupSlotMode} {...props(sources)} />);
   rendered.mockClear();
   view.rerender(
-    <RetainedViewportListRenderer
+    <RetainedViewportListRenderer groupSlotMode={groupSlotMode}
       {...props([{ ...sources[0], purchaseStatus: "Purchased" }, sources[1]])}
     />,
   );
@@ -1021,7 +1025,7 @@ it("updates a collapsed space summary without rendering unrelated collapsed spac
   expect(view.getByText("Purchased")).toBeVisible();
 });
 
-it("reveals the committed group after a concurrent render is discarded", () => {
+it.each(fixedSlotModes)("reveals the committed group after a concurrent render is discarded (%s)", (groupSlotMode) => {
   const blocked = new Promise<void>(() => {});
   const Suspend = ({ value }: { value: string }) => {
     if (value === "discarded") throw blocked;
@@ -1034,7 +1038,7 @@ it("reveals the committed group after a concurrent render is discarded", () => {
     const member = { ...items[0], remarks: value };
     return (
       <React.Suspense fallback={<span>ロード中</span>}>
-        <RetainedViewportListRenderer
+        <RetainedViewportListRenderer groupSlotMode={groupSlotMode}
           model={buildListRows({
             items: [member],
             groups: [{ key: "group", label: "訪問先", items: [member] }],
@@ -1062,7 +1066,7 @@ it("reveals the committed group after a concurrent render is discarded", () => {
   expect(view.queryByText("discarded", { exact: true })).toBeNull();
 });
 
-it("propagates dialog retention through a memoized group and releases the row after closing", () => {
+it.each(fixedSlotModes)("propagates dialog retention through a memoized group and releases the row after closing (%s)", (groupSlotMode) => {
   const model = buildListRows({
     items,
     groups: [{ key: "A1", label: "A1", items }],
@@ -1092,10 +1096,10 @@ it("propagates dialog retention through a memoized group and releases the row af
     renderGroup,
     renderDependencies: dependencies,
   };
-  const view = render(<RetainedViewportListRenderer {...props} />);
+  const view = render(<RetainedViewportListRenderer groupSlotMode={groupSlotMode} {...props} />);
   const input = view.getByRole("textbox", { name: "item-0" });
   view.rerender(
-    <RetainedViewportListRenderer
+    <RetainedViewportListRenderer groupSlotMode={groupSlotMode}
       {...props}
       pinnedRowKeys={new Set([rowKey])}
     />,
@@ -1115,7 +1119,7 @@ it("propagates dialog retention through a memoized group and releases the row af
   expect(view.getByRole("textbox", { name: "item-0" })).toBe(input);
   expect(input).toHaveValue("保持する入力");
   view.rerender(
-    <RetainedViewportListRenderer {...props} pinnedRowKeys={new Set()} />,
+    <RetainedViewportListRenderer groupSlotMode={groupSlotMode} {...props} pinnedRowKeys={new Set()} />,
   );
   leaveViewport();
   expect(view.queryByRole("textbox", { name: "item-0" })).toBeNull();
@@ -1380,4 +1384,319 @@ it("keeps an appended offscreen row deferred after the original parent anchor is
       buildListRows({ items: [inserted] }).itemRows[0].rowKey,
   );
   expect(pending).toHaveAttribute("data-viewport-active", "false");
+});
+
+it("keeps all 500 placeholder attributes equivalent and updates only the changed metadata consumer", () => {
+  const members = Array.from({ length: 500 }, (_, index) => ({
+    ...items[0], id: `slot-${index}`, number: String(index),
+  }));
+  const content = (
+    groupSlotMode: (typeof fixedSlotModes)[number],
+    source: ShoppingItem[],
+  ) => (
+    <RetainedViewportListRenderer
+      groupSlotMode={groupSlotMode}
+      model={buildListRows({
+        items: source,
+        groups: source.map((item) => ({ key: item.id, label: item.circle, items: [item] })),
+      })}
+      accessibleLabel="全件同値"
+      getVisitId={(item) => `visit-${item.id}`}
+      renderDependencies={[]}
+      renderGroup={(_group, rows) => <>{rows.map((child) => child.render(<input />))}</>}
+    />
+  );
+  const reference = render(content(undefined, members));
+  const view = render(content("current-model", members));
+  expect(view.container.innerHTML).toBe(reference.container.innerHTML);
+  const next = [{ ...members[0], quantity: 7, remarks: "ユーザー登録・更新" }, ...members.slice(1)];
+  shoppingPerformance.enable();
+  shoppingPerformance.reset();
+  const readContext = vi.spyOn(React, "useContext");
+  view.rerender(content("current-model", next));
+  // No active body exists: only this group's metadata consumer may run.
+  expect(readContext).toHaveBeenCalledTimes(1);
+  expect(shoppingPerformance.read().renders["execution-viewport"] ?? 0).toBe(0);
+  readContext.mockRestore();
+  reference.rerender(content(undefined, next));
+  expect(view.container.innerHTML).toBe(reference.container.innerHTML);
+  const inserted = { ...members[0], id: "inserted-slot" };
+  for (const reordered of [[inserted, ...next.slice().reverse()], next.slice(1)]) {
+    reference.rerender(content(undefined, reordered));
+    view.rerender(content("current-model", reordered));
+    expect(view.container.innerHTML).toBe(reference.container.innerHTML);
+    const rows = [...view.container.querySelectorAll<HTMLElement>("[aria-posinset]")];
+    expect(rows).toHaveLength(reordered.length);
+    rows.forEach((row, index) => {
+      expect(row).toHaveAttribute("aria-posinset", String(index + 1));
+      expect(row).toHaveAttribute("aria-setsize", String(reordered.length));
+    });
+  }
+});
+
+describe.each(fixedSlotModes)("fixed group slot strategy %s", (groupSlotMode) => {
+  it("keeps every native option mounted when IntersectionObserver is unavailable", () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    const members = items.slice(0, 3);
+    const view = render(
+      <RetainedViewportListRenderer
+        groupSlotMode={groupSlotMode}
+        model={buildListRows({ items: members, groups: [{ key: "all", label: "全件", items: members }] })}
+        accessibleLabel="通常の全件表示"
+        renderGroup={(_group, rows) => <>{rows.map((child) => child.render(
+          <select aria-label={child.row.itemId} defaultValue="1">
+            <option value="1">ユーザー登録</option>
+            <option value="2">エラーが発生しました</option>
+          </select>,
+        ))}</>}
+      />,
+    );
+    expect(view.container.querySelectorAll("select")).toHaveLength(3);
+    expect(view.container.querySelectorAll("option")).toHaveLength(6);
+    expect(view.container.querySelectorAll("[data-row-key]")).toHaveLength(4);
+  });
+
+  it("keeps hall boundaries, section totals, raw stripes, and canonical callback indices current", () => {
+    const clicked = vi.fn();
+    const sources = items.slice(0, 4);
+    type Group = { key: string; label: string; hall: string; items: ShoppingItem[] };
+    const groupsFor = (order: ShoppingItem[]) => order.map((item) => ({
+      key: item.id, label: item.id, hall: item === sources[0] || item === sources[1] ? "H1" : "H2", items: [item],
+    }));
+    const content = (raw: ShoppingItem[], groups: Group[], marker: string) => (
+      <RetainedViewportListRenderer
+        groupSlotMode={groupSlotMode}
+        defer={false}
+        model={buildListRows({ items: raw, groups })}
+        accessibleLabel="境界と位置"
+        renderDependencies={[]}
+        getGroupVersion={(key) => groups.find((group) => group.key === key)}
+        renderGroup={(row, children, index) => {
+          const position = groups.findIndex((group) => group.key === row.groupKey);
+          const group = groups[position];
+          let count = 0;
+          for (let cursor = position; groups[cursor]?.hall === group.hall; cursor++) count += groups[cursor].items.length;
+          return (
+            <section data-testid={row.groupKey} data-model-index={index}>
+              <header>{groups[position - 1]?.hall !== group.hall ? `${group.hall}:${count}` : ""}</header>
+              {children.map((child) => child.render(
+                <button
+                  data-testid={`card-${child.row.itemId}`}
+                  data-striped={raw.indexOf(child.row.item) % 2 !== 0}
+                  data-can-move-up={raw.indexOf(child.row.item) > 0}
+                  data-canonical-index={child.index}
+                  onClick={() => clicked(marker)}
+                >{child.row.item.title}</button>,
+              ))}
+            </section>
+          );
+        }}
+      />
+    );
+    const view = render(content(sources, groupsFor(sources), "first"));
+    const header = (item: ShoppingItem) => view.getByTestId(item.id).querySelector("header")!.textContent;
+    expect(header(sources[1])).toBe("");
+    view.rerender(content(sources, groupsFor([sources[2], sources[1], sources[0], sources[3]]), "boundary"));
+    // B's own index/membership/ARIA size are unchanged; its previous hall changed.
+    expect(header(sources[1])).toBe("H1:2");
+    view.rerender(content(sources, groupsFor([sources[1], sources[0], sources[2], sources[3]]), "section"));
+    expect(header(sources[1])).toBe("H1:2");
+    view.rerender(content(sources, groupsFor([sources[1], sources[2], sources[0], sources[3]]), "short-section"));
+    expect(header(sources[1])).toBe("H1:1");
+    const raw = [sources[0], sources[2], sources[1], sources[3]];
+    const grouped: Group[] = [
+      { key: "merged", label: "同一訪問", hall: "H1", items: [sources[0], sources[1]] },
+      { key: sources[2].id, label: sources[2].id, hall: "H2", items: [sources[2]] },
+      { key: sources[3].id, label: sources[3].id, hall: "H2", items: [sources[3]] },
+    ];
+    view.rerender(content(raw, grouped, "raw-before"));
+    expect(view.getByTestId(`card-${sources[2].id}`)).toHaveAttribute("data-striped", "true");
+    const nextRaw = [sources[0], sources[1], sources[2], sources[3]];
+    view.rerender(content(nextRaw, grouped.map((group) => ({ ...group })), "raw-after"));
+    const moved = view.getByTestId(`card-${sources[2].id}`);
+    expect(moved).toHaveAttribute("data-striped", "false");
+    expect(moved).toHaveAttribute("data-can-move-up", "true");
+    expect(moved).toHaveAttribute("data-canonical-index", "4");
+    expect(view.getByTestId(sources[2].id)).toHaveAttribute("data-model-index", "3");
+    fireEvent.click(moved);
+    expect(clicked).toHaveBeenLastCalledWith("raw-after");
+  });
+
+  it("reveals optional content and focuses the latest handler after an inactive update", () => {
+    const used = vi.fn();
+    const content = (url: string, marker: string) => {
+      const member = { ...items[0], url };
+      return (
+        <RetainedViewportListRenderer
+          groupSlotMode={groupSlotMode}
+          model={buildListRows({ items: [member], groups: [{ key: "pending", label: "待機", items: [member] }] })}
+          accessibleLabel="最新の本文"
+          renderDependencies={[marker]}
+          getVisitId={() => "optional-target"}
+          renderGroup={(_group, rows) => <>{rows.map((child) => child.render(
+            <input aria-label="URL" value={child.row.item.url} readOnly onFocus={() => used(marker)} />,
+          ))}</>}
+        />
+      );
+    };
+    const view = render(content("https://example.com/old", "old"));
+    expect(view.queryByRole("textbox")).toBeNull();
+    view.rerender(content("https://example.com/current", "current"));
+    const pending = view.container.querySelector<HTMLElement>('[data-space-navigation-visit-id="optional-target"]')!;
+    act(() => pending.focus());
+    expect(view.getByRole("textbox", { name: "URL" })).toHaveValue("https://example.com/current");
+    expect(view.getByRole("textbox", { name: "URL" })).toHaveFocus();
+    expect(used).toHaveBeenLastCalledWith("current");
+  });
+
+  it("preserves the root and list state through hall/space key collisions, layout, flat and empty transitions", () => {
+    const scroll = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
+    const PersistentRow = ({ item }: { item: ShoppingItem }) => {
+      const [expanded, setExpanded] = useCardExpansion(item.id);
+      return (
+        <div>
+          <button aria-label={`expand-${item.id}`} aria-expanded={expanded.has("title")} onClick={() => setExpanded(new Set(["title"]))}>展開</button>
+          <input aria-label={item.id} defaultValue={item.circle} />
+        </div>
+      );
+    };
+    const content = (grouping: "space" | "hall" | "flat" | "empty", layoutMode: "pc" | "smartphone" = "pc", defer = false) => {
+      const members = grouping === "empty" ? [] : items.slice(0, 2);
+      const common = {
+        groupSlotMode, layoutMode, defer,
+        zoomPercent: layoutMode === "pc" ? 100 : 150,
+        accessibleLabel: "保持するリスト",
+        beforeContent: <input aria-label="リスト入力" defaultValue="保持" />,
+        pinnedRowKeys: new Set(buildListRows({ items: members }).itemRows.map((row) => row.rowKey)),
+      };
+      const grouped = grouping === "space" || grouping === "hall";
+      return grouped ? (
+        <RetainedViewportListRenderer
+          {...common}
+          model={buildListRows({ items: members, groups: [{ key: "shared-key", label: grouping, items: members }] })}
+          renderDependencies={[grouping]}
+          renderGroup={(_group, rows) => <section>{rows.map((child) => child.render(<PersistentRow item={child.row.item} />))}</section>}
+        />
+      ) : (
+        <RetainedViewportListRenderer
+          {...common}
+          model={buildListRows({ items: members })}
+          renderRow={(row) => row.kind === "item" ? <PersistentRow item={row.item} /> : null}
+        />
+      );
+    };
+    const view = render(content("space"));
+    const root = view.container.firstElementChild;
+    const input = view.getByRole("textbox", { name: "item-0" });
+    fireEvent.click(view.getByRole("button", { name: "expand-item-0" }));
+    fireEvent.change(input, { target: { value: "編集中" } });
+    input.focus();
+    for (const next of [content("hall"), content("space", "smartphone", true), content("hall", "pc", true)]) {
+      view.rerender(next);
+      expect(view.container.firstElementChild).toBe(root);
+      expect(view.getByRole("textbox", { name: "item-0" })).toBe(input);
+      expect(input).toHaveFocus();
+      expect(input).toHaveValue("編集中");
+      expect(view.getByRole("button", { name: "expand-item-0" })).toHaveAttribute("aria-expanded", "true");
+    }
+    expect(scroll).toHaveBeenCalledWith({ top: 0, behavior: "instant" });
+    const listInput = view.getByRole("textbox", { name: "リスト入力" });
+    listInput.focus();
+    view.rerender(content("flat"));
+    expect(view.getByRole("button", { name: "expand-item-0" })).toHaveAttribute("aria-expanded", "true");
+    view.rerender(content("empty"));
+    expect(view.container.firstElementChild).toBe(root);
+    expect(view.getByRole("textbox", { name: "リスト入力" })).toBe(listInput);
+    expect(listInput).toHaveFocus();
+    expect(view.queryByRole("button", { name: "expand-item-0" })).toBeNull();
+    view.rerender(content("space"));
+    // Deleting an item clears its retained state, as on the generic path.
+    expect(view.getByRole("button", { name: "expand-item-0" })).toHaveAttribute("aria-expanded", "false");
+  });
+});
+
+it("keeps the actual ShoppingList retained strategy, root and row state through all grouping branches", () => {
+  vi.stubGlobal("visualViewport", { scale: 1, addEventListener: vi.fn(), removeEventListener: vi.fn() });
+  vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+  vi.spyOn(window, "scrollBy").mockImplementation(() => {});
+  vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(800);
+  vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(200);
+  const sharedKey = getSpaceKey("A", "01a");
+  const hallDefinitions = [{ id: sharedKey, name: "同一keyのホール", vertices: [], blockNames: ["A", "B"] }];
+  const initial: ShoppingItem[] = [
+    { ...items[0], number: "01a", title: "省略される新刊タイトル".repeat(8), manualHallId: sharedKey },
+    { ...items[1], block: "B", number: "02a", manualHallId: sharedKey },
+  ];
+  const latest = [{ ...initial[0], url: "https://example.com/current" }, initial[1]];
+  const oldEdit = vi.fn();
+  const currentEdit = vi.fn();
+  const common = {
+    onUpdateItem: vi.fn(), onMoveItem: vi.fn(), onDeleteRequest: vi.fn(),
+    onSelectItem: vi.fn(), selectedItemIds: new Set<string>(),
+    layoutMode: "pc" as const, viewMode: "edit" as const, columnType: "execute" as const,
+    skipLimitedPurchaseForSingleQuantity: false,
+    listRendererPreferencePort: { read: () => ({ status: "ok" as const, value: "auto" as const }), write: () => true },
+  };
+  const content = (grouping: "empty" | "space" | "hall" | "flat", members = latest, onEditRequest = currentEdit) => (
+    <ShoppingList
+      {...common}
+      items={grouping === "empty" ? [] : members}
+      hallDefinitions={hallDefinitions}
+      showSpaceGroups={grouping === "space"}
+      showHallGroups={grouping === "hall"}
+      onEditRequest={onEditRequest}
+    />
+  );
+  const view = render(content("empty"));
+  const root = view.container.firstElementChild as HTMLElement;
+  const assertRoot = () => {
+    expect(view.container.firstElementChild).toBe(root);
+    expect(root).toHaveAttribute("data-list-renderer-strategy", "retained-viewport");
+  };
+  assertRoot();
+  view.rerender(content("space", initial, oldEdit));
+  assertRoot();
+  expect(root.querySelectorAll("[data-space-group-key]")).toHaveLength(2);
+  const groupGate = [...root.querySelectorAll<HTMLElement>("[data-viewport-row-key]")].find((row) => row.dataset.viewportRowKey === `group:${JSON.stringify(sharedKey)}`)!;
+  expect(groupGate).toBeInTheDocument();
+  const title = () => view.getByTitle(initial[0].title);
+  fireEvent.click(title());
+  expect(title()).toHaveAttribute("aria-expanded", "true");
+  const card = () => root.querySelector<HTMLElement>('[data-item-id="item-0"]')!;
+  const memo = card().querySelector<HTMLElement>('[aria-label="利用者メモ"]')!;
+  act(() => memo.focus());
+  shoppingPerformance.enable();
+  shoppingPerformance.reset();
+  view.rerender(content("space"));
+  expect(shoppingPerformance.read().renders["execution-viewport"] ?? 0).toBe(0);
+  expect(card().querySelector('[aria-label="利用者メモ"]')).toBe(memo);
+  expect(memo).toHaveFocus();
+  expect(card().querySelector('[aria-label="URLを開く"]')).toHaveAttribute("href", latest[0].url);
+  fireEvent.click([...card().querySelectorAll("button")].find((button) => button.textContent?.trim() === "編集")!);
+  expect(currentEdit).toHaveBeenLastCalledWith(latest[0]);
+  expect(oldEdit).not.toHaveBeenCalled();
+  // Real hall/space bodies have different child structures. Retain their shared
+  // Gate and list state; do not invent an input-DOM guarantee that generic lacks.
+  root.tabIndex = 0;
+  act(() => root.focus());
+  for (const grouping of ["hall", "space", "flat"] as const) {
+    view.rerender(content(grouping));
+    assertRoot();
+    expect(root).toHaveFocus();
+    expect(title()).toHaveAttribute("aria-expanded", "true");
+    if (grouping !== "flat") expect(groupGate).toBeInTheDocument();
+    const rows = [...root.querySelectorAll<HTMLElement>("[aria-posinset]")];
+    expect(rows).toHaveLength(2);
+    rows.forEach((row, index) => {
+      expect(row).toHaveAttribute("aria-posinset", String(index + 1));
+      expect(row).toHaveAttribute("aria-setsize", "2");
+    });
+  }
+  view.rerender(content("empty"));
+  assertRoot();
+  expect(root).toHaveFocus();
+  expect(root.querySelectorAll("[aria-posinset]")).toHaveLength(0);
+  view.rerender(content("space"));
+  assertRoot();
+  expect(title()).toHaveAttribute("aria-expanded", "false");
 });

@@ -499,6 +499,9 @@ const getExecutionVisitIdForItem = (item: ShoppingItem): string =>
     priorityLevel: item.priorityLevel,
   });
 
+// Keep the retained strategy fixed across every grouping and empty state.
+const SHOPPING_LIST_GROUP_SLOT_MODE = "current-model" as const;
+
 const ShoppingList: React.FC<ShoppingListProps> = ({
   items,
   dragSourceItems = items,
@@ -3018,6 +3021,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   if (items.length === 0) {
     return (
       <GroupedListRenderer
+        groupSlotMode={SHOPPING_LIST_GROUP_SLOT_MODE}
         defer={useRetainedViewport}
         zoomPercent={viewportZoomPercent}
         pinnedRowKeys={
@@ -4356,6 +4360,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
     return (
       <GroupedListRenderer
+        groupSlotMode={SHOPPING_LIST_GROUP_SLOT_MODE}
         defer={useRetainedViewport}
         zoomPercent={viewportZoomPercent}
         pinnedRowKeys={
@@ -5093,6 +5098,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
     return (
       <GroupedListRenderer
+        groupSlotMode={SHOPPING_LIST_GROUP_SLOT_MODE}
         defer={useRetainedViewport}
         zoomPercent={viewportZoomPercent}
         pinnedRowKeys={
@@ -5329,6 +5335,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   if (useRetainedViewportStructure) {
     return (
       <RetainedViewportListRenderer
+        groupSlotMode={SHOPPING_LIST_GROUP_SLOT_MODE}
         defer={useRetainedViewport}
         zoomPercent={viewportZoomPercent}
         pinnedRowKeys={
