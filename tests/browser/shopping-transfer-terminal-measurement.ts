@@ -126,7 +126,15 @@ async function gesture(
     target = await transferRow(page, anchor).boundingBox();
   expect(source).not.toBeNull();
   expect(target).not.toBeNull();
-  const from = { x: source!.x + 4, y: source!.y + 35 };
+  // Candidate range chains occupy the outer left edge; use its actual drag handle.
+  const handle =
+    condition.scenario === "reject"
+      ? await transferRow(page, id).locator("[data-drag-handle]").boundingBox()
+      : null;
+  if (condition.scenario === "reject") expect(handle).not.toBeNull();
+  const from = handle
+    ? { x: handle.x + handle.width / 2, y: handle.y + handle.height / 2 }
+    : { x: source!.x + 4, y: source!.y + 35 };
   const fraction =
     condition.scenario === "noop" || condition.scenario === "reject"
       ? 0.2
@@ -520,7 +528,9 @@ export async function measureTerminal(
       sessionId: number;
       acknowledged: boolean;
     }> = [];
-  const collect = (value: { value: Trace[] }) => trace.push(...value.value);
+  const collect = ({ value }: { value: Array<Record<string, string>> }) => {
+    trace.push(...(value as unknown as Trace[]));
+  };
   const acknowledgements: Promise<unknown>[] = [];
   const capture = (event: {
     data: string;
@@ -742,7 +752,7 @@ export async function measureTerminal(
     session.off("Page.screencastFrame", capture);
     await Promise.all(acknowledgements);
     const complete = new Promise<void>((resolve) =>
-      session.once("Tracing.tracingComplete", resolve),
+      session.once("Tracing.tracingComplete", () => resolve()),
     );
     await session.send("Tracing.end");
     await complete;
@@ -1042,7 +1052,7 @@ export async function measureTerminal(
       if (!stopped) {
         await session.send("Page.stopScreencast").catch(() => {});
         const done = new Promise<void>((resolve) =>
-          session.once("Tracing.tracingComplete", resolve),
+          session.once("Tracing.tracingComplete", () => resolve()),
         );
         await session
           .send("Tracing.end")
