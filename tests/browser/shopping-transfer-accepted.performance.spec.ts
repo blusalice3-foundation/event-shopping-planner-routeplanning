@@ -138,6 +138,11 @@ for (const condition of acceptedTransferConditions)
                   operationId:
                     "save" in warmup ? warmup.save.operationId : null,
                   commits: "save" in warmup ? warmup.save.commits : null,
+                  responseMs:
+                    "response" in warmup ? warmup.response.durationMs : null,
+                  saveMs: "save" in warmup ? warmup.save.durationMs : null,
+                  auxiliary: true,
+                  firstFixtureMove: true,
                   selectionReset: true,
                 },
                 baselineItemOrder: before.items.map((item) => item.id),

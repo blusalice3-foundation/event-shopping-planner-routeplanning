@@ -43,14 +43,15 @@ for (const condition of transferConditions)
       );
       let failure: unknown;
       let finalState: unknown;
+      let warmup: Awaited<ReturnType<typeof measureTransfer>> | undefined;
       try {
         if (condition.input === "touch")
           await session.send("Emulation.setTouchEmulationEnabled", {
             enabled: true,
             maxTouchPoints: 1,
           });
-        // One fixed, unrecorded move warms the same product path. Measured IDs each move once.
-        await measureTransfer(
+        // The first fixture move is auxiliary; its cold-path cost is retained separately.
+        warmup = await measureTransfer(
           page,
           session,
           worker,
@@ -98,6 +99,7 @@ for (const condition of transferConditions)
         ...shoppingEvidenceIdentity("transfer", measurementKind),
         condition,
         fixture,
+        warmup: { auxiliary: true, firstFixtureMove: true, metrics: warmup },
         environment: {
           browserVersion: context.browser()?.version(),
           userAgent: await page.evaluate(() => navigator.userAgent),
