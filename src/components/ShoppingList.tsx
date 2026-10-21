@@ -90,6 +90,7 @@ import {
   type ExecutionNavigationGuardFeedback,
 } from "../features/space-navigation/hooks/useExecutionSpaceNavigator";
 import { acquireBodyScrollLock } from "../utils/bodyScrollLock";
+import { acquireShoppingTouchDragDefaultGuard } from "../features/shopping-list/drag/touchDragDefaultGuard";
 import { useModalFocusBoundary } from "../hooks/useModalFocusBoundary";
 import { buildQuantityOptions } from "./quantityOptions";
 import {
@@ -692,6 +693,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const touchDragSpaceGroupIds = useRef<string[] | null>(null);
   const touchDragSourceEl = useRef<HTMLElement | null>(null); // ドラッグ元要素（draggable復元用）
   const releaseTouchBodyScrollLock = useRef<(() => void) | null>(null);
+  const releaseTouchMoveDefaultGuard = useRef<(() => void) | null>(null);
   const activeDropTarget = useRef<{
     id: string;
     position: "top" | "bottom";
@@ -2642,6 +2644,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       clearInterval(touchScrollInterval.current);
       touchScrollInterval.current = null;
     }
+    releaseTouchMoveDefaultGuard.current?.();
+    releaseTouchMoveDefaultGuard.current = null;
     if (touchDragClone.current) {
       touchDragClone.current.remove();
       touchDragClone.current = null;
@@ -2697,6 +2701,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       sourceEl: HTMLElement,
       touchX: number,
       touchY: number,
+      touchIdentifier: number,
       spaceGroupItemIds?: string[],
     ) => {
       setDragRuntimeActive(true);
@@ -2738,6 +2743,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
       // ドラッグクローン作成
       touchDragClone.current = createDragClone(sourceEl, touchX, touchY);
+      releaseTouchMoveDefaultGuard.current?.();
+      releaseTouchMoveDefaultGuard.current =
+        acquireShoppingTouchDragDefaultGuard(sourceEl, touchIdentifier);
 
       // スクロール防止
       releaseTouchBodyScrollLock.current?.();
@@ -2767,7 +2775,13 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
       const el = e.currentTarget;
       touchLongPressTimer.current = setTimeout(() => {
-        handleTouchDragStart(item.id, el, touch.clientX, touch.clientY);
+        handleTouchDragStart(
+          item.id,
+          el,
+          touch.clientX,
+          touch.clientY,
+          touch.identifier,
+        );
       }, TOUCH_LONG_PRESS_MS);
     },
     [handleTouchDragStart],
@@ -2789,7 +2803,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         return;
       }
 
-      e.preventDefault(); // ドラッグ中はスクロール防止
+      if (e.nativeEvent.cancelable && !e.nativeEvent.defaultPrevented)
+        e.preventDefault(); // ドラッグ中はスクロール防止
 
       if (touchDragClone.current) {
         touchDragClone.current.dataset.layoutTop = `${touch.clientY - 20}px`;
@@ -3356,6 +3371,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                           el,
                           touch.clientX,
                           touch.clientY,
+                          touch.identifier,
                           effectiveIds,
                         );
                       }, TOUCH_LONG_PRESS_MS);
