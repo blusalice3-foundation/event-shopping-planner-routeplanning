@@ -2546,3 +2546,50 @@ it("stops after a native durable cache-adoption failure without exposing a recei
     ),
   ).toEqual(["2", "1", "other-day"]);
 });
+
+it.each(["remove", "add"])(
+  "persists own undefined field %s in an item root without rewriting equal frozen history",
+  async (change) => {
+    const withFields = {
+      ...item,
+      url: undefined,
+      assignedTo: undefined,
+      customField: { optional: undefined },
+    };
+    const withoutFields = { ...item, customField: {} };
+    const before = {
+      event: [change === "remove" ? withFields : withoutFields],
+      past: [Object.freeze({ ...item, id: "past" })],
+    };
+    const initial = await partitionDayRecordStore("eventLists", before);
+    const historyKey = [...initial.state.records.keys()].find((key) =>
+      key.includes('["past",[]]'),
+    )!;
+    const history = initial.state.records.get(historyKey);
+    const after = {
+      event: [change === "remove" ? withoutFields : withFields],
+      past: [{ ...item, id: "past" }],
+    };
+    const write = await patchEventListRecordStore(initial.state, before, after);
+    expect([...write.puts.keys()]).toHaveLength(1);
+    expect(write.puts.has(historyKey)).toBe(false);
+    const adopted = adoptDayRecordWrite(write);
+    expect(adopted.records.get(historyKey)).toBe(history);
+    const data = (
+      await decodeDayRecords("eventLists", adopted.head, adopted.records)
+    ).data as typeof after;
+    expect(data).toEqual(after);
+    expect(Object.prototype.hasOwnProperty.call(data.event[0], "url")).toBe(
+      change === "add",
+    );
+    expect(
+      Object.prototype.hasOwnProperty.call(data.event[0], "assignedTo"),
+    ).toBe(change === "add");
+    expect(
+      Object.prototype.hasOwnProperty.call(
+        data.event[0].customField,
+        "optional",
+      ),
+    ).toBe(change === "add");
+  },
+);

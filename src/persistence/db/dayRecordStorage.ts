@@ -391,6 +391,29 @@ export async function patchDayRecordStore(
   };
 }
 
+/** Physical roots preserve own undefined fields even when their canonical digest does not. */
+function sameStoredItemValue(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) return true;
+  if (
+    left === null ||
+    right === null ||
+    typeof left !== "object" ||
+    typeof right !== "object" ||
+    Array.isArray(left) !== Array.isArray(right) ||
+    (Array.isArray(left) && left.length !== (right as unknown[]).length)
+  )
+    return false;
+  const keys = Object.keys(left);
+  if (keys.length !== Object.keys(right).length) return false;
+  return keys.every(
+    (key) =>
+      Object.prototype.hasOwnProperty.call(right, key) &&
+      sameStoredItemValue(
+        (left as Record<string, unknown>)[key],
+        (right as Record<string, unknown>)[key],
+      ),
+  );
+}
 /** Event-wide item roots share the existing authenticated head without rewriting other events. */
 export async function patchEventListRecordStore(
   previous: DayRecordState,
@@ -404,7 +427,7 @@ export async function patchEventListRecordStore(
     ...Object.keys(before),
     ...Object.keys(after),
   ])) {
-    if (semanticEqual(before[eventName], after[eventName])) continue;
+    if (sameStoredItemValue(before[eventName], after[eventName])) continue;
     const write = await patchDayRecordStore(
       STORES.EVENT_LISTS,
       state,
