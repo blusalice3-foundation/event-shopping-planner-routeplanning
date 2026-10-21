@@ -26,6 +26,7 @@ import {
 } from "../internal/persistenceCore";
 import { resetDatabaseConnection, openDatabase } from "../db/openDatabase";
 import { createPersistenceWorkerServer } from "./persistenceWorkerServer";
+import { createApplicationMutationCoordinator } from "../../app/commands/applicationMutationCoordinator";
 import { createEventConsistency } from "../../types/consistency";
 import type {
   ItemContentEdit,
@@ -3143,4 +3144,168 @@ it("deep-captures prototype-like item IDs while preserving the valid saved order
   expect((receipt.snapshot.eventLists.event[499] as { id: string }).id).toBe(
     "__proto__",
   );
+});
+
+it("keeps current-version generic moves, cold export/restore and atomic abort usable with every shopping capability disabled", async () => {
+  const { buildWorkerBackup } = await import("./backupWorkerServer");
+  const { parseAppBackup } = await import("../../utils/appBackup");
+  await setupShopping(1000);
+  const prepared = await physicalShoppingRecords();
+  expect(prepared.eventLists.get("data")).toMatchObject({
+    kind: "event-shopping-planner-day-records",
+    authenticatedRoots: true,
+  });
+  const cached = vi.spyOn(db, "readCachedShoppingCommandSnapshot");
+  const shopping = vi.spyOn(db, "readShoppingCommandSnapshot");
+  const dedicated = vi.spyOn(db, "commitShoppingCommandSnapshot");
+  const initial = await db.readApplicationSnapshot();
+  let current = initial.snapshot;
+  const applied = vi.fn((snapshot: PersistenceSnapshot) => {
+    current = snapshot;
+  });
+  const genericCommit = vi.fn(
+    async (
+      snapshot: PersistenceSnapshot,
+      expectedRoots: object,
+      _base: PersistenceSnapshot,
+      invalidatedEvents?: readonly string[],
+    ) => {
+      await db.commitApplicationSnapshotAtomically(snapshot, {
+        expectedRoots,
+        changedStoresOnly: true,
+        invalidatedEvents,
+      });
+    },
+  );
+  const makeCoordinator = () =>
+    createApplicationMutationCoordinator({
+      readCurrent: () => current,
+      drain: async () => {},
+      readDurable: () => db.readApplicationSnapshot(),
+      commit: genericCommit,
+      apply: applied,
+      // No shopping/item/day command, scoped-read, or scoped-commit capability.
+    });
+  const coordinator = makeCoordinator();
+  coordinator.initializeEventGenerations(initial);
+  const moved = await coordinator.request({
+    id: "rollback:generic-move",
+    events: ["event"],
+    shoppingMove: shoppingCommand(),
+    plan: (snapshot) => planShoppingMove(snapshot, shoppingCommand()),
+  });
+  expect(moved.status).toBe("committed");
+  expect(genericCommit).toHaveBeenCalledOnce();
+  expect(applied).toHaveBeenCalledOnce();
+  expect(
+    current.eventLists.event.map((entry) => (entry as { id: string }).id),
+  ).toEqual(["2", "1", "other-day"]);
+  expect(current.executeModeItems.event).toEqual({
+    "1日目": [],
+    "2日目": ["other-day"],
+  });
+  expect(current.eventLists.event[0]).toMatchObject({
+    quantity: 7,
+    remarks: "後発メモ",
+    customField: { keep: true },
+  });
+  expect(current.eventLists.past).toHaveLength(1000);
+  expect(
+    (await physicalShoppingRecords()).eventLists.get("data"),
+  ).toMatchObject({
+    kind: "event-shopping-planner-day-records",
+    authenticatedRoots: true,
+  });
+
+  resetDatabaseConnection();
+  const readOnlyPuts = vi.spyOn(IDBObjectStore.prototype, "put");
+  const cold = await db.readApplicationSnapshot({
+    prepareScopedCommands: false,
+  });
+  expect(cold.snapshot).toEqual(current);
+  expect((await db.getAllData("eventLists")).data).toEqual(current.eventLists);
+  const backup = await buildWorkerBackup(db.readApplicationSnapshot, {
+    changes: [],
+  });
+  expect(readOnlyPuts).not.toHaveBeenCalled();
+  readOnlyPuts.mockRestore();
+  if (!("file" in backup)) throw new Error("missing logical backup");
+  const parsed = parseAppBackup(await backup.file.blob.text());
+  if (!parsed.ok) throw new Error("invalid logical backup");
+  expect(parsed.data).toEqual(current);
+  expect(parsed.data.eventLists).not.toHaveProperty("kind");
+
+  const changed = structuredClone(cold.snapshot.eventLists);
+  Object.assign(changed.event[0] as object, {
+    quantity: 99,
+    remarks: "復元前の変更",
+  });
+  await db.saveEventLists(changed);
+  const beforeRestore = await db.readApplicationSnapshot();
+  expect(beforeRestore.snapshot.eventLists.event[0]).toMatchObject({
+    quantity: 99,
+  });
+  await db.restoreAppDataAtomically(parsed.data, {
+    expectedRoots: beforeRestore.expectedRoots,
+    invalidatedEvents: ["event", "past"],
+  });
+  resetDatabaseConnection();
+  const restored = await db.readApplicationSnapshot({
+    prepareScopedCommands: false,
+  });
+  expect(restored.snapshot).toEqual(parsed.data);
+  expect(restored.eventGenerations).toMatchObject({ event: 1, past: 1 });
+  expect(
+    (await physicalShoppingRecords()).eventLists.get("data"),
+  ).toMatchObject({
+    kind: "event-shopping-planner-day-records",
+    authenticatedRoots: true,
+  });
+  current = restored.snapshot;
+  applied.mockClear();
+  genericCommit.mockClear();
+  const rollback = makeCoordinator();
+  rollback.initializeEventGenerations(restored);
+  const beforeAbort = await physicalShoppingRecords();
+  const command = nextShoppingOrder(restored.snapshot);
+  const put = IDBObjectStore.prototype.put;
+  let faultReached = false;
+  const fault = vi
+    .spyOn(IDBObjectStore.prototype, "put")
+    .mockImplementation(function (
+      this: IDBObjectStore,
+      ...args: Parameters<typeof put>
+    ) {
+      if (
+        this.name === "syncQueue" &&
+        String(args[1]).includes("meta:v1") &&
+        String(args[1]).includes("eventLists")
+      ) {
+        faultReached = true;
+        throw new DOMException("rollback quota fault", "QuotaExceededError");
+      }
+      return put.apply(this, args);
+    });
+  await expect(
+    rollback.request({
+      id: "rollback:abort",
+      events: ["event"],
+      shoppingMove: command,
+      plan: (snapshot) => planShoppingMove(snapshot, command),
+    }),
+  ).rejects.toThrow("rollback quota fault");
+  fault.mockRestore();
+  expect(faultReached).toBe(true);
+  expect(genericCommit).toHaveBeenCalledOnce();
+  expect(applied).not.toHaveBeenCalled();
+  expect(current).toBe(restored.snapshot);
+  expect(await physicalShoppingRecords()).toEqual(beforeAbort);
+  resetDatabaseConnection();
+  expect(
+    (await db.readApplicationSnapshot({ prepareScopedCommands: false }))
+      .snapshot,
+  ).toEqual(parsed.data);
+  expect(cached).not.toHaveBeenCalled();
+  expect(shopping).not.toHaveBeenCalled();
+  expect(dedicated).not.toHaveBeenCalled();
 });
