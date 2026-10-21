@@ -273,6 +273,12 @@ const metric = (kind = "response", operation = "response", condition = {}) => {
             destinationOrderVerified: true,
             controlsVerified: true,
             frameTimestampMs: durationMs,
+            ...(condition.scenario === "range"
+              ? {
+                  visibleSourceIds: [...moved],
+                  visibleTransferredIds: [...moved],
+                }
+              : {}),
             ...(condition.scenario === "noop"
               ? {
                   visualTarget: "endpoints",
@@ -478,8 +484,8 @@ async function fixture(t, group = "shopping") {
           sample.visualTarget === "source-origin"
             ? "source-origin"
             : "source-gap";
-        const score = (rect, role) => ({
-          itemId: sample.targetId,
+        const score = (rect, role, itemId) => ({
+          itemId,
           role,
           rect,
           frameError: 0,
@@ -502,8 +508,20 @@ async function fixture(t, group = "shopping") {
         sample.captureMethod = "Page.startScreencast(png)";
         sample.captureTimestampKind = "frame-swap-upper-bound";
         sample.expectedTransferredIds ??= [sample.targetId];
-        sample.visibleSourceIds = [sample.targetId];
-        sample.visibleTransferredIds = [sample.targetId];
+        const visibleIds =
+          data.condition.scenario === "range"
+            ? [...sample.expectedTransferredIds]
+            : [sample.targetId];
+        sample.visibleSourceIds = [...visibleIds];
+        sample.visibleTransferredIds = [...visibleIds];
+        const sourceRects = visibleIds.map((_, index) => ({
+          ...sourceRect,
+          y: sourceRect.y + index * 200,
+        }));
+        const targetRects = visibleIds.map((_, index) => ({
+          ...targetRect,
+          y: targetRect.y + index * 200,
+        }));
         sample.allVisibleDestinationCardsVerified = true;
         const timestamp = (sample.startEpoch + sample.durationMs) / 1000;
         sample.correlation = {
@@ -511,22 +529,18 @@ async function fixture(t, group = "shopping") {
           sourcePaint: points.paint,
           sourceRect,
           targetRect,
-          sourceProofs: [
-            {
-              sourceId: sample.targetId,
-              rect: sourceRect,
-              paint: { ...points.paint, itemId: sample.targetId },
-              scoreIndex: 0,
-            },
-          ],
-          targetProofs: [
-            {
-              targetId: sample.targetId,
-              rect: targetRect,
-              paint: { ...points.paint, itemId: sample.targetId },
-              scoreIndex: 1,
-            },
-          ],
+          sourceProofs: visibleIds.map((sourceId, index) => ({
+            sourceId,
+            rect: sourceRects[index],
+            paint: { ...points.paint, itemId: sourceId },
+            scoreIndex: index,
+          })),
+          targetProofs: visibleIds.map((targetId, index) => ({
+            targetId,
+            rect: targetRects[index],
+            paint: { ...points.paint, itemId: targetId },
+            scoreIndex: visibleIds.length + index,
+          })),
           frame: {
             epochMs: timestamp * 1000,
             traceTs: began + (timestamp * 1000 - sample.startEpoch) * 1000,
@@ -535,8 +549,12 @@ async function fixture(t, group = "shopping") {
           comparison: {
             matched: true,
             scores: [
-              score(sourceRect, sourceRole),
-              score(targetRect, "destination-card"),
+              ...visibleIds.map((id, index) =>
+                score(sourceRects[index], sourceRole, id),
+              ),
+              ...visibleIds.map((id, index) =>
+                score(targetRects[index], "destination-card", id),
+              ),
             ],
           },
         };
@@ -1720,4 +1738,107 @@ for (const [name, scenario, direction, mutate] of [
     });
     mutate(sample);
     assert.throws(() => validateAcceptedScenarioProof(sample, condition));
+  });
+
+for (const operation of ["response", "nextPending", "nextApplied", "save"])
+  test(`saving metric membership rejects an unrelated ${operation} measurement set`, () => {
+    const a = artifact("transfer");
+    for (const sample of a.metrics[operation].samples)
+      sample.measurementId = `${operation}-other-${sample.measurementId}`;
+    assert.throws(
+      () => validateEvidenceArtifact(a, "transfer", identity),
+      /Move metric membership/,
+    );
+  });
+
+for (const scenario of ["noop", "reject", "cancel"])
+  test(`${scenario} metric membership rejects unrelated next-input measurements`, () => {
+    const condition = expectedConditions("transfer").find(
+      (c) => c.scenario === scenario,
+    );
+    const a = artifact("transfer", condition);
+    for (const sample of a.metrics.nextApplied.samples)
+      sample.measurementId = `other-${sample.measurementId}`;
+    assert.throws(
+      () => validateEvidenceArtifact(a, "transfer", identity),
+      /Move metric membership/,
+    );
+  });
+
+test("move membership accepts the same complete IDs when metric detail order differs", () => {
+  const a = artifact("transfer");
+  a.metrics.nextPending.samples.reverse();
+  a.metrics.nextPending.raw.reverse();
+  assert.doesNotThrow(() => validateEvidenceArtifact(a, "transfer", identity));
+});
+
+for (const field of ["visibleSourceIds", "visibleTransferredIds"])
+  test(`range frame rejects an omitted identity from ${field}`, () => {
+    const condition = expectedConditions("transfer").find(
+      (c) => c.scenario === "range",
+    );
+    const a = artifact("transfer", condition, "frame");
+    a.metrics.frame.samples[0][field] = a.metrics.frame.samples[0][field].slice(
+      0,
+      2,
+    );
+    assert.throws(
+      () => validateEvidenceArtifact(a, "transfer", identity),
+      /Range frame requires all three/,
+    );
+  });
+
+test("range frame cannot redefine its known three-item scenario as two items", async (t) => {
+  const f = await fixture(t, "transfer");
+  const a = f.report.suites[0].specs
+    .map((spec) =>
+      JSON.parse(
+        Buffer.from(
+          spec.tests[0].results[0].attachments[0].body,
+          "base64",
+        ).toString("utf8"),
+      ),
+    )
+    .find(
+      (data) =>
+        data.condition.scenario === "range" && data.measurementKind === "frame",
+    );
+  const sample = a.metrics.frame.samples[0];
+  const moved = sample.expectedTransferredIds.slice(0, 2);
+  sample.expectedTransferredIds = moved;
+  sample.visibleSourceIds = [...moved];
+  sample.visibleTransferredIds = [...moved];
+  sample.correlation.sourceProofs = sample.correlation.sourceProofs.slice(0, 2);
+  sample.correlation.targetProofs = sample.correlation.targetProofs
+    .slice(0, 2)
+    .map((proof, index) => ({ ...proof, scoreIndex: 2 + index }));
+  const scores = sample.correlation.comparison.scores;
+  sample.correlation.comparison.scores = [
+    ...scores.slice(0, 2),
+    ...scores.slice(3, 5),
+  ];
+  const selection = sample.durableProof.selectionPreparation;
+  selection.requestedIds = [...moved];
+  selection.requestedDisplayOrder = [...moved];
+  selection.checkboxChecks = selection.checkboxChecks.slice(0, 2);
+  selection.mountedCheckedIds = [...moved];
+  selection.requestedCount = 2;
+  selection.effectiveCount = 2;
+  selection.headerText = "Move(2件)";
+  sample.scenarioEvidence.selectionPreparation = selection;
+  assert.throws(
+    () => validateEvidenceArtifact(a, "transfer", identity),
+    /Accepted scenario|Range frame requires all three/,
+  );
+});
+
+for (const missing of [true, false])
+  test(`normal artifacts reject ${missing ? "missing" : "unknown-type"} page errors`, () => {
+    const a = artifact("shopping");
+    if (missing) delete a.errors;
+    else a.errors = "not-an-array";
+    assert.throws(
+      () => validateEvidenceArtifact(a, "shopping", identity),
+      /Artifact errors must be an empty array/,
+    );
   });

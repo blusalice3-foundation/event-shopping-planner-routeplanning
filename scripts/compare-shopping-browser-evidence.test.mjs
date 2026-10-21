@@ -30,6 +30,7 @@ function shopping(base = 10) {
     ops = ["execute", "executeRecord", "focus", "record", "next", "back"];
   return {
     ...evidenceIdentity("shopping"),
+    errors: [],
     environment: browserEnvironment,
     count: 150,
     concentrated: false,

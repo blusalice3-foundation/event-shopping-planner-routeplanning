@@ -571,6 +571,23 @@ function validateTransferPhaseProofs(artifact, condition) {
       if (!terminalScenarios.has(condition.scenario)) {
         validateTransferSourceProof(sample, artifact.environment);
         validateAcceptedScenarioProof(sample, condition);
+        if (
+          condition.scenario === "range" &&
+          artifact.measurementKind === "frame"
+        )
+          assert(
+            Array.isArray(sample.expectedTransferredIds) &&
+              sample.expectedTransferredIds.length === 3 &&
+              sameMembers(
+                sample.visibleSourceIds,
+                sample.expectedTransferredIds,
+              ) &&
+              sameMembers(
+                sample.visibleTransferredIds,
+                sample.expectedTransferredIds,
+              ),
+            "Range frame requires all three expected source and destination identities",
+          );
       }
       if (preparedNextInput)
         validatePreparedNextInput(
@@ -673,6 +690,11 @@ function validateTransferPhaseProofs(artifact, condition) {
       }
     }
   for (const samples of byId.values()) {
+    keysEqual(
+      samples,
+      expectedTransferMetricNames(condition, artifact.measurementKind),
+      "Move metric membership",
+    );
     const first = Object.values(samples)[0];
     for (const sample of Object.values(samples))
       if (first.startEpoch !== undefined)
@@ -767,8 +789,10 @@ export function validateEvidenceArtifact(
     expectedConditions(group).some((row) => conditionKey(row, group) === key),
     "Unexpected performance condition",
   );
-  if (Array.isArray(artifact.errors))
-    assert(artifact.errors.length === 0, "Artifact contains page errors");
+  assert(
+    Array.isArray(artifact.errors) && artifact.errors.length === 0,
+    "Artifact errors must be an empty array",
+  );
   if (group === "shopping") {
     const operations = [
       "execute",
