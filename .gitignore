@@ -23,3 +23,6 @@ Thumbs.db
 
 # Local shopping performance runs; final evidence is added explicitly.
 /artifacts/shopping-operation-completion-*/
+
+# Isolated browser acceptance evidence, including failed runs.
+/artifacts/dnd-selection-rendering/
