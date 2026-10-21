@@ -12,6 +12,8 @@ import {
   installWorkerTransferDiagnostics,
   resetWorkerTransferDiagnostics,
   readWorkerTransferDiagnostics,
+  createWorkerCpuProfiler,
+  type DiagnosticCpuProfile,
 } from "./shopping-transfer-diagnostics";
 import {
   restoreTransferFixture,
@@ -23,22 +25,11 @@ import {
   prepareAcceptedScenario,
   restoreAcceptedScenario,
 } from "./shopping-transfer-scenarios";
-type CpuProfile = {
-  startTime: number;
-  endTime: number;
-  nodes: Array<{
-    id: number;
-    callFrame: {
-      functionName: string;
-      url: string;
-      lineNumber: number;
-      columnNumber: number;
-    };
-  }>;
-  samples?: number[];
-  timeDeltas?: number[];
-};
-function sampledSelfTimes(profile: CpuProfile, start: number, end: number) {
+function sampledSelfTimes(
+  profile: DiagnosticCpuProfile,
+  start: number,
+  end: number,
+) {
   if (
     ![profile.startTime, profile.endTime, start, end].every(Number.isFinite) ||
     profile.startTime > start ||
@@ -137,7 +128,12 @@ for (const profile of [
       let failure: unknown;
       let end = 0;
       let profiling = false;
-      let rawCpuProfile: CpuProfile | undefined;
+      let rawCpuProfile: DiagnosticCpuProfile | undefined;
+      let rawWorkerCpuProfile: DiagnosticCpuProfile | undefined;
+      let workerProfiler:
+        | Awaited<ReturnType<typeof createWorkerCpuProfiler>>
+        | undefined;
+      let workerProfiling = false;
       try {
         await measureTransfer(
           page,
@@ -170,10 +166,19 @@ for (const profile of [
             accepted,
           );
         }
+        const browser = context.browser();
+        if (!browser) throw new Error("Worker profiling requires Chromium");
+        workerProfiler = await createWorkerCpuProfiler(
+          browser,
+          session,
+          worker,
+        );
         await resetTransferDiagnostics(page);
         await resetWorkerTransferDiagnostics(worker);
         await session.send("Profiler.enable");
         await session.send("Profiler.setSamplingInterval", { interval: 1000 });
+        await workerProfiler.start();
+        workerProfiling = true;
         await session.send("Profiler.start");
         profiling = true;
         sample = await measureTransfer(
@@ -189,6 +194,18 @@ for (const profile of [
       } catch (error) {
         failure = error;
       } finally {
+        if (workerProfiler) {
+          if (workerProfiling) {
+            try {
+              rawWorkerCpuProfile = await workerProfiler.stop();
+            } catch (error) {
+              failure ??= error;
+            }
+          }
+          await workerProfiler.dispose().catch((error: unknown) => {
+            failure ??= error;
+          });
+        }
         if (profiling) {
           try {
             rawCpuProfile = (await session.send("Profiler.stop")).profile;
@@ -208,6 +225,7 @@ for (const profile of [
               frame?: {
                 startEpoch?: number;
                 durationMs?: number;
+                markerDelayMs?: number;
                 tracePath?: string;
                 correlation?: {
                   input: { pid: number; ts: number };
@@ -226,6 +244,60 @@ for (const profile of [
         end,
       );
       let cpuProfile;
+      let workerCpuProfile;
+      if (rawWorkerCpuProfile) {
+        const bytes = Buffer.from(JSON.stringify(rawWorkerCpuProfile));
+        const profilePath = testInfo.outputPath(
+          "shopping-transfer-worker.cpuprofile",
+        );
+        await writeFile(profilePath, bytes);
+        await testInfo.attach("shopping-transfer-worker-cpu-profile", {
+          path: profilePath,
+          contentType: "application/json",
+        });
+        const message = workerDiagnostics.events.find(
+          (row) =>
+            row.stage === "message-observed" && row.method === "shopping",
+        );
+        const reply =
+          message &&
+          workerDiagnostics.events.find(
+            (row) => row.stage === "reply-posted" && row.id === message.id,
+          );
+        const epochToTrace = (epoch: number) =>
+          (frame?.correlation?.input.ts ?? NaN) +
+          (epoch - start - (frame?.markerDelayMs ?? NaN)) * 1000;
+        workerCpuProfile = {
+          path: profilePath,
+          sha256: createHash("sha256").update(bytes).digest("hex"),
+          target: workerProfiler?.target,
+          profileStartTime: rawWorkerCpuProfile.startTime,
+          profileEndTime: rawWorkerCpuProfile.endTime,
+          ...sampledSelfTimes(
+            rawWorkerCpuProfile,
+            frame?.correlation?.input.ts ?? NaN,
+            frame?.correlation?.frame.traceTs ?? NaN,
+          ),
+          commandWindow: {
+            messageObservedEpoch: message?.at,
+            replyPostedEpoch: reply?.at,
+            operationId: message?.operationId,
+            epochToTrace: {
+              inputMarkTraceTs: frame?.correlation?.input.ts,
+              inputStartEpoch: start,
+              inputMarkerDelayMs: frame?.markerDelayMs,
+              method: "same input-mark/epoch mapping as the verified frame",
+            },
+            ...sampledSelfTimes(
+              rawWorkerCpuProfile,
+              epochToTrace(message?.at ?? NaN),
+              epochToTrace(reply?.at ?? NaN),
+            ),
+          },
+          interpretation:
+            "V8 Worker samples clipped to the renderer input/frame window and independently to actual shopping message-observed/reply-posted timestamps; timestamps, idle/GC samples and observer overhead are retained; estimates are not exact callee durations",
+        };
+      }
       let mainThreadLongTasks: {
         atTraceTs: number;
         durationMs: number;
@@ -303,7 +375,7 @@ for (const profile of [
             warmupMoves: 1,
             responseThresholdApplied: false,
             instrumentation:
-              "Test-only React commit/PerformedWork fiber counts, shopping geometry getters with product/observer call-stack attribution, Long Tasks API, actual Worker message/reply observation, plus content-verified renderer trace/frame, a 1000us renderer CPU profile, and armed native Worker cost wrappers",
+              "Test-only React commit/PerformedWork fiber counts, shopping geometry getters with product/observer call-stack attribution, Long Tasks API, actual Worker message/reply observation, plus content-verified renderer trace/frame, 1000us renderer and Worker CPU profiles, and armed native Worker cost wrappers",
             lifecycle:
               "message-observed is the registered listener's observation, not an invented handler-start or queue receipt; reply-posted is the actual Worker postMessage call",
             window:
@@ -362,6 +434,7 @@ for (const profile of [
           workerCosts: workerDiagnostics.costs,
           workerInstrumentation: { installed: workerDiagnostics.installed },
           cpuProfile,
+          workerCpuProfile,
           mainThreadLongTasks,
           sample,
           failure:
@@ -404,4 +477,13 @@ for (const profile of [
         ),
       ).toBe(true);
       expect(cpuProfile?.status).toBe("available");
+      expect(workerCpuProfile?.status).toBe("available");
+      expect(workerCpuProfile?.commandWindow.status).toBe("available");
+      expect(workerCpuProfile?.target?.identityVerified).toBe(true);
+      expect(
+        workerCpuProfile?.commandWindow.topSelfTimeFrames?.some(
+          (row) => row.url === workerProfiler?.target.url,
+        ),
+        "Actual shopping command must contain measured Worker bundle samples",
+      ).toBe(true);
     });

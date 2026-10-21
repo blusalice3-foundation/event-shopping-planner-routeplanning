@@ -1,4 +1,4 @@
-import type { Page, Worker } from "@playwright/test";
+import type { Browser, CDPSession, Page, Worker } from "@playwright/test";
 
 type DiagnosticCommit = {
   at: number;
@@ -440,4 +440,199 @@ export async function readWorkerTransferDiagnostics(
       ).__shoppingWorkerDiagnosticProbe.read(start, end),
     { start, end },
   );
+}
+
+export type DiagnosticCpuProfile = {
+  startTime: number;
+  endTime: number;
+  nodes: Array<{
+    id: number;
+    children?: number[];
+    callFrame: {
+      functionName: string;
+      url: string;
+      lineNumber: number;
+      columnNumber: number;
+    };
+  }>;
+  samples?: number[];
+  timeDeltas?: number[];
+};
+
+/** A second CDP client samples the existing Worker without changing its handler. */
+export async function createWorkerCpuProfiler(
+  browser: Browser,
+  pageSession: CDPSession,
+  worker: Worker,
+) {
+  const connection = await browser.newBrowserCDPSession();
+  let sessionId = "";
+  let sequence = 0;
+  let profiling = false;
+  let closed = false;
+  const pending = new Map<
+    number,
+    {
+      timer: ReturnType<typeof setTimeout>;
+      resolve: (value: unknown) => void;
+      reject: (error: Error) => void;
+    }
+  >();
+  const failPending = (error: Error) => {
+    for (const request of pending.values()) {
+      clearTimeout(request.timer);
+      request.reject(error);
+    }
+    pending.clear();
+  };
+  const receive = (event: { sessionId: string; message: string }) => {
+    if (event.sessionId !== sessionId) return;
+    let reply: {
+      id?: number;
+      result?: unknown;
+      error?: { code: number; message: string };
+    };
+    try {
+      reply = JSON.parse(event.message);
+    } catch {
+      failPending(new Error("Malformed Worker CDP response"));
+      return;
+    }
+    if (reply.id === undefined) return;
+    const request = pending.get(reply.id);
+    if (!request) return;
+    pending.delete(reply.id);
+    clearTimeout(request.timer);
+    if (reply.error)
+      request.reject(
+        new Error(`Worker CDP ${reply.error.code}: ${reply.error.message}`),
+      );
+    else request.resolve(reply.result);
+  };
+  const request = <T>(
+    method: string,
+    params: Record<string, unknown> = {},
+  ): Promise<T> =>
+    new Promise((resolve, reject) => {
+      if (closed) return reject(new Error("Worker CPU profiler is closed"));
+      const id = ++sequence;
+      const timer = setTimeout(() => {
+        pending.delete(id);
+        reject(new Error(`Worker CDP timed out: ${method}`));
+      }, 10000);
+      pending.set(id, {
+        timer,
+        resolve: (value) => resolve(value as T),
+        reject,
+      });
+      void connection
+        .send("Target.sendMessageToTarget", {
+          sessionId,
+          message: JSON.stringify({ id, method, params }),
+        })
+        .catch((error: Error) => {
+          const waiting = pending.get(id);
+          if (!waiting) return;
+          pending.delete(id);
+          clearTimeout(waiting.timer);
+          waiting.reject(error);
+        });
+    });
+  const dispose = async () => {
+    if (closed) return;
+    try {
+      if (profiling) {
+        await request("Profiler.stop");
+        profiling = false;
+      }
+      if (sessionId) await request("Profiler.disable");
+    } finally {
+      closed = true;
+      failPending(new Error("Worker CPU profiler detached"));
+      connection.off("Target.receivedMessageFromTarget", receive);
+      if (sessionId)
+        await connection
+          .send("Target.detachFromTarget", { sessionId })
+          .catch(() => {});
+      await connection.detach().catch(() => {});
+    }
+  };
+  try {
+    const { targetInfo: pageTarget } = await pageSession.send(
+      "Target.getTargetInfo",
+    );
+    const { targetInfos } = await connection.send("Target.getTargets");
+    const candidates = targetInfos.filter(
+      (target) =>
+        target.type === "worker" &&
+        target.url === worker.url() &&
+        target.browserContextId === pageTarget.browserContextId &&
+        (!target.openerId || target.openerId === pageTarget.targetId),
+    );
+    if (candidates.length !== 1)
+      throw new Error(
+        `Expected exactly one matching persistence Worker target, found ${candidates.length}`,
+      );
+    const target = candidates[0];
+    ({ sessionId } = await connection.send("Target.attachToTarget", {
+      targetId: target.targetId,
+      flatten: false,
+    }));
+    connection.on("Target.receivedMessageFromTarget", receive);
+    const identity = await worker.evaluate(() => ({
+      url: location.href,
+      timeOrigin: performance.timeOrigin,
+    }));
+    const remote = await request<{ result: { value?: string } }>(
+      "Runtime.evaluate",
+      {
+        expression:
+          "JSON.stringify({url:location.href,timeOrigin:performance.timeOrigin})",
+        returnByValue: true,
+      },
+    );
+    const remoteIdentity = JSON.parse(remote.result.value ?? "null") as {
+      url?: string;
+      timeOrigin?: number;
+    } | null;
+    if (
+      identity.url !== target.url ||
+      !Number.isFinite(identity.timeOrigin) ||
+      remoteIdentity?.url !== identity.url ||
+      remoteIdentity?.timeOrigin !== identity.timeOrigin
+    )
+      throw new Error("Attached CDP target does not match the measured Worker");
+    await request("Profiler.enable");
+    await request("Profiler.setSamplingInterval", { interval: 1000 });
+    return {
+      target: {
+        targetId: target.targetId,
+        url: target.url,
+        type: target.type,
+        browserContextId: target.browserContextId,
+        openerId: target.openerId,
+        pageTargetId: pageTarget.targetId,
+        workerTimeOrigin: identity.timeOrigin,
+        identityVerified: true,
+        transport: "Target.attachToTarget(flatten:false) message relay",
+      },
+      async start() {
+        if (profiling) throw new Error("Worker CPU profiler already started");
+        await request("Profiler.start");
+        profiling = true;
+      },
+      async stop(): Promise<DiagnosticCpuProfile> {
+        if (!profiling) throw new Error("Worker CPU profiler was not started");
+        const result = await request<{ profile: DiagnosticCpuProfile }>(
+          "Profiler.stop",
+        );
+        profiling = false;
+        return result.profile;
+      },
+      dispose,
+    };
+  } catch (error) {
+    await dispose().catch(() => {});
+    throw error;
+  }
 }
