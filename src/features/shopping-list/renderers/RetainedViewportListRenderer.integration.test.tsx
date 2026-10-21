@@ -1951,3 +1951,178 @@ it("keeps the actual ShoppingList retained strategy, root and row state through 
   assertRoot();
   expect(title()).toHaveAttribute("aria-expanded", "false");
 });
+
+describe("single-item current-model activation", () => {
+  it.each(
+    fixedSlotModes.flatMap((groupSlotMode) =>
+      [1, 2].map((count) => ({ groupSlotMode, count })),
+    ),
+  )(
+    "keeps the first outer-body commit complete only for an opted-in single item ($groupSlotMode, $count)",
+    ({ groupSlotMode, count }) => {
+      const members = items.slice(0, count);
+      const model = buildListRows({
+        items: members,
+        groups: [{ key: "first-commit", label: "同時生成", items: members }],
+      });
+      model.itemRows.forEach((row) => visibleKeys.add(row.rowKey));
+      const bodyCommits: number[] = [];
+      const BodyCommitProbe = ({ children }: { children: React.ReactNode }) => {
+        const root = React.useRef<HTMLDivElement>(null);
+        React.useLayoutEffect(() => {
+          bodyCommits.push(root.current!.querySelectorAll("input").length);
+        });
+        return <div ref={root}>{children}</div>;
+      };
+      const view = render(
+        <RetainedViewportListRenderer
+          groupSlotMode={groupSlotMode}
+          model={model}
+          accessibleLabel="単品の初回commit"
+          renderGroup={(_group, rows) => (
+            <BodyCommitProbe>
+              {rows.map((child) =>
+                child.render(<input aria-label={child.row.itemId} />),
+              )}
+            </BodyCommitProbe>
+          )}
+        />,
+      );
+      expect(view.container.querySelectorAll("input")).toHaveLength(0);
+      const outer = view.container.querySelector<HTMLElement>(
+        "[data-viewport-row-key]",
+      )!;
+      // Deliver only the outer intersection. Its first body layout effect records
+      // the committed DOM before a deferred child's own activation can commit.
+      act(() =>
+        callback(
+          [
+            { target: outer, isIntersecting: true },
+          ] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        ),
+      );
+      expect(bodyCommits).toEqual([
+        groupSlotMode === "current-model" && count === 1 ? 1 : 0,
+      ]);
+      expect(view.container.querySelectorAll("input")).toHaveLength(count);
+      expect(
+        view.container.querySelectorAll("[data-viewport-row-key]"),
+      ).toHaveLength(count + 1);
+    },
+  );
+
+  it("keeps 500 inactive single-item groups deferred and activates just the outer-selected card", () => {
+    const members = Array.from({ length: 500 }, (_, index) => ({
+      ...items[0],
+      id: `activation-${index}`,
+    }));
+    const model = buildListRows({
+      items: members,
+      groups: members.map((item) => ({
+        key: item.id,
+        label: item.id,
+        items: [item],
+      })),
+    });
+    const view = render(
+      <RetainedViewportListRenderer
+        groupSlotMode="current-model"
+        model={model}
+        accessibleLabel="画面外の単品"
+        renderGroup={(_group, rows) => (
+          <>
+            {rows.map((child) =>
+              child.render(<input aria-label={child.row.itemId} />),
+            )}
+          </>
+        )}
+      />,
+    );
+    expect(view.container.querySelectorAll("input")).toHaveLength(0);
+    expect(view.container.querySelectorAll("[data-row-key]")).toHaveLength(
+      1000,
+    );
+    const outer = view.container.querySelector<HTMLElement>(
+      "[data-viewport-row-key]",
+    )!;
+    act(() =>
+      callback(
+        [
+          { target: outer, isIntersecting: true },
+        ] as IntersectionObserverEntry[],
+        {} as IntersectionObserver,
+      ),
+    );
+    expect(view.container.querySelectorAll("input")).toHaveLength(1);
+    expect(
+      view.getByRole("textbox", { name: members[0].id }),
+    ).toBeInTheDocument();
+    expect(view.container.querySelectorAll("[data-row-key]")).toHaveLength(
+      1000,
+    );
+    act(() =>
+      callback(
+        [
+          { target: outer, isIntersecting: false },
+        ] as IntersectionObserverEntry[],
+        {} as IntersectionObserver,
+      ),
+    );
+    expect(view.container.querySelectorAll("input")).toHaveLength(0);
+  }, 15_000);
+
+  it("preserves a pinned single card, its focused edit and print activation", async () => {
+    const model = buildListRows({
+      items: [items[0]],
+      groups: [
+        { key: "pinned-single", label: "保持する単品", items: [items[0]] },
+      ],
+    });
+    const content = (pinned: boolean) => (
+      <RetainedViewportListRenderer
+        groupSlotMode="current-model"
+        model={model}
+        pinnedRowKeys={pinned ? new Set([model.itemRows[0].rowKey]) : undefined}
+        accessibleLabel="単品の保持と印刷"
+        renderGroup={(_group, rows) => (
+          <>
+            {rows.map((child) =>
+              child.render(
+                <input
+                  aria-label={child.row.itemId}
+                  defaultValue="ユーザー登録"
+                />,
+              ),
+            )}
+          </>
+        )}
+      />
+    );
+    const view = render(content(true));
+    const outer = view.container.querySelector("[data-viewport-row-key]");
+    const input = view.getByRole("textbox", { name: items[0].id });
+    act(() => input.focus());
+    fireEvent.change(input, {
+      target: { value: "エラーが発生しました・編集中" },
+    });
+    view.rerender(content(false));
+    fireEvent(window, new Event("beforeprint"));
+    fireEvent(window, new Event("afterprint"));
+    expect(view.container.querySelector("[data-viewport-row-key]")).toBe(outer);
+    expect(view.getByRole("textbox", { name: items[0].id })).toBe(input);
+    expect(input).toHaveValue("エラーが発生しました・編集中");
+    expect(input).toHaveFocus();
+    await act(async () => {
+      input.blur();
+      await Promise.resolve();
+    });
+    expect(view.queryByRole("textbox")).toBeNull();
+    fireEvent(window, new Event("beforeprint"));
+    expect(
+      view.getByRole("textbox", { name: items[0].id }),
+    ).toBeInTheDocument();
+    fireEvent(window, new Event("afterprint"));
+    expect(view.queryByRole("textbox")).toBeNull();
+  });
+});

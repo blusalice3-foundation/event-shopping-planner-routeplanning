@@ -399,6 +399,9 @@ export const RetainedViewportListRenderer = (
     const row = props.model.rows[index];
     if (row.kind === "group" && renderGroup) {
       const itemRows: FullListRenderedItemRow[] = [];
+      // The active outer gate already owns visibility for a complete single-item visit.
+      const deferItems =
+        currentModel && row.itemCount === 1 ? false : props.defer;
       let cursor = index + 1;
       while (cursor < props.model.rows.length) {
         const itemRow = props.model.rows[cursor];
@@ -414,7 +417,7 @@ export const RetainedViewportListRenderer = (
               layoutKey={layoutKey}
               estimatedHeight={estimatedItemHeight}
               retain={props.pinnedRowKeys?.has(itemRow.rowKey)}
-              defer={props.defer}
+              defer={deferItems}
               placeholder={itemPlaceholder(
                 itemRow,
                 layoutMode,
