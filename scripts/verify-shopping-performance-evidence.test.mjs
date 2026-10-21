@@ -10,6 +10,8 @@ import {
   rejectedDiagnosticEnvironment,
   summarizeSamples,
   validateEvidenceArtifact,
+  validateTransferSourceProof,
+  validateAcceptedScenarioProof,
   verifyGroupEvidence,
   verifyFrameFiles,
 } from "./verify-shopping-performance-evidence.mjs";
@@ -34,8 +36,157 @@ const browserEnvironment = {
   retries: 0,
 };
 const raw = () => Array.from({ length: 20 }, (_, i) => 10 + i / 10);
+const terminalScenarios = new Set(["noop", "reject", "cancel", "same-column"]);
+function movedIds(condition) {
+  const n =
+    !condition.scenario || terminalScenarios.has(condition.scenario)
+      ? 1
+      : ["range", "mixed"].includes(condition.scenario)
+        ? 3
+        : ["collapsed", "auto-scroll"].includes(condition.scenario)
+          ? 1
+          : 2;
+  return Array.from({ length: n }, (_, i) => `item-${i + 1}`);
+}
+function sourceFixtureProof(moved) {
+  const selected = {
+    origin: "card-edge",
+    point: { x: 104, y: 135 },
+    hitTagName: "DIV",
+    hitTitle: null,
+    hitItemId: moved[0],
+    sourceContainsHit: true,
+    sourceOwnerMatched: true,
+    interactive: false,
+    withinSource: true,
+    withinViewport: true,
+    matched: true,
+    hitRect: { x: 100, y: 100, width: 100, height: 80 },
+  };
+  return {
+    sourcePoint: selected.point,
+    sourceOrigin: selected.origin,
+    sourceHitTest: {
+      sourceId: moved[0],
+      sourceRect: { x: 100, y: 100, width: 100, height: 80 },
+      attempts: [selected],
+      selectedHit: selected,
+      initialRejection: null,
+    },
+  };
+}
+function acceptedFixtureProof(condition, moved) {
+  if (!condition.scenario || terminalScenarios.has(condition.scenario))
+    return {};
+  const requested =
+    condition.scenario === "same-visit-merge" ? moved.slice(0, 1) : [...moved];
+  const selection = {
+    requestedIds: requested,
+    requestedDisplayOrder: [...requested],
+    checkboxChecks: requested.map((targetId, i) => ({
+      targetId,
+      checked: true,
+      scrollY: i * 1000,
+      rect: { x: 100, y: 200, width: 20, height: 20 },
+    })),
+    headerText: `Move(${requested.length === moved.length ? `${requested.length}件` : `選択${requested.length}件（移動${moved.length}件）`})`,
+    requestedCount: requested.length,
+    effectiveCount: moved.length,
+    mountedCheckedIds: [...requested],
+    exactSelectionVerified: true,
+    scrollRestoration:
+      condition.scenario === "offscreen" &&
+      condition.direction === "candidate-to-execute"
+        ? { before: 0, after: 0, sourceVisible: true, anchorVisible: true }
+        : null,
+  };
+  const rest = Array.from(
+    { length: condition.count - moved.length - 2 },
+    (_, i) => `unmoved-${i}`,
+  );
+  const raw = ["anchor-1", ...moved, "other-candidate", ...rest];
+  const reversed = condition.direction === "execute-to-candidate";
+  const count =
+    condition.scenario === "same-visit-merge"
+      ? 1
+      : ["multiple-merge", "mixed", "offscreen"].includes(condition.scenario)
+        ? 2
+        : 0;
+  const tail = reversed
+    ? []
+    : Array.from({ length: count }, (_, i) => {
+        const appendedIds = count === 1 ? [...moved] : [moved[i]];
+        const existingIds = [i ? "other-candidate" : "anchor-1"];
+        return {
+          existingIds,
+          appendedIds,
+          expectedIds: [...existingIds, ...appendedIds],
+          durableIds: [...existingIds, ...appendedIds],
+          mountedIds: [...existingIds, ...appendedIds],
+        };
+      });
+  const mergeProof =
+    condition.scenario === "offscreen"
+      ? [
+          {
+            source: moved[1],
+            target: "other-candidate",
+            sourceNumber: "9999a2",
+            targetNumber: "9999a",
+            targetMembership: true,
+          },
+        ]
+      : [];
+  return {
+    scenarioEvidence: {
+      selectionPreparation: selection,
+      ...(condition.scenario === "offscreen"
+        ? {
+            offscreenTargetId: "other-candidate",
+            targetMounted: false,
+            targetBounds: null,
+            viewport: browserEnvironment.viewport,
+            offscreenBeforeDrop: true,
+          }
+        : {}),
+    },
+    durableProof: {
+      fullItemContentPreserved: true,
+      selectionPreparation: selection,
+      actualItemOrder: raw,
+      actualExecuteIds: [],
+      mergeProof,
+      offscreenIdentityProof:
+        condition.scenario === "offscreen"
+          ? { ...mergeProof[0], beforeItemPreserved: true }
+          : null,
+      mergeTailProof: tail,
+      candidateOrderProof: reversed
+        ? {
+            contract: "candidate-raw-boundary-and-default-display",
+            rawOrderVerified: true,
+            defaultDisplayOrderVerified: true,
+            expectedItemOrder: raw,
+            actualItemOrder: raw,
+            expectedExecuteIds: [],
+            actualExecuteIds: [],
+            expectedRawCandidateIds: raw,
+            actualRawCandidateIds: raw,
+            expectedDisplayIds: raw,
+            actualMountedDisplayIds: raw,
+            sourceIds: moved,
+            displayedBeforeIds: ["anchor-1", "other-candidate", ...rest],
+            boundaryKind: "next-displayed-row",
+            anchorId: "anchor-1",
+            boundaryId: "other-candidate",
+          }
+        : null,
+    },
+  };
+}
 const metric = (kind = "response", operation = "response", condition = {}) => {
   const noSave = ["noop", "reject", "cancel"].includes(condition.scenario);
+  const moved = movedIds(condition);
   const preparedNextInput =
     kind === "response" &&
     !["noop", "reject", "cancel", "same-column"].includes(condition.scenario);
@@ -55,6 +206,9 @@ const metric = (kind = "response", operation = "response", condition = {}) => {
       matched: true,
       measurementId: `sample-${i}`,
       targetId: operation.startsWith("next") ? "anchor-1" : "item-1",
+      ...(!terminalScenarios.has(condition.scenario)
+        ? { expectedTransferredIds: moved }
+        : {}),
       startEpoch: 1000000 + i * 1000,
       commits: noSave
         ? []
@@ -62,6 +216,12 @@ const metric = (kind = "response", operation = "response", condition = {}) => {
       physicalWriteCount: noSave ? 0 : 1,
       operationId: null,
       operationIdUnavailableReason: "Fixture has no operation ID",
+      ...(!terminalScenarios.has(condition.scenario)
+        ? {
+            gestureObservation: sourceFixtureProof(moved),
+            ...acceptedFixtureProof(condition, moved),
+          }
+        : {}),
       ...(preparedNextInput
         ? {
             nextInputId: "anchor-1",
@@ -69,7 +229,7 @@ const metric = (kind = "response", operation = "response", condition = {}) => {
               (condition.scenario ?? "single") === "single"
                 ? "anchor"
                 : "topmost-visible-unmoved-destination",
-            expectedTransferredIds: ["item-1"],
+            expectedTransferredIds: moved,
           }
         : {}),
       ...(operation.startsWith("next")
@@ -341,7 +501,7 @@ async function fixture(t, group = "shopping") {
         sample.drawFrameCorrelated = true;
         sample.captureMethod = "Page.startScreencast(png)";
         sample.captureTimestampKind = "frame-swap-upper-bound";
-        sample.expectedTransferredIds = [sample.targetId];
+        sample.expectedTransferredIds ??= [sample.targetId];
         sample.visibleSourceIds = [sample.targetId];
         sample.visibleTransferredIds = [sample.targetId];
         sample.allVisibleDestinationCardsVerified = true;
@@ -458,7 +618,12 @@ test("known normal matrices pass with exact expected coverage and response/frame
   );
   for (const group of ["shopping", "range", "drag", "transfer"]) {
     const f = await fixture(t, group);
-    assert.equal((await f.verify()).status, "passed", group);
+    const result = await f.verify();
+    assert.equal(
+      result.status,
+      "passed",
+      `${group}: ${JSON.stringify(result.errors)}`,
+    );
   }
 });
 for (const [name, mutate] of [
@@ -1336,3 +1501,223 @@ test("prepared next-input proof accepts CDP event integer rounding and scenario-
     }
   validateEvidenceArtifact(a, "transfer", identity);
 });
+
+test("source proof preserves the first eligible existing origin and the real owner", () => {
+  const sample = {
+    expectedTransferredIds: ["item-1"],
+    gestureObservation: sourceFixtureProof(["item-1"]),
+  };
+  validateTransferSourceProof(sample, browserEnvironment);
+  const original = structuredClone(sample);
+  validateTransferSourceProof(sample, browserEnvironment);
+  assert.deepEqual(sample, original);
+});
+test("source proof retains a rejected interactive origin before its actual fallback", () => {
+  const observation = sourceFixtureProof(["item-1"]);
+  const first = {
+    ...observation.sourceHitTest.selectedHit,
+    interactive: true,
+    matched: false,
+  };
+  const selected = {
+    ...observation.sourceHitTest.selectedHit,
+    origin: "card-body",
+    point: { x: 180, y: 135 },
+  };
+  observation.sourceHitTest = {
+    ...observation.sourceHitTest,
+    attempts: [first, selected],
+    initialRejection: first,
+    selectedHit: selected,
+  };
+  observation.sourceOrigin = selected.origin;
+  observation.sourcePoint = selected.point;
+  validateTransferSourceProof(
+    { expectedTransferredIds: ["item-1"], gestureObservation: observation },
+    browserEnvironment,
+  );
+});
+for (const [name, mutate] of [
+  ["missing source proof", (s) => delete s.gestureObservation.sourceHitTest],
+  [
+    "foreign real owner",
+    (s) =>
+      (s.gestureObservation.sourceHitTest.selectedHit.hitItemId = "foreign"),
+  ],
+  [
+    "owner flag false",
+    (s) =>
+      (s.gestureObservation.sourceHitTest.selectedHit.sourceOwnerMatched = false),
+  ],
+  [
+    "interactive hit",
+    (s) => (s.gestureObservation.sourceHitTest.selectedHit.interactive = true),
+  ],
+  [
+    "out of source point",
+    (s) => (s.gestureObservation.sourceHitTest.selectedHit.point.x = 20),
+  ],
+  [
+    "unmatched trusted point",
+    (s) => (s.gestureObservation.sourcePoint = { x: 180, y: 150 }),
+  ],
+  [
+    "wrong initial rejection",
+    (s) =>
+      (s.gestureObservation.sourceHitTest.initialRejection =
+        s.gestureObservation.sourceHitTest.selectedHit),
+  ],
+  [
+    "unmoved source identity",
+    (s) => (s.expectedTransferredIds = ["different"]),
+  ],
+])
+  test(`source proof rejects ${name}`, () => {
+    const sample = {
+      expectedTransferredIds: ["item-1"],
+      gestureObservation: sourceFixtureProof(["item-1"]),
+    };
+    mutate(sample);
+    assert.throws(() =>
+      validateTransferSourceProof(sample, browserEnvironment),
+    );
+  });
+test("all accepted category proof fixtures retain direction-specific raw and display contracts", () => {
+  for (const condition of expectedConditions("transfer").filter(
+    (c) => c.scenario && !terminalScenarios.has(c.scenario),
+  )) {
+    const moved = movedIds(condition);
+    validateAcceptedScenarioProof(
+      {
+        expectedTransferredIds: moved,
+        ...acceptedFixtureProof(condition, moved),
+      },
+      condition,
+    );
+  }
+});
+const acceptedCondition = (
+  scenario = "same-visit-merge",
+  direction = "execute-to-candidate",
+) => ({
+  count: 500,
+  input: "native",
+  grouped: true,
+  load: "light",
+  scenario,
+  direction,
+});
+for (const [name, scenario, direction, mutate] of [
+  [
+    "missing checkbox evidence",
+    "same-visit-merge",
+    "execute-to-candidate",
+    (s) => (s.durableProof.selectionPreparation.checkboxChecks = []),
+  ],
+  [
+    "extra requested selection",
+    "multiple",
+    "execute-to-candidate",
+    (s) => s.durableProof.selectionPreparation.requestedIds.push("extra"),
+  ],
+  [
+    "wrong parent count",
+    "multiple",
+    "execute-to-candidate",
+    (s) => (s.durableProof.selectionPreparation.headerText = "Move(3件)"),
+  ],
+  [
+    "raw UI ordering conflated",
+    "same-visit-merge",
+    "execute-to-candidate",
+    (s) => s.durableProof.candidateOrderProof.actualRawCandidateIds.reverse(),
+  ],
+  [
+    "missing displayed identity",
+    "same-visit-merge",
+    "execute-to-candidate",
+    (s) => s.durableProof.candidateOrderProof.expectedDisplayIds.pop(),
+  ],
+  [
+    "unexpected displayed member",
+    "same-visit-merge",
+    "execute-to-candidate",
+    (s) =>
+      s.durableProof.candidateOrderProof.actualMountedDisplayIds.push(
+        "foreign",
+      ),
+  ],
+  [
+    "missing raw global order",
+    "same-visit-merge",
+    "execute-to-candidate",
+    (s) => (s.durableProof.candidateOrderProof.actualItemOrder = []),
+  ],
+  [
+    "wrong raw boundary",
+    "same-visit-merge",
+    "execute-to-candidate",
+    (s) => (s.durableProof.candidateOrderProof.boundaryId = "anchor-1"),
+  ],
+  [
+    "reverse tail substitution",
+    "same-visit-merge",
+    "execute-to-candidate",
+    (s) => (s.durableProof.mergeTailProof = [{}]),
+  ],
+  [
+    "missing forward tail",
+    "same-visit-merge",
+    "candidate-to-execute",
+    (s) => (s.durableProof.mergeTailProof = []),
+  ],
+  [
+    "forward prepend substitution",
+    "same-visit-merge",
+    "candidate-to-execute",
+    (s) => s.durableProof.mergeTailProof[0].expectedIds.reverse(),
+  ],
+  [
+    "offscreen scroll not restored",
+    "offscreen",
+    "candidate-to-execute",
+    (s) => (s.durableProof.selectionPreparation.scrollRestoration.after = 100),
+  ],
+  [
+    "offscreen checkbox not reached",
+    "offscreen",
+    "candidate-to-execute",
+    (s) => (s.durableProof.selectionPreparation.checkboxChecks[1].scrollY = 0),
+  ],
+  [
+    "missing unmounted target proof",
+    "offscreen",
+    "execute-to-candidate",
+    (s) => delete s.scenarioEvidence.targetMounted,
+  ],
+  [
+    "false offscreen target",
+    "offscreen",
+    "execute-to-candidate",
+    (s) => {
+      s.scenarioEvidence.targetMounted = true;
+      s.scenarioEvidence.targetBounds = { x: 0, y: 50, width: 100, height: 80 };
+    },
+  ],
+  [
+    "wrong durable offscreen identity",
+    "offscreen",
+    "execute-to-candidate",
+    (s) => (s.durableProof.offscreenIdentityProof.target = "foreign"),
+  ],
+])
+  test(`accepted proof rejects ${name}`, () => {
+    const condition = acceptedCondition(scenario, direction),
+      moved = movedIds(condition);
+    const sample = structuredClone({
+      expectedTransferredIds: moved,
+      ...acceptedFixtureProof(condition, moved),
+    });
+    mutate(sample);
+    assert.throws(() => validateAcceptedScenarioProof(sample, condition));
+  });

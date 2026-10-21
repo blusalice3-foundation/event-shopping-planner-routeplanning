@@ -47,6 +47,119 @@ export const acceptedTransferConditions: AcceptedTransferCondition[] =
     ),
   );
 
+type OracleItem = {
+  id: string;
+  block: string;
+  number: string;
+  eventDate: string;
+};
+export function defaultCandidateOrder(items: readonly OracleItem[]) {
+  const collator = new Intl.Collator("ja", {
+    numeric: true,
+    sensitivity: "base",
+  });
+  return [...items]
+    .sort(
+      (a, b) =>
+        collator.compare(a.block, b.block) ||
+        collator.compare(a.number, b.number),
+    )
+    .map((item) => item.id);
+}
+
+// Independent specification: raw candidate slots and displayed numeric order differ.
+export function reverseCandidateOrderExpectation(
+  before: { items: readonly OracleItem[]; executeIds: readonly string[] },
+  effectiveIds: readonly string[],
+  target: { anchorId: string; collapsedFirstMemberId?: string },
+) {
+  const byId = new Map(before.items.map((item) => [item.id, item]));
+  const executing = new Set(before.executeIds);
+  const moving = new Set(effectiveIds);
+  if (
+    moving.size !== effectiveIds.length ||
+    effectiveIds.some((id) => !executing.has(id) || !byId.has(id))
+  )
+    throw new Error(
+      "Reverse oracle requires unique existing execution members",
+    );
+  const day = byId.get(effectiveIds[0])?.eventDate;
+  if (!day || effectiveIds.some((id) => byId.get(id)!.eventDate !== day))
+    throw new Error("Reverse oracle requires one frozen source day");
+  const rawCandidates = before.items.filter(
+    (item) => item.eventDate === day && !executing.has(item.id),
+  );
+  const displayedBeforeIds = defaultCandidateOrder(rawCandidates);
+  const anchorId = target.collapsedFirstMemberId ?? target.anchorId;
+  const anchorIndex = displayedBeforeIds.indexOf(anchorId);
+  if (anchorIndex === -1)
+    throw new Error("Reverse oracle anchor is not a candidate");
+  // Ordinary rows retain the lower-half next-displayed-row boundary. A collapsed
+  // header retains its first-member anchor, even when its lower half is hovered.
+  const boundaryId = target.collapsedFirstMemberId
+    ? anchorId
+    : (displayedBeforeIds[anchorIndex + 1] ?? null);
+  const insertionIndex =
+    boundaryId === null
+      ? rawCandidates.length
+      : rawCandidates.findIndex((item) => item.id === boundaryId);
+  const sourceIds = before.items
+    .filter((item) => moving.has(item.id))
+    .map((item) => item.id);
+  const expectedRawCandidateIds = rawCandidates.map((item) => item.id);
+  expectedRawCandidateIds.splice(insertionIndex, 0, ...sourceIds);
+  const expectedExecuteIds = before.executeIds.filter((id) => !moving.has(id));
+  const remainingExecutionItems = before.items.filter(
+    (item) =>
+      item.eventDate === day && executing.has(item.id) && !moving.has(item.id),
+  );
+  let candidateIndex = 0;
+  let executionIndex = 0;
+  const expectedItemOrder = before.items.map((item) =>
+    item.eventDate !== day
+      ? item.id
+      : executing.has(item.id) && !moving.has(item.id)
+        ? remainingExecutionItems[executionIndex++].id
+        : expectedRawCandidateIds[candidateIndex++],
+  );
+  return {
+    contract: "candidate-raw-boundary-and-default-display" as const,
+    anchorId,
+    boundaryKind: target.collapsedFirstMemberId
+      ? ("collapsed-first-member" as const)
+      : ("next-displayed-row" as const),
+    boundaryId,
+    displayedBeforeIds,
+    sourceIds,
+    expectedItemOrder,
+    expectedExecuteIds,
+    expectedRawCandidateIds,
+    expectedDisplayIds: defaultCandidateOrder(
+      expectedRawCandidateIds.map((id) => byId.get(id)!),
+    ),
+  };
+}
+type SelectionPreparationProof = {
+  requestedIds: string[];
+  requestedDisplayOrder: string[];
+  checkboxChecks: Array<{
+    targetId: string;
+    checked: boolean;
+    scrollY: number;
+    rect: { x: number; y: number; width: number; height: number };
+  }>;
+  headerText: string;
+  requestedCount: number;
+  effectiveCount: number;
+  mountedCheckedIds: string[];
+  exactSelectionVerified: true;
+  scrollRestoration: {
+    before: number;
+    after: number;
+    sourceVisible: boolean;
+    anchorVisible: boolean;
+  } | null;
+};
 export function acceptedScenarioFixture(condition: AcceptedTransferCondition) {
   const backup = createTransferFixture(condition);
   const sourcePrefix =
@@ -132,6 +245,7 @@ export function acceptedScenarioFixture(condition: AcceptedTransferCondition) {
     warmupSourceId: source(0),
     warmupAnchorId: target(0),
     mergePairs,
+    preparationProof: undefined as SelectionPreparationProof | undefined,
     fixtureHash: createHash("sha256")
       .update(JSON.stringify(backup))
       .digest("hex"),
@@ -157,24 +271,144 @@ export async function prepareAcceptedScenario(
   condition: AcceptedTransferCondition,
   scenario: ReturnType<typeof acceptedScenarioFixture>,
 ): Promise<TransferMeasurementOptions> {
-  if (condition.scenario === "range") {
-    await transferRow(page, scenario.requestedIds[0])
-      .locator('input[type="checkbox"]')
-      .check();
-    await transferRow(page, scenario.requestedIds.at(-1)!)
-      .locator('input[type="checkbox"]')
-      .check();
+  const checkboxChecks: SelectionPreparationProof["checkboxChecks"] = [];
+  const checkActualCheckbox = async (id: string) => {
+    const checkbox = transferRow(page, id).locator('input[type="checkbox"]');
+    await checkbox.check();
+    await expect(checkbox).toBeChecked();
+    checkboxChecks.push(
+      await checkbox.evaluate((input, targetId) => {
+        const rect = input.getBoundingClientRect();
+        return {
+          targetId,
+          checked: (input as HTMLInputElement).checked,
+          scrollY,
+          rect: {
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+          },
+        };
+      }, id),
+    );
+  };
+  let scrollRestoration: SelectionPreparationProof["scrollRestoration"] = null;
+  const fillRange =
+    condition.scenario === "range" ||
+    (condition.scenario === "mixed" && scenario.sourcePrefix === "c");
+  if (fillRange) {
+    await checkActualCheckbox(scenario.requestedIds[0]);
+    // Mixed candidate numbers display c1,c3,c2. Select its actual outer endpoints,
+    // then use the product's range action instead of clicking through its overlay.
+    await checkActualCheckbox(
+      condition.scenario === "mixed"
+        ? scenario.requestedIds[1]
+        : scenario.requestedIds.at(-1)!,
+    );
     await page
       .getByTitle("範囲内のチェックを入れる", { exact: true })
       .first()
       .click();
-    for (const id of scenario.requestedIds)
-      await expect(
-        transferRow(page, id).locator('input[type="checkbox"]'),
-      ).toBeChecked();
-  } else
-    for (const id of scenario.requestedIds)
-      await transferRow(page, id).locator('input[type="checkbox"]').check();
+    for (const id of scenario.requestedIds) {
+      const checkbox = transferRow(page, id).locator('input[type="checkbox"]');
+      await expect(checkbox).toBeChecked();
+      if (!checkboxChecks.some((entry) => entry.targetId === id))
+        checkboxChecks.push(
+          await checkbox.evaluate((input, targetId) => {
+            const rect = input.getBoundingClientRect();
+            return {
+              targetId,
+              checked: (input as HTMLInputElement).checked,
+              scrollY,
+              rect: {
+                x: rect.x,
+                y: rect.y,
+                width: rect.width,
+                height: rect.height,
+              },
+            };
+          }, id),
+        );
+    }
+  } else if (
+    condition.scenario === "offscreen" &&
+    scenario.sourcePrefix === "c"
+  ) {
+    const before = await page.evaluate(() => scrollY);
+    await checkActualCheckbox(scenario.requestedIds[0]);
+    await page.evaluate(() =>
+      scrollTo(0, document.documentElement.scrollHeight),
+    );
+    await checkActualCheckbox(scenario.requestedIds[1]);
+    await page.evaluate((top) => scrollTo(0, top), before);
+    await expect(transferRow(page, scenario.sourceId)).toBeInViewport();
+    await expect(transferRow(page, scenario.anchorId)).toBeInViewport();
+    const after = await page.evaluate(() => scrollY);
+    expect(Math.abs(after - before)).toBeLessThanOrEqual(1);
+    await expect(
+      transferRow(page, scenario.sourceId).locator('input[type="checkbox"]'),
+    ).toBeChecked();
+    scrollRestoration = {
+      before,
+      after,
+      sourceVisible: true,
+      anchorVisible: true,
+    };
+  } else for (const id of scenario.requestedIds) await checkActualCheckbox(id);
+  const column = scenario.sourcePrefix === "c" ? "candidate" : "execute";
+  const header = page.getByRole("button", {
+    name:
+      column === "candidate"
+        ? /選択したアイテムを実行列に移動/
+        : /選択したアイテムを実行列から戻す/,
+  });
+  const countLabel =
+    scenario.requestedIds.length === scenario.effectiveIds.length
+      ? `${scenario.requestedIds.length}件`
+      : `選択${scenario.requestedIds.length}件（移動${scenario.effectiveIds.length}件）`;
+  await expect(header).toContainText(countLabel);
+  const headerText = (await header.innerText()).replace(/\s/g, "");
+  expect(headerText.endsWith(`(${countLabel})`)).toBe(true);
+  const mountedCheckedIds = await page.evaluate(
+    (column) =>
+      [
+        ...document.querySelectorAll<HTMLInputElement>(
+          `[data-shopping-drag-column="${column}"] [data-item-id]:not([data-space-group-key]):not(.esp-shopping-touch-clone) input[type="checkbox"]:checked`,
+        ),
+      ].map(
+        (input) =>
+          input.closest<HTMLElement>("[data-item-id]")!.dataset.itemId!,
+      ),
+    column,
+  );
+  expect(
+    mountedCheckedIds.every((id) => scenario.requestedIds.includes(id)),
+  ).toBe(true);
+  expect(checkboxChecks.map((entry) => entry.targetId).sort()).toEqual(
+    [...scenario.requestedIds].sort(),
+  );
+  const requestedItems = scenario.backup.data.eventLists[
+    transferEventName
+  ].filter((item) => scenario.requestedIds.includes(item.id));
+  const requestedDisplayOrder =
+    column === "candidate"
+      ? defaultCandidateOrder(requestedItems)
+      : scenario.requestedIds;
+  expect(mountedCheckedIds).toEqual(
+    requestedDisplayOrder.filter((id) => mountedCheckedIds.includes(id)),
+  );
+  scenario.preparationProof = {
+    requestedIds: [...scenario.requestedIds],
+    requestedDisplayOrder,
+    checkboxChecks,
+    headerText,
+    requestedCount: scenario.requestedIds.length,
+    effectiveCount: scenario.effectiveIds.length,
+    mountedCheckedIds,
+    exactSelectionVerified: true,
+    scrollRestoration,
+  };
   const options: TransferMeasurementOptions = {
     sourceId: scenario.sourceId,
     anchorId: scenario.anchorId,
@@ -182,6 +416,7 @@ export async function prepareAcceptedScenario(
     nextInputTarget: "topmost-visible-unmoved-destination",
     anchorPosition: scenario.anchorPosition,
     guideKind: "either",
+    scenarioEvidence: { selectionPreparation: scenario.preparationProof },
   };
   if (condition.scenario === "collapsed") {
     const selector = `[data-shopping-drag-column="${scenario.targetPrefix === "e" ? "execute" : "candidate"}"] [data-space-group-key="A-90a"]`;
@@ -189,6 +424,7 @@ export async function prepareAcceptedScenario(
     await expect(transferRow(page, `${scenario.targetPrefix}0`)).toHaveCount(0);
     options.gestureTargetSelector = selector;
     options.scenarioEvidence = {
+      ...options.scenarioEvidence,
       collapsedHeaderSelector: selector,
       hiddenExistingIds: [
         `${scenario.targetPrefix}0`,
@@ -199,7 +435,20 @@ export async function prepareAcceptedScenario(
   }
   if (condition.scenario === "offscreen") {
     const targetId = `${scenario.targetPrefix}249`;
-    const box = await transferRow(page, targetId).boundingBox();
+    // A virtualized offscreen row may not exist. Do not wait for it or reveal it.
+    const observation = await page.evaluate((targetId) => {
+      const row = document.querySelector<HTMLElement>(
+        '[data-item-id="' +
+          targetId +
+          '"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)',
+      );
+      const r = row?.getBoundingClientRect();
+      return {
+        mounted: !!row,
+        bounds: r ? { x: r.x, y: r.y, width: r.width, height: r.height } : null,
+      };
+    }, targetId);
+    const box = observation.bounds;
     const viewport = page.viewportSize()!;
     const outside = !box || box.y + box.height <= 0 || box.y >= viewport.height;
     expect(
@@ -207,8 +456,10 @@ export async function prepareAcceptedScenario(
       "merge destination must actually be outside the viewport",
     ).toBe(true);
     options.scenarioEvidence = {
+      ...options.scenarioEvidence,
       offscreenTargetId: targetId,
       targetBounds: box,
+      targetMounted: observation.mounted,
       viewport,
       offscreenBeforeDrop: outside,
     };
@@ -216,7 +467,7 @@ export async function prepareAcceptedScenario(
   if (condition.scenario === "auto-scroll") {
     options.recaptureAfterGesture = true;
     options.gesture = async () => {
-      await beginGesture(
+      const initialGesture = await beginGesture(
         page,
         session,
         condition.input,
@@ -257,6 +508,8 @@ export async function prepareAcceptedScenario(
       await page.mouse.move(box!.x + 6, box!.y + box!.height * 0.8 + 1);
       expect(after).toBeGreaterThan(before);
       return {
+        ...initialGesture,
+        finalTargetPoint: { x: box!.x + 6, y: box!.y + box!.height * 0.8 + 1 },
         autoScrollBefore: before,
         autoScrollAfter: after,
         autoScrollMs: Date.now() - began,
@@ -341,37 +594,84 @@ export async function verifyAcceptedScenario(
       ].map((row) => row.dataset.itemId!),
     destination,
   );
-  const mergeTailProof = [...mergedVisits].map(([key, targetId]) => {
-    const existingIds = beforeDestinationIds.filter(
-      (id) => visitKey(id) === key,
+  const reverseOrder =
+    condition.direction === "execute-to-candidate"
+      ? reverseCandidateOrderExpectation(
+          {
+            items: before.items as OracleItem[],
+            executeIds: before.executeIds,
+          },
+          scenario.effectiveIds,
+          {
+            anchorId: scenario.anchorId,
+            ...(condition.scenario === "collapsed"
+              ? { collapsedFirstMemberId: `${scenario.targetPrefix}0` }
+              : {}),
+          },
+        )
+      : null;
+  let candidateOrderProof = null;
+  if (reverseOrder) {
+    expect(after.items.map((item) => item.id)).toEqual(
+      reverseOrder.expectedItemOrder,
     );
-    const appendedIds = sourceIds.filter(
-      (id) => scenario.effectiveIds.includes(id) && visitKey(id) === key,
+    expect(after.executeIds).toEqual(reverseOrder.expectedExecuteIds);
+    expect(afterDestinationIds).toEqual(reverseOrder.expectedRawCandidateIds);
+    expect(mountedDestinationIds).toEqual(
+      reverseOrder.expectedDisplayIds.filter((id) =>
+        mountedDestinationIds.includes(id),
+      ),
     );
-    const expectedIds = [...existingIds, ...appendedIds];
-    const durableIds = afterDestinationIds.filter((id) => visitKey(id) === key);
-    expect(
-      durableIds,
-      `${key}: merge appends after the existing visit tail`,
-    ).toEqual(expectedIds);
-    const mountedIds = mountedDestinationIds.filter((id) =>
-      expectedIds.includes(id),
-    );
-    expect(
-      mountedIds,
-      `${key}: mounted member order follows the durable merge tail`,
-    ).toEqual(expectedIds.filter((id) => mountedDestinationIds.includes(id)));
-    return {
-      key,
-      targetId,
-      existingIds,
-      appendedIds,
-      expectedIds,
-      durableIds,
-      mountedIds,
-      allMembersMounted: mountedIds.length === expectedIds.length,
+    candidateOrderProof = {
+      ...reverseOrder,
+      actualItemOrder: after.items.map((item) => item.id),
+      actualExecuteIds: after.executeIds,
+      actualRawCandidateIds: afterDestinationIds,
+      actualMountedDisplayIds: mountedDestinationIds,
+      rawOrderVerified: true,
+      defaultDisplayOrderVerified: true,
     };
-  });
+  } else {
+    // Forward transfer modifies execution order, never the full item-array order.
+    expect(after.items.map((item) => item.id)).toEqual(
+      before.items.map((item) => item.id),
+    );
+  }
+  const mergeTailProof = (reverseOrder ? [] : [...mergedVisits]).map(
+    ([key, targetId]) => {
+      const existingIds = beforeDestinationIds.filter(
+        (id) => visitKey(id) === key,
+      );
+      const appendedIds = sourceIds.filter(
+        (id) => scenario.effectiveIds.includes(id) && visitKey(id) === key,
+      );
+      const expectedIds = [...existingIds, ...appendedIds];
+      const durableIds = afterDestinationIds.filter(
+        (id) => visitKey(id) === key,
+      );
+      expect(
+        durableIds,
+        `${key}: merge appends after the existing visit tail`,
+      ).toEqual(expectedIds);
+      const mountedIds = mountedDestinationIds.filter((id) =>
+        expectedIds.includes(id),
+      );
+      expect(
+        mountedIds,
+        `${key}: mounted member order follows the durable merge tail`,
+      ).toEqual(expectedIds.filter((id) => mountedDestinationIds.includes(id)));
+      return {
+        key,
+        targetId,
+        existingIds,
+        appendedIds,
+        expectedIds,
+        durableIds,
+        mountedIds,
+        allMembersMounted: mountedIds.length === expectedIds.length,
+      };
+    },
+  );
   const visibleTransferredIds = await page.evaluate((ids) => {
     return ids
       .filter((id) => {
@@ -405,7 +705,18 @@ export async function verifyAcceptedScenario(
     expectedExecuteMembership: [...wanted],
     fullItemContentPreserved: true,
     mergeProof,
+    offscreenIdentityProof:
+      condition.scenario === "offscreen"
+        ? {
+            ...mergeProof.find(
+              (pair) => pair.target === `${scenario.targetPrefix}249`,
+            )!,
+            beforeItemPreserved: true,
+          }
+        : null,
     mergeTailProof,
+    candidateOrderProof,
+    selectionPreparation: scenario.preparationProof,
     visibleTransferredIds,
     offscreenTransferredIds: scenario.effectiveIds.filter(
       (id) => !visibleTransferredIds.includes(id),

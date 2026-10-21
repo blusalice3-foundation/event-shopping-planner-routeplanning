@@ -256,6 +256,292 @@ function validatePreparedNextInput(sample, metric, condition, environment) {
     `${metric}: actual click point or event queue delay does not match preparation`,
   );
 }
+const terminalScenarios = new Set(["noop", "reject", "cancel", "same-column"]);
+const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const finitePoint = (point) =>
+  Number.isFinite(point?.x) && Number.isFinite(point?.y);
+const positiveRect = (rect) =>
+  finitePoint(rect) &&
+  Number.isFinite(rect?.width) &&
+  rect.width > 0 &&
+  Number.isFinite(rect?.height) &&
+  rect.height > 0;
+const uniqueStrings = (ids) =>
+  Array.isArray(ids) &&
+  ids.every((id) => typeof id === "string" && id.length > 0) &&
+  new Set(ids).size === ids.length;
+const sameMembers = (a, b) =>
+  uniqueStrings(a) &&
+  uniqueStrings(b) &&
+  a.length === b.length &&
+  a.every((id) => b.includes(id));
+export function validateTransferSourceProof(sample, environment) {
+  const observation = sample.gestureObservation;
+  const proof = observation?.sourceHitTest;
+  const attempts = proof?.attempts;
+  const selected = proof?.selectedHit;
+  const viewport = environment?.viewport;
+  assert(
+    typeof proof?.sourceId === "string" &&
+      sample.expectedTransferredIds?.includes(proof.sourceId) &&
+      positiveRect(proof.sourceRect) &&
+      Array.isArray(attempts) &&
+      attempts.length > 0 &&
+      attempts.length <= 7 &&
+      selected &&
+      sameJson(selected, attempts.at(-1)) &&
+      attempts.slice(0, -1).every((attempt) => attempt.matched === false) &&
+      sameJson(
+        proof.initialRejection,
+        attempts[0].matched ? null : attempts[0],
+      ),
+    "Missing or inconsistent real source-origin attempts",
+  );
+  for (const attempt of attempts) {
+    const point = attempt.point;
+    const withinSource =
+      finitePoint(point) &&
+      point.x > proof.sourceRect.x &&
+      point.x < proof.sourceRect.x + proof.sourceRect.width &&
+      point.y > proof.sourceRect.y &&
+      point.y < proof.sourceRect.y + proof.sourceRect.height;
+    const withinViewport =
+      finitePoint(point) &&
+      point.x > 0 &&
+      point.x < viewport?.width &&
+      point.y > 0 &&
+      point.y < viewport?.height;
+    assert(
+      ["card-edge", "drag-handle", "card-body"].includes(attempt.origin) &&
+        attempt.withinSource === withinSource &&
+        attempt.withinViewport === withinViewport &&
+        typeof attempt.interactive === "boolean" &&
+        typeof attempt.sourceContainsHit === "boolean" &&
+        typeof attempt.sourceOwnerMatched === "boolean" &&
+        (attempt.sourceOwnerMatched !== true ||
+          attempt.hitItemId === proof.sourceId) &&
+        (attempt.matched !== true ||
+          (withinSource &&
+            withinViewport &&
+            attempt.sourceContainsHit === true &&
+            attempt.sourceOwnerMatched === true &&
+            attempt.interactive === false &&
+            positiveRect(attempt.hitRect))),
+      "Source-origin hit-test flags do not prove its actual source owner",
+    );
+  }
+  assert(
+    selected.matched === true &&
+      selected.hitItemId === proof.sourceId &&
+      observation.sourceOrigin === selected.origin &&
+      sameJson(observation.sourcePoint, selected.point),
+    "Trusted drag source point does not match its selected real source hit",
+  );
+}
+export function validateAcceptedScenarioProof(sample, condition) {
+  const scenario = condition.scenario ?? "single";
+  if (scenario === "single" || terminalScenarios.has(scenario)) return;
+  const proof = sample.durableProof;
+  const selection = proof?.selectionPreparation;
+  const effectiveCount = ["range", "mixed"].includes(scenario)
+    ? 3
+    : ["collapsed", "auto-scroll"].includes(scenario)
+      ? 1
+      : 2;
+  const requestedCount = scenario === "same-visit-merge" ? 1 : effectiveCount;
+  const requested = selection?.requestedIds;
+  const moved = sample.expectedTransferredIds;
+  const checks = selection?.checkboxChecks;
+  const label =
+    requestedCount === effectiveCount
+      ? `${requestedCount}件`
+      : `選択${requestedCount}件（移動${effectiveCount}件）`;
+  assert(
+    proof?.fullItemContentPreserved === true &&
+      uniqueStrings(proof.actualItemOrder) &&
+      proof.actualItemOrder.length === condition.count &&
+      uniqueStrings(proof.actualExecuteIds) &&
+      proof.actualExecuteIds.every((id) =>
+        proof.actualItemOrder.includes(id),
+      ) &&
+      uniqueStrings(moved) &&
+      moved.length === effectiveCount &&
+      uniqueStrings(requested) &&
+      requested.length === requestedCount &&
+      requested.every((id) => moved.includes(id)) &&
+      selection.exactSelectionVerified === true &&
+      selection.requestedCount === requestedCount &&
+      selection.effectiveCount === effectiveCount &&
+      typeof selection.headerText === "string" &&
+      selection.headerText.endsWith(`(${label})`) &&
+      Array.isArray(checks) &&
+      sameMembers(
+        checks.map((entry) => entry.targetId),
+        requested,
+      ) &&
+      checks.every(
+        (entry) =>
+          entry.checked === true &&
+          Number.isFinite(entry.scrollY) &&
+          positiveRect(entry.rect),
+      ) &&
+      sameMembers(selection.requestedDisplayOrder, requested) &&
+      uniqueStrings(selection.mountedCheckedIds) &&
+      sameJson(
+        selection.mountedCheckedIds,
+        selection.requestedDisplayOrder.filter((id) =>
+          selection.mountedCheckedIds.includes(id),
+        ),
+      ) &&
+      sameJson(sample.scenarioEvidence?.selectionPreparation, selection),
+    "Accepted scenario lacks exact actual-checkbox/parent-count selection preparation",
+  );
+  if (
+    scenario === "offscreen" &&
+    condition.direction === "candidate-to-execute"
+  ) {
+    const restored = selection.scrollRestoration;
+    assert(
+      Number.isFinite(restored?.before) &&
+        Number.isFinite(restored?.after) &&
+        Math.abs(restored.before - restored.after) <= 1 &&
+        restored.sourceVisible === true &&
+        restored.anchorVisible === true &&
+        checks[1].scrollY > checks[0].scrollY,
+      "Offscreen candidate was not actually checked and returned to the source viewport",
+    );
+  }
+  if (scenario === "offscreen") {
+    const evidence = sample.scenarioEvidence;
+    const identity = proof.offscreenIdentityProof;
+    const box = evidence?.targetBounds;
+    const viewport = evidence?.viewport;
+    assert(
+      evidence?.offscreenBeforeDrop === true &&
+        typeof evidence.offscreenTargetId === "string" &&
+        typeof evidence.targetMounted === "boolean" &&
+        (evidence.targetMounted
+          ? positiveRect(box) &&
+            viewport?.width > 0 &&
+            viewport?.height > 0 &&
+            (box.y + box.height <= 0 || box.y >= viewport.height)
+          : box === null) &&
+        identity?.target === evidence.offscreenTargetId &&
+        moved.includes(identity.source) &&
+        identity.targetMembership === true &&
+        identity.beforeItemPreserved === true &&
+        typeof identity.sourceNumber === "string" &&
+        typeof identity.targetNumber === "string" &&
+        identity.sourceNumber.replace(/([a-zA-Z])\d+$/, "$1") ===
+          identity.targetNumber.replace(/([a-zA-Z])\d+$/, "$1") &&
+        proof.mergeProof?.some((pair) =>
+          sameJson(
+            pair,
+            Object.fromEntries(
+              Object.entries(identity).filter(
+                ([key]) => key !== "beforeItemPreserved",
+              ),
+            ),
+          ),
+        ),
+      "Offscreen destination lacks no-wait viewport observation and durable identity proof",
+    );
+  }
+  const tail = proof.mergeTailProof;
+  assert(
+    Array.isArray(tail),
+    "Accepted scenario is missing direction-specific order proof",
+  );
+  if (condition.direction === "execute-to-candidate") {
+    const order = proof.candidateOrderProof;
+    assert(
+      tail.length === 0 &&
+        order?.contract === "candidate-raw-boundary-and-default-display" &&
+        order.rawOrderVerified === true &&
+        order.defaultDisplayOrderVerified === true &&
+        uniqueStrings(order.expectedItemOrder) &&
+        order.expectedItemOrder.length === condition.count &&
+        sameJson(order.actualItemOrder, order.expectedItemOrder) &&
+        sameJson(proof.actualItemOrder, order.actualItemOrder) &&
+        uniqueStrings(order.expectedExecuteIds) &&
+        sameJson(order.actualExecuteIds, order.expectedExecuteIds) &&
+        sameJson(proof.actualExecuteIds, order.actualExecuteIds) &&
+        uniqueStrings(order.expectedRawCandidateIds) &&
+        sameJson(order.actualRawCandidateIds, order.expectedRawCandidateIds) &&
+        sameJson(
+          order.actualItemOrder.filter(
+            (id) => !order.actualExecuteIds.includes(id),
+          ),
+          order.actualRawCandidateIds,
+        ) &&
+        sameMembers(order.expectedDisplayIds, order.expectedRawCandidateIds) &&
+        uniqueStrings(order.actualMountedDisplayIds) &&
+        sameJson(
+          order.actualMountedDisplayIds,
+          order.expectedDisplayIds.filter((id) =>
+            order.actualMountedDisplayIds.includes(id),
+          ),
+        ) &&
+        sameMembers(order.sourceIds, moved) &&
+        uniqueStrings(order.displayedBeforeIds) &&
+        ["next-displayed-row", "collapsed-first-member"].includes(
+          order.boundaryKind,
+        ) &&
+        order.displayedBeforeIds.includes(order.anchorId),
+      "Reverse scenario does not independently prove full raw order and numeric display order",
+    );
+    const boundary =
+      order.boundaryKind === "collapsed-first-member"
+        ? order.anchorId
+        : (order.displayedBeforeIds[
+            order.displayedBeforeIds.indexOf(order.anchorId) + 1
+          ] ?? null);
+    const start = order.expectedRawCandidateIds.indexOf(order.sourceIds[0]);
+    assert(
+      boundary === order.boundaryId &&
+        start >= 0 &&
+        sameJson(
+          order.expectedRawCandidateIds.slice(start, start + moved.length),
+          order.sourceIds,
+        ) &&
+        (boundary === null
+          ? start + moved.length === order.expectedRawCandidateIds.length
+          : order.expectedRawCandidateIds[start + moved.length] === boundary),
+      "Reverse scenario moved block does not precede its independent candidate boundary",
+    );
+  } else {
+    const expectedTailCount =
+      scenario === "same-visit-merge"
+        ? 1
+        : ["multiple-merge", "mixed", "offscreen"].includes(scenario)
+          ? 2
+          : 0;
+    assert(
+      proof.candidateOrderProof === null && tail.length === expectedTailCount,
+      "Forward scenario is missing its existing visit-tail contract",
+    );
+    for (const visit of tail) {
+      assert(
+        uniqueStrings(visit.existingIds) &&
+          visit.existingIds.length > 0 &&
+          uniqueStrings(visit.appendedIds) &&
+          visit.appendedIds.length > 0 &&
+          visit.appendedIds.every((id) => moved.includes(id)) &&
+          sameJson(visit.expectedIds, [
+            ...visit.existingIds,
+            ...visit.appendedIds,
+          ]) &&
+          sameJson(visit.durableIds, visit.expectedIds) &&
+          uniqueStrings(visit.mountedIds) &&
+          sameJson(
+            visit.mountedIds,
+            visit.expectedIds.filter((id) => visit.mountedIds.includes(id)),
+          ),
+        "Forward merge did not append after the existing durable visit tail",
+      );
+    }
+  }
+}
 function validateTransferPhaseProofs(artifact, condition) {
   const preparedNextInput =
     artifact.measurementKind === "response" &&
@@ -282,6 +568,10 @@ function validateTransferPhaseProofs(artifact, condition) {
     for (const sample of values.samples) {
       if (!byId.has(sample.measurementId)) byId.set(sample.measurementId, {});
       byId.get(sample.measurementId)[metric] = sample;
+      if (!terminalScenarios.has(condition.scenario)) {
+        validateTransferSourceProof(sample, artifact.environment);
+        validateAcceptedScenarioProof(sample, condition);
+      }
       if (preparedNextInput)
         validatePreparedNextInput(
           sample,
