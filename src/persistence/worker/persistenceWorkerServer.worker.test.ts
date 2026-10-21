@@ -1,3 +1,4 @@
+import { projectConsistencySnapshot } from "../../features/consistency/domain/projection";
 import * as snapshotDeltas from "./snapshotDelta";
 import {
   planShoppingMove,
@@ -1718,4 +1719,109 @@ it("constructs recovery full snapshots without consulting the normal previous-ba
   const full = await h.server.readFull();
   expect(full.delta.full?.eventLists.event).toHaveLength(3);
   expect(delta).not.toHaveBeenCalled();
+});
+
+it("keeps virtual hall assignments during repeated forward, reverse and candidate order commits", async () => {
+  const h = await setupShopping();
+  const initial = await db.readApplicationSnapshot();
+  initial.snapshot.hallDefinitions = {
+    event: {
+      "__mapless__:1日目": [
+        { id: "hall-a", name: "Aホール", vertices: [], blockNames: ["A"] },
+      ],
+    },
+  };
+  initial.snapshot.eventConsistency.event.days["1日目"] = {
+    selectedMapKey: null,
+    maps: {},
+    mapless: {
+      assignments: {
+        "2": { kind: "simple", dayKey: "1日目", hallId: "hall-a" },
+      },
+      hallOrder: [],
+      hallVisitLists: [],
+      route: null,
+    },
+  };
+  await db.commitApplicationSnapshotAtomically(initial.snapshot, {
+    expectedRoots: initial.expectedRoots,
+    changedStoresOnly: true,
+  });
+  await h.server.read();
+  let current = (await db.readApplicationSnapshot()).snapshot;
+  const transitions = [
+    {
+      sourceColumn: "candidate" as const,
+      targetColumn: "execute" as const,
+      effectiveIds: ["2"],
+      itemIds: ["1", "2", "other-day"],
+      executeIds: ["1", "2"],
+    },
+    {
+      sourceColumn: "execute" as const,
+      targetColumn: "candidate" as const,
+      effectiveIds: ["1", "2"],
+      itemIds: ["2", "1", "other-day"],
+      executeIds: [],
+    },
+    {
+      sourceColumn: "candidate" as const,
+      targetColumn: "candidate" as const,
+      effectiveIds: ["2"],
+      itemIds: ["1", "2", "other-day"],
+      executeIds: [],
+    },
+  ];
+  for (const [index, transition] of transitions.entries()) {
+    const projected = projectConsistencySnapshot(current, "event", "1日目");
+    expect(projected.eventLists.event[0]).toHaveProperty("manualHallId");
+    const command = {
+      ...shoppingCommand(),
+      ...transition,
+      requestedIds: transition.effectiveIds,
+      baselineItemIds: current.eventLists.event.map(
+        (item) => (item as { id: string }).id,
+      ),
+      baselineExecuteIds: current.executeModeItems.event["1日目"],
+      baselineVisits: shoppingMoveVisitBaseline(current, "event", "1日目"),
+    };
+    const plan = planShoppingMove(current, command);
+    expect(plan.confirmation).toBeUndefined();
+    expect(
+      plan.snapshot.eventLists.event.every(
+        (item) => !Object.prototype.hasOwnProperty.call(item, "manualHallId"),
+      ),
+    ).toBe(true);
+    const committed = await h.server.shopping(
+      command,
+      `projected-move:${index}`,
+      {},
+    );
+    expect(committed.status).toBe("committed");
+    current = (await db.readApplicationSnapshot()).snapshot;
+    expect(
+      current.eventLists.event.map((item) => (item as { id: string }).id),
+    ).toEqual(transition.itemIds);
+    expect(current.executeModeItems.event["1日目"]).toEqual(
+      transition.executeIds,
+    );
+    expect(
+      current.eventLists.event.find(
+        (item) => (item as { id: string }).id === "2",
+      ),
+    ).toMatchObject({
+      quantity: 7,
+      remarks: "後発メモ",
+      customField: { keep: true },
+    });
+    expect(
+      current.eventLists.event.every(
+        (item) => !Object.prototype.hasOwnProperty.call(item, "manualHallId"),
+      ),
+    ).toBe(true);
+    expect(current.executeModeItems.event["2日目"]).toEqual(["other-day"]);
+    expect(
+      current.eventConsistency.event.days["1日目"].mapless?.assignments["2"],
+    ).toEqual({ kind: "simple", dayKey: "1日目", hallId: "hall-a" });
+  }
 });

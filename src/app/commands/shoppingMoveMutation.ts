@@ -1,3 +1,4 @@
+import { projectConsistencySnapshot } from "../../features/consistency/domain/projection";
 import { sameDay } from "../../features/consistency/domain/context";
 import {
   buildExecutionVisitProjectionKey,
@@ -227,7 +228,15 @@ export function planShoppingMove(
   const dayIds = new Set(
     shoppingItemIds(recordEntry(scoped.eventLists, eventName) ?? []),
   );
-  const days = recordEntry(scoped.executeModeItems, eventName) ?? {};
+  // Consistency planners consume the displayed placement projection. Reorder its
+  // current objects so virtual hall assignments are not mistaken for removals.
+  const projected = projectConsistencySnapshot(scoped, eventName, day);
+  const projectedById = new Map(
+    (recordEntry(projected.eventLists, eventName) as ShoppingItem[]).map(
+      (item) => [item.id, item],
+    ),
+  );
+  const days = recordEntry(projected.executeModeItems, eventName) ?? {};
   const dayKey = existingDayKey(days, day) ?? day;
   const plan = planProjectedMutation(
     scoped,
@@ -236,7 +245,9 @@ export function planShoppingMove(
         ? {}
         : {
             eventLists: {
-              [eventName]: ordered.filter((item) => dayIds.has(item.id)),
+              [eventName]: ordered
+                .filter((item) => dayIds.has(item.id))
+                .map((item) => projectedById.get(item.id)!),
             },
           }),
       ...(semanticEqual(currentExecute, executeIds)
@@ -249,7 +260,7 @@ export function planShoppingMove(
     },
     { eventName, day },
     choices,
-    undefined,
+    projected,
     true,
   );
   const next = mergeDaySnapshot(
