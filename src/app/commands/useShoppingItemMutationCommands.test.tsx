@@ -353,6 +353,65 @@ const frozenDrag = (
 
 describe("useShoppingItemMutationCommands", () => {
   it.each(["candidate", "execute"] as const)(
+    "supplies the accepted baseline for a second %s move before the screen rerenders",
+    (sourceColumn) => {
+      const x = item("x", { number: "1" });
+      const y = item("y", { number: "2" });
+      const z = item("z", { number: "3" });
+      const target = item("target", { number: "4" });
+      const targetColumn =
+        sourceColumn === "candidate" ? "execute" : "candidate";
+      const harness = createHarness({
+        eventLists: { [EVENT]: [x, y, z, target] },
+        executeModeItems: {
+          [EVENT]: {
+            [DAY]: sourceColumn === "execute" ? ["x", "y", "z"] : ["target"],
+          },
+        },
+      });
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(harness.ports),
+      );
+      act(() => {
+        result.current.moveItem(
+          "x",
+          "__END_OF_LIST__",
+          targetColumn,
+          sourceColumn,
+          frozenDrag(sourceColumn, targetColumn, ["x"], ["x"], [x]),
+        );
+      });
+      const afterFirstOrder = harness.refs.eventListsRef.current[EVENT].map(
+        (entry) => entry.id,
+      );
+      const afterFirstExecute = [
+        ...harness.refs.executeModeItemsRef.current[EVENT][DAY],
+      ];
+      // The render's eventLists/dayModes are deliberately unchanged. Both compute
+      // inputs and their queue proof must use the synchronously accepted refs.
+      act(() => {
+        result.current.moveItem(
+          "y",
+          "__END_OF_LIST__",
+          sourceColumn,
+          sourceColumn,
+          frozenDrag(sourceColumn, sourceColumn, ["y"], ["y"], [y]),
+        );
+      });
+      expect(harness.spies.queueShoppingMovePatch).toHaveBeenCalledTimes(2);
+      expect(
+        harness.spies.queueShoppingMovePatch.mock.calls[1][0],
+      ).toMatchObject({
+        baselineItemIds: afterFirstOrder,
+        baselineExecuteIds: afterFirstExecute,
+      });
+      expect(
+        harness.refs.executeModeItemsRef.current[EVENT][DAY].includes("x"),
+      ).toBe(sourceColumn === "candidate");
+    },
+  );
+
+  it.each(["candidate", "execute"] as const)(
     "keeps both column controllers and later checks consistent while an accepted %s transfer saves",
     (sourceColumn) => {
       const moving = ["m1", "m2", "m3"].map((id, index) =>

@@ -1,4 +1,5 @@
 import type { ShoppingDragMoveContext } from "../../features/shopping-list/drag/shoppingDrag";
+import { existingDayKey } from "../../features/consistency/domain/context";
 import { bulkImportFailureStatus } from "../../utils/importOutcome";
 import { itemUpdateGuard } from "../../utils/itemContentGuard";
 import type { BulkImportResult } from "../../types/import";
@@ -794,6 +795,8 @@ export const useShoppingItemMutationCommands = ({
           : (firstId: string, secondId: string) =>
               areItemsInSameHall(firstId, secondId, activeEventDate);
 
+      const currentAllItems =
+        recordEntry(eventListsRef.current, activeEventName) || [];
       const result = computeMoveItem({
         dragId,
         hoverId,
@@ -801,7 +804,7 @@ export const useShoppingItemMutationCommands = ({
         sourceColumn,
         mode: mode as ViewMode | undefined,
         effectiveSelectedIds,
-        allItems: recordEntry(eventListsRef.current, activeEventName) || [],
+        allItems: currentAllItems,
         executeModeItems: currentExecuteItems,
         dayName: activeEventDate,
         selectedBlockFilters: new Set(selectedBlockFilters),
@@ -814,6 +817,13 @@ export const useShoppingItemMutationCommands = ({
           eventName: activeEventName,
           day: activeEventDate,
           eventGeneration: dragContext.generation,
+          baselineItemIds: currentAllItems.map((item) => item.id),
+          baselineExecuteIds:
+            recordEntry(
+              currentExecuteItems,
+              existingDayKey(currentExecuteItems, activeEventDate) ??
+                activeEventDate,
+            ) ?? [],
           sourceColumn: sourceColumn!,
           targetColumn: targetColumn!,
           requestedIds: dragContext.requestedIds,
