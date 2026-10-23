@@ -7,6 +7,8 @@ import {
   expectedTransferMetricNames,
   performanceConditionKey,
   performanceGroupSpecs,
+  shoppingPerformanceCriteriaDate,
+  shoppingPerformanceThresholds,
 } from "./shopping-performance-evidence-contract.mjs";
 test("fixed performance inventory retains all original matrices and each expanded category", () => {
   assert.deepEqual(
@@ -65,4 +67,14 @@ test("an omitted single scenario preserves the original condition identity; cate
     performanceConditionKey(condition, "transfer"),
     performanceConditionKey({ ...condition, scenario: "multiple" }, "transfer"),
   );
+});
+
+test("current acceptance criteria are shared and immutable without changing the sample or p95 limits", () => {
+  assert.equal(shoppingPerformanceCriteriaDate, "2026-10-24");
+  assert.deepEqual(shoppingPerformanceThresholds, {
+    minimumCount: 20,
+    medianMs: 65,
+    p95Ms: 100,
+  });
+  assert.ok(Object.isFrozen(shoppingPerformanceThresholds));
 });

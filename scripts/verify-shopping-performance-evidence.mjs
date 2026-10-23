@@ -12,6 +12,8 @@ import {
   performanceConditionKey,
   performanceGroupSpecs,
   performanceAttachmentNames,
+  shoppingPerformanceCriteriaDate,
+  shoppingPerformanceThresholds,
 } from "./shopping-performance-evidence-contract.mjs";
 export const SCHEMA_VERSION = 1;
 export const INSTRUMENT_VERSION = "shopping-rendering-v1";
@@ -57,15 +59,19 @@ export function evidenceIdentity(
     measurementKind,
     diagnosticOnly: false,
     acceptanceMeasurement: true,
+    acceptanceCriteriaDate: shoppingPerformanceCriteriaDate,
+    acceptanceThresholds: shoppingPerformanceThresholds,
   };
 }
 export function summarizeSamples(raw) {
   if (
     !Array.isArray(raw) ||
-    raw.length < 20 ||
+    raw.length < shoppingPerformanceThresholds.minimumCount ||
     raw.some((n) => typeof n !== "number" || !Number.isFinite(n) || n < 0)
   )
-    throw new Error("At least 20 finite non-negative raw samples are required");
+    throw new Error(
+      `At least ${shoppingPerformanceThresholds.minimumCount} finite non-negative raw samples are required`,
+    );
   const sorted = [...raw].sort((a, b) => a - b);
   return {
     count: raw.length,
@@ -101,8 +107,14 @@ function validateMetric(raw, summary, label, threshold = true) {
       `${label}: raw/summary ${field} mismatch`,
     );
   if (threshold) {
-    assert(calculated.medianMs <= 55, `${label}: median exceeds 55ms`);
-    assert(calculated.p95Ms <= 100, `${label}: p95 exceeds 100ms`);
+    assert(
+      calculated.medianMs <= shoppingPerformanceThresholds.medianMs,
+      `${label}: median exceeds ${shoppingPerformanceThresholds.medianMs}ms`,
+    );
+    assert(
+      calculated.p95Ms <= shoppingPerformanceThresholds.p95Ms,
+      `${label}: p95 exceeds ${shoppingPerformanceThresholds.p95Ms}ms`,
+    );
   }
 }
 export const expectedConditions = expectedPerformanceConditions;
@@ -904,7 +916,7 @@ export function validateEvidenceArtifact(
       );
     assert(
       Array.isArray(artifact.start) &&
-        artifact.start.length >= 20 &&
+        artifact.start.length >= shoppingPerformanceThresholds.minimumCount &&
         Array.isArray(artifact.end) &&
         artifact.end.length === artifact.start.length,
       "Drag start/end details missing",
@@ -1267,6 +1279,8 @@ export async function verifyGroupEvidence({
     phase,
     runId,
     status: "failed",
+    acceptanceCriteriaDate: shoppingPerformanceCriteriaDate,
+    acceptanceThresholds: shoppingPerformanceThresholds,
     errors: [],
     artifacts: [],
     hashes: {},

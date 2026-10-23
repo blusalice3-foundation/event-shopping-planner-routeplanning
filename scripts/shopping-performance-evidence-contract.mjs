@@ -1,3 +1,11 @@
+// Current user-specified acceptance criteria. Historical raw evidence is never rewritten.
+export const shoppingPerformanceCriteriaDate = "2026-10-24";
+export const shoppingPerformanceThresholds = Object.freeze({
+  minimumCount: 20,
+  medianMs: 65,
+  p95Ms: 100,
+});
+
 // Fixed test-only inventory. Evidence may never define or shrink its expected collection.
 export const performanceGroupSpecs = {
   shopping: ["responsive-performance.spec.ts"],

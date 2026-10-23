@@ -1,5 +1,6 @@
 import {
   shoppingEvidenceIdentity,
+  shoppingPerformanceThresholds,
   shoppingBrowserEnvironment,
 } from "./shopping-performance-evidence";
 import { writeFile } from "node:fs/promises";
@@ -2219,7 +2220,7 @@ for (const condition of conditions) {
         persistence:
           "保存なし: selection and endpoints are transient UI state; no persistence operation added",
         baseline: "比較不可: target chain does not exist before the fix",
-        thresholds: { minimumCount: 20, medianMs: 55, p95Ms: 100 },
+        thresholds: shoppingPerformanceThresholds,
       },
       warmupAssetReadiness,
       cspViolations: await rangeCspViolations(page),
@@ -2232,10 +2233,14 @@ for (const condition of conditions) {
     expect(await rangeCspViolations(page)).toEqual([]);
     for (const [operation, result] of Object.entries(summary)) {
       expect(result.count, `${operation} sample count`).toBeGreaterThanOrEqual(
-        20,
+        shoppingPerformanceThresholds.minimumCount,
       );
-      expect(result.medianMs, `${operation} median`).toBeLessThanOrEqual(55);
-      expect(result.p95Ms, `${operation} p95`).toBeLessThanOrEqual(100);
+      expect(result.medianMs, `${operation} median`).toBeLessThanOrEqual(
+        shoppingPerformanceThresholds.medianMs,
+      );
+      expect(result.p95Ms, `${operation} p95`).toBeLessThanOrEqual(
+        shoppingPerformanceThresholds.p95Ms,
+      );
     }
   });
 }

@@ -2,6 +2,7 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
 import {
   shoppingEvidenceIdentity,
+  shoppingPerformanceThresholds,
   shoppingBrowserEnvironment,
 } from "./shopping-performance-evidence";
 
@@ -3096,9 +3097,15 @@ for (const count of [150, 500])
         });
         expect(errors).toEqual([]);
         for (const [operation, value] of Object.entries(records)) {
-          expect(value.samples.length, operation).toBeGreaterThanOrEqual(20);
-          expect(value.medianMs, operation).toBeLessThanOrEqual(55);
-          expect(value.p95Ms, operation).toBeLessThanOrEqual(100);
+          expect(value.samples.length, operation).toBeGreaterThanOrEqual(
+            shoppingPerformanceThresholds.minimumCount,
+          );
+          expect(value.medianMs, operation).toBeLessThanOrEqual(
+            shoppingPerformanceThresholds.medianMs,
+          );
+          expect(value.p95Ms, operation).toBeLessThanOrEqual(
+            shoppingPerformanceThresholds.p95Ms,
+          );
         }
       });
 

@@ -14,6 +14,8 @@ import {
   expectedPerformanceCases,
   performanceGroupSpecs,
   expectedTransferMetricNames,
+  shoppingPerformanceCriteriaDate,
+  shoppingPerformanceThresholds,
 } from "./shopping-performance-evidence-contract.mjs";
 const groups = ["shopping", "range", "drag", "transfer"];
 const names = {
@@ -383,6 +385,8 @@ export async function compareBrowserEvidence({
 }) {
   const result = {
     schemaVersion: 1,
+    acceptanceCriteriaDate: shoppingPerformanceCriteriaDate,
+    acceptanceThresholds: shoppingPerformanceThresholds,
     status: "incomplete",
     errors: [],
     absoluteStatus: "not-evaluated",
@@ -467,7 +471,9 @@ export async function compareBrowserEvidence({
           ? "missing"
           : descriptor.auxiliary
             ? "not-applicable"
-            : metric.summary.medianMs <= 55 && metric.summary.p95Ms <= 100
+            : metric.summary.medianMs <=
+                  shoppingPerformanceThresholds.medianMs &&
+                metric.summary.p95Ms <= shoppingPerformanceThresholds.p95Ms
               ? "passed"
               : "failed";
       const compared = reasons.length === 0;

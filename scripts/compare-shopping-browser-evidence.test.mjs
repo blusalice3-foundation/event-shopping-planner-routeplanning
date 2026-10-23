@@ -14,7 +14,10 @@ import {
   summarizeSamples,
   validateEvidenceArtifact,
 } from "./verify-shopping-performance-evidence.mjs";
-import { expectedPerformanceConditions } from "./shopping-performance-evidence-contract.mjs";
+import {
+  expectedPerformanceConditions,
+  shoppingPerformanceThresholds,
+} from "./shopping-performance-evidence-contract.mjs";
 const browserEnvironment = {
   browserVersion: "140.0.0.0",
   userAgent: "fixture-browser",
@@ -67,7 +70,7 @@ test("comparison retains all legacy/UI metrics from a complete threshold-failed 
   assert.equal(rows.filter((row) => row.metric === "legacy").length, 6);
   assert.equal(rows.filter((row) => row.metric === "ui").length, 6);
   assert.equal(rows[0].summary.count, 20);
-  assert.ok(rows[0].summary.medianMs > 55);
+  assert.ok(rows[0].summary.medianMs > shoppingPerformanceThresholds.medianMs);
   assert.deepEqual(data, original);
   assert.throws(
     () => validateEvidenceArtifact(data, "shopping"),
@@ -251,6 +254,31 @@ test("missing extra categories retain every valid core before/after row and expl
         row.after === null &&
         row.reasons.length > 0,
     ),
+  );
+});
+test("comparison labels current 65ms judgments and preserves original run verdicts", async (t) => {
+  const directory = await mkdtemp(
+    path.join(os.tmpdir(), "esp current budget "),
+  );
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const beforeRoot = await partialShoppingRun(directory, "before", 60),
+    afterRoot = await partialShoppingRun(directory, "after", 64);
+  const beforeBytes = await readFile(path.join(beforeRoot, "run-result.json"));
+  const afterBytes = await readFile(path.join(afterRoot, "run-result.json"));
+  const { result } = await compareBrowserEvidence({ beforeRoot, afterRoot });
+  assert.equal(result.acceptanceCriteriaDate, "2026-10-24");
+  assert.deepEqual(result.acceptanceThresholds, shoppingPerformanceThresholds);
+  const core = result.rows.find((row) => row.group === "shopping");
+  assert.equal(core.beforeAbsolute, "passed");
+  assert.equal(core.afterAbsolute, "passed");
+  assert.equal(core.deltaReview, "increase-needs-review");
+  assert.deepEqual(
+    await readFile(path.join(beforeRoot, "run-result.json")),
+    beforeBytes,
+  );
+  assert.deepEqual(
+    await readFile(path.join(afterRoot, "run-result.json")),
+    afterBytes,
   );
 });
 test("a missing UI condition leaves its rows incomparable while other valid condition pairs survive", async (t) => {

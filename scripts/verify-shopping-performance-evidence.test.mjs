@@ -19,6 +19,7 @@ import {
 import {
   expectedPerformanceCases,
   expectedTransferMetricNames,
+  shoppingPerformanceThresholds,
 } from "./shopping-performance-evidence-contract.mjs";
 const identity = { phase: "after", runId: "fixture-run" };
 const env = {
@@ -787,6 +788,46 @@ for (const [name, mutate] of [
     mutate(a);
     assert.throws(() => validateEvidenceArtifact(a, "shopping", identity));
   });
+for (const kind of ["legacy", "ui"])
+  for (const [name, values, error] of [
+    ["inclusive median", Array(20).fill(65), null],
+    ["excess median", Array(20).fill(65.01), /median exceeds 65ms/],
+    ["inclusive p95", [...Array(18).fill(65), 100, 100], null],
+    [
+      "excess p95",
+      [...Array(18).fill(65), 100.01, 100.01],
+      /p95 exceeds 100ms/,
+    ],
+  ])
+    test(`current ${kind} budget validates ${name} independently`, () => {
+      const a = artifact("shopping");
+      const timings = kind === "legacy" ? a.timings : a.uiTimings;
+      const summary = kind === "legacy" ? a.summary : a.uiSummary;
+      timings.execute = values;
+      summary.execute = summarizeSamples(values);
+      for (let index = 0; index < values.length; index++)
+        a.uiSamples.execute[index][kind === "legacy" ? "legacyMs" : "uiMs"] =
+          values[index];
+      if (error)
+        assert.throws(
+          () => validateEvidenceArtifact(a, "shopping", identity),
+          error,
+        );
+      else
+        assert.doesNotThrow(() =>
+          validateEvidenceArtifact(a, "shopping", identity),
+        );
+    });
+
+test("new evidence labels its current criteria without changing earlier artifact fields", () => {
+  const a = artifact("shopping");
+  assert.equal(a.acceptanceCriteriaDate, "2026-10-24");
+  assert.deepEqual(a.acceptanceThresholds, shoppingPerformanceThresholds);
+  a.method = { thresholds: { minimumCount: 20, medianMs: 55, p95Ms: 100 } };
+  const original = structuredClone(a);
+  assert.doesNotThrow(() => validateEvidenceArtifact(a, "shopping", identity));
+  assert.deepEqual(a, original);
+});
 test("frame evidence cannot replace a response condition or rely on unverified pixels", () => {
   const frame = artifact(
     "transfer",

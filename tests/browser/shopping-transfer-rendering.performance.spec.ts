@@ -1,7 +1,10 @@
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
-import { shoppingEvidenceIdentity } from "./shopping-performance-evidence";
+import {
+  shoppingEvidenceIdentity,
+  shoppingPerformanceThresholds,
+} from "./shopping-performance-evidence";
 import {
   installCommitProbe,
   measureTransfer,
@@ -128,7 +131,7 @@ for (const condition of transferConditions)
             "source gap and destination dark-ink glyph shapes/opacity must match final reference and discriminate pre-drop identities; checkbox/status control ink is checked separately; allowed striping/hover background color is excluded",
           actualMoveIds:
             "measurementId identifies only the test sample; actual persistence operationId is reported separately when exposed",
-          thresholds: { minimumCount: 20, medianMs: 55, p95Ms: 100 },
+          thresholds: shoppingPerformanceThresholds,
         },
         metrics,
         finalState,
@@ -152,7 +155,7 @@ for (const condition of transferConditions)
         expect(
           metric.raw.length,
           `${name}: missing samples`,
-        ).toBeGreaterThanOrEqual(20);
+        ).toBeGreaterThanOrEqual(shoppingPerformanceThresholds.minimumCount);
         expect(
           metric.raw.every((value) => Number.isFinite(value) && value >= 0),
           `${name}: invalid raw timing`,
@@ -161,8 +164,10 @@ for (const condition of transferConditions)
           expect(
             metric.summary.medianMs,
             `${name}: median`,
-          ).toBeLessThanOrEqual(55);
-          expect(metric.summary.p95Ms, `${name}: p95`).toBeLessThanOrEqual(100);
+          ).toBeLessThanOrEqual(shoppingPerformanceThresholds.medianMs);
+          expect(metric.summary.p95Ms, `${name}: p95`).toBeLessThanOrEqual(
+            shoppingPerformanceThresholds.p95Ms,
+          );
         }
       }
     });

@@ -5,6 +5,7 @@ import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import {
   measureShoppingResponse,
   shoppingEvidenceIdentity,
+  shoppingPerformanceThresholds,
   shoppingBrowserEnvironment,
   type ShoppingUiExpectation,
 } from "./shopping-performance-evidence";
@@ -1146,9 +1147,13 @@ for (const count of [150, 500, 1500])
         expect(
           result.count,
           operation + " sample count",
-        ).toBeGreaterThanOrEqual(20);
-        expect(result.medianMs, operation + " median").toBeLessThanOrEqual(55);
-        expect(result.p95Ms, operation + " p95").toBeLessThanOrEqual(100);
+        ).toBeGreaterThanOrEqual(shoppingPerformanceThresholds.minimumCount);
+        expect(result.medianMs, operation + " median").toBeLessThanOrEqual(
+          shoppingPerformanceThresholds.medianMs,
+        );
+        expect(result.p95Ms, operation + " p95").toBeLessThanOrEqual(
+          shoppingPerformanceThresholds.p95Ms,
+        );
       }
     });
   }

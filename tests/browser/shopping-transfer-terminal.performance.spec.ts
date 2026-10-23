@@ -1,7 +1,10 @@
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
-import { shoppingEvidenceIdentity } from "./shopping-performance-evidence";
+import {
+  shoppingEvidenceIdentity,
+  shoppingPerformanceThresholds,
+} from "./shopping-performance-evidence";
 import {
   terminalConditions,
   restoreTerminalFixture,
@@ -139,7 +142,7 @@ for (const condition of terminalConditions)
           warmupMoves: 0,
           trace: frame,
           video: false,
-          thresholds: { minimumCount: 20, medianMs: 55, p95Ms: 100 },
+          thresholds: shoppingPerformanceThresholds,
           response:
             "trusted drop/dragend/touchend/touchcancel event timestamp to correct endpoint/selection/order and cleared drag UI, then rAF and next task",
         },
@@ -168,10 +171,16 @@ for (const condition of terminalConditions)
       expect(errors).toEqual([]);
       if (failure) throw failure;
       for (const [name, metric] of Object.entries(metrics)) {
-        expect(metric.raw).toHaveLength(20);
+        expect(metric.raw).toHaveLength(
+          shoppingPerformanceThresholds.minimumCount,
+        );
         if (name !== "save") {
-          expect(metric.summary.medianMs).toBeLessThanOrEqual(55);
-          expect(metric.summary.p95Ms).toBeLessThanOrEqual(100);
+          expect(metric.summary.medianMs).toBeLessThanOrEqual(
+            shoppingPerformanceThresholds.medianMs,
+          );
+          expect(metric.summary.p95Ms).toBeLessThanOrEqual(
+            shoppingPerformanceThresholds.p95Ms,
+          );
         }
       }
     });

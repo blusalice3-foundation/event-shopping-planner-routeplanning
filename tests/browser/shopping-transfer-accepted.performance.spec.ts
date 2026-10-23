@@ -1,7 +1,10 @@
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
-import { shoppingEvidenceIdentity } from "./shopping-performance-evidence";
+import {
+  shoppingEvidenceIdentity,
+  shoppingPerformanceThresholds,
+} from "./shopping-performance-evidence";
 import {
   installCommitProbe,
   measureTransfer,
@@ -350,7 +353,7 @@ for (const condition of acceptedTransferConditions)
             "actual trusted native drag at viewport edge changes product scroll before measured drop; fresh before-drop screenshot preserves current coordinate proof",
           rpcByteEstimates:
             "serialized after Tracing.end, outside measured frame endpoint",
-          thresholds: { minimumCount: 20, medianMs: 55, p95Ms: 100 },
+          thresholds: shoppingPerformanceThresholds,
         },
         metrics,
         errors,
@@ -371,7 +374,9 @@ for (const condition of acceptedTransferConditions)
       expect(errors).toEqual([]);
       if (failure) throw failure;
       for (const [name, metric] of Object.entries(metrics)) {
-        expect(metric.raw.length, `${name}: missing samples`).toBe(20);
+        expect(metric.raw.length, `${name}: missing samples`).toBe(
+          shoppingPerformanceThresholds.minimumCount,
+        );
         expect(
           metric.raw.every((value) => Number.isFinite(value) && value >= 0),
           `${name}: invalid sample`,
@@ -380,8 +385,10 @@ for (const condition of acceptedTransferConditions)
           expect(
             metric.summary.medianMs,
             `${name}: median`,
-          ).toBeLessThanOrEqual(55);
-          expect(metric.summary.p95Ms, `${name}: p95`).toBeLessThanOrEqual(100);
+          ).toBeLessThanOrEqual(shoppingPerformanceThresholds.medianMs);
+          expect(metric.summary.p95Ms, `${name}: p95`).toBeLessThanOrEqual(
+            shoppingPerformanceThresholds.p95Ms,
+          );
         }
       }
     });
