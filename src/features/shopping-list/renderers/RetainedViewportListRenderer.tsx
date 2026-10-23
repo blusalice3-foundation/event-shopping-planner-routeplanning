@@ -334,33 +334,61 @@ const currentPlaceholderStaticParts = (
     ? previous
     : { headingName, headingVisitId, heading, labels };
 };
+const sameGroupMetadata = (
+  metadata: readonly unknown[],
+  props: GroupViewportProps,
+): boolean => {
+  if (
+    metadata.length !== 5 + props.items.length * 8 ||
+    !Object.is(metadata[0], props.layoutMode) ||
+    !Object.is(metadata[1], props.row.rowKey) ||
+    !Object.is(metadata[2], props.row.label) ||
+    !Object.is(metadata[3], props.row.accessibleName) ||
+    !Object.is(metadata[4], props.visitIds[0])
+  )
+    return false;
+  for (let index = 0; index < props.items.length; index++) {
+    const { row } = props.items[index];
+    const offset = 5 + index * 8;
+    if (
+      !Object.is(metadata[offset], row.rowKey) ||
+      !Object.is(metadata[offset + 1], row.accessibleName) ||
+      !Object.is(metadata[offset + 2], row.positionInSet) ||
+      !Object.is(metadata[offset + 3], row.setSize) ||
+      !Object.is(metadata[offset + 4], row.item.remarks) ||
+      !Object.is(metadata[offset + 5], row.item.price ?? "価格未定") ||
+      !Object.is(metadata[offset + 6], row.item.quantity) ||
+      !Object.is(metadata[offset + 7], props.visitIds[index + 1])
+    )
+      return false;
+  }
+  return true;
+};
 const currentGroupSlot = (
   previous: GroupSlot | undefined,
   props: GroupViewportProps,
 ): GroupSlot => {
-  const metadata: readonly unknown[] = [
-    props.layoutMode,
-    props.row.rowKey,
-    props.row.label,
-    props.row.accessibleName,
-    props.visitIds[0],
-    ...props.items.flatMap(({ row }, index) => [
-      row.rowKey,
-      row.accessibleName,
-      row.positionInSet,
-      row.setSize,
-      row.item.remarks,
-      row.item.price ?? "価格未定",
-      row.item.quantity,
-      props.visitIds[index + 1],
-    ]),
-  ];
   const sameMetadata =
-    previous !== undefined &&
-    previous.metadata.length === metadata.length &&
-    metadata.every((value, index) =>
-      Object.is(value, previous.metadata[index]),
-    );
+    previous !== undefined && sameGroupMetadata(previous.metadata, props);
+  const metadata: readonly unknown[] = sameMetadata
+    ? previous.metadata
+    : [
+        props.layoutMode,
+        props.row.rowKey,
+        props.row.label,
+        props.row.accessibleName,
+        props.visitIds[0],
+        ...props.items.flatMap(({ row }, index) => [
+          row.rowKey,
+          row.accessibleName,
+          row.positionInSet,
+          row.setSize,
+          row.item.remarks,
+          row.item.price ?? "価格未定",
+          row.item.quantity,
+          props.visitIds[index + 1],
+        ]),
+      ];
   const context =
     previous?.context ?? React.createContext<React.ReactNode>(null);
   const config: GroupGateProps = {

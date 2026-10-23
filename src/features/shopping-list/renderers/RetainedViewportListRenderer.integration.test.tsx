@@ -2418,6 +2418,116 @@ it("records changed label primitives even when their joined text and JSX stay eq
     readContext.mockRestore();
   }
 });
+it("updates a later child visit identity while the group heading identity stays fixed", () => {
+  const members = items.slice(0, 3);
+  const content = (
+    mode: (typeof fixedSlotModes)[number],
+    lastVisitId: string,
+  ) => (
+    <RetainedViewportListRenderer
+      groupSlotMode={mode}
+      model={buildListRows({
+        items: members,
+        groups: [
+          { key: "child-visits", label: "Stable group", items: members },
+        ],
+      })}
+      accessibleLabel="Child visit identities"
+      getGroupVisitId={() => "fixed-heading"}
+      getVisitId={(item) =>
+        item.id === members[2].id ? lastVisitId : `visit-${item.id}`
+      }
+      renderGroup={(_group, rows) => (
+        <>{rows.map((child) => child.render(<input />))}</>
+      )}
+    />
+  );
+  const reference = render(content(undefined, "last-before"));
+  const view = render(content("current-model", "last-before"));
+  const heading = view.container.querySelector(
+    '[data-space-navigation-anchor="heading"]',
+  );
+  expect(view.container.innerHTML).toBe(reference.container.innerHTML);
+  view.rerender(content("current-model", "last-after"));
+  reference.rerender(content(undefined, "last-after"));
+  expect(view.container.innerHTML).toBe(reference.container.innerHTML);
+  expect(
+    view.container.querySelector('[data-space-navigation-anchor="heading"]'),
+  ).toBe(heading);
+  expect(heading).toHaveAttribute(
+    "data-space-navigation-visit-id",
+    "fixed-heading",
+  );
+  const childAnchors = view.container.querySelectorAll(
+    '[data-space-navigation-anchor="item"]',
+  );
+  expect(childAnchors).toHaveLength(3);
+  expect(childAnchors[0]).toHaveAttribute(
+    "data-space-navigation-visit-id",
+    `visit-${members[0].id}`,
+  );
+  expect(childAnchors[2]).toHaveAttribute(
+    "data-space-navigation-visit-id",
+    "last-after",
+  );
+  expect(view.container.querySelector("input")).toBeNull();
+});
+
+it("preserves Object.is metadata boundaries and the nullish price fallback", () => {
+  const content = (
+    mode: (typeof fixedSlotModes)[number],
+    price: ShoppingItem["price"] | undefined,
+  ) => {
+    const member = { ...items[0], price: price as ShoppingItem["price"] };
+    return (
+      <RetainedViewportListRenderer
+        groupSlotMode={mode}
+        model={buildListRows({
+          items: [member],
+          groups: [
+            { key: "price-values", label: "Price values", items: [member] },
+          ],
+        })}
+        accessibleLabel="Metadata value boundaries"
+        getGroupVisitId={() => "fixed-heading"}
+        getVisitId={() => "fixed-child"}
+        renderGroup={(_group, rows) => (
+          <>{rows.map((child) => child.render(<input />))}</>
+        )}
+      />
+    );
+  };
+  const readContext = vi.spyOn(React, "useContext");
+  try {
+    const reference = render(content(undefined, Number.NaN));
+    const view = render(content("current-model", Number.NaN));
+    const boundaries: Array<{
+      price: ShoppingItem["price"] | undefined;
+      metadataReads: number;
+    }> = [
+      { price: Number.NaN, metadataReads: 0 },
+      { price: 0, metadataReads: 1 },
+      { price: -0, metadataReads: 1 },
+      { price: 0, metadataReads: 1 },
+      { price: 0, metadataReads: 0 },
+      { price: null, metadataReads: 1 },
+      { price: undefined, metadataReads: 0 },
+      { price: null, metadataReads: 0 },
+    ];
+    // These direct renderer inputs do not broaden persisted-item validation.
+    for (const { price, metadataReads } of boundaries) {
+      readContext.mockClear();
+      view.rerender(content("current-model", price));
+      expect(readContext).toHaveBeenCalledTimes(metadataReads);
+      reference.rerender(content(undefined, price));
+      expect(view.container.innerHTML).toBe(reference.container.innerHTML);
+    }
+    expect(view.container).toHaveTextContent("価格未定");
+    expect(view.container.querySelector("input")).toBeNull();
+  } finally {
+    readContext.mockRestore();
+  }
+});
 describe("forced viewport activation keeps unknown visibility private", () => {
   const noSynchronousHeightRead = () =>
     vi.stubGlobal(
