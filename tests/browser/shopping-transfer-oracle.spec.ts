@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { verifyTransferLogicalOrder } from "./shopping-transfer-measurement";
 import {
   acceptedScenarioFixture,
   defaultCandidateOrder,
@@ -252,4 +253,126 @@ test("mixed fixture retains raw requested order and distinct candidate display o
     .filter((entry) => fixture.requestedIds.includes(entry.id));
   expect(defaultCandidateOrder(selected)).toEqual(["c1", "c3", "c2"]);
   expect(fixture.effectiveIds).toEqual(["c1", "c2", "c3"]);
+});
+
+test.describe("logical transfer DOM order", () => {
+  const expectedIds = [
+    "e20",
+    "e19",
+    "e18",
+    "e17",
+    "e16",
+    "e15",
+    "e14",
+    "e13",
+    "c0",
+  ];
+  test.beforeEach(async ({ page }) => {
+    await page.setContent('<div data-shopping-drag-column="candidate"></div>');
+    await page.evaluate((ids) => {
+      const root = document.querySelector("[data-shopping-drag-column]")!;
+      const group = document.createElement("div");
+      group.setAttribute("role", "listitem");
+      group.dataset.rowKey = 'group:"A"';
+      root.append(group);
+      for (const id of ids) {
+        const row = document.createElement("div");
+        row.setAttribute("role", "listitem");
+        row.dataset.rowKey = `item:${JSON.stringify(id)}`;
+        row.style.minHeight = "180px";
+        if (id === "e13") {
+          row.textContent = "deferred item e13";
+        } else {
+          const card = document.createElement("div");
+          card.dataset.itemId = id;
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          card.append(input);
+          row.append(card);
+        }
+        group.append(row);
+      }
+      root
+        .querySelector<HTMLInputElement>('[data-item-id="c0"] input')!
+        .focus({ preventScroll: true });
+    }, expectedIds);
+  });
+
+  test("includes deferred rows before a retained focused offscreen control", async ({
+    page,
+  }) => {
+    expect(
+      await page
+        .locator('[data-item-id="c0"] input')
+        .evaluate((input) => input === document.activeElement),
+    ).toBe(true);
+    await expect(
+      page.locator('[data-item-id="c0"] input'),
+    ).not.toBeInViewport();
+    const mountedCardIds = await page
+      .locator("[data-item-id]")
+      .evaluateAll((cards) =>
+        cards.map((card) => card.getAttribute("data-item-id")),
+      );
+    expect(mountedCardIds).toEqual([
+      "e20",
+      "e19",
+      "e18",
+      "e17",
+      "e16",
+      "e15",
+      "e14",
+      "c0",
+    ]);
+    await verifyTransferLogicalOrder(page, "candidate", expectedIds);
+  });
+
+  test("rejects swapped mounted card identities while logical row keys stay correct", async ({
+    page,
+  }) => {
+    await page.evaluate(() => {
+      const first = document.querySelector<HTMLElement>(
+        '[data-item-id="e20"]',
+      )!;
+      const second = document.querySelector<HTMLElement>(
+        '[data-item-id="e19"]',
+      )!;
+      first.dataset.itemId = "e19";
+      second.dataset.itemId = "e20";
+    });
+    await expect(
+      verifyTransferLogicalOrder(page, "candidate", expectedIds),
+    ).rejects.toThrow("candidate: mounted card identity matches logical row");
+  });
+  test("rejects a cloned mounted card inside the same unchanged logical row", async ({
+    page,
+  }) => {
+    await page.evaluate(() => {
+      const card = document.querySelector('[data-item-id="e20"]')!;
+      card.after(card.cloneNode(true));
+    });
+    await expect(
+      verifyTransferLogicalOrder(page, "candidate", expectedIds),
+    ).rejects.toThrow("candidate: mounted item cards are unique");
+  });
+  for (const mutation of ["reordered", "missing", "duplicate"] as const)
+    test(`rejects ${mutation} logical rows even when mounted controls look unchanged`, async ({
+      page,
+    }) => {
+      await page.evaluate((mutation) => {
+        const row = [
+          ...document.querySelectorAll<HTMLElement>("[data-row-key]"),
+        ].find((row) => row.dataset.rowKey === 'item:"e13"')!;
+        if (mutation === "reordered") {
+          const retained = document
+            .querySelector('[data-item-id="c0"]')!
+            .closest('[role="listitem"]')!;
+          row.parentElement!.insertBefore(retained, row);
+        } else if (mutation === "missing") row.remove();
+        else row.after(row.cloneNode(true));
+      }, mutation);
+      await expect(
+        verifyTransferLogicalOrder(page, "candidate", expectedIds),
+      ).rejects.toThrow("candidate: logical DOM item order");
+    });
 });

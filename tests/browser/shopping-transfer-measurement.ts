@@ -1888,6 +1888,46 @@ export async function readTransferDurable(page: Page) {
       .reduce((sum, [, items]) => sum + items.length, 0),
   };
 }
+/** Include deferred rows; focused offscreen controls need not form a prefix. */
+export async function verifyTransferLogicalOrder(
+  page: Page,
+  column: "execute" | "candidate",
+  expectedIds: readonly string[],
+) {
+  const { rowKeys, mountedCards } = await page
+    .locator(`[data-shopping-drag-column="${column}"]`)
+    .evaluate((root) => ({
+      rowKeys: [
+        ...root.querySelectorAll<HTMLElement>(
+          '[role="listitem"][data-row-key^="item:"]',
+        ),
+      ].map((row) => row.dataset.rowKey),
+      mountedCards: [
+        ...root.querySelectorAll<HTMLElement>(
+          "[data-item-id]:not([data-space-group-key]):not(.esp-shopping-touch-clone)",
+        ),
+      ]
+        .filter((card) => !!card.querySelector('input[type="checkbox"]'))
+        .map((card) => ({
+          rowKey: card.closest<HTMLElement>(
+            '[role="listitem"][data-row-key^="item:"]',
+          )?.dataset.rowKey,
+          expectedRowKey: `item:${JSON.stringify(card.dataset.itemId)}`,
+        })),
+    }));
+  expect(rowKeys, `${column}: logical DOM item order`).toEqual(
+    expectedIds.map((id) => `item:${JSON.stringify(id)}`),
+  );
+  const mountedRowKeys = mountedCards.map((card) => card.rowKey);
+  expect(
+    mountedRowKeys,
+    `${column}: mounted card identity matches logical row`,
+  ).toEqual(mountedCards.map((card) => card.expectedRowKey));
+  expect(
+    new Set(mountedRowKeys).size,
+    `${column}: mounted item cards are unique`,
+  ).toBe(mountedRowKeys.length);
+}
 export async function verifyContinuousTransferResult(
   page: Page,
   condition: TransferCondition,
@@ -1946,19 +1986,11 @@ export async function verifyContinuousTransferResult(
     condition.direction === "execute-to-candidate"
       ? [...moved.map((i) => `e${i}`), ...candidates]
       : ["e0", ...moved.map((i) => `c${i}`), ...execute.slice(1)];
-  const visiblePrefix = await page.evaluate(
-    (column) =>
-      [
-        ...document.querySelectorAll<HTMLElement>(
-          `[data-shopping-drag-column="${column}"] [data-item-id]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
-        ),
-      ]
-        .filter((row) => !!row.querySelector('input[type="checkbox"]'))
-        .slice(0, 8)
-        .map((row) => row.dataset.itemId),
+  await verifyTransferLogicalOrder(
+    page,
     condition.direction === "execute-to-candidate" ? "candidate" : "execute",
+    expectedVisible,
   );
-  expect(visiblePrefix).toEqual(expectedVisible.slice(0, visiblePrefix.length));
   expect(saved.historicalItems).toBe(
     condition.load === "practical" ? 10000 : 0,
   );
