@@ -658,6 +658,21 @@ cleanなworktreeでpreviewを停止した後、`npm run test:release-a-rollback`
 
 旧localStorage原本の物理cleanupはRelease Aでは強制OFFで、通常起動・migration・autosave・復旧UIから実行されません。Release B用の静的gateは`VITE_PERSISTENCE_RELEASE_CHANNEL=release-b`と`VITE_PERSISTENCE_LEGACY_CLEANUP=true`の二重一致が必要ですが、これだけでは実行されません。runtime kill switch、対応clientとService Workerのversion証明、全clientのquiescence、およびWeb Lockの排他を同時に証明できない場合はfail closedで延期します。production proof providerとoperator UIが未構成のため、Release Bは運用禁止です。運用条件と禁止事項は[永続化復旧runbook](docs/persistence-recovery-runbook.md)を参照してください。
 
+### 買い物操作の性能基準（編集・レビュー時）
+
+2026-10-24のユーザー指定により、D&D・選択・描画改善プランに直接関連する動作だけ、中央値・95%点ともに110.0ms以下を通過基準とします。変更・追加する操作の内容から、次の性能試験群を選んでください。
+
+| 性能試験群 | 対象 | 中央値 | 95%点 | 最低サンプル数 |
+| --- | --- | ---: | ---: | ---: |
+| `range` / `drag` / `transfer` | D&D・範囲選択・描画・移動後の次操作 | 110.0ms以下 | 110.0ms以下 | 各20 |
+| `shopping` | 通常の買い物6操作 | 65.0ms以下 | 100.0ms以下 | 各20 |
+
+通常6操作など本プランの対象外の動作は、計画書に回帰確認として掲載されている場合も従来の65.0ms／100ms基準を維持します。保存完了時間は操作反応と分けた補助指標です。
+
+判定には[性能基準の共通定義](scripts/shopping-performance-evidence-contract.mjs)の `performanceAcceptanceCriteriaForGroup(group)` を使います。入力・DOM反映・実フレーム・次操作の計測終了点、測定条件、各20サンプル以上、保存の原子性・整合性検証を維持してください。過去の測定値・当初の合否は保持し、新基準による再判定は別の記録に残します。部分実行や診断の通過は、全条件の合格と区別します。
+
+適用範囲の詳細は[プラン限定の性能基準](docs/dnd-selection-rendering-performance-criteria-20261024.md)、作業時のルールは[AGENTS.md](AGENTS.md)を参照してください。
+
 ### 技術構成
 
 | 領域           | 実装                                                                  |

@@ -6,6 +6,14 @@ export const shoppingPerformanceThresholds = Object.freeze({
   p95Ms: 100,
 });
 
+/**
+ * 2026-10-24 ユーザー指定: D&D・選択・描画改善プランに限る例外。
+ * range / drag / transfer（D&D・範囲選択・描画・移動後の次操作）は
+ * 中央値・95%点とも110ms以下。通常のshoppingは上記65ms / 100msを維持する。
+ * 各20サンプル以上。保存完了（save）は別の補助指標として扱う。
+ * 計測終了点・条件、過去の実測値・当初合否を維持し、再判定は別に記録する。
+ * 詳細: docs/dnd-selection-rendering-performance-criteria-20261024.md / AGENTS.md。
+ */
 export const dndSelectionRenderingPerformanceThresholds = Object.freeze({
   minimumCount: 20,
   medianMs: 110,
