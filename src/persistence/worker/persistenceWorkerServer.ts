@@ -241,7 +241,11 @@ export function createPersistenceWorkerServer(
         }
         // An order-only acknowledgement is valid only for the exact published baseline.
         // Fresh/conflict reads may contain content, other-day or other-event changes.
+        // Unretained publications (for example item edits) still advance the
+        // exact client delta baseline. Their missing commit observation is not
+        // evidence of a different snapshot and must not force another full read.
         const requiresCompleteBaseline =
+          read!.snapshot !== previous &&
           read!.snapshot !== observedSnapshots.get(sequence);
         let committedReceipt: ApplicationSnapshotRead | void;
         try {
