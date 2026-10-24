@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
 import {
   shoppingEvidenceIdentity,
-  shoppingPerformanceThresholds,
+  performanceAcceptanceCriteriaForGroup,
 } from "./shopping-performance-evidence";
 import {
   installCommitProbe,
@@ -22,6 +22,9 @@ import {
   restoreAcceptedScenario,
   verifyAcceptedScenario,
 } from "./shopping-transfer-scenarios";
+
+const shoppingPerformanceThresholds =
+  performanceAcceptanceCriteriaForGroup("transfer").acceptanceThresholds;
 
 test.use({
   video: "off",

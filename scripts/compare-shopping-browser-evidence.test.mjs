@@ -17,6 +17,7 @@ import {
 import {
   expectedPerformanceConditions,
   shoppingPerformanceThresholds,
+  performanceAcceptanceCriteriaByGroup,
 } from "./shopping-performance-evidence-contract.mjs";
 const browserEnvironment = {
   browserVersion: "140.0.0.0",
@@ -266,12 +267,20 @@ test("comparison labels current 65ms judgments and preserves original run verdic
   const beforeBytes = await readFile(path.join(beforeRoot, "run-result.json"));
   const afterBytes = await readFile(path.join(afterRoot, "run-result.json"));
   const { result } = await compareBrowserEvidence({ beforeRoot, afterRoot });
-  assert.equal(result.acceptanceCriteriaDate, "2026-10-24");
-  assert.deepEqual(result.acceptanceThresholds, shoppingPerformanceThresholds);
+  assert.deepEqual(
+    result.acceptanceCriteriaByGroup,
+    performanceAcceptanceCriteriaByGroup,
+  );
+  assert.equal(result.acceptanceThresholds, undefined);
+  assert.equal(
+    result.before.recordedAcceptanceCriteria.acceptanceCriteriaByGroup,
+    null,
+  );
   const core = result.rows.find((row) => row.group === "shopping");
   assert.equal(core.beforeAbsolute, "passed");
   assert.equal(core.afterAbsolute, "passed");
   assert.equal(core.deltaReview, "increase-needs-review");
+  assert.deepEqual(core.acceptanceThresholds, shoppingPerformanceThresholds);
   assert.deepEqual(
     await readFile(path.join(beforeRoot, "run-result.json")),
     beforeBytes,
@@ -464,4 +473,152 @@ test("comparison requires actual transfer fixture identities without inventing m
     /ambiguous/,
   );
   assert.equal(comparableFixtureIdentity(shopping(), "shopping"), null);
+});
+
+async function addRangeReport(runRoot, phase, values) {
+  const operations = [
+    "firstEndpoint",
+    "secondEndpoint",
+    "selectRange",
+    "clearRange",
+  ];
+  const report = {
+    errors: [],
+    config: { workers: 1, projects: [{ retries: 0 }] },
+    suites: [
+      {
+        specs: expectedPerformanceConditions("range").map(
+          (condition, index) => ({
+            file: "edit-execute-range-selection.spec.ts",
+            title: `range-${index}`,
+            tests: [
+              {
+                expectedStatus: "passed",
+                status: "expected",
+                results: [
+                  {
+                    retry: 0,
+                    status: "passed",
+                    attachments: [
+                      {
+                        name: "edit-execute-range-selection-timings",
+                        contentType: "application/json",
+                        body: Buffer.from(
+                          JSON.stringify({
+                            ...evidenceIdentity("range", "response", {
+                              ESP_EVIDENCE_PHASE: phase,
+                              ESP_EVIDENCE_RUN_ID: `${phase}-run`,
+                            }),
+                            environment: {
+                              ...browserEnvironment,
+                              ...condition,
+                              requestedRenderer: condition.renderer,
+                            },
+                            errors: [],
+                            timings: Object.fromEntries(
+                              operations.map((op) => [op, values]),
+                            ),
+                            summary: Object.fromEntries(
+                              operations.map((op) => [
+                                op,
+                                summarizeSamples(values),
+                              ]),
+                            ),
+                            samples: values.map((value, repeat) => ({
+                              repeat,
+                              durations: Object.fromEntries(
+                                operations.map((op) => [op, value]),
+                              ),
+                            })),
+                          }),
+                        ).toString("base64"),
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          }),
+        ),
+      },
+    ],
+  };
+  await mkdir(path.join(runRoot, "range"));
+  await writeFile(
+    path.join(runRoot, "range/report.json"),
+    JSON.stringify(report),
+    "utf8",
+  );
+}
+test("mixed runs independently judge shopping at 65/100 and range at inclusive 110/110 while retaining historical metadata", async (t) => {
+  const directory = await mkdtemp(
+    path.join(os.tmpdir(), "esp scoped compare "),
+  );
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const beforeRoot = await partialShoppingRun(directory, "before", 70);
+  const afterRoot = await partialShoppingRun(directory, "after", 70);
+  await addRangeReport(beforeRoot, "before", Array(20).fill(110));
+  await addRangeReport(afterRoot, "after", [
+    ...Array(18).fill(100),
+    110.001,
+    110.001,
+  ]);
+  const file = path.join(afterRoot, "run-result.json");
+  const run = JSON.parse(await readFile(file, "utf8"));
+  run.acceptanceCriteriaByGroup = performanceAcceptanceCriteriaByGroup;
+  await writeFile(file, JSON.stringify(run), "utf8");
+  const beforeBytes = await readFile(path.join(beforeRoot, "run-result.json"));
+  const afterBytes = await readFile(file);
+  const { result } = await compareBrowserEvidence({ beforeRoot, afterRoot });
+  const shoppingRow = result.rows.find((row) => row.group === "shopping");
+  const rangeRow = result.rows.find((row) => row.group === "range");
+  assert.equal(shoppingRow.afterAbsolute, "failed");
+  assert.equal(rangeRow.status, "compared");
+  assert.equal(rangeRow.beforeAbsolute, "passed");
+  assert.equal(rangeRow.afterAbsolute, "failed");
+  assert.equal(rangeRow.acceptanceScope, "dnd-selection-rendering");
+  assert.deepEqual(rangeRow.acceptanceThresholds, {
+    minimumCount: 20,
+    medianMs: 110,
+    p95Ms: 110,
+  });
+  assert.equal(
+    result.before.recordedAcceptanceCriteria.acceptanceCriteriaByGroup,
+    null,
+  );
+  assert.deepEqual(
+    result.after.recordedAcceptanceCriteria.acceptanceCriteriaByGroup,
+    performanceAcceptanceCriteriaByGroup,
+  );
+  assert.deepEqual(
+    await readFile(path.join(beforeRoot, "run-result.json")),
+    beforeBytes,
+  );
+  assert.deepEqual(await readFile(file), afterBytes);
+});
+test("comparison refuses a present but incomplete criteria table", async (t) => {
+  const directory = await mkdtemp(
+    path.join(os.tmpdir(), "esp invalid criteria "),
+  );
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const beforeRoot = await partialShoppingRun(directory, "before");
+  const afterRoot = await partialShoppingRun(directory, "after");
+  const file = path.join(afterRoot, "run-result.json");
+  const run = JSON.parse(await readFile(file, "utf8"));
+  run.acceptanceCriteriaByGroup = structuredClone(
+    performanceAcceptanceCriteriaByGroup,
+  );
+  delete run.acceptanceCriteriaByGroup.range;
+  await writeFile(file, JSON.stringify(run), "utf8");
+  const { result, exitCode } = await compareBrowserEvidence({
+    beforeRoot,
+    afterRoot,
+  });
+  assert.equal(exitCode, 1);
+  assert.ok(
+    result.errors.some((error) =>
+      error.includes("acceptanceCriteriaByGroup metadata"),
+    ),
+  );
+  assert.equal(result.rows.length, 0);
 });

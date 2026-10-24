@@ -13,6 +13,8 @@ import {
   verifyGroupEvidence,
 } from "./verify-shopping-performance-evidence.mjs";
 
+import { performanceAcceptanceCriteriaByGroup } from "./shopping-performance-evidence-contract.mjs";
+
 export const GROUPS = [
   { group: "functional", script: null },
   { group: "shopping", script: "test:shopping-performance:run" },
@@ -259,6 +261,7 @@ export async function collectBrowserProvenance(cwd, env) {
       )
       .digest("hex"),
     instrumentVersion: INSTRUMENT_VERSION,
+    acceptanceCriteriaByGroup: performanceAcceptanceCriteriaByGroup,
     instrumentPatch: await sourceHashes(cwd, instruments),
     fixtureSources: await sourceHashes(cwd, [
       ...new Set([...specs, ...transferSources]),
@@ -287,6 +290,7 @@ export async function runBrowserEvidence(options = {}) {
   await mkdir(runRoot); // exclusive run ID: never reuse or overwrite earlier evidence
   const result = {
     schemaVersion: 1,
+    acceptanceCriteriaByGroup: performanceAcceptanceCriteriaByGroup,
     phase,
     runId,
     runRoot,
@@ -315,6 +319,7 @@ export async function runBrowserEvidence(options = {}) {
     Object.assign(
       result,
       options.provenance ?? (await collectBrowserProvenance(cwd, env)),
+      { acceptanceCriteriaByGroup: performanceAcceptanceCriteriaByGroup },
     );
     const npmCli = options.npmCli ?? (await resolveNpmCli(env));
     for (const definition of GROUPS) {

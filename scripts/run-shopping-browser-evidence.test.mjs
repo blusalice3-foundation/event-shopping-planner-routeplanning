@@ -13,6 +13,8 @@ import {
   spawnInvocation,
 } from "./run-shopping-browser-evidence.mjs";
 
+import { performanceAcceptanceCriteriaByGroup } from "./shopping-performance-evidence-contract.mjs";
+
 const repository = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
@@ -35,6 +37,7 @@ async function fixture(t) {
 }
 test("normal runner keeps group order, siblings, argument boundaries and parent environment", async (t) => {
   const options = await fixture(t);
+  options.provenance.acceptanceCriteriaByGroup = { forged: { medianMs: 999 } };
   const original = { ...options.env };
   const calls = [];
   const result = await runBrowserEvidence({
@@ -81,6 +84,12 @@ test("normal runner keeps group order, siblings, argument boundaries and parent 
   );
   assert.equal(saved.status, "passed");
   assert.equal(saved.groups.length, 5);
+  assert.deepEqual(
+    saved.acceptanceCriteriaByGroup,
+    performanceAcceptanceCriteriaByGroup,
+  );
+  assert.equal(saved.acceptanceCriteriaByGroup.functional, undefined);
+  assert.equal(saved.acceptanceThresholds, undefined);
   await assert.rejects(runBrowserEvidence(options), /EEXIST/);
 });
 for (const [label, child] of [

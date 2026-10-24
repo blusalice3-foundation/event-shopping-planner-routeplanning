@@ -12,7 +12,8 @@ import {
   performanceConditionKey,
   performanceGroupSpecs,
   performanceAttachmentNames,
-  shoppingPerformanceCriteriaDate,
+  performanceAcceptanceCriteriaForGroup,
+  validateAcceptanceCriteriaMetadata,
   shoppingPerformanceThresholds,
 } from "./shopping-performance-evidence-contract.mjs";
 export const SCHEMA_VERSION = 1;
@@ -59,8 +60,7 @@ export function evidenceIdentity(
     measurementKind,
     diagnosticOnly: false,
     acceptanceMeasurement: true,
-    acceptanceCriteriaDate: shoppingPerformanceCriteriaDate,
-    acceptanceThresholds: shoppingPerformanceThresholds,
+    ...performanceAcceptanceCriteriaForGroup(group),
   };
 }
 export function summarizeSamples(raw) {
@@ -99,7 +99,7 @@ function keysEqual(value, expected, label) {
 function sameNumber(a, b) {
   return typeof a === "number" && Number.isFinite(a) && Math.abs(a - b) < 1e-8;
 }
-function validateMetric(raw, summary, label, threshold = true) {
+function validateMetric(raw, summary, label, threshold, thresholds) {
   const calculated = summarizeSamples(raw);
   for (const field of ["count", "medianMs", "p95Ms"])
     assert(
@@ -108,12 +108,12 @@ function validateMetric(raw, summary, label, threshold = true) {
     );
   if (threshold) {
     assert(
-      calculated.medianMs <= shoppingPerformanceThresholds.medianMs,
-      `${label}: median exceeds ${shoppingPerformanceThresholds.medianMs}ms`,
+      calculated.medianMs <= thresholds.medianMs,
+      `${label}: median exceeds ${thresholds.medianMs}ms`,
     );
     assert(
-      calculated.p95Ms <= shoppingPerformanceThresholds.p95Ms,
-      `${label}: p95 exceeds ${shoppingPerformanceThresholds.p95Ms}ms`,
+      calculated.p95Ms <= thresholds.p95Ms,
+      `${label}: p95 exceeds ${thresholds.p95Ms}ms`,
     );
   }
 }
@@ -769,8 +769,12 @@ export function validateEvidenceArtifact(
   artifact,
   group,
   identity = {},
-  { enforceBudgets = true } = {},
+  { enforceBudgets = true, requireCurrentCriteria = true } = {},
 ) {
+  const { acceptanceThresholds } = performanceAcceptanceCriteriaForGroup(group);
+  validateAcceptanceCriteriaMetadata(artifact, group, {
+    required: requireCurrentCriteria,
+  });
   assert(
     artifact?.schemaVersion === SCHEMA_VERSION,
     "Unsupported or missing evidence schemaVersion",
@@ -828,12 +832,14 @@ export function validateEvidenceArtifact(
         artifact.summary[op],
         `${op}/legacy`,
         enforceBudgets,
+        acceptanceThresholds,
       );
       validateMetric(
         artifact.uiTimings[op],
         artifact.uiSummary[op],
         `${op}/ui`,
         enforceBudgets,
+        acceptanceThresholds,
       );
       const samples = artifact.uiSamples[op];
       assert(
@@ -881,6 +887,7 @@ export function validateEvidenceArtifact(
         artifact.summary[op],
         op,
         enforceBudgets,
+        acceptanceThresholds,
       );
       assert(
         Array.isArray(artifact.samples) &&
@@ -913,6 +920,7 @@ export function validateEvidenceArtifact(
         artifact.records[op],
         op,
         enforceBudgets,
+        acceptanceThresholds,
       );
     assert(
       Array.isArray(artifact.start) &&
@@ -931,6 +939,7 @@ export function validateEvidenceArtifact(
         metric?.summary,
         op,
         op !== "save" && enforceBudgets,
+        acceptanceThresholds,
       );
       assert(
         Array.isArray(metric.samples) &&
@@ -1279,8 +1288,7 @@ export async function verifyGroupEvidence({
     phase,
     runId,
     status: "failed",
-    acceptanceCriteriaDate: shoppingPerformanceCriteriaDate,
-    acceptanceThresholds: shoppingPerformanceThresholds,
+    ...performanceAcceptanceCriteriaForGroup(group),
     errors: [],
     artifacts: [],
     hashes: {},

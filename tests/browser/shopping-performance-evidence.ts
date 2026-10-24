@@ -1,10 +1,10 @@
 import type { Locator, Page } from "@playwright/test";
 import {
-  shoppingPerformanceCriteriaDate,
+  performanceAcceptanceCriteriaForGroup,
   shoppingPerformanceThresholds,
 } from "../../scripts/shopping-performance-evidence-contract.mjs";
 
-export { shoppingPerformanceThresholds };
+export { shoppingPerformanceThresholds, performanceAcceptanceCriteriaForGroup };
 export const shoppingInstrumentVersion = "shopping-rendering-v1";
 export function shoppingEvidenceIdentity(
   group: "shopping" | "range" | "drag" | "transfer",
@@ -19,8 +19,7 @@ export function shoppingEvidenceIdentity(
     measurementKind,
     diagnosticOnly: false,
     acceptanceMeasurement: true,
-    acceptanceCriteriaDate: shoppingPerformanceCriteriaDate,
-    acceptanceThresholds: shoppingPerformanceThresholds,
+    ...performanceAcceptanceCriteriaForGroup(group),
   };
 }
 

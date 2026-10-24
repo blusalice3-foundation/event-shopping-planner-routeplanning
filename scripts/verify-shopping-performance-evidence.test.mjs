@@ -1883,3 +1883,78 @@ for (const missing of [true, false])
       /Artifact errors must be an empty array/,
     );
   });
+
+for (const group of ["range", "drag", "transfer"])
+  for (const [name, values, error] of [
+    ["inclusive median and p95", Array(20).fill(110), null],
+    ["excess median", Array(20).fill(110.001), /median exceeds 110ms/],
+    [
+      "excess p95",
+      [...Array(18).fill(100), 110.001, 110.001],
+      /p95 exceeds 110ms/,
+    ],
+  ])
+    test(`${group} scoped budget validates ${name}`, () => {
+      const condition =
+        group === "transfer"
+          ? expectedConditions(group).find((row) => row.scenario === "cancel")
+          : undefined;
+      const a = artifact(group, condition);
+      if (group === "range") {
+        a.timings.firstEndpoint = values;
+        a.summary.firstEndpoint = summarizeSamples(values);
+        a.samples.forEach((sample, index) => {
+          sample.durations.firstEndpoint = values[index];
+        });
+      } else if (group === "drag") {
+        a.records.drop = { samples: values, ...summarizeSamples(values) };
+      } else {
+        a.metrics.response.raw = values;
+        a.metrics.response.summary = summarizeSamples(values);
+        a.metrics.response.samples.forEach((sample, index) => {
+          sample.durationMs = values[index];
+        });
+      }
+      if (error)
+        assert.throws(
+          () => validateEvidenceArtifact(a, group, identity),
+          error,
+        );
+      else
+        assert.doesNotThrow(() => validateEvidenceArtifact(a, group, identity));
+    });
+test("current evidence rejects forged scope even when budgets are disabled; historical evidence remains unmodified", () => {
+  const a = artifact("range");
+  a.acceptanceThresholds = { minimumCount: 20, medianMs: 999, p95Ms: 999 };
+  assert.throws(
+    () =>
+      validateEvidenceArtifact(a, "range", identity, { enforceBudgets: false }),
+    /acceptanceThresholds metadata/,
+  );
+  delete a.acceptanceScope;
+  delete a.acceptanceCriteriaId;
+  a.acceptanceThresholds = { minimumCount: 20, medianMs: 65, p95Ms: 100 };
+  const original = JSON.stringify(a);
+  assert.throws(
+    () => validateEvidenceArtifact(a, "range", identity),
+    /acceptanceScope metadata/,
+  );
+  assert.doesNotThrow(() =>
+    validateEvidenceArtifact(a, "range", identity, {
+      requireCurrentCriteria: false,
+    }),
+  );
+  assert.equal(JSON.stringify(a), original);
+  assert.throws(
+    () => validateEvidenceArtifact(a, "future", identity),
+    /Unknown performance criteria group/,
+  );
+  a.timings.firstEndpoint.pop();
+  assert.throws(
+    () =>
+      validateEvidenceArtifact(a, "range", identity, {
+        requireCurrentCriteria: false,
+      }),
+    /At least 20/,
+  );
+});

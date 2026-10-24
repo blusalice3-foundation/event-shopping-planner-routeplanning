@@ -14,8 +14,9 @@ import {
   expectedPerformanceCases,
   performanceGroupSpecs,
   expectedTransferMetricNames,
-  shoppingPerformanceCriteriaDate,
-  shoppingPerformanceThresholds,
+  performanceAcceptanceCriteriaByGroup,
+  performanceAcceptanceCriteriaForGroup,
+  validateRunAcceptanceCriteriaMetadata,
 } from "./shopping-performance-evidence-contract.mjs";
 const groups = ["shopping", "range", "drag", "transfer"];
 const names = {
@@ -95,7 +96,12 @@ export function comparableFixtureIdentity(artifact, group) {
 }
 
 export function comparableMetrics(artifact, group) {
-  validateEvidenceArtifact(artifact, group, {}, { enforceBudgets: false });
+  validateEvidenceArtifact(
+    artifact,
+    group,
+    {},
+    { enforceBudgets: false, requireCurrentCriteria: false },
+  );
   const metrics = [];
   const add = (operation, metric, summary, auxiliary = false) =>
     metrics.push({ operation, metric, summary, auxiliary });
@@ -124,9 +130,18 @@ export function comparableMetrics(artifact, group) {
       );
   return metrics;
 }
+function recordedCriteria(run) {
+  return {
+    acceptanceCriteriaByGroup: run.acceptanceCriteriaByGroup ?? null,
+    acceptanceCriteriaDate: run.acceptanceCriteriaDate ?? null,
+    acceptanceThresholds: run.acceptanceThresholds ?? null,
+    originalStatus: run.status ?? null,
+  };
+}
 async function readRun(runRoot, phase) {
   const bytes = await readFile(path.join(runRoot, "run-result.json"));
   const run = JSON.parse(bytes.toString("utf8"));
+  validateRunAcceptanceCriteriaMetadata(run);
   assert(
     run.phase === phase &&
       typeof run.runId === "string" &&
@@ -268,7 +283,7 @@ async function readRun(runRoot, phase) {
             artifact,
             group,
             { phase, runId: run.runId },
-            { enforceBudgets: false },
+            { enforceBudgets: false, requireCurrentCriteria: false },
           );
           assert(
             expected.includes(checked.key) &&
@@ -385,8 +400,7 @@ export async function compareBrowserEvidence({
 }) {
   const result = {
     schemaVersion: 1,
-    acceptanceCriteriaDate: shoppingPerformanceCriteriaDate,
-    acceptanceThresholds: shoppingPerformanceThresholds,
+    acceptanceCriteriaByGroup: performanceAcceptanceCriteriaByGroup,
     status: "incomplete",
     errors: [],
     absoluteStatus: "not-evaluated",
@@ -466,14 +480,15 @@ export async function compareBrowserEvidence({
             reasons.push(`artifact environment ${field} mismatch`);
         }
       }
+      const criteria = performanceAcceptanceCriteriaForGroup(descriptor.group);
       const absolute = (metric) =>
         !metric
           ? "missing"
           : descriptor.auxiliary
             ? "not-applicable"
             : metric.summary.medianMs <=
-                  shoppingPerformanceThresholds.medianMs &&
-                metric.summary.p95Ms <= shoppingPerformanceThresholds.p95Ms
+                  criteria.acceptanceThresholds.medianMs &&
+                metric.summary.p95Ms <= criteria.acceptanceThresholds.p95Ms
               ? "passed"
               : "failed";
       const compared = reasons.length === 0;
@@ -485,6 +500,7 @@ export async function compareBrowserEvidence({
         : null;
       result.rows.push({
         group: descriptor.group,
+        ...criteria,
         condition: descriptor.condition,
         measurementKind: descriptor.measurementKind,
         operation: descriptor.operation,
@@ -530,6 +546,7 @@ export async function compareBrowserEvidence({
       runRoot: path.resolve(beforeRoot),
       runId: before.run.runId,
       productCommit: before.run.productCommit,
+      recordedAcceptanceCriteria: recordedCriteria(before.run),
       sourceHashes: before.sourceHashes,
       errors: before.errors,
     };
@@ -537,6 +554,7 @@ export async function compareBrowserEvidence({
       runRoot: path.resolve(afterRoot),
       runId: after.run.runId,
       productCommit: after.run.productCommit,
+      recordedAcceptanceCriteria: recordedCriteria(after.run),
       sourceHashes: after.sourceHashes,
       errors: after.errors,
     };

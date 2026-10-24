@@ -1,6 +1,6 @@
 import {
   shoppingEvidenceIdentity,
-  shoppingPerformanceThresholds,
+  performanceAcceptanceCriteriaForGroup,
   shoppingBrowserEnvironment,
 } from "./shopping-performance-evidence";
 import { writeFile } from "node:fs/promises";
@@ -14,6 +14,9 @@ import {
 import { summarizePerformanceSamples } from "./performance-summary";
 
 // Match responsive-performance.spec.ts: no trace/video overhead in response timings.
+const shoppingPerformanceThresholds =
+  performanceAcceptanceCriteriaForGroup("range").acceptanceThresholds;
+
 test.use({
   video: "off",
   trace: "off",

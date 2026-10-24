@@ -6,6 +6,81 @@ export const shoppingPerformanceThresholds = Object.freeze({
   p95Ms: 100,
 });
 
+export const dndSelectionRenderingPerformanceThresholds = Object.freeze({
+  minimumCount: 20,
+  medianMs: 110,
+  p95Ms: 110,
+});
+const shoppingCriteria = Object.freeze({
+  acceptanceScope: "shopping-operations",
+  acceptanceCriteriaId: "shopping-operations-65-100-2026-10-24",
+  acceptanceCriteriaDate: shoppingPerformanceCriteriaDate,
+  acceptanceThresholds: shoppingPerformanceThresholds,
+});
+const dndCriteria = Object.freeze({
+  acceptanceScope: "dnd-selection-rendering",
+  acceptanceCriteriaId: "dnd-selection-rendering-110-110-2026-10-24",
+  acceptanceCriteriaDate: shoppingPerformanceCriteriaDate,
+  acceptanceThresholds: dndSelectionRenderingPerformanceThresholds,
+});
+export const performanceAcceptanceCriteriaByGroup = Object.freeze({
+  shopping: shoppingCriteria,
+  range: dndCriteria,
+  drag: dndCriteria,
+  transfer: dndCriteria,
+});
+export function performanceAcceptanceCriteriaForGroup(group) {
+  if (
+    typeof group !== "string" ||
+    !Object.hasOwn(performanceAcceptanceCriteriaByGroup, group)
+  )
+    throw new Error(`Unknown performance criteria group: ${String(group)}`);
+  return performanceAcceptanceCriteriaByGroup[group];
+}
+// Historical evidence without scoped metadata remains readable, but never chooses its own budget.
+export function validateAcceptanceCriteriaMetadata(
+  value,
+  group,
+  { required = true } = {},
+) {
+  const expected = performanceAcceptanceCriteriaForGroup(group);
+  if (
+    !required &&
+    value?.acceptanceScope === undefined &&
+    value?.acceptanceCriteriaId === undefined
+  )
+    return;
+  for (const field of [
+    "acceptanceScope",
+    "acceptanceCriteriaId",
+    "acceptanceCriteriaDate",
+  ])
+    if (value?.[field] !== expected[field])
+      throw new Error(`${group}: invalid ${field} metadata`);
+  const thresholds = value?.acceptanceThresholds;
+  if (
+    !thresholds ||
+    JSON.stringify(Object.keys(thresholds).sort()) !==
+      JSON.stringify(Object.keys(expected.acceptanceThresholds).sort()) ||
+    Object.entries(expected.acceptanceThresholds).some(
+      ([key, number]) => thresholds[key] !== number,
+    )
+  )
+    throw new Error(`${group}: invalid acceptanceThresholds metadata`);
+}
+export function validateRunAcceptanceCriteriaMetadata(value) {
+  if (value.acceptanceCriteriaByGroup === undefined) return;
+  const table = value.acceptanceCriteriaByGroup;
+  if (
+    !table ||
+    JSON.stringify(Object.keys(table).sort()) !==
+      JSON.stringify(Object.keys(performanceAcceptanceCriteriaByGroup).sort())
+  )
+    throw new Error("Invalid acceptanceCriteriaByGroup metadata");
+  for (const group of Object.keys(performanceAcceptanceCriteriaByGroup))
+    validateAcceptanceCriteriaMetadata(table[group], group);
+}
+
 // Fixed test-only inventory. Evidence may never define or shrink its expected collection.
 export const performanceGroupSpecs = {
   shopping: ["responsive-performance.spec.ts"],

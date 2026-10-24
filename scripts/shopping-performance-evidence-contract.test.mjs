@@ -8,6 +8,10 @@ import {
   performanceConditionKey,
   performanceGroupSpecs,
   shoppingPerformanceCriteriaDate,
+  performanceAcceptanceCriteriaByGroup,
+  performanceAcceptanceCriteriaForGroup,
+  validateAcceptanceCriteriaMetadata,
+  validateRunAcceptanceCriteriaMetadata,
   shoppingPerformanceThresholds,
 } from "./shopping-performance-evidence-contract.mjs";
 test("fixed performance inventory retains all original matrices and each expanded category", () => {
@@ -77,4 +81,95 @@ test("current acceptance criteria are shared and immutable without changing the 
     p95Ms: 100,
   });
   assert.ok(Object.isFrozen(shoppingPerformanceThresholds));
+});
+
+test("only trusted plan groups select 110ms criteria and retain the 20-sample minimum", () => {
+  assert.deepEqual(Object.keys(performanceAcceptanceCriteriaByGroup), [
+    "shopping",
+    "range",
+    "drag",
+    "transfer",
+  ]);
+  assert.deepEqual(
+    performanceAcceptanceCriteriaForGroup("shopping").acceptanceThresholds,
+    shoppingPerformanceThresholds,
+  );
+  for (const group of ["range", "drag", "transfer"]) {
+    const criteria = performanceAcceptanceCriteriaForGroup(group);
+    assert.equal(criteria.acceptanceScope, "dnd-selection-rendering");
+    assert.deepEqual(criteria.acceptanceThresholds, {
+      minimumCount: 20,
+      medianMs: 110,
+      p95Ms: 110,
+    });
+    assert.ok(Object.isFrozen(criteria));
+    assert.ok(Object.isFrozen(criteria.acceptanceThresholds));
+  }
+  assert.ok(Object.isFrozen(performanceAcceptanceCriteriaByGroup));
+  for (const group of [
+    "functional",
+    "future",
+    "toString",
+    "__proto__",
+    undefined,
+  ])
+    assert.throws(
+      () => performanceAcceptanceCriteriaForGroup(group),
+      /Unknown performance criteria group/,
+    );
+});
+test("criteria metadata rejects forged values, partial scopes, and incomplete or foreign group tables", () => {
+  for (const group of Object.keys(performanceAcceptanceCriteriaByGroup)) {
+    const correct = performanceAcceptanceCriteriaForGroup(group);
+    assert.doesNotThrow(() =>
+      validateAcceptanceCriteriaMetadata(correct, group),
+    );
+    for (const field of Object.keys(correct)) {
+      const forged = structuredClone(correct);
+      forged[field] =
+        field === "acceptanceThresholds"
+          ? { minimumCount: 20, medianMs: 999, p95Ms: 999 }
+          : "forged";
+      assert.throws(
+        () => validateAcceptanceCriteriaMetadata(forged, group),
+        /metadata/,
+      );
+    }
+  }
+  assert.doesNotThrow(() => validateRunAcceptanceCriteriaMetadata({}));
+  assert.doesNotThrow(() =>
+    validateRunAcceptanceCriteriaMetadata({
+      acceptanceCriteriaByGroup: performanceAcceptanceCriteriaByGroup,
+    }),
+  );
+  const missing = structuredClone(performanceAcceptanceCriteriaByGroup);
+  delete missing.range;
+  for (const table of [
+    null,
+    missing,
+    { ...performanceAcceptanceCriteriaByGroup, future: {} },
+  ])
+    assert.throws(
+      () =>
+        validateRunAcceptanceCriteriaMetadata({
+          acceptanceCriteriaByGroup: table,
+        }),
+      /metadata/,
+    );
+  assert.doesNotThrow(() =>
+    validateAcceptanceCriteriaMetadata(
+      { acceptanceThresholds: { medianMs: 55 } },
+      "range",
+      { required: false },
+    ),
+  );
+  assert.throws(
+    () =>
+      validateAcceptanceCriteriaMetadata(
+        { acceptanceScope: "dnd-selection-rendering" },
+        "range",
+        { required: false },
+      ),
+    /metadata/,
+  );
 });

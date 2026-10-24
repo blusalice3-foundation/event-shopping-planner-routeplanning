@@ -2,9 +2,12 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
 import {
   shoppingEvidenceIdentity,
-  shoppingPerformanceThresholds,
+  performanceAcceptanceCriteriaForGroup,
   shoppingBrowserEnvironment,
 } from "./shopping-performance-evidence";
+
+const shoppingPerformanceThresholds =
+  performanceAcceptanceCriteriaForGroup("drag").acceptanceThresholds;
 
 test.use({
   video: "off",
