@@ -1,3 +1,4 @@
+import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import { expect, test, type Page } from "@playwright/test";
 const eventName = "画面内描画の操作回帰";
 const backup = (mode: "execute" | "focus", sameSpace = false) => {
@@ -163,32 +164,11 @@ for (const layout of ["pc", "smartphone"] as const) {
       ).toHaveValue("7");
       await expect
         .poll(() =>
-          page.evaluate(async (event) => {
-            const database = await new Promise<IDBDatabase>(
-              (resolve, reject) => {
-                const request = indexedDB.open("EventShoppingPlannerDB");
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-              },
-            );
-            try {
-              return await new Promise((resolve, reject) => {
-                const request = database
-                  .transaction("eventLists", "readonly")
-                  .objectStore("eventLists")
-                  .get("data");
-                request.onsuccess = () =>
-                  resolve(
-                    request.result[event]?.find(
-                      (item: { id: string }) => item.id === "viewport-0-239",
-                    )?.price,
-                  );
-                request.onerror = () => reject(request.error);
-              });
-            } finally {
-              database.close();
-            }
-          }, eventName),
+          readBrowserEventLists(page).then(
+            (lists) =>
+              lists[eventName]?.find((item) => item.id === "viewport-0-239")
+                ?.price,
+          ),
         )
         .toBe(2000);
       await page.getByRole("button", { name: /^2日目/ }).click();

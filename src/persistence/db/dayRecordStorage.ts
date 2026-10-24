@@ -123,7 +123,8 @@ export async function decodeDayRecords(
     value.kind !== HEAD_KIND ||
     value.version !== 1 ||
     value.storeName !== store ||
-    !dayRecordStores.includes(store) ||
+    !(dayRecordStores.includes(store) || store === STORES.EVENT_LISTS) ||
+    (store === STORES.EVENT_LISTS && value.authenticatedRoots !== true) ||
     !Number.isSafeInteger(value.count) ||
     (value.count as number) < 0 ||
     typeof value.checksum !== "string" ||
@@ -147,6 +148,11 @@ export async function decodeDayRecords(
           ? entry.path.length === 0 ||
             (entry.path.length === 2 && entry.path[0] === "days")
           : entry.path.length <= 1) ||
+        (store === STORES.EVENT_LISTS &&
+          (entry.path.length !== 0 ||
+            !Array.isArray(entry.value) ||
+            !Array.isArray(entry.children) ||
+            entry.children.length !== 0)) ||
         key !== dayRecordKey(entry.eventName, entry.path) ||
         !isPersistenceDigestDescriptor(entry.digest) ||
         !(await verifyPersistenceDigest(
@@ -344,7 +350,11 @@ export async function patchDayRecordStore(
   const rootKey = dayRecordKey(eventName, []);
   const oldRoot = previous.records.get(rootKey);
   let root = puts.get(rootKey) ?? oldRoot;
-  if (root && !deletes.includes(rootKey)) {
+  if (
+    root &&
+    !deletes.includes(rootKey) &&
+    changes.some((change) => change.path.length > 0)
+  ) {
     const children = new Map(
       (root.children ?? []).map((child) => [JSON.stringify(child.path), child]),
     );
@@ -381,6 +391,61 @@ export async function patchDayRecordStore(
   };
 }
 
+/** Physical roots preserve own undefined fields even when their canonical digest does not. */
+function sameStoredItemValue(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) return true;
+  if (
+    left === null ||
+    right === null ||
+    typeof left !== "object" ||
+    typeof right !== "object" ||
+    Array.isArray(left) !== Array.isArray(right) ||
+    (Array.isArray(left) && left.length !== (right as unknown[]).length)
+  )
+    return false;
+  const keys = Object.keys(left);
+  if (keys.length !== Object.keys(right).length) return false;
+  return keys.every(
+    (key) =>
+      Object.prototype.hasOwnProperty.call(right, key) &&
+      sameStoredItemValue(
+        (left as Record<string, unknown>)[key],
+        (right as Record<string, unknown>)[key],
+      ),
+  );
+}
+/** Event-wide item roots share the existing authenticated head without rewriting other events. */
+export async function patchEventListRecordStore(
+  previous: DayRecordState,
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): Promise<DayRecordWrite> {
+  let state = previous;
+  const puts = new Map<string, DayRecord>();
+  const deletes: string[] = [];
+  for (const eventName of new Set([
+    ...Object.keys(before),
+    ...Object.keys(after),
+  ])) {
+    if (sameStoredItemValue(before[eventName], after[eventName])) continue;
+    const write = await patchDayRecordStore(
+      STORES.EVENT_LISTS,
+      state,
+      eventName,
+      [
+        {
+          path: [],
+          present: Object.prototype.hasOwnProperty.call(after, eventName),
+          value: after[eventName],
+        },
+      ],
+    );
+    state = write.state;
+    for (const [key, entry] of write.puts) puts.set(key, entry);
+    deletes.push(...write.deletes);
+  }
+  return { state, puts, deletes, replace: false };
+}
 export function enqueueDayRecordWrite(
   store: IDBObjectStore,
   write: DayRecordWrite,

@@ -386,7 +386,7 @@ const allowedBuildConfigs = new Map([
     "playwright.config.ts",
     {
       loaderPackage: "@playwright/test",
-      loaderScript: "test:browser",
+      loaderScript: "test:shopping-performance:run",
       loaderBinary: "playwright",
     },
   ],

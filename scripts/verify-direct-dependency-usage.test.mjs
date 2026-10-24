@@ -162,3 +162,122 @@ test("rejects a direct dependency with empty evidence", async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+
+const createDelegatedBrowserFixture = async () => {
+  const root = await createFixture();
+  await Promise.all([
+    mkdir(path.join(root, "node_modules", "@playwright", "test"), {
+      recursive: true,
+    }),
+    mkdir(path.join(root, "scripts"), { recursive: true }),
+  ]);
+  const packagePath = path.join(root, "package.json");
+  const packageJson = JSON.parse(await readFile(packagePath, "utf8"));
+  packageJson.scripts["test:browser"] =
+    "node scripts/browser-runner.mjs --phase after";
+  packageJson.scripts["test:shopping-performance:run"] =
+    "node scripts/browser-preflight.mjs && playwright test --workers=1 --retries=0";
+  packageJson.devDependencies["@playwright/test"] = "1.0.0";
+  await writeJson(packagePath, packageJson);
+  await Promise.all([
+    writeJson(
+      path.join(root, "node_modules", "@playwright", "test", "package.json"),
+      {
+        name: "@playwright/test",
+        version: "1.0.0",
+        bin: { playwright: "cli.js" },
+      },
+    ),
+    writeFile(
+      path.join(root, "scripts", "browser-runner.mjs"),
+      "export {};\n",
+      "utf8",
+    ),
+    writeFile(
+      path.join(root, "scripts", "browser-preflight.mjs"),
+      "export {};\n",
+      "utf8",
+    ),
+    writeFile(
+      path.join(root, "playwright.config.ts"),
+      'import { defineConfig } from "@playwright/test";\nexport default defineConfig({});\n',
+      "utf8",
+    ),
+  ]);
+  const policyPath = path.join(root, "config", "direct-dependency-usage.json");
+  const policy = JSON.parse(await readFile(policyPath, "utf8"));
+  policy.graphs.buildConfigRoots.push({
+    file: "playwright.config.ts",
+    loaderPackage: "@playwright/test",
+    loaderScript: "test:shopping-performance:run",
+    loaderBinary: "playwright",
+  });
+  policy.packages["@playwright/test"] = {
+    scope: "devDependencies",
+    evidence: [
+      {
+        kind: "cli",
+        script: "test:shopping-performance:run",
+        binary: "playwright",
+      },
+      {
+        kind: "module-import",
+        graph: "build",
+        file: "playwright.config.ts",
+        specifier: "@playwright/test",
+      },
+    ],
+  };
+  policy.packages = Object.fromEntries(
+    Object.entries(policy.packages).sort(([left], [right]) =>
+      Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8")),
+    ),
+  );
+  await writeJson(policyPath, policy);
+  return root;
+};
+
+test("accepts the direct Playwright child loader when the normal browser script delegates to a runner", async (t) => {
+  const root = await createDelegatedBrowserFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const result = runVerifier(root);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /3 known, 0 unknown, 0 unused/);
+});
+
+test("does not accept the node wrapper as direct Playwright loader or CLI evidence", async (t) => {
+  const root = await createDelegatedBrowserFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const policyPath = path.join(root, "config", "direct-dependency-usage.json");
+  const policy = JSON.parse(await readFile(policyPath, "utf8"));
+  policy.graphs.buildConfigRoots[0].loaderScript = "test:browser";
+  policy.packages["@playwright/test"].evidence[0].script = "test:browser";
+  await writeJson(policyPath, policy);
+  const result = runVerifier(root);
+  assert.notEqual(result.status, 0);
+  assert.match(
+    result.stderr,
+    /unsupported or mismatched default loader binding/,
+  );
+  assert.match(
+    result.stderr,
+    /package script test:browser does not invoke playwright/,
+  );
+});
+
+test("rejects both the config loader and CLI claim when the child no longer invokes Playwright", async (t) => {
+  const root = await createDelegatedBrowserFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const packagePath = path.join(root, "package.json");
+  const packageJson = JSON.parse(await readFile(packagePath, "utf8"));
+  packageJson.scripts["test:shopping-performance:run"] =
+    "node scripts/browser-preflight.mjs";
+  await writeJson(packagePath, packageJson);
+  const result = runVerifier(root);
+  assert.notEqual(result.status, 0);
+  const rejectedClaims =
+    result.stderr.match(
+      /package script test:shopping-performance:run does not invoke playwright/g,
+    ) ?? [];
+  assert.equal(rejectedClaims.length, 2, result.stderr);
+});

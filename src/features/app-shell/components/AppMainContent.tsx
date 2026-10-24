@@ -695,7 +695,8 @@ const AppMainContent: React.FC<AppMainContentProps> = ({
               day={activeEventDate}
               generation={eventGeneration}
             >
-              <div className="grid grid-cols-2 gap-4">
+              {/* Reserve 40px chain targets with 2px clearance on both sides. */}
+              <div className="grid grid-cols-2 gap-x-11 gap-y-4">
                 {/* 表示処理の補足 */}
                 <div className="space-y-2">
                   <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-3">

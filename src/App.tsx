@@ -384,6 +384,7 @@ const App: React.FC = () => {
     executeCollapsedSpaces,
     setExecuteCollapsedSpaces,
     clearSelection,
+    removeSelectedItemIds,
     clearRangeSelection,
     clearBlockFilters,
     toggleBlockFilter,
@@ -833,6 +834,8 @@ const App: React.FC = () => {
     actions: {
       setEventLists,
       updateItemFields: application.updateItemFields,
+      queueShoppingMovePatch: application.queueShoppingMovePatch,
+      removeSelectedItemIds,
       setEventMetadata,
       setDayModes,
       updateExecuteModeItems,

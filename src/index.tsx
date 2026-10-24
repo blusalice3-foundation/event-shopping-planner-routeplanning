@@ -16,16 +16,28 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
+const StorageRollbackMaintenance = React.lazy(
+  () => import("./app/maintenance/StorageRollbackMaintenance"),
+);
+const storageRollbackRequested =
+  new URLSearchParams(window.location.search).get("maintenance") ===
+  "storage-rollback";
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <ConsistencyUpgradeGate>
-      <SpaceNavigatorProvider
-        settingsPersistence={appRuntime.persistenceCommands}
-      >
-        <App />
-        <SpaceNavigatorHost />
-      </SpaceNavigatorProvider>
-    </ConsistencyUpgradeGate>
+    {storageRollbackRequested ? (
+      <React.Suspense fallback={<main>準備中…</main>}>
+        <StorageRollbackMaintenance />
+      </React.Suspense>
+    ) : (
+      <ConsistencyUpgradeGate>
+        <SpaceNavigatorProvider
+          settingsPersistence={appRuntime.persistenceCommands}
+        >
+          <App />
+          <SpaceNavigatorHost />
+        </SpaceNavigatorProvider>
+      </ConsistencyUpgradeGate>
+    )}
   </React.StrictMode>,
 );

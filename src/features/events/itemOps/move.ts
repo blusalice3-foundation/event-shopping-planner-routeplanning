@@ -26,6 +26,8 @@ export interface MoveItemResult {
   executeModeItems?: ExecuteModeItems;
   placement?: ExecuteInsertPlacement;
   mergedIntoVisitItemIds?: string[];
+  /** Accepted cross-column members, including automatic visit expansion. */
+  transferredItemIds?: readonly string[];
 }
 
 /**
@@ -259,6 +261,7 @@ export function computeMoveItem(params: {
             : "mixed";
       return {
         executeModeItems: { ...executeModeItems, [savedDayName]: dayItems },
+        transferredItemIds: itemsToMove.map((item) => item.id),
         placement,
         ...(mergedIntoVisitItemIds.length > 0
           ? { mergedIntoVisitItemIds }
@@ -351,6 +354,7 @@ export function computeMoveItem(params: {
       return {
         eventListItems: newItems,
         executeModeItems: { ...executeModeItems, [savedDayName]: newDayItems },
+        transferredItemIds: itemIdsToMove,
       };
     }
   }

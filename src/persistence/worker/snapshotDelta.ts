@@ -7,7 +7,16 @@ import type {
 } from "../../app/ports/PersistenceCommandPort";
 import { semanticEqual } from "../../utils/semanticEquality";
 
+export interface ShoppingOrderDelta {
+  version: 1;
+  eventName: string;
+  day: string;
+  baseObservationId: number;
+  baselineItemIds: readonly string[];
+  itemIds: readonly string[];
+}
 export interface SnapshotDelta {
+  shoppingOrder?: ShoppingOrderDelta;
   scope?: {
     target: ApplicationDayScope;
     snapshot: PersistenceSnapshot;
@@ -181,4 +190,42 @@ export function daySnapshotDelta(
       );
   }
   return { branches, stores };
+}
+
+/** Order acknowledgements carry no item copies and preserve current item content. */
+export function applyShoppingOrderDelta(
+  snapshot: PersistenceSnapshot,
+  order: ShoppingOrderDelta,
+  observationId: number,
+): PersistenceSnapshot {
+  if (order.version !== 1 || order.baseObservationId !== observationId)
+    throw new Error("Shopping order revision mismatch.");
+  const items = recordEntry(snapshot.eventLists, order.eventName) as
+    | Array<{ id: string }>
+    | undefined;
+  if (
+    !items ||
+    !Array.isArray(order.itemIds) ||
+    !Array.isArray(order.baselineItemIds)
+  )
+    throw new Error("Missing shopping item order.");
+  const ids = items.map((item) => item.id);
+  const byId = new Map(items.map((item) => [item.id, item]));
+  if (
+    byId.size !== items.length ||
+    order.itemIds.length !== items.length ||
+    new Set(order.itemIds).size !== items.length ||
+    !semanticEqual(ids, order.baselineItemIds) ||
+    order.itemIds.some((id) => !byId.has(id))
+  )
+    throw new Error("Invalid shopping item order.");
+  return semanticEqual(ids, order.itemIds)
+    ? snapshot
+    : {
+        ...snapshot,
+        eventLists: {
+          ...snapshot.eventLists,
+          [order.eventName]: order.itemIds.map((id) => byId.get(id)!),
+        },
+      };
 }

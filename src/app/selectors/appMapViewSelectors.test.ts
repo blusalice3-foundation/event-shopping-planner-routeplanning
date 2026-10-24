@@ -214,6 +214,85 @@ describe("appMapViewSelectors", () => {
     ).toBe(false);
   });
 
+  it("reuses dates for an unchanged event array while isolating returned key sets", () => {
+    const first = item("one");
+    let dateReads = 0;
+    Object.defineProperty(first, "eventDate", {
+      enumerable: true,
+      get: () => {
+        dateReads += 1;
+        return " 1日目　";
+      },
+    });
+    const eventItems = [first, item("two", { eventDate: "2日目" })];
+    const initial = selectValidFocusSessionKeys({
+      eventLists: { event: eventItems },
+    });
+    const initialReads = dateReads;
+    expect(initialReads).toBeGreaterThan(0);
+    const next = selectValidFocusSessionKeys({
+      eventLists: { event: eventItems },
+    });
+    expect([...next]).toEqual([
+      JSON.stringify(["event", "1日目"]),
+      JSON.stringify(["event", "2日目"]),
+    ]);
+    expect(next).not.toBe(initial);
+    expect(dateReads).toBe(initialReads);
+    (initial as Set<string>).clear();
+    expect([
+      ...selectValidFocusSessionKeys({ eventLists: { event: eventItems } }),
+    ]).toEqual([...next]);
+  });
+
+  it("rebuilds ownership when an event is renamed with the same item array", () => {
+    const eventItems = [item("one")];
+    const before = selectValidFocusSessionKeys({
+      eventLists: { old: eventItems },
+    });
+    const renamed = selectValidFocusSessionKeys({
+      eventLists: { renamed: eventItems },
+    });
+    expect([...before]).toEqual([JSON.stringify(["old", "1日目"])]);
+    expect([...renamed]).toEqual([JSON.stringify(["renamed", "1日目"])]);
+    expect(renamed.has(JSON.stringify(["old", "1日目"]))).toBe(false);
+  });
+
+  it("drops deleted events even while their cached arrays are still referenced", () => {
+    const removed = [item("removed")],
+      retained = [item("retained", { eventDate: "2日目" })];
+    selectValidFocusSessionKeys({ eventLists: { removed, retained } });
+    expect([
+      ...selectValidFocusSessionKeys({ eventLists: { retained } }),
+    ]).toEqual([JSON.stringify(["retained", "2日目"])]);
+    expect([...selectValidFocusSessionKeys({ eventLists: {} })]).toEqual([]);
+    expect(removed).toHaveLength(1);
+  });
+
+  it("invalidates dates for a replacement array and still supports the previous snapshot", () => {
+    const original = [item("one")];
+    selectValidFocusSessionKeys({ eventLists: { event: original } });
+    const replacement = [{ ...original[0], eventDate: " 2日目　" }];
+    expect([
+      ...selectValidFocusSessionKeys({ eventLists: { event: replacement } }),
+    ]).toEqual([JSON.stringify(["event", "2日目"])]);
+    expect(original[0].eventDate).toBe("1日目");
+    expect([
+      ...selectValidFocusSessionKeys({ eventLists: { event: original } }),
+    ]).toEqual([JSON.stringify(["event", "1日目"])]);
+  });
+
+  it("keeps separate session keys for two events sharing the same item array", () => {
+    const eventItems = [item("one")];
+    expect([
+      ...selectValidFocusSessionKeys({
+        eventLists: { first: eventItems, second: eventItems },
+      }),
+    ]).toEqual([
+      JSON.stringify(["first", "1日目"]),
+      JSON.stringify(["second", "1日目"]),
+    ]);
+  });
   it("normalizes per-screen rotations, selects viewport, and honors visibility override", () => {
     expect(
       selectCurrentMapRotations({

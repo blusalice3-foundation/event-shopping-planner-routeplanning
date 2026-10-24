@@ -1706,6 +1706,23 @@ export function validateSnapshotReferences(
   errors.push(...validateConsistencyReferences(data));
   return errors;
 }
+/** Validate stable snapshot structure and references with one shared traversal. */
+export function validateSnapshot(
+  data: AppData,
+  validatedMaps?: WeakSet<object>,
+): string[] {
+  const structuralErrors: string[] = [];
+  const referenceErrors: string[] = [];
+  validateAppData(
+    data as unknown as UnknownRecord,
+    structuralErrors,
+    referenceErrors,
+    validatedMaps,
+  );
+  structuralErrors.push(...validateEventConsistency(data.eventConsistency));
+  referenceErrors.push(...validateConsistencyReferences(data));
+  return [...structuralErrors, ...referenceErrors];
+}
 export function createAppBackup(
   data: AppData | LegacySnapshot,
   exportedAt: Date = new Date(),

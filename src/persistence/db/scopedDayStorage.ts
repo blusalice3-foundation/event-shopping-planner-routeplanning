@@ -1,4 +1,8 @@
 import { dayScopeDays } from "../../features/consistency/domain/dayScope";
+import {
+  SHOPPING_STORAGE_MODE_KEY,
+  usesLegacyShoppingStorage,
+} from "./shoppingStorageMode";
 import type {
   ApplicationDayScope,
   PersistenceSnapshot,
@@ -180,6 +184,7 @@ export interface ScopedDayObservation {
   rawGenerations: unknown;
   mapScopeRevision: string;
   scopeReady: Map<StoreName, unknown>;
+  shoppingStorageMode: unknown;
 }
 /** Missing caches and CAS retries read only authenticated roots and target-date records. */
 export async function observeScopedDay(
@@ -196,6 +201,7 @@ export async function observeScopedDay(
   // Retain the abort handler while post-read validation runs outside this transaction.
   void finished.catch(() => {});
   const control = transaction.objectStore(STORES.SYNC_QUEUE);
+  const shoppingMode = requestResult(control.get(SHOPPING_STORAGE_MODE_KEY));
   const journal = requestResult(control.get(CONSISTENCY_MIGRATION_KEY));
   const archive = requestResult(control.get(CONSISTENCY_ARCHIVE_KEY));
   const generations = requestResult(control.get(EVENT_GENERATIONS_KEY));
@@ -268,6 +274,8 @@ export async function observeScopedDay(
   await finished;
   const [journalValue, archiveValue, rawGenerations, mapScopeRevision] =
     await Promise.all([journal, archive, generations, ready]);
+  const shoppingStorageMode = await shoppingMode;
+  usesLegacyShoppingStorage(shoppingStorageMode);
   const snapshot = Object.fromEntries(
     names.map((store) => [store, {}]),
   ) as unknown as PersistenceSnapshot;
@@ -419,6 +427,7 @@ export async function observeScopedDay(
     archive: archiveValue,
     rawGenerations,
     mapScopeRevision: mapScopeRevision as string,
+    shoppingStorageMode,
     scopeReady: new Map(
       raw
         .filter((entry) => !dayRecordStores.includes(entry.store))

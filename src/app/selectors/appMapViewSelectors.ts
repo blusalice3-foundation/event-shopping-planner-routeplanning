@@ -221,12 +221,24 @@ export interface ValidFocusSessionKeysSelectorInput {
   readonly eventLists: Readonly<Record<string, ShoppingItem[]>>;
 }
 
+// Published event arrays are immutable. Cache dates only: event ownership and
+// deletion always come from the current map, and old arrays remain collectible.
+const focusSessionDatesByItems = new WeakMap<
+  ShoppingItem[],
+  readonly string[]
+>();
+
 export const selectValidFocusSessionKeys = (
   input: ValidFocusSessionKeysSelectorInput,
 ): ReadonlySet<string> => {
   const keys = new Set<string>();
   Object.entries(input.eventLists).forEach(([eventName, eventItems]) => {
-    extractEventDates(eventItems).forEach((eventDate) => {
+    let eventDates = focusSessionDatesByItems.get(eventItems);
+    if (!eventDates) {
+      eventDates = extractEventDates(eventItems);
+      focusSessionDatesByItems.set(eventItems, eventDates);
+    }
+    eventDates.forEach((eventDate) => {
       keys.add(buildFocusSessionKey(eventName, eventDate));
     });
   });

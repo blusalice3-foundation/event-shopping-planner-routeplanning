@@ -655,6 +655,54 @@ describe("itemOps regressions", () => {
     expect(result.executeModeItems[dayName]).toEqual(["b1"]);
   });
 
+  it("reports a reverse transfer when the global item order is already unchanged", () => {
+    const allItems = [
+      makeItem("candidate", "A", "01"),
+      makeItem("execute", "A", "02"),
+    ];
+    const result = computeMoveItem({
+      dragId: "execute",
+      hoverId: "__END_OF_LIST__",
+      targetColumn: "candidate",
+      sourceColumn: "execute",
+      mode: "edit",
+      effectiveSelectedIds: new Set(["execute"]),
+      allItems,
+      executeModeItems: { [dayName]: ["execute"] },
+      dayName,
+      selectedBlockFilters: new Set(),
+    });
+    expect(result.eventListItems).toEqual(allItems);
+    expect(result.executeModeItems?.[dayName]).toEqual([]);
+    expect(result.transferredItemIds).toEqual(["execute"]);
+  });
+
+  it.each(["candidate", "execute"] as const)(
+    "does not consume selection for a valid same-order %s result",
+    (column) => {
+      const allItems = [
+        makeItem("a", "A", "01"),
+        makeItem("b", "A", "02"),
+        makeItem("c", "A", "03"),
+      ];
+      const result = computeMoveItem({
+        dragId: "b",
+        hoverId: "__END_OF_LIST__",
+        targetColumn: column,
+        sourceColumn: column,
+        mode: "edit",
+        effectiveSelectedIds: new Set(["b", "c"]),
+        allItems,
+        executeModeItems: {
+          [dayName]: column === "execute" ? ["a", "b", "c"] : [],
+        },
+        dayName,
+        selectedBlockFilters: new Set(),
+      });
+      expect(result.eventListItems ?? result.executeModeItems).toBeDefined();
+      expect(result.transferredItemIds).toBeUndefined();
+    },
+  );
   it("moves a candidate item together with same-space same-priority siblings", () => {
     const allItems = [
       makeItem("a1", "A", "01", "priority"),
@@ -676,6 +724,7 @@ describe("itemOps regressions", () => {
     });
 
     expect(result.executeModeItems?.[dayName]).toEqual(["a1", "a2", "b1"]);
+    expect(result.transferredItemIds).toEqual(["a1", "a2"]);
   });
 
   it.each(["b1", "__END_OF_LIST__"])(

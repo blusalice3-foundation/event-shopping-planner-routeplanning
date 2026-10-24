@@ -24,14 +24,17 @@ import {
   dayRecordStores,
   assertDayRecordsUnchanged,
   partitionDayRecordStore,
+  patchEventListRecordStore,
   enqueueDayRecordWrite,
   enqueueDayRootDigests,
   sidecarRecordStores,
   type DayRecord,
+  type DayRecordWrite,
 } from "../db/dayRecordStorage";
 import {
   prepareSidecarRecords,
   enqueueSidecarRecords,
+  scopeReadyKey,
 } from "../db/scopedDayStorage";
 import { PersistenceConflictError } from "../db/errors";
 import {
@@ -76,6 +79,42 @@ import {
   type RawPersistenceSnapshot,
 } from "./applicationDataRepository";
 
+type PreparedEventListWrite = {
+  write: DayRecordWrite;
+  expectedRecords: Map<string, unknown>;
+};
+async function prepareExistingEventListWrite<T>(
+  storeName: StoreName,
+  key: string,
+  data: T,
+): Promise<PreparedEventListWrite | undefined> {
+  if (storeName !== STORES.EVENT_LISTS || key !== "data") return undefined;
+  const snapshot = await readPersistenceSnapshotWithRetry(storeName, key);
+  if (!hasDayRecordHead(snapshot.payload)) return undefined;
+  const validation = await validatePersistenceSnapshot<Record<string, unknown>>(
+    storeName,
+    key,
+    snapshot,
+  );
+  if ("conflict" in validation)
+    throw (
+      validation.conflict.error ??
+      new PersistenceConflictError("イベント品目レコードを検証できません。")
+    );
+  const state = validation.validated.dayRecordState;
+  if (!state || !snapshot.dayRecords)
+    throw new PersistenceConflictError(
+      "イベント品目の保存ヘッダーがありません。",
+    );
+  return {
+    write: await patchEventListRecordStore(
+      state,
+      validation.validated.data ?? {},
+      data as Record<string, unknown>,
+    ),
+    expectedRecords: snapshot.dayRecords,
+  };
+}
 async function writeDataWithMetadataOnce<T>(
   storeName: StoreName,
   key: string,
@@ -84,19 +123,27 @@ async function writeDataWithMetadataOnce<T>(
   expectedCheckpoint: PersistenceCheckpoint | null,
   metadata: StoredPersistenceMetadata,
   checkpoint: PersistenceCheckpoint,
+  preparedEventListWrite?: PreparedEventListWrite | null,
 ): Promise<{
   metadata: StoredPersistenceMetadata;
   checkpoint: PersistenceCheckpoint;
 }> {
+  const eventListWrite =
+    preparedEventListWrite === undefined
+      ? await prepareExistingEventListWrite(storeName, key, data)
+      : preparedEventListWrite;
   const dayWrite =
-    key === "data" && dayRecordStores.includes(storeName)
+    eventListWrite?.write ??
+    (key === "data" && dayRecordStores.includes(storeName)
       ? await partitionDayRecordStore(
           storeName,
           data as Record<string, unknown>,
         )
-      : undefined;
+      : undefined);
   const sidecar =
-    key === "data" && sidecarRecordStores.some((store) => store === storeName)
+    !dayWrite &&
+    key === "data" &&
+    sidecarRecordStores.some((store) => store === storeName)
       ? await prepareSidecarRecords(
           storeName,
           data as Record<string, unknown>,
@@ -120,7 +167,8 @@ async function writeDataWithMetadataOnce<T>(
       },
     };
   }
-  let expectedDayRecords: Map<string, unknown> | undefined;
+  let expectedDayRecords: Map<string, unknown> | undefined =
+    eventListWrite?.expectedRecords;
   if (key === "data" && dayRecordStores.includes(storeName)) {
     const snapshot = await readPersistenceSnapshotWithRetry(storeName, key);
     if (hasDayRecordHead(snapshot.payload)) {
@@ -247,6 +295,10 @@ async function writeDataWithMetadataOnce<T>(
               failure = failure ?? removed.error;
             };
           }
+          if (dayWrite && storeName === STORES.EVENT_LISTS)
+            track(
+              controlStore.put(metadata.revision, scopeReadyKey(storeName)),
+            );
           if (sidecar)
             enqueueSidecarRecords(
               payloadStore,
@@ -452,10 +504,27 @@ export async function saveApplicationRecord<T>(
   const baseRevision = logicalExpected.missing
     ? null
     : logicalExpected.revision;
+  let preparedEventListWrite: PreparedEventListWrite | undefined;
+  let eventListPreparationUnavailable = false;
+  try {
+    preparedEventListWrite = await prepareExistingEventListWrite(
+      storeName,
+      key,
+      stableData,
+    );
+  } catch (error) {
+    if (
+      isPersistenceConflict(error) ||
+      !canUseRuntimeFallback(storeName, error)
+    )
+      throw error;
+    // Keep transient IDB failures inside the existing write retry/fallback boundary.
+    eventListPreparationUnavailable = true;
+  }
   const metadata = await prepareMetadataForPayload(
     storeName,
     key,
-    stableData,
+    preparedEventListWrite?.write.state.head ?? stableData,
     baseRevision,
   );
   const checkpoint = createNextPersistenceCheckpoint(
@@ -475,6 +544,9 @@ export async function saveApplicationRecord<T>(
       writeExpectedCheckpoint,
       metadata,
       checkpoint,
+      eventListPreparationUnavailable
+        ? undefined
+        : (preparedEventListWrite ?? null),
     );
 
   try {

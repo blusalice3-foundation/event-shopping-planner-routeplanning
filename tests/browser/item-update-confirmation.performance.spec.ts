@@ -1,3 +1,4 @@
+import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import { expect, test, type Page } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
 import {
@@ -297,7 +298,9 @@ async function stored(page: Page) {
       ).data
     : (raw.execute.payload as Record<string, unknown>);
   return {
-    items: (raw.lists.payload as Record<string, ShoppingItem[]>)[SHEET_EVENT],
+    items: (
+      await readBrowserEventLists<ShoppingItem & Record<string, unknown>>(page)
+    )[SHEET_EVENT],
     metadata: (raw.metadata.payload as Record<string, unknown>)[SHEET_EVENT],
     execute: execute[SHEET_EVENT] as Record<string, string[]>,
   };

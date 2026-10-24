@@ -1,3 +1,4 @@
+import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import { expect, test, type Page } from "@playwright/test";
 
 const eventName = "セルからの限数編集";
@@ -72,7 +73,7 @@ async function workerObservation(page: Page) {
   );
 }
 async function durableState(page: Page) {
-  return page.evaluate(
+  const visits = await page.evaluate(
     async ({ eventName, day }) => {
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open("EventShoppingPlannerDB");
@@ -80,35 +81,31 @@ async function durableState(page: Page) {
         request.onerror = () => reject(request.error);
       });
       try {
-        const read = (store: string, key = "data") =>
-          new Promise<unknown>((resolve, reject) => {
+        const visits = await new Promise<{ value: string[] }>(
+          (resolve, reject) => {
             const request = database
-              .transaction(store, "readonly")
-              .objectStore(store)
-              .get(key);
+              .transaction("executeModeItems", "readonly")
+              .objectStore("executeModeItems")
+              .get(
+                "__esp_internal__:day-record:v1:" +
+                  JSON.stringify([eventName, [day]]),
+              );
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
-          });
-        const [visits, lists] = await Promise.all([
-          read(
-            "executeModeItems",
-            "__esp_internal__:day-record:v1:" +
-              JSON.stringify([eventName, [day]]),
-          ),
-          read("eventLists"),
-        ]);
-        return {
-          visits: (visits as { value: string[] }).value,
-          item: (lists as Record<string, Array<{ id: string }>>)[
-            eventName
-          ].find((item) => item.id === "limited"),
-        };
+          },
+        );
+        return visits.value;
       } finally {
         database.close();
       }
     },
     { eventName, day },
   );
+  const lists = await readBrowserEventLists<{ id: string }>(page);
+  return {
+    visits,
+    item: lists[eventName].find((item) => item.id === "limited"),
+  };
 }
 function popup(page: Page) {
   return page.getByRole("dialog", { name: "A-1のアイテム一覧", exact: true });

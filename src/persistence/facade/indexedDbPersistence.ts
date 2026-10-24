@@ -13,7 +13,11 @@ import type { LoadResult } from "../contracts/persistence";
 import { STORES } from "../db/constants";
 import {
   readApplicationSnapshot,
+  prepareShoppingMoveRollback,
   readDayCommandSnapshot,
+  readShoppingCommandSnapshot,
+  readCachedShoppingCommandSnapshot,
+  commitShoppingCommandSnapshot,
   commitDayCommandSnapshot,
   commitApplicationSnapshotAtomically,
   restoreAppDataAtomically,
@@ -67,7 +71,11 @@ const syncQueueRepository = createSyncQueueRepository(
 export const db = {
   STORES,
   readApplicationSnapshot,
+  prepareShoppingMoveRollback,
   readDayCommandSnapshot,
+  readShoppingCommandSnapshot,
+  readCachedShoppingCommandSnapshot,
+  commitShoppingCommandSnapshot,
   commitDayCommandSnapshot,
   saveEventConsistency(data: AppData["eventConsistency"]): Promise<void> {
     assertEventConsistency(data);

@@ -581,6 +581,18 @@ export const stageCanonicalExportEventLists = async ({
         ...emptyPayloadDigest,
         value: await sha256(emptyDayCanonical),
       };
+      const emptyEventCanonical = canonicalize({
+        kind: "event-shopping-planner-day-records",
+        version: 1,
+        storeName: EVENT_STORE,
+        count: 0,
+        checksum: "0".repeat(64),
+        authenticatedRoots: true,
+      });
+      const emptyEventDigest = {
+        ...emptyPayloadDigest,
+        value: await sha256(emptyEventCanonical),
+      };
       const consistencyPayload = Object.fromEntries(
         Object.keys(input.eventLists).map((event) => [
           event,
@@ -654,22 +666,29 @@ export const stageCanonicalExportEventLists = async ({
           requestResult(controlStore.get(consistencyMetadataKey)),
           requestResult(controlStore.get(consistencyCheckpointKey)),
           requestResult(consistencyStore.count()),
+          requestResult(eventStore.count()),
         ]);
         const isInitializedEmptyRoot = (
           [existingPayload, existingMetadata, existingCheckpoint],
           storeName,
         ) => {
           const physicalCanonical = canonicalize(existingPayload ?? null);
+          const recordCount =
+            storeName === EVENT_STORE ? existing[7] : existing[6];
           const partitioned =
-            storeName === CONSISTENCY_STORE &&
-            physicalCanonical === emptyDayCanonical &&
-            existing[6] === 1;
+            recordCount === 1 &&
+            (storeName === CONSISTENCY_STORE
+              ? physicalCanonical === emptyDayCanonical
+              : physicalCanonical === emptyEventCanonical);
           const expectedDigest = partitioned
-            ? emptyDayDigest
+            ? storeName === EVENT_STORE
+              ? emptyEventDigest
+              : emptyDayDigest
             : emptyPayloadDigest;
           const baseRevision = existingMetadata?.baseRevision;
           return (
-            (physicalCanonical === "{}" || partitioned) &&
+            ((physicalCanonical === "{}" && recordCount === 1) ||
+              partitioned) &&
             existingMetadata?.kind === metadata.kind &&
             existingMetadata.version === 1 &&
             existingMetadata.storeName === storeName &&
@@ -709,12 +728,14 @@ export const stageCanonicalExportEventLists = async ({
         const roots = [
           {
             existing: existing.slice(0, 3),
+            recordCount: existing[7],
             storeName: EVENT_STORE,
             metadata,
             checkpoint,
           },
           {
             existing: existing.slice(3, 6),
+            recordCount: existing[6],
             storeName: CONSISTENCY_STORE,
             metadata: consistencyMetadata,
             checkpoint: consistencyCheckpoint,
@@ -723,7 +744,8 @@ export const stageCanonicalExportEventLists = async ({
         if (
           roots.some(
             (root) =>
-              root.existing.some((value) => value !== undefined) &&
+              (root.existing.some((value) => value !== undefined) ||
+                root.recordCount !== 0) &&
               !isInitializedEmptyRoot(root.existing, root.storeName),
           )
         ) {
@@ -947,7 +969,25 @@ export const readCommittedEventListsReceipt = async ({
         const completion = transactionFinished(transaction);
         const eventStore = transaction.objectStore("eventLists");
         const controlStore = transaction.objectStore("syncQueue");
-        const [payload, metadata, checkpoint] = await Promise.all([
+        const recordsRequest = new Promise((resolve, reject) => {
+          const records = [];
+          const request = eventStore.openCursor();
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => {
+            const cursor = request.result;
+            if (!cursor) {
+              resolve(records);
+              return;
+            }
+            if (
+              typeof cursor.key === "string" &&
+              cursor.key.startsWith("__esp_internal__:day-record:v1:")
+            )
+              records.push([cursor.key, cursor.value]);
+            cursor.continue();
+          };
+        });
+        const [payload, metadata, checkpoint, records] = await Promise.all([
           requestResult(eventStore.get("data")),
           requestResult(
             controlStore.get("__esp_internal__:meta:v1:eventLists:data"),
@@ -955,9 +995,83 @@ export const readCommittedEventListsReceipt = async ({
           requestResult(
             controlStore.get("__esp_internal__:checkpoint:v1:eventLists:data"),
           ),
+          recordsRequest,
         ]);
         await completion;
-        const items = payload?.[input.eventName];
+        // Bind the physical header to its metadata/checkpoint independently of
+        // the logical event arrays. Every row was captured in this same readonly transaction.
+        if (!payload || typeof payload !== "object" || Array.isArray(payload))
+          throw new Error("Committed event payload shape drifted");
+        let logicalPayload = payload;
+        if (payload?.kind === "event-shopping-planner-day-records") {
+          if (
+            payload.version !== 1 ||
+            payload.storeName !== "eventLists" ||
+            payload.authenticatedRoots !== true ||
+            !Number.isSafeInteger(payload.count) ||
+            payload.count < 0 ||
+            records.length !== payload.count ||
+            typeof payload.checksum !== "string" ||
+            !/^[0-9a-f]{64}$/.test(payload.checksum)
+          )
+            throw new Error("Committed event record head drifted");
+          logicalPayload = {};
+          let digestSum = 0n;
+          for (const [key, row] of records) {
+            if (
+              !row ||
+              typeof row !== "object" ||
+              Array.isArray(row) ||
+              row.kind !== "event-shopping-planner-day-record" ||
+              row.version !== 1 ||
+              typeof row.eventName !== "string" ||
+              !Array.isArray(row.path) ||
+              row.path.length !== 0 ||
+              !Array.isArray(row.value) ||
+              !Array.isArray(row.children) ||
+              row.children.length !== 0 ||
+              key !==
+                "__esp_internal__:day-record:v1:" +
+                  JSON.stringify([row.eventName, []]) ||
+              Object.prototype.hasOwnProperty.call(
+                logicalPayload,
+                row.eventName,
+              ) ||
+              row.digest?.algorithm !== "SHA-256" ||
+              row.digest?.canonicalization !== "esp-json-v1" ||
+              typeof row.digest.value !== "string" ||
+              !/^[0-9a-f]{64}$/.test(row.digest.value) ||
+              row.digest.value !==
+                (await sha256(
+                  canonicalize({
+                    store: "eventLists",
+                    key,
+                    value: row.value,
+                    children: row.children,
+                  }),
+                ))
+            )
+              throw new Error("Committed event record binding drifted");
+            digestSum += BigInt("0x" + row.digest.value);
+            Object.defineProperty(logicalPayload, row.eventName, {
+              value: row.value,
+              enumerable: true,
+              configurable: true,
+              writable: true,
+            });
+          }
+          if (
+            (digestSum % (1n << 256n)).toString(16).padStart(64, "0") !==
+            payload.checksum
+          )
+            throw new Error("Committed event record checksum drifted");
+        }
+        const items = Object.prototype.hasOwnProperty.call(
+          logicalPayload ?? {},
+          input.eventName,
+        )
+          ? logicalPayload[input.eventName]
+          : undefined;
         if (!Array.isArray(items) || items.length !== input.expectedItemCount) {
           throw new Error("Committed event cardinality drifted");
         }

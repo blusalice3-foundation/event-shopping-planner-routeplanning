@@ -1,4 +1,10 @@
+import {
+  beginShoppingMoveLifecycle,
+  endShoppingMoveLifecycle,
+  recordShoppingMovePlanReady,
+} from "../../utils/shoppingPerformance";
 import type { ShoppingDragMoveContext } from "../../features/shopping-list/drag/shoppingDrag";
+import { existingDayKey } from "../../features/consistency/domain/context";
 import { bulkImportFailureStatus } from "../../utils/importOutcome";
 import { itemUpdateGuard } from "../../utils/itemContentGuard";
 import type { BulkImportResult } from "../../types/import";
@@ -55,7 +61,10 @@ import {
   buildExecutionVisitProjectionKey,
   normalizeExecutionVisitDay,
 } from "../../utils/visitProjection";
-import type { ApplicationSnapshotCommitPort } from "./ApplicationSnapshotCommitPort";
+import type {
+  ApplicationSnapshotCommitPort,
+  QueueShoppingMovePatch,
+} from "./ApplicationSnapshotCommitPort";
 import type { EventUpdateOperationRegistry } from "./eventUpdateOperation";
 
 type EventLists = Record<string, ShoppingItem[]>;
@@ -107,6 +116,8 @@ export interface ShoppingItemMutationActionPort {
   openDuplicateEvent(value: PendingDuplicateEventImport): string | void;
   clearRangeSelection(): void;
   clearSelection(): void;
+  removeSelectedItemIds(itemIds: readonly string[]): void;
+  queueShoppingMovePatch: QueueShoppingMovePatch;
   setSortState(value: Extract<SortState, "Manual">): void;
   setBlockSortDirection(value: BlockSortDirection | null): void;
   setCandidateNumberSortDirection(value: BlockSortDirection | null): void;
@@ -302,6 +313,8 @@ export const useShoppingItemMutationCommands = ({
     openDuplicateEvent,
     clearRangeSelection,
     clearSelection,
+    removeSelectedItemIds,
+    queueShoppingMovePatch,
     setSortState,
     setBlockSortDirection,
     setCandidateNumberSortDirection,
@@ -727,102 +740,143 @@ export const useShoppingItemMutationCommands = ({
       sourceColumn?: ShoppingListColumn,
       dragContext?: ShoppingDragMoveContext,
     ) => {
-      if (!activeEventName) return;
-      if (!dragContext) {
-        clearRangeSelection();
-        setSortState("Manual");
-        setBlockSortDirection(null);
-      }
-
-      const mode = recordEntry(dayModes, activeEventName)?.[activeEventDate];
-      if (
-        dragContext &&
-        (!dragContext.isCurrent() ||
-          dragContext.eventName !== activeEventName ||
-          dragContext.day !== activeEventDate ||
-          (getEventGeneration &&
-            dragContext.generation !== getEventGeneration(activeEventName)))
-      )
-        return;
-      const spaceGroupIds = dragContext
-        ? dragContext.operation === "space-group"
-          ? dragContext.effectiveIds
-          : null
-        : spaceGroupDragItemIdsRef.current;
-      const effectiveSelectedIds = new Set(
-        dragContext?.requestedIds ?? spaceGroupIds ?? selectedItemIds,
-      );
-      if (!dragContext) spaceGroupDragItemIdsRef.current = null;
-
-      const currentEventExecuteItems =
-        recordEntry(executeModeItemsRef.current, activeEventName) || {};
-      const currentExecuteItems = currentEventExecuteItems[activeEventDate]
-        ? {
-            ...currentEventExecuteItems,
-            [activeEventDate]: [
-              ...(currentEventExecuteItems[activeEventDate] || []),
-            ],
-          }
-        : currentEventExecuteItems;
-
-      const selectionSpansMultipleSpaces = (() => {
-        if (effectiveSelectedIds.size <= 1) return false;
-        const spaceKeys = new Set<string>();
-        effectiveSelectedIds.forEach((id) => {
-          const selectedItem = (
-            recordEntry(eventLists, activeEventName) || []
-          ).find((candidate) => candidate.id === id);
-          if (selectedItem) {
-            spaceKeys.add(getSpaceKey(selectedItem.block, selectedItem.number));
-          }
-        });
-        return spaceKeys.size > 1;
-      })();
-      const hallCheck =
-        spaceGroupIds || selectionSpansMultipleSpaces
-          ? (firstId: string, secondId: string) =>
-              areItemsInSameHallGroup(firstId, secondId, activeEventDate)
-          : (firstId: string, secondId: string) =>
-              areItemsInSameHall(firstId, secondId, activeEventDate);
-
-      const result = computeMoveItem({
+      const lifecycleScope = beginShoppingMoveLifecycle(
+        dragContext?.token,
         dragId,
-        hoverId,
-        targetColumn,
         sourceColumn,
-        mode: mode as ViewMode | undefined,
-        effectiveSelectedIds,
-        allItems: recordEntry(eventListsRef.current, activeEventName) || [],
-        executeModeItems: currentExecuteItems,
-        dayName: activeEventDate,
-        selectedBlockFilters: new Set(selectedBlockFilters),
-        areItemsInSameHall: hallCheck,
-        dragContext,
-      });
-      if (dragContext) {
-        if (!result.eventListItems && !result.executeModeItems) return;
-        clearRangeSelection();
-        setSortState("Manual");
-        setBlockSortDirection(null);
-        spaceGroupDragItemIdsRef.current = null;
-      }
-      if (result.eventListItems) {
-        setEventLists((current) => ({
-          ...current,
-          [activeEventName]: result.eventListItems!,
-        }));
-      }
-      if (result.executeModeItems) {
-        updateExecuteModeItems((current) => ({
-          ...current,
-          [activeEventName]: result.executeModeItems!,
-        }));
-      }
-      if (
-        result.placement === "merged-into-existing-visit" ||
-        result.placement === "mixed"
-      ) {
-        notify(EXECUTION_VISIT_MERGE_NOTICE);
+        targetColumn,
+      );
+      try {
+        if (!activeEventName) return;
+        if (!dragContext) {
+          clearRangeSelection();
+          setSortState("Manual");
+          setBlockSortDirection(null);
+        }
+
+        const mode = recordEntry(dayModes, activeEventName)?.[activeEventDate];
+        if (
+          dragContext &&
+          (!sourceColumn ||
+            !targetColumn ||
+            !dragContext.isCurrent() ||
+            dragContext.eventName !== activeEventName ||
+            dragContext.day !== activeEventDate ||
+            (getEventGeneration &&
+              dragContext.generation !== getEventGeneration(activeEventName)))
+        )
+          return;
+        const spaceGroupIds = dragContext
+          ? dragContext.operation === "space-group"
+            ? dragContext.effectiveIds
+            : null
+          : spaceGroupDragItemIdsRef.current;
+        const effectiveSelectedIds = new Set(
+          dragContext?.requestedIds ?? spaceGroupIds ?? selectedItemIds,
+        );
+        if (!dragContext) spaceGroupDragItemIdsRef.current = null;
+
+        const currentEventExecuteItems =
+          recordEntry(executeModeItemsRef.current, activeEventName) || {};
+        const currentExecuteItems = currentEventExecuteItems[activeEventDate]
+          ? {
+              ...currentEventExecuteItems,
+              [activeEventDate]: [
+                ...(currentEventExecuteItems[activeEventDate] || []),
+              ],
+            }
+          : currentEventExecuteItems;
+
+        const selectionSpansMultipleSpaces = (() => {
+          if (effectiveSelectedIds.size <= 1) return false;
+          const spaceKeys = new Set<string>();
+          effectiveSelectedIds.forEach((id) => {
+            const selectedItem = (
+              recordEntry(eventLists, activeEventName) || []
+            ).find((candidate) => candidate.id === id);
+            if (selectedItem) {
+              spaceKeys.add(
+                getSpaceKey(selectedItem.block, selectedItem.number),
+              );
+            }
+          });
+          return spaceKeys.size > 1;
+        })();
+        const hallCheck =
+          spaceGroupIds || selectionSpansMultipleSpaces
+            ? (firstId: string, secondId: string) =>
+                areItemsInSameHallGroup(firstId, secondId, activeEventDate)
+            : (firstId: string, secondId: string) =>
+                areItemsInSameHall(firstId, secondId, activeEventDate);
+
+        const currentAllItems =
+          recordEntry(eventListsRef.current, activeEventName) || [];
+        const result = computeMoveItem({
+          dragId,
+          hoverId,
+          targetColumn,
+          sourceColumn,
+          mode: mode as ViewMode | undefined,
+          effectiveSelectedIds,
+          allItems: currentAllItems,
+          executeModeItems: currentExecuteItems,
+          dayName: activeEventDate,
+          selectedBlockFilters: new Set(selectedBlockFilters),
+          areItemsInSameHall: hallCheck,
+          dragContext,
+        });
+        if (dragContext) {
+          if (!result.eventListItems && !result.executeModeItems) return;
+          recordShoppingMovePlanReady();
+          const receipt = queueShoppingMovePatch({
+            eventName: activeEventName,
+            day: activeEventDate,
+            eventGeneration: dragContext.generation,
+            baselineItemIds: currentAllItems.map((item) => item.id),
+            baselineExecuteIds:
+              recordEntry(
+                currentExecuteItems,
+                existingDayKey(currentExecuteItems, activeEventDate) ??
+                  activeEventDate,
+              ) ?? [],
+            sourceColumn: sourceColumn!,
+            targetColumn: targetColumn!,
+            requestedIds: dragContext.requestedIds,
+            effectiveIds: dragContext.effectiveIds,
+            hoverId,
+            eventListItems: result.eventListItems,
+            executeModeItems: result.executeModeItems,
+          });
+          if (receipt.status === "blocked") return;
+          if (receipt.status === "accepted" && result.transferredItemIds) {
+            removeSelectedItemIds(result.transferredItemIds);
+          }
+          clearRangeSelection();
+          setSortState("Manual");
+          setBlockSortDirection(null);
+          spaceGroupDragItemIdsRef.current = null;
+          if (receipt.status === "noop") return;
+        }
+        if (!dragContext && result.eventListItems) {
+          setEventLists((current) => ({
+            ...current,
+            [activeEventName]: result.eventListItems!,
+          }));
+        }
+        if (!dragContext && result.executeModeItems) {
+          updateExecuteModeItems((current) => ({
+            ...current,
+            [activeEventName]: result.executeModeItems!,
+          }));
+        }
+        if (
+          result.placement === "merged-into-existing-visit" ||
+          result.placement === "mixed"
+        ) {
+          notify(EXECUTION_VISIT_MERGE_NOTICE);
+        }
+      } finally {
+        endShoppingMoveLifecycle(lifecycleScope);
       }
     },
     [
@@ -831,6 +885,8 @@ export const useShoppingItemMutationCommands = ({
       areItemsInSameHall,
       areItemsInSameHallGroup,
       clearRangeSelection,
+      removeSelectedItemIds,
+      queueShoppingMovePatch,
       dayModes,
       eventLists,
       eventListsRef,

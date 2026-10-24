@@ -90,6 +90,7 @@ import {
   type ExecutionNavigationGuardFeedback,
 } from "../features/space-navigation/hooks/useExecutionSpaceNavigator";
 import { acquireBodyScrollLock } from "../utils/bodyScrollLock";
+import { acquireShoppingTouchDragDefaultGuard } from "../features/shopping-list/drag/touchDragDefaultGuard";
 import { useModalFocusBoundary } from "../hooks/useModalFocusBoundary";
 import { buildQuantityOptions } from "./quantityOptions";
 import {
@@ -296,6 +297,7 @@ const EMPTY_DUPLICATE_CIRCLE_ITEM_IDS = new Set<string>();
 const DEFAULT_LIST_RENDERER_PREFERENCE_PORT =
   createLocalStorageListRendererPreferenceAdapter();
 const VIRTUAL_LIST_MINIMUM_ROW_COUNT = 80;
+const FLAT_RANGE_ANIMATION_ITEM_LIMIT = 80;
 const RETAINED_VIEWPORT_MINIMUM_ROW_COUNT = 32;
 const VIRTUAL_LIST_ESTIMATED_ROW_HEIGHT_PX = 136;
 const VIRTUAL_LIST_SUPPORTED_ZOOM_PERCENTS = [100] as const;
@@ -498,6 +500,9 @@ const getExecutionVisitIdForItem = (item: ShoppingItem): string =>
     priorityLevel: item.priorityLevel,
   });
 
+// Keep the retained strategy fixed across every grouping and empty state.
+const SHOPPING_LIST_GROUP_SLOT_MODE = "current-model" as const;
+
 const ShoppingList: React.FC<ShoppingListProps> = ({
   items,
   dragSourceItems = items,
@@ -557,9 +562,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 }) => {
   const onMoveItemUp = useStableOptionalCallback(onMoveItemUpProp);
   const onMoveItemDown = useStableOptionalCallback(onMoveItemDownProp);
-  const onToggleRangeSelection = useStableOptionalCallback(
-    onToggleRangeSelectionProp,
-  );
+
   const onToggleSpaceCollapse = useStableOptionalCallback(
     onToggleSpaceCollapseProp,
   );
@@ -690,6 +693,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const touchDragSpaceGroupIds = useRef<string[] | null>(null);
   const touchDragSourceEl = useRef<HTMLElement | null>(null); // ドラッグ元要素（draggable復元用）
   const releaseTouchBodyScrollLock = useRef<(() => void) | null>(null);
+  const releaseTouchMoveDefaultGuard = useRef<(() => void) | null>(null);
   const activeDropTarget = useRef<{
     id: string;
     position: "top" | "bottom";
@@ -1719,26 +1723,28 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   );
   const projectControllerRows = useMemo(createListRowsProjector, []);
   const projectDisplayRows = useMemo(createListRowsProjector, []);
-  const listControllerModel = useMemo(() => {
-    const visibleModel = projectControllerRows({
-      items,
-      groups: listRowGroups,
-      column: columnType,
+  const listVisibleModel = useMemo(
+    () =>
+      projectControllerRows({
+        items,
+        groups: listRowGroups,
+        column: columnType,
+        duplicateCircleItemIds,
+        highlightedItemId,
+      }),
+    [
+      columnType,
       duplicateCircleItemIds,
       highlightedItemId,
-    });
-    return {
-      ...visibleModel,
-      itemIds: stableItemIds(items),
-    };
-  }, [
-    columnType,
-    duplicateCircleItemIds,
-    highlightedItemId,
-    items,
-    listRowGroups,
-    projectControllerRows,
-  ]);
+      items,
+      listRowGroups,
+      projectControllerRows,
+    ],
+  );
+  const listControllerModel = useMemo(
+    () => ({ ...listVisibleModel, itemIds: stableItemIds(items) }),
+    [items, listVisibleModel],
+  );
   const listControllerModelMembershipKey = useMemo(
     () =>
       JSON.stringify([
@@ -1765,7 +1771,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         JSON.parse(controlledSelectedItemIdsSignature) as string[],
       ),
     );
-  }, [controlledSelectedItemIdsSignature]);
+  }, [controlledSelectedItemIdsSignature, listControllerModelMembershipKey]);
 
   useEffect(() => {
     dispatchListController(shoppingListCommand.reconcileModel());
@@ -1778,14 +1784,16 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
   const listReadModel = useMemo(
     () =>
-      projectDisplayRows({
-        items,
-        groups: listRowGroups,
-        column: columnType,
-        selectedItemIds,
-        duplicateCircleItemIds,
-        highlightedItemId,
-      }),
+      selectedItemIds.size === 0
+        ? listVisibleModel
+        : projectDisplayRows({
+            items,
+            groups: listRowGroups,
+            column: columnType,
+            selectedItemIds,
+            duplicateCircleItemIds,
+            highlightedItemId,
+          }),
     [
       columnType,
       duplicateCircleItemIds,
@@ -1794,7 +1802,19 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       listRowGroups,
       selectedItemIds,
       projectDisplayRows,
+      listVisibleModel,
     ],
+  );
+
+  const onToggleRangeSelection = useStableOptionalCallback(
+    onToggleRangeSelectionProp
+      ? (rangeItemIds: readonly string[]) => {
+          dispatchListController(
+            shoppingListCommand.toggleRangeSelection(rangeItemIds),
+          );
+          onToggleRangeSelectionProp(rangeItemIds);
+        }
+      : undefined,
   );
 
   const onSelectItem = useStableCallback(
@@ -2022,7 +2042,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       });
     }
 
-    if (showHallGroups) {
+    if (shouldShowHallGroups) {
       const groups = hallGroups.map((group) => ({
         key: group.groupId,
         itemIds: group.items.map((item) => item.id),
@@ -2060,7 +2080,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     hallGroups,
     items,
     rangeScopeId,
-    showHallGroups,
+    shouldShowHallGroups,
     showSpaceGroups,
     spaceGroups,
     viewMode,
@@ -2624,6 +2644,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       clearInterval(touchScrollInterval.current);
       touchScrollInterval.current = null;
     }
+    releaseTouchMoveDefaultGuard.current?.();
+    releaseTouchMoveDefaultGuard.current = null;
     if (touchDragClone.current) {
       touchDragClone.current.remove();
       touchDragClone.current = null;
@@ -2679,6 +2701,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       sourceEl: HTMLElement,
       touchX: number,
       touchY: number,
+      touchIdentifier: number,
       spaceGroupItemIds?: string[],
     ) => {
       setDragRuntimeActive(true);
@@ -2720,6 +2743,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
       // ドラッグクローン作成
       touchDragClone.current = createDragClone(sourceEl, touchX, touchY);
+      releaseTouchMoveDefaultGuard.current?.();
+      releaseTouchMoveDefaultGuard.current =
+        acquireShoppingTouchDragDefaultGuard(sourceEl, touchIdentifier);
 
       // スクロール防止
       releaseTouchBodyScrollLock.current?.();
@@ -2749,7 +2775,13 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
       const el = e.currentTarget;
       touchLongPressTimer.current = setTimeout(() => {
-        handleTouchDragStart(item.id, el, touch.clientX, touch.clientY);
+        handleTouchDragStart(
+          item.id,
+          el,
+          touch.clientX,
+          touch.clientY,
+          touch.identifier,
+        );
       }, TOUCH_LONG_PRESS_MS);
     },
     [handleTouchDragStart],
@@ -2771,7 +2803,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         return;
       }
 
-      e.preventDefault(); // ドラッグ中はスクロール防止
+      if (e.nativeEvent.cancelable && !e.nativeEvent.defaultPrevented)
+        e.preventDefault(); // ドラッグ中はスクロール防止
 
       if (touchDragClone.current) {
         touchDragClone.current.dataset.layoutTop = `${touch.clientY - 20}px`;
@@ -3003,6 +3036,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   if (items.length === 0) {
     return (
       <GroupedListRenderer
+        groupSlotMode={SHOPPING_LIST_GROUP_SLOT_MODE}
         defer={useRetainedViewport}
         zoomPercent={viewportZoomPercent}
         pinnedRowKeys={
@@ -3337,6 +3371,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                           el,
                           touch.clientX,
                           touch.clientY,
+                          touch.identifier,
                           effectiveIds,
                         );
                       }, TOUCH_LONG_PRESS_MS);
@@ -4066,7 +4101,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                       onTouchCancel={
                         !isInspecting ? handleItemTouchCancel : undefined
                       }
-                      className="transition-opacity duration-200 relative"
+                      className="relative"
                       data-is-selected={selectedItemIds.has(item.id)}
                     >
                       <ShoppingItemCard
@@ -4341,6 +4376,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
     return (
       <GroupedListRenderer
+        groupSlotMode={SHOPPING_LIST_GROUP_SLOT_MODE}
         defer={useRetainedViewport}
         zoomPercent={viewportZoomPercent}
         pinnedRowKeys={
@@ -4871,7 +4907,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                   onTouchCancel={
                     !isInspecting ? handleItemTouchCancel : undefined
                   }
-                  className={`transition-opacity duration-200 relative ${
+                  className={`relative ${
                     group.priority === "highest"
                       ? "bg-red-50/30 dark:bg-red-950/20"
                       : group.priority === "priority"
@@ -5078,6 +5114,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
     return (
       <GroupedListRenderer
+        groupSlotMode={SHOPPING_LIST_GROUP_SLOT_MODE}
         defer={useRetainedViewport}
         zoomPercent={viewportZoomPercent}
         pinnedRowKeys={
@@ -5171,6 +5208,11 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     const isEnd = rangeInfo && index === rangeInfo.endIndex;
     const isMiddle =
       rangeInfo && index > rangeInfo.startIndex && index < rangeInfo.endIndex;
+    const rangeAppearanceClassName =
+      rangeInfo &&
+      rangeInfo.rangeItems.length >= FLAT_RANGE_ANIMATION_ITEM_LIMIT
+        ? "esp-flat-range-chain-large"
+        : "transition-opacity";
 
     return (
       <div
@@ -5191,7 +5233,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         onTouchMove={!isInspecting ? handleItemTouchMove : undefined}
         onTouchEnd={!isInspecting ? handleItemTouchEnd : undefined}
         onTouchCancel={!isInspecting ? handleItemTouchCancel : undefined}
-        className="transition-opacity duration-200 relative"
+        className="relative"
         data-is-selected={selectedItemIds.has(item.id)}
       >
         <ShoppingItemCard
@@ -5242,7 +5284,17 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                   rangeInfo.rangeItems.map((rangeItem) => rangeItem.id),
                 );
               }}
-              className={`pointer-events-auto absolute h-full w-full transition-opacity ${
+              className={`esp-flat-range-chain ${
+                isStart
+                  ? "esp-flat-range-chain-start"
+                  : isEnd
+                    ? "esp-flat-range-chain-end"
+                    : ""
+              } ${
+                columnType === "candidate"
+                  ? "esp-flat-range-chain-candidate"
+                  : ""
+              } pointer-events-auto absolute h-full w-full ${rangeAppearanceClassName} ${
                 rangeInfo.onlyStartEndSelected
                   ? "opacity-50 hover:opacity-100"
                   : "opacity-100"
@@ -5255,126 +5307,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                   : "範囲内のチェックを入れる"
               }
               data-no-long-press
-            >
-              <svg
-                width="40"
-                height="100%"
-                preserveAspectRatio="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-full h-full"
-              >
-                <defs>
-                  <linearGradient
-                    id={`chainMetal-${item.id}`}
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="0%"
-                  >
-                    <stop offset="0%" stopColor="#9CA3AF" />
-                    <stop offset="30%" stopColor="#F3F4F6" />
-                    <stop offset="50%" stopColor="#D1D5DB" />
-                    <stop offset="70%" stopColor="#9CA3AF" />
-                    <stop offset="100%" stopColor="#6B7280" />
-                  </linearGradient>
-                  <pattern
-                    id={`chainPattern-${item.id}`}
-                    x="0"
-                    y="0"
-                    width="40"
-                    height="20"
-                    patternUnits="userSpaceOnUse"
-                  >
-                    <rect
-                      x="14"
-                      y="-2"
-                      width="12"
-                      height="18"
-                      rx="6"
-                      fill="none"
-                      stroke={`url(#chainMetal-${item.id})`}
-                      strokeWidth="3"
-                    />
-                    <rect
-                      x="17"
-                      y="13"
-                      width="6"
-                      height="8"
-                      rx="2"
-                      fill={`url(#chainMetal-${item.id})`}
-                      stroke="#4B5563"
-                      strokeWidth="0.5"
-                    />
-                  </pattern>
-                </defs>
-
-                {/* チェーンの描画範囲を制御 */}
-                {isStart && (
-                  // 起点: 中央から下まで
-                  <rect
-                    x="0"
-                    y="50%"
-                    width="40"
-                    height="50%"
-                    fill={`url(#chainPattern-${item.id})`}
-                  />
-                )}
-                {isEnd && (
-                  // 終点: 上から中央まで
-                  <rect
-                    x="0"
-                    y="0"
-                    width="40"
-                    height="50%"
-                    fill={`url(#chainPattern-${item.id})`}
-                  />
-                )}
-                {isMiddle && (
-                  <rect
-                    x="0"
-                    y="0"
-                    width="40"
-                    height="100%"
-                    fill={`url(#chainPattern-${item.id})`}
-                  />
-                )}
-
-                {/* フック（アイテムと鎖を繋ぐ金具） - 全ての範囲内アイテムに表示 */}
-                <g transform="translate(0, 50)">
-                  {columnType === "candidate" ? (
-                    <path
-                      d="M 40 0 L 20 0"
-                      stroke={`url(#chainMetal-${item.id})`}
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                  ) : (
-                    <path
-                      d="M 0 0 L 20 0"
-                      stroke={`url(#chainMetal-${item.id})`}
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                  )}
-                  <circle
-                    cx="20"
-                    cy="0"
-                    r="4"
-                    fill={`url(#chainMetal-${item.id})`}
-                    stroke="#4B5563"
-                    strokeWidth="0.5"
-                  />
-                  <circle
-                    cx={columnType === "candidate" ? 38 : 2}
-                    cy="0"
-                    r="3"
-                    fill="#9CA3AF"
-                  />
-                </g>
-              </svg>
-            </button>
+            ></button>
           </div>
         )}
 
@@ -5397,7 +5330,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     rangeInfo.rangeItems.map((rangeItem) => rangeItem.id),
                   );
                 }}
-                className={`pointer-events-auto absolute w-full h-full transition-opacity ${
+                className={`esp-flat-range-chain-gap pointer-events-auto absolute w-full h-full ${rangeAppearanceClassName} ${
                   rangeInfo.onlyStartEndSelected
                     ? "opacity-50 hover:opacity-100"
                     : "opacity-100"
@@ -5408,67 +5341,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     : "範囲内のチェックを入れる"
                 }
                 data-no-long-press
-              >
-                <svg
-                  width="40"
-                  height="16"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-full h-full"
-                >
-                  {/* パターン定義を再利用するためにdefsを定義（本当はuseタグを使いたいが、IDスコープが面倒なので再定義） */}
-                  <defs>
-                    <linearGradient
-                      id={`chainMetal-gap-${item.id}`}
-                      x1="0%"
-                      y1="0%"
-                      x2="100%"
-                      y2="0%"
-                    >
-                      <stop offset="0%" stopColor="#9CA3AF" />
-                      <stop offset="30%" stopColor="#F3F4F6" />
-                      <stop offset="50%" stopColor="#D1D5DB" />
-                      <stop offset="70%" stopColor="#9CA3AF" />
-                      <stop offset="100%" stopColor="#6B7280" />
-                    </linearGradient>
-                    <pattern
-                      id={`chainPattern-gap-${item.id}`}
-                      x="0"
-                      y="0"
-                      width="40"
-                      height="20"
-                      patternUnits="userSpaceOnUse"
-                    >
-                      <rect
-                        x="14"
-                        y="-2"
-                        width="12"
-                        height="18"
-                        rx="6"
-                        fill="none"
-                        stroke={`url(#chainMetal-gap-${item.id})`}
-                        strokeWidth="3"
-                      />
-                      <rect
-                        x="17"
-                        y="13"
-                        width="6"
-                        height="8"
-                        rx="2"
-                        fill={`url(#chainMetal-gap-${item.id})`}
-                        stroke="#4B5563"
-                        strokeWidth="0.5"
-                      />
-                    </pattern>
-                  </defs>
-                  <rect
-                    x="0"
-                    y="0"
-                    width="40"
-                    height="100%"
-                    fill={`url(#chainPattern-gap-${item.id})`}
-                  />
-                </svg>
-              </button>
+              ></button>
             </div>
           )}
       </div>
@@ -5478,6 +5351,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   if (useRetainedViewportStructure) {
     return (
       <RetainedViewportListRenderer
+        groupSlotMode={SHOPPING_LIST_GROUP_SLOT_MODE}
         defer={useRetainedViewport}
         zoomPercent={viewportZoomPercent}
         pinnedRowKeys={

@@ -1,3 +1,4 @@
+import { toggleRangeSelection } from "../../lists/domain/rangeSelection";
 import type { ShoppingListReadModel } from "../model/buildListRows";
 
 export type ListScrollAlignment = "start" | "center" | "end" | "nearest";
@@ -33,6 +34,10 @@ export type ShoppingListControllerCommand =
   | {
       type: "toggle-selection";
       itemId: string;
+    }
+  | {
+      type: "toggle-range-selection";
+      itemIds: readonly string[];
     }
   | {
       type: "focus-row";
@@ -104,6 +109,22 @@ export const shoppingListControllerReducer = (
         selected.add(command.itemId);
       }
       return { ...state, selectedItemIds: Array.from(selected) };
+    }
+
+    case "toggle-range-selection": {
+      const availableItemIds = itemIdSet(model);
+      const targetItemIds = command.itemIds.filter((itemId) =>
+        availableItemIds.has(itemId),
+      );
+      const result = toggleRangeSelection(
+        new Set(state.selectedItemIds),
+        targetItemIds,
+      );
+      if (result.operation === "none") return state;
+      return {
+        ...state,
+        selectedItemIds: Array.from(result.selectedItemIds),
+      };
     }
 
     case "focus-row":
@@ -182,6 +203,11 @@ export const shoppingListCommand = {
   },
   toggleSelection(itemId: string): ShoppingListControllerCommand {
     return { type: "toggle-selection", itemId };
+  },
+  toggleRangeSelection(
+    itemIds: readonly string[],
+  ): ShoppingListControllerCommand {
+    return { type: "toggle-range-selection", itemIds };
   },
   focusRow(rowKey: string | null): ShoppingListControllerCommand {
     return { type: "focus-row", rowKey };

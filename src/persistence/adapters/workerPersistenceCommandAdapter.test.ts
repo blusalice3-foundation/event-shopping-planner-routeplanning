@@ -111,7 +111,7 @@ it("adopts equal UI references before the first day command and never rescans hi
   release();
 });
 
-it.each(["commit", "commitDay", "day", "items", "save"])(
+it.each(["commit", "commitDay", "day", "items", "shopping", "save"])(
   "stops all writes after a sent %s loses its worker response",
   async (method) => {
     const workers: LossWorker[] = [];
@@ -146,9 +146,29 @@ it.each(["commit", "commitDay", "day", "items", "save"])(
                 "day",
                 {},
               )
-            : method === "items"
-              ? port.commitItemContentEdits!([], ["items"], {})
-              : port.saveEventLists({})
+            : method === "shopping"
+              ? port.commitShoppingMove!(
+                  {
+                    version: 1,
+                    eventName: "event",
+                    day: "1日目",
+                    sourceColumn: "execute",
+                    targetColumn: "candidate",
+                    requestedIds: [],
+                    effectiveIds: [],
+                    hoverId: "__END_OF_LIST__",
+                    baselineVisits: [],
+                    baselineItemIds: [],
+                    itemIds: [],
+                    baselineExecuteIds: [],
+                    executeIds: [],
+                  },
+                  "move",
+                  {},
+                )
+              : method === "items"
+                ? port.commitItemContentEdits!([], ["items"], {})
+                : port.saveEventLists({})
     ).catch((error: unknown) => error);
     workers[0].onmessageerror!();
     const reason = await result;
@@ -220,3 +240,72 @@ it("does not label creation or synchronous postMessage failure as an unknown out
   await expect(fresh.saveEventLists({})).rejects.toThrow("creation");
   expect(fresh.getWriteStopReason!()).toBeUndefined();
 });
+
+it.each(["unavailable", "invalid"])(
+  "stops every writer when known-commit full recovery is %s",
+  async (failure) => {
+    const methods: string[] = [];
+    class RecoveryWorker {
+      onmessage?: (event: MessageEvent) => void;
+      postMessage(request: { id: number; method: string }) {
+        methods.push(request.method);
+        queueMicrotask(() =>
+          this.onmessage?.({
+            data:
+              request.method === "shopping"
+                ? {
+                    id: request.id,
+                    result: { status: "committed", deltaError: true },
+                  }
+                : failure === "unavailable"
+                  ? {
+                      id: request.id,
+                      error: { name: "Error", message: "read failed" },
+                    }
+                  : {
+                      id: request.id,
+                      result: {
+                        observationId: 2,
+                        consistencyMissing: false,
+                        delta: {
+                          full: {
+                            ...emptyApplicationSnapshot(),
+                            executeModeItems: {
+                              event: { "1日目": ["missing"] },
+                            },
+                          },
+                        },
+                      },
+                    },
+          } as MessageEvent),
+        );
+      }
+    }
+    vi.stubGlobal("Worker", RecoveryWorker);
+    vi.stubGlobal("localStorage", { length: 0, key: () => null });
+    const port = createWorkerPersistenceCommandAdapter();
+    const reason = await port.commitShoppingMove!(
+      {
+        version: 1,
+        eventName: "event",
+        day: "1日目",
+        sourceColumn: "execute",
+        targetColumn: "candidate",
+        requestedIds: [],
+        effectiveIds: [],
+        hoverId: "__END_OF_LIST__",
+        baselineVisits: [],
+        baselineItemIds: [],
+        itemIds: [],
+        baselineExecuteIds: [],
+        executeIds: [],
+      },
+      "move",
+      {},
+    ).catch((error: unknown) => error);
+    expect(reason).toMatchObject({ name: "CommittedStateApplyError" });
+    expect(port.getWriteStopReason!()).toBe(reason);
+    await expect(port.saveEventLists({})).rejects.toBe(reason);
+    expect(methods).toEqual(["shopping", "readFull"]);
+  },
+);

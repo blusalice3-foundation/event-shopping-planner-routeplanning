@@ -14,6 +14,7 @@ import {
   useSpaceNavigator,
 } from "../features/space-navigation/SpaceNavigatorContext";
 import ShoppingList from "./ShoppingList";
+import * as viewportContent from "../features/shopping-list/renderers/ViewportContent";
 
 const makeItem = (
   id: string,
@@ -66,6 +67,7 @@ function NavigatorProbe() {
       <output data-testid="registration-id">
         {navigator.registration?.id ?? ""}
       </output>
+      <output data-testid="notification">{navigator.notification ?? ""}</output>
       <output data-testid="history-depth">{navigator.history.length}</output>
       <output data-testid="inspect-state">
         {String(navigator.isInspecting)}
@@ -193,6 +195,37 @@ function ShoppingListHarness({
   );
 }
 
+function captureNavigationFrames() {
+  let sequence = 0;
+  const pending = new Map<number, FrameRequestCallback>();
+  const request = vi
+    .spyOn(window, "requestAnimationFrame")
+    .mockImplementation((callback) => {
+      const id = ++sequence;
+      pending.set(id, callback);
+      return id;
+    });
+  const cancel = vi
+    .spyOn(window, "cancelAnimationFrame")
+    .mockImplementation((id) => {
+      pending.delete(id);
+    });
+  return {
+    async flush() {
+      await act(async () => {
+        await Promise.resolve();
+        const callbacks = [...pending.values()];
+        pending.clear();
+        callbacks.forEach((callback) => callback(performance.now()));
+        await Promise.resolve();
+      });
+    },
+    restore() {
+      request.mockRestore();
+      cancel.mockRestore();
+    },
+  };
+}
 describe("ShoppingList execution space navigator integration", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -435,6 +468,142 @@ describe("ShoppingList execution space navigator integration", () => {
     );
   });
 
+  it("keeps disabled removal silent and publishes the latest visit when enabled again", async () => {
+    render(
+      <SpaceNavigatorProvider>
+        <ShoppingListHarness
+          initialItems={[
+            makeItem("a", "A", "01a"),
+            makeItem("b", "B", "02a"),
+            makeItem("c", "C", "03a"),
+          ]}
+        />
+      </SpaceNavigatorProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("entry-count")).toHaveTextContent("3"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "ナビ無効化" }));
+    const reveal = vi.spyOn(viewportContent, "revealViewportContent");
+    const prewarm = vi.spyOn(viewportContent, "prewarmViewportContent");
+    const frames = captureNavigationFrames();
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "Aを除外" }));
+      for (let index = 0; index < 4; index++) await frames.flush();
+      expect(screen.getByTestId("entry-count")).toHaveTextContent("0");
+      expect(screen.getByTestId("notification")).toBeEmptyDOMElement();
+      expect(reveal).not.toHaveBeenCalled();
+      expect(prewarm).not.toHaveBeenCalled();
+      expect(HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
+      expect(window.scrollTo).not.toHaveBeenCalled();
+      expect(window.scrollBy).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: "ナビ再有効化" }));
+      await waitFor(() =>
+        expect(screen.getByTestId("entry-order")).toHaveTextContent(
+          "B-02a:none|C-03a:none",
+        ),
+      );
+      expect(screen.getByTestId("current-visit-id")).toHaveTextContent(
+        "B-02a:none",
+      );
+      expect(screen.getByTestId("current-index")).toHaveTextContent("0");
+      expect(screen.getByTestId("formal-index")).toHaveTextContent("0");
+      fireEvent.click(screen.getByRole("button", { name: "一時移動" }));
+      // Existing smooth navigation uses two reveal, two settle, and two final flush frames.
+      for (let index = 0; index < 6; index++) await frames.flush();
+      await waitFor(() =>
+        expect(screen.getByTestId("history-depth")).toHaveTextContent("1"),
+      );
+      expect(screen.getByTestId("current-visit-id")).toHaveTextContent(
+        "C-03a:none",
+      );
+      expect(screen.getByTestId("formal-index")).toHaveTextContent("0");
+      expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
+    } finally {
+      frames.restore();
+      reveal.mockRestore();
+      prewarm.mockRestore();
+    }
+  });
+
+  it.each(["before-reveal", "before-scroll"] as const)(
+    "cancels removal recovery when disabled %s",
+    async (stage) => {
+      render(
+        <SpaceNavigatorProvider>
+          <ShoppingListHarness
+            initialItems={[
+              makeItem("a", "A", "01a"),
+              makeItem("b", "B", "02a"),
+            ]}
+          />
+        </SpaceNavigatorProvider>,
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId("entry-count")).toHaveTextContent("2"),
+      );
+      const reveal = vi.spyOn(viewportContent, "revealViewportContent");
+      const frames = captureNavigationFrames();
+      try {
+        fireEvent.click(screen.getByRole("button", { name: "Aを除外" }));
+        await act(async () => {
+          await Promise.resolve();
+        });
+        if (stage === "before-scroll") {
+          await frames.flush();
+          expect(reveal).toHaveBeenCalledTimes(1);
+        }
+        fireEvent.click(screen.getByRole("button", { name: "ナビ無効化" }));
+        for (let index = 0; index < 4; index++) await frames.flush();
+        expect(reveal).toHaveBeenCalledTimes(stage === "before-scroll" ? 1 : 0);
+        expect(HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
+        expect(window.scrollTo).not.toHaveBeenCalled();
+        expect(window.scrollBy).not.toHaveBeenCalled();
+        expect(screen.getByTestId("entry-count")).toHaveTextContent("0");
+        fireEvent.click(screen.getByRole("button", { name: "ナビ再有効化" }));
+        await waitFor(() =>
+          expect(screen.getByTestId("current-visit-id")).toHaveTextContent(
+            "B-02a:none",
+          ),
+        );
+        expect(screen.getByTestId("current-index")).toHaveTextContent("0");
+        expect(screen.getByTestId("formal-index")).toHaveTextContent("0");
+      } finally {
+        frames.restore();
+        reveal.mockRestore();
+      }
+    },
+  );
+
+  it("keeps enabled automatic removal recovery and its notification", async () => {
+    render(
+      <SpaceNavigatorProvider>
+        <ShoppingListHarness
+          initialItems={[makeItem("a", "A", "01a"), makeItem("b", "B", "02a")]}
+        />
+      </SpaceNavigatorProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("entry-count")).toHaveTextContent("2"),
+    );
+    const reveal = vi.spyOn(viewportContent, "revealViewportContent");
+    const frames = captureNavigationFrames();
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "Aを除外" }));
+      for (let index = 0; index < 4; index++) await frames.flush();
+      expect(screen.getByTestId("current-visit-id")).toHaveTextContent(
+        "B-02a:none",
+      );
+      expect(screen.getByTestId("notification")).toHaveTextContent(
+        "最も近い訪問先へ移動しました",
+      );
+      expect(reveal).toHaveBeenCalledTimes(1);
+      expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
+    } finally {
+      frames.restore();
+      reveal.mockRestore();
+    }
+  });
   it("does not commit temporary history after an in-flight navigator hook is unmounted", async () => {
     render(
       <SpaceNavigatorProvider>

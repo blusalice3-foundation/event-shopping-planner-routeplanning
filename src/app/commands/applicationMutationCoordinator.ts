@@ -8,6 +8,7 @@ import { scopeDaySnapshot } from "../../features/consistency/domain/dayMutation"
 import type {
   ApplicationSnapshotRead,
   ApplicationDayMutation,
+  ApplicationShoppingMove,
   ApplicationDayScope,
   ApplicationBackupFile,
   PersistenceSnapshot,
@@ -54,6 +55,7 @@ export interface MutationIntent {
   expectedGenerations?: Record<string, number>;
   itemContentEdits?: readonly ItemContentEdit[];
   dayMutation?: ApplicationDayMutation;
+  shoppingMove?: ApplicationShoppingMove;
   /** Check ephemeral UI sessions before taking a worker fast path or retrying a review. */
   assertApplicable?(): void;
   /** Keep ordinary accepted edits visible after persistence failures or exhausted CAS retries. */
@@ -130,6 +132,11 @@ export interface MutationCoordinatorPorts {
     base: PersistenceSnapshot,
     accepted: PersistenceSnapshot,
   ): Promise<ApplicationBackupFile>;
+  commitShoppingMove?(
+    command: ApplicationShoppingMove,
+    operationId: string,
+    expectedEventGenerations: Readonly<Record<string, number>>,
+  ): Promise<ApplicationItemEditsResult>;
   commitDayMutation?(
     command: ApplicationDayMutation,
     operationId: string,
@@ -142,6 +149,11 @@ export interface MutationCoordinatorPorts {
     invalidatedEvents?: readonly string[],
   ): Promise<void>;
   apply(snapshot: PersistenceSnapshot, invalidatedEvents: string[]): void;
+  /** Optional diagnostics; success is apply-port return, not React commit. */
+  onApplyLifecycle?(
+    operationId: string,
+    phase: "start" | "success" | "failure",
+  ): void;
   onApplyFailure?(error: PersistenceWriteStopReason): void;
   onExpired?(operationIds: string[]): void;
   onPendingStateChanged?(operationId: string): void;
@@ -198,6 +210,16 @@ export function createApplicationMutationCoordinator(
   let tail: Promise<unknown> = Promise.resolve();
   let sequence = 0;
   let stopped: PersistenceWriteStopReason | undefined;
+  function notifyApplyLifecycle(
+    operationId: string,
+    phase: "start" | "success" | "failure",
+  ): void {
+    try {
+      ports.onApplyLifecycle?.(operationId, phase);
+    } catch {
+      // A diagnostic observer cannot skip apply or change the persistence result.
+    }
+  }
   function notifyPendingStateChanged(id: string): void {
     try {
       ports.onPendingStateChanged?.(id);
@@ -320,19 +342,27 @@ export function createApplicationMutationCoordinator(
     const afterDrain = validity();
     if (afterDrain) return afterDrain;
     if (
-      operation.intent.dayMutation &&
-      ports.commitDayMutation &&
+      (operation.intent.shoppingMove || operation.intent.dayMutation) &&
+      (operation.intent.shoppingMove
+        ? ports.commitShoppingMove
+        : ports.commitDayMutation) &&
       !operation.confirmation &&
       !confirmation &&
       !ports.hasPendingAcceptedChanges?.(id)
     ) {
       setCommitting(operation, true);
       try {
-        const result = await ports.commitDayMutation(
-          operation.intent.dayMutation,
-          id,
-          durableGenerations,
-        );
+        const result = operation.intent.shoppingMove
+          ? await ports.commitShoppingMove!(
+              operation.intent.shoppingMove,
+              id,
+              durableGenerations,
+            )
+          : await ports.commitDayMutation!(
+              operation.intent.dayMutation!,
+              id,
+              durableGenerations,
+            );
         if (result.status === "committed") {
           const nextGenerations =
             result.read.eventGenerations ?? durableGenerations;
@@ -351,8 +381,11 @@ export function createApplicationMutationCoordinator(
           deletePending(id);
           invalidate(invalidated);
           try {
+            notifyApplyLifecycle(id, "start");
             ports.apply(result.read.snapshot, invalidated);
+            notifyApplyLifecycle(id, "success");
           } catch (error) {
+            notifyApplyLifecycle(id, "failure");
             const failure = new CommittedStateApplyError(error);
             stopWrites(failure);
             throw failure;
@@ -525,8 +558,11 @@ export function createApplicationMutationCoordinator(
       completed.add(id);
       deletePending(id);
       try {
+        notifyApplyLifecycle(id, "start");
         ports.apply(plan.snapshot, plan.invalidatedEvents ?? []);
+        notifyApplyLifecycle(id, "success");
       } catch (error) {
+        notifyApplyLifecycle(id, "failure");
         const failure = new CommittedStateApplyError(error);
         stopWrites(failure);
         throw failure;

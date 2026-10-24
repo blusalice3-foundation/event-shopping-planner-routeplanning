@@ -64,3 +64,56 @@
     contain-intrinsic-block-size: auto 220px;
   }
 }
+
+/* Keep the repeat phase at row y=0 when endpoint halves are clipped. */
+.esp-flat-range-chain::before,
+.esp-flat-range-chain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.esp-flat-range-chain::before,
+.esp-flat-range-chain-gap {
+  background-image: url("/src/components/range-chain/links.svg");
+  background-position: 0 0;
+  background-repeat: repeat-y;
+  background-size: 40px 20px;
+}
+
+.esp-flat-range-chain-start::before {
+  clip-path: inset(50% 0 0);
+}
+
+.esp-flat-range-chain-end::before {
+  clip-path: inset(0 0 50%);
+}
+
+/* The original SVG hook is centered at fixed y=50, independent of row height. */
+.esp-flat-range-chain::after {
+  background-image: url("/src/components/range-chain/hook-execute.svg");
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  background-size: 40px 58px;
+}
+
+.esp-flat-range-chain-candidate::after {
+  background-image: url("/src/components/range-chain/hook-candidate.svg");
+}
+
+/* Keep the filter in both states to avoid rebuilding large chain layouts. */
+.esp-flat-range-chain-large {
+  opacity: 1;
+  filter: opacity(1);
+}
+
+.esp-flat-range-chain-large.opacity-50 {
+  filter: opacity(0.5);
+}
+
+@media (hover: hover) {
+  .esp-flat-range-chain-large.opacity-50:hover {
+    filter: opacity(1);
+  }
+}

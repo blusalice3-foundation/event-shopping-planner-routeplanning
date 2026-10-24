@@ -16,7 +16,7 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
         with:
@@ -178,6 +178,15 @@ jobs:
 
       - name: Browser
         run: npm run test:browser
+
+      - name: Upload shopping browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopping-browser-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/dnd-selection-rendering/
+          if-no-files-found: warn
+          overwrite: false
 
       - name: Accessibility
         run: npm run test:a11y

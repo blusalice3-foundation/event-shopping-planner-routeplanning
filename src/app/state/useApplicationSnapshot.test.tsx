@@ -1,3 +1,5 @@
+import { planShoppingMove } from "../commands/shoppingMoveMutation";
+import type { ShoppingMovePatch } from "../commands/ApplicationSnapshotCommitPort";
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -16,7 +18,7 @@ import {
   useApplicationSnapshot,
 } from "./useApplicationSnapshot";
 
-function harness() {
+function harness(overrides: Partial<PersistenceCommandPort> = {}) {
   let durable: PersistenceSnapshot = {
     ...emptyApplicationSnapshot(),
     eventLists: { event: [] },
@@ -33,6 +35,7 @@ function harness() {
     }),
     commitApplicationSnapshotAtomically: commit,
     bindApplicationSettings: () => () => {},
+    ...overrides,
   } as unknown as PersistenceCommandPort;
   const hook = renderHook(() => useApplicationSnapshot(port, "event", "1日目"));
   act(() => {
@@ -1951,3 +1954,388 @@ it("cancels a pending import during drain exactly once and refuses cancellation 
   });
   expect(h.result.current.pendingCount).toBe(0);
 });
+
+const shoppingItem = (id: string, quantity = 1) => ({
+  id,
+  circle: "ユーザー登録",
+  title: "新刊",
+  eventDate: "1日目",
+  block: "A",
+  number: id,
+  price: 500,
+  quantity,
+  purchaseStatus: "None" as const,
+  remarks: "メモ",
+  source: "spreadsheet" as const,
+  protectionLevel: "none" as const,
+});
+function hydrateShopping(h: ReturnType<typeof harness>) {
+  h.durable().eventLists.event = [
+    shoppingItem("1"),
+    shoppingItem("2"),
+    shoppingItem("3"),
+  ];
+  h.durable().executeModeItems = { event: { "1日目": [] } };
+  h.durable().dayModes = { event: { "1日目": "edit" } };
+  act(() => {
+    h.result.current.hydrationSetters.setEventLists(
+      structuredClone(h.durable().eventLists) as never,
+    );
+    h.result.current.hydrationSetters.setExecuteModeItems({
+      event: { "1日目": [] },
+    });
+    h.result.current.hydrationSetters.setDayModes({
+      event: { "1日目": "edit" },
+    });
+  });
+}
+const moveInput = (
+  patch: Partial<ShoppingMovePatch> = {},
+): ShoppingMovePatch => ({
+  baselineItemIds: ["1", "2", "3"],
+  baselineExecuteIds: [],
+  eventName: "event",
+  day: "1日目",
+  sourceColumn: "candidate",
+  targetColumn: "execute",
+  requestedIds: ["1"],
+  effectiveIds: ["1"],
+  hoverId: "__END_OF_LIST__",
+  executeModeItems: { "1日目": ["1"] },
+  ...patch,
+});
+it("accepts all move patches synchronously and uses the one dedicated command without a full read", async () => {
+  const dedicated =
+    vi.fn<NonNullable<PersistenceCommandPort["commitShoppingMove"]>>();
+  const h = harness({ commitShoppingMove: dedicated });
+  hydrateShopping(h);
+  dedicated.mockImplementation(async (command) => ({
+    status: "committed",
+    read: {
+      snapshot: planShoppingMove(h.durable(), command).snapshot,
+      expectedRoots: {},
+      consistencyMissing: false,
+    },
+  }));
+  const read = vi.spyOn(h.port, "readApplicationSnapshot");
+  let receipt!: ReturnType<typeof h.result.current.queueShoppingMovePatch>;
+  act(() => {
+    receipt = h.result.current.queueShoppingMovePatch(moveInput());
+  });
+  expect(receipt).toMatchObject({
+    status: "accepted",
+    moveId: expect.stringContaining(":move:1"),
+  });
+  expect(h.result.current.raw.executeModeItems.event["1日目"]).toEqual([]);
+  await act(async () => {
+    await h.result.current.flush();
+  });
+  expect(dedicated).toHaveBeenCalledOnce();
+  expect(h.commit).not.toHaveBeenCalled();
+  expect(read).not.toHaveBeenCalled();
+  expect(h.result.current.raw.executeModeItems.event["1日目"]).toEqual(["1"]);
+});
+it("does not allocate or write a same-order move and checks write-stop and scope first", async () => {
+  const h = harness();
+  hydrateShopping(h);
+  const input = moveInput({
+    sourceColumn: "candidate",
+    targetColumn: "candidate",
+    eventListItems: [shoppingItem("1"), shoppingItem("2"), shoppingItem("3")],
+    executeModeItems: undefined,
+    requestedIds: ["2", "3"],
+    effectiveIds: ["2", "3"],
+  });
+  expect(h.result.current.queueShoppingMovePatch(input)).toEqual({
+    status: "noop",
+    reason: "same-order",
+  });
+  expect(h.result.current.isPending()).toBe(false);
+  expect(
+    h.result.current.queueShoppingMovePatch({ ...input, day: "2日目" }),
+  ).toMatchObject({ status: "blocked" });
+  act(() => {
+    h.result.current.stopWrites(new Error("stopped"));
+  });
+  expect(h.result.current.queueShoppingMovePatch(input)).toEqual({
+    status: "blocked",
+    reason: "stopped",
+  });
+  expect(h.commit).not.toHaveBeenCalled();
+});
+it("keeps both frozen moves and prior edits when a physical batch uses the generic fallback", async () => {
+  const dedicated =
+    vi.fn<NonNullable<PersistenceCommandPort["commitShoppingMove"]>>();
+  const h = harness({ commitShoppingMove: dedicated });
+  hydrateShopping(h);
+  let first!: ReturnType<typeof h.result.current.queueShoppingMovePatch>;
+  let second!: ReturnType<typeof h.result.current.queueShoppingMovePatch>;
+  act(() => {
+    h.result.current.setters.setEventMetadata({
+      event: {
+        spreadsheetUrl: "",
+        spreadsheetSheetName: "最新",
+        lastImportDate: "2026-10-21",
+      },
+    });
+    first = h.result.current.queueShoppingMovePatch(moveInput());
+    second = h.result.current.queueShoppingMovePatch(
+      moveInput({
+        requestedIds: ["2"],
+        baselineExecuteIds: ["1"],
+        effectiveIds: ["2"],
+        executeModeItems: { "1日目": ["1", "2"] },
+      }),
+    );
+  });
+  expect(first.status).toBe("accepted");
+  expect(second.status).toBe("accepted");
+  if (first.status !== "accepted" || second.status !== "accepted")
+    throw new Error("not accepted");
+  expect(second.operationId).toBe(first.operationId);
+  expect(second.moveId).toBe(`${first.operationId}:move:2`);
+  await act(async () => {
+    await h.result.current.flush();
+  });
+  expect(dedicated).not.toHaveBeenCalled();
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(h.durable().executeModeItems.event["1日目"]).toEqual(["1", "2"]);
+  expect(h.durable().eventMetadata.event).toEqual({
+    spreadsheetUrl: "",
+    spreadsheetSheetName: "最新",
+    lastImportDate: "2026-10-21",
+  });
+});
+it("rejects invalid order atomically and preserves a previously accepted draft", async () => {
+  const h = harness();
+  hydrateShopping(h);
+  act(() => {
+    h.result.current.setters.setEventMetadata({
+      event: {
+        spreadsheetUrl: "",
+        spreadsheetSheetName: "最新",
+        lastImportDate: "2026-10-21",
+      },
+    });
+    expect(
+      h.result.current.queueShoppingMovePatch(
+        moveInput({
+          eventListItems: [
+            shoppingItem("1"),
+            shoppingItem("1"),
+            shoppingItem("3"),
+          ],
+        }),
+      ),
+    ).toMatchObject({ status: "blocked" });
+  });
+  await act(async () => {
+    await h.result.current.flush();
+  });
+  expect(h.durable().executeModeItems.event["1日目"]).toEqual([]);
+  expect(h.durable().eventLists.event).toHaveLength(3);
+  expect(h.durable().eventMetadata.event).toEqual({
+    spreadsheetUrl: "",
+    spreadsheetSheetName: "最新",
+    lastImportDate: "2026-10-21",
+  });
+});
+it("uses current item objects when an older move result contains stale quantity and optional fields", async () => {
+  const h = harness();
+  hydrateShopping(h);
+  (
+    h.durable().eventLists.event[0] as ReturnType<typeof shoppingItem>
+  ).quantity = 9;
+  Object.assign(h.durable().eventLists.event[0] as object, {
+    customField: { latest: true },
+  });
+  act(() => {
+    h.result.current.hydrationSetters.setEventLists(
+      structuredClone(h.durable().eventLists) as never,
+    );
+    expect(
+      h.result.current.queueShoppingMovePatch(
+        moveInput({
+          sourceColumn: "candidate",
+          targetColumn: "candidate",
+          executeModeItems: undefined,
+          eventListItems: [
+            shoppingItem("2"),
+            shoppingItem("1"),
+            shoppingItem("3"),
+          ],
+        }),
+      ),
+    ).toMatchObject({ status: "accepted" });
+  });
+  await act(async () => {
+    await h.result.current.flush();
+  });
+  expect(h.durable().eventLists.event[1]).toMatchObject({
+    id: "1",
+    quantity: 9,
+    customField: { latest: true },
+  });
+});
+
+it("submits an accepted quantity edit before a structural move without dropping either", async () => {
+  const dedicated =
+    vi.fn<NonNullable<PersistenceCommandPort["commitShoppingMove"]>>();
+  const h = harness({ commitShoppingMove: dedicated });
+  hydrateShopping(h);
+  dedicated.mockImplementation(async (command) => {
+    const snapshot = planShoppingMove(h.durable(), command).snapshot;
+    Object.assign(h.durable(), snapshot);
+    return {
+      status: "committed",
+      read: { snapshot, expectedRoots: {}, consistencyMissing: false },
+    };
+  });
+  act(() => {
+    h.result.current.updateItemFields({
+      eventName: "event",
+      itemId: "1",
+      baseline: shoppingItem("1"),
+      changes: { quantity: 7 },
+    });
+    expect(h.result.current.queueShoppingMovePatch(moveInput())).toMatchObject({
+      status: "accepted",
+    });
+  });
+  await act(async () => {
+    await h.result.current.flush();
+  });
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(dedicated).toHaveBeenCalledOnce();
+  expect(h.result.current.raw.executeModeItems.event["1日目"]).toEqual(["1"]);
+  expect(h.result.current.raw.eventLists.event[0]).toMatchObject({
+    id: "1",
+    quantity: 7,
+  });
+});
+it("does not publish any move patch when preparation throws after a prior accepted draft", async () => {
+  const h = harness();
+  hydrateShopping(h);
+  act(() => {
+    h.result.current.setters.setEventMetadata({
+      event: {
+        spreadsheetUrl: "",
+        spreadsheetSheetName: "latest",
+        lastImportDate: "2026-10-21",
+      },
+    });
+    const schedule = vi
+      .spyOn(globalThis, "queueMicrotask")
+      .mockImplementationOnce(() => {
+        throw new Error("prepare failed");
+      });
+    expect(h.result.current.queueShoppingMovePatch(moveInput())).toEqual({
+      status: "blocked",
+      reason: "prepare failed",
+    });
+    schedule.mockRestore();
+  });
+  await act(async () => {
+    await h.result.current.flush();
+  });
+  expect(h.durable().executeModeItems.event["1日目"]).toEqual([]);
+  expect(h.durable().eventMetadata.event).toMatchObject({
+    spreadsheetSheetName: "latest",
+  });
+});
+it("reprojects later accepted quantity input while a dedicated move acknowledgement is waiting", async () => {
+  let release!: () => void;
+  const barrier = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const dedicated =
+    vi.fn<NonNullable<PersistenceCommandPort["commitShoppingMove"]>>();
+  const h = harness({ commitShoppingMove: dedicated });
+  hydrateShopping(h);
+  dedicated.mockImplementation(async (command) => {
+    const snapshot = planShoppingMove(h.durable(), command).snapshot;
+    await barrier;
+    Object.assign(h.durable(), snapshot);
+    return {
+      status: "committed",
+      read: { snapshot, expectedRoots: {}, consistencyMissing: false },
+    };
+  });
+  act(() => {
+    h.result.current.queueShoppingMovePatch(moveInput());
+  });
+  await waitFor(() => expect(dedicated).toHaveBeenCalledOnce());
+  act(() => {
+    h.result.current.updateItemFields({
+      eventName: "event",
+      itemId: "1",
+      baseline: shoppingItem("1"),
+      changes: { quantity: 9 },
+    });
+  });
+  expect(h.result.current.values.eventLists.event[0].quantity).toBe(9);
+  await act(async () => {
+    release();
+    await h.result.current.flush();
+  });
+  expect(h.result.current.raw.executeModeItems.event["1日目"]).toEqual(["1"]);
+  expect(h.result.current.values.eventLists.event[0].quantity).toBe(9);
+  expect(h.durable().eventLists.event[0]).toMatchObject({ quantity: 9 });
+});
+
+it.each(["same task", "pending save"])(
+  "rejects a stale second order without undoing the first accepted move (%s)",
+  async (timing) => {
+    const h = harness();
+    hydrateShopping(h);
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const save = h.commit.getMockImplementation()!;
+    if (timing === "pending save")
+      h.commit.mockImplementationOnce(async (snapshot) => {
+        await barrier;
+        await save(snapshot);
+      });
+    const first = moveInput({
+      sourceColumn: "candidate",
+      targetColumn: "candidate",
+      executeModeItems: undefined,
+      eventListItems: [shoppingItem("2"), shoppingItem("3"), shoppingItem("1")],
+    });
+    act(() => {
+      expect(h.result.current.queueShoppingMovePatch(first)).toMatchObject({
+        status: "accepted",
+      });
+    });
+    if (timing === "pending save")
+      await waitFor(() => expect(h.commit).toHaveBeenCalledOnce());
+    act(() => {
+      expect(
+        h.result.current.queueShoppingMovePatch(
+          moveInput({
+            sourceColumn: "candidate",
+            targetColumn: "candidate",
+            executeModeItems: undefined,
+            requestedIds: ["2"],
+            effectiveIds: ["2"],
+            eventListItems: [
+              shoppingItem("1"),
+              shoppingItem("3"),
+              shoppingItem("2"),
+            ],
+          }),
+        ),
+      ).toMatchObject({ status: "blocked" });
+    });
+    await act(async () => {
+      release();
+      await h.result.current.flush();
+    });
+    expect(
+      h.durable().eventLists.event.map((item) => (item as { id: string }).id),
+    ).toEqual(["2", "3", "1"]);
+    expect(h.commit).toHaveBeenCalledOnce();
+  },
+);

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20">
+  <defs>
+    <linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9CA3AF" />
+      <stop offset="30%" stop-color="#F3F4F6" />
+      <stop offset="50%" stop-color="#D1D5DB" />
+      <stop offset="70%" stop-color="#9CA3AF" />
+      <stop offset="100%" stop-color="#6B7280" />
+    </linearGradient>
+    <pattern id="links" x="0" y="0" width="40" height="20" patternUnits="userSpaceOnUse">
+      <rect x="14" y="-2" width="12" height="18" rx="6" fill="none" stroke="url(#metal)" stroke-width="3" />
+      <rect x="17" y="13" width="6" height="8" rx="2" fill="url(#metal)" stroke="#4B5563" stroke-width="0.5" />
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="40" height="20" fill="url(#links)" />
+</svg>

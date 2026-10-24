@@ -43,6 +43,13 @@ self.onmessage = (
         const args = request.args;
         let result: unknown;
         if (method === "read") result = await server.read();
+        else if (method === "readFull") result = await server.readFull();
+        else if (method === "shopping")
+          result = await server.shopping(
+            args[0] as Parameters<typeof server.shopping>[0],
+            args[1] as string,
+            args[2] as Record<string, number>,
+          );
         else if (method === "commit")
           result = await server.commit(
             args[0] as Parameters<typeof server.commit>[0],
@@ -85,7 +92,7 @@ self.onmessage = (
           method === "commit" ||
           method === "commitDay" ||
           method.startsWith("save") ||
-          ((method === "day" || method === "items") &&
+          ((method === "day" || method === "items" || method === "shopping") &&
             (result as { status?: string })?.status === "committed");
         self.postMessage({
           id: request.id,

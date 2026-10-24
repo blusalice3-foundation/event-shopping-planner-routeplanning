@@ -1,29 +1,10 @@
+import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import { expect, test, type Page } from "@playwright/test";
 
 test.use({ serviceWorkers: "block" });
 
 async function storedEventLists(page: Page) {
-  return page.evaluate(async () => {
-    const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open("EventShoppingPlannerDB");
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-    try {
-      return await new Promise<Record<string, Array<Record<string, unknown>>>>(
-        (resolve, reject) => {
-          const request = database
-            .transaction("eventLists", "readonly")
-            .objectStore("eventLists")
-            .get("data");
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        },
-      );
-    } finally {
-      database.close();
-    }
-  });
+  return readBrowserEventLists(page);
 }
 
 test("a real XLSX restore stops every later write after its committed completion alert throws", async ({

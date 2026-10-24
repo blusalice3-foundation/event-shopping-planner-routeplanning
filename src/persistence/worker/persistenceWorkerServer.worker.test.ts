@@ -1,8 +1,32 @@
+import {
+  decodeDayRecords,
+  patchDayRecordStore,
+  patchEventListRecordStore,
+  adoptDayRecordWrite,
+  partitionDayRecordStore,
+  prepareDayRecord,
+} from "../db/dayRecordStorage";
+import { projectConsistencySnapshot } from "../../features/consistency/domain/projection";
+import * as snapshotDeltas from "./snapshotDelta";
+import * as shoppingPlanner from "../../app/commands/shoppingMoveMutation";
+import { CONSISTENCY_MIGRATION_KEY } from "../db/constants";
+import { RUNTIME_FALLBACK_NAMESPACE } from "../../utils/persistenceResilience";
+import {
+  planShoppingMove,
+  shoppingMoveVisitBaseline,
+} from "../../app/commands/shoppingMoveMutation";
+import { createWorkerPersistenceCommandAdapter } from "../adapters/workerPersistenceCommandAdapter";
 import { IDBFactory, IDBObjectStore, IDBKeyRange } from "fake-indexeddb";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "../facade/indexedDbPersistence";
+import {
+  expectedRevisionRoots,
+  expectedPersistenceCheckpoints,
+  getObservedRootKey,
+} from "../internal/persistenceCore";
 import { resetDatabaseConnection, openDatabase } from "../db/openDatabase";
 import { createPersistenceWorkerServer } from "./persistenceWorkerServer";
+import { createApplicationMutationCoordinator } from "../../app/commands/applicationMutationCoordinator";
 import { createEventConsistency } from "../../types/consistency";
 import type {
   ItemContentEdit,
@@ -1380,3 +1404,1908 @@ it.each(["commit", "items", "day", "commitDay"])(
     else expect(durable.dayModes.event["1日目"]).toBe("edit");
   },
 );
+
+function shoppingCommand() {
+  return {
+    version: 1 as const,
+    eventName: "event",
+    day: "1日目",
+    sourceColumn: "execute" as const,
+    targetColumn: "candidate" as const,
+    requestedIds: ["1"],
+    effectiveIds: ["1"],
+    hoverId: "__END_OF_LIST__",
+    baselineVisits: shoppingMoveVisitBaseline(
+      {
+        ...seed(),
+        eventLists: { event: [item, { ...item, id: "2", number: "2" }] },
+      },
+      "event",
+      "1日目",
+    ),
+    baselineItemIds: ["1", "2", "other-day"],
+    itemIds: ["2", "1", "other-day"],
+    baselineExecuteIds: ["1"],
+    executeIds: [],
+  };
+}
+async function setupShopping(historyCount = 1, prepare = true) {
+  const data = seed();
+  data.eventLists.event = [
+    item,
+    {
+      ...item,
+      id: "2",
+      number: "2",
+      quantity: 7,
+      remarks: "後発メモ",
+      customField: { keep: true },
+    },
+    { ...item, id: "other-day", eventDate: "2日目" },
+  ];
+  data.eventLists.past = Array.from({ length: historyCount }, (_, index) => ({
+    ...item,
+    id: historyCount === 1 ? "past" : `past-${index}`,
+    quantity: 9,
+  }));
+  data.eventConsistency.past = createEventConsistency();
+  data.executeModeItems.event["1日目"] = ["1"];
+  data.executeModeItems.event["2日目"] = ["other-day"];
+  data.dayModes.event["1日目"] = "edit";
+  const initial = await db.readApplicationSnapshot();
+  await db.commitApplicationSnapshotAtomically(data, {
+    expectedRoots: initial.expectedRoots,
+  });
+  const commit = vi.fn(db.commitShoppingCommandSnapshot);
+  const read = vi.fn(db.readApplicationSnapshot);
+  const shoppingRead = vi.fn(db.readShoppingCommandSnapshot);
+  const cachedRead = vi.fn(db.readCachedShoppingCommandSnapshot);
+  const server = createPersistenceWorkerServer({
+    ...db,
+    readApplicationSnapshot: read,
+    readShoppingCommandSnapshot: shoppingRead,
+    readCachedShoppingCommandSnapshot: cachedRead,
+    commitShoppingCommandSnapshot: commit,
+  });
+  const baseline = prepare ? await server.read() : await server.readFull();
+  read.mockClear();
+  return { server, baseline, commit, read, shoppingRead, cachedRead };
+}
+it("atomically commits shopping order and references without full reads or item payload deltas", async () => {
+  const h = await setupShopping();
+  const database = await openDatabase();
+  const transactions = vi.spyOn(database, "transaction");
+  const result = await h.server.shopping(shoppingCommand(), "move:1", {});
+  expect(result.status).toBe("committed");
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(h.read).not.toHaveBeenCalled();
+  expect(h.shoppingRead).not.toHaveBeenCalled();
+  expect(h.cachedRead).toHaveBeenCalledOnce();
+  expect(transactions.mock.calls.map(([, mode]) => mode)).toEqual([
+    "readwrite",
+  ]);
+  transactions.mockRestore();
+  if (result.status !== "committed" || !result.read)
+    throw new Error("not committed");
+  expect(result.read.delta.shoppingOrder).toMatchObject({
+    version: 1,
+    itemIds: ["2", "1", "other-day"],
+    baseObservationId: h.baseline.observationId,
+  });
+  expect(result.read.delta.full).toBeUndefined();
+  expect(result.read.delta.stores).toEqual({});
+  expect(
+    result.read.delta.branches?.some((branch) => branch.store === "eventLists"),
+  ).toBe(false);
+  const receipt = await h.commit.mock.results[0].value;
+  const durable = (await db.readApplicationSnapshot()).snapshot;
+  expect(receipt.snapshot).toEqual(durable);
+  expect(receipt.eventGenerations).toEqual(h.baseline.eventGenerations);
+  expect(receipt.scopeTarget).toBeUndefined();
+  const receiptRoots = (
+    receipt.expectedRoots as { roots: Map<string, unknown> }
+  ).roots;
+  const physical = await physicalShoppingRecords();
+  for (const store of ["eventLists", "executeModeItems", "eventConsistency"]) {
+    expect(receiptRoots.get(store)).toEqual(
+      [...physical.syncQueue.values()].find(
+        (value) =>
+          value &&
+          typeof value === "object" &&
+          "storeName" in value &&
+          value.storeName === store &&
+          "revision" in value &&
+          "payloadDigest" in value,
+      ),
+    );
+  }
+  expect(Object.isFrozen(receipt.snapshot.eventLists.event)).toBe(true);
+  expect(
+    durable.eventLists.event.map((item) => (item as { id: string }).id),
+  ).toEqual(["2", "1", "other-day"]);
+  expect(durable.eventLists.event[0]).toMatchObject({
+    quantity: 7,
+    remarks: "後発メモ",
+    customField: { keep: true },
+  });
+  expect(durable.executeModeItems.event).toEqual({
+    "1日目": [],
+    "2日目": ["other-day"],
+  });
+  expect(durable.eventLists.past[0]).toMatchObject({ quantity: 9 });
+  // A cold scoped read authenticates the persisted event sidecar, root and checkpoints.
+  resetDatabaseConnection();
+  const cold = await db.readDayCommandSnapshot({
+    eventName: "event",
+    day: "1日目",
+  });
+  expect(
+    cold.snapshot.eventLists.event.map((item) => (item as { id: string }).id),
+  ).toEqual(["2", "1", "other-day"]);
+  expect(cold.snapshot.eventLists.event[0]).toMatchObject({
+    quantity: 7,
+    customField: { keep: true },
+  });
+  expect(cold.snapshot.executeModeItems.event["1日目"]).toEqual([]);
+});
+it("rolls all shopping stores back on abort and falls back before writing stale order", async () => {
+  const h = await setupShopping();
+  const rootsBefore = new Map(expectedRevisionRoots);
+  const checkpointsBefore = new Map(expectedPersistenceCheckpoints);
+  const original = IDBObjectStore.prototype.put;
+  const fault = vi
+    .spyOn(IDBObjectStore.prototype, "put")
+    .mockImplementation(function (
+      this: IDBObjectStore,
+      ...args: Parameters<typeof original>
+    ) {
+      if (this.name === "executeModeItems")
+        throw new DOMException("quota", "QuotaExceededError");
+      return original.apply(this, args);
+    });
+  await expect(
+    h.server.shopping(shoppingCommand(), "move:1", {}),
+  ).rejects.toThrow();
+  fault.mockRestore();
+  expect(expectedRevisionRoots).toEqual(rootsBefore);
+  expect(expectedPersistenceCheckpoints).toEqual(checkpointsBefore);
+  const durable = (await db.readApplicationSnapshot()).snapshot;
+  expect(
+    durable.eventLists.event.map((item) => (item as { id: string }).id),
+  ).toEqual(["1", "2", "other-day"]);
+  expect(durable.executeModeItems.event["1日目"]).toEqual(["1"]);
+  expect(
+    await h.server.shopping(
+      { ...shoppingCommand(), baselineItemIds: ["2", "1", "other-day"] },
+      "move:2",
+      {},
+    ),
+  ).toEqual({ status: "review-required" });
+  expect(h.commit).toHaveBeenCalledOnce();
+  const read = await db.readShoppingCommandSnapshot({
+    eventName: "event",
+    day: "1日目",
+  });
+  const changedItems = structuredClone(read!.snapshot.eventLists);
+  Object.assign(changedItems.event[1] as object, { remarks: "中断後メモ" });
+  await db.commitApplicationSnapshotAtomically(
+    { ...read!.snapshot, eventLists: changedItems },
+    { expectedRoots: read!.expectedRoots, changedStoresOnly: true },
+  );
+  expect(
+    (await h.server.shopping(shoppingCommand(), "move:retry", {})).status,
+  ).toBe("committed");
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.eventLists.event[0],
+  ).toMatchObject({
+    id: "2",
+    remarks: "中断後メモ",
+    quantity: 7,
+  });
+});
+it("full recovery is baseline-independent, validates all stores and never prepares writes", async () => {
+  const h = await setupShopping();
+  await h.server.shopping(shoppingCommand(), "move:1", {});
+  const writes = vi.spyOn(IDBObjectStore.prototype, "put");
+  const full = await h.server.readFull();
+  expect(
+    full.delta.full?.eventLists.event.map(
+      (item) => (item as { id: string }).id,
+    ),
+  ).toEqual(["2", "1", "other-day"]);
+  expect(full.delta.full?.eventLists.past).toHaveLength(1);
+  expect(h.read).toHaveBeenCalledWith({
+    shareVerified: true,
+    prepareScopedCommands: false,
+  });
+  expect(writes).not.toHaveBeenCalled();
+  const next = await h.server.read();
+  expect(next.delta.full).toBeUndefined();
+  expect(next.delta.stores).toEqual({});
+});
+
+it.each(["none", "duplicate", "missing", "revision", "other-day"])(
+  "recovers one known shopping commit from %s order delta with a full read and resumes normal deltas",
+  async (corruption) => {
+    const h = await setupShopping();
+    const methods: string[] = [];
+    const recoveryWrites: string[] = [];
+    class StorageWorker {
+      onmessage?: (event: MessageEvent) => void;
+      onerror?: () => void;
+      postMessage(request: { id: number; method: string; args: unknown[] }) {
+        methods.push(request.method);
+        void (async () => {
+          let result: unknown;
+          try {
+            if (request.method === "read") result = h.baseline;
+            else if (request.method === "shopping") {
+              const committed = await h.server.shopping(
+                request.args[0] as ReturnType<typeof shoppingCommand>,
+                request.args[1] as string,
+                {},
+              );
+              if (committed.status !== "committed" || !committed.read)
+                throw new Error("missing shopping commit");
+              const read = structuredClone(committed.read);
+              if (corruption === "revision")
+                read.delta.shoppingOrder!.baseObservationId = -1;
+              else if (corruption === "duplicate" || corruption === "missing")
+                read.delta.shoppingOrder!.itemIds =
+                  corruption === "duplicate" ? ["1", "1", "other-day"] : ["1"];
+              // Include an invalid branch: no prefix may become the adapter baseline.
+              if (corruption !== "none")
+                read.delta.branches = [
+                  {
+                    store: "dayModes",
+                    eventName: "event",
+                    path: [corruption === "other-day" ? "2日目" : "1日目"],
+                    present: true,
+                    value: "broken",
+                  },
+                ];
+              result = { status: "committed", read };
+            } else if (request.method === "readFull") {
+              const puts = vi.spyOn(IDBObjectStore.prototype, "put");
+              result = await h.server.readFull();
+              recoveryWrites.push(...puts.mock.calls.map(() => "put"));
+              puts.mockRestore();
+            } else if (request.method === "day")
+              result = await h.server.day(
+                request.args[0] as Parameters<typeof h.server.day>[0],
+                request.args[1] as string,
+                {},
+              );
+            else throw new Error("Unexpected protocol method");
+            this.onmessage?.({
+              data: { id: request.id, result },
+            } as MessageEvent);
+          } catch (error) {
+            const value = error as Error;
+            this.onmessage?.({
+              data: {
+                id: request.id,
+                error: { name: value.name, message: value.message },
+              },
+            } as MessageEvent);
+          }
+        })();
+      }
+      terminate() {}
+    }
+    vi.stubGlobal("Worker", StorageWorker);
+    const port = createWorkerPersistenceCommandAdapter();
+    await port.readApplicationSnapshot();
+    const result = await port.commitShoppingMove!(
+      shoppingCommand(),
+      "move:1",
+      {},
+    );
+    expect(result.status).toBe("committed");
+    if (result.status !== "committed") throw new Error("not committed");
+    expect(
+      result.read.snapshot.eventLists.event.map(
+        (item) => (item as { id: string }).id,
+      ),
+    ).toEqual(["2", "1", "other-day"]);
+    expect(result.read.snapshot.eventLists.event[0]).toMatchObject({
+      quantity: 7,
+      remarks: "後発メモ",
+      customField: { keep: true },
+    });
+    expect(result.read.snapshot.dayModes.event["1日目"]).toBe("edit");
+    expect(result.read.snapshot.eventLists.past).toHaveLength(1);
+    expect(h.commit).toHaveBeenCalledOnce();
+    expect(methods).toEqual(
+      corruption === "none"
+        ? ["read", "shopping"]
+        : ["read", "shopping", "readFull"],
+    );
+    expect(recoveryWrites).toEqual([]);
+    const next = await port.commitDayMutation!(
+      { kind: "mode", eventName: "event", day: "1日目", mode: "execute" },
+      "mode:2",
+      {},
+    );
+    expect(next.status).toBe("committed");
+    if (next.status !== "committed") throw new Error("not committed");
+    expect(next.read.snapshot.dayModes.event["1日目"]).toBe("execute");
+    expect(next.read.snapshot.eventLists.event[0]).toMatchObject({
+      id: "2",
+      quantity: 7,
+    });
+    expect(port.getWriteStopReason!()).toBeUndefined();
+  },
+);
+
+it("returns a known commit when delta construction fails after advancing the worker baseline", async () => {
+  const h = await setupShopping();
+  const fault = vi
+    .spyOn(snapshotDeltas, "daySnapshotDelta")
+    .mockImplementationOnce(() => {
+      throw new Error("delta construction failed");
+    });
+  expect(await h.server.shopping(shoppingCommand(), "move:1", {})).toEqual({
+    status: "committed",
+    deltaError: true,
+  });
+  fault.mockRestore();
+  expect(h.commit).toHaveBeenCalledOnce();
+  const full = await h.server.readFull();
+  expect(
+    full.delta.full?.eventLists.event.map(
+      (item) => (item as { id: string }).id,
+    ),
+  ).toEqual(["2", "1", "other-day"]);
+  expect((await h.server.read()).delta.stores).toEqual({});
+});
+it("preserves later quantities but refuses stale source identity and reviews changed target visits", async () => {
+  const h = await setupShopping();
+  const snapshot = h.baseline.delta.full!;
+  const command = {
+    ...shoppingCommand(),
+    baselineVisits: shoppingMoveVisitBaseline(snapshot, "event", "1日目"),
+  };
+  const quantity = structuredClone(snapshot);
+  Object.assign(quantity.eventLists.event[0] as object, {
+    quantity: 9,
+    remarks: "latest",
+  });
+  expect(
+    planShoppingMove(quantity, command).snapshot.eventLists.event[1],
+  ).toMatchObject({ id: "1", quantity: 9, remarks: "latest" });
+  const changedSource = structuredClone(snapshot);
+  Object.assign(changedSource.eventLists.event[0] as object, {
+    eventDate: "2日目",
+  });
+  expect(() => planShoppingMove(changedSource, command)).toThrow("編集対象");
+  const changedVisit = structuredClone(snapshot);
+  Object.assign(changedVisit.eventLists.event[0] as object, { number: "9" });
+  expect(() => planShoppingMove(changedVisit, command)).toThrow("編集対象");
+  const changedTarget = structuredClone(snapshot);
+  Object.assign(changedTarget.eventLists.event[1] as object, { number: "8" });
+  expect(planShoppingMove(changedTarget, command).confirmation).toBeDefined();
+  expect(h.commit).not.toHaveBeenCalled();
+});
+
+it("constructs recovery full snapshots without consulting the normal previous-based delta function", async () => {
+  const h = await setupShopping();
+  const delta = vi
+    .spyOn(snapshotDeltas, "snapshotDelta")
+    .mockImplementation(() => {
+      throw new Error("previous-based delta is unavailable");
+    });
+  const full = await h.server.readFull();
+  expect(full.delta.full?.eventLists.event).toHaveLength(3);
+  expect(delta).not.toHaveBeenCalled();
+});
+
+it("keeps virtual hall assignments during repeated forward, reverse and candidate order commits", async () => {
+  const h = await setupShopping();
+  const initial = await db.readApplicationSnapshot();
+  initial.snapshot.hallDefinitions = {
+    event: {
+      "__mapless__:1日目": [
+        { id: "hall-a", name: "Aホール", vertices: [], blockNames: ["A"] },
+      ],
+    },
+  };
+  initial.snapshot.eventConsistency.event.days["1日目"] = {
+    selectedMapKey: null,
+    maps: {},
+    mapless: {
+      assignments: {
+        "2": { kind: "simple", dayKey: "1日目", hallId: "hall-a" },
+      },
+      hallOrder: [],
+      hallVisitLists: [],
+      route: null,
+    },
+  };
+  await db.commitApplicationSnapshotAtomically(initial.snapshot, {
+    expectedRoots: initial.expectedRoots,
+    changedStoresOnly: true,
+  });
+  await h.server.read();
+  let current = (await db.readApplicationSnapshot()).snapshot;
+  const transitions = [
+    {
+      sourceColumn: "candidate" as const,
+      targetColumn: "execute" as const,
+      effectiveIds: ["2"],
+      itemIds: ["1", "2", "other-day"],
+      executeIds: ["1", "2"],
+    },
+    {
+      sourceColumn: "execute" as const,
+      targetColumn: "candidate" as const,
+      effectiveIds: ["1", "2"],
+      itemIds: ["2", "1", "other-day"],
+      executeIds: [],
+    },
+    {
+      sourceColumn: "candidate" as const,
+      targetColumn: "candidate" as const,
+      effectiveIds: ["2"],
+      itemIds: ["1", "2", "other-day"],
+      executeIds: [],
+    },
+  ];
+  for (const [index, transition] of transitions.entries()) {
+    const projected = projectConsistencySnapshot(current, "event", "1日目");
+    expect(projected.eventLists.event[0]).toHaveProperty("manualHallId");
+    const command = {
+      ...shoppingCommand(),
+      ...transition,
+      requestedIds: transition.effectiveIds,
+      baselineItemIds: current.eventLists.event.map(
+        (item) => (item as { id: string }).id,
+      ),
+      baselineExecuteIds: current.executeModeItems.event["1日目"],
+      baselineVisits: shoppingMoveVisitBaseline(current, "event", "1日目"),
+    };
+    const plan = planShoppingMove(current, command);
+    expect(plan.confirmation).toBeUndefined();
+    expect(
+      plan.snapshot.eventLists.event.every(
+        (item) => !Object.prototype.hasOwnProperty.call(item, "manualHallId"),
+      ),
+    ).toBe(true);
+    const committed = await h.server.shopping(
+      command,
+      `projected-move:${index}`,
+      {},
+    );
+    expect(committed.status).toBe("committed");
+    current = (await db.readApplicationSnapshot()).snapshot;
+    expect(
+      current.eventLists.event.map((item) => (item as { id: string }).id),
+    ).toEqual(transition.itemIds);
+    expect(current.executeModeItems.event["1日目"]).toEqual(
+      transition.executeIds,
+    );
+    expect(
+      current.eventLists.event.find(
+        (item) => (item as { id: string }).id === "2",
+      ),
+    ).toMatchObject({
+      quantity: 7,
+      remarks: "後発メモ",
+      customField: { keep: true },
+    });
+    expect(
+      current.eventLists.event.every(
+        (item) => !Object.prototype.hasOwnProperty.call(item, "manualHallId"),
+      ),
+    ).toBe(true);
+    expect(current.executeModeItems.event["2日目"]).toEqual(["other-day"]);
+    expect(
+      current.eventConsistency.event.days["1日目"].mapless?.assignments["2"],
+    ).toEqual({ kind: "simple", dayKey: "1日目", hallId: "hall-a" });
+  }
+});
+
+async function physicalShoppingRecords() {
+  const database = await openDatabase();
+  const names = [
+    "eventLists",
+    "executeModeItems",
+    "eventConsistency",
+    "syncQueue",
+  ];
+  const transaction = database.transaction(names, "readonly");
+  return Object.fromEntries(
+    await Promise.all(
+      names.map(async (name) => {
+        const store = transaction.objectStore(name);
+        const keys = store.getAllKeys(),
+          values = store.getAll();
+        const result = await Promise.all(
+          [keys, values].map(
+            (request) =>
+              new Promise<unknown[]>((resolve, reject) => {
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+              }),
+          ),
+        );
+        return [
+          name,
+          new Map(
+            result[0].map((key, index) => [String(key), result[1][index]]),
+          ),
+        ] as const;
+      }),
+    ),
+  );
+}
+function nextShoppingOrder(snapshot: PersistenceSnapshot, reverse = false) {
+  return {
+    ...shoppingCommand(),
+    sourceColumn: "candidate" as const,
+    targetColumn: "candidate" as const,
+    baselineVisits: shoppingMoveVisitBaseline(snapshot, "event", "1日目"),
+    baselineItemIds: snapshot.eventLists.event.map(
+      (value) => (value as { id: string }).id,
+    ),
+    itemIds: reverse ? ["2", "1", "other-day"] : ["1", "2", "other-day"],
+    baselineExecuteIds: snapshot.executeModeItems.event["1日目"],
+    executeIds: snapshot.executeModeItems.event["1日目"],
+  };
+}
+it("keeps authenticated event roots bounded across warm order, quantity/memo, direct save and warm order", async () => {
+  const h = await setupShopping(10000);
+  await h.server.shopping(shoppingCommand(), "head:convert", {});
+  const converted = await physicalShoppingRecords();
+  expect(converted.eventLists.get("data")).toMatchObject({
+    kind: "event-shopping-planner-day-records",
+    version: 1,
+    storeName: "eventLists",
+    count: 2,
+    authenticatedRoots: true,
+  });
+  const historyKey = '__esp_internal__:day-record:v1:["past",[]]';
+  const historyRoot = converted.eventLists.get(historyKey);
+  const originalPut = IDBObjectStore.prototype.put;
+  const written: Array<{ store: string; key: unknown; value: unknown }> = [];
+  const puts = vi
+    .spyOn(IDBObjectStore.prototype, "put")
+    .mockImplementation(function (
+      this: IDBObjectStore,
+      ...args: Parameters<typeof originalPut>
+    ) {
+      written.push({ store: this.name, key: args[1], value: args[0] });
+      return originalPut.apply(this, args);
+    });
+  let current = (await db.readDayCommandSnapshot()).snapshot;
+  const clone = vi.spyOn(globalThis, "structuredClone");
+  expect(
+    (await h.server.shopping(nextShoppingOrder(current), "head:warm1", {}))
+      .status,
+  ).toBe("committed");
+  expect(
+    clone.mock.calls.some(
+      ([value]) =>
+        value &&
+        typeof value === "object" &&
+        "event" in value &&
+        "past" in value,
+    ),
+  ).toBe(false);
+  clone.mockRestore();
+  current = (await db.readDayCommandSnapshot()).snapshot;
+  const edited = current.eventLists.event.find(
+    (value) => (value as { id: string }).id === "2",
+  )!;
+  expect(
+    (
+      await h.server.items(
+        [
+          {
+            eventName: "event",
+            itemId: "2",
+            baseline: edited as ItemContentEdit["baseline"],
+            fields: {
+              quantity: { present: true, value: 11 },
+              remarks: { present: true, value: "更新メモ" },
+            },
+          },
+        ],
+        ["head:content"],
+        {},
+      )
+    ).status,
+  ).toBe("committed");
+  current = (await db.readDayCommandSnapshot()).snapshot;
+  expect(
+    (
+      await h.server.shopping(
+        nextShoppingOrder(current, true),
+        "head:warm2",
+        {},
+      )
+    ).status,
+  ).toBe("committed");
+  current = (await db.readDayCommandSnapshot()).snapshot;
+  const direct = structuredClone(current.eventLists);
+  Object.assign(direct.event[0] as object, { remarks: "直接保存メモ" });
+  await db.saveEventLists(direct);
+  await h.server.read();
+  current = (await db.readDayCommandSnapshot()).snapshot;
+  expect(
+    (await h.server.shopping(nextShoppingOrder(current), "head:warm3", {}))
+      .status,
+  ).toBe("committed");
+  puts.mockRestore();
+  const itemWrites = written.filter((entry) => entry.store === "eventLists");
+  expect(itemWrites.length).toBeGreaterThan(0);
+  expect(
+    itemWrites.every(
+      (entry) =>
+        entry.key === "data" ||
+        entry.key === '__esp_internal__:day-record:v1:["event",[]]',
+    ),
+  ).toBe(true);
+  expect(
+    itemWrites
+      .filter((entry) => entry.key === "data")
+      .every(
+        (entry) =>
+          (entry.value as { kind?: string }).kind ===
+          "event-shopping-planner-day-records",
+      ),
+  ).toBe(true);
+  const durable = await physicalShoppingRecords();
+  expect(durable.eventLists.get(historyKey)).toEqual(historyRoot);
+  resetDatabaseConnection();
+  const readOnly = vi.spyOn(IDBObjectStore.prototype, "put");
+  const full = (await db.readApplicationSnapshot()).snapshot;
+  expect(readOnly).not.toHaveBeenCalled();
+  readOnly.mockRestore();
+  expect(full.eventLists.past).toHaveLength(10000);
+  expect(full.eventLists.past[9999]).toMatchObject({
+    id: "past-9999",
+    quantity: 9,
+  });
+  expect(
+    full.eventLists.event.map((value) => (value as { id: string }).id),
+  ).toEqual(["1", "2", "other-day"]);
+  expect(
+    full.eventLists.event.find((value) => (value as { id: string }).id === "2"),
+  ).toMatchObject({
+    quantity: 11,
+    remarks: "直接保存メモ",
+    customField: { keep: true },
+  });
+  expect((await db.getAllData("eventLists")).data).toEqual(full.eventLists);
+  const day = await db.readDayCommandSnapshot({
+    eventName: "event",
+    day: "1日目",
+  });
+  const invalid = {
+    ...day.snapshot,
+    eventLists: {
+      ...day.snapshot.eventLists,
+      event: [...day.snapshot.eventLists.event].reverse(),
+    },
+  };
+  await expect(
+    db.commitDayCommandSnapshot(invalid, day.expectedRoots, {
+      eventName: "event",
+      day: "1日目",
+    }),
+  ).rejects.toThrow("Day commands cannot modify");
+});
+it("rolls an existing event head, roots, execute IDs and checkpoints back together", async () => {
+  const h = await setupShopping();
+  await h.server.shopping(shoppingCommand(), "head:convert", {});
+  const before = await physicalShoppingRecords();
+  const current = (await db.readDayCommandSnapshot()).snapshot;
+  const original = IDBObjectStore.prototype.put;
+  const fault = vi
+    .spyOn(IDBObjectStore.prototype, "put")
+    .mockImplementation(function (
+      this: IDBObjectStore,
+      ...args: Parameters<typeof original>
+    ) {
+      if (
+        this.name === "syncQueue" &&
+        String(args[1]).includes("meta:v1") &&
+        String(args[1]).includes("eventLists")
+      )
+        throw new DOMException("quota", "QuotaExceededError");
+      return original.apply(this, args);
+    });
+  await expect(
+    h.server.shopping(
+      {
+        ...nextShoppingOrder(current),
+        targetColumn: "execute",
+        executeIds: ["1"],
+      },
+      "head:abort",
+      {},
+    ),
+  ).rejects.toThrow();
+  fault.mockRestore();
+  expect(await physicalShoppingRecords()).toEqual(before);
+});
+it.each(["history-root", "metadata", "checkpoint"])(
+  "rejects a corrupt %s on a cold authenticated item reload",
+  async (corruption) => {
+    const h = await setupShopping();
+    await h.server.shopping(shoppingCommand(), "head:convert", {});
+    const all = await physicalShoppingRecords();
+    const store = corruption === "history-root" ? "eventLists" : "syncQueue";
+    const key =
+      corruption === "history-root"
+        ? '__esp_internal__:day-record:v1:["past",[]]'
+        : [...all.syncQueue.keys()].find(
+            (key) =>
+              key.includes("eventLists") &&
+              key.includes(
+                corruption === "metadata" ? "meta:v1" : "checkpoint:v1",
+              ),
+          )!;
+    const value = structuredClone(all[store].get(key)) as Record<
+      string,
+      unknown
+    >;
+    if (corruption === "history-root")
+      (value.value as Array<{ quantity: number }>)[0].quantity = 999;
+    else if (corruption === "metadata") value.revision = "tampered-root";
+    else
+      (value.committedRoot as { revision: string }).revision =
+        "tampered-checkpoint";
+    const database = await openDatabase();
+    const transaction = database.transaction(store, "readwrite");
+    transaction.objectStore(store).put(value, key);
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onabort = () => reject(transaction.error);
+    });
+    resetDatabaseConnection();
+    await expect(db.readApplicationSnapshot()).rejects.toThrow();
+  },
+);
+
+it.each(["unauthenticated", "object-root", "child-path", "children"])(
+  "rejects the unsupported %s item-head shape without changing ordinary day formats",
+  async (shape) => {
+    const partition = await partitionDayRecordStore("eventLists", {
+      event: [item],
+    });
+    const original = [...partition.state.records.values()][0];
+    const [key, entry] = await prepareDayRecord(
+      "eventLists",
+      "event",
+      shape === "child-path" ? ["1日目"] : [],
+      shape === "object-root" ? { invalid: true } : [item],
+      shape === "children"
+        ? [{ path: ["1日目"], digest: original.digest }]
+        : [],
+    );
+    const head = {
+      ...partition.state.head,
+      checksum: entry.digest.value,
+      ...(shape === "unauthenticated" ? { authenticatedRoots: undefined } : {}),
+    };
+    await expect(
+      decodeDayRecords("eventLists", head, new Map([[key, entry]])),
+    ).rejects.toThrow();
+    const ordinary = await partitionDayRecordStore("executeModeItems", {
+      event: { "1日目": ["1"] },
+    });
+    const compatible = {
+      ...ordinary.state.head,
+      authenticatedRoots: undefined,
+    };
+    expect(
+      (
+        await decodeDayRecords(
+          "executeModeItems",
+          compatible,
+          ordinary.state.records,
+        )
+      ).data,
+    ).toEqual({ event: { "1日目": ["1"] } });
+  },
+);
+
+it("keeps legacy recovery read-only and declines dedicated writes until explicit startup preparation", async () => {
+  const h = await setupShopping(10000, false);
+  const legacy = await physicalShoppingRecords();
+  expect(legacy.eventLists.get("data")).not.toHaveProperty("kind");
+  const writes = vi.spyOn(IDBObjectStore.prototype, "put");
+  const full = await h.server.readFull();
+  expect(full.delta.full?.eventLists.past).toHaveLength(10000);
+  expect(writes).not.toHaveBeenCalled();
+  expect(
+    await h.server.shopping(shoppingCommand(), "cold:unprepared", {}),
+  ).toEqual({ status: "review-required" });
+  expect(h.commit).not.toHaveBeenCalled();
+  expect(writes).not.toHaveBeenCalled();
+  const cold = await db.readDayCommandSnapshot();
+  const plan = planShoppingMove(cold.snapshot, shoppingCommand());
+  await expect(
+    db.commitShoppingCommandSnapshot(plan.snapshot, cold.expectedRoots, {
+      eventName: "event",
+      day: "1日目",
+    }),
+  ).rejects.toThrow("authoritative item root");
+  expect(writes).not.toHaveBeenCalled();
+  const started = await h.server.read();
+  expect(started.eventGenerations).toEqual(h.baseline.eventGenerations);
+  expect(
+    (await physicalShoppingRecords()).eventLists.get("data"),
+  ).toMatchObject({
+    kind: "event-shopping-planner-day-records",
+    storeName: "eventLists",
+    count: 2,
+  });
+  expect(h.read).toHaveBeenCalledWith({
+    shareVerified: true,
+    prepareScopedCommands: true,
+  });
+  writes.mockClear();
+  const clone = vi.spyOn(globalThis, "structuredClone");
+  expect(
+    (await h.server.shopping(shoppingCommand(), "cold:first-prepared", {}))
+      .status,
+  ).toBe("committed");
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(
+    clone.mock.calls.some(
+      ([value]) =>
+        value &&
+        typeof value === "object" &&
+        "event" in value &&
+        "past" in value,
+    ),
+  ).toBe(false);
+  clone.mockRestore();
+  expect(
+    writes.mock.calls.filter(([, key]) => String(key).includes('["past",[]]')),
+  ).toEqual([]);
+  writes.mockRestore();
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.eventLists.past,
+  ).toHaveLength(10000);
+});
+it.each(["restore", "new-event"])(
+  "prepares item roots inside the existing %s transaction before its first move",
+  async (kind) => {
+    const h = await setupShopping(1, false);
+    const snapshot = structuredClone(h.baseline.delta.full!);
+    if (kind === "new-event") {
+      snapshot.eventLists.new = [{ ...item, id: "new-item" }];
+      snapshot.eventConsistency.new = createEventConsistency();
+    } else
+      Object.assign(snapshot.eventLists.event[1] as object, {
+        remarks: "復元後メモ",
+      });
+    await h.server.commit(snapshot, {
+      observationId: h.baseline.observationId,
+      invalidatedEvents: kind === "new-event" ? ["new"] : ["event"],
+      changedStoresOnly: true,
+    });
+    const physical = await physicalShoppingRecords();
+    expect(physical.eventLists.get("data")).toMatchObject({
+      kind: "event-shopping-planner-day-records",
+      storeName: "eventLists",
+      count: kind === "new-event" ? 3 : 2,
+    });
+    const writes = vi.spyOn(IDBObjectStore.prototype, "put");
+    expect(
+      (
+        await h.server.shopping(
+          shoppingCommand(),
+          `first:${kind}`,
+          kind === "restore" ? { event: 1 } : {},
+        )
+      ).status,
+    ).toBe("committed");
+    expect(h.commit).toHaveBeenCalledOnce();
+    expect(
+      writes.mock.calls.filter(([, key]) =>
+        String(key).includes('["past",[]]'),
+      ),
+    ).toEqual([]);
+    writes.mockRestore();
+    expect(
+      (await db.readApplicationSnapshot()).snapshot.eventLists.event.find(
+        (value) => (value as { id: string }).id === "2",
+      ),
+    ).toMatchObject({
+      remarks: kind === "restore" ? "復元後メモ" : "後発メモ",
+      quantity: 7,
+    });
+  },
+);
+
+it("prepares one changed item root once and retains mixed root/child authentication", async () => {
+  const items = Array.from({ length: 500 }, (_, index) => ({
+    ...item,
+    id: `item-${index}`,
+  }));
+  const before = { event: items };
+  const initial = await partitionDayRecordStore("eventLists", before);
+  const after = { event: [...items].reverse() };
+  const clone = vi.spyOn(globalThis, "structuredClone");
+  const write = await patchEventListRecordStore(initial.state, before, after);
+  expect(
+    clone.mock.calls.filter(([value]) => value === after.event),
+  ).toHaveLength(1);
+  clone.mockRestore();
+  const adopted = adoptDayRecordWrite(write);
+  expect(
+    (await decodeDayRecords("eventLists", adopted.head, adopted.records)).data,
+  ).toEqual(after);
+  const days = await partitionDayRecordStore("executeModeItems", {
+    event: { "1日目": ["1"], "2日目": ["other"] },
+  });
+  const mixed = adoptDayRecordWrite(
+    await patchDayRecordStore("executeModeItems", days.state, "event", [
+      { path: [], present: true, value: {} },
+      { path: ["1日目"], present: true, value: ["2"] },
+    ]),
+  );
+  expect(
+    (await decodeDayRecords("executeModeItems", mixed.head, mixed.records))
+      .data,
+  ).toEqual({ event: { "1日目": ["2"], "2日目": ["other"] } });
+});
+
+it.each(["clone", "handle"])(
+  "keeps receipt %s failures before writes without publishing new expected roots",
+  async (failure) => {
+    await setupShopping();
+    const initial = await db.readApplicationSnapshot();
+    await db.commitApplicationSnapshotAtomically(initial.snapshot, {
+      expectedRoots: initial.expectedRoots,
+      changedStoresOnly: true,
+      invalidatedEvents: ["event"],
+    });
+    const target = { eventName: "event", day: "1日目" };
+    const read = (await db.readShoppingCommandSnapshot(target))!;
+    const plan = planShoppingMove(read.snapshot, shoppingCommand());
+    const rootsBefore = new Map(expectedRevisionRoots);
+    const checkpointsBefore = new Map(expectedPersistenceCheckpoints);
+    const physicalBefore = await physicalShoppingRecords();
+    const revision = expectedRevisionRoots.get(
+      getObservedRootKey("eventLists", "data"),
+    )!.revision;
+    const isFutureRoots = (value: unknown) =>
+      value instanceof Map &&
+      value.has("eventLists") &&
+      value.get("eventLists").revision !== revision;
+    const clone = globalThis.structuredClone;
+    const set = WeakMap.prototype.set;
+    const fault =
+      failure === "clone"
+        ? vi
+            .spyOn(globalThis, "structuredClone")
+            .mockImplementation((value, options) => {
+              if (isFutureRoots(value)) throw new Error("receipt clone failed");
+              return clone(value, options);
+            })
+        : vi.spyOn(WeakMap.prototype, "set").mockImplementation(function (
+            this: WeakMap<object, unknown>,
+            key: object,
+            value: unknown,
+          ) {
+            if (key && "roots" in key && isFutureRoots(key.roots))
+              throw new Error("receipt handle failed");
+            return set.call(this, key, value);
+          });
+    const writes = vi.spyOn(IDBObjectStore.prototype, "put");
+    await expect(
+      db.commitShoppingCommandSnapshot(
+        plan.snapshot,
+        read.expectedRoots,
+        target,
+      ),
+    ).rejects.toThrow(`receipt ${failure} failed`);
+    expect(writes).not.toHaveBeenCalled();
+    writes.mockRestore();
+    fault.mockRestore();
+    expect(expectedRevisionRoots).toEqual(rootsBefore);
+    expect(expectedPersistenceCheckpoints).toEqual(checkpointsBefore);
+    expect(await physicalShoppingRecords()).toEqual(physicalBefore);
+    // The original handle still authorizes the unchanged durable state.
+    const receipt = await db.commitShoppingCommandSnapshot(
+      plan.snapshot,
+      read.expectedRoots,
+      target,
+    );
+    expect(receipt.eventGenerations).toEqual({ event: 1 });
+    const next = structuredClone(receipt.snapshot);
+    Object.assign(next.eventLists.event[0] as object, { quantity: 8 });
+    await db.commitApplicationSnapshotAtomically(next, {
+      expectedRoots: receipt.expectedRoots,
+      changedStoresOnly: true,
+    });
+    expect(
+      (await db.readApplicationSnapshot()).snapshot.eventLists.event[0],
+    ).toMatchObject({ id: "2", quantity: 8 });
+  },
+);
+
+it("retains postcommit read fallback for shopping delegates that return void", async () => {
+  await setupShopping();
+  const read = vi.fn(db.readShoppingCommandSnapshot);
+  const commit = vi.fn(
+    async (...args: Parameters<typeof db.commitShoppingCommandSnapshot>) => {
+      await db.commitShoppingCommandSnapshot(...args);
+    },
+  );
+  const server = createPersistenceWorkerServer({
+    ...db,
+    readCachedShoppingCommandSnapshot: undefined,
+    readShoppingCommandSnapshot: read,
+    commitShoppingCommandSnapshot: commit,
+  });
+  await server.read();
+  expect(
+    (await server.shopping(shoppingCommand(), "void:move", {})).status,
+  ).toBe("committed");
+  expect(commit).toHaveBeenCalledOnce();
+  expect(read).toHaveBeenCalledTimes(2);
+});
+
+function shoppingStoragePort(h: Awaited<ReturnType<typeof setupShopping>>) {
+  const methods: string[] = [];
+  class StorageWorker {
+    onmessage?: (event: MessageEvent) => void;
+    postMessage(request: { id: number; method: string; args: unknown[] }) {
+      methods.push(request.method);
+      void (async () => {
+        try {
+          const result =
+            request.method === "read"
+              ? h.baseline
+              : request.method === "shopping"
+                ? await h.server.shopping(
+                    request.args[0] as ReturnType<typeof shoppingCommand>,
+                    request.args[1] as string,
+                    {},
+                  )
+                : request.method === "readFull"
+                  ? await h.server.readFull()
+                  : (() => {
+                      throw new Error("Unexpected protocol method");
+                    })();
+          this.onmessage?.({
+            data: { id: request.id, result },
+          } as MessageEvent);
+        } catch (error) {
+          const value = error as Error;
+          this.onmessage?.({
+            data: {
+              id: request.id,
+              error: { name: value.name, message: value.message },
+            },
+          } as MessageEvent);
+        }
+      })();
+    }
+    terminate() {}
+  }
+  vi.stubGlobal("Worker", StorageWorker);
+  return { methods, port: createWorkerPersistenceCommandAdapter() };
+}
+
+it("recovers a native receipt delta failure once without resending or postcommit command reads", async () => {
+  const h = await setupShopping();
+  const { port, methods } = shoppingStoragePort(h);
+  await port.readApplicationSnapshot();
+  const fault = vi
+    .spyOn(snapshotDeltas, "daySnapshotDelta")
+    .mockImplementationOnce(() => {
+      throw new Error("delta build failed");
+    });
+  const result = await port.commitShoppingMove!(
+    shoppingCommand(),
+    "receipt:delta",
+    {},
+  );
+  fault.mockRestore();
+  expect(result.status).toBe("committed");
+  expect(methods).toEqual(["read", "shopping", "readFull"]);
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(h.shoppingRead).not.toHaveBeenCalled();
+  expect(h.cachedRead).toHaveBeenCalledOnce();
+  expect(h.read).toHaveBeenCalledOnce();
+  expect(h.read).toHaveBeenCalledWith({
+    shareVerified: true,
+    prepareScopedCommands: false,
+  });
+  expect(port.getWriteStopReason!()).toBeUndefined();
+});
+
+it("stops after a native durable cache-adoption failure without exposing a receipt or recovering automatically", async () => {
+  const h = await setupShopping();
+  const { port, methods } = shoppingStoragePort(h);
+  await port.readApplicationSnapshot();
+  const key = getObservedRootKey("eventLists", "data");
+  const revision = expectedRevisionRoots.get(key)!.revision;
+  const set = expectedRevisionRoots.set;
+  const fault = vi
+    .spyOn(expectedRevisionRoots, "set")
+    .mockImplementation(function (entryKey, value) {
+      if (entryKey === key && value.revision !== revision)
+        throw new Error("durable cache adoption failed");
+      return set.call(expectedRevisionRoots, entryKey, value);
+    });
+  await expect(
+    port.commitShoppingMove!(shoppingCommand(), "receipt:unknown", {}),
+  ).rejects.toMatchObject({ name: "PersistenceOutcomeUnknownError" });
+  fault.mockRestore();
+  expect(methods).toEqual(["read", "shopping"]);
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(h.shoppingRead).not.toHaveBeenCalled();
+  expect(h.cachedRead).toHaveBeenCalledOnce();
+  expect(h.read).not.toHaveBeenCalled();
+  expect(port.getWriteStopReason!()).toMatchObject({
+    name: "PersistenceOutcomeUnknownError",
+  });
+  expect(
+    (await db.readApplicationSnapshot()).snapshot.eventLists.event.map(
+      (entry) => (entry as { id: string }).id,
+    ),
+  ).toEqual(["2", "1", "other-day"]);
+});
+
+it.each(["remove", "add"])(
+  "persists own undefined field %s in an item root without rewriting equal frozen history",
+  async (change) => {
+    const withFields = {
+      ...item,
+      url: undefined,
+      assignedTo: undefined,
+      customField: { optional: undefined },
+    };
+    const withoutFields = { ...item, customField: {} };
+    const before = {
+      event: [change === "remove" ? withFields : withoutFields],
+      past: [Object.freeze({ ...item, id: "past" })],
+    };
+    const initial = await partitionDayRecordStore("eventLists", before);
+    const historyKey = [...initial.state.records.keys()].find((key) =>
+      key.includes('["past",[]]'),
+    )!;
+    const history = initial.state.records.get(historyKey);
+    const after = {
+      event: [change === "remove" ? withoutFields : withFields],
+      past: [{ ...item, id: "past" }],
+    };
+    const write = await patchEventListRecordStore(initial.state, before, after);
+    expect([...write.puts.keys()]).toHaveLength(1);
+    expect(write.puts.has(historyKey)).toBe(false);
+    const adopted = adoptDayRecordWrite(write);
+    expect(adopted.records.get(historyKey)).toBe(history);
+    const data = (
+      await decodeDayRecords("eventLists", adopted.head, adopted.records)
+    ).data as typeof after;
+    expect(data).toEqual(after);
+    expect(Object.prototype.hasOwnProperty.call(data.event[0], "url")).toBe(
+      change === "add",
+    );
+    expect(
+      Object.prototype.hasOwnProperty.call(data.event[0], "assignedTo"),
+    ).toBe(change === "add");
+    expect(
+      Object.prototype.hasOwnProperty.call(
+        data.event[0].customField,
+        "optional",
+      ),
+    ).toBe(change === "add");
+  },
+);
+
+it("uses only the current complete private shopping cache and never accepts a changed database or fallback key", async () => {
+  await setupShopping();
+  const target = { eventName: "event", day: "1日目" };
+  const database = await openDatabase();
+  const transactions = vi.spyOn(database, "transaction");
+  expect(await db.readCachedShoppingCommandSnapshot(target)).toBeDefined();
+  expect(transactions).not.toHaveBeenCalled();
+  localStorage.setItem(`${RUNTIME_FALLBACK_NAMESPACE}:changed`, "new fallback");
+  expect(await db.readCachedShoppingCommandSnapshot(target)).toBeUndefined();
+  localStorage.removeItem(`${RUNTIME_FALLBACK_NAMESPACE}:changed`);
+  transactions.mockRestore();
+  resetDatabaseConnection();
+  vi.stubGlobal("indexedDB", new IDBFactory());
+  expect(await db.readCachedShoppingCommandSnapshot(target)).toBeUndefined();
+});
+
+it.each(["eligibility", "planner-exception"])(
+  "freshly rechecks a cached %s result before deciding a shopping outcome",
+  async (failure) => {
+    const h = await setupShopping();
+    if (failure === "eligibility") {
+      h.cachedRead.mockImplementationOnce(async (target) => {
+        const cached = (await db.readCachedShoppingCommandSnapshot(target))!;
+        return { ...cached, eventGenerations: { event: 1 } };
+      });
+    }
+    const fault =
+      failure === "planner-exception"
+        ? vi
+            .spyOn(shoppingPlanner, "planShoppingMove")
+            .mockImplementationOnce(() => {
+              throw new Error("stale cached plan");
+            })
+        : undefined;
+    const { port, methods } = shoppingStoragePort(h);
+    await port.readApplicationSnapshot();
+    const result = await port.commitShoppingMove!(
+      shoppingCommand(),
+      "cached:recheck",
+      {},
+    );
+    fault?.mockRestore();
+    expect(result.status).toBe("committed");
+    expect(h.cachedRead).toHaveBeenCalledOnce();
+    expect(h.shoppingRead).toHaveBeenCalledExactlyOnceWith(
+      { eventName: "event", day: "1日目" },
+      { freshComplete: true },
+    );
+    expect(h.commit).toHaveBeenCalledOnce();
+    expect(methods).toEqual(["read", "shopping", "readFull"]);
+    expect(h.read).toHaveBeenCalledOnce();
+    if (result.status !== "committed") throw new Error("not committed");
+    expect(result.read.snapshot).toEqual(
+      (await db.readApplicationSnapshot()).snapshot,
+    );
+  },
+);
+
+function trackShoppingWriteTransactions(database: IDBDatabase) {
+  const rows: Array<{ puts: number; outcome: string }> = [];
+  const observed = new WeakMap<IDBTransaction, (typeof rows)[number]>();
+  let enabled = false;
+  const transaction = database.transaction;
+  const txSpy = vi.spyOn(database, "transaction").mockImplementation(function (
+    ...args: Parameters<typeof transaction>
+  ) {
+    const tx = transaction.apply(database, args);
+    if (enabled && args[1] === "readwrite") {
+      const row = { puts: 0, outcome: "pending" };
+      rows.push(row);
+      observed.set(tx, row);
+      tx.addEventListener("complete", () => {
+        row.outcome = "complete";
+      });
+      tx.addEventListener("abort", () => {
+        row.outcome = "abort";
+      });
+    }
+    return tx;
+  });
+  const put = IDBObjectStore.prototype.put;
+  const putSpy = vi
+    .spyOn(IDBObjectStore.prototype, "put")
+    .mockImplementation(function (
+      this: IDBObjectStore,
+      ...args: Parameters<typeof put>
+    ) {
+      const row = observed.get(this.transaction);
+      if (row) row.puts++;
+      return put.apply(this, args);
+    });
+  return {
+    rows,
+    begin: () => {
+      enabled = true;
+    },
+    stop: () => {
+      txSpy.mockRestore();
+      putSpy.mockRestore();
+    },
+  };
+}
+
+async function changeShoppingStateAfterBaseline(change: string) {
+  if (change === "control" || change === "checkpoint") {
+    const database = await openDatabase();
+    const physical = await physicalShoppingRecords();
+    const checkpointKey = [...physical.syncQueue.keys()].find(
+      (key) =>
+        key.includes("checkpoint:v1") && key.includes("hallRouteSettings"),
+    )!;
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction("syncQueue", "readwrite");
+      const store = transaction.objectStore("syncQueue");
+      if (change === "control")
+        store.put({ unexpected: true }, CONSISTENCY_MIGRATION_KEY);
+      else
+        store.put(
+          {
+            ...(physical.syncQueue.get(checkpointKey) as object),
+            updatedAt: "2026-10-21T13:00:00.000Z",
+          },
+          checkpointKey,
+        );
+      transaction.oncomplete = () => resolve();
+      transaction.onabort = () => reject(transaction.error);
+    });
+    return;
+  }
+  const read = await db.readApplicationSnapshot();
+  const next = read.snapshot;
+  if (change === "content")
+    Object.assign(next.eventLists.event[1] as object, {
+      quantity: 13,
+      remarks: "基準取得後メモ",
+      url: "https://example.com/latest",
+      customField: { latest: true },
+    });
+  else if (change === "other-day") {
+    Object.assign(next.eventLists.event[2] as object, {
+      remarks: "別日の最新メモ",
+    });
+    next.dayModes.event["2日目"] = "execute";
+  } else if (change === "other-event")
+    Object.assign(next.eventLists.past[0] as object, {
+      remarks: "過去イベントの最新メモ",
+    });
+  else if (change === "membership") next.executeModeItems.event["1日目"] = [];
+  await db.commitApplicationSnapshotAtomically(next, {
+    expectedRoots: read.expectedRoots,
+    changedStoresOnly: true,
+    ...(change === "generation" ? { invalidatedEvents: ["event"] } : {}),
+  });
+}
+
+it.each([
+  "content",
+  "other-day",
+  "other-event",
+  "membership",
+  "generation",
+  "control",
+  "checkpoint",
+])(
+  "checks every shopping CAS before puts and freshly replans a stale %s cache",
+  async (change) => {
+    const h = await setupShopping();
+    const tracked = trackShoppingWriteTransactions(await openDatabase());
+    h.cachedRead.mockImplementationOnce(async (target) => {
+      const old = (await db.readCachedShoppingCommandSnapshot(target))!;
+      expect(old).toBeDefined();
+      await changeShoppingStateAfterBaseline(change);
+      tracked.begin();
+      return old;
+    });
+    const { port, methods } = shoppingStoragePort(h);
+    await port.readApplicationSnapshot();
+    const result = await port.commitShoppingMove!(
+      shoppingCommand(),
+      `cached:${change}`,
+      {},
+    );
+    expect(h.cachedRead).toHaveBeenCalledOnce();
+    expect(h.shoppingRead).toHaveBeenCalledExactlyOnceWith(
+      { eventName: "event", day: "1日目" },
+      { freshComplete: true },
+    );
+    expect(tracked.rows[0]).toEqual({ puts: 0, outcome: "abort" });
+    const blocked = ["membership", "generation", "control"].includes(change);
+    if (blocked) {
+      expect(result).toEqual({ status: "review-required" });
+      expect(h.commit).toHaveBeenCalledOnce();
+      expect(tracked.rows).toHaveLength(1);
+      expect(methods).toEqual(["read", "shopping"]);
+    } else {
+      expect(result.status).toBe("committed");
+      expect(h.commit).toHaveBeenCalledTimes(2);
+      expect(tracked.rows).toHaveLength(2);
+      expect(tracked.rows[1].outcome).toBe("complete");
+      expect(tracked.rows[1].puts).toBeGreaterThan(0);
+      expect(methods).toEqual(["read", "shopping", "readFull"]);
+      expect(h.read).toHaveBeenCalledOnce();
+      if (result.status !== "committed") throw new Error("not committed");
+      const durable = (await db.readApplicationSnapshot()).snapshot;
+      expect(result.read.snapshot).toEqual(durable);
+      expect(
+        durable.eventLists.event.map((entry) => (entry as { id: string }).id),
+      ).toEqual(["2", "1", "other-day"]);
+      if (change === "content")
+        expect(result.read.snapshot.eventLists.event[0]).toMatchObject({
+          quantity: 13,
+          remarks: "基準取得後メモ",
+          url: "https://example.com/latest",
+          customField: { latest: true },
+        });
+      if (change === "other-day")
+        expect(result.read.snapshot.eventLists.event[2]).toMatchObject({
+          remarks: "別日の最新メモ",
+        });
+      if (change === "other-event")
+        expect(result.read.snapshot.eventLists.past[0]).toMatchObject({
+          remarks: "過去イベントの最新メモ",
+        });
+    }
+    expect(port.getWriteStopReason!()).toBeUndefined();
+    tracked.stop();
+  },
+);
+
+it("does not hide a newer same-screen cached snapshot behind an order-only acknowledgement", async () => {
+  const h = await setupShopping();
+  const { port, methods } = shoppingStoragePort(h);
+  await port.readApplicationSnapshot();
+  await changeShoppingStateAfterBaseline("content");
+  const result = await port.commitShoppingMove!(
+    shoppingCommand(),
+    "cached:latest-before-plan",
+    {},
+  );
+  expect(result.status).toBe("committed");
+  expect(h.commit).toHaveBeenCalledOnce();
+  expect(h.shoppingRead).not.toHaveBeenCalled();
+  expect(methods).toEqual(["read", "shopping", "readFull"]);
+  if (result.status !== "committed") throw new Error("not committed");
+  expect(result.read.snapshot.eventLists.event[0]).toMatchObject({
+    quantity: 13,
+    remarks: "基準取得後メモ",
+    customField: { latest: true },
+  });
+  expect(result.read.snapshot).toEqual(
+    (await db.readApplicationSnapshot()).snapshot,
+  );
+});
+
+it("publishes the native receipt as the next warm baseline and captures caller order before awaits", async () => {
+  const h = await setupShopping();
+  const first = await h.server.shopping(shoppingCommand(), "cached:first", {});
+  expect(first.status).toBe("committed");
+  if (first.status !== "committed" || !first.read)
+    throw new Error("missing order delta");
+  const read = (await db.readCachedShoppingCommandSnapshot({
+    eventName: "event",
+    day: "1日目",
+  }))!;
+  const second = await h.server.shopping(
+    nextShoppingOrder(read.snapshot),
+    "cached:second",
+    {},
+  );
+  expect(second.status).toBe("committed");
+  if (second.status !== "committed" || !second.read)
+    throw new Error("missing second order delta");
+  expect(second.read.delta.shoppingOrder).toBeDefined();
+  expect(h.shoppingRead).not.toHaveBeenCalled();
+  const current = (await db.readCachedShoppingCommandSnapshot({
+    eventName: "event",
+    day: "1日目",
+  }))!;
+  const plan = planShoppingMove(
+    current.snapshot,
+    nextShoppingOrder(current.snapshot, true),
+  );
+  const caller = {
+    ...plan.snapshot,
+    executeModeItems: {
+      ...plan.snapshot.executeModeItems,
+      event: {
+        ...plan.snapshot.executeModeItems.event,
+        "1日目": [] as string[],
+      },
+    },
+  };
+  const pending = db.commitShoppingCommandSnapshot(
+    caller,
+    current.expectedRoots,
+    { eventName: "event", day: "1日目" },
+  );
+  plan.snapshot.eventLists.event.reverse();
+  caller.executeModeItems.event["1日目"] = ["2"];
+  const receipt = await pending;
+  expect(
+    receipt.snapshot.eventLists.event.map(
+      (entry) => (entry as { id: string }).id,
+    ),
+  ).toEqual(["2", "1", "other-day"]);
+  expect(receipt.snapshot.executeModeItems.event["1日目"]).toEqual([]);
+  expect(receipt.snapshot).toEqual(
+    (await db.readApplicationSnapshot()).snapshot,
+  );
+});
+
+async function preparedCaptureOrder(prototypeId = false) {
+  await setupShopping();
+  const initial = await db.readApplicationSnapshot();
+  initial.snapshot.eventLists.event = Array.from(
+    { length: 500 },
+    (_, index) => ({
+      ...item,
+      id: prototypeId && index === 499 ? "__proto__" : String(index + 1),
+      number: String(index + 1),
+      customField: { nested: { keep: true }, optional: undefined },
+    }),
+  );
+  initial.snapshot.executeModeItems.event = { "1日目": ["1"] };
+  await db.commitApplicationSnapshotAtomically(initial.snapshot, {
+    expectedRoots: initial.expectedRoots,
+    changedStoresOnly: true,
+  });
+  await db.readApplicationSnapshot({
+    shareVerified: true,
+    prepareScopedCommands: false,
+  });
+  const target = { eventName: "event", day: "1日目" };
+  const read = (await db.readCachedShoppingCommandSnapshot(target))!;
+  const ids = read.snapshot.eventLists.event.map(
+    (entry) => (entry as { id: string }).id,
+  );
+  const command = {
+    ...shoppingCommand(),
+    baselineItemIds: ids,
+    itemIds: [ids[1], ids[0], ...ids.slice(2)],
+    baselineVisits: shoppingMoveVisitBaseline(read.snapshot, "event", "1日目"),
+  };
+  return { read, target, plan: planShoppingMove(read.snapshot, command), ids };
+}
+function observeItemCaptureClones(incoming: unknown[]) {
+  const clone = globalThis.structuredClone;
+  const rows: Array<{ incoming: boolean; count: number }> = [];
+  const spy = vi
+    .spyOn(globalThis, "structuredClone")
+    .mockImplementation((value, options) => {
+      if (
+        Array.isArray(value) &&
+        value.length === 500 &&
+        value.every(
+          (entry) => entry && typeof entry === "object" && "id" in entry,
+        )
+      )
+        rows.push({ incoming: value === incoming, count: value.length });
+      return clone(value, options);
+    });
+  return { rows, stop: () => spy.mockRestore() };
+}
+
+it("captures a private frozen 500-item permutation without cloning its contents and retains the physical root clone", async () => {
+  const h = await preparedCaptureOrder();
+  const incoming = h.plan.snapshot.eventLists.event;
+  const baselineById = new Map(
+    h.read.snapshot.eventLists.event.map((entry) => [
+      (entry as { id: string }).id,
+      entry,
+    ]),
+  );
+  for (const entry of incoming)
+    expect(entry).toBe(baselineById.get((entry as { id: string }).id));
+  const nested = (incoming[0] as { customField: { nested: { keep: boolean } } })
+    .customField.nested;
+  expect(Object.isFrozen(nested)).toBe(true);
+  expect(Reflect.set(nested, "keep", false)).toBe(false);
+  const clones = observeItemCaptureClones(incoming);
+  const pending = db.commitShoppingCommandSnapshot(
+    h.plan.snapshot,
+    h.read.expectedRoots,
+    h.target,
+  );
+  incoming.reverse();
+  const receipt = await pending;
+  clones.stop();
+  expect(clones.rows).toEqual([{ incoming: false, count: 500 }]);
+  expect(
+    receipt.snapshot.eventLists.event.map(
+      (entry) => (entry as { id: string }).id,
+    ),
+  ).toEqual([h.ids[1], h.ids[0], ...h.ids.slice(2)]);
+  expect(receipt.snapshot.eventLists.event).not.toBe(incoming);
+  expect(receipt.snapshot.eventLists.event[0]).toBe(baselineById.get("2"));
+  expect(receipt.snapshot.eventLists.event[0]).toMatchObject({
+    quantity: 1,
+    customField: { nested: { keep: true } },
+  });
+  expect(receipt.snapshot).toEqual(
+    (await db.readApplicationSnapshot()).snapshot,
+  );
+});
+
+it("deep-captures equal caller item clones and isolates later optional/content mutations", async () => {
+  const h = await preparedCaptureOrder();
+  const incoming = structuredClone(h.plan.snapshot.eventLists.event);
+  const caller = {
+    ...h.plan.snapshot,
+    eventLists: { ...h.plan.snapshot.eventLists, event: incoming },
+  };
+  const clones = observeItemCaptureClones(incoming);
+  const pending = db.commitShoppingCommandSnapshot(
+    caller,
+    h.read.expectedRoots,
+    h.target,
+  );
+  Object.assign(incoming[0] as object, {
+    quantity: 42,
+    remarks: "呼び出し後のメモ",
+  });
+  (
+    incoming[0] as { customField: { nested: { keep: boolean } } }
+  ).customField.nested.keep = false;
+  incoming.reverse();
+  const receipt = await pending;
+  clones.stop();
+  expect(clones.rows).toEqual([
+    { incoming: true, count: 500 },
+    { incoming: false, count: 500 },
+  ]);
+  expect(receipt.snapshot.eventLists.event[0]).toMatchObject({
+    id: "2",
+    quantity: 1,
+    remarks: "",
+    customField: { nested: { keep: true } },
+  });
+  expect(receipt.snapshot.eventLists.event[0]).not.toBe(
+    h.read.snapshot.eventLists.event[1],
+  );
+  expect(receipt.snapshot).toEqual(
+    (await db.readApplicationSnapshot()).snapshot,
+  );
+});
+
+it("keeps general application saves on the original complete capture path", async () => {
+  const h = await preparedCaptureOrder();
+  const caller = h.plan.snapshot;
+  const clone = globalThis.structuredClone;
+  let completeCaptures = 0;
+  const spy = vi
+    .spyOn(globalThis, "structuredClone")
+    .mockImplementation((value, options) => {
+      if (
+        value &&
+        typeof value === "object" &&
+        "eventLists" in value &&
+        value.eventLists === caller.eventLists
+      )
+        completeCaptures++;
+      return clone(value, options);
+    });
+  const pending = db.commitApplicationSnapshotAtomically(caller, {
+    expectedRoots: h.read.expectedRoots,
+    changedStoresOnly: true,
+  });
+  caller.eventLists.event.reverse();
+  await pending;
+  spy.mockRestore();
+  expect(completeCaptures).toBe(1);
+  const durable = (await db.readApplicationSnapshot()).snapshot;
+  expect(
+    durable.eventLists.event.map((entry) => (entry as { id: string }).id),
+  ).toEqual([h.ids[1], h.ids[0], ...h.ids.slice(2)]);
+});
+
+it.each(["duplicate", "hole"])(
+  "keeps %s item order arrays on the ordinary deep-capture failure path before writes",
+  async (kind) => {
+    const h = await preparedCaptureOrder();
+    const incoming = h.plan.snapshot.eventLists.event;
+    if (kind === "duplicate") incoming[5] = incoming[4];
+    else delete incoming[5];
+    const roots = new Map(expectedRevisionRoots);
+    const clone = globalThis.structuredClone;
+    let captured = 0;
+    const spy = vi
+      .spyOn(globalThis, "structuredClone")
+      .mockImplementation((value, options) => {
+        if (value === incoming) {
+          captured++;
+          throw new Error("ordinary item capture failed");
+        }
+        return clone(value, options);
+      });
+    const puts = vi.spyOn(IDBObjectStore.prototype, "put");
+    // Exercise the private shopping flag at the atomic boundary without persisting invalid input.
+    await expect(
+      db.commitApplicationSnapshotAtomically(
+        h.plan.snapshot,
+        { expectedRoots: h.read.expectedRoots, changedStoresOnly: true },
+        h.target,
+        true,
+      ),
+    ).rejects.toThrow("ordinary item capture failed");
+    expect(captured).toBe(1);
+    expect(puts).not.toHaveBeenCalled();
+    expect(expectedRevisionRoots).toEqual(roots);
+    puts.mockRestore();
+    spy.mockRestore();
+    expect(
+      (await db.readApplicationSnapshot()).snapshot.eventLists.event.map(
+        (entry) => (entry as { id: string }).id,
+      ),
+    ).toEqual(h.ids);
+  },
+);
+
+it("deep-captures prototype-like item IDs while preserving the valid saved order", async () => {
+  const h = await preparedCaptureOrder(true);
+  const incoming = h.plan.snapshot.eventLists.event;
+  const clones = observeItemCaptureClones(incoming);
+  const receipt = await db.commitShoppingCommandSnapshot(
+    h.plan.snapshot,
+    h.read.expectedRoots,
+    h.target,
+  );
+  clones.stop();
+  expect(clones.rows).toEqual([
+    { incoming: true, count: 500 },
+    { incoming: false, count: 500 },
+  ]);
+  expect(
+    receipt.snapshot.eventLists.event.map(
+      (entry) => (entry as { id: string }).id,
+    ),
+  ).toEqual([h.ids[1], h.ids[0], ...h.ids.slice(2)]);
+  expect((receipt.snapshot.eventLists.event[499] as { id: string }).id).toBe(
+    "__proto__",
+  );
+});
+
+it("keeps current-version generic moves, cold export/restore and atomic abort usable with every shopping capability disabled", async () => {
+  const { buildWorkerBackup } = await import("./backupWorkerServer");
+  const { parseAppBackup } = await import("../../utils/appBackup");
+  await setupShopping(1000);
+  const prepared = await physicalShoppingRecords();
+  expect(prepared.eventLists.get("data")).toMatchObject({
+    kind: "event-shopping-planner-day-records",
+    authenticatedRoots: true,
+  });
+  const cached = vi.spyOn(db, "readCachedShoppingCommandSnapshot");
+  const shopping = vi.spyOn(db, "readShoppingCommandSnapshot");
+  const dedicated = vi.spyOn(db, "commitShoppingCommandSnapshot");
+  const initial = await db.readApplicationSnapshot();
+  let current = initial.snapshot;
+  const applied = vi.fn((snapshot: PersistenceSnapshot) => {
+    current = snapshot;
+  });
+  const genericCommit = vi.fn(
+    async (
+      snapshot: PersistenceSnapshot,
+      expectedRoots: object,
+      _base: PersistenceSnapshot,
+      invalidatedEvents?: readonly string[],
+    ) => {
+      await db.commitApplicationSnapshotAtomically(snapshot, {
+        expectedRoots,
+        changedStoresOnly: true,
+        invalidatedEvents,
+      });
+    },
+  );
+  const makeCoordinator = () =>
+    createApplicationMutationCoordinator({
+      readCurrent: () => current,
+      drain: async () => {},
+      readDurable: () => db.readApplicationSnapshot(),
+      commit: genericCommit,
+      apply: applied,
+      // No shopping/item/day command, scoped-read, or scoped-commit capability.
+    });
+  const coordinator = makeCoordinator();
+  coordinator.initializeEventGenerations(initial);
+  const moved = await coordinator.request({
+    id: "rollback:generic-move",
+    events: ["event"],
+    shoppingMove: shoppingCommand(),
+    plan: (snapshot) => planShoppingMove(snapshot, shoppingCommand()),
+  });
+  expect(moved.status).toBe("committed");
+  expect(genericCommit).toHaveBeenCalledOnce();
+  expect(applied).toHaveBeenCalledOnce();
+  expect(
+    current.eventLists.event.map((entry) => (entry as { id: string }).id),
+  ).toEqual(["2", "1", "other-day"]);
+  expect(current.executeModeItems.event).toEqual({
+    "1日目": [],
+    "2日目": ["other-day"],
+  });
+  expect(current.eventLists.event[0]).toMatchObject({
+    quantity: 7,
+    remarks: "後発メモ",
+    customField: { keep: true },
+  });
+  expect(current.eventLists.past).toHaveLength(1000);
+  expect(
+    (await physicalShoppingRecords()).eventLists.get("data"),
+  ).toMatchObject({
+    kind: "event-shopping-planner-day-records",
+    authenticatedRoots: true,
+  });
+
+  resetDatabaseConnection();
+  const readOnlyPuts = vi.spyOn(IDBObjectStore.prototype, "put");
+  const cold = await db.readApplicationSnapshot({
+    prepareScopedCommands: false,
+  });
+  expect(cold.snapshot).toEqual(current);
+  expect((await db.getAllData("eventLists")).data).toEqual(current.eventLists);
+  const backup = await buildWorkerBackup(db.readApplicationSnapshot, {
+    changes: [],
+  });
+  expect(readOnlyPuts).not.toHaveBeenCalled();
+  readOnlyPuts.mockRestore();
+  if (!("file" in backup)) throw new Error("missing logical backup");
+  const parsed = parseAppBackup(await backup.file.blob.text());
+  if (!parsed.ok) throw new Error("invalid logical backup");
+  expect(parsed.data).toEqual(current);
+  expect(parsed.data.eventLists).not.toHaveProperty("kind");
+
+  const changed = structuredClone(cold.snapshot.eventLists);
+  Object.assign(changed.event[0] as object, {
+    quantity: 99,
+    remarks: "復元前の変更",
+  });
+  await db.saveEventLists(changed);
+  const beforeRestore = await db.readApplicationSnapshot();
+  expect(beforeRestore.snapshot.eventLists.event[0]).toMatchObject({
+    quantity: 99,
+  });
+  await db.restoreAppDataAtomically(parsed.data, {
+    expectedRoots: beforeRestore.expectedRoots,
+    invalidatedEvents: ["event", "past"],
+  });
+  resetDatabaseConnection();
+  const restored = await db.readApplicationSnapshot({
+    prepareScopedCommands: false,
+  });
+  expect(restored.snapshot).toEqual(parsed.data);
+  expect(restored.eventGenerations).toMatchObject({ event: 1, past: 1 });
+  expect(
+    (await physicalShoppingRecords()).eventLists.get("data"),
+  ).toMatchObject({
+    kind: "event-shopping-planner-day-records",
+    authenticatedRoots: true,
+  });
+  current = restored.snapshot;
+  applied.mockClear();
+  genericCommit.mockClear();
+  const rollback = makeCoordinator();
+  rollback.initializeEventGenerations(restored);
+  const beforeAbort = await physicalShoppingRecords();
+  const command = nextShoppingOrder(restored.snapshot);
+  const put = IDBObjectStore.prototype.put;
+  let faultReached = false;
+  const fault = vi
+    .spyOn(IDBObjectStore.prototype, "put")
+    .mockImplementation(function (
+      this: IDBObjectStore,
+      ...args: Parameters<typeof put>
+    ) {
+      if (
+        this.name === "syncQueue" &&
+        String(args[1]).includes("meta:v1") &&
+        String(args[1]).includes("eventLists")
+      ) {
+        faultReached = true;
+        throw new DOMException("rollback quota fault", "QuotaExceededError");
+      }
+      return put.apply(this, args);
+    });
+  await expect(
+    rollback.request({
+      id: "rollback:abort",
+      events: ["event"],
+      shoppingMove: command,
+      plan: (snapshot) => planShoppingMove(snapshot, command),
+    }),
+  ).rejects.toThrow("rollback quota fault");
+  fault.mockRestore();
+  expect(faultReached).toBe(true);
+  expect(genericCommit).toHaveBeenCalledOnce();
+  expect(applied).not.toHaveBeenCalled();
+  expect(current).toBe(restored.snapshot);
+  expect(await physicalShoppingRecords()).toEqual(beforeAbort);
+  resetDatabaseConnection();
+  expect(
+    (await db.readApplicationSnapshot({ prepareScopedCommands: false }))
+      .snapshot,
+  ).toEqual(parsed.data);
+  expect(cached).not.toHaveBeenCalled();
+  expect(shopping).not.toHaveBeenCalled();
+  expect(dedicated).not.toHaveBeenCalled();
+});

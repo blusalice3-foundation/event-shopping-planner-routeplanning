@@ -1,3 +1,4 @@
+import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import { expect, test, type Page } from "@playwright/test";
 import { migrateLegacyConsistency } from "../../src/features/consistency/domain/migration";
 import {
@@ -7,6 +8,7 @@ import {
 } from "../../src/test/sheetImportOptionalUrlFixtures";
 
 async function stored(page: Page, name: string) {
+  if (name === "eventLists") return readBrowserEventLists(page);
   return page.evaluate(async (name) => {
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("EventShoppingPlannerDB");
