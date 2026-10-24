@@ -6,6 +6,7 @@ import {
 import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import { measureShoppingResponse } from "./shopping-performance-evidence";
 import { prepareTransferSourceOrigin } from "./shopping-transfer-measurement";
+import { captureAcceptedSelectionPostcondition } from "./shopping-transfer-scenarios";
 
 test.use({ trace: "off", video: "off" });
 for (const delay of [0, 150]) {
@@ -59,6 +60,335 @@ test("shopping UI observer uses the active visit instead of retained hidden rows
   expect(sample.matched).toBe(true);
 });
 
+for (const delayedRow of ["old-card", "placeholder"] as const) {
+  test(`shopping UI observer waits for every visible visit row: ${delayedRow}`, async ({
+    page,
+  }) => {
+    await page.setContent(`
+      <div data-testid="focus-mode-header">Visit A</div>
+      <button id="next">next</button>
+      <div data-testid="focus-mode-scroll-region" style="height:120px;overflow:auto">
+        <div data-viewport-list>
+          <div style="height:40px"><div id="first" data-item-id="old-1">old first</div></div>
+          <div id="second" style="height:40px">${delayedRow === "old-card" ? '<div data-item-id="old-2">old second</div>' : '<div data-viewport-active="false" data-viewport-row-key="focus:new-2"><div class="esp-viewport-placeholder" data-row-key="focus:new-2">new second placeholder</div></div>'}</div>
+        </div>
+      </div>`);
+    await page.locator("#next").evaluate((button) => {
+      button.addEventListener("click", () => {
+        document.querySelector(
+          '[data-testid="focus-mode-header"]',
+        )!.textContent = "Visit B";
+        document.querySelector<HTMLElement>("#first")!.dataset.itemId = "new-1";
+        setTimeout(() => {
+          document.querySelector("#second")!.innerHTML =
+            '<div data-item-id="new-2">new second</div>';
+        }, 250);
+      });
+    });
+    const sample = await measureShoppingResponse(
+      page.locator("#next"),
+      "button",
+      {
+        targetId: "new-1",
+        visitNumber: "Visit B",
+        visitItemIds: ["new-1", "new-2"],
+      },
+    );
+    expect(sample.matched).toBe(true);
+    expect(sample.uiMs).toBeGreaterThanOrEqual(250);
+    expect(sample.uiMs - sample.legacyMs).toBeGreaterThan(100);
+    await expect(page.locator('[data-item-id="new-2"]')).toBeVisible();
+  });
+}
+
+for (const retained of [true, false]) {
+  test(`shopping UI observer waits for an absent visible row (${retained ? "retained slots" : "virtual frontier"})`, async ({
+    page,
+  }) => {
+    await page.setContent(`
+      <div data-testid="focus-mode-header">Visit A</div><button id="next">next</button>
+      <div data-testid="focus-mode-scroll-region" style="height:120px;overflow:auto">
+        <div id="visit" ${retained ? "data-viewport-list" : ""}><div data-item-id="new-1" style="height:40px">first row only</div></div>
+      </div>`);
+    await page.locator("#next").evaluate((button) => {
+      button.addEventListener("click", () => {
+        document.querySelector(
+          '[data-testid="focus-mode-header"]',
+        )!.textContent = "Visit B";
+        setTimeout(() => {
+          document
+            .querySelector("#visit")!
+            .insertAdjacentHTML(
+              "beforeend",
+              '<div data-item-id="new-2" style="height:40px">second row</div>',
+            );
+        }, 250);
+      });
+    });
+    const sample = await measureShoppingResponse(
+      page.locator("#next"),
+      "button",
+      {
+        targetId: "new-1",
+        visitNumber: "Visit B",
+        visitItemIds: ["new-1", "new-2"],
+      },
+    );
+    expect(sample.matched).toBe(true);
+    expect(sample.uiMs).toBeGreaterThanOrEqual(250);
+    expect(sample.uiMs - sample.legacyMs).toBeGreaterThan(100);
+  });
+}
+
+for (const invalidOrder of ["duplicate", "missing-middle"] as const) {
+  test(`shopping UI observer rejects ${invalidOrder} visible membership until repaired`, async ({
+    page,
+  }) => {
+    const initialIds =
+      invalidOrder === "duplicate"
+        ? ["new-1", "new-1", "new-3"]
+        : ["new-1", "new-3"];
+    await page.setContent(`
+      <div data-testid="focus-mode-header">Visit A</div><button id="next">next</button>
+      <div data-testid="focus-mode-scroll-region" style="height:160px;overflow:auto">
+        <div id="visit">${initialIds.map((id) => `<div data-item-id="${id}" style="height:40px">${id}</div>`).join("")}</div>
+      </div>`);
+    await page.locator("#next").evaluate((button) => {
+      button.addEventListener("click", () => {
+        document.querySelector(
+          '[data-testid="focus-mode-header"]',
+        )!.textContent = "Visit B";
+        setTimeout(() => {
+          document.querySelector("#visit")!.innerHTML = [
+            "new-1",
+            "new-2",
+            "new-3",
+          ]
+            .map(
+              (id) =>
+                `<div data-item-id="${id}" style="height:40px">${id}</div>`,
+            )
+            .join("");
+        }, 250);
+      });
+    });
+    const sample = await measureShoppingResponse(
+      page.locator("#next"),
+      "button",
+      {
+        targetId: "new-1",
+        visitNumber: "Visit B",
+        visitItemIds: ["new-1", "new-2", "new-3"],
+      },
+    );
+    expect(sample.matched).toBe(true);
+    expect(sample.uiMs).toBeGreaterThanOrEqual(250);
+    expect(sample.uiMs - sample.legacyMs).toBeGreaterThan(100);
+  });
+}
+
+test("shopping UI observer accepts virtual visits whose omitted rows are below the viewport", async ({
+  page,
+}) => {
+  await page.setContent(`
+    <div data-testid="focus-mode-header">Visit A</div><button id="next">next</button>
+    <div data-testid="focus-mode-scroll-region" style="height:80px;overflow:auto">
+      <div data-list-renderer="virtual"><div data-item-id="new-1" style="height:100px">only visible card</div></div>
+    </div>`);
+  await page.locator("#next").evaluate((button) => {
+    button.addEventListener("click", () => {
+      document.querySelector('[data-testid="focus-mode-header"]')!.textContent =
+        "Visit B";
+    });
+  });
+  const sample = await measureShoppingResponse(
+    page.locator("#next"),
+    "button",
+    {
+      targetId: "new-1",
+      visitNumber: "Visit B",
+      visitItemIds: ["new-1", "new-2", "new-3"],
+    },
+  );
+  expect(sample.matched).toBe(true);
+  expect(sample.uiMs).toBeLessThan(250);
+  await expect(page.locator("[data-item-id]")).toHaveCount(1);
+});
+test("shopping UI observer excludes old visible rows even for a single-item visit", async ({
+  page,
+}) => {
+  await page.setContent(`
+    <div data-testid="focus-mode-header">Visit A</div><button id="next">next</button>
+    <div data-testid="focus-mode-scroll-region" style="height:120px;overflow:auto">
+      <div data-item-id="new-1">new first</div><div id="stale" data-item-id="old-2">old second</div>
+    </div>`);
+  await page.locator("#next").evaluate((button) => {
+    button.addEventListener("click", () => {
+      document.querySelector('[data-testid="focus-mode-header"]')!.textContent =
+        "Visit B";
+      setTimeout(() => document.querySelector("#stale")!.remove(), 250);
+    });
+  });
+  const sample = await measureShoppingResponse(
+    page.locator("#next"),
+    "button",
+    {
+      targetId: "new-1",
+      visitNumber: "Visit B",
+    },
+  );
+  expect(sample.matched).toBe(true);
+  expect(sample.uiMs).toBeGreaterThanOrEqual(250);
+  expect(sample.uiMs - sample.legacyMs).toBeGreaterThan(100);
+});
+
+test("shopping UI observer ignores hidden prewarm and offscreen deferred slots", async ({
+  page,
+}) => {
+  await page.setContent(`
+    <div data-testid="focus-mode-header">Visit A</div><button id="next">next</button>
+    <div data-testid="focus-mode-scroll-region" style="height:80px;overflow:auto">
+      <div hidden aria-hidden="true" data-viewport-list><div data-item-id="old-hidden">hidden old</div></div>
+      <div data-viewport-list>
+        <div style="height:100px"><div data-item-id="new-1">new first</div></div>
+        <div data-viewport-active="false" data-viewport-row-key="focus:new-2" style="height:40px"><div class="esp-viewport-placeholder">offscreen placeholder</div></div>
+      </div>
+    </div>`);
+  await page.locator("#next").evaluate((button) => {
+    button.addEventListener("click", () => {
+      document.querySelector('[data-testid="focus-mode-header"]')!.textContent =
+        "Visit B";
+    });
+  });
+  const sample = await measureShoppingResponse(
+    page.locator("#next"),
+    "button",
+    {
+      targetId: "new-1",
+      visitNumber: "Visit B",
+      visitItemIds: ["new-1", "new-2"],
+    },
+  );
+  expect(sample.matched).toBe(true);
+  expect(sample.uiMs).toBeLessThan(250);
+  await expect(page.locator(".esp-viewport-placeholder")).toHaveCount(1);
+});
+
+test("shopping UI observer rechecks visible membership after its response frame", async ({
+  page,
+}) => {
+  await page.setContent(`
+    <div data-testid="focus-mode-header">Visit A</div><button id="next">next</button>
+    <div data-testid="focus-mode-scroll-region" style="height:120px;overflow:auto">
+      <div data-item-id="new-1">new first</div><div id="second" data-item-id="new-2">new second</div>
+    </div>`);
+  await page.locator("#next").evaluate((button) => {
+    button.addEventListener("click", () => {
+      document.querySelector('[data-testid="focus-mode-header"]')!.textContent =
+        "Visit B";
+      requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>("#second")!.dataset.itemId =
+          "old-2";
+      });
+      setTimeout(() => {
+        document.querySelector<HTMLElement>("#second")!.dataset.itemId =
+          "new-2";
+      }, 250);
+    });
+  });
+  const sample = await measureShoppingResponse(
+    page.locator("#next"),
+    "button",
+    {
+      targetId: "new-1",
+      visitNumber: "Visit B",
+      visitItemIds: ["new-1", "new-2"],
+    },
+  );
+  expect(sample.matched).toBe(true);
+  expect(sample.uiMs).toBeGreaterThanOrEqual(250);
+  expect(sample.uiMs - sample.legacyMs).toBeGreaterThan(100);
+});
+test("completed response clocks survive a separately reported selection postcondition failure", async ({
+  page,
+}) => {
+  await page.setContent(`<div data-list-renderer="full">
+    <div data-item-id="target"><button aria-label="Current status: 未購入">status</button></div>
+    <div data-item-id="moved"><input type="checkbox" checked></div>
+  </div>`);
+  await page
+    .locator("button")
+    .evaluate((button) =>
+      button.addEventListener("click", () =>
+        button.setAttribute("aria-label", "Current status: 購入済"),
+      ),
+    );
+  const measured = await measureShoppingResponse(
+    page.locator('[data-item-id="target"]'),
+    "button",
+    { targetId: "target", status: "購入済" },
+  );
+  const postconditionErrors = await captureAcceptedSelectionPostcondition(
+    page,
+    ["moved", "unmounted"],
+    7,
+    "selection-fixture-7",
+    50,
+  );
+  expect(measured.matched).toBe(true);
+  expect(Number.isFinite(measured.legacyMs)).toBe(true);
+  expect(Number.isFinite(measured.uiMs)).toBe(true);
+  expect(postconditionErrors).toEqual([
+    {
+      measurementId: "selection-fixture-7",
+      sampleIndex: 7,
+      code: "selection-not-consumed",
+      itemIds: ["moved"],
+      message: expect.stringContaining(
+        "Moved mounted item checkboxes must be unchecked",
+      ),
+    },
+  ]);
+});
+
+test("accepted selection postcondition waits for late UI cleanup while ignoring unmounted identities", async ({
+  page,
+}) => {
+  await page.setContent(
+    '<div data-item-id="moved"><input type="checkbox" checked></div>',
+  );
+  await page.evaluate(() => {
+    setTimeout(() => {
+      document.querySelector<HTMLInputElement>("input")!.checked = false;
+    }, 100);
+  });
+  expect(
+    await captureAcceptedSelectionPostcondition(
+      page,
+      ["moved", "unmounted"],
+      3,
+      "selection-fixture-3",
+    ),
+  ).toEqual([]);
+});
+
+test("accepted selection capture keeps page read errors fatal", async () => {
+  const readFailure = new Error("selection page read failed");
+  const page = {
+    evaluate: async () => {
+      throw readFailure;
+    },
+  } as unknown as Page;
+  await expect(
+    captureAcceptedSelectionPostcondition(
+      page,
+      ["moved"],
+      1,
+      "selection-fixture-1",
+      20,
+    ),
+  ).rejects.toBe(readFailure);
+});
 test("persisted readback binds event roots to the committed metadata and checkpoint", async () => {
   const items = [{ id: "one", circle: "ユーザー登録", quantity: 1 }];
   const key = '__esp_internal__:day-record:v1:["event",[]]';

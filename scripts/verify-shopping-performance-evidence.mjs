@@ -17,7 +17,7 @@ import {
   shoppingPerformanceThresholds,
 } from "./shopping-performance-evidence-contract.mjs";
 export const SCHEMA_VERSION = 1;
-export const INSTRUMENT_VERSION = "shopping-rendering-v1";
+export const INSTRUMENT_VERSION = "shopping-rendering-v2";
 const ownPath = fileURLToPath(import.meta.url);
 const groupSpecs = performanceGroupSpecs;
 const attachmentNames = performanceAttachmentNames;
@@ -764,12 +764,89 @@ export function validateBrowserArtifactEnvironment(environment) {
     "Artifact environment headed/workers/retries is missing or invalid",
   );
 }
+// Completed clocks may be retained when a later, independent functional assertion
+// fails on the unmodified baseline. This never makes acceptance evidence pass.
+function validateRecordedPostconditions(
+  artifact,
+  group,
+  allowBaselineFailures,
+) {
+  const recorded = artifact.postconditionErrors ?? [];
+  assert(Array.isArray(recorded), "Invalid functional postcondition records");
+  const allSamples = Object.values(artifact.metrics ?? {}).flatMap((metric) =>
+    Array.isArray(metric.samples) ? metric.samples : [],
+  );
+  if (recorded.length) {
+    assert(
+      group === "transfer" &&
+        artifact.phase === "before" &&
+        !["single", "noop", "reject", "cancel", "same-column"].includes(
+          artifact.condition?.scenario ?? "single",
+        ) &&
+        allowBaselineFailures,
+      "Functional postconditions failed; acceptance evidence is invalid",
+    );
+    const ids = new Set();
+    const indices = new Set();
+    for (const record of recorded) {
+      assert(
+        record &&
+          sameJson(Object.keys(record).sort(), [
+            "code",
+            "itemIds",
+            "measurementId",
+            "message",
+            "sampleIndex",
+          ]) &&
+          record.code === "selection-not-consumed" &&
+          typeof record.measurementId === "string" &&
+          record.measurementId.length > 0 &&
+          typeof record.message === "string" &&
+          record.message.length > 0 &&
+          Number.isInteger(record.sampleIndex) &&
+          record.sampleIndex >= 1 &&
+          record.sampleIndex <= 20 &&
+          uniqueStrings(record.itemIds) &&
+          record.itemIds.length > 0 &&
+          !ids.has(record.measurementId) &&
+          !indices.has(record.sampleIndex),
+        "Invalid or duplicate baseline functional postcondition record",
+      );
+      ids.add(record.measurementId);
+      indices.add(record.sampleIndex);
+      for (const metric of Object.values(artifact.metrics ?? {})) {
+        const sample = metric.samples?.[record.sampleIndex - 1];
+        assert(
+          sample?.measurementId === record.measurementId &&
+            record.itemIds.every((id) =>
+              sample.expectedTransferredIds?.includes(id),
+            ),
+          "Baseline functional postcondition does not match its completed sample",
+        );
+      }
+    }
+  }
+  for (const sample of allSamples) {
+    const expected = recorded.filter(
+      (record) => record.measurementId === sample.measurementId,
+    );
+    assert(
+      Array.isArray(sample.postconditionErrors ?? []) &&
+        sameJson(sample.postconditionErrors ?? [], expected),
+      "Functional postcondition records disagree with completed samples",
+    );
+  }
+}
 // Budget reporting is used only by before/after comparison; acceptance verification always enforces budgets.
 export function validateEvidenceArtifact(
   artifact,
   group,
   identity = {},
-  { enforceBudgets = true, requireCurrentCriteria = true } = {},
+  {
+    enforceBudgets = true,
+    requireCurrentCriteria = true,
+    allowBaselinePostconditionFailures = false,
+  } = {},
 ) {
   const { acceptanceThresholds } = performanceAcceptanceCriteriaForGroup(group);
   validateAcceptanceCriteriaMetadata(artifact, group, {
@@ -808,6 +885,11 @@ export function validateEvidenceArtifact(
   assert(
     Array.isArray(artifact.errors) && artifact.errors.length === 0,
     "Artifact errors must be an empty array",
+  );
+  validateRecordedPostconditions(
+    artifact,
+    group,
+    !enforceBudgets && allowBaselinePostconditionFailures,
   );
   if (group === "shopping") {
     const operations = [

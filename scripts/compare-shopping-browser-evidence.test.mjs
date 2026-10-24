@@ -122,7 +122,7 @@ async function partialShoppingRun(directory, phase, base = 10, options = {}) {
   const metadata = {
     phase,
     runId,
-    instrumentVersion: "shopping-rendering-v1",
+    instrumentVersion: "shopping-rendering-v2",
     instrumentPatch: { sha256: (options.instrumentHash ?? "a").repeat(64) },
     fixtureSources: { sha256: "b".repeat(64) },
     productCommit: `${phase}-product`,

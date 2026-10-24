@@ -21,6 +21,8 @@ import {
   verifyAcceptedRangeFramePreparation,
   restoreAcceptedScenario,
   verifyAcceptedScenario,
+  captureAcceptedSelectionPostcondition,
+  type AcceptedTransferPostconditionError,
 } from "./shopping-transfer-scenarios";
 
 const shoppingPerformanceThresholds =
@@ -48,6 +50,7 @@ for (const condition of acceptedTransferConditions)
         ).map((name) => [name, []]),
       );
       const fixtures: unknown[] = [];
+      const postconditionErrors: AcceptedTransferPostconditionError[] = [];
       let failure: unknown, environment: unknown;
       try {
         for (let index = 1; index <= 20; index++) {
@@ -259,6 +262,22 @@ for (const condition of acceptedTransferConditions)
                 scenario,
                 condition,
               );
+              const recordedMeasurementId =
+                measured.response?.measurementId ??
+                measured.frame?.measurementId;
+              if (!recordedMeasurementId)
+                throw new Error("Completed transfer measurement ID is missing");
+              const samplePostconditionErrors =
+                await captureAcceptedSelectionPostcondition(
+                  page,
+                  scenario.effectiveIds,
+                  index,
+                  recordedMeasurementId,
+                );
+              postconditionErrors.push(...samplePostconditionErrors);
+              // Each original isolated fixture contributes once. A later UI
+              // postcondition failure is retained and fails the test below;
+              // it never refills or replaces a timed sample with another one.
               fixtures.push({
                 index,
                 ...scenario.fixture,
@@ -286,6 +305,7 @@ for (const condition of acceptedTransferConditions)
                   samples[name].push({
                     ...sample,
                     durableProof,
+                    postconditionErrors: samplePostconditionErrors,
                     visualTarget: "card",
                     fixtureHash: scenario.fixtureHash,
                   });
@@ -356,11 +376,14 @@ for (const condition of acceptedTransferConditions)
             "actual trusted native drag at viewport edge changes product scroll before measured drop; fresh before-drop screenshot preserves current coordinate proof",
           rpcByteEstimates:
             "serialized after Tracing.end, outside measured frame endpoint",
+          selectionPostcondition:
+            "checked moved identities are reported after clocks and mandatory durable proof; all original isolated samples are retained and any postcondition error fails acceptance",
           thresholds: shoppingPerformanceThresholds,
         },
         metrics,
         errors,
         notices,
+        postconditionErrors,
         ...(failure
           ? {
               failure:
@@ -376,6 +399,7 @@ for (const condition of acceptedTransferConditions)
       });
       expect(errors).toEqual([]);
       if (failure) throw failure;
+      expect(postconditionErrors).toEqual([]);
       for (const [name, metric] of Object.entries(metrics)) {
         expect(metric.raw.length, `${name}: missing samples`).toBe(
           shoppingPerformanceThresholds.minimumCount,

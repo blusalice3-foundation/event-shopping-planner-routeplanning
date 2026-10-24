@@ -5,7 +5,7 @@ import {
 } from "../../scripts/shopping-performance-evidence-contract.mjs";
 
 export { shoppingPerformanceThresholds, performanceAcceptanceCriteriaForGroup };
-export const shoppingInstrumentVersion = "shopping-rendering-v1";
+export const shoppingInstrumentVersion = "shopping-rendering-v2";
 export function shoppingEvidenceIdentity(
   group: "shopping" | "range" | "drag" | "transfer",
   measurementKind: "response" | "frame" = "response",
@@ -49,22 +49,121 @@ export async function measureShoppingResponse(
         !element.closest('[hidden], [aria-hidden="true"]') &&
         element.getClientRects().length > 0 &&
         getComputedStyle(element).visibility !== "hidden";
-      const visitItemIds = expected.visitItemIds
-        ? new Set(expected.visitItemIds)
+      const visitOrder = expected.visitNumber
+        ? (expected.visitItemIds ?? [expected.targetId])
         : undefined;
+      const visitItemIds = visitOrder ? new Set(visitOrder) : undefined;
+      const visitPositions = visitOrder
+        ? new Map(visitOrder.map((id, index) => [id, index]))
+        : undefined;
+      const focusRegion = visitItemIds
+        ? document.querySelector<HTMLElement>(
+            '[data-testid="focus-mode-scroll-region"]',
+          )
+        : null;
+      const focusHeader = visitItemIds
+        ? document.querySelector('[data-testid="focus-mode-header"]')
+        : null;
+      // Focus visits retain offscreen/hidden rows. Check only slots intersecting
+      // the scroll viewport, including slots whose real card is still deferred.
+      // FocusVisitRows keeps one logical slot per visit item, including deferred
+      // cards. Its child count proves that a temporarily absent slot cannot make
+      // the remaining first card sufficient. No offscreen real card is required.
+      // Stop geometry reads below the viewport; other virtual renderers without
+      // that retained-slot contract need only cover the visible frontier.
+      const visibleVisitRow = (): HTMLElement | null => {
+        if (!visible(focusRegion)) return null;
+        const regionRect = focusRegion.getBoundingClientRect();
+        const top = Math.max(0, regionRect.top);
+        const bottom = Math.min(innerHeight, regionRect.bottom);
+        const left = Math.max(0, regionRect.left);
+        const right = Math.min(innerWidth, regionRect.right);
+        if (bottom <= top || right <= left) return null;
+        const lists = Array.from(
+          focusRegion.querySelectorAll<HTMLElement>("[data-viewport-list]"),
+        ).filter(visible);
+        const candidates = lists.length
+          ? lists.map((list) => ({
+              retained: true,
+              rows: Array.from(list.children),
+            }))
+          : [
+              {
+                retained: false,
+                rows: Array.from(
+                  focusRegion.querySelectorAll(
+                    "[data-item-id]:not(.esp-shopping-touch-clone), [data-viewport-focus-sentinel], .esp-viewport-placeholder",
+                  ),
+                ),
+              },
+            ];
+        let first: HTMLElement | null = null;
+        let previousPosition: number | undefined;
+        let lastBottom = top;
+        let continuationBelowViewport = false;
+        for (const { retained, rows } of candidates) {
+          if (retained && rows.length !== visitOrder!.length) return null;
+          for (const [slotIndex, slot] of rows.entries()) {
+            if (!visible(slot)) continue;
+            const rect = slot.getBoundingClientRect();
+            if (rect.top >= bottom) {
+              continuationBelowViewport = true;
+              if (retained) break;
+            }
+            if (
+              rect.bottom <= top ||
+              rect.top >= bottom ||
+              rect.right <= left ||
+              rect.left >= right
+            )
+              continue;
+            const row = slot.matches("[data-item-id]")
+              ? slot
+              : slot.querySelector<HTMLElement>(
+                  "[data-item-id]:not(.esp-shopping-touch-clone)",
+                );
+            if (
+              !visible(row) ||
+              !visitItemIds!.has(row.dataset.itemId!) ||
+              (retained && row.dataset.itemId !== visitOrder![slotIndex]) ||
+              slot.matches(
+                '[data-viewport-active="false"], [data-viewport-focus-sentinel], .esp-viewport-placeholder',
+              ) ||
+              slot.querySelector(
+                '[data-viewport-active="false"], [data-viewport-focus-sentinel], .esp-viewport-placeholder',
+              )
+            )
+              return null;
+            const position = visitPositions!.get(row.dataset.itemId!)!;
+            if (
+              previousPosition !== undefined &&
+              position !== previousPosition + 1
+            )
+              return null;
+            previousPosition = position;
+            lastBottom = Math.max(lastBottom, rect.bottom);
+            first ??= row;
+          }
+        }
+        // A virtual renderer may omit offscreen DOM, but cannot leave room for
+        // an expected next row and claim that only the first row has settled.
+        if (
+          first &&
+          previousPosition! < visitOrder!.length - 1 &&
+          lastBottom < bottom &&
+          !continuationBelowViewport
+        )
+          return null;
+        return first;
+      };
       const matches = () => {
-        const row =
-          Array.from(
-            document.querySelectorAll(
-              visitItemIds
-                ? '[data-testid="focus-mode-scroll-region"] [data-item-id]'
-                : `[data-item-id="${CSS.escape(expected.targetId)}"]:not(.esp-shopping-touch-clone)`,
-            ),
-          ).find(
-            (entry) =>
-              visible(entry) &&
-              (!visitItemIds || visitItemIds.has(entry.dataset.itemId!)),
-          ) ?? null;
+        const row = visitItemIds
+          ? visibleVisitRow()
+          : (Array.from(
+              document.querySelectorAll(
+                `[data-item-id="${CSS.escape(expected.targetId)}"]:not(.esp-shopping-touch-clone)`,
+              ),
+            ).find(visible) ?? null);
         if (!visible(row)) return false;
         if (expected.status) {
           const status = row.querySelector(
@@ -92,12 +191,9 @@ export async function measureShoppingResponse(
             return false;
         }
         if (expected.visitNumber) {
-          const header = document.querySelector(
-            '[data-testid="focus-mode-header"]',
-          );
           if (
-            !visible(header) ||
-            !header.textContent?.includes(expected.visitNumber)
+            !visible(focusHeader) ||
+            !focusHeader.textContent?.includes(expected.visitNumber)
           )
             return false;
           if (!row.closest('[data-testid="focus-mode-scroll-region"]'))
@@ -145,15 +241,23 @@ export async function measureShoppingResponse(
       };
       // Restrict observation to the current list/focus root and the modal host.
       const scope =
+        focusRegion ??
         root.closest(
           '[data-testid="focus-mode-scroll-region"], [data-list-renderer]',
-        ) ?? document.body;
+        ) ??
+        document.body;
       observer.observe(scope, {
         subtree: true,
         childList: true,
         attributes: true,
         characterData: true,
       });
+      if (focusHeader && !scope.contains(focusHeader))
+        observer.observe(focusHeader, {
+          subtree: true,
+          childList: true,
+          characterData: true,
+        });
       if (scope !== document.body)
         observer.observe(document.body, { childList: true });
       start = performance.now();

@@ -100,7 +100,11 @@ export function comparableMetrics(artifact, group) {
     artifact,
     group,
     {},
-    { enforceBudgets: false, requireCurrentCriteria: false },
+    {
+      enforceBudgets: false,
+      requireCurrentCriteria: false,
+      allowBaselinePostconditionFailures: true,
+    },
   );
   const metrics = [];
   const add = (operation, metric, summary, auxiliary = false) =>
@@ -217,7 +221,8 @@ async function readRun(runRoot, phase) {
   const rows = new Map(),
     artifacts = new Map(),
     sourceHashes = { "run-result.json": hash(bytes) },
-    errors = [];
+    errors = [],
+    functionalFailures = [];
   for (const group of groups) {
     const definitions = expectedPerformanceCases(group),
       expected = definitions.map((row) => row.key),
@@ -283,7 +288,11 @@ async function readRun(runRoot, phase) {
             artifact,
             group,
             { phase, runId: run.runId },
-            { enforceBudgets: false, requireCurrentCriteria: false },
+            {
+              enforceBudgets: false,
+              requireCurrentCriteria: false,
+              allowBaselinePostconditionFailures: true,
+            },
           );
           assert(
             expected.includes(checked.key) &&
@@ -301,6 +310,16 @@ async function readRun(runRoot, phase) {
           seen.add(checked.key);
           comparableFixtureIdentity(artifact, group);
           const artifactKey = `${group}:${checked.key}`;
+          if (artifact.postconditionErrors?.length) {
+            functionalFailures.push({
+              group,
+              key: checked.key,
+              postconditionErrors: artifact.postconditionErrors,
+            });
+            errors.push(
+              `${phase}/${group}/${checked.key}: completed timings retained with failed functional postconditions`,
+            );
+          }
           artifacts.set(artifactKey, artifact);
           for (const metric of comparableMetrics(artifact, group)) {
             const key = `${artifactKey}:${metric.operation}:${metric.metric}`;
@@ -326,7 +345,7 @@ async function readRun(runRoot, phase) {
       if (!seen.has(key))
         errors.push(`${phase}/${group}: unavailable normal evidence ${key}`);
   }
-  return { run, rows, artifacts, sourceHashes, errors };
+  return { run, rows, artifacts, sourceHashes, errors, functionalFailures };
 }
 function expectedMetricRows() {
   return groups.flatMap((group) =>
@@ -510,6 +529,7 @@ export async function compareBrowserEvidence({
         before: oldMetric?.summary ?? null,
         after: current?.summary ?? null,
         deltaMs: delta,
+        beforePostconditionErrors: oldArtifact?.postconditionErrors ?? [],
         beforeAbsolute: absolute(oldMetric),
         afterAbsolute: absolute(current),
         deltaReview: !compared
@@ -549,6 +569,7 @@ export async function compareBrowserEvidence({
       recordedAcceptanceCriteria: recordedCriteria(before.run),
       sourceHashes: before.sourceHashes,
       errors: before.errors,
+      functionalFailures: before.functionalFailures,
     };
     result.after = {
       runRoot: path.resolve(afterRoot),

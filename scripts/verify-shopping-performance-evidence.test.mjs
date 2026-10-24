@@ -1958,3 +1958,64 @@ test("current evidence rejects forged scope even when budgets are disabled; hist
     /At least 20/,
   );
 });
+
+test("completed baseline timings retain independent functional failures without passing acceptance", async () => {
+  const data = artifact(
+    "transfer",
+    acceptedCondition("multiple", "candidate-to-execute"),
+  );
+  data.phase = "before";
+  const record = {
+    measurementId: data.metrics.response.samples[0].measurementId,
+    sampleIndex: 1,
+    code: "selection-not-consumed",
+    message: "Transferred selection remains checked on the baseline",
+    itemIds: [data.metrics.response.samples[0].expectedTransferredIds[0]],
+  };
+  data.postconditionErrors = [record];
+  for (const metric of Object.values(data.metrics))
+    metric.samples.forEach((sample, index) => {
+      sample.postconditionErrors = index === 0 ? [record] : [];
+    });
+  const comparisonOptions = {
+    enforceBudgets: false,
+    allowBaselinePostconditionFailures: true,
+  };
+  assert.throws(
+    () => validateEvidenceArtifact(data, "transfer"),
+    /Functional postconditions failed/,
+  );
+  assert.doesNotThrow(() =>
+    validateEvidenceArtifact(data, "transfer", {}, comparisonOptions),
+  );
+  const { comparableMetrics } =
+    await import("./compare-shopping-browser-evidence.mjs");
+  assert.equal(comparableMetrics(data, "transfer").length, 4);
+  const after = structuredClone(data);
+  after.phase = "after";
+  assert.throws(
+    () => validateEvidenceArtifact(after, "transfer", {}, comparisonOptions),
+    /Functional postconditions failed/,
+  );
+  const mismatched = structuredClone(data);
+  mismatched.metrics.save.samples[0].postconditionErrors = [];
+  assert.throws(
+    () =>
+      validateEvidenceArtifact(mismatched, "transfer", {}, comparisonOptions),
+    /disagree/,
+  );
+  const wrongTarget = structuredClone(data);
+  wrongTarget.postconditionErrors[0].itemIds = ["not-transferred"];
+  assert.throws(
+    () =>
+      validateEvidenceArtifact(wrongTarget, "transfer", {}, comparisonOptions),
+    /does not match/,
+  );
+  const sampleOnly = structuredClone(data);
+  sampleOnly.postconditionErrors = [];
+  assert.throws(
+    () =>
+      validateEvidenceArtifact(sampleOnly, "transfer", {}, comparisonOptions),
+    /disagree/,
+  );
+});
