@@ -16,7 +16,7 @@
       {
         "file": "playwright.config.ts",
         "loaderPackage": "@playwright/test",
-        "loaderScript": "test:browser",
+        "loaderScript": "test:shopping-performance:run",
         "loaderBinary": "playwright"
       },
       {
@@ -75,7 +75,7 @@
       "evidence": [
         {
           "kind": "cli",
-          "script": "test:browser",
+          "script": "test:shopping-performance:run",
           "binary": "playwright"
         },
         {
