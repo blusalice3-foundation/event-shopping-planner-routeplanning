@@ -1,5 +1,10 @@
 import { recordEntry } from "../../utils/ownRecord";
 import {
+  SHOPPING_STORAGE_MODE_KEY,
+  LEGACY_SHOPPING_STORAGE_MODE,
+  usesLegacyShoppingStorage,
+} from "./shoppingStorageMode";
+import {
   dayScopeDays,
   matchesScopeDay,
   sameDayScope,
@@ -133,6 +138,7 @@ interface AppDataRestoreObservation {
   dayRecords: Map<StoreName, DayRecordState>;
   scopeReady: Map<StoreName, unknown>;
   scopeTarget?: DayStorageTarget;
+  shoppingStorageMode: unknown;
 }
 
 // Opaque read handles keep the verified baseline private. Caller snapshots and
@@ -318,6 +324,9 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
   const archiveRequest = requestResult(
     transaction.objectStore(STORES.SYNC_QUEUE).get(CONSISTENCY_ARCHIVE_KEY),
   );
+  const shoppingStorageModeRequest = requestResult(
+    transaction.objectStore(STORES.SYNC_QUEUE).get(SHOPPING_STORAGE_MODE_KEY),
+  );
   const generationsRequest = requestResult(
     transaction.objectStore(STORES.SYNC_QUEUE).get(EVENT_GENERATIONS_KEY),
   );
@@ -351,6 +360,8 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
     archiveRequest,
     generationsRequest,
   ]);
+  const shoppingStorageMode = await shoppingStorageModeRequest;
+  usesLegacyShoppingStorage(shoppingStorageMode);
   const eventGenerations = readEventGenerations(rawGenerations);
   const consistencyMissing =
     raw.get(STORES.EVENT_CONSISTENCY)?.payload === undefined;
@@ -469,6 +480,7 @@ async function observeAppDataRestoreState(): Promise<AppDataRestoreObservation> 
     eventGenerations,
     dayRecords,
     scopeReady: new Map(await Promise.all(scopeReadyRequests)),
+    shoppingStorageMode,
   };
 }
 
@@ -703,6 +715,7 @@ export async function readDayCommandSnapshot(
       }
       return true;
     });
+    const shoppingMode = requestResult(control.get(SHOPPING_STORAGE_MODE_KEY));
     const journal = requestResult(control.get(CONSISTENCY_MIGRATION_KEY));
     const archive = requestResult(control.get(CONSISTENCY_ARCHIVE_KEY));
     const generations = requestResult(control.get(EVENT_GENERATIONS_KEY));
@@ -711,10 +724,12 @@ export async function readDayCommandSnapshot(
       journal,
       archive,
       generations,
+      shoppingMode,
       finished,
     ]);
     if (
       heads.every(Boolean) &&
+      storedValuesEqual(evidence[3], cached.observation.shoppingStorageMode) &&
       storedValuesEqual(evidence[0], cached.observation.journal) &&
       storedValuesEqual(evidence[1], cached.observation.archive) &&
       storedValuesEqual(
@@ -781,6 +796,7 @@ export async function readCachedShoppingCommandSnapshot(
     cached.fallbackKey !== runtimeFallbackKey() ||
     cached.observation.scopeTarget ||
     cached.observation.consistencyMissing ||
+    usesLegacyShoppingStorage(cached.observation.shoppingStorageMode) ||
     cached.observation.runtimeCandidates.length ||
     !recordEntry(cached.observation.snapshot.eventLists, target.eventName) ||
     ![STORES.EVENT_LISTS, ...dayRecordStores].every(
@@ -809,7 +825,9 @@ export async function readShoppingCommandSnapshot(
     : await readDayCommandSnapshot(target);
   const observation = applicationSnapshotObservations.get(read.expectedRoots);
   return read.scopeTarget ||
-    !observation?.dayRecords.get(STORES.EVENT_LISTS)?.head.authenticatedRoots
+    !observation ||
+    usesLegacyShoppingStorage(observation.shoppingStorageMode) ||
+    !observation.dayRecords.get(STORES.EVENT_LISTS)?.head.authenticatedRoots
     ? undefined
     : read;
 }
@@ -823,6 +841,7 @@ export async function commitShoppingCommandSnapshot(
   if (
     !observation ||
     observation.scopeTarget ||
+    usesLegacyShoppingStorage(observation.shoppingStorageMode) ||
     !observation.dayRecords.get(STORES.EVENT_LISTS)?.head.authenticatedRoots ||
     !dayCommandObservations.has(expectedRoots)
   )
@@ -862,6 +881,32 @@ export async function commitShoppingCommandSnapshot(
   }
   return receipt.read!;
 }
+/** Prepare the verified state for a baseline release without discarding user data. */
+export async function prepareShoppingMoveRollback(
+  expectedRoots: object,
+): Promise<void> {
+  const observation = applicationSnapshotObservations.get(expectedRoots);
+  if (
+    !observation ||
+    observation.scopeTarget ||
+    observation.consistencyMissing ||
+    observation.runtimeCandidates.length
+  )
+    throw new PersistenceConflictError(
+      "最新の保存済みデータを確認してから、旧バージョン用の準備を行ってください。",
+    );
+  // Use the same opaque observation that produced the user's downloaded backup.
+  await commitApplicationSnapshotAtomically(
+    observation.snapshot,
+    { expectedRoots, changedStoresOnly: true },
+    undefined,
+    false,
+    false,
+    undefined,
+    true,
+  );
+}
+
 export async function readApplicationSnapshot(
   options: { shareVerified?: boolean; prepareScopedCommands?: boolean } = {},
 ): Promise<ApplicationSnapshotRead> {
@@ -870,7 +915,9 @@ export async function readApplicationSnapshot(
     options.prepareScopedCommands &&
     !observation.consistencyMissing &&
     !observation.runtimeCandidates.length &&
-    (!observation.dayRecords.get(STORES.EVENT_LISTS)?.head.authenticatedRoots ||
+    ((!usesLegacyShoppingStorage(observation.shoppingStorageMode) &&
+      !observation.dayRecords.get(STORES.EVENT_LISTS)?.head
+        .authenticatedRoots) ||
       dayRecordStores.some(
         (store) => !observation.dayRecords.get(store)?.head.authenticatedRoots,
       ) ||
@@ -907,6 +954,7 @@ export async function commitApplicationSnapshotAtomically(
   shoppingMove = false,
   prepareEventListRoots = false,
   shoppingReceipt?: ShoppingCommitReceiptOutput,
+  prepareLegacyShoppingStorage = false,
 ): Promise<void> {
   const verifiedCommand =
     !!dayTarget &&
@@ -918,19 +966,14 @@ export async function commitApplicationSnapshotAtomically(
     : undefined;
   if (
     shoppingMove &&
-    !ownedObservation?.dayRecords.get(STORES.EVENT_LISTS)?.head
-      .authenticatedRoots
+    (!ownedObservation ||
+      usesLegacyShoppingStorage(ownedObservation.shoppingStorageMode) ||
+      !ownedObservation.dayRecords.get(STORES.EVENT_LISTS)?.head
+        .authenticatedRoots)
   )
     throw new PersistenceConflictError(
       "Shopping move requires prepared authoritative item roots.",
     );
-  // Legacy conversion belongs to explicit startup preparation or an existing
-  // structural restore/import/migration write, never an interactive shopping write.
-  const prepareItemRoots =
-    !dayTarget &&
-    (prepareEventListRoots ||
-      options.migration !== undefined ||
-      !!options.invalidatedEvents?.length);
   const mapDescriptor = Object.getOwnPropertyDescriptor(data, "mapData");
   const reuseUnchangedMap =
     options.changedStoresOnly &&
@@ -1006,6 +1049,30 @@ export async function commitApplicationSnapshotAtomically(
     throw new PersistenceConflictError(
       "移行済みの保全記録は上書きできません。",
     );
+  const legacyShoppingStorage =
+    prepareLegacyShoppingStorage ||
+    usesLegacyShoppingStorage(observation.shoppingStorageMode);
+  // Partitioning belongs to startup preparation or structural writes, never
+  // an interactive shopping write or a database prepared for an older release.
+  const prepareItemRoots =
+    !legacyShoppingStorage &&
+    !dayTarget &&
+    (prepareEventListRoots ||
+      options.migration !== undefined ||
+      !!options.invalidatedEvents?.length);
+  if (
+    prepareLegacyShoppingStorage &&
+    (!ownedObservation ||
+      dayTarget ||
+      shoppingMove ||
+      options.migration ||
+      options.invalidatedEvents?.length ||
+      observation.consistencyMissing ||
+      observation.runtimeCandidates.length)
+  )
+    throw new PersistenceConflictError(
+      "旧バージョン用の準備条件が一致しません。",
+    );
   const migrationDigest = options.migration
     ? await createPersistenceDigest(options.migration)
     : null;
@@ -1033,6 +1100,7 @@ export async function commitApplicationSnapshotAtomically(
       (storeName) =>
         !options.changedStoresOnly ||
         options.migration ||
+        (prepareLegacyShoppingStorage && storeName === STORES.EVENT_LISTS) ||
         (prepareItemRoots &&
           storeName === STORES.EVENT_LISTS &&
           !observation.dayRecords.get(storeName)?.head.authenticatedRoots) ||
@@ -1082,6 +1150,7 @@ export async function commitApplicationSnapshotAtomically(
     }
     if (
       storeName === STORES.EVENT_LISTS &&
+      !legacyShoppingStorage &&
       (prepareItemRoots || observation.dayRecords.has(storeName))
     ) {
       const previous = observation.dayRecords.get(storeName);
@@ -1299,6 +1368,9 @@ export async function commitApplicationSnapshotAtomically(
         ...(mapScopeRoots ? [[STORES.MAP_DATA, mapRevision] as const] : []),
       ]),
       dayRecords: nextDayRecords,
+      shoppingStorageMode: prepareLegacyShoppingStorage
+        ? LEGACY_SHOPPING_STORAGE_MODE
+        : observation.shoppingStorageMode,
       consistencyMissing: false,
       mapDataNormalized: true,
       eventGenerations: Object.fromEntries(
@@ -1357,10 +1429,11 @@ export async function commitApplicationSnapshotAtomically(
     const currentDayRecords = new Map<StoreName, Map<string, unknown>>();
     let remainingReads =
       APPLICATION_SNAPSHOT_STORE_NAMES.length * (verifiedCommand ? 2 : 3) +
-      3 +
+      4 +
       (verifiedCommand ? 0 : observation.dayRecords.size);
     let currentEventGenerations: unknown;
     let currentJournal: unknown;
+    let currentShoppingStorageMode: unknown;
     let currentArchive: unknown;
     let writesQueued = false;
 
@@ -1405,6 +1478,22 @@ export async function commitApplicationSnapshotAtomically(
 
       try {
         const controlStore = transaction.objectStore(STORES.SYNC_QUEUE);
+        if (
+          !storedValuesEqual(
+            currentShoppingStorageMode,
+            observation.shoppingStorageMode,
+          )
+        )
+          throw new PersistenceConflictError(
+            "計算後に旧バージョン用の保存設定が変更されました。",
+          );
+        if (prepareLegacyShoppingStorage)
+          trackRequest(
+            controlStore.put(
+              LEGACY_SHOPPING_STORAGE_MODE,
+              SHOPPING_STORAGE_MODE_KEY,
+            ),
+          );
         if (
           !storedValuesEqual(currentJournal, observation.journal) ||
           !storedValuesEqual(currentArchive, observation.archive)
@@ -1637,6 +1726,14 @@ export async function commitApplicationSnapshotAtomically(
 
     try {
       const controlStore = transaction.objectStore(STORES.SYNC_QUEUE);
+      const shoppingModeRead = controlStore.get(SHOPPING_STORAGE_MODE_KEY);
+      shoppingModeRead.onerror = () => {
+        failure = shoppingModeRead.error;
+      };
+      shoppingModeRead.onsuccess = () => {
+        currentShoppingStorageMode = shoppingModeRead.result;
+        commitIfReady();
+      };
       const generationsRead = controlStore.get(EVENT_GENERATIONS_KEY);
       generationsRead.onerror = () => {
         failure = generationsRead.error;
@@ -1748,6 +1845,7 @@ export async function commitApplicationSnapshotAtomically(
   // The transaction is durable; later failures must never permit a resend.
   try {
     const nextDayRecords = new Map(observation.dayRecords);
+    if (prepareLegacyShoppingStorage) nextDayRecords.delete(STORES.EVENT_LISTS);
     dayRecordWrites.forEach((write, store) =>
       nextDayRecords.set(store, adoptDayRecordWrite(write)),
     );

@@ -13,6 +13,7 @@ import type { LoadResult } from "../contracts/persistence";
 import { STORES } from "../db/constants";
 import {
   readApplicationSnapshot,
+  prepareShoppingMoveRollback,
   readDayCommandSnapshot,
   readShoppingCommandSnapshot,
   readCachedShoppingCommandSnapshot,
@@ -70,6 +71,7 @@ const syncQueueRepository = createSyncQueueRepository(
 export const db = {
   STORES,
   readApplicationSnapshot,
+  prepareShoppingMoveRollback,
   readDayCommandSnapshot,
   readShoppingCommandSnapshot,
   readCachedShoppingCommandSnapshot,
