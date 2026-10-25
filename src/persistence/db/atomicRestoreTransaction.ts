@@ -1,3 +1,4 @@
+import { createPrivateSnapshotFreezer } from "../internal/privateSnapshotFreeze";
 import { recordEntry } from "../../utils/ownRecord";
 import {
   dayScopeDays,
@@ -480,14 +481,7 @@ let verifiedCommandCache:
     }
   | undefined;
 const dayCommandObservations = new WeakSet<object>();
-const frozenCommandValues = new WeakSet<object>();
-function freezeCommandValue(value: unknown): void {
-  if (!value || typeof value !== "object" || frozenCommandValues.has(value))
-    return;
-  frozenCommandValues.add(value);
-  for (const entry of Object.values(value)) freezeCommandValue(entry);
-  Object.freeze(value);
-}
+const frozenCommandValues = createPrivateSnapshotFreezer();
 /** Only privately deep-frozen item objects can be shared by an incoming order array. */
 function captureFrozenItemOrder(
   before: unknown,
@@ -596,7 +590,7 @@ function prepareObservationRead(
   const expectedRoots = { roots: structuredClone(observation.roots) };
   applicationSnapshotObservations.set(expectedRoots, observation);
   if (share) {
-    freezeCommandValue(observation.snapshot);
+    frozenCommandValues.freeze(observation.snapshot);
     dayCommandObservations.add(expectedRoots);
   }
   return {
