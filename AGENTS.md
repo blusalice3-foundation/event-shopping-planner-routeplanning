@@ -83,3 +83,12 @@ chcp 65001 > $null
 - 既存の1,500品目の買い物8条件とbounded DOM 1件は、`npm run test:shopping-large-list-diagnostic:run` による明示実行の任意診断として保持する。新規の任意診断記録は `diagnosticOnly: true`／`acceptanceMeasurement: false` とし、150／500品目の不足条件や失敗を補う合格証拠へ使わない。
 - 計測終了点、既存の地図・過去10,000品目の負荷、保存・整合性検証、`range`／`drag`／`transfer` の基準と対象条件は変更しない。
 - 過去の1,500品目の測定値・当初の合否・元artifactは保持する。2026-10-25の対象変更に基づく新しい必須範囲の判定・比較は別記録とし、過去の失敗を成功へ書き換えない。
+
+## 性能測定回数の用途別変更（2026-10-26 ユーザー指定・最新版）
+
+- 性能試験群 `shopping`／`range`／`drag`／`transfer` の測定回数だけを、PR確認では各操作・指標2回、実装完了判定では各操作・指標10回へ変更する。本節は上記2026-10-16・2026-10-24・2026-10-25の「各20サンプル以上」と「サンプル数を変更しない」の部分だけを上書きする。
+- profileは `pr`／`completion` とし、`ESP_PERFORMANCE_PROFILE` またはrunnerの `--profile` で指定する。指定なしは `completion`（10回）。PR確認は `npm run test:browser:pr`、実装完了判定は `npm run test:browser:completion` を使用する。
+- PRの2回の `passed` は実装完了の証拠へ流用しない。完了判定・変更前後比較には、同じ `completion` profileで採取した10回の記録を用いる。profile、測定回数、sampling policy、source、run IDをartifactへ記録する。
+- 必須条件は `shopping` 150／500品目の16条件・各6操作、`range` 20条件、`drag` 8条件、`transfer` 100条件を維持する。時間基準は `shopping` が中央値65.0ms以下・95%点100ms以下、対象3群が中央値・95%点とも110.0ms以下。fixture、地図・過去品目の負荷、ウォームアップ、ジェスチャー、入力・DOM・実フレーム・次操作の終了点、保存の原子性・整合性検証、retry 0は変更しない。
+- GitHubのPR eventは `pr`、非PRの通常受入は `completion` を選ぶ。個別の性能群を直接実行する場合も同じprofileを指定し、部分実行の成功で全条件完了と判定しない。
+- 過去20回のraw・当初の合否・元artifactと中断した採取は保持する。新しい回数のrunは独立した記録にし、旧runの切り詰め、成功分だけの補充、PR／完了profileの混在で合格を作らない。後続作業者も本節を適用し、README・現行性能基準・通常runner／CIの指定を揃える。
