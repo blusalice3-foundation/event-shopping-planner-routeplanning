@@ -628,6 +628,41 @@ test("preflight rejects every nonempty diagnostic setting without changing the p
   );
   assert.deepEqual(values, before);
 });
+for (const transform of [
+  (name) => name.toLowerCase(),
+  (name) =>
+    name.replace(/./g, (letter, index) =>
+      index % 2 ? letter.toLowerCase() : letter,
+    ),
+]) {
+  test(`preflight rejects diagnostic environment names regardless of case: ${transform("ESP_PROFILE_RANGE")}`, () => {
+    const names = [
+      "ESP_PROFILE_RANGE",
+      "ESP_DIAGNOSTIC_CSS",
+      "ESP_RANGE_CONTINUOUS_DIAGNOSTIC",
+      "ESP_RANGE_INVALIDATION_DIAGNOSTIC",
+      "ESP_RANGE_RENDER_DIAGNOSTICS",
+      "ESP_RANGE_WARMUP_VISUAL",
+      "ESP_RANGE_WARMUP_MOUSE",
+      "ESP_DRAG_TRACE_STAGES",
+      "ESP_DRAG_CPU_PROFILE",
+      "ESP_DRAG_DROP_PROBE_COMPARE",
+      "ESP_DRAG_BASELINE",
+    ].map(transform);
+    const values = Object.fromEntries(
+      names.map((name, index) => [name, index % 2 ? "0" : "1"]),
+    );
+    values[transform("ESP_PROFILE_EMPTY")] = "";
+    values[transform("ESP_EXPECT_CSS_CHAIN")] = "1";
+    const before = { ...values };
+    assert.deepEqual(
+      rejectedDiagnosticEnvironment(values).map((entry) => entry.name),
+      names,
+    );
+    assert.deepEqual(values, before);
+  });
+}
+
 test("known normal matrices pass with exact expected coverage and response/frame separation", async (t) => {
   assert.deepEqual(
     ["shopping", "range", "drag", "transfer"].map(

@@ -17,7 +17,7 @@ import {
   shoppingPerformanceThresholds,
 } from "./shopping-performance-evidence-contract.mjs";
 export const SCHEMA_VERSION = 1;
-export const INSTRUMENT_VERSION = "shopping-rendering-v1";
+export const INSTRUMENT_VERSION = "shopping-rendering-v2";
 const ownPath = fileURLToPath(import.meta.url);
 const groupSpecs = performanceGroupSpecs;
 const attachmentNames = performanceAttachmentNames;
@@ -39,7 +39,8 @@ export function rejectedDiagnosticEnvironment(env = process.env) {
         value !== undefined &&
         value !== null &&
         String(value).length > 0 &&
-        (/^ESP_(?:PROFILE|DIAGNOSTIC)_/.test(name) || forbiddenNames.has(name)),
+        (/^ESP_(?:PROFILE|DIAGNOSTIC)_/i.test(name) ||
+          forbiddenNames.has(name.toUpperCase())),
     )
     .map(([name]) => ({
       name,
