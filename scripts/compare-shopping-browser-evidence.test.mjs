@@ -126,7 +126,9 @@ async function partialShoppingRun(directory, phase, base = 10, options = {}) {
     instrumentVersion: "shopping-rendering-v2",
     instrumentPatch: { sha256: (options.instrumentHash ?? "a").repeat(64) },
     fixtureSources: { sha256: "b".repeat(64) },
-    productCommit: `${phase}-product`,
+    productCommit: (phase === "before" ? "a" : "b").repeat(40),
+    sourceState: "clean",
+    sourceDiffSha256: createHash("sha256").update("").digest("hex"),
     releaseCapability: {
       kind: "event-shopping-planner-release-capabilities",
       version: 1,
@@ -134,8 +136,8 @@ async function partialShoppingRun(directory, phase, base = 10, options = {}) {
       releaseChannel: "release-a",
       legacyLocalStorageCleanup: "forced-off",
       sourceState: "clean",
-      sourceSha: "a".repeat(40),
-      buildId: "a".repeat(40),
+      sourceSha: (phase === "before" ? "a" : "b").repeat(40),
+      buildId: (phase === "before" ? "a" : "b").repeat(40),
     },
     releaseCapabilitySha256: "c".repeat(64),
     environment: {
@@ -995,3 +997,52 @@ test("normal and censored comparison reporting retains original partial function
     null,
   );
 });
+
+for (const change of [
+  "product-commit",
+  "build-id",
+  "source-sha",
+  "dirty",
+  "diff",
+  "missing-state",
+])
+  test(`comparison rejects self-consistent capability metadata with invalid measured source: ${change}`, async (t) => {
+    const directory = await mkdtemp(
+      path.join(os.tmpdir(), "esp source compare "),
+    );
+    t.after(() => rm(directory, { recursive: true, force: true }));
+    const beforeRoot = await partialShoppingRun(directory, "before");
+    const afterRoot = await partialShoppingRun(directory, "after");
+    const file = path.join(afterRoot, "run-result.json");
+    const run = JSON.parse(await readFile(file, "utf8"));
+    if (change === "product-commit") run.productCommit = "c".repeat(40);
+    if (change === "build-id") run.releaseCapability.buildId = "c".repeat(40);
+    if (change === "source-sha")
+      run.releaseCapability.sourceSha = "c".repeat(40);
+    if (change === "dirty") run.sourceState = "dirty";
+    if (change === "diff")
+      run.sourceDiffSha256 = createHash("sha256")
+        .update("source changed")
+        .digest("hex");
+    if (change === "missing-state") delete run.sourceState;
+    // Rehash local and served copies: internal file consistency alone cannot
+    // prove that these bytes were built from the recorded measured product.
+    run.releaseCapabilityRaw = JSON.stringify(run.releaseCapability);
+    run.releaseCapabilitySha256 = createHash("sha256")
+      .update(run.releaseCapabilityRaw)
+      .digest("hex");
+    run.servedReleaseCapabilityRaw = run.releaseCapabilityRaw;
+    run.servedReleaseCapabilitySha256 = run.releaseCapabilitySha256;
+    await writeFile(file, JSON.stringify(run), "utf8");
+    const { result, exitCode } = await compareBrowserEvidence({
+      beforeRoot,
+      afterRoot,
+    });
+    assert.equal(exitCode, 1);
+    assert.equal(result.status, "incomplete");
+    assert.equal(result.rows.length, 0);
+    assert.match(
+      result.errors.join("\n"),
+      /exact clean product source|source\/build IDs differ/,
+    );
+  });

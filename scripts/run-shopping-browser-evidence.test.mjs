@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import os from "node:os";
@@ -8,6 +9,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   GROUPS,
   collectBrowserEnvironment,
+  collectBrowserSourceIdentity,
+  validateBrowserSourceIdentity,
   groupInvocation,
   runBrowserEvidence,
   spawnInvocation,
@@ -453,4 +456,93 @@ test("runner preserves the completed child checkpoint if evidence verification i
   assert.equal(saved.groups[1].status, "interrupted");
   assert.equal(saved.groups[1].exitCode, 0);
   assert.ok(saved.groups.slice(2).every((row) => row.status === "not-run"));
+});
+
+test("actual source proof rejects tracked, staged and untracked product changes before browser launch", async (t) => {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), "esp source identity "));
+  t.after(() => rm(cwd, { recursive: true, force: true }));
+  const git = (args) =>
+    execFileSync("git", ["-c", "core.autocrlf=false", ...args], {
+      cwd,
+      encoding: "utf8",
+    }).trim();
+  git(["init", "--quiet"]);
+  await mkdir(path.join(cwd, "src"));
+  await mkdir(path.join(cwd, "public"));
+  await mkdir(path.join(cwd, "dist"));
+  await writeFile(
+    path.join(cwd, "src/item.ts"),
+    "export const value = 1;\n",
+    "utf8",
+  );
+  await writeFile(path.join(cwd, "public/manifest.json"), "{}\n", "utf8");
+  git(["add", "src", "public"]);
+  git([
+    "-c",
+    "user.name=Evidence Test",
+    "-c",
+    "user.email=evidence@example.test",
+    "commit",
+    "--quiet",
+    "-m",
+    "source fixture",
+  ]);
+  const head = git(["rev-parse", "HEAD"]);
+  const capability = {
+    kind: "event-shopping-planner-release-capabilities",
+    version: 1,
+    buildMode: "release-a",
+    releaseChannel: "release-a",
+    legacyLocalStorageCleanup: "forced-off",
+    sourceState: "clean",
+    sourceSha: head,
+    buildId: head,
+  };
+  await writeFile(
+    path.join(cwd, "dist/release-capabilities.json"),
+    JSON.stringify(capability),
+    "utf8",
+  );
+  const clean = collectBrowserSourceIdentity(cwd);
+  assert.equal(clean.productCommit, head);
+  assert.equal(clean.sourceState, "clean");
+  assert.doesNotThrow(() =>
+    validateBrowserSourceIdentity({ ...clean, releaseCapability: capability }),
+  );
+  // Build mismatch must fail before loading Playwright or requesting a preview.
+  await assert.rejects(
+    collectBrowserEnvironment(
+      cwd,
+      {},
+      { ...clean, productCommit: "a".repeat(40) },
+    ),
+    /source\/build IDs differ/,
+  );
+  for (const mode of [
+    "tracked",
+    "staged",
+    "untracked-src",
+    "untracked-public",
+  ]) {
+    const relative = mode.startsWith("untracked")
+      ? mode === "untracked-src"
+        ? "src/extra.ts"
+        : "public/extra.json"
+      : "src/item.ts";
+    await writeFile(path.join(cwd, relative), "changed\n", "utf8");
+    if (mode === "staged") git(["add", relative]);
+    const dirty = collectBrowserSourceIdentity(cwd);
+    assert.equal(dirty.sourceState, "dirty", mode);
+    if (mode.startsWith("untracked"))
+      assert.equal(dirty.sourceDiffSha256, clean.sourceDiffSha256);
+    else assert.notEqual(dirty.sourceDiffSha256, clean.sourceDiffSha256);
+    await assert.rejects(
+      collectBrowserEnvironment(cwd, {}, dirty),
+      /exact clean product source/,
+      mode,
+    );
+    if (mode.startsWith("untracked")) await rm(path.join(cwd, relative));
+    else git(["restore", "--source=HEAD", "--staged", "--worktree", relative]);
+  }
+  assert.deepEqual(collectBrowserSourceIdentity(cwd), clean);
 });

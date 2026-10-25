@@ -20,6 +20,7 @@ import {
   performanceAcceptanceCriteriaForGroup,
   validateRunAcceptanceCriteriaMetadata,
 } from "./shopping-performance-evidence-contract.mjs";
+import { validateBrowserSourceIdentity } from "./run-shopping-browser-evidence.mjs";
 const groups = ["shopping", "range", "drag", "transfer"];
 const names = {
   shopping: "shopping-operation-timings",
@@ -224,6 +225,7 @@ async function readRun(runRoot, phase) {
         run.servedReleaseCapabilitySha256 === run.releaseCapabilitySha256,
       `${phase}: served preview capability differs from the measured release build`,
     );
+  validateBrowserSourceIdentity(run);
   const rows = new Map(),
     artifacts = new Map(),
     sourceHashes = { "run-result.json": hash(bytes) },

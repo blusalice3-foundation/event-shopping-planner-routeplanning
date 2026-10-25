@@ -136,7 +136,47 @@ async function sourceHashes(cwd, files) {
   }
   return { sha256: hash.digest("hex"), files: entries };
 }
-export async function collectBrowserEnvironment(cwd, env) {
+export function validateBrowserSourceIdentity(provenance) {
+  const emptyDiffHash = createHash("sha256").update("").digest("hex");
+  if (
+    !/^[a-f0-9]{40}$/.test(provenance.productCommit ?? "") ||
+    provenance.sourceState !== "clean" ||
+    provenance.sourceDiffSha256 !== emptyDiffHash
+  )
+    throw new Error(
+      "Acceptance evidence requires the exact clean product source",
+    );
+  if (
+    provenance.releaseCapability?.sourceSha !== provenance.productCommit ||
+    provenance.releaseCapability?.buildId !== provenance.productCommit
+  )
+    throw new Error(
+      "Release capability source/build IDs differ from the measured product HEAD",
+    );
+}
+export function collectBrowserSourceIdentity(cwd) {
+  const git = (args) => execFileSync("git", args, { cwd });
+  return {
+    productCommit: git(["rev-parse", "HEAD"]).toString("utf8").trim(),
+    sourceState:
+      git([
+        "status",
+        "--porcelain",
+        "--untracked-files=all",
+        "--",
+        "src",
+        "public",
+      ])
+        .toString("utf8")
+        .trim() === ""
+        ? "clean"
+        : "dirty",
+    sourceDiffSha256: createHash("sha256")
+      .update(git(["diff", "HEAD", "--", "src", "public"]))
+      .digest("hex"),
+  };
+}
+export async function collectBrowserEnvironment(cwd, env, sourceIdentity) {
   const capabilityBytes = await readFile(
     path.join(cwd, "dist/release-capabilities.json"),
   );
@@ -154,6 +194,8 @@ export async function collectBrowserEnvironment(cwd, env) {
     throw new Error(
       "Acceptance evidence requires a clean release-a capability",
     );
+  if (sourceIdentity)
+    validateBrowserSourceIdentity({ ...sourceIdentity, releaseCapability });
   let servedReleaseCapabilityRaw = null;
   if (env.PLAYWRIGHT_BASE_URL) {
     const response = await fetch(
@@ -259,23 +301,16 @@ export async function collectBrowserProvenance(cwd, env) {
       ...transferSources,
     ]),
   ];
+  const sourceIdentity = collectBrowserSourceIdentity(cwd);
   return {
-    productCommit: execFileSync("git", ["rev-parse", "HEAD"], {
-      cwd,
-      encoding: "utf8",
-    }).trim(),
-    sourceDiffSha256: createHash("sha256")
-      .update(
-        execFileSync("git", ["diff", "HEAD", "--", "src", "public"], { cwd }),
-      )
-      .digest("hex"),
+    ...sourceIdentity,
     instrumentVersion: INSTRUMENT_VERSION,
     acceptanceCriteriaByGroup: performanceAcceptanceCriteriaByGroup,
     instrumentPatch: await sourceHashes(cwd, instruments),
     fixtureSources: await sourceHashes(cwd, [
       ...new Set([...specs, ...transferSources]),
     ]),
-    ...(await collectBrowserEnvironment(cwd, env)),
+    ...(await collectBrowserEnvironment(cwd, env, sourceIdentity)),
   };
 }
 export async function runBrowserEvidence(options = {}) {
