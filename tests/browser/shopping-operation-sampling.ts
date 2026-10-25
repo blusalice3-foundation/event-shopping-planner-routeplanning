@@ -10,6 +10,7 @@ export function shoppingOperationSamplingPlan(
   const ordinaryFocusSamples = sampleCount - (concentrated ? 1 : 2);
   return {
     sampleCount,
+    purpose: sampleCount === 2 ? "pr-feedback-only" : "completion",
     execute: Array.from({ length: 20 }, (_, index) => ({
       targetId: `perf-${index}`,
       measured: index < sampleCount,
@@ -17,6 +18,8 @@ export function shoppingOperationSamplingPlan(
     focus: Array.from({ length: 20 }, (_, offset) => ({
       targetId: `perf-${offset + 20}`,
       measured: offset < ordinaryFocusSamples,
+      nextMeasured: !concentrated && offset === 0,
+      nextContext: "after-focus-purchase" as const,
     })),
     extraFocusPurchase: concentrated
       ? null
@@ -29,10 +32,15 @@ export function shoppingOperationSamplingPlan(
       { length: sampleCount },
       (_, index) => 1 + (index % 2),
     ),
-    postRecordNext: { measured: true },
+    postRecordNext: { measured: true, context: "after-record" as const },
     returnCycles: Array.from({ length: sampleCount }, (_, index) => ({
       backMeasured: true,
-      nextMeasured: index < sampleCount - 1,
+      nextMeasured: index < sampleCount - (concentrated ? 1 : 2),
+      nextContext: "return-after-back" as const,
+      nextReason:
+        !concentrated && sampleCount === 2
+          ? "PR covers purchase and record contexts; return-next is functional acknowledgement only and cannot support completion"
+          : "Preserve the original return-next sequence with its preselected measurement role",
     })),
     setupPolicy:
       "Original fixed-ID actions preserve the fixture state and order; unmeasured setup never starts a response clock.",

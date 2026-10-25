@@ -49,6 +49,13 @@ export async function measureShoppingResponse(
   expected: ShoppingUiExpectation,
   swipe?: "next" | "back",
 ) {
+  if (
+    arguments.length > 4 ||
+    (swipe !== undefined && swipe !== "next" && swipe !== "back")
+  )
+    throw new Error(
+      "Measured response requires its own input; observe-only options are setup-only",
+    );
   const result = await observeShoppingResponse(
     locator,
     selector,
@@ -77,15 +84,38 @@ export async function prepareShoppingResponse(
   return { matched, reason, targetId, expected: acknowledged };
 }
 
+/** Acknowledge an already dispatched setup input without another click or clock. */
+export async function acknowledgeShoppingResponse(
+  locator: Locator,
+  selector: string,
+  expected: ShoppingUiExpectation,
+) {
+  const {
+    matched,
+    reason,
+    targetId,
+    expected: acknowledged,
+  } = await observeShoppingResponse(
+    locator,
+    selector,
+    expected,
+    undefined,
+    false,
+    false,
+  );
+  return { matched, reason, targetId, expected: acknowledged };
+}
+
 async function observeShoppingResponse(
   locator: Locator,
   selector: string,
   expected: ShoppingUiExpectation,
   swipe: "next" | "back" | undefined,
   measured: boolean,
+  dispatchInput = true,
 ) {
   return locator.evaluate(
-    async (root, { selector, expected, swipe, measured }) => {
+    async (root, { selector, expected, swipe, measured, dispatchInput }) => {
       const button = root.matches(selector)
         ? root
         : root.querySelector(selector);
@@ -312,7 +342,7 @@ async function observeShoppingResponse(
         () => finish(false, "Expected target UI did not settle within 15000ms"),
         15000,
       );
-      if (swipe) {
+      if (dispatchInput && swipe) {
         const emit = (type: string, x: number) => {
           const point = { clientX: x, clientY: 200 };
           const event = new Event(type, { bubbles: true });
@@ -325,7 +355,7 @@ async function observeShoppingResponse(
         emit("touchstart", 200);
         emit("touchmove", swipe === "next" ? 80 : 320);
         emit("touchend", swipe === "next" ? 80 : 320);
-      } else (button as HTMLButtonElement).click();
+      } else if (dispatchInput) (button as HTMLButtonElement).click();
       const legacy = measured
         ? new Promise<number>((resolve) => {
             requestAnimationFrame(() =>
@@ -338,7 +368,7 @@ async function observeShoppingResponse(
       observer.disconnect();
       return { legacyMs, ...result, targetId: expected.targetId, expected };
     },
-    { selector, expected, swipe, measured },
+    { selector, expected, swipe, measured, dispatchInput },
   );
 }
 /** Capture actual case settings after measurement, outside every response clock. */

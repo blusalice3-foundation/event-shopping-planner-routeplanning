@@ -7,6 +7,7 @@ import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import {
   measureShoppingResponse as measureResponse,
   prepareShoppingResponse,
+  acknowledgeShoppingResponse,
 } from "./shopping-performance-evidence";
 import { prepareTransferSourceOrigin } from "./shopping-transfer-measurement";
 
@@ -380,6 +381,93 @@ for (const mode of ["response", "setup"] as const)
       expect(sample.uiMs - sample.legacyMs).toBeGreaterThan(100);
     });
   });
+
+for (const transient of [false, true]) {
+  test(`trusted PC setup acknowledges visible membership without another input or clock: transient=${transient}`, async ({
+    page,
+  }) => {
+    await page.setContent(`
+      <div data-testid="focus-mode-header">Visit A</div><button id="next">next</button>
+      <div data-testid="focus-mode-scroll-region" style="height:120px;overflow:auto">
+        <div id="first" data-item-id="old-1" style="height:40px">first</div>
+        <div id="second" data-item-id="old-2" style="height:40px">second</div>
+      </div>`);
+    await page.locator("#next").evaluate((button, transient) => {
+      const trusted: boolean[] = [];
+      Object.assign(window, { setupTrustedEvents: trusted });
+      button.addEventListener("click", (event) => {
+        trusted.push(event.isTrusted);
+        document.querySelector(
+          '[data-testid="focus-mode-header"]',
+        )!.textContent = "Visit B";
+        document.querySelector<HTMLElement>("#first")!.dataset.itemId = "new-1";
+        if (transient) {
+          document.querySelector<HTMLElement>("#second")!.dataset.itemId =
+            "new-2";
+          requestAnimationFrame(() => {
+            document.querySelector<HTMLElement>("#second")!.dataset.itemId =
+              "old-2";
+          });
+        }
+        setTimeout(() => {
+          document.querySelector<HTMLElement>("#second")!.dataset.itemId =
+            "new-2";
+        }, 250);
+      });
+    }, transient);
+    await page.locator("#next").click();
+    await page.evaluate(() => {
+      performance.now = () => {
+        throw new Error("Observe-only setup must not read a clock");
+      };
+    });
+    const result = await acknowledgeShoppingResponse(
+      page.locator("#next"),
+      "button",
+      {
+        targetId: "new-1",
+        visitNumber: "Visit B",
+        visitItemIds: ["new-1", "new-2"],
+      },
+    );
+    expect(result.matched).toBe(true);
+    expect(result).not.toHaveProperty("legacyMs");
+    expect(result).not.toHaveProperty("uiMs");
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as { setupTrustedEvents: boolean[] })
+            .setupTrustedEvents,
+      ),
+    ).toEqual([true]);
+    await expect(page.locator('[data-item-id="new-2"]')).toBeVisible();
+  });
+}
+
+test("measured response rejects observe-only options before emitting an input", async ({
+  page,
+}) => {
+  await page.setContent('<button data-item-id="target">click</button>');
+  await page.locator("button").evaluate((button) => {
+    button.addEventListener("click", () =>
+      button.setAttribute("data-clicked", "true"),
+    );
+    performance.now = () => {
+      throw new Error("Invalid no-input mode must fail before clock start");
+    };
+  });
+  const locator = page.locator("button"),
+    expected = { targetId: "target" };
+  for (const args of [
+    [locator, "button", expected, "observe-only"],
+    [locator, "button", expected, { dispatchInput: false }],
+    [locator, "button", expected, undefined, false],
+  ])
+    await expect(
+      Reflect.apply(measureResponse, undefined, args),
+    ).rejects.toThrow("requires its own input");
+  await expect(locator).not.toHaveAttribute("data-clicked");
+});
 
 test("persisted readback binds event roots to the committed metadata and checkpoint", async () => {
   const items = [{ id: "one", circle: "ユーザー登録", quantity: 1 }];

@@ -5,6 +5,7 @@ import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import {
   measureShoppingResponse,
   prepareShoppingResponse,
+  acknowledgeShoppingResponse,
   performanceMeasurementSampleCount,
   performanceMeasurementProfile,
   shoppingEvidenceIdentity,
@@ -731,12 +732,19 @@ for (const count of [150, 500, 1500])
         measured: boolean;
         reason: string;
         verified: boolean;
+        context?: string;
+        inputKind: "dom-click" | "touch-sequence" | "playwright-trusted";
       }> = [];
       const declareInput = (
         operation: string,
         expected: ShoppingUiExpectation,
         measured: boolean,
         reason: string,
+        context?: string,
+        inputKind:
+          | "dom-click"
+          | "touch-sequence"
+          | "playwright-trusted" = "dom-click",
       ) => {
         const input = {
           order: inputJournal.length,
@@ -746,6 +754,8 @@ for (const count of [150, 500, 1500])
           measured,
           reason,
           verified: false,
+          context,
+          inputKind,
         };
         inputJournal.push(input);
         return input;
@@ -828,6 +838,7 @@ for (const count of [150, 500, 1500])
         reason = record
           ? "profile-selected measurement"
           : "preserve original fixed-ID state before later operations",
+        context?: string,
       ) => {
         await locator.scrollIntoViewIfNeeded();
         if (!expected) {
@@ -852,7 +863,7 @@ for (const count of [150, 500, 1500])
             };
           }
         }
-        const declared = declareInput(group, expected, record, reason);
+        const declared = declareInput(group, expected, record, reason, context);
         if (record) {
           const result = await measureShoppingResponse(
             locator,
@@ -874,6 +885,13 @@ for (const count of [150, 500, 1500])
       const navigateResponse = async (
         direction: "next" | "back",
         record = true,
+        context:
+          | "initial-visit-setup"
+          | "after-focus-purchase"
+          | "after-record"
+          | "return-after-back"
+          | "back" = direction === "back" ? "back" : "after-record",
+        reason = "profile-selected navigation measurement",
       ) => {
         const nextIndex = focusVisitIndex + (direction === "next" ? 1 : -1);
         const itemIndex =
@@ -897,7 +915,13 @@ for (const count of [150, 500, 1500])
               direction,
               expected,
               false,
-              "preserve original visit order outside response measurement",
+              reason,
+              context,
+              layout === "smartphone"
+                ? "touch-sequence"
+                : context === "initial-visit-setup"
+                  ? "playwright-trusted"
+                  : "dom-click",
             )
           : undefined;
         if (layout === "pc") {
@@ -906,13 +930,32 @@ for (const count of [150, 500, 1500])
             { exact: true },
           );
           if (record)
-            await clickResponse(button, "button", direction, expected);
-          else {
-            const result = await prepareShoppingResponse(
+            await clickResponse(
               button,
               "button",
+              direction,
               expected,
+              true,
+              reason,
+              context,
             );
+          else {
+            // Only this original record=false route used Playwright's trusted click.
+            // New sampling-only setup keeps the original measured DOM click input.
+            let result;
+            if (context === "initial-visit-setup") {
+              await button.click();
+              result = await acknowledgeShoppingResponse(
+                button,
+                "button",
+                expected,
+              );
+            } else
+              result = await prepareShoppingResponse(
+                button,
+                "button",
+                expected,
+              );
             expect(result.matched, result.reason).toBe(true);
           }
         } else if (record) {
@@ -920,7 +963,9 @@ for (const count of [150, 500, 1500])
             direction,
             expected,
             true,
-            "profile-selected measurement",
+            reason,
+            context,
+            "touch-sequence",
           );
           const result = await measureShoppingResponse(
             page.getByTestId("focus-mode-scroll-region"),
@@ -1064,7 +1109,12 @@ for (const count of [150, 500, 1500])
       await page.getByTitle("集中モード", { exact: true }).click();
       if (!concentrated)
         for (let index = 0; index < 20; index++)
-          await navigateResponse("next", false);
+          await navigateResponse(
+            "next",
+            false,
+            "initial-visit-setup",
+            "preserve original trusted PC visit setup",
+          );
       if (mapVisible)
         await page.getByTitle("マップを表示", { exact: true }).click();
       await diagnostics("reset");
@@ -1080,7 +1130,13 @@ for (const count of [150, 500, 1500])
           undefined,
           planned.measured,
         );
-        if (!concentrated) await navigateResponse("next", false);
+        if (!concentrated)
+          await navigateResponse(
+            "next",
+            planned.nextMeasured,
+            planned.nextContext,
+            "next immediately after the original focus purchase",
+          );
       }
       const target = samplingPlan.focusSoldOut.targetId;
       recordTarget = target;
@@ -1131,7 +1187,12 @@ for (const count of [150, 500, 1500])
           row.getByRole("button", { name: /Current status: 売切/ }),
         ).toBeVisible();
       }
-      await navigateResponse("next");
+      await navigateResponse(
+        "next",
+        samplingPlan.postRecordNext.measured,
+        samplingPlan.postRecordNext.context,
+        "next immediately after the original record",
+      );
       await expect(dialog).toBeHidden();
       await expect
         .poll(async () => (await durableItem(page, target)).remarks, {
@@ -1148,8 +1209,18 @@ for (const count of [150, 500, 1500])
       await backProfiler?.send("Profiler.start");
       // Returning to the large first space also exercises retained input state.
       for (const cycle of samplingPlan.returnCycles) {
-        await navigateResponse("back", cycle.backMeasured);
-        await navigateResponse("next", cycle.nextMeasured);
+        await navigateResponse(
+          "back",
+          cycle.backMeasured,
+          "back",
+          "return to the original previous visit",
+        );
+        await navigateResponse(
+          "next",
+          cycle.nextMeasured,
+          cycle.nextContext,
+          cycle.nextReason,
+        );
       }
       if (backProfiler) {
         const profile = await backProfiler.send("Profiler.stop");

@@ -22,6 +22,7 @@ for (const count of [2, 10])
           Number(plan.focusSoldOut.measured),
         record: plan.recordAnswers.length,
         next:
+          plan.focus.filter((entry) => entry.nextMeasured).length +
           Number(plan.postRecordNext.measured) +
           plan.returnCycles.filter((entry) => entry.nextMeasured).length,
         back: plan.returnCycles.filter((entry) => entry.backMeasured).length,
@@ -55,6 +56,42 @@ for (const count of [2, 10])
         "Original execution record target is prepared",
       );
       assert.match(plan.setupPolicy, /never starts a response clock/);
+      const contexts = {
+        purchase: plan.focus.filter((entry) => entry.nextMeasured).length,
+        record: Number(plan.postRecordNext.measured),
+        return: plan.returnCycles.filter((entry) => entry.nextMeasured).length,
+      };
+      assert.deepEqual(
+        contexts,
+        concentrated
+          ? { purchase: 0, record: 1, return: count - 1 }
+          : { purchase: 1, record: 1, return: count - 2 },
+      );
+      if (!concentrated && count === 10)
+        assert.ok(Object.values(contexts).every((value) => value >= 1));
+      assert.equal(
+        plan.purpose,
+        count === 2 ? "pr-feedback-only" : "completion",
+      );
+      assert.ok(
+        plan.focus.every(
+          (entry) => entry.nextContext === "after-focus-purchase",
+        ),
+      );
+      assert.equal(plan.postRecordNext.context, "after-record");
+      assert.ok(
+        plan.returnCycles.every(
+          (entry) => entry.nextContext === "return-after-back",
+        ),
+      );
+      if (!concentrated && count === 2) {
+        assert.ok(plan.returnCycles.every((entry) => !entry.nextMeasured));
+        assert.ok(
+          plan.returnCycles.every((entry) =>
+            /cannot support completion/.test(entry.nextReason),
+          ),
+        );
+      }
       if (!concentrated && count === 2) {
         assert.equal(plan.focus.filter((entry) => entry.measured).length, 0);
         assert.equal(plan.extraFocusPurchase.measured, true);
