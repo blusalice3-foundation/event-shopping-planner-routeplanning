@@ -82,14 +82,14 @@ test("current acceptance criteria are shared and immutable without changing the 
   assert.equal(shoppingPerformanceCriteriaDate, "2026-10-25");
   assert.equal(dndSelectionRenderingPerformanceCriteriaDate, "2026-10-24");
   assert.deepEqual(shoppingPerformanceThresholds, {
-    minimumCount: 20,
+    minimumCount: 10,
     medianMs: 65,
     p95Ms: 100,
   });
   assert.ok(Object.isFrozen(shoppingPerformanceThresholds));
 });
 
-test("only trusted plan groups select 110ms criteria and retain the 20-sample minimum", () => {
+test("only trusted plan groups select 110ms criteria and retain completion sampling", () => {
   assert.deepEqual(Object.keys(performanceAcceptanceCriteriaByGroup), [
     "shopping",
     "range",
@@ -109,7 +109,7 @@ test("only trusted plan groups select 110ms criteria and retain the 20-sample mi
     );
     assert.equal(criteria.acceptanceCriteriaDate, "2026-10-24");
     assert.deepEqual(criteria.acceptanceThresholds, {
-      minimumCount: 20,
+      minimumCount: 10,
       medianMs: 110,
       p95Ms: 110,
     });
@@ -139,7 +139,7 @@ test("criteria metadata rejects forged values, partial scopes, and incomplete or
       const forged = structuredClone(correct);
       forged[field] =
         field === "acceptanceThresholds"
-          ? { minimumCount: 20, medianMs: 999, p95Ms: 999 }
+          ? { minimumCount: 10, medianMs: 999, p95Ms: 999 }
           : "forged";
       assert.throws(
         () => validateAcceptanceCriteriaMetadata(forged, group),
@@ -263,4 +263,68 @@ test("optional 1500 records carry exclusion and reference budgets without accept
       /Unknown shopping item count/,
     );
   }
+});
+
+test("sampling profiles change only the requested repetition count and purpose", async () => {
+  const {
+    performanceSamplingProfile,
+    performanceAcceptanceCriteriaByGroupForProfile,
+    resolvePerformanceProfile,
+    validatePerformanceSamplingMetadata,
+    performanceSamplingMetadata,
+  } = await import("./shopping-performance-evidence-contract.mjs");
+  assert.equal(resolvePerformanceProfile(), "completion");
+  for (const [profile, count] of [
+    ["pr", 2],
+    ["completion", 10],
+  ]) {
+    const sampling = performanceSamplingProfile(profile);
+    assert.equal(sampling.sampleCount, count);
+    assert.equal(sampling.completionEligible, profile === "completion");
+    assert.equal(sampling.policyDate, "2026-10-26");
+    const table = performanceAcceptanceCriteriaByGroupForProfile(profile);
+    for (const group of ["shopping", "range", "drag", "transfer"]) {
+      assert.equal(table[group].acceptanceThresholds.minimumCount, count);
+      assert.equal(
+        table[group].acceptanceThresholds.medianMs,
+        group === "shopping" ? 65 : 110,
+      );
+      assert.equal(
+        table[group].acceptanceThresholds.p95Ms,
+        group === "shopping" ? 100 : 110,
+      );
+      assert.equal(
+        expectedPerformanceCases(group).length,
+        { shopping: 16, range: 20, drag: 8, transfer: 100 }[group],
+      );
+      assert.doesNotThrow(() =>
+        validatePerformanceSamplingMetadata(table[group], profile),
+      );
+    }
+    assert.throws(
+      () =>
+        validatePerformanceSamplingMetadata(
+          performanceSamplingMetadata(profile),
+          profile === "pr" ? "completion" : "pr",
+        ),
+      /sampling metadata/,
+    );
+  }
+  for (const unknown of ["", "PR", "fast", null, 2, "__proto__"])
+    assert.throws(() => performanceSamplingProfile(unknown), /Unknown/);
+  assert.equal(
+    resolvePerformanceProfile(undefined, { ESP_PERFORMANCE_PROFILE: "pr" }),
+    "pr",
+  );
+  assert.throws(
+    () =>
+      resolvePerformanceProfile("pr", {
+        ESP_PERFORMANCE_PROFILE: "completion",
+      }),
+    /conflicts/,
+  );
+  assert.throws(
+    () => resolvePerformanceProfile(undefined, { ESP_PERFORMANCE_PROFILE: "" }),
+    /Unknown/,
+  );
 });

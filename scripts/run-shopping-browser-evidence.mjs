@@ -21,7 +21,10 @@ import {
 } from "./verify-shopping-performance-evidence.mjs";
 
 import {
-  performanceAcceptanceCriteriaByGroup,
+  performanceAcceptanceCriteriaByGroupForProfile,
+  performanceSamplingMetadata,
+  resolvePerformanceProfile,
+  performanceProfileEnvironment,
   shoppingLargeListDiagnosticTag,
 } from "./shopping-performance-evidence-contract.mjs";
 
@@ -85,7 +88,7 @@ export function groupInvocation({
     command: process.execPath,
     args,
     env: {
-      ...env,
+      ...performanceProfileEnvironment(env),
       PLAYWRIGHT_HTML_REPORT: html,
       PLAYWRIGHT_HTML_OUTPUT_DIR: html,
       PLAYWRIGHT_HTML_OPEN: "never",
@@ -93,6 +96,7 @@ export function groupInvocation({
       ESP_EVIDENCE_PHASE: phase,
       ESP_EVIDENCE_RUN_ID: runId,
       ESP_EVIDENCE_GROUP: group,
+      ESP_PERFORMANCE_PROFILE: resolvePerformanceProfile(undefined, env),
     },
   };
 }
@@ -295,6 +299,7 @@ export async function collectBrowserProvenance(cwd, env) {
       ...specs,
       "tests/browser/performance-summary.ts",
       "tests/browser/shopping-performance-evidence.ts",
+      "tests/browser/shopping-operation-sampling.ts",
       "tests/browser/shopping-transfer-measurement.ts",
       "scripts/verify-shopping-performance-evidence.mjs",
       "scripts/baseline-frame-performance-observations.mjs",
@@ -308,17 +313,31 @@ export async function collectBrowserProvenance(cwd, env) {
   return {
     ...sourceIdentity,
     instrumentVersion: INSTRUMENT_VERSION,
-    acceptanceCriteriaByGroup: performanceAcceptanceCriteriaByGroup,
+    acceptanceCriteriaByGroup: performanceAcceptanceCriteriaByGroupForProfile(
+      resolvePerformanceProfile(undefined, env),
+    ),
+    ...performanceSamplingMetadata(resolvePerformanceProfile(undefined, env)),
     instrumentPatch: await sourceHashes(cwd, instruments),
     fixtureSources: await sourceHashes(cwd, [
-      ...new Set([...specs, ...transferSources]),
+      ...new Set([
+        ...specs,
+        "tests/browser/shopping-operation-sampling.ts",
+        ...transferSources,
+      ]),
     ]),
     ...(await collectBrowserEnvironment(cwd, env, sourceIdentity)),
   };
 }
 export async function runBrowserEvidence(options = {}) {
   const cwd = path.resolve(options.cwd ?? projectRoot);
-  const env = { ...(options.env ?? process.env) };
+  let env = { ...(options.env ?? process.env) };
+  let profile, profileError;
+  try {
+    profile = resolvePerformanceProfile(options.profile, env);
+  } catch (error) {
+    profileError = error.message;
+  }
+  if (!profileError) env = performanceProfileEnvironment(env, profile);
   const phase = options.phase ?? "after";
   if (!["before", "after"].includes(phase))
     throw new Error("phase must be before or after");
@@ -337,7 +356,16 @@ export async function runBrowserEvidence(options = {}) {
   await mkdir(runRoot); // exclusive run ID: never reuse or overwrite earlier evidence
   const result = {
     schemaVersion: 1,
-    acceptanceCriteriaByGroup: performanceAcceptanceCriteriaByGroup,
+    ...(profileError
+      ? {
+          samplingConfigurationError: profileError,
+          requestedProfile: options.profile ?? null,
+        }
+      : {
+          acceptanceCriteriaByGroup:
+            performanceAcceptanceCriteriaByGroupForProfile(profile),
+          ...performanceSamplingMetadata(profile),
+        }),
     phase,
     runId,
     runRoot,
@@ -366,7 +394,7 @@ export async function runBrowserEvidence(options = {}) {
   await checkpoint();
   let exitCode = 1;
   try {
-    const checked = await preflight({ env, runRoot });
+    const checked = await preflight({ env, runRoot, profile: options.profile });
     result.preflight = {
       ...checked,
       exitCode: checked.status === "passed" ? 0 : 1,
@@ -379,7 +407,11 @@ export async function runBrowserEvidence(options = {}) {
     Object.assign(
       result,
       options.provenance ?? (await collectBrowserProvenance(cwd, env)),
-      { acceptanceCriteriaByGroup: performanceAcceptanceCriteriaByGroup },
+      {
+        acceptanceCriteriaByGroup:
+          performanceAcceptanceCriteriaByGroupForProfile(profile),
+        ...performanceSamplingMetadata(profile),
+      },
     );
     const npmCli = options.npmCli ?? (await resolveNpmCli(env));
     for (const definition of GROUPS) {
@@ -409,6 +441,7 @@ export async function runBrowserEvidence(options = {}) {
           group: definition.group,
           phase,
           runId,
+          profile,
         });
         entry.evidenceStatus = evidence.status;
         entry.evidenceExitCode = evidence.status === "passed" ? 0 : 1;
@@ -442,12 +475,21 @@ if (
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
   try {
-    const args = process.argv.slice(2);
-    if (args.length !== 2 || args[0] !== "--phase")
-      throw new Error(
-        "Usage: run-shopping-browser-evidence.mjs --phase before|after",
-      );
-    const { exitCode, result } = await runBrowserEvidence({ phase: args[1] });
+    const args = process.argv.slice(2),
+      options = {};
+    if (![2, 4].includes(args.length))
+      throw new Error("Usage: --phase before|after [--profile pr|completion]");
+    for (let i = 0; i < args.length; i += 2) {
+      if (
+        !["--phase", "--profile"].includes(args[i]) ||
+        !args[i + 1] ||
+        Object.hasOwn(options, args[i].slice(2))
+      )
+        throw new Error("Invalid or duplicate runner option");
+      options[args[i].slice(2)] = args[i + 1];
+    }
+    if (!options.phase) throw new Error("Missing --phase");
+    const { exitCode, result } = await runBrowserEvidence(options);
     process.stdout.write(
       `${result.status.toUpperCase()} browser evidence: ${result.runRoot}${result.error ? `\n${result.error}` : ""}\n`,
     );

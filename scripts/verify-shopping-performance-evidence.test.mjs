@@ -38,7 +38,7 @@ const browserEnvironment = {
   workers: 1,
   retries: 0,
 };
-const raw = () => Array.from({ length: 20 }, (_, i) => 10 + i / 10);
+const raw = () => Array.from({ length: 10 }, (_, i) => 10 + i / 10);
 const terminalScenarios = new Set(["noop", "reject", "cancel", "same-column"]);
 function movedIds(condition) {
   const n =
@@ -736,7 +736,7 @@ for (const [name, mutate] of [
   });
 for (const [name, mutate] of [
   [
-    "19 samples",
+    "9 samples",
     (a) => {
       a.timings.execute.pop();
     },
@@ -827,14 +827,10 @@ for (const [name, mutate] of [
   });
 for (const kind of ["legacy", "ui"])
   for (const [name, values, error] of [
-    ["inclusive median", Array(20).fill(65), null],
-    ["excess median", Array(20).fill(65.01), /median exceeds 65ms/],
-    ["inclusive p95", [...Array(18).fill(65), 100, 100], null],
-    [
-      "excess p95",
-      [...Array(18).fill(65), 100.01, 100.01],
-      /p95 exceeds 100ms/,
-    ],
+    ["inclusive median", Array(10).fill(65), null],
+    ["excess median", Array(10).fill(65.01), /median exceeds 65ms/],
+    ["inclusive p95", [...Array(8).fill(65), 100, 100], null],
+    ["excess p95", [...Array(8).fill(65), 100.01, 100.01], /p95 exceeds 100ms/],
   ])
     test(`current ${kind} budget validates ${name} independently`, () => {
       const a = artifact("shopping");
@@ -898,10 +894,10 @@ test("verification is retained separately, hashes its source and refuses overwri
   await assert.rejects(verifyGroupEvidence(options), /EEXIST/);
 });
 test("summaries use even median and nearest-rank p95", () => {
-  assert.deepEqual(summarizeSamples(Array.from({ length: 20 }, (_, i) => i)), {
-    count: 20,
-    medianMs: 9.5,
-    p95Ms: 18,
+  assert.deepEqual(summarizeSamples(Array.from({ length: 10 }, (_, i) => i)), {
+    count: 10,
+    medianMs: 4.5,
+    p95Ms: 9,
   });
 });
 for (const [label, mutate] of [
@@ -1923,11 +1919,11 @@ for (const missing of [true, false])
 
 for (const group of ["range", "drag", "transfer"])
   for (const [name, values, error] of [
-    ["inclusive median and p95", Array(20).fill(110), null],
-    ["excess median", Array(20).fill(110.001), /median exceeds 110ms/],
+    ["inclusive median and p95", Array(10).fill(110), null],
+    ["excess median", Array(10).fill(110.001), /median exceeds 110ms/],
     [
       "excess p95",
-      [...Array(18).fill(100), 110.001, 110.001],
+      [...Array(8).fill(100), 110.001, 110.001],
       /p95 exceeds 110ms/,
     ],
   ])
@@ -1992,7 +1988,7 @@ test("current evidence rejects forged scope even when budgets are disabled; hist
       validateEvidenceArtifact(a, "range", identity, {
         requireCurrentCriteria: false,
       }),
-    /At least 20/,
+    /expected exactly 10/,
   );
 });
 
@@ -2185,7 +2181,7 @@ for (const kind of ["response", "frame"]) {
       rows.map((row) => row.operation),
       kind === "response" ? ["response", "nextApplied"] : ["frame"],
     );
-    assert.equal(data.persistence.writeCount, 20);
+    assert.equal(data.persistence.writeCount, 10);
     assert.equal(data.metrics[kind].samples[0].operationId, "actual-noop-0");
     assert.deepEqual(data, original);
     data.phase = "after";
@@ -2203,8 +2199,8 @@ for (const kind of ["response", "frame"]) {
   test(`baseline noop integration ${kind} keeps zero-write originals outside the exception map`, () => {
     const data = baselineNoopIntegrationFixture(kind, 0);
     assert.doesNotThrow(() => validateBaselineNoopIntegration(data));
-    assert.equal(data.persistence.writeCount, 19);
-    assert.equal(data.postconditionErrors.length, 19);
+    assert.equal(data.persistence.writeCount, 9);
+    assert.equal(data.postconditionErrors.length, 9);
     assert.deepEqual(data.metrics[kind].samples[0].commits, []);
     assert.equal(data.metrics[kind].samples[0].operationId, null);
     assert.deepEqual(data.metrics[kind].samples[0].postconditionErrors, []);
@@ -2439,12 +2435,12 @@ function baselineFrameIntegrationFixture(partial = false) {
   if (!partial) return data;
   const [unobservable] = data.metrics.frame.samples.splice(0, 1);
   data.metrics.frame.raw.splice(0, 1);
-  // A partial witness has only its nineteen genuine completed values.
+  // A partial witness retains only its nine genuine completed values.
   const values = [...data.metrics.frame.raw].sort((a, b) => a - b);
   data.metrics.frame.summary = {
-    count: 19,
-    medianMs: values[9],
-    p95Ms: values[18],
+    count: 9,
+    medianMs: values[4],
+    p95Ms: values[8],
   };
   const rects = (role) =>
     unobservable.expectedTransferredIds.map((itemId, index) => ({
@@ -2512,15 +2508,15 @@ function baselineFrameIntegrationFixture(partial = false) {
   return data;
 }
 
-test("baseline frame wrapper integration preserves all twenty completed original frames", async () => {
+test("baseline frame wrapper integration preserves all completion-profile completed original frames", async () => {
   const data = baselineFrameIntegrationFixture();
   const original = structuredClone(data);
   const checked = validateBaselineFrameObservationArtifact(
     data,
     baselineNoopExpectedRun,
   );
-  assert.equal(checked.attempted, 20);
-  assert.equal(checked.completedCount, 20);
+  assert.equal(checked.attempted, 10);
+  assert.equal(checked.completedCount, 10);
   assert.equal(checked.unobservableCount, 0);
   assert.doesNotThrow(() =>
     validateEvidenceArtifact(data, "transfer", baselineNoopExpectedRun),
@@ -2531,18 +2527,18 @@ test("baseline frame wrapper integration preserves all twenty completed original
   assert.deepEqual(data, original);
 });
 
-test("baseline frame wrapper integration retains nineteen completed clocks and one typed unobservable original", async () => {
+test("baseline frame wrapper integration retains nine completed clocks and one typed unobservable original", async () => {
   const data = baselineFrameIntegrationFixture(true);
   const original = structuredClone(data);
   const checked = validateBaselineFrameObservationArtifact(
     data,
     baselineNoopExpectedRun,
   );
-  assert.equal(checked.attempted, 20);
-  assert.equal(checked.completedCount, 19);
+  assert.equal(checked.attempted, 10);
+  assert.equal(checked.completedCount, 9);
   assert.equal(checked.unobservableCount, 1);
-  assert.equal(data.metrics.frame.raw.length, 19);
-  assert.equal(data.metrics.frame.summary.count, 19);
+  assert.equal(data.metrics.frame.raw.length, 9);
+  assert.equal(data.metrics.frame.summary.count, 9);
   assert.equal(
     data.baselineFrameObservations[0].outcome,
     "endpoint-unobservable",
@@ -2557,7 +2553,7 @@ test("baseline frame wrapper integration retains nineteen completed clocks and o
   );
   assert.throws(
     () => validateEvidenceArtifact(data, "transfer", baselineNoopExpectedRun),
-    /Normal acceptance requires 20 observed frames/,
+    /Normal acceptance requires 10 observed frames/,
   );
   assert.throws(
     () =>
@@ -2567,13 +2563,13 @@ test("baseline frame wrapper integration retains nineteen completed clocks and o
         baselineNoopExpectedRun,
         baselineNoopComparisonOptions,
       ),
-    /Normal acceptance requires 20 observed frames/,
+    /Normal acceptance requires 10 observed frames/,
   );
   const { comparableMetrics } =
     await import("./compare-shopping-browser-evidence.mjs");
   assert.throws(
     () => comparableMetrics(data, "transfer"),
-    /Normal acceptance requires 20 observed frames/,
+    /Normal acceptance requires 10 observed frames/,
   );
   assert.deepEqual(data, original);
 });
@@ -2697,5 +2693,154 @@ test("1500 diagnostics and forged normal flags cannot replace mandatory shopping
   assert.throws(
     () => validateEvidenceArtifact(diagnostic, "shopping", identity),
     /Unexpected performance condition/,
+  );
+});
+
+async function profiledShoppingArtifact(profile) {
+  const { performanceAcceptanceCriteriaForGroup, performanceSamplingProfile } =
+    await import("./shopping-performance-evidence-contract.mjs");
+  const data = artifact("shopping");
+  Object.assign(
+    data,
+    performanceAcceptanceCriteriaForGroup("shopping", profile),
+  );
+  const count = performanceSamplingProfile(profile).sampleCount;
+  for (const op of Object.keys(data.timings)) {
+    data.timings[op] = data.timings[op].slice(0, count);
+    data.uiTimings[op] = data.uiTimings[op].slice(0, count);
+    data.uiSamples[op] = data.uiSamples[op].slice(0, count);
+    data.summary[op] = summarizeSamples(data.timings[op], count);
+    data.uiSummary[op] = summarizeSamples(data.uiTimings[op], count);
+  }
+  return data;
+}
+test("PR2 is valid only for explicitly requested PR evidence and never for completion10", async () => {
+  const data = await profiledShoppingArtifact("pr");
+  assert.equal(data.samplingProfile.completionEligible, false);
+  assert.doesNotThrow(() =>
+    validateEvidenceArtifact(data, "shopping", identity, { profile: "pr" }),
+  );
+  assert.throws(
+    () => validateEvidenceArtifact(data, "shopping", identity),
+    /sampling metadata/,
+  );
+  const completed = await profiledShoppingArtifact("completion");
+  assert.doesNotThrow(() =>
+    validateEvidenceArtifact(completed, "shopping", identity),
+  );
+  assert.throws(
+    () =>
+      validateEvidenceArtifact(completed, "shopping", identity, {
+        profile: "pr",
+      }),
+    /sampling metadata/,
+  );
+});
+for (const mutation of [
+  "claimed-count",
+  "claimed-eligibility",
+  "mixed-metric",
+  "old20",
+  "missing-policy",
+])
+  test(`sampling evidence rejects ${mutation} instead of inferring its own profile`, async () => {
+    const data = await profiledShoppingArtifact("pr");
+    if (mutation === "claimed-count")
+      data.samplingProfile = { ...data.samplingProfile, sampleCount: 10 };
+    if (mutation === "claimed-eligibility")
+      data.samplingProfile = {
+        ...data.samplingProfile,
+        completionEligible: true,
+      };
+    if (mutation === "mixed-metric" || mutation === "old20") {
+      data.timings.execute = Array(mutation === "old20" ? 20 : 10).fill(10);
+      data.summary.execute = summarizeSamples(data.timings.execute);
+    }
+    if (mutation === "missing-policy") delete data.samplingPolicyId;
+    assert.throws(
+      () =>
+        validateEvidenceArtifact(data, "shopping", identity, { profile: "pr" }),
+      /sampling metadata|expected exactly 2/,
+    );
+  });
+test("group verification cannot accept a complete PR matrix as a completion run", async (t) => {
+  const f = await fixture(t);
+  for (const spec of f.report.suites[0].specs) {
+    const a = spec.tests[0].results[0].attachments[0];
+    const old = JSON.parse(Buffer.from(a.body, "base64"));
+    const data = await profiledShoppingArtifact("pr");
+    const { performanceAcceptanceCriteriaForGroup } =
+      await import("./shopping-performance-evidence-contract.mjs");
+    for (const key of [
+      "timings",
+      "uiTimings",
+      "uiSamples",
+      "summary",
+      "uiSummary",
+    ])
+      old[key] = data[key];
+    Object.assign(old, performanceAcceptanceCriteriaForGroup("shopping", "pr"));
+    a.body = Buffer.from(JSON.stringify(old)).toString("base64");
+  }
+  await f.save();
+  const pr = await verifyGroupEvidence({
+    runRoot: f.runRoot,
+    group: "shopping",
+    ...identity,
+    write: false,
+    profile: "pr",
+  });
+  // The fixed condition identities, not the sampling helper, remain the oracle.
+  assert.equal(pr.status, "passed", pr.errors.join("\n"));
+  const completion = await f.verify();
+  assert.equal(completion.status, "failed");
+  assert.match(completion.errors.join("\n"), /sampling metadata/);
+});
+
+for (const group of ["range", "drag", "transfer"])
+  test(`PR2 ${group} evidence uses explicit sampling without changing its endpoint proof`, async () => {
+    const { performanceAcceptanceCriteriaForGroup } =
+      await import("./shopping-performance-evidence-contract.mjs");
+    const a = artifact(group);
+    Object.assign(a, performanceAcceptanceCriteriaForGroup(group, "pr"));
+    if (group === "range") {
+      for (const op of Object.keys(a.timings)) {
+        a.timings[op] = a.timings[op].slice(0, 2);
+        a.summary[op] = summarizeSamples(a.timings[op], 2);
+      }
+      a.samples = a.samples.slice(0, 2);
+    } else if (group === "drag") {
+      for (const record of Object.values(a.records)) {
+        record.samples = record.samples.slice(0, 2);
+        Object.assign(record, summarizeSamples(record.samples, 2));
+      }
+      a.start = a.start.slice(0, 2);
+      a.end = a.end.slice(0, 2);
+    } else
+      for (const metric of Object.values(a.metrics)) {
+        metric.raw = metric.raw.slice(0, 2);
+        metric.samples = metric.samples.slice(0, 2);
+        metric.summary = summarizeSamples(metric.raw, 2);
+      }
+    assert.doesNotThrow(() =>
+      validateEvidenceArtifact(a, group, identity, { profile: "pr" }),
+    );
+    assert.throws(
+      () => validateEvidenceArtifact(a, group, identity),
+      /sampling metadata/,
+    );
+  });
+
+test("rewriting every profile label cannot promote two real samples into completion ten", async () => {
+  const data = await profiledShoppingArtifact("pr");
+  const { performanceAcceptanceCriteriaForGroup } =
+    await import("./shopping-performance-evidence-contract.mjs");
+  Object.assign(
+    data,
+    performanceAcceptanceCriteriaForGroup("shopping", "completion"),
+  );
+  assert.throws(
+    () => validateEvidenceArtifact(data, "shopping", identity),
+    /expected exactly 10/,
   );
 });

@@ -592,5 +592,133 @@ test("1500 diagnostics are opt-in and never join the default or CI acceptance gr
     /layout=\$\{layout\} \$\{shoppingPerformanceTestTag\(count\)\}/,
   );
   assert.match(source, /shoppingOperationEvidenceIdentity\(count\)/);
-  assert.match(source, /shoppingCollectionMetadataForCount\(count\)/);
+  assert.match(
+    source,
+    /shoppingCollectionMetadataForCount\(count,\s*performanceMeasurementProfile\)/,
+  );
+});
+
+for (const [profile, count] of [
+  ["pr", 2],
+  ["completion", 10],
+])
+  test(`normal runner stamps ${profile} sampling into every child and verification`, async (t) => {
+    const options = await fixture(t),
+      calls = [],
+      checked = [];
+    const { result, exitCode } = await runBrowserEvidence({
+      ...options,
+      profile,
+      spawn: async (invocation) => {
+        calls.push(invocation);
+        return { exitCode: 0, signal: null };
+      },
+      verify: async (args) => {
+        checked.push(args);
+        return { status: "passed" };
+      },
+    });
+    assert.equal(exitCode, 0);
+    assert.equal(result.samplingProfile.id, profile);
+    assert.equal(result.samplingProfile.sampleCount, count);
+    assert.equal(
+      result.samplingProfile.completionEligible,
+      profile === "completion",
+    );
+    assert.equal(result.samplingPolicyId, "performance-samples-2026-10-26");
+    assert.deepEqual(
+      calls.map((c) => c.env.ESP_PERFORMANCE_PROFILE),
+      Array(5).fill(profile),
+    );
+    assert.deepEqual(
+      checked.map((c) => c.profile),
+      Array(4).fill(profile),
+    );
+    assert.equal(
+      result.acceptanceCriteriaByGroup.shopping.acceptanceThresholds
+        .minimumCount,
+      count,
+    );
+    assert.equal(options.env.ESP_PERFORMANCE_PROFILE, undefined);
+  });
+test("unknown and contradictory sampling profiles are recorded before starting a child", async (t) => {
+  const options = await fixture(t);
+  let started = 0;
+  const configs = [
+    { profile: "fast" },
+    { profile: "pr", env: { ESP_PERFORMANCE_PROFILE: "completion" } },
+    { env: { ESP_PERFORMANCE_PROFILE: "" } },
+    {
+      env: {
+        ESP_PERFORMANCE_PROFILE: "pr",
+        esp_performance_profile: "completion",
+      },
+    },
+  ];
+  for (const [index, config] of configs.entries()) {
+    const { result, exitCode } = await runBrowserEvidence({
+      ...options,
+      ...config,
+      runId: `invalid-profile-${index}`,
+      spawn: async () => {
+        started++;
+        return { exitCode: 0 };
+      },
+    });
+    assert.equal(exitCode, 1);
+    assert.equal(result.preflight.status, "failed");
+    assert.match(result.error, /ESP_PERFORMANCE_PROFILE/);
+    assert.ok(result.groups.every((group) => group.status === "not-run"));
+    const stored = JSON.parse(
+      await readFile(path.join(result.runRoot, "run-result.json"), "utf8"),
+    );
+    assert.equal(
+      stored.samplingConfigurationError,
+      result.samplingConfigurationError,
+    );
+  }
+  assert.equal(started, 0);
+});
+test("Windows lowercase profile resolves once, canonicalizes only child env and preserves parent", async (t) => {
+  const options = await fixture(t);
+  options.env.esp_performance_profile = "pr";
+  const original = { ...options.env },
+    calls = [];
+  const { result, exitCode } = await runBrowserEvidence({
+    ...options,
+    spawn: async (call) => {
+      calls.push(call);
+      return { exitCode: 0, signal: null };
+    },
+    verify: async () => ({ status: "passed" }),
+  });
+  assert.equal(exitCode, 0);
+  assert.equal(result.samplingProfile.id, "pr");
+  assert.deepEqual(options.env, original);
+  for (const call of calls) {
+    assert.equal(call.env.ESP_PERFORMANCE_PROFILE, "pr");
+    assert.equal(call.env.esp_performance_profile, undefined);
+  }
+});
+test("CI and explicit package scripts choose PR2 or completion10 without changing the normal group chain", async () => {
+  const pkg = JSON.parse(
+    await readFile(path.join(repository, "package.json"), "utf8"),
+  );
+  for (const profile of ["pr", "completion"])
+    assert.equal(
+      pkg.scripts[`test:browser:${profile}`],
+      `npm run build:release-a && node scripts/run-shopping-browser-evidence.mjs --phase after --profile ${profile}`,
+    );
+  const ci = await readFile(
+    path.join(repository, ".github/workflows/quality.yml"),
+    "utf8",
+  );
+  assert.match(
+    ci,
+    /ESP_PERFORMANCE_PROFILE:.*github\.event_name == 'pull_request'.*'pr'.*'completion'/,
+  );
+  assert.deepEqual(
+    GROUPS.map((g) => g.group),
+    ["functional", "shopping", "range", "drag", "transfer"],
+  );
 });

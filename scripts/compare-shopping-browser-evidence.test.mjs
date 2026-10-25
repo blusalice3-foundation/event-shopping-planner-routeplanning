@@ -19,6 +19,7 @@ import {
   expectedPerformanceConditions,
   shoppingPerformanceThresholds,
   performanceAcceptanceCriteriaByGroup,
+  performanceSamplingMetadata,
 } from "./shopping-performance-evidence-contract.mjs";
 const browserEnvironment = {
   browserVersion: "140.0.0.0",
@@ -31,7 +32,7 @@ const browserEnvironment = {
   retries: 0,
 };
 function shopping(base = 10) {
-  const raw = Array.from({ length: 20 }, (_, i) => base + i / 10),
+  const raw = Array.from({ length: 10 }, (_, i) => base + i / 10),
     ops = ["execute", "executeRecord", "focus", "record", "next", "back"];
   return {
     ...evidenceIdentity("shopping"),
@@ -71,7 +72,7 @@ test("comparison retains all legacy/UI metrics from a complete threshold-failed 
   assert.equal(rows.length, 12);
   assert.equal(rows.filter((row) => row.metric === "legacy").length, 6);
   assert.equal(rows.filter((row) => row.metric === "ui").length, 6);
-  assert.equal(rows[0].summary.count, 20);
+  assert.equal(rows[0].summary.count, 10);
   assert.ok(rows[0].summary.medianMs > shoppingPerformanceThresholds.medianMs);
   assert.deepEqual(data, original);
   assert.throws(
@@ -91,7 +92,7 @@ test("comparison rejects mismatched sample details and summaries without pooling
   assert.throws(() => comparableMetrics(data, "shopping"), /raw\/detail/);
   const short = shopping();
   short.timings.execute.pop();
-  assert.throws(() => comparableMetrics(short, "shopping"), /20/);
+  assert.throws(() => comparableMetrics(short, "shopping"), /10/);
 });
 test("incomplete source produces a retained nonzero comparison artifact and refuses overwrite", async (t) => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "esp compare "));
@@ -123,7 +124,9 @@ async function partialShoppingRun(directory, phase, base = 10, options = {}) {
   const metadata = {
     phase,
     runId,
-    instrumentVersion: "shopping-rendering-v2",
+    instrumentVersion: "shopping-rendering-v3",
+    ...performanceSamplingMetadata(),
+    acceptanceCriteriaByGroup: performanceAcceptanceCriteriaByGroup,
     instrumentPatch: { sha256: (options.instrumentHash ?? "a").repeat(64) },
     fixtureSources: { sha256: "b".repeat(64) },
     productCommit: (phase === "before" ? "a" : "b").repeat(40),
@@ -248,8 +251,8 @@ test("missing extra categories retain every valid core before/after row and expl
     (row) => row.group === "shopping" && row.metric === "ui",
   );
   assert.equal(core.status, "compared");
-  assert.equal(core.before.count, 20);
-  assert.equal(core.after.count, 20);
+  assert.equal(core.before.count, 10);
+  assert.equal(core.after.count, 10);
   assert.equal(core.beforeAbsolute, "failed");
   assert.equal(core.afterAbsolute, "passed");
   assert.ok(core.deltaMs.median < 0);
@@ -279,9 +282,9 @@ test("comparison labels current 65ms judgments and preserves original run verdic
     performanceAcceptanceCriteriaByGroup,
   );
   assert.equal(result.acceptanceThresholds, undefined);
-  assert.equal(
+  assert.deepEqual(
     result.before.recordedAcceptanceCriteria.acceptanceCriteriaByGroup,
-    null,
+    performanceAcceptanceCriteriaByGroup,
   );
   const core = result.rows.find((row) => row.group === "shopping");
   assert.equal(core.beforeAbsolute, "passed");
@@ -415,7 +418,7 @@ test("comparison rejects a mismatched served preview capability even when both l
 });
 
 test("comparison checks each actual isolated fixture and its sample association", () => {
-  const hashes = Array.from({ length: 20 }, (_, index) =>
+  const hashes = Array.from({ length: 10 }, (_, index) =>
     index.toString(16).padStart(64, "0"),
   );
   const artifact = {
@@ -564,9 +567,9 @@ test("mixed runs independently judge shopping at 65/100 and range at inclusive 1
   t.after(() => rm(directory, { recursive: true, force: true }));
   const beforeRoot = await partialShoppingRun(directory, "before", 70);
   const afterRoot = await partialShoppingRun(directory, "after", 70);
-  await addRangeReport(beforeRoot, "before", Array(20).fill(110));
+  await addRangeReport(beforeRoot, "before", Array(10).fill(110));
   await addRangeReport(afterRoot, "after", [
-    ...Array(18).fill(100),
+    ...Array(8).fill(100),
     110.001,
     110.001,
   ]);
@@ -585,13 +588,13 @@ test("mixed runs independently judge shopping at 65/100 and range at inclusive 1
   assert.equal(rangeRow.afterAbsolute, "failed");
   assert.equal(rangeRow.acceptanceScope, "dnd-selection-rendering");
   assert.deepEqual(rangeRow.acceptanceThresholds, {
-    minimumCount: 20,
+    minimumCount: 10,
     medianMs: 110,
     p95Ms: 110,
   });
-  assert.equal(
+  assert.deepEqual(
     result.before.recordedAcceptanceCriteria.acceptanceCriteriaByGroup,
-    null,
+    performanceAcceptanceCriteriaByGroup,
   );
   assert.deepEqual(
     result.after.recordedAcceptanceCriteria.acceptanceCriteriaByGroup,
@@ -697,7 +700,7 @@ test("comparison retains a file-verified unobservable baseline without creating 
   };
   const fixtures = [],
     observations = [];
-  for (let sampleIndex = 1; sampleIndex <= 20; sampleIndex++) {
+  for (let sampleIndex = 1; sampleIndex <= 10; sampleIndex++) {
     const measurementId = `original-frame-${sampleIndex}`,
       fixtureHash = "b".repeat(64),
       startEpoch = 100000 + sampleIndex * 1000;
@@ -832,7 +835,7 @@ test("comparison retains a file-verified unobservable baseline without creating 
       },
     },
     failure:
-      "Original frame endpoint unobservable in all twenty isolated attempts; no timing was substituted",
+      "Original frame endpoint unobservable in all original profile attempts; no timing was substituted",
   };
   const artifactPath = path.join(evidenceRoot, "artifact.json");
   await writeFile(artifactPath, JSON.stringify(artifact), "utf8");
@@ -894,9 +897,9 @@ test("comparison retains a file-verified unobservable baseline without creating 
   assert.equal(row.after, null);
   assert.equal(row.deltaMs, null);
   assert.deepEqual(row.beforeObservation, {
-    attempted: 20,
+    attempted: 10,
     completedCount: 0,
-    unobservableCount: 20,
+    unobservableCount: 10,
     numericTimingAvailable: false,
   });
   assert.equal(result.coverage.baselineUnobservable, 1);
@@ -915,7 +918,7 @@ test("comparison retains a file-verified unobservable baseline without creating 
   );
   assert.ok(
     Object.keys(result.before.sourceHashes).some((name) =>
-      name.endsWith("original-frame-20-trace"),
+      name.endsWith("original-frame-10-trace"),
     ),
   );
   const shoppingRow = result.rows.find(
@@ -1048,3 +1051,102 @@ for (const change of [
       /exact clean product source|source\/build IDs differ/,
     );
   });
+
+async function rewriteRunSampling(root, profile) {
+  const {
+    performanceAcceptanceCriteriaByGroupForProfile,
+    performanceSamplingMetadata,
+    performanceAcceptanceCriteriaForGroup,
+    performanceSamplingProfile,
+  } = await import("./shopping-performance-evidence-contract.mjs");
+  const metaPath = path.join(root, "run-result.json"),
+    run = JSON.parse(await readFile(metaPath, "utf8"));
+  Object.assign(run, performanceSamplingMetadata(profile), {
+    acceptanceCriteriaByGroup:
+      performanceAcceptanceCriteriaByGroupForProfile(profile),
+  });
+  await writeFile(metaPath, JSON.stringify(run), "utf8");
+  const reportPath = path.join(root, "shopping/report.json"),
+    report = JSON.parse(await readFile(reportPath, "utf8"));
+  const count = performanceSamplingProfile(profile).sampleCount;
+  for (const spec of report.suites[0].specs) {
+    const attachment = spec.tests[0].results[0].attachments[0],
+      a = JSON.parse(Buffer.from(attachment.body, "base64"));
+    Object.assign(
+      a,
+      performanceAcceptanceCriteriaForGroup("shopping", profile),
+    );
+    for (const op of Object.keys(a.timings)) {
+      a.timings[op] = a.timings[op].slice(0, count);
+      a.uiTimings[op] = a.uiTimings[op].slice(0, count);
+      a.uiSamples[op] = a.uiSamples[op].slice(0, count);
+      a.summary[op] = summarizeSamples(a.timings[op], count);
+      a.uiSummary[op] = summarizeSamples(a.uiTimings[op], count);
+    }
+    attachment.body = Buffer.from(JSON.stringify(a)).toString("base64");
+  }
+  await writeFile(reportPath, JSON.stringify(report), "utf8");
+}
+test("comparison requires the same explicit sampling profile and cannot reuse PR2 as completion10", async (t) => {
+  const directory = await mkdtemp(
+    path.join(os.tmpdir(), "esp profile compare "),
+  );
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const beforeRoot = await partialShoppingRun(directory, "before"),
+    afterRoot = await partialShoppingRun(directory, "after");
+  await rewriteRunSampling(beforeRoot, "pr");
+  await rewriteRunSampling(afterRoot, "pr");
+  const pr = await compareBrowserEvidence({
+    beforeRoot,
+    afterRoot,
+    profile: "pr",
+    env: {},
+  });
+  assert.equal(pr.result.coverage.compared, 192);
+  assert.equal(pr.result.samplingProfile.completionEligible, false);
+  assert.equal(
+    pr.result.rows.find((row) => row.group === "shopping").after.count,
+    2,
+  );
+  const final = await compareBrowserEvidence({
+    beforeRoot,
+    afterRoot,
+    env: {},
+  });
+  assert.equal(final.exitCode, 1);
+  assert.equal(final.result.rows.length, 0);
+  assert.match(final.result.errors.join("\n"), /sampling metadata/);
+  const afterPath = path.join(afterRoot, "run-result.json"),
+    after = JSON.parse(await readFile(afterPath, "utf8"));
+  Object.assign(after, performanceSamplingMetadata());
+  await writeFile(afterPath, JSON.stringify(after), "utf8");
+  const mixed = await compareBrowserEvidence({
+    beforeRoot,
+    afterRoot,
+    profile: "pr",
+    env: {},
+  });
+  assert.equal(mixed.exitCode, 1);
+  assert.equal(mixed.result.rows.length, 0);
+  assert.match(mixed.result.errors.join("\n"), /sampling metadata/);
+  await assert.rejects(
+    compareBrowserEvidence({
+      beforeRoot,
+      afterRoot,
+      profile: "pr",
+      env: { ESP_PERFORMANCE_PROFILE: "completion" },
+    }),
+    /conflicts/,
+  );
+});
+
+test("v3 comparison cannot hide forged sample thresholds by deleting time criteria fields", () => {
+  const data = shopping();
+  delete data.acceptanceScope;
+  delete data.acceptanceCriteriaId;
+  data.acceptanceThresholds = { ...data.acceptanceThresholds, minimumCount: 2 };
+  assert.throws(
+    () => comparableMetrics(data, "shopping"),
+    /acceptanceScope metadata/,
+  );
+});

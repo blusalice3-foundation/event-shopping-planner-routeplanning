@@ -16,7 +16,10 @@ import {
   expectedPerformanceCases,
   performanceGroupSpecs,
   expectedTransferMetricNames,
-  performanceAcceptanceCriteriaByGroup,
+  performanceAcceptanceCriteriaByGroupForProfile,
+  performanceSamplingProfile,
+  performanceSamplingMetadata,
+  resolvePerformanceProfile,
   performanceAcceptanceCriteriaForGroup,
   validateRunAcceptanceCriteriaMetadata,
 } from "./shopping-performance-evidence-contract.mjs";
@@ -52,7 +55,11 @@ function inside(root, file) {
 }
 // Compare the actual restored payloads, including every isolated accepted sample.
 // Source hashes alone cannot detect a different fixture supplied at runtime.
-export function comparableFixtureIdentity(artifact, group) {
+export function comparableFixtureIdentity(
+  artifact,
+  group,
+  profile = "completion",
+) {
   const validHash = (value) =>
     typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
   const fixture = artifact.fixture;
@@ -68,7 +75,10 @@ export function comparableFixtureIdentity(artifact, group) {
     );
     assert(!fixture, "ambiguous single and isolated fixtures");
     const fixtures = artifact.fixtures;
-    assert(fixtures.length >= 20, "isolated fixture identities are incomplete");
+    assert(
+      fixtures.length === performanceSamplingProfile(profile).sampleCount,
+      "isolated fixture identities are incomplete",
+    );
     const hashes = fixtures.map((entry, index) => {
       assert(
         entry?.index === index + 1 && validHash(entry.fixtureHash),
@@ -98,11 +108,17 @@ export function comparableFixtureIdentity(artifact, group) {
   return { kind: "single", hash: fixture.fixtureHash };
 }
 
-export function comparableMetrics(artifact, group, identity = {}) {
+export function comparableMetrics(
+  artifact,
+  group,
+  identity = {},
+  profile = "completion",
+) {
   validateEvidenceArtifact(artifact, group, identity, {
     enforceBudgets: false,
-    requireCurrentCriteria: false,
+    requireCurrentCriteria: true,
     allowBaselinePostconditionFailures: true,
+    profile,
   });
   const metrics = [];
   const add = (operation, metric, summary, auxiliary = false) =>
@@ -149,10 +165,10 @@ function recordedCriteria(run) {
     originalStatus: run.status ?? null,
   };
 }
-async function readRun(runRoot, phase) {
+async function readRun(runRoot, phase, profile) {
   const bytes = await readFile(path.join(runRoot, "run-result.json"));
   const run = JSON.parse(bytes.toString("utf8"));
-  validateRunAcceptanceCriteriaMetadata(run);
+  validateRunAcceptanceCriteriaMetadata(run, { profile, required: true });
   assert(
     run.phase === phase &&
       typeof run.runId === "string" &&
@@ -312,6 +328,7 @@ async function readRun(runRoot, phase) {
                 runId: run.runId,
                 productCommit: run.productCommit,
               },
+              profile,
             );
             assert(
               expected.includes(observed.key) &&
@@ -349,8 +366,9 @@ async function readRun(runRoot, phase) {
             { phase, runId: run.runId, productCommit: run.productCommit },
             {
               enforceBudgets: false,
-              requireCurrentCriteria: false,
+              requireCurrentCriteria: true,
               allowBaselinePostconditionFailures: true,
+              profile,
             },
           );
           assert(
@@ -367,7 +385,7 @@ async function readRun(runRoot, phase) {
               sourceHashes,
             );
           seen.add(checked.key);
-          comparableFixtureIdentity(artifact, group);
+          comparableFixtureIdentity(artifact, group, profile);
           const artifactKey = `${group}:${checked.key}`;
           const functional = comparisonFunctionalFailure(
             artifact,
@@ -380,11 +398,16 @@ async function readRun(runRoot, phase) {
             errors.push(functional.message);
           }
           artifacts.set(artifactKey, artifact);
-          for (const metric of comparableMetrics(artifact, group, {
-            phase,
-            runId: run.runId,
-            productCommit: run.productCommit,
-          })) {
+          for (const metric of comparableMetrics(
+            artifact,
+            group,
+            {
+              phase,
+              runId: run.runId,
+              productCommit: run.productCommit,
+            },
+            profile,
+          )) {
             const key = `${artifactKey}:${metric.operation}:${metric.metric}`;
             assert(!rows.has(key), "duplicate metric");
             rows.set(key, {
@@ -487,10 +510,15 @@ export async function compareBrowserEvidence({
   beforeRoot,
   afterRoot,
   output,
+  profile: requestedProfile,
+  env = process.env,
 }) {
+  const profile = resolvePerformanceProfile(requestedProfile, env);
   const result = {
     schemaVersion: 1,
-    acceptanceCriteriaByGroup: performanceAcceptanceCriteriaByGroup,
+    acceptanceCriteriaByGroup:
+      performanceAcceptanceCriteriaByGroupForProfile(profile),
+    ...performanceSamplingMetadata(profile),
     status: "incomplete",
     errors: [],
     absoluteStatus: "not-evaluated",
@@ -498,8 +526,8 @@ export async function compareBrowserEvidence({
     rows: [],
   };
   try {
-    const before = await readRun(path.resolve(beforeRoot), "before"),
-      after = await readRun(path.resolve(afterRoot), "after");
+    const before = await readRun(path.resolve(beforeRoot), "before", profile),
+      after = await readRun(path.resolve(afterRoot), "after", profile);
     const compatibility = [];
     if (before.run.instrumentVersion !== after.run.instrumentVersion)
       compatibility.push("instrumentVersion mismatch");
@@ -542,7 +570,7 @@ export async function compareBrowserEvidence({
       if (!oldMetric)
         reasons.push(
           baselineObservation
-            ? `before: ${baselineObservation.unobservableCount} of 20 frame endpoints were unobservable; no 20-frame timing can be inferred`
+            ? `before: ${baselineObservation.unobservableCount} of ${performanceSamplingProfile(profile).sampleCount} frame endpoints were unobservable; no complete-profile frame timing can be inferred`
             : "before: complete matching normal metric unavailable; see before source errors",
         );
       if (!current)
@@ -556,10 +584,14 @@ export async function compareBrowserEvidence({
           JSON.stringify(
             baselineObservation
               ? { kind: "isolated", hashes: baselineObservation.fixtureHashes }
-              : comparableFixtureIdentity(oldArtifact, descriptor.group),
+              : comparableFixtureIdentity(
+                  oldArtifact,
+                  descriptor.group,
+                  profile,
+                ),
           ) !==
           JSON.stringify(
-            comparableFixtureIdentity(newArtifact, descriptor.group),
+            comparableFixtureIdentity(newArtifact, descriptor.group, profile),
           )
         )
           reasons.push("fixture hash mismatch");
@@ -577,7 +609,10 @@ export async function compareBrowserEvidence({
             reasons.push(`artifact environment ${field} mismatch`);
         }
       }
-      const criteria = performanceAcceptanceCriteriaForGroup(descriptor.group);
+      const criteria = performanceAcceptanceCriteriaForGroup(
+        descriptor.group,
+        profile,
+      );
       const absolute = (metric) =>
         !metric
           ? "missing"
@@ -720,13 +755,14 @@ if (
     const args = process.argv.slice(2),
       options = {};
     assert(
-      args.length === 6,
+      [6, 8].includes(args.length),
       "Usage: --before-root path --after-root path --output path",
     );
     for (let i = 0; i < args.length; i += 2) {
       assert(
-        ["--before-root", "--after-root", "--output"].includes(args[i]) &&
-          args[i + 1],
+        ["--before-root", "--after-root", "--output", "--profile"].includes(
+          args[i],
+        ) && args[i + 1],
         "Invalid comparison argument",
       );
       const name = args[i]

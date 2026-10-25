@@ -19,11 +19,14 @@ import {
   performanceGroupSpecs,
   performanceAttachmentNames,
   performanceAcceptanceCriteriaForGroup,
+  performanceSamplingProfile,
+  performanceSamplingMetadata,
+  resolvePerformanceProfile,
   validateAcceptanceCriteriaMetadata,
-  shoppingPerformanceThresholds,
+  validatePerformanceSamplingMetadata,
 } from "./shopping-performance-evidence-contract.mjs";
 export const SCHEMA_VERSION = 1;
-export const INSTRUMENT_VERSION = "shopping-rendering-v2";
+export const INSTRUMENT_VERSION = "shopping-rendering-v3";
 const ownPath = fileURLToPath(import.meta.url);
 const groupSpecs = performanceGroupSpecs;
 const attachmentNames = performanceAttachmentNames;
@@ -67,17 +70,23 @@ export function evidenceIdentity(
     measurementKind,
     diagnosticOnly: false,
     acceptanceMeasurement: true,
-    ...performanceAcceptanceCriteriaForGroup(group),
+    ...performanceAcceptanceCriteriaForGroup(
+      group,
+      resolvePerformanceProfile(undefined, env),
+    ),
   };
 }
-export function summarizeSamples(raw) {
+export function summarizeSamples(
+  raw,
+  minimumCount = performanceSamplingProfile().sampleCount,
+) {
   if (
     !Array.isArray(raw) ||
-    raw.length < shoppingPerformanceThresholds.minimumCount ||
+    raw.length < minimumCount ||
     raw.some((n) => typeof n !== "number" || !Number.isFinite(n) || n < 0)
   )
     throw new Error(
-      `At least ${shoppingPerformanceThresholds.minimumCount} finite non-negative raw samples are required`,
+      `At least ${minimumCount} finite non-negative raw samples are required`,
     );
   const sorted = [...raw].sort((a, b) => a - b);
   return {
@@ -107,7 +116,11 @@ function sameNumber(a, b) {
   return typeof a === "number" && Number.isFinite(a) && Math.abs(a - b) < 1e-8;
 }
 function validateMetric(raw, summary, label, threshold, thresholds) {
-  const calculated = summarizeSamples(raw);
+  assert(
+    Array.isArray(raw) && raw.length === thresholds.minimumCount,
+    `${label}: expected exactly ${thresholds.minimumCount} samples for this profile`,
+  );
+  const calculated = summarizeSamples(raw, thresholds.minimumCount);
   for (const field of ["count", "medianMs", "p95Ms"])
     assert(
       sameNumber(summary?.[field], calculated[field]),
@@ -780,15 +793,17 @@ export function validateBrowserArtifactEnvironment(environment) {
     "Artifact environment headed/workers/retries is missing or invalid",
   );
 }
-// This is a comparison witness, never a substitute for 20 accepted frames.
+// A comparison witness never substitutes for the requested profile count of accepted frames.
 export function validateBaselineFrameObservationArtifact(
   artifact,
   identity = {},
+  profile = "completion",
 ) {
   const checked = validateBaselineFrameObservations(
     artifact,
     identity,
     INSTRUMENT_VERSION,
+    profile,
   );
   validateBrowserArtifactEnvironment(artifact.environment);
   for (const sample of artifact.metrics.frame.samples)
@@ -812,6 +827,7 @@ function validateRecordedPostconditions(
   group,
   allowBaselineFailures,
   identity,
+  profile,
 ) {
   const recorded = artifact.postconditionErrors ?? [];
   assert(Array.isArray(recorded), "Invalid functional postcondition records");
@@ -825,7 +841,7 @@ function validateRecordedPostconditions(
         allowBaselineFailures,
       "Functional postconditions failed; acceptance evidence is invalid",
     );
-    return validateBaselineNoopObservation(artifact, identity);
+    return validateBaselineNoopObservation(artifact, identity, profile);
   }
   if (recorded.length) {
     assert(
@@ -856,7 +872,8 @@ function validateRecordedPostconditions(
           record.message.length > 0 &&
           Number.isInteger(record.sampleIndex) &&
           record.sampleIndex >= 1 &&
-          record.sampleIndex <= 20 &&
+          record.sampleIndex <=
+            performanceSamplingProfile(profile).sampleCount &&
           uniqueStrings(record.itemIds) &&
           record.itemIds.length > 0 &&
           !ids.has(record.measurementId) &&
@@ -898,11 +915,17 @@ export function validateEvidenceArtifact(
     enforceBudgets = true,
     requireCurrentCriteria = true,
     allowBaselinePostconditionFailures = false,
+    profile = "completion",
   } = {},
 ) {
-  const { acceptanceThresholds } = performanceAcceptanceCriteriaForGroup(group);
+  const { acceptanceThresholds } = performanceAcceptanceCriteriaForGroup(
+    group,
+    profile,
+  );
+  validatePerformanceSamplingMetadata(artifact, profile);
   validateAcceptanceCriteriaMetadata(artifact, group, {
     required: requireCurrentCriteria,
+    profile,
   });
   assert(
     artifact?.schemaVersion === SCHEMA_VERSION,
@@ -922,15 +945,19 @@ export function validateEvidenceArtifact(
     if (identity[key] !== undefined)
       assert(artifact[key] === identity[key], `Evidence ${key} mismatch`);
   if (artifact.baselineFrameObservations !== undefined) {
-    const observed = validateBaselineFrameObservationArtifact(artifact, {
-      ...identity,
-      productCommit:
-        identity.productCommit ??
-        artifact.baselineComparisonObservation?.sourceCommit,
-    });
+    const observed = validateBaselineFrameObservationArtifact(
+      artifact,
+      {
+        ...identity,
+        productCommit:
+          identity.productCommit ??
+          artifact.baselineComparisonObservation?.sourceCommit,
+      },
+      profile,
+    );
     assert(
       observed.unobservableCount === 0,
-      "Normal acceptance requires 20 observed frames; baseline observation failed",
+      `Normal acceptance requires ${performanceSamplingProfile(profile).sampleCount} observed frames; baseline observation failed`,
     );
   }
   assert(!artifact.failure, "Artifact records an incomplete measurement");
@@ -955,6 +982,7 @@ export function validateEvidenceArtifact(
     group,
     !enforceBudgets && allowBaselinePostconditionFailures,
     identity,
+    profile,
   );
   if (group === "shopping") {
     const operations = [
@@ -1071,7 +1099,7 @@ export function validateEvidenceArtifact(
       );
     assert(
       Array.isArray(artifact.start) &&
-        artifact.start.length >= shoppingPerformanceThresholds.minimumCount &&
+        artifact.start.length === acceptanceThresholds.minimumCount &&
         Array.isArray(artifact.end) &&
         artifact.end.length === artifact.start.length,
       "Drag start/end details missing",
@@ -1415,9 +1443,21 @@ async function writeResult(filename, value) {
     "Saved evidence result could not be verified",
   );
 }
-export async function preflight({ env = process.env, runRoot } = {}) {
+export async function preflight({ env = process.env, runRoot, profile } = {}) {
   const rejected = rejectedDiagnosticEnvironment(env);
-  const result = { status: rejected.length ? "failed" : "passed", rejected };
+  let sampling;
+  try {
+    sampling = performanceSamplingMetadata(
+      resolvePerformanceProfile(profile, env),
+    );
+  } catch (error) {
+    rejected.push({ name: "ESP_PERFORMANCE_PROFILE", reason: error.message });
+  }
+  const result = {
+    status: rejected.length ? "failed" : "passed",
+    rejected,
+    ...sampling,
+  };
   if (runRoot)
     await writeResult(path.join(runRoot, "preflight-result.json"), result);
   return result;
@@ -1428,6 +1468,7 @@ export async function verifyGroupEvidence({
   phase,
   runId,
   write = true,
+  profile = resolvePerformanceProfile(undefined, process.env),
 }) {
   assert(Object.hasOwn(groupSpecs, group), "Unknown evidence group");
   const groupRoot = path.join(runRoot, group);
@@ -1436,7 +1477,7 @@ export async function verifyGroupEvidence({
     phase,
     runId,
     status: "failed",
-    ...performanceAcceptanceCriteriaForGroup(group),
+    ...performanceAcceptanceCriteriaForGroup(group, profile),
     errors: [],
     artifacts: [],
     hashes: {},
@@ -1507,10 +1548,15 @@ export async function verifyGroupEvidence({
           path.join(groupRoot, "test-results"),
           result.hashes,
         );
-      const validated = validateEvidenceArtifact(artifact, group, {
-        phase,
-        runId,
-      });
+      const validated = validateEvidenceArtifact(
+        artifact,
+        group,
+        {
+          phase,
+          runId,
+        },
+        { profile },
+      );
       assert(
         expected.includes(validated.key) &&
           expectedPerformanceCases(group).find(
@@ -1541,8 +1587,9 @@ function parseArgs(args) {
   const options = {};
   for (let i = 0; i < args.length; i += 2) {
     assert(
-      ["--run-root", "--group", "--phase", "--run-id"].includes(args[i]) &&
-        args[i + 1],
+      ["--run-root", "--group", "--phase", "--run-id", "--profile"].includes(
+        args[i],
+      ) && args[i + 1],
       `Invalid option: ${args[i]}`,
     );
     const name = args[i]
@@ -1557,6 +1604,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === ownPath) {
   try {
     const [command, ...args] = process.argv.slice(2);
     const options = parseArgs(args);
+    if (command === "verify")
+      options.profile = resolvePerformanceProfile(options.profile, process.env);
     assert(
       command === "preflight" || command === "verify",
       "Usage: preflight [--run-root path] | verify --run-root path --group group --phase phase --run-id id",

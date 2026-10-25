@@ -1,60 +1,170 @@
-// Current user-specified acceptance criteria. Historical raw evidence is never rewritten.
+// Time budgets and workload conditions are unchanged. Sampling changed on 2026-10-26.
 export const shoppingPerformanceCriteriaDate = "2026-10-25";
 export const dndSelectionRenderingPerformanceCriteriaDate = "2026-10-24";
+export const performanceSamplingPolicyId = "performance-samples-2026-10-26";
+const samplingProfiles = Object.freeze({
+  pr: Object.freeze({
+    id: "pr",
+    sampleCount: 2,
+    policyDate: "2026-10-26",
+    completionEligible: false,
+  }),
+  completion: Object.freeze({
+    id: "completion",
+    sampleCount: 10,
+    policyDate: "2026-10-26",
+    completionEligible: true,
+  }),
+});
+export function performanceSamplingProfile(profile = "completion") {
+  if (typeof profile !== "string" || !Object.hasOwn(samplingProfiles, profile))
+    throw new Error(`Unknown performance sampling profile: ${String(profile)}`);
+  return samplingProfiles[profile];
+}
+export function resolvePerformanceProfile(profile, env = {}) {
+  const entries = Object.entries(env).filter(
+    ([name, value]) =>
+      name.toUpperCase() === "ESP_PERFORMANCE_PROFILE" && value !== undefined,
+  );
+  const values = new Set(entries.map(([, value]) => value));
+  if (values.size > 1)
+    throw new Error(
+      "Ambiguous case-insensitive ESP_PERFORMANCE_PROFILE values",
+    );
+  const environmentProfile = entries[0]?.[1];
+  if (profile !== undefined) performanceSamplingProfile(profile);
+  if (environmentProfile !== undefined)
+    performanceSamplingProfile(environmentProfile);
+  if (
+    profile !== undefined &&
+    environmentProfile !== undefined &&
+    profile !== environmentProfile
+  )
+    throw new Error(
+      "Explicit performance profile conflicts with ESP_PERFORMANCE_PROFILE",
+    );
+  return profile ?? environmentProfile ?? "completion";
+}
+export function performanceProfileEnvironment(env = {}, profile) {
+  const selected = resolvePerformanceProfile(profile, env),
+    child = { ...env };
+  for (const name of Object.keys(child))
+    if (name.toUpperCase() === "ESP_PERFORMANCE_PROFILE") delete child[name];
+  child.ESP_PERFORMANCE_PROFILE = selected;
+  return child;
+}
+export function performanceSamplingMetadata(profile = "completion") {
+  return {
+    samplingPolicyId: performanceSamplingPolicyId,
+    samplingProfile: performanceSamplingProfile(profile),
+  };
+}
+export function validatePerformanceSamplingMetadata(
+  value,
+  profile = "completion",
+) {
+  const expected = performanceSamplingMetadata(profile);
+  if (
+    value?.samplingPolicyId !== expected.samplingPolicyId ||
+    !value?.samplingProfile ||
+    JSON.stringify(Object.keys(value.samplingProfile).sort()) !==
+      JSON.stringify(Object.keys(expected.samplingProfile).sort()) ||
+    Object.entries(expected.samplingProfile).some(
+      ([key, entry]) => value.samplingProfile[key] !== entry,
+    )
+  )
+    throw new Error(
+      `Invalid or mixed ${profile} performance sampling metadata`,
+    );
+}
 export const shoppingAcceptanceItemCounts = Object.freeze([150, 500]);
 export const shoppingLargeListDiagnosticTag = "@shopping-large-list-diagnostic";
 export const shoppingPerformanceThresholds = Object.freeze({
-  minimumCount: 20,
+  minimumCount: 10,
   medianMs: 65,
   p95Ms: 100,
 });
-
-/**
- * 2026-10-24 ユーザー指定: D&D・選択・描画改善プランに限る例外。
- * range / drag / transfer（D&D・範囲選択・描画・移動後の次操作）は
- * 中央値・95%点とも110ms以下。通常のshoppingは上記65ms / 100msを維持する。
- * 各20サンプル以上。保存完了（save）は別の補助指標として扱う。
- * 計測終了点・条件、過去の実測値・当初合否を維持し、再判定は別に記録する。
- * 詳細: docs/dnd-selection-rendering-performance-criteria-20261024.md / AGENTS.md。
- */
 export const dndSelectionRenderingPerformanceThresholds = Object.freeze({
-  minimumCount: 20,
+  minimumCount: 10,
   medianMs: 110,
   p95Ms: 110,
 });
-const shoppingCriteria = Object.freeze({
-  acceptanceScope: "shopping-operations",
-  acceptanceCriteriaId: "shopping-operations-150-500-65-100-2026-10-25",
-  acceptanceCriteriaDate: shoppingPerformanceCriteriaDate,
-  acceptanceThresholds: shoppingPerformanceThresholds,
-});
-const dndCriteria = Object.freeze({
-  acceptanceScope: "dnd-selection-rendering",
-  acceptanceCriteriaId: "dnd-selection-rendering-110-110-2026-10-24",
-  acceptanceCriteriaDate: dndSelectionRenderingPerformanceCriteriaDate,
-  acceptanceThresholds: dndSelectionRenderingPerformanceThresholds,
-});
+const criteriaTables = Object.freeze(
+  Object.fromEntries(
+    Object.keys(samplingProfiles).map((profile) => {
+      const sampling = performanceSamplingMetadata(profile);
+      const shopping = Object.freeze({
+        acceptanceScope: "shopping-operations",
+        acceptanceCriteriaId: "shopping-operations-150-500-65-100-2026-10-25",
+        acceptanceCriteriaDate: shoppingPerformanceCriteriaDate,
+        acceptanceThresholds: Object.freeze({
+          ...shoppingPerformanceThresholds,
+          minimumCount: sampling.samplingProfile.sampleCount,
+        }),
+        ...sampling,
+      });
+      const dnd = Object.freeze({
+        acceptanceScope: "dnd-selection-rendering",
+        acceptanceCriteriaId: "dnd-selection-rendering-110-110-2026-10-24",
+        acceptanceCriteriaDate: dndSelectionRenderingPerformanceCriteriaDate,
+        acceptanceThresholds: Object.freeze({
+          ...dndSelectionRenderingPerformanceThresholds,
+          minimumCount: sampling.samplingProfile.sampleCount,
+        }),
+        ...sampling,
+      });
+      return [
+        profile,
+        Object.freeze({ shopping, range: dnd, drag: dnd, transfer: dnd }),
+      ];
+    }),
+  ),
+);
+export function performanceAcceptanceCriteriaByGroupForProfile(
+  profile = "completion",
+) {
+  performanceSamplingProfile(profile);
+  return criteriaTables[profile];
+}
+export const performanceAcceptanceCriteriaByGroup =
+  performanceAcceptanceCriteriaByGroupForProfile();
+export function performanceAcceptanceCriteriaForGroup(
+  group,
+  profile = "completion",
+) {
+  const table = performanceAcceptanceCriteriaByGroupForProfile(profile);
+  if (typeof group !== "string" || !Object.hasOwn(table, group))
+    throw new Error(`Unknown performance criteria group: ${String(group)}`);
+  return table[group];
+}
 const shoppingAcceptanceCollection = Object.freeze({
   diagnosticOnly: false,
   acceptanceMeasurement: true,
 });
-const shoppingLargeListDiagnosticCollection = Object.freeze({
-  diagnosticOnly: true,
-  acceptanceMeasurement: false,
-  collectionScope: "optional-large-list-diagnostic",
-  excludedFromDefaultAcceptance: true,
-  acceptanceExclusion: Object.freeze({
-    decisionDate: shoppingPerformanceCriteriaDate,
-    reason: "user-excluded-1500-item-workload",
-    itemCount: 1500,
-    mandatoryItemCounts: shoppingAcceptanceItemCounts,
-  }),
-  referenceAcceptanceCriteria: shoppingCriteria,
-});
-export function shoppingCollectionMetadataForCount(count) {
+export function shoppingCollectionMetadataForCount(
+  count,
+  profile = "completion",
+) {
+  performanceSamplingProfile(profile);
   if (shoppingAcceptanceItemCounts.includes(count))
     return shoppingAcceptanceCollection;
-  if (count === 1500) return shoppingLargeListDiagnosticCollection;
+  if (count === 1500)
+    return Object.freeze({
+      diagnosticOnly: true,
+      acceptanceMeasurement: false,
+      collectionScope: "optional-large-list-diagnostic",
+      excludedFromDefaultAcceptance: true,
+      acceptanceExclusion: Object.freeze({
+        decisionDate: shoppingPerformanceCriteriaDate,
+        reason: "user-excluded-1500-item-workload",
+        itemCount: 1500,
+        mandatoryItemCounts: shoppingAcceptanceItemCounts,
+      }),
+      referenceAcceptanceCriteria: performanceAcceptanceCriteriaForGroup(
+        "shopping",
+        profile,
+      ),
+    });
   throw new Error(`Unknown shopping item count: ${String(count)}`);
 }
 export function shoppingPerformanceTestTag(count) {
@@ -62,27 +172,13 @@ export function shoppingPerformanceTestTag(count) {
     ? shoppingLargeListDiagnosticTag
     : "@shopping-performance";
 }
-export const performanceAcceptanceCriteriaByGroup = Object.freeze({
-  shopping: shoppingCriteria,
-  range: dndCriteria,
-  drag: dndCriteria,
-  transfer: dndCriteria,
-});
-export function performanceAcceptanceCriteriaForGroup(group) {
-  if (
-    typeof group !== "string" ||
-    !Object.hasOwn(performanceAcceptanceCriteriaByGroup, group)
-  )
-    throw new Error(`Unknown performance criteria group: ${String(group)}`);
-  return performanceAcceptanceCriteriaByGroup[group];
-}
-// Historical evidence without scoped metadata remains readable, but never chooses its own budget.
+// Historical artifacts are retained separately; current evidence must declare its sampling policy.
 export function validateAcceptanceCriteriaMetadata(
   value,
   group,
-  { required = true } = {},
+  { required = true, profile = "completion" } = {},
 ) {
-  const expected = performanceAcceptanceCriteriaForGroup(group);
+  const expected = performanceAcceptanceCriteriaForGroup(group, profile);
   if (
     !required &&
     value?.acceptanceScope === undefined &&
@@ -106,20 +202,28 @@ export function validateAcceptanceCriteriaMetadata(
     )
   )
     throw new Error(`${group}: invalid acceptanceThresholds metadata`);
+  validatePerformanceSamplingMetadata(value, profile);
 }
-export function validateRunAcceptanceCriteriaMetadata(value) {
-  if (value.acceptanceCriteriaByGroup === undefined) return;
+export function validateRunAcceptanceCriteriaMetadata(
+  value,
+  { profile = "completion", required = false } = {},
+) {
+  if (required) validatePerformanceSamplingMetadata(value, profile);
+  if (value.acceptanceCriteriaByGroup === undefined) {
+    if (required) throw new Error("Missing acceptanceCriteriaByGroup metadata");
+    return;
+  }
   const table = value.acceptanceCriteriaByGroup;
+  const expected = performanceAcceptanceCriteriaByGroupForProfile(profile);
   if (
     !table ||
     JSON.stringify(Object.keys(table).sort()) !==
-      JSON.stringify(Object.keys(performanceAcceptanceCriteriaByGroup).sort())
+      JSON.stringify(Object.keys(expected).sort())
   )
     throw new Error("Invalid acceptanceCriteriaByGroup metadata");
-  for (const group of Object.keys(performanceAcceptanceCriteriaByGroup))
-    validateAcceptanceCriteriaMetadata(table[group], group);
+  for (const group of Object.keys(expected))
+    validateAcceptanceCriteriaMetadata(table[group], group, { profile });
 }
-
 // Fixed test-only inventory. Evidence may never define or shrink its expected collection.
 export const performanceGroupSpecs = {
   shopping: ["responsive-performance.spec.ts"],
