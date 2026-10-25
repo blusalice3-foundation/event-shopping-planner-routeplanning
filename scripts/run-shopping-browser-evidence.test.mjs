@@ -378,3 +378,79 @@ test("browser environment preflight rejects an unrelated explicit preview before
     /Preview release capability differs/,
   );
 });
+
+test("runner checkpoints the running group before starting its child", async (t) => {
+  const options = await fixture(t);
+  let checkpoints = 0;
+  const { result, exitCode } = await runBrowserEvidence({
+    ...options,
+    spawn: async (invocation) => {
+      const saved = JSON.parse(
+        await readFile(
+          path.join(
+            path.dirname(invocation.env.PLAYWRIGHT_JSON_OUTPUT_FILE),
+            "..",
+            "run-result.json",
+          ),
+          "utf8",
+        ),
+      );
+      const current = saved.groups.find(
+        (row) => row.group === invocation.env.ESP_EVIDENCE_GROUP,
+      );
+      assert.equal(saved.preflight.status, "passed");
+      assert.equal(current.status, "running");
+      assert.ok(current.startedAt);
+      assert.equal(current.exitCode, null);
+      assert.ok(
+        saved.groups
+          .slice(checkpoints + 1)
+          .every((row) => row.status === "not-run"),
+      );
+      assert.ok(
+        saved.groups
+          .slice(0, checkpoints)
+          .every((row) => row.status === "passed"),
+      );
+      checkpoints++;
+      return { exitCode: 0, signal: null };
+    },
+    verify: async () => ({ status: "passed" }),
+  });
+  assert.equal(checkpoints, 5);
+  assert.equal(exitCode, 0);
+  assert.equal(result.status, "passed");
+});
+
+test("runner preserves the completed child checkpoint if evidence verification is interrupted", async (t) => {
+  const options = await fixture(t);
+  let verified = 0;
+  const { result, exitCode } = await runBrowserEvidence({
+    ...options,
+    spawn: async () => ({ exitCode: 0, signal: null }),
+    verify: async ({ runRoot, group }) => {
+      const saved = JSON.parse(
+        await readFile(path.join(runRoot, "run-result.json"), "utf8"),
+      );
+      const current = saved.groups.find((row) => row.group === group);
+      assert.equal(saved.groups[0].status, "passed");
+      assert.equal(current.status, "running");
+      assert.equal(current.exitCode, 0);
+      assert.equal(current.signal, null);
+      assert.equal(current.evidenceStatus, "not-run");
+      assert.ok(saved.groups.slice(2).every((row) => row.status === "not-run"));
+      verified++;
+      throw new Error("evidence verification interrupted");
+    },
+  });
+  assert.equal(verified, 1);
+  assert.equal(exitCode, 1);
+  const saved = JSON.parse(
+    await readFile(path.join(result.runRoot, "run-result.json"), "utf8"),
+  );
+  assert.equal(saved.status, "failed");
+  assert.equal(saved.error, "evidence verification interrupted");
+  assert.equal(saved.groups[1].status, "interrupted");
+  assert.equal(saved.groups[1].exitCode, 0);
+  assert.ok(saved.groups.slice(2).every((row) => row.status === "not-run"));
+});

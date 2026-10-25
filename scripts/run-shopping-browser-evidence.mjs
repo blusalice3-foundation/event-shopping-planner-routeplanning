@@ -1,7 +1,14 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import {
+  access,
+  mkdir,
+  readFile,
+  readdir,
+  rename,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { createRequire } from "node:module";
@@ -245,6 +252,8 @@ export async function collectBrowserProvenance(cwd, env) {
       "tests/browser/shopping-performance-evidence.ts",
       "tests/browser/shopping-transfer-measurement.ts",
       "scripts/verify-shopping-performance-evidence.mjs",
+      "scripts/baseline-frame-performance-observations.mjs",
+      "scripts/baseline-shopping-performance-observations.mjs",
       "scripts/run-shopping-browser-evidence.mjs",
       "scripts/shopping-performance-evidence-contract.mjs",
       ...transferSources,
@@ -305,6 +314,18 @@ export async function runBrowserEvidence(options = {}) {
       evidenceExitCode: null,
     })),
   };
+  const output = path.join(runRoot, "run-result.json");
+  // Keep a complete checkpoint even if the host terminates a long browser run.
+  // The exclusively created run directory remains the authority for run ID reuse.
+  const checkpoint = async () => {
+    const temporary = path.join(runRoot, `run-result-${randomUUID()}.tmp`);
+    await writeFile(temporary, `${JSON.stringify(result, null, 2)}\n`, {
+      encoding: "utf8",
+      flag: "wx",
+    });
+    await rename(temporary, output);
+  };
+  await checkpoint();
   let exitCode = 1;
   try {
     const checked = await preflight({ env, runRoot });
@@ -312,6 +333,7 @@ export async function runBrowserEvidence(options = {}) {
       ...checked,
       exitCode: checked.status === "passed" ? 0 : 1,
     };
+    await checkpoint();
     if (checked.status !== "passed")
       throw new Error(
         `Acceptance preflight rejected: ${checked.rejected.map((r) => r.name).join(", ")}`,
@@ -338,8 +360,10 @@ export async function runBrowserEvidence(options = {}) {
       entry.command = [invocation.command, ...invocation.args];
       entry.startedAt = new Date().toISOString();
       entry.status = "running";
+      await checkpoint();
       const child = await (options.spawn ?? spawnInvocation)(invocation, cwd);
       Object.assign(entry, child);
+      await checkpoint();
       const childPassed = child.exitCode === 0 && !child.signal && !child.error;
       if (definition.group !== "functional") {
         const evidence = await (options.verify ?? verifyGroupEvidence)({
@@ -354,6 +378,7 @@ export async function runBrowserEvidence(options = {}) {
       entry.finishedAt = new Date().toISOString();
       entry.status =
         childPassed && entry.evidenceStatus !== "failed" ? "passed" : "failed";
+      await checkpoint();
       if (entry.status !== "passed")
         throw new Error(
           `${definition.group} failed; later groups were not run`,
@@ -367,11 +392,8 @@ export async function runBrowserEvidence(options = {}) {
       if (group.status === "running") group.status = "interrupted";
   }
   result.finishedAt = new Date().toISOString();
-  const output = path.join(runRoot, "run-result.json");
-  await writeFile(output, `${JSON.stringify(result, null, 2)}\n`, {
-    encoding: "utf8",
-    flag: "wx",
-  });
+  await checkpoint();
+
   const saved = JSON.parse(await readFile(output, "utf8"));
   if (JSON.stringify(saved) !== JSON.stringify(result))
     throw new Error("run-result JSON could not be verified after saving");
