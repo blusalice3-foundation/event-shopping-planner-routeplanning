@@ -10,6 +10,7 @@ import {
   rejectedDiagnosticEnvironment,
   summarizeSamples,
   validateEvidenceArtifact,
+  validateBaselineFrameObservationArtifact,
   validateTransferSourceProof,
   validateAcceptedScenarioProof,
   verifyGroupEvidence,
@@ -1993,3 +1994,689 @@ test("current evidence rejects forged scope even when budgets are disabled; hist
     /At least 20/,
   );
 });
+
+test("completed baseline timings retain independent functional failures without passing acceptance", async () => {
+  const data = artifact(
+    "transfer",
+    acceptedCondition("multiple", "candidate-to-execute"),
+  );
+  data.phase = "before";
+  const record = {
+    measurementId: data.metrics.response.samples[0].measurementId,
+    sampleIndex: 1,
+    code: "selection-not-consumed",
+    message: "Transferred selection remains checked on the baseline",
+    itemIds: [data.metrics.response.samples[0].expectedTransferredIds[0]],
+  };
+  data.postconditionErrors = [record];
+  for (const metric of Object.values(data.metrics))
+    metric.samples.forEach((sample, index) => {
+      sample.postconditionErrors = index === 0 ? [record] : [];
+    });
+  const comparisonOptions = {
+    enforceBudgets: false,
+    allowBaselinePostconditionFailures: true,
+  };
+  assert.throws(
+    () => validateEvidenceArtifact(data, "transfer"),
+    /Functional postconditions failed/,
+  );
+  assert.doesNotThrow(() =>
+    validateEvidenceArtifact(data, "transfer", {}, comparisonOptions),
+  );
+  const { comparableMetrics } =
+    await import("./compare-shopping-browser-evidence.mjs");
+  assert.equal(comparableMetrics(data, "transfer").length, 4);
+  const after = structuredClone(data);
+  after.phase = "after";
+  assert.throws(
+    () => validateEvidenceArtifact(after, "transfer", {}, comparisonOptions),
+    /Functional postconditions failed/,
+  );
+  const mismatched = structuredClone(data);
+  mismatched.metrics.save.samples[0].postconditionErrors = [];
+  assert.throws(
+    () =>
+      validateEvidenceArtifact(mismatched, "transfer", {}, comparisonOptions),
+    /disagree/,
+  );
+  const wrongTarget = structuredClone(data);
+  wrongTarget.postconditionErrors[0].itemIds = ["not-transferred"];
+  assert.throws(
+    () =>
+      validateEvidenceArtifact(wrongTarget, "transfer", {}, comparisonOptions),
+    /does not match/,
+  );
+  const sampleOnly = structuredClone(data);
+  sampleOnly.postconditionErrors = [];
+  assert.throws(
+    () =>
+      validateEvidenceArtifact(sampleOnly, "transfer", {}, comparisonOptions),
+    /disagree/,
+  );
+});
+
+const baselineNoopSource = "67743821a278c22b38f43fc918d443c581d748cb";
+const baselineNoopComparisonOptions = {
+  enforceBudgets: false,
+  allowBaselinePostconditionFailures: true,
+};
+function baselineNoopIntegrationFixture(
+  kind = "response",
+  zeroWriteIndex = -1,
+) {
+  const condition = expectedConditions("transfer").find(
+    (row) => row.scenario === "noop" && row.input === "native",
+  );
+  const data = artifact("transfer", condition, kind);
+  data.phase = "before";
+  data.baselineComparisonObservation = {
+    phase: "before",
+    sourceCommit: baselineNoopSource,
+    referenceProductCommit: "200cd7564772a17e2264907ae22e9a93ad30f5dc",
+    sourceTree: "4155d4dc250e69b16be9a0455bd99a208b9f8d93",
+    publicTree: "90071a462092c45bc3ae11df5e696a053fc8a1ed",
+    sourceState: "clean",
+  };
+  data.notApplicable = {
+    save: "The noop sampler defines no save clock; actual unexpected transactions are recorded",
+    nextPending: "The noop sampler defines no pending-save input clock",
+  };
+  data.postconditionErrors = [];
+  data.persistence = {
+    writeCount: 0,
+    operationId: null,
+    commits: [],
+    samples: [],
+  };
+  const primary = data.metrics[kind].samples;
+  for (const [index, sample] of primary.entries()) {
+    const commits =
+      index === zeroWriteIndex
+        ? []
+        : [
+            {
+              at: sample.startEpoch + 2,
+              operationId: `actual-noop-${index}`,
+              stores: ["eventLists", "syncQueue"],
+              writes: [
+                { store: "eventLists", method: "put", key: "fixture-event" },
+              ],
+            },
+          ];
+    const record = commits.length
+      ? {
+          measurementId: sample.measurementId,
+          sampleIndex: index + 1,
+          code: "unexpected-noop-write",
+          itemIds: [sample.targetId],
+          message: "Noop expected zero persistence transactions; observed 1",
+          expectedWriteCount: 0,
+          actualWriteCount: commits.length,
+        }
+      : undefined;
+    if (record) data.postconditionErrors.push(record);
+    for (const values of Object.values(data.metrics)) {
+      const corresponding = values.samples[index];
+      corresponding.commits = structuredClone(commits);
+      corresponding.physicalWriteCount = commits.length;
+      corresponding.operationId = commits[0]?.operationId ?? null;
+      delete corresponding.operationIdUnavailableReason;
+      corresponding.postconditionErrors = record
+        ? [structuredClone(record)]
+        : [];
+    }
+    data.persistence.samples.push({
+      sampleIndex: index + 1,
+      measurementId: sample.measurementId,
+      physicalWriteCount: commits.length,
+      operationId: commits[0]?.operationId ?? null,
+      commits: structuredClone(commits),
+    });
+    data.persistence.commits.push(...structuredClone(commits));
+    data.persistence.writeCount += commits.length;
+  }
+  return data;
+}
+const baselineNoopExpectedRun = {
+  phase: "before",
+  runId: identity.runId,
+  productCommit: baselineNoopSource,
+};
+function validateBaselineNoopIntegration(
+  data,
+  expectedRun = baselineNoopExpectedRun,
+) {
+  return validateEvidenceArtifact(
+    data,
+    "transfer",
+    expectedRun,
+    baselineNoopComparisonOptions,
+  );
+}
+
+for (const kind of ["response", "frame"]) {
+  test(`baseline noop integration ${kind} retains actual writes only for before comparison`, async () => {
+    const data = baselineNoopIntegrationFixture(kind);
+    const original = structuredClone(data);
+    assert.throws(
+      () => validateEvidenceArtifact(data, "transfer"),
+      /Functional postconditions failed/,
+    );
+    assert.throws(
+      () =>
+        validateEvidenceArtifact(
+          data,
+          "transfer",
+          {},
+          {
+            allowBaselinePostconditionFailures: true,
+          },
+        ),
+      /Functional postconditions failed/,
+    );
+    assert.doesNotThrow(() => validateBaselineNoopIntegration(data));
+    const { comparableMetrics } =
+      await import("./compare-shopping-browser-evidence.mjs");
+    const rows = comparableMetrics(data, "transfer");
+    assert.equal(rows.length, kind === "response" ? 2 : 1);
+    assert.deepEqual(
+      rows.map((row) => row.operation),
+      kind === "response" ? ["response", "nextApplied"] : ["frame"],
+    );
+    assert.equal(data.persistence.writeCount, 20);
+    assert.equal(data.metrics[kind].samples[0].operationId, "actual-noop-0");
+    assert.deepEqual(data, original);
+    data.phase = "after";
+    assert.throws(
+      () =>
+        validateEvidenceArtifact(
+          data,
+          "transfer",
+          {},
+          baselineNoopComparisonOptions,
+        ),
+      /Functional postconditions failed/,
+    );
+  });
+  test(`baseline noop integration ${kind} keeps zero-write originals outside the exception map`, () => {
+    const data = baselineNoopIntegrationFixture(kind, 0);
+    assert.doesNotThrow(() => validateBaselineNoopIntegration(data));
+    assert.equal(data.persistence.writeCount, 19);
+    assert.equal(data.postconditionErrors.length, 19);
+    assert.deepEqual(data.metrics[kind].samples[0].commits, []);
+    assert.equal(data.metrics[kind].samples[0].operationId, null);
+    assert.deepEqual(data.metrics[kind].samples[0].postconditionErrors, []);
+    data.metrics[kind].samples[0].physicalWriteCount = 1;
+    assert.throws(
+      () => validateBaselineNoopIntegration(data),
+      /physical transaction evidence/,
+    );
+  });
+}
+
+for (const [label, kind, mutate, pattern] of [
+  [
+    "source commit from another run",
+    "response",
+    (data) => {
+      data.baselineComparisonObservation.sourceCommit = "b".repeat(40);
+    },
+    /source commit differs from provenance/,
+  ],
+  [
+    "unknown phase",
+    "response",
+    (data) => {
+      data.phase = "unknown";
+    },
+    /Functional postconditions failed/,
+  ],
+  [
+    "dirty source",
+    "response",
+    (data) => {
+      data.baselineComparisonObservation.sourceState = "dirty";
+    },
+    /pinned clean before product/,
+  ],
+  [
+    "changed product tree",
+    "frame",
+    (data) => {
+      data.baselineComparisonObservation.sourceTree = "c".repeat(40);
+    },
+    /pinned clean before product/,
+  ],
+  [
+    "fake zero aggregate write count",
+    "response",
+    (data) => {
+      data.persistence.writeCount = 0;
+    },
+    /hides or fabricates/,
+  ],
+  [
+    "fake zero sample write count",
+    "frame",
+    (data) => {
+      data.metrics.frame.samples[0].physicalWriteCount = 0;
+    },
+    /physical transaction evidence/,
+  ],
+  [
+    "missing next-input metric",
+    "response",
+    (data) => {
+      delete data.metrics.nextApplied;
+    },
+    /every original/,
+  ],
+  [
+    "mixed frame and response metrics",
+    "frame",
+    (data) => {
+      data.metrics.response = structuredClone(data.metrics.frame);
+    },
+    /every original/,
+  ],
+  [
+    "write record count mismatch",
+    "response",
+    (data) => {
+      data.postconditionErrors[0].actualWriteCount = 2;
+    },
+    /actual target\/transaction count/,
+  ],
+  [
+    "record uses next-input target",
+    "response",
+    (data) => {
+      data.postconditionErrors[0].itemIds = [
+        data.metrics.nextApplied.samples[0].targetId,
+      ];
+    },
+    /actual target\/transaction count/,
+  ],
+  [
+    "sample record differs from top record",
+    "frame",
+    (data) => {
+      data.metrics.frame.samples[0].postconditionErrors = [];
+    },
+    /postconditions disagree/,
+  ],
+  [
+    "actual write has no failure record",
+    "response",
+    (data) => {
+      data.postconditionErrors.shift();
+      for (const values of Object.values(data.metrics))
+        values.samples[0].postconditionErrors = [];
+    },
+    /matching functional failure record/,
+  ],
+  [
+    "unknown postcondition record field",
+    "frame",
+    (data) => {
+      data.postconditionErrors[0].accepted = true;
+    },
+    /postcondition record is invalid/,
+  ],
+  [
+    "faked sole operation ID",
+    "response",
+    (data) => {
+      data.metrics.response.samples[0].operationId = "fake-operation";
+    },
+    /sole operation ID/,
+  ],
+  [
+    "next-input starts before the actual commit",
+    "response",
+    (data) => {
+      data.metrics.nextApplied.samples[0].eventEpoch =
+        data.metrics.response.samples[0].commits[0].at;
+    },
+    /did not follow every actual transaction/,
+  ],
+  [
+    "untrusted next-input",
+    "response",
+    (data) => {
+      data.metrics.nextApplied.samples[0].trusted = false;
+    },
+    /did not follow every actual transaction/,
+  ],
+  [
+    "unmatched next-input",
+    "response",
+    (data) => {
+      data.metrics.nextApplied.samples[0].matched = false;
+    },
+    /did not follow every actual transaction/,
+  ],
+]) {
+  test(`baseline noop integration rejects ${label}`, () => {
+    const data = baselineNoopIntegrationFixture(kind);
+    mutate(data);
+    const expectedRun =
+      label === "unknown phase" ? {} : baselineNoopExpectedRun;
+    assert.throws(
+      () => validateBaselineNoopIntegration(data, expectedRun),
+      pattern,
+    );
+  });
+}
+for (const [field, value, pattern] of [
+  ["guideCleared", false, /restore interactive drag state/],
+  ["cloneCleared", false, /restore interactive drag state/],
+  ["sourceInteractive", false, /restore interactive drag state/],
+  ["endpointsCleared", false, /incorrect endpoint state/],
+  ["selectionAfterIds", ["changed-selection"], /lost its frozen selection/],
+]) {
+  test(`baseline noop integration preserves mandatory UI cleanup ${field}`, () => {
+    const data = baselineNoopIntegrationFixture();
+    data.metrics.response.samples[0][field] = value;
+    assert.throws(() => validateBaselineNoopIntegration(data), pattern);
+  });
+}
+for (const field of [
+  "sourcePresent",
+  "selectionVerified",
+  "controlsVerified",
+]) {
+  test(`baseline noop integration preserves frame visual proof ${field}`, () => {
+    const data = baselineNoopIntegrationFixture("frame");
+    data.metrics.frame.samples[0][field] = false;
+    assert.throws(() => validateBaselineNoopIntegration(data));
+  });
+}
+
+function baselineFrameIntegrationFixture(partial = false) {
+  const condition = acceptedCondition("range", "candidate-to-execute");
+  const data = artifact("transfer", condition, "frame");
+  data.phase = "before";
+  data.baselineComparisonObservation = {
+    phase: "before",
+    sourceCommit: baselineNoopSource,
+    referenceProductCommit: "200cd7564772a17e2264907ae22e9a93ad30f5dc",
+    sourceTree: "4155d4dc250e69b16be9a0455bd99a208b9f8d93",
+    publicTree: "90071a462092c45bc3ae11df5e696a053fc8a1ed",
+    sourceState: "clean",
+  };
+  data.fixtures = [];
+  data.baselineFrameObservations = [];
+  data.postconditionErrors = [];
+  const fixtureHash = "d".repeat(64);
+  for (const [index, sample] of data.metrics.frame.samples.entries()) {
+    sample.fixtureHash = fixtureHash;
+    sample.postconditionErrors = [];
+    sample.durableProof.actualExecuteIds = [...sample.expectedTransferredIds];
+    sample.durableProof.expectedExecuteMembership = [
+      ...sample.expectedTransferredIds,
+    ];
+    data.fixtures.push({
+      index: index + 1,
+      measurementId: sample.measurementId,
+      fixtureHash,
+      initialCount: 500,
+      isolation: "new-browser-context-per-sample",
+      baselineItemOrder: [...sample.durableProof.actualItemOrder],
+      baselineExecuteIds: [],
+    });
+    data.baselineFrameObservations.push({
+      sampleIndex: index + 1,
+      measurementId: sample.measurementId,
+      fixtureHash,
+      effectiveIds: [...sample.expectedTransferredIds],
+      outcome: "completed",
+      durationMs: sample.durationMs,
+    });
+  }
+  if (!partial) return data;
+  const [unobservable] = data.metrics.frame.samples.splice(0, 1);
+  data.metrics.frame.raw.splice(0, 1);
+  // A partial witness has only its nineteen genuine completed values.
+  const values = [...data.metrics.frame.raw].sort((a, b) => a - b);
+  data.metrics.frame.summary = {
+    count: 19,
+    medianMs: values[9],
+    p95Ms: values[18],
+  };
+  const rects = (role) =>
+    unobservable.expectedTransferredIds.map((itemId, index) => ({
+      itemId,
+      role,
+      x: role === "destination-card" ? 200 : 10,
+      y: 20 + index * 100,
+      width: 100,
+      height: role === "destination-card" && index === 2 ? 16 : 100,
+    }));
+  const ref = (name) => ({
+    [`${name}Path`]: path.resolve(`wrapper-${name}.fixture`),
+    [`${name}Sha256`]: "e".repeat(64),
+  });
+  const durableProof = structuredClone(unobservable.durableProof);
+  durableProof.actualExecuteIds = [...unobservable.expectedTransferredIds];
+  durableProof.expectedExecuteMembership = [
+    ...unobservable.expectedTransferredIds,
+  ];
+  const evidence = {
+    postInput: true,
+    trusted: true,
+    matched: true,
+    startEpoch: unobservable.startEpoch,
+    domMs: 3,
+    markerDelayMs: 0,
+    commits: unobservable.commits.map((commit) => ({ ...commit, writes: [] })),
+    sourceRects: rects("source-origin"),
+    targetRects: rects("destination-card"),
+    captures: [
+      {
+        index: 0,
+        ...ref("frame"),
+        sessionId: 1,
+        acknowledged: true,
+        metadata: { timestamp: (unobservable.startEpoch + 10) / 1000 },
+      },
+    ],
+    inputMarkerCount: 1,
+    inputMarker: { pid: 17, ts: 1000 },
+    domMarker: { pid: 17, ts: 4000 },
+    ...ref("trace"),
+    ...ref("baseline"),
+    ...ref("failedObservation"),
+    ...ref("failureScreenshot"),
+    ...ref("failureDom"),
+    durableProof,
+    scenarioEvidence: structuredClone(unobservable.scenarioEvidence),
+    expectedTransferredIds: [...unobservable.expectedTransferredIds],
+    guard: {
+      itemId: unobservable.expectedTransferredIds[2],
+      actualHeight: 16,
+      minimumHeightExclusive: 20,
+    },
+  };
+  const first = data.baselineFrameObservations[0];
+  delete first.durationMs;
+  first.outcome = "endpoint-unobservable";
+  first.failure = {
+    code: "identity-clipped",
+    message: "Observed destination identity occupied only sixteen pixels",
+    evidence,
+  };
+  data.failure = "One original baseline frame endpoint was unobservable";
+  return data;
+}
+
+test("baseline frame wrapper integration preserves all twenty completed original frames", async () => {
+  const data = baselineFrameIntegrationFixture();
+  const original = structuredClone(data);
+  const checked = validateBaselineFrameObservationArtifact(
+    data,
+    baselineNoopExpectedRun,
+  );
+  assert.equal(checked.attempted, 20);
+  assert.equal(checked.completedCount, 20);
+  assert.equal(checked.unobservableCount, 0);
+  assert.doesNotThrow(() =>
+    validateEvidenceArtifact(data, "transfer", baselineNoopExpectedRun),
+  );
+  const { comparableMetrics } =
+    await import("./compare-shopping-browser-evidence.mjs");
+  assert.equal(comparableMetrics(data, "transfer").length, 1);
+  assert.deepEqual(data, original);
+});
+
+test("baseline frame wrapper integration retains nineteen completed clocks and one typed unobservable original", async () => {
+  const data = baselineFrameIntegrationFixture(true);
+  const original = structuredClone(data);
+  const checked = validateBaselineFrameObservationArtifact(
+    data,
+    baselineNoopExpectedRun,
+  );
+  assert.equal(checked.attempted, 20);
+  assert.equal(checked.completedCount, 19);
+  assert.equal(checked.unobservableCount, 1);
+  assert.equal(data.metrics.frame.raw.length, 19);
+  assert.equal(data.metrics.frame.summary.count, 19);
+  assert.equal(
+    data.baselineFrameObservations[0].outcome,
+    "endpoint-unobservable",
+  );
+  assert.equal(
+    Object.hasOwn(data.baselineFrameObservations[0], "durationMs"),
+    false,
+  );
+  assert.equal(
+    data.metrics.frame.samples[0].measurementId,
+    data.baselineFrameObservations[1].measurementId,
+  );
+  assert.throws(
+    () => validateEvidenceArtifact(data, "transfer", baselineNoopExpectedRun),
+    /Normal acceptance requires 20 observed frames/,
+  );
+  assert.throws(
+    () =>
+      validateEvidenceArtifact(
+        data,
+        "transfer",
+        baselineNoopExpectedRun,
+        baselineNoopComparisonOptions,
+      ),
+    /Normal acceptance requires 20 observed frames/,
+  );
+  const { comparableMetrics } =
+    await import("./compare-shopping-browser-evidence.mjs");
+  assert.throws(
+    () => comparableMetrics(data, "transfer"),
+    /Normal acceptance requires 20 observed frames/,
+  );
+  assert.deepEqual(data, original);
+});
+
+for (const partial of [false, true]) {
+  test(`baseline frame wrapper integration rejects after ${partial ? "partial" : "complete"} observations`, () => {
+    const data = baselineFrameIntegrationFixture(partial);
+    data.phase = "after";
+    assert.throws(
+      () => validateBaselineFrameObservationArtifact(data, {}),
+      /only normal before/,
+    );
+    assert.throws(
+      () =>
+        validateEvidenceArtifact(
+          data,
+          "transfer",
+          {},
+          baselineNoopComparisonOptions,
+        ),
+      /only normal before/,
+    );
+  });
+  test(`baseline frame wrapper integration binds ${partial ? "partial" : "complete"} source commit to provenance`, () => {
+    const data = baselineFrameIntegrationFixture(partial);
+    const wrongRun = {
+      ...baselineNoopExpectedRun,
+      productCommit: "f".repeat(40),
+    };
+    assert.throws(
+      () => validateBaselineFrameObservationArtifact(data, wrongRun),
+      /source commit differs from provenance/,
+    );
+    assert.throws(
+      () => validateEvidenceArtifact(data, "transfer", wrongRun),
+      /source commit differs from provenance/,
+    );
+  });
+}
+for (const [label, mutate, pattern] of [
+  [
+    "missing full durable item content",
+    (evidence) => {
+      delete evidence.durableProof.fullItemContentPreserved;
+    },
+    /mandatory full durable/,
+  ],
+  [
+    "missing complete durable order",
+    (evidence) => {
+      evidence.durableProof.actualItemOrder.pop();
+    },
+    /mandatory full durable/,
+  ],
+  [
+    "incorrect transferred membership",
+    (evidence) => {
+      evidence.durableProof.actualExecuteIds = [];
+      evidence.durableProof.expectedExecuteMembership = [];
+    },
+    /durable membership/,
+  ],
+  [
+    "missing exact checkbox preparation",
+    (evidence) => {
+      delete evidence.durableProof.selectionPreparation.checkboxChecks;
+      delete evidence.scenarioEvidence.selectionPreparation.checkboxChecks;
+    },
+    /actual-checkbox/,
+  ],
+  [
+    "missing direction-specific durable order",
+    (evidence) => {
+      delete evidence.durableProof.mergeTailProof;
+    },
+    /direction-specific order proof/,
+  ],
+  [
+    "unverified selection count",
+    (evidence) => {
+      evidence.durableProof.selectionPreparation.exactSelectionVerified = false;
+      evidence.scenarioEvidence.selectionPreparation.exactSelectionVerified = false;
+    },
+    /actual-checkbox/,
+  ],
+]) {
+  test(`baseline frame wrapper integration rejects ${label} in an unobservable attempt`, () => {
+    const data = baselineFrameIntegrationFixture(true);
+    mutate(data.baselineFrameObservations[0].failure.evidence);
+    assert.throws(
+      () =>
+        validateBaselineFrameObservationArtifact(data, baselineNoopExpectedRun),
+      pattern,
+    );
+  });
+}
+for (const partial of [false, true]) {
+  test(`baseline frame wrapper integration keeps completed frame visual proof for ${partial ? "partial" : "complete"} observations`, () => {
+    const data = baselineFrameIntegrationFixture(partial);
+    data.metrics.frame.samples[0].controlsVerified = false;
+    assert.throws(
+      () =>
+        validateBaselineFrameObservationArtifact(data, baselineNoopExpectedRun),
+      /verified visible content/,
+    );
+  });
+}

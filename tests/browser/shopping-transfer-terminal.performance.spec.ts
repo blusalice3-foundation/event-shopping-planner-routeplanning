@@ -12,6 +12,13 @@ import {
   installCommitProbe,
 } from "./shopping-transfer-terminal-measurement";
 import type { TransferSample } from "./shopping-transfer-measurement";
+import {
+  resolveBaselineProductObservation,
+  terminalPersistenceObservation,
+  type TerminalObservedCommit,
+  type TerminalPersistenceSample,
+  type TerminalWritePostconditionError,
+} from "./shopping-transfer-terminal-observation";
 const shoppingPerformanceThresholds =
   performanceAcceptanceCriteriaForGroup("transfer").acceptanceThresholds;
 
@@ -33,7 +40,12 @@ for (const condition of terminalConditions)
       test.setTimeout(600000);
 
       const errors: string[] = [];
-
+      const postconditionErrors: TerminalWritePostconditionError[] = [];
+      const persistenceSamples: TerminalPersistenceSample[] = [];
+      const baselineComparisonObservation =
+        condition.scenario === "noop"
+          ? resolveBaselineProductObservation()
+          : undefined;
       const frame = measurementKind === "frame",
         saving = condition.scenario === "same-column";
       const names = frame
@@ -89,7 +101,25 @@ for (const condition of terminalConditions)
                 index,
                 frame,
                 testInfo,
+                baselineComparisonObservation,
               );
+              const primary = measured.response ?? measured.frame;
+              const samplePostconditionErrors =
+                primary.postconditionErrors as TerminalWritePostconditionError[];
+              postconditionErrors.push(...samplePostconditionErrors);
+              if (!saving) {
+                const commits = primary.commits as TerminalObservedCommit[];
+                persistenceSamples.push({
+                  sampleIndex: index + 1,
+                  measurementId: primary.measurementId,
+                  physicalWriteCount: commits.length,
+                  operationId:
+                    typeof primary.operationId === "string"
+                      ? primary.operationId
+                      : null,
+                  commits,
+                });
+              }
               for (const [name, sample] of Object.entries(measured))
                 samples[name].push(sample);
             } finally {
@@ -138,6 +168,10 @@ for (const condition of terminalConditions)
         environment,
         metrics,
         errors,
+        postconditionErrors,
+        ...(baselineComparisonObservation
+          ? { baselineComparisonObservation }
+          : {}),
         method: {
           repetitions: 20,
           freshFixturePerSample: true,
@@ -151,11 +185,22 @@ for (const condition of terminalConditions)
         },
         ...(!saving
           ? {
-              notApplicable: {
-                save: "No persistence mutation is accepted for this terminal outcome",
-                nextPending: "No save is pending for this terminal outcome",
-              },
-              persistence: { writeCount: 0, operationId: null, commits: [] },
+              notApplicable:
+                postconditionErrors.length > 0
+                  ? {
+                      save: "The noop sampler defines no save clock; actual unexpected transactions are recorded in persistence",
+                      nextPending:
+                        "The noop sampler defines no pending-save input clock; observed transactions are not treated as absent",
+                    }
+                  : {
+                      save: "No persistence mutation is accepted for this terminal outcome",
+                      nextPending:
+                        "No save is pending for this terminal outcome",
+                    },
+              persistence:
+                postconditionErrors.length > 0
+                  ? terminalPersistenceObservation(persistenceSamples)
+                  : { writeCount: 0, operationId: null, commits: [] },
             }
           : {}),
         ...(failure
@@ -173,6 +218,7 @@ for (const condition of terminalConditions)
       });
       expect(errors).toEqual([]);
       if (failure) throw failure;
+      expect(postconditionErrors).toEqual([]);
       for (const [name, metric] of Object.entries(metrics)) {
         expect(metric.raw).toHaveLength(
           shoppingPerformanceThresholds.minimumCount,

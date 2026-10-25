@@ -20,6 +20,12 @@ import {
   type TransferSample,
 } from "./shopping-transfer-measurement";
 
+import {
+  terminalWritePostconditions,
+  type TerminalBaselineObservation,
+  type TerminalObservedCommit,
+} from "./shopping-transfer-terminal-observation";
+
 export type TerminalCondition = {
   count: 500;
   grouped: false;
@@ -53,12 +59,7 @@ type Trace = {
   ts: number;
   args?: { data?: { clip?: number[] } };
 };
-type Commit = {
-  at: number;
-  stores: string[];
-  operationId?: string;
-  writes: unknown[];
-};
+type Commit = TerminalObservedCommit;
 export async function restoreTerminalFixture(
   page: Page,
   condition: TerminalCondition,
@@ -460,6 +461,7 @@ export async function measureTerminal(
   index: number,
   frame: boolean,
   testInfo: TestInfo,
+  baselineObservation?: TerminalBaselineObservation,
 ): Promise<Record<string, TransferSample>> {
   const source = condition.scenario === "reject" ? "candidate" : "execute",
     prefix = source === "candidate" ? "c" : "e";
@@ -628,7 +630,18 @@ export async function measureTerminal(
       beforeCount,
     );
     const saving = condition.scenario === "same-column";
-    expect(commits).toHaveLength(saving ? 1 : 0);
+    const postconditionErrors = terminalWritePostconditions({
+      observation: baselineObservation,
+      scenario: condition.scenario,
+      sampleIndex: index + 1,
+      measurementId,
+      targetId: id,
+      commits,
+    });
+    // Only the pinned before product may retain this known noop postcondition.
+    // Every original response/next-input/frame endpoint is still verified below.
+    if (postconditionErrors.length === 0)
+      expect(commits).toHaveLength(saving ? 1 : 0);
     const common = {
       measurementId,
       targetId: id,
@@ -638,12 +651,16 @@ export async function measureTerminal(
       domMs: state.domMs,
       commits,
       physicalWriteCount: commits.length,
-      operationId: saving ? (commits[0].operationId ?? null) : null,
+      operationId:
+        commits.length === 1 ? (commits[0].operationId ?? null) : null,
       operationIdUnavailableReason:
-        saving && !commits[0].operationId
-          ? "Persistence request did not expose an operation ID"
-          : undefined,
+        commits.length > 1
+          ? "Multiple observed transactions cannot be attributed to one operation ID"
+          : commits.length === 1 && !commits[0].operationId
+            ? "Persistence request did not expose an operation ID"
+            : undefined,
       trusted: state.trusted,
+      postconditionErrors,
     };
     if (!frame) {
       let pending: (typeof state.clicks)[number] | undefined;
@@ -680,7 +697,7 @@ export async function measureTerminal(
       expect(applied.trusted).toBe(true);
       expect(applied.matched).toBe(true);
       expect(applied.eventEpoch).toBeGreaterThan(
-        saving ? commits[0].at : state.startEpoch,
+        commits.length > 0 ? commits.at(-1)!.at : state.startEpoch,
       );
       return {
         response: {

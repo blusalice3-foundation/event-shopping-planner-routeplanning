@@ -6,6 +6,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   INSTRUMENT_VERSION,
+  validateBaselineFrameObservationArtifact,
+  verifyBaselineFrameObservationFiles,
   validateEvidenceArtifact,
   validateBrowserArtifactEnvironment,
   verifyFrameFiles,
@@ -95,13 +97,12 @@ export function comparableFixtureIdentity(artifact, group) {
   return { kind: "single", hash: fixture.fixtureHash };
 }
 
-export function comparableMetrics(artifact, group) {
-  validateEvidenceArtifact(
-    artifact,
-    group,
-    {},
-    { enforceBudgets: false, requireCurrentCriteria: false },
-  );
+export function comparableMetrics(artifact, group, identity = {}) {
+  validateEvidenceArtifact(artifact, group, identity, {
+    enforceBudgets: false,
+    requireCurrentCriteria: false,
+    allowBaselinePostconditionFailures: true,
+  });
   const metrics = [];
   const add = (operation, metric, summary, auxiliary = false) =>
     metrics.push({ operation, metric, summary, auxiliary });
@@ -129,6 +130,15 @@ export function comparableMetrics(artifact, group) {
         operation === "save",
       );
   return metrics;
+}
+// Strict artifact validation precedes this shared reporting step. Partial frame
+// samples keep their original indices and remain functional failures in either path.
+export function comparisonFunctionalFailure(artifact, group, key, phase) {
+  if (!artifact.postconditionErrors?.length) return null;
+  return {
+    record: { group, key, postconditionErrors: artifact.postconditionErrors },
+    message: `${phase}/${group}/${key}: completed timings retained with failed functional postconditions`,
+  };
 }
 function recordedCriteria(run) {
   return {
@@ -217,7 +227,9 @@ async function readRun(runRoot, phase) {
   const rows = new Map(),
     artifacts = new Map(),
     sourceHashes = { "run-result.json": hash(bytes) },
-    errors = [];
+    errors = [],
+    functionalFailures = [],
+    baselineObservations = new Map();
   for (const group of groups) {
     const definitions = expectedPerformanceCases(group),
       expected = definitions.map((row) => row.key),
@@ -279,11 +291,65 @@ async function readRun(runRoot, phase) {
           }
           assert(body, "empty artifact");
           const artifact = JSON.parse(body.toString("utf8"));
+          if (
+            phase === "before" &&
+            group === "transfer" &&
+            artifact.measurementKind === "frame" &&
+            artifact.baselineFrameObservations?.some(
+              (entry) => entry.outcome === "endpoint-unobservable",
+            )
+          ) {
+            assert(
+              test.results[0].status === "failed",
+              "unobservable baseline artifact must retain its failed producer result",
+            );
+            const observed = validateBaselineFrameObservationArtifact(
+              artifact,
+              {
+                phase,
+                runId: run.runId,
+                productCommit: run.productCommit,
+              },
+            );
+            assert(
+              expected.includes(observed.key) &&
+                definitions.find((row) => row.key === observed.key)?.spec ===
+                  path.basename(spec.file ?? "") &&
+                !seen.has(observed.key),
+              "duplicate, foreign baseline observation or wrong spec",
+            );
+            const output = path.join(runRoot, group, "test-results");
+            await verifyFrameFiles(artifact, output, sourceHashes);
+            await verifyBaselineFrameObservationFiles(
+              artifact,
+              output,
+              sourceHashes,
+            );
+            const artifactKey = `${group}:${observed.key}`;
+            baselineObservations.set(artifactKey, observed);
+            const functional = comparisonFunctionalFailure(
+              artifact,
+              group,
+              observed.key,
+              phase,
+            );
+            if (functional) {
+              functionalFailures.push(functional.record);
+              errors.push(functional.message);
+            }
+            artifacts.set(artifactKey, artifact);
+            seen.add(observed.key);
+            continue;
+          }
           const checked = validateEvidenceArtifact(
             artifact,
             group,
-            { phase, runId: run.runId },
-            { enforceBudgets: false, requireCurrentCriteria: false },
+            { phase, runId: run.runId, productCommit: run.productCommit },
+            {
+              enforceBudgets: false,
+              requireCurrentCriteria: false,
+              allowBaselinePostconditionFailures: true,
+            },
           );
           assert(
             expected.includes(checked.key) &&
@@ -301,8 +367,22 @@ async function readRun(runRoot, phase) {
           seen.add(checked.key);
           comparableFixtureIdentity(artifact, group);
           const artifactKey = `${group}:${checked.key}`;
+          const functional = comparisonFunctionalFailure(
+            artifact,
+            group,
+            checked.key,
+            phase,
+          );
+          if (functional) {
+            functionalFailures.push(functional.record);
+            errors.push(functional.message);
+          }
           artifacts.set(artifactKey, artifact);
-          for (const metric of comparableMetrics(artifact, group)) {
+          for (const metric of comparableMetrics(artifact, group, {
+            phase,
+            runId: run.runId,
+            productCommit: run.productCommit,
+          })) {
             const key = `${artifactKey}:${metric.operation}:${metric.metric}`;
             assert(!rows.has(key), "duplicate metric");
             rows.set(key, {
@@ -326,7 +406,15 @@ async function readRun(runRoot, phase) {
       if (!seen.has(key))
         errors.push(`${phase}/${group}: unavailable normal evidence ${key}`);
   }
-  return { run, rows, artifacts, sourceHashes, errors };
+  return {
+    run,
+    rows,
+    artifacts,
+    sourceHashes,
+    errors,
+    functionalFailures,
+    baselineObservations,
+  };
 }
 function expectedMetricRows() {
   return groups.flatMap((group) =>
@@ -445,10 +533,15 @@ export async function compareBrowserEvidence({
     for (const descriptor of expectedMetricRows()) {
       const oldMetric = before.rows.get(descriptor.key),
         current = after.rows.get(descriptor.key),
+        baselineObservation = before.baselineObservations.get(
+          descriptor.artifactKey,
+        ),
         reasons = [...compatibility];
       if (!oldMetric)
         reasons.push(
-          "before: complete matching normal metric unavailable; see before source errors",
+          baselineObservation
+            ? `before: ${baselineObservation.unobservableCount} of 20 frame endpoints were unobservable; no 20-frame timing can be inferred`
+            : "before: complete matching normal metric unavailable; see before source errors",
         );
       if (!current)
         reasons.push(
@@ -459,7 +552,9 @@ export async function compareBrowserEvidence({
       if (oldArtifact && newArtifact) {
         if (
           JSON.stringify(
-            comparableFixtureIdentity(oldArtifact, descriptor.group),
+            baselineObservation
+              ? { kind: "isolated", hashes: baselineObservation.fixtureHashes }
+              : comparableFixtureIdentity(oldArtifact, descriptor.group),
           ) !==
           JSON.stringify(
             comparableFixtureIdentity(newArtifact, descriptor.group),
@@ -510,7 +605,18 @@ export async function compareBrowserEvidence({
         before: oldMetric?.summary ?? null,
         after: current?.summary ?? null,
         deltaMs: delta,
-        beforeAbsolute: absolute(oldMetric),
+        beforeObservation: baselineObservation
+          ? {
+              attempted: baselineObservation.attempted,
+              completedCount: baselineObservation.completedCount,
+              unobservableCount: baselineObservation.unobservableCount,
+              numericTimingAvailable: false,
+            }
+          : null,
+        beforePostconditionErrors: oldArtifact?.postconditionErrors ?? [],
+        beforeAbsolute: baselineObservation
+          ? "unobservable"
+          : absolute(oldMetric),
         afterAbsolute: absolute(current),
         deltaReview: !compared
           ? "uncomparable"
@@ -541,6 +647,18 @@ export async function compareBrowserEvidence({
       expectedMetrics: result.rows.length,
       compared: result.rows.length - uncomparable,
       uncomparable,
+      // These are two evidence axes, not a partition: one row may have an
+      // observed-unobservable before endpoint and missing after evidence.
+      baselineUnobservable: result.rows.filter(
+        (row) => row.beforeObservation !== null,
+      ).length,
+      unmeasuredMissing: result.rows.filter(
+        (row) =>
+          row.status === "uncomparable" &&
+          (row.afterAbsolute === "missing" ||
+            (row.beforeAbsolute === "missing" &&
+              row.beforeObservation === null)),
+      ).length,
     };
     result.before = {
       runRoot: path.resolve(beforeRoot),
@@ -549,6 +667,10 @@ export async function compareBrowserEvidence({
       recordedAcceptanceCriteria: recordedCriteria(before.run),
       sourceHashes: before.sourceHashes,
       errors: before.errors,
+      functionalFailures: before.functionalFailures,
+      baselineFrameObservations: [...before.baselineObservations.entries()].map(
+        ([key, observation]) => ({ key, ...observation }),
+      ),
     };
     result.after = {
       runRoot: path.resolve(afterRoot),

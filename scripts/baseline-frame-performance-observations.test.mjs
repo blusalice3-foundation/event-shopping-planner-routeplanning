@@ -1,0 +1,625 @@
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import test from "node:test";
+import { performanceAcceptanceCriteriaForGroup } from "./shopping-performance-evidence-contract.mjs";
+import {
+  validateBaselineFrameObservations,
+  verifyBaselineFrameObservationFiles,
+} from "./baseline-frame-performance-observations.mjs";
+
+const version = "shopping-rendering-v2";
+const sourceCommit = "a".repeat(40);
+const fixtureHash = "b".repeat(64);
+const identity = {
+  phase: "before",
+  runId: "original-20",
+  productCommit: sourceCommit,
+};
+const png = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aDLcAAAAASUVORK5CYII=",
+  "base64",
+);
+const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
+const moved = ["c1", "c2", "c3"];
+const allIds = Array.from(
+  { length: 500 },
+  (_, index) => `${index < 250 ? "c" : "e"}${index % 250}`,
+);
+const execute = allIds.filter((id) => id.startsWith("e"));
+const rects = (role, height = 100) =>
+  moved.map((itemId, index) => ({
+    itemId,
+    x: role === "destination-card" ? 200 : 10,
+    y: 20 + index * 100,
+    width: 100,
+    height: index === 2 ? height : 100,
+    role,
+  }));
+const file = (name, bytes = png) => ({
+  [`${name}Path`]: path.resolve(`${name}.png`),
+  [`${name}Sha256`]: sha(bytes),
+});
+function fixtureArtifact(completedIndices = [], code = "identity-clipped") {
+  const observations = [],
+    fixtures = [],
+    samples = [];
+  for (let sampleIndex = 1; sampleIndex <= 20; sampleIndex++) {
+    const measurementId = `original-${sampleIndex}`;
+    const common = {
+      sampleIndex,
+      measurementId,
+      fixtureHash,
+      effectiveIds: [...moved],
+    };
+    fixtures.push({
+      index: sampleIndex,
+      measurementId,
+      fixtureHash,
+      initialCount: 500,
+      isolation: "new-browser-context-per-sample",
+      baselineItemOrder: [...allIds],
+      baselineExecuteIds: [...execute],
+    });
+    if (completedIndices.includes(sampleIndex)) {
+      observations.push({
+        ...common,
+        outcome: "completed",
+        durationMs: sampleIndex + 0.25,
+      });
+      samples.push({
+        measurementId,
+        fixtureHash,
+        durationMs: sampleIndex + 0.25,
+        expectedTransferredIds: [...moved],
+        postconditionErrors: [],
+      });
+      continue;
+    }
+    const evidence = {
+      postInput: true,
+      trusted: true,
+      matched: true,
+      startEpoch: 100000 + sampleIndex * 1000,
+      domMs: 42,
+      markerDelayMs: 1,
+      commits: [
+        { at: 100050 + sampleIndex * 1000, stores: ["eventLists"], writes: [] },
+      ],
+      sourceRects: rects("source-origin"),
+      targetRects: rects(
+        "destination-card",
+        code === "identity-clipped" ? 16.15625 : 100,
+      ),
+      captures: [
+        {
+          index: 0,
+          ...file("frame"),
+          sessionId: sampleIndex,
+          acknowledged: true,
+          metadata: { timestamp: (100100 + sampleIndex * 1000) / 1000 },
+        },
+      ],
+      inputMarkerCount: 1,
+      inputMarker: { pid: 17, ts: 1000 },
+      domMarker: { pid: 17, ts: 1042 },
+      ...file("trace", "trace"),
+      ...file("baseline"),
+      ...file("failedObservation", "probe"),
+      ...file("failureScreenshot"),
+      ...file("failureDom", "DOM"),
+      durableProof: {
+        fullItemContentPreserved: true,
+        actualItemOrder: [...allIds],
+        actualExecuteIds: [...execute, ...moved],
+        expectedExecuteMembership: [...execute, ...moved],
+        selectionPreparation: { requestedIds: [...moved] },
+      },
+      scenarioEvidence: { selectionPreparation: { requestedIds: [...moved] } },
+      expectedTransferredIds: [...moved],
+      ...(code === "identity-clipped"
+        ? {
+            guard: {
+              itemId: "c3",
+              actualHeight: 16.15625,
+              minimumHeightExclusive: 20,
+            },
+          }
+        : {
+            candidateCount: 0,
+            ...file("reference"),
+            ...file("verification", "[]"),
+          }),
+    };
+    observations.push({
+      ...common,
+      outcome: "endpoint-unobservable",
+      failure: {
+        code,
+        message: "Original post-input endpoint could not be observed",
+        evidence,
+      },
+    });
+  }
+  const raw = samples.map((sample) => sample.durationMs),
+    sorted = [...raw].sort((a, b) => a - b),
+    count = raw.length;
+  return {
+    schemaVersion: 1,
+    instrumentVersion: version,
+    phase: "before",
+    runId: identity.runId,
+    group: "transfer",
+    measurementKind: "frame",
+    diagnosticOnly: false,
+    acceptanceMeasurement: true,
+    ...performanceAcceptanceCriteriaForGroup("transfer"),
+    condition: {
+      count: 500,
+      input: "native",
+      grouped: true,
+      load: "light",
+      direction: "candidate-to-execute",
+      scenario: "range",
+    },
+    baselineComparisonObservation: {
+      phase: "before",
+      sourceCommit,
+      sourceState: "clean",
+      referenceProductCommit: "200cd7564772a17e2264907ae22e9a93ad30f5dc",
+      sourceTree: "4155d4dc250e69b16be9a0455bd99a208b9f8d93",
+      publicTree: "90071a462092c45bc3ae11df5e696a053fc8a1ed",
+    },
+    baselineFrameObservations: observations,
+    fixtures,
+    errors: [],
+    postconditionErrors: [],
+    ...(count < 20
+      ? { failure: "Original baseline frame endpoint unobservable" }
+      : {}),
+    metrics: {
+      frame: {
+        raw,
+        samples,
+        summary: {
+          count,
+          medianMs: count
+            ? (sorted[Math.floor((count - 1) / 2)] +
+                sorted[Math.floor(count / 2)]) /
+              2
+            : null,
+          p95Ms: count ? sorted[Math.ceil(count * 0.95) - 1] : null,
+        },
+      },
+    },
+  };
+}
+const validate = (artifact) =>
+  validateBaselineFrameObservations(artifact, identity, version);
+
+test("20 unobservable original attempts have no numeric frame value or pass claim", () => {
+  const result = validate(fixtureArtifact());
+  assert.equal(result.attempted, 20);
+  assert.equal(result.completedCount, 0);
+  assert.equal(result.unobservableCount, 20);
+  assert.equal(result.fixtureHashes.length, 20);
+  assert.equal(new Set(result.fixtureHashes).size, 1);
+  assert.equal(Object.hasOwn(result, "passed"), false);
+});
+test("partial original indices retain only real completed values with recomputed summary", () => {
+  const artifact = fixtureArtifact([2, 7, 20], "no-content-verified-frame");
+  assert.equal(validate(artifact).completedCount, 3);
+  assert.deepEqual(artifact.metrics.frame.raw, [2.25, 7.25, 20.25]);
+});
+test("all 20 actually completed before frames can retain normal observations without failure", () => {
+  assert.equal(
+    validate(
+      fixtureArtifact(Array.from({ length: 20 }, (_, index) => index + 1)),
+    ).unobservableCount,
+    0,
+  );
+});
+test("completed selection errors bind original index, measurement ID and effective IDs", () => {
+  const artifact = fixtureArtifact([2, 7]);
+  const error = {
+    sampleIndex: 7,
+    measurementId: "original-7",
+    code: "selection-not-consumed",
+    message: "Checked moved card remained selected",
+    itemIds: ["c2"],
+  };
+  artifact.postconditionErrors.push(error);
+  artifact.metrics.frame.samples[1].postconditionErrors.push(error);
+  assert.equal(validate(artifact).completedCount, 2);
+  artifact.postconditionErrors[0].sampleIndex = 2;
+  assert.throws(() => validate(artifact), /original completed attempt/);
+});
+
+test("completed observations bind effective identities to the actual original metric sample", () => {
+  for (const completedIndices of [
+    [2, 7],
+    Array.from({ length: 20 }, (_, index) => index + 1),
+  ]) {
+    const artifact = fixtureArtifact(completedIndices);
+    const original = structuredClone(artifact);
+    assert.equal(validate(artifact).completedCount, completedIndices.length);
+    assert.deepEqual(artifact, original);
+    const completed = artifact.baselineFrameObservations.find(
+      (entry) => entry.outcome === "completed",
+    );
+    completed.effectiveIds = ["c4", "c5", "c6"];
+    assert.throws(() => validate(artifact), /effective identities differ/);
+  }
+});
+for (const [label, mutate] of Object.entries({
+  missing: (sample) => {
+    delete sample.expectedTransferredIds;
+  },
+  reordered: (sample) => {
+    sample.expectedTransferredIds.reverse();
+  },
+  extra: (sample) => {
+    sample.expectedTransferredIds.push("c4");
+  },
+  duplicate: (sample) => {
+    sample.expectedTransferredIds[2] = "c1";
+  },
+}))
+  test(`rejects ${label} actual completed transferred identities without compacting original indices`, () => {
+    const artifact = fixtureArtifact([2, 7]);
+    mutate(artifact.metrics.frame.samples[1]);
+    assert.throws(() => validate(artifact), /effective identities differ/);
+  });
+const mutations = {
+  "after phase": (a) => {
+    a.phase = "after";
+  },
+  "response endpoint": (a) => {
+    a.measurementKind = "response";
+  },
+  "foreign product": (a) => {
+    a.baselineComparisonObservation.sourceTree = "c".repeat(40);
+  },
+  "dirty product": (a) => {
+    a.baselineComparisonObservation.sourceState = "dirty";
+  },
+  "wrong source provenance": (a) => {
+    a.baselineComparisonObservation.sourceCommit = "d".repeat(40);
+  },
+  "old instrument": (a) => {
+    a.instrumentVersion = "shopping-rendering-v1";
+  },
+  "wrong criterion": (a) => {
+    a.acceptanceCriteriaDate = "2026-10-25";
+  },
+  "diagnostic substitution": (a) => {
+    a.diagnosticOnly = true;
+  },
+  "extended condition": (a) => {
+    a.condition.fake = true;
+  },
+  "missing original attempt": (a) => {
+    a.baselineFrameObservations.pop();
+  },
+  "reordered original ordinals": (a) => {
+    a.baselineFrameObservations[3].sampleIndex = 2;
+  },
+  "duplicate measurement": (a) => {
+    a.baselineFrameObservations[3].measurementId = "original-1";
+  },
+  "mismatched fixture": (a) => {
+    a.fixtures[1].fixtureHash = "e".repeat(64);
+  },
+  "only two effective identities": (a) => {
+    a.baselineFrameObservations[0].effectiveIds.pop();
+  },
+  "unknown endpoint failure": (a) => {
+    a.baselineFrameObservations[0].failure.code = "timeout";
+  },
+  "invented failed latency": (a) => {
+    a.baselineFrameObservations[0].durationMs = 0;
+  },
+  "untrusted input": (a) => {
+    a.baselineFrameObservations[0].failure.evidence.trusted = false;
+  },
+  "pre-input failure": (a) => {
+    a.baselineFrameObservations[0].failure.evidence.postInput = false;
+  },
+  "missing physical PNG": (a) => {
+    a.baselineFrameObservations[0].failure.evidence.captures = [];
+  },
+  "unacknowledged capture": (a) => {
+    a.baselineFrameObservations[0].failure.evidence.captures[0].acknowledged = false;
+  },
+  "no compositor timestamp": (a) => {
+    delete a.baselineFrameObservations[0].failure.evidence.captures[0].metadata
+      .timestamp;
+  },
+  "false clipped guard": (a) => {
+    a.baselineFrameObservations[0].failure.evidence.guard.actualHeight = 100;
+  },
+  "missing durable proof": (a) => {
+    delete a.baselineFrameObservations[0].failure.evidence.durableProof;
+  },
+  "lost transferred member": (a) => {
+    a.baselineFrameObservations[0].failure.evidence.durableProof.actualExecuteIds.pop();
+  },
+  "extra durable transaction": (a) => {
+    a.baselineFrameObservations[0].failure.evidence.commits.push(
+      a.baselineFrameObservations[0].failure.evidence.commits[0],
+    );
+  },
+  "unordered trace marker": (a) => {
+    a.baselineFrameObservations[0].failure.evidence.domMarker.ts = 999;
+  },
+  "duplicate trusted input": (a) => {
+    a.baselineFrameObservations[0].failure.evidence.inputMarkerCount = 2;
+  },
+  "missing failed-test flag": (a) => {
+    delete a.failure;
+  },
+  "pseudo zero frame": (a) => {
+    a.metrics.frame.raw.push(0);
+  },
+  "unknown setup error": (a) => {
+    a.errors.push("setup failed");
+  },
+};
+for (const [name, mutate] of Object.entries(mutations))
+  test(`rejects ${name}`, () => {
+    const a = fixtureArtifact();
+    mutate(a);
+    assert.throws(() => validate(a));
+  });
+for (const [name, mutate] of Object.entries({
+  "unrecomputed partial summary": (a) => {
+    a.metrics.frame.summary.count = 20;
+  },
+  "compacted measurement identity": (a) => {
+    a.metrics.frame.samples[0].measurementId = "original-1";
+  },
+  "changed completed duration": (a) => {
+    a.metrics.frame.raw[0] += 1;
+  },
+}))
+  test(`rejects ${name}`, () => {
+    const a = fixtureArtifact([2, 7]);
+    mutate(a);
+    assert.throws(() => validate(a));
+  });
+
+test("missing provenance or untrusted current version cannot enable baseline extraction", () => {
+  assert.throws(
+    () => validateBaselineFrameObservations(fixtureArtifact(), {}, version),
+    /provenance/,
+  );
+  assert.throws(
+    () =>
+      validateBaselineFrameObservations(
+        fixtureArtifact(),
+        identity,
+        "arbitrary-v3",
+      ),
+    /instrument version/,
+  );
+});
+test("no-content endpoint requires reference and candidate verification references", () => {
+  const a = fixtureArtifact([], "no-content-verified-frame");
+  delete a.baselineFrameObservations[0].failure.evidence.referencePath;
+  assert.throws(() => validate(a), /reference\/candidate/);
+});
+
+async function actualFiles(t, code = "identity-clipped") {
+  const root = await mkdtemp(path.join(os.tmpdir(), "esp-frame-observation-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const artifact = fixtureArtifact([2, 7], code);
+  const put = async (record, name, bytes, suffix) => {
+    const filename = path.join(
+      root,
+      `${suffix}-${name}${name === "trace" || name === "failedObservation" || name === "verification" ? ".json" : name === "failureDom" ? ".yml" : ".png"}`,
+    );
+    await writeFile(filename, bytes);
+    record[`${name}Path`] = filename;
+    record[`${name}Sha256`] = sha(bytes);
+    return filename;
+  };
+  for (const observation of artifact.baselineFrameObservations) {
+    if (observation.outcome === "completed") continue;
+    const e = observation.failure.evidence,
+      id = observation.measurementId;
+    await put(
+      e,
+      "trace",
+      JSON.stringify({
+        traceEvents: [
+          { name: `${id}:input`, ...e.inputMarker },
+          { name: `${id}:dom`, ...e.domMarker },
+        ],
+      }),
+      id,
+    );
+    await put(
+      e,
+      "failedObservation",
+      JSON.stringify({
+        probe: {
+          id: moved[0],
+          trusted: true,
+          matched: true,
+          startEpoch: e.startEpoch,
+          domMs: e.domMs,
+          markerDelayMs: e.markerDelayMs,
+        },
+        columns: [{ column: "execute", ids: [...moved] }],
+      }),
+      id,
+    );
+    await put(e, "baseline", png, id);
+    await put(e, "failureScreenshot", png, id);
+    await put(e, "failureDom", "- document: original failed endpoint\n", id);
+    await put(e.captures[0], "frame", png, id);
+    if (code === "no-content-verified-frame") {
+      await put(e, "reference", png, id);
+      await put(e, "verification", "[]", id);
+    }
+  }
+  validate(artifact);
+  return { artifact, root, put };
+}
+test("all failed witness files are hashed and actual trace/probe/PNG metadata verified", async (t) => {
+  const { artifact, root } = await actualFiles(t);
+  const hashes = {};
+  await verifyBaselineFrameObservationFiles(artifact, root, hashes);
+  assert.equal(Object.keys(hashes).length, 18 * 6);
+});
+test("actual no-content candidate evidence is verified separately from accepted frames", async (t) => {
+  const { artifact, root } = await actualFiles(t, "no-content-verified-frame");
+  await verifyBaselineFrameObservationFiles(artifact, root, {});
+});
+for (const name of [
+  "trace",
+  "baseline",
+  "failedObservation",
+  "failureScreenshot",
+  "failureDom",
+])
+  test(`rejects tampered failed ${name} bytes`, async (t) => {
+    const { artifact, root } = await actualFiles(t);
+    const e = artifact.baselineFrameObservations[0].failure.evidence;
+    await writeFile(e[`${name}Path`], "tampered");
+    await assert.rejects(
+      verifyBaselineFrameObservationFiles(artifact, root, {}),
+      /hash mismatch/,
+    );
+  });
+test("rehashed duplicate input or foreign trace tuple still fails", async (t) => {
+  const { artifact, root, put } = await actualFiles(t);
+  const o = artifact.baselineFrameObservations[0],
+    e = o.failure.evidence;
+  await put(
+    e,
+    "trace",
+    JSON.stringify({
+      traceEvents: [
+        { name: `${o.measurementId}:input`, ...e.inputMarker },
+        { name: `${o.measurementId}:input`, ...e.inputMarker },
+        { name: `${o.measurementId}:dom`, ...e.domMarker },
+      ],
+    }),
+    "duplicate",
+  );
+  await assert.rejects(
+    verifyBaselineFrameObservationFiles(artifact, root, {}),
+    /actual trace/,
+  );
+});
+test("rehashed probe from another attempt cannot substitute for the failed observation", async (t) => {
+  const { artifact, root, put } = await actualFiles(t);
+  const e = artifact.baselineFrameObservations[0].failure.evidence;
+  await put(
+    e,
+    "failedObservation",
+    JSON.stringify({
+      probe: {
+        id: "c1",
+        trusted: true,
+        matched: true,
+        startEpoch: 1,
+        domMs: e.domMs,
+        markerDelayMs: e.markerDelayMs,
+      },
+      columns: [],
+    }),
+    "foreign",
+  );
+  await assert.rejects(
+    verifyBaselineFrameObservationFiles(artifact, root, {}),
+    /actual failed probe/,
+  );
+});
+test("rehashed non-PNG capture is rejected", async (t) => {
+  const { artifact, root, put } = await actualFiles(t);
+  const e = artifact.baselineFrameObservations[0].failure.evidence;
+  await put(e.captures[0], "frame", "not a PNG", "bad-capture");
+  await assert.rejects(
+    verifyBaselineFrameObservationFiles(artifact, root, {}),
+    /PNG/,
+  );
+});
+test("correct hash outside evidence realpath root is rejected", async (t) => {
+  const { artifact, root } = await actualFiles(t);
+  const outer = await mkdtemp(path.join(os.tmpdir(), "esp-outer-frame-"));
+  t.after(() => rm(outer, { recursive: true, force: true }));
+  const outside = path.join(outer, "capture.png");
+  await writeFile(outside, png);
+  artifact.baselineFrameObservations[0].failure.evidence.captures[0].framePath =
+    outside;
+  await assert.rejects(
+    verifyBaselineFrameObservationFiles(artifact, root, {}),
+    /escaped evidence root/,
+  );
+});
+test("symlink escape is resolved before evidence containment", async (t) => {
+  const { artifact, root } = await actualFiles(t);
+  const outer = await mkdtemp(path.join(os.tmpdir(), "esp-outer-link-"));
+  t.after(() => rm(outer, { recursive: true, force: true }));
+  const outside = path.join(outer, "capture.png"),
+    link = path.join(root, "escape.png");
+  await writeFile(outside, png);
+  try {
+    await symlink(outside, link, "file");
+  } catch (error) {
+    if (["EPERM", "EACCES"].includes(error.code)) {
+      t.skip("Windows file symlink privilege unavailable");
+      return;
+    }
+    throw error;
+  }
+  artifact.baselineFrameObservations[0].failure.evidence.captures[0].framePath =
+    link;
+  await assert.rejects(
+    verifyBaselineFrameObservationFiles(artifact, root, {}),
+    /escaped evidence root/,
+  );
+});
+test("rehashed candidate with a verified content match contradicts no-content failure", async (t) => {
+  const { artifact, root, put } = await actualFiles(
+    t,
+    "no-content-verified-frame",
+  );
+  const e = artifact.baselineFrameObservations[0].failure.evidence;
+  e.candidateCount = 1;
+  await put(
+    e,
+    "verification",
+    JSON.stringify([
+      {
+        frameSwapEpochMs: e.startEpoch + 10,
+        captureTs: 1234,
+        checked: { matched: true },
+        sourceRects: e.sourceRects,
+        targetRects: e.targetRects,
+        ...e.captures[0],
+      },
+    ]),
+    "contradiction",
+  );
+  await assert.rejects(
+    verifyBaselineFrameObservationFiles(artifact, root, {}),
+    /contradicts/,
+  );
+});
+test("rehashed candidate count cannot hide the actual verification records", async (t) => {
+  const { artifact, root, put } = await actualFiles(
+    t,
+    "no-content-verified-frame",
+  );
+  const e = artifact.baselineFrameObservations[0].failure.evidence;
+  await put(e, "verification", "[{}]", "hidden-candidate");
+  await assert.rejects(
+    verifyBaselineFrameObservationFiles(artifact, root, {}),
+    /count differs/,
+  );
+});

@@ -1,4 +1,5 @@
 import { writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
 import {
@@ -12,7 +13,14 @@ import {
   readTransferDurable,
   transferRow,
   type TransferSample,
+  type BaselineFrameObservation,
+  appendBaselineFrameObservation,
+  canRecordBaselineFrameObservation,
 } from "./shopping-transfer-measurement";
+import {
+  resolveBaselineProductObservation,
+  isTerminalBaselineObservation,
+} from "./shopping-transfer-terminal-observation";
 import {
   acceptedTransferConditions,
   acceptedRangeFrameGeometry,
@@ -21,6 +29,8 @@ import {
   verifyAcceptedRangeFramePreparation,
   restoreAcceptedScenario,
   verifyAcceptedScenario,
+  captureAcceptedSelectionPostcondition,
+  type AcceptedTransferPostconditionError,
 } from "./shopping-transfer-scenarios";
 
 const shoppingPerformanceThresholds =
@@ -48,6 +58,19 @@ for (const condition of acceptedTransferConditions)
         ).map((name) => [name, []]),
       );
       const fixtures: unknown[] = [];
+      const postconditionErrors: AcceptedTransferPostconditionError[] = [];
+      const phase = process.env.ESP_EVIDENCE_PHASE;
+      const baselineComparisonObservation =
+        phase === "before" &&
+        measurementKind === "frame" &&
+        condition.scenario === "range" &&
+        condition.count === 500
+          ? resolveBaselineProductObservation({ phase })
+          : undefined;
+      const baselineFrameMode = isTerminalBaselineObservation(
+        baselineComparisonObservation,
+      );
+      const baselineFrameObservations: BaselineFrameObservation[] = [];
       let failure: unknown, environment: unknown;
       try {
         for (let index = 1; index <= 20; index++) {
@@ -61,6 +84,23 @@ for (const condition of acceptedTransferConditions)
           });
           const page = await context.newPage();
           page.setDefaultTimeout(15000);
+          let originalFrameAttempt:
+            | {
+                observation: Pick<
+                  BaselineFrameObservation,
+                  | "sampleIndex"
+                  | "measurementId"
+                  | "fixtureHash"
+                  | "effectiveIds"
+                >;
+                fixture: () => unknown;
+                verifyDurable: () => Promise<
+                  Awaited<ReturnType<typeof verifyAcceptedScenario>>
+                >;
+                scenarioEvidence: Record<string, unknown> | undefined;
+                expectedTransferredIds: readonly string[];
+              }
+            | undefined;
           page.on("pageerror", (error) => errors.push(error.message));
           page.on("dialog", async (dialog) => {
             notices.push(dialog.message());
@@ -176,6 +216,46 @@ for (const condition of acceptedTransferConditions)
                   },
                 };
               }
+              const fixtureEvidence = () => ({
+                index,
+                ...(baselineFrameMode ? { measurementId } : {}),
+                ...scenario.fixture,
+                fixtureHash: scenario.fixtureHash,
+                isolation: "new-browser-context-per-sample",
+                initialCount: condition.count,
+                warmup: {
+                  sourceId: scenario.warmupSourceId,
+                  anchorId: scenario.warmupAnchorId,
+                  operationId:
+                    "save" in warmup ? warmup.save.operationId : null,
+                  commits: "save" in warmup ? warmup.save.commits : null,
+                  responseMs:
+                    "response" in warmup ? warmup.response.durationMs : null,
+                  saveMs: "save" in warmup ? warmup.save.durationMs : null,
+                  auxiliary: true,
+                  firstFixtureMove: true,
+                  selectionReset: true,
+                },
+                baselineItemOrder: before.items.map((item) => item.id),
+                baselineExecuteIds: before.executeIds,
+              });
+              if (baselineFrameMode)
+                originalFrameAttempt = {
+                  observation: {
+                    sampleIndex: index,
+                    measurementId,
+                    fixtureHash: scenario.fixtureHash,
+                    effectiveIds: [...scenario.effectiveIds],
+                  },
+                  fixture: fixtureEvidence,
+                  verifyDurable: () =>
+                    verifyAcceptedScenario(page, before, scenario, condition),
+                  scenarioEvidence: options.scenarioEvidence,
+                  expectedTransferredIds: [
+                    ...(options.expectedTransferredIds ??
+                      scenario.effectiveIds),
+                  ],
+                };
               const measured = await measureTransfer(
                 page,
                 session,
@@ -259,40 +339,109 @@ for (const condition of acceptedTransferConditions)
                 scenario,
                 condition,
               );
-              fixtures.push({
-                index,
-                ...scenario.fixture,
-                fixtureHash: scenario.fixtureHash,
-                isolation: "new-browser-context-per-sample",
-                initialCount: condition.count,
-                warmup: {
-                  sourceId: scenario.warmupSourceId,
-                  anchorId: scenario.warmupAnchorId,
-                  operationId:
-                    "save" in warmup ? warmup.save.operationId : null,
-                  commits: "save" in warmup ? warmup.save.commits : null,
-                  responseMs:
-                    "response" in warmup ? warmup.response.durationMs : null,
-                  saveMs: "save" in warmup ? warmup.save.durationMs : null,
-                  auxiliary: true,
-                  firstFixtureMove: true,
-                  selectionReset: true,
-                },
-                baselineItemOrder: before.items.map((item) => item.id),
-                baselineExecuteIds: before.executeIds,
-              });
+              const recordedMeasurementId =
+                "response" in measured
+                  ? measured.response.measurementId
+                  : measured.frame.measurementId;
+              if (!recordedMeasurementId)
+                throw new Error("Completed transfer measurement ID is missing");
+              const samplePostconditionErrors =
+                await captureAcceptedSelectionPostcondition(
+                  page,
+                  scenario.effectiveIds,
+                  index,
+                  recordedMeasurementId,
+                );
+              postconditionErrors.push(...samplePostconditionErrors);
+              // Each original isolated fixture contributes once. A later UI
+              // postcondition failure is retained and fails the test below;
+              // it never refills or replaces a timed sample with another one.
+              fixtures.push(fixtureEvidence());
               for (const [name, sample] of Object.entries(measured))
                 if (sample && samples[name])
                   samples[name].push({
                     ...sample,
                     durableProof,
+                    postconditionErrors: samplePostconditionErrors,
                     visualTarget: "card",
                     fixtureHash: scenario.fixtureHash,
                   });
+              if (baselineFrameMode)
+                appendBaselineFrameObservation(baselineFrameObservations, {
+                  ...originalFrameAttempt!.observation,
+                  outcome: "completed",
+                  durationMs: measured.frame!.durationMs,
+                });
             } finally {
               await session.detach();
             }
           } catch (error) {
+            if (
+              originalFrameAttempt &&
+              canRecordBaselineFrameObservation(
+                error,
+                phase,
+                measurementKind,
+                condition,
+                baselineComparisonObservation,
+              ) &&
+              error.measurementId ===
+                originalFrameAttempt.observation.measurementId
+            ) {
+              const failureScreenshotPath = testInfo.outputPath(
+                `${error.measurementId}-failure-screenshot.png`,
+              );
+              const failureDomPath = testInfo.outputPath(
+                `${error.measurementId}-failure-dom.yml`,
+              );
+              const screenshot = await page.screenshot();
+              const dom = Buffer.from(
+                await page.locator("body").ariaSnapshot(),
+                "utf8",
+              );
+              await writeFile(failureScreenshotPath, screenshot);
+              await writeFile(failureDomPath, dom);
+              Object.assign(error.evidence, {
+                failureScreenshotPath,
+                failureScreenshotSha256: createHash("sha256")
+                  .update(screenshot)
+                  .digest("hex"),
+                failureDomPath,
+                failureDomSha256: createHash("sha256")
+                  .update(dom)
+                  .digest("hex"),
+              });
+              await testInfo.attach(`accepted-${index}-failure-screenshot`, {
+                path: failureScreenshotPath,
+                contentType: "image/png",
+              });
+              await testInfo.attach(`accepted-${index}-failure-dom`, {
+                path: failureDomPath,
+                contentType: "text/yaml",
+              });
+              fixtures.push(originalFrameAttempt.fixture());
+              // Frame observability never excuses failed persistence/content/order.
+              // A proof failure remains fatal and does not create an observation.
+              const durableProof = await originalFrameAttempt.verifyDurable();
+              Object.assign(error.evidence, {
+                durableProof,
+                scenarioEvidence: originalFrameAttempt.scenarioEvidence,
+                expectedTransferredIds:
+                  originalFrameAttempt.expectedTransferredIds,
+              });
+              appendBaselineFrameObservation(baselineFrameObservations, {
+                ...originalFrameAttempt.observation,
+                outcome: "endpoint-unobservable",
+                failure: {
+                  code: error.code,
+                  message: error.message,
+                  evidence: error.evidence,
+                },
+              });
+              // Observe the next original isolated fixture once; never retry or
+              // replace this missing endpoint with a fabricated duration/sample.
+              continue;
+            }
             await testInfo
               .attach(`accepted-${index}-failure-screenshot`, {
                 body: await page.screenshot(),
@@ -313,6 +462,15 @@ for (const condition of acceptedTransferConditions)
       } catch (error) {
         failure = error;
       }
+      if (
+        !failure &&
+        baselineFrameObservations.some(
+          (entry) => entry.outcome === "endpoint-unobservable",
+        )
+      )
+        failure = new Error(
+          "Baseline frame endpoint was unobservable in original fixture attempts; no latency value was substituted",
+        );
       const metrics = Object.fromEntries(
         Object.entries(samples).map(([name, values]) => {
           const raw = values.map((sample) => sample.durationMs);
@@ -333,6 +491,9 @@ for (const condition of acceptedTransferConditions)
         condition,
         fixtures,
         environment,
+        ...(baselineFrameMode
+          ? { baselineComparisonObservation, baselineFrameObservations }
+          : {}),
         method: {
           warmupMoves: 1,
           warmupPerFixture: true,
@@ -356,11 +517,14 @@ for (const condition of acceptedTransferConditions)
             "actual trusted native drag at viewport edge changes product scroll before measured drop; fresh before-drop screenshot preserves current coordinate proof",
           rpcByteEstimates:
             "serialized after Tracing.end, outside measured frame endpoint",
+          selectionPostcondition:
+            "checked moved identities are reported after clocks and mandatory durable proof; all original isolated samples are retained and any postcondition error fails acceptance",
           thresholds: shoppingPerformanceThresholds,
         },
         metrics,
         errors,
         notices,
+        postconditionErrors,
         ...(failure
           ? {
               failure:
@@ -376,6 +540,7 @@ for (const condition of acceptedTransferConditions)
       });
       expect(errors).toEqual([]);
       if (failure) throw failure;
+      expect(postconditionErrors).toEqual([]);
       for (const [name, metric] of Object.entries(metrics)) {
         expect(metric.raw.length, `${name}: missing samples`).toBe(
           shoppingPerformanceThresholds.minimumCount,

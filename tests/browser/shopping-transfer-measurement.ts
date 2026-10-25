@@ -8,6 +8,16 @@ import {
   type TestInfo,
   type Worker as BrowserWorker,
 } from "@playwright/test";
+import { FrameObservationError } from "./shopping-transfer-frame-observation";
+export {
+  FrameObservationError,
+  appendBaselineFrameObservation,
+  canRecordBaselineFrameObservation,
+} from "./shopping-transfer-frame-observation";
+export type {
+  BaselineFrameObservation,
+  FrameObservationEvidence,
+} from "./shopping-transfer-frame-observation";
 
 export type TransferCondition = {
   count: number;
@@ -1040,6 +1050,7 @@ export async function measureTransfer(
   let traceStopped = false;
   let traceSaved = false;
   let screencastStopped = false;
+  let frameObservationFailure: FrameObservationError | undefined;
   const capturedFrames: Array<{
     data: string;
     metadata: { timestamp?: number; [key: string]: unknown };
@@ -1367,11 +1378,37 @@ export async function measureTransfer(
       visibleTargets.some((row) => row.itemId === id),
       "primary moved card must be physically visible",
     ).toBe(true);
-    for (const target of visibleTargets)
-      expect(
-        target.height,
-        `${target.itemId}: card identity must be observable inside viewport`,
-      ).toBeGreaterThan(20);
+    for (const target of visibleTargets) {
+      try {
+        expect(
+          target.height,
+          `${target.itemId}: card identity must be observable inside viewport`,
+        ).toBeGreaterThan(20);
+      } catch (error) {
+        throw new FrameObservationError(
+          "identity-clipped",
+          measurementId,
+          error instanceof Error ? error.message : String(error),
+          {
+            postInput: true,
+            trusted: state.trusted,
+            matched: state.matched,
+            startEpoch: state.startEpoch,
+            domMs: state.domMs,
+            markerDelayMs: state.markerDelayMs,
+            commits,
+            sourceRects,
+            targetRects: visibleTargets,
+            captures: [],
+            guard: {
+              itemId: target.itemId,
+              actualHeight: target.height,
+              minimumHeightExclusive: 20,
+            },
+          },
+        );
+      }
+    }
     const reference = await page.screenshot({ animations: "allow" });
     await session.send("Page.stopScreencast");
     screencastStopped = true;
@@ -1551,10 +1588,47 @@ export async function measureTransfer(
       body: JSON.stringify(candidateComparisons, null, 2),
       contentType: "application/json",
     });
-    expect(
-      selected,
-      "No captured compositor frame had verified source/destination card content after the corresponding Paint/DrawFrame",
-    ).toBeDefined();
+    try {
+      expect(
+        selected,
+        "No captured compositor frame had verified source/destination card content after the corresponding Paint/DrawFrame",
+      ).toBeDefined();
+    } catch (error) {
+      const verificationPath = testInfo.outputPath(
+        `${measurementId}-failed-frame-verification.json`,
+      );
+      const verificationBytes = Buffer.from(
+        JSON.stringify(candidateComparisons, null, 2),
+        "utf8",
+      );
+      await writeFile(verificationPath, verificationBytes);
+      throw new FrameObservationError(
+        "no-content-verified-frame",
+        measurementId,
+        error instanceof Error ? error.message : String(error),
+        {
+          postInput: true,
+          trusted: state.trusted,
+          matched: state.matched,
+          startEpoch: state.startEpoch,
+          domMs: state.domMs,
+          markerDelayMs: state.markerDelayMs,
+          commits,
+          sourceRects,
+          targetRects,
+          captures: [],
+          candidateCount: candidateComparisons.length,
+          tracePath,
+          traceSha256: sha256(traceBytes),
+          baselinePath,
+          baselineSha256: sha256(beforeFrame!),
+          referencePath,
+          referenceSha256: sha256(reference),
+          verificationPath,
+          verificationSha256: sha256(verificationBytes),
+        },
+      );
+    }
     const frameBytes = Buffer.from(selected!.data, "base64"),
       framePath = testInfo.outputPath(`${measurementId}-frame.png`);
     await writeFile(framePath, frameBytes);
@@ -1679,6 +1753,21 @@ export async function measureTransfer(
           .map((row) => row.dataset.itemId),
       })),
     }));
+    if (error instanceof FrameObservationError) {
+      frameObservationFailure = error;
+      const failedObservationPath = testInfo.outputPath(
+        `${measurementId}-failed-observation.json`,
+      );
+      const failedObservationBytes = Buffer.from(
+        JSON.stringify(state, null, 2),
+        "utf8",
+      );
+      await writeFile(failedObservationPath, failedObservationBytes);
+      Object.assign(error.evidence, {
+        failedObservationPath,
+        failedObservationSha256: sha256(failedObservationBytes),
+      });
+    }
     await testInfo.attach(`${measurementId}-failed-observation`, {
       body: JSON.stringify(state, null, 2),
       contentType: "application/json",
@@ -1707,6 +1796,53 @@ export async function measureTransfer(
           path: output,
           contentType: "application/json",
         });
+        if (frameObservationFailure)
+          Object.assign(frameObservationFailure.evidence, {
+            tracePath: output,
+            traceSha256: sha256(JSON.stringify({ traceEvents: trace })),
+          });
+      }
+      if (frameObservationFailure) {
+        const evidence = frameObservationFailure.evidence;
+        const inputMarkers = trace.filter(
+          (event) => event.name === `${measurementId}:input`,
+        );
+        const domMarker = trace.find(
+          (event) => event.name === `${measurementId}:dom`,
+        );
+        evidence.inputMarkerCount = inputMarkers.length;
+        if (inputMarkers[0])
+          evidence.inputMarker = {
+            pid: inputMarkers[0].pid,
+            ts: inputMarkers[0].ts,
+          };
+        if (domMarker)
+          evidence.domMarker = { pid: domMarker.pid, ts: domMarker.ts };
+        if (!evidence.baselinePath && beforeFrame) {
+          const baselinePath = testInfo.outputPath(
+            `${measurementId}-failed-baseline.png`,
+          );
+          await writeFile(baselinePath, beforeFrame);
+          evidence.baselinePath = baselinePath;
+          evidence.baselineSha256 = sha256(beforeFrame);
+        }
+        // Preserve every actually captured PNG, even when no candidate qualifies.
+        // These files are diagnostic witnesses, never replacement frame samples.
+        for (const [captureIndex, captured] of capturedFrames.entries()) {
+          const framePath = testInfo.outputPath(
+            `${measurementId}-failed-capture-${captureIndex}.png`,
+          );
+          const bytes = Buffer.from(captured.data, "base64");
+          await writeFile(framePath, bytes);
+          evidence.captures.push({
+            index: captureIndex,
+            framePath,
+            frameSha256: sha256(bytes),
+            sessionId: captured.sessionId,
+            acknowledged: captured.acknowledged,
+            metadata: captured.metadata,
+          });
+        }
       }
     }
   }

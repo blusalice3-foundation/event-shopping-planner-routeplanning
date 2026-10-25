@@ -682,6 +682,67 @@ export async function prepareAcceptedScenario(
   }
   return options;
 }
+export type AcceptedTransferPostconditionError = {
+  measurementId: string;
+  sampleIndex: number;
+  code: "selection-not-consumed";
+  itemIds: string[];
+  message: string;
+};
+
+/** Keep completed clocks independent from a later selection postcondition. */
+export async function captureAcceptedSelectionPostcondition(
+  page: Page,
+  effectiveIds: readonly string[],
+  sampleIndex: number,
+  measurementId: string,
+  timeoutMs = 5000,
+): Promise<AcceptedTransferPostconditionError[]> {
+  let checkedIds: string[] = [];
+  let readFailure: unknown;
+  try {
+    await expect
+      .poll(
+        async () => {
+          try {
+            checkedIds = await page.evaluate((ids) => {
+              return ids.filter((id) => {
+                const inputs = document.querySelectorAll<HTMLInputElement>(
+                  `[data-item-id="${CSS.escape(id)}"]:not([data-space-group-key]):not(.esp-shopping-touch-clone) input[type="checkbox"]`,
+                );
+                if (inputs.length > 1)
+                  throw new Error(`Ambiguous moved-item checkbox: ${id}`);
+                // The durable proof covers unmounted/offscreen moved identities.
+                return inputs[0]?.checked === true;
+              });
+            }, effectiveIds);
+            return checkedIds;
+          } catch (error) {
+            readFailure = error;
+            throw error;
+          }
+        },
+        {
+          timeout: timeoutMs,
+          message: "Moved mounted item checkboxes must be unchecked",
+        },
+      )
+      .toEqual([]);
+    if (readFailure) throw readFailure;
+    return [];
+  } catch (error) {
+    if (readFailure) throw readFailure;
+    return [
+      {
+        measurementId,
+        sampleIndex,
+        code: "selection-not-consumed",
+        itemIds: checkedIds,
+        message: error instanceof Error ? error.message : String(error),
+      },
+    ];
+  }
+}
 export async function verifyAcceptedScenario(
   page: Page,
   before: Awaited<ReturnType<typeof readTransferDurable>>,
@@ -698,10 +759,7 @@ export async function verifyAcceptedScenario(
     if (condition.direction === "candidate-to-execute") wanted.add(id);
     else wanted.delete(id);
   expect([...after.executeIds].sort()).toEqual([...wanted].sort());
-  for (const id of scenario.effectiveIds) {
-    const checkbox = transferRow(page, id).locator('input[type="checkbox"]');
-    if (await checkbox.count()) await expect(checkbox).not.toBeChecked();
-  }
+
   const space = (number: string) => number.replace(/([a-zA-Z])\d+$/, "$1");
   const targetIds = new Set(
     condition.direction === "candidate-to-execute"

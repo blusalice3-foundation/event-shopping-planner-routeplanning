@@ -1,5 +1,11 @@
 #!/usr/bin/env node
+import {
+  validateBaselineFrameObservations,
+  verifyBaselineFrameObservationFiles,
+} from "./baseline-frame-performance-observations.mjs";
+export { verifyBaselineFrameObservationFiles };
 // Acceptance-only validation. Never imported by the application bundle.
+import { validateBaselineNoopObservation } from "./baseline-shopping-performance-observations.mjs";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -555,7 +561,11 @@ export function validateAcceptedScenarioProof(sample, condition) {
     }
   }
 }
-function validateTransferPhaseProofs(artifact, condition) {
+function validateTransferPhaseProofs(
+  artifact,
+  condition,
+  baselineNoopWrites = new Map(),
+) {
   const preparedNextInput =
     artifact.measurementKind === "response" &&
     !["noop", "reject", "cancel", "same-column"].includes(condition.scenario);
@@ -568,13 +578,15 @@ function validateTransferPhaseProofs(artifact, condition) {
         artifact.notApplicable.nextPending.length > 0,
       "No-save cases must explicitly mark save/pending timings not applicable",
     );
-    assert(
-      artifact.persistence?.writeCount === 0 &&
-        artifact.persistence.operationId === null &&
-        Array.isArray(artifact.persistence.commits) &&
-        artifact.persistence.commits.length === 0,
-      "No-save case contains a write or fabricated operation ID",
-    );
+    if (!baselineNoopWrites.size) {
+      assert(
+        artifact.persistence?.writeCount === 0 &&
+          artifact.persistence.operationId === null &&
+          Array.isArray(artifact.persistence.commits) &&
+          artifact.persistence.commits.length === 0,
+        "No-save case contains a write or fabricated operation ID",
+      );
+    }
   }
   const byId = new Map();
   for (const [metric, values] of Object.entries(artifact.metrics))
@@ -618,12 +630,15 @@ function validateTransferPhaseProofs(artifact, condition) {
         `${metric}: missing input/commit phase proof`,
       );
       if (noSave) {
-        assert(
-          sample.commits.length === 0 &&
-            sample.physicalWriteCount === 0 &&
-            sample.operationId === null,
-          `${metric}: no-save sample wrote persistence or fabricated an operation ID`,
-        );
+        if (!baselineNoopWrites.has(sample.measurementId)) {
+          assert(
+            sample.commits.length === 0 &&
+              sample.physicalWriteCount === 0 &&
+              sample.operationId === null,
+            `${metric}: no-save sample wrote persistence or fabricated an operation ID`,
+          );
+        }
+
         if (metric === "response") {
           assert(
             Array.isArray(sample.selectionBeforeIds) &&
@@ -765,12 +780,125 @@ export function validateBrowserArtifactEnvironment(environment) {
     "Artifact environment headed/workers/retries is missing or invalid",
   );
 }
+// This is a comparison witness, never a substitute for 20 accepted frames.
+export function validateBaselineFrameObservationArtifact(
+  artifact,
+  identity = {},
+) {
+  const checked = validateBaselineFrameObservations(
+    artifact,
+    identity,
+    INSTRUMENT_VERSION,
+  );
+  validateBrowserArtifactEnvironment(artifact.environment);
+  for (const sample of artifact.metrics.frame.samples)
+    validateFrameVisualProof(sample, checked.condition);
+  validateTransferPhaseProofs(artifact, checked.condition);
+  for (const observation of checked.observations)
+    if (observation.outcome === "endpoint-unobservable")
+      validateAcceptedScenarioProof(
+        {
+          ...observation.failure.evidence,
+          expectedTransferredIds: observation.effectiveIds,
+        },
+        checked.condition,
+      );
+  return checked;
+}
+// Completed clocks may be retained when a later, independent functional assertion
+// fails on the unmodified baseline. This never makes acceptance evidence pass.
+function validateRecordedPostconditions(
+  artifact,
+  group,
+  allowBaselineFailures,
+  identity,
+) {
+  const recorded = artifact.postconditionErrors ?? [];
+  assert(Array.isArray(recorded), "Invalid functional postcondition records");
+  const allSamples = Object.values(artifact.metrics ?? {}).flatMap((metric) =>
+    Array.isArray(metric.samples) ? metric.samples : [],
+  );
+  if (recorded.length && artifact.condition?.scenario === "noop") {
+    assert(
+      group === "transfer" &&
+        artifact.phase === "before" &&
+        allowBaselineFailures,
+      "Functional postconditions failed; acceptance evidence is invalid",
+    );
+    return validateBaselineNoopObservation(artifact, identity);
+  }
+  if (recorded.length) {
+    assert(
+      group === "transfer" &&
+        artifact.phase === "before" &&
+        !["single", "noop", "reject", "cancel", "same-column"].includes(
+          artifact.condition?.scenario ?? "single",
+        ) &&
+        allowBaselineFailures,
+      "Functional postconditions failed; acceptance evidence is invalid",
+    );
+    const ids = new Set();
+    const indices = new Set();
+    for (const record of recorded) {
+      assert(
+        record &&
+          sameJson(Object.keys(record).sort(), [
+            "code",
+            "itemIds",
+            "measurementId",
+            "message",
+            "sampleIndex",
+          ]) &&
+          record.code === "selection-not-consumed" &&
+          typeof record.measurementId === "string" &&
+          record.measurementId.length > 0 &&
+          typeof record.message === "string" &&
+          record.message.length > 0 &&
+          Number.isInteger(record.sampleIndex) &&
+          record.sampleIndex >= 1 &&
+          record.sampleIndex <= 20 &&
+          uniqueStrings(record.itemIds) &&
+          record.itemIds.length > 0 &&
+          !ids.has(record.measurementId) &&
+          !indices.has(record.sampleIndex),
+        "Invalid or duplicate baseline functional postcondition record",
+      );
+      ids.add(record.measurementId);
+      indices.add(record.sampleIndex);
+      for (const metric of Object.values(artifact.metrics ?? {})) {
+        const sample = metric.samples?.[record.sampleIndex - 1];
+        assert(
+          sample?.measurementId === record.measurementId &&
+            record.itemIds.every((id) =>
+              sample.expectedTransferredIds?.includes(id),
+            ),
+          "Baseline functional postcondition does not match its completed sample",
+        );
+      }
+    }
+  }
+  for (const sample of allSamples) {
+    const expected = recorded.filter(
+      (record) => record.measurementId === sample.measurementId,
+    );
+    assert(
+      Array.isArray(sample.postconditionErrors ?? []) &&
+        sameJson(sample.postconditionErrors ?? [], expected),
+      "Functional postcondition records disagree with completed samples",
+    );
+  }
+  return new Map();
+}
 // Budget reporting is used only by before/after comparison; acceptance verification always enforces budgets.
 export function validateEvidenceArtifact(
   artifact,
   group,
   identity = {},
-  { enforceBudgets = true, requireCurrentCriteria = true } = {},
+  {
+    enforceBudgets = true,
+    requireCurrentCriteria = true,
+    allowBaselinePostconditionFailures = false,
+  } = {},
 ) {
   const { acceptanceThresholds } = performanceAcceptanceCriteriaForGroup(group);
   validateAcceptanceCriteriaMetadata(artifact, group, {
@@ -793,6 +921,18 @@ export function validateEvidenceArtifact(
   for (const key of ["phase", "runId"])
     if (identity[key] !== undefined)
       assert(artifact[key] === identity[key], `Evidence ${key} mismatch`);
+  if (artifact.baselineFrameObservations !== undefined) {
+    const observed = validateBaselineFrameObservationArtifact(artifact, {
+      ...identity,
+      productCommit:
+        identity.productCommit ??
+        artifact.baselineComparisonObservation?.sourceCommit,
+    });
+    assert(
+      observed.unobservableCount === 0,
+      "Normal acceptance requires 20 observed frames; baseline observation failed",
+    );
+  }
   assert(!artifact.failure, "Artifact records an incomplete measurement");
   validateBrowserArtifactEnvironment(artifact.environment);
   const kind = artifact.measurementKind;
@@ -809,6 +949,12 @@ export function validateEvidenceArtifact(
   assert(
     Array.isArray(artifact.errors) && artifact.errors.length === 0,
     "Artifact errors must be an empty array",
+  );
+  const baselineNoopWrites = validateRecordedPostconditions(
+    artifact,
+    group,
+    !enforceBudgets && allowBaselinePostconditionFailures,
+    identity,
   );
   if (group === "shopping") {
     const operations = [
@@ -966,7 +1112,8 @@ export function validateEvidenceArtifact(
       );
     }
   }
-  if (group === "transfer") validateTransferPhaseProofs(artifact, condition);
+  if (group === "transfer")
+    validateTransferPhaseProofs(artifact, condition, baselineNoopWrites);
   return { key: `${kind}:${key}`, condition, measurementKind: kind };
 }
 function collectTests(suites, list = []) {

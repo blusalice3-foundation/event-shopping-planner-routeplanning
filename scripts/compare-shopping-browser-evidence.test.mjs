@@ -7,6 +7,7 @@ import test from "node:test";
 import {
   comparableFixtureIdentity,
   comparableMetrics,
+  comparisonFunctionalFailure,
   compareBrowserEvidence,
 } from "./compare-shopping-browser-evidence.mjs";
 import {
@@ -236,6 +237,8 @@ test("missing extra categories retain every valid core before/after row and expl
     expectedMetrics: 672,
     compared: 288,
     uncomparable: 384,
+    baselineUnobservable: 0,
+    unmeasuredMissing: 384,
   });
   const core = result.rows.find(
     (row) => row.group === "shopping" && row.metric === "ui",
@@ -621,4 +624,374 @@ test("comparison refuses a present but incomplete criteria table", async (t) => 
     ),
   );
   assert.equal(result.rows.length, 0);
+});
+
+test("comparison retains a file-verified unobservable baseline without creating a numeric frame or borrowing after acceptance", async (t) => {
+  const directory = await mkdtemp(
+    path.join(os.tmpdir(), "esp observed baseline compare "),
+  );
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const beforeRoot = await partialShoppingRun(directory, "before", 80);
+  const afterRoot = await partialShoppingRun(directory, "after", 10);
+  const metadataPath = path.join(beforeRoot, "run-result.json");
+  const metadata = JSON.parse(await readFile(metadataPath, "utf8"));
+  metadata.productCommit = "a".repeat(40);
+  await writeFile(metadataPath, JSON.stringify(metadata), "utf8");
+  const evidenceRoot = path.join(
+    beforeRoot,
+    "transfer",
+    "test-results",
+    "observed",
+  );
+  await mkdir(evidenceRoot, { recursive: true });
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aDLcAAAAASUVORK5CYII=",
+    "base64",
+  );
+  const put = async (stem, name, bytes) => {
+    const filename = path.join(evidenceRoot, `${stem}-${name}`);
+    await writeFile(filename, bytes);
+    return {
+      [`${name}Path`]: filename,
+      [`${name}Sha256`]: createHash("sha256").update(bytes).digest("hex"),
+    };
+  };
+  const sharedImage = await put("shared", "frame", png);
+  const image = (name) => ({
+    [`${name}Path`]: sharedImage.framePath,
+    [`${name}Sha256`]: sharedImage.frameSha256,
+  });
+  const allIds = Array.from(
+    { length: 500 },
+    (_, index) => `${index < 250 ? "c" : "e"}${index % 250}`,
+  );
+  const executeIds = allIds.filter((id) => id.startsWith("e"));
+  const effectiveIds = ["c1", "c2", "c3"];
+  const selectionPreparation = {
+    requestedIds: [...effectiveIds],
+    requestedDisplayOrder: [...effectiveIds],
+    mountedCheckedIds: [...effectiveIds],
+    exactSelectionVerified: true,
+    requestedCount: 3,
+    effectiveCount: 3,
+    headerText: "Candidate (3件)",
+    checkboxChecks: effectiveIds.map((targetId) => ({
+      targetId,
+      checked: true,
+      scrollY: 0,
+      rect: { x: 10, y: 10, width: 100, height: 100 },
+    })),
+  };
+  const durableProof = {
+    fullItemContentPreserved: true,
+    actualItemOrder: [...allIds],
+    actualExecuteIds: [...executeIds, ...effectiveIds],
+    expectedExecuteMembership: [...executeIds, ...effectiveIds],
+    selectionPreparation,
+    candidateOrderProof: null,
+    mergeTailProof: [],
+  };
+  const fixtures = [],
+    observations = [];
+  for (let sampleIndex = 1; sampleIndex <= 20; sampleIndex++) {
+    const measurementId = `original-frame-${sampleIndex}`,
+      fixtureHash = "b".repeat(64),
+      startEpoch = 100000 + sampleIndex * 1000;
+    const inputMarker = { pid: 17, ts: sampleIndex * 10000 },
+      domMarker = { pid: 17, ts: sampleIndex * 10000 + 42000 };
+    const rects = (role) =>
+      effectiveIds.map((itemId, index) => ({
+        itemId,
+        x: role === "destination-card" ? 200 : 10,
+        y: 20 + index * 100,
+        width: 100,
+        height: role === "destination-card" && index === 2 ? 16.15625 : 100,
+        role,
+      }));
+    const evidence = {
+      postInput: true,
+      trusted: true,
+      matched: true,
+      startEpoch,
+      domMs: 42,
+      markerDelayMs: 1,
+      commits: [{ at: startEpoch + 50, stores: ["eventLists"], writes: [] }],
+      sourceRects: rects("source-gap"),
+      targetRects: rects("destination-card"),
+      captures: [
+        {
+          index: 0,
+          ...sharedImage,
+          sessionId: sampleIndex,
+          acknowledged: true,
+          metadata: { timestamp: (startEpoch + 100) / 1000 },
+        },
+      ],
+      inputMarkerCount: 1,
+      inputMarker,
+      domMarker,
+      ...(await put(
+        measurementId,
+        "trace",
+        JSON.stringify({
+          traceEvents: [
+            { name: `${measurementId}:input`, ...inputMarker },
+            { name: `${measurementId}:dom`, ...domMarker },
+          ],
+        }),
+      )),
+      ...(await put(
+        measurementId,
+        "failedObservation",
+        JSON.stringify({
+          probe: {
+            id: "c1",
+            trusted: true,
+            matched: true,
+            startEpoch,
+            domMs: 42,
+            markerDelayMs: 1,
+          },
+          columns: [{ column: "execute", ids: [...effectiveIds] }],
+        }),
+      )),
+      ...image("baseline"),
+      ...image("failureScreenshot"),
+      ...(await put(
+        measurementId,
+        "failureDom",
+        "- document: original failed frame endpoint\n",
+      )),
+      durableProof,
+      scenarioEvidence: { selectionPreparation },
+      expectedTransferredIds: [...effectiveIds],
+      guard: {
+        itemId: "c3",
+        actualHeight: 16.15625,
+        minimumHeightExclusive: 20,
+      },
+    };
+    fixtures.push({
+      index: sampleIndex,
+      measurementId,
+      fixtureHash,
+      initialCount: 500,
+      isolation: "new-browser-context-per-sample",
+      baselineItemOrder: [...allIds],
+      baselineExecuteIds: [...executeIds],
+    });
+    observations.push({
+      sampleIndex,
+      measurementId,
+      fixtureHash,
+      effectiveIds: [...effectiveIds],
+      outcome: "endpoint-unobservable",
+      failure: {
+        code: "identity-clipped",
+        message:
+          "The third actual moved identity was clipped below the unchanged 20px guard",
+        evidence,
+      },
+    });
+  }
+  const artifact = {
+    ...evidenceIdentity("transfer", "frame", {
+      ESP_EVIDENCE_PHASE: "before",
+      ESP_EVIDENCE_RUN_ID: metadata.runId,
+    }),
+    condition: {
+      count: 500,
+      input: "native",
+      grouped: true,
+      load: "light",
+      direction: "candidate-to-execute",
+      scenario: "range",
+    },
+    baselineComparisonObservation: {
+      phase: "before",
+      sourceCommit: metadata.productCommit,
+      sourceState: "clean",
+      referenceProductCommit: "200cd7564772a17e2264907ae22e9a93ad30f5dc",
+      sourceTree: "4155d4dc250e69b16be9a0455bd99a208b9f8d93",
+      publicTree: "90071a462092c45bc3ae11df5e696a053fc8a1ed",
+    },
+    fixtures,
+    baselineFrameObservations: observations,
+    environment: browserEnvironment,
+    errors: [],
+    postconditionErrors: [],
+    metrics: {
+      frame: {
+        raw: [],
+        samples: [],
+        summary: { count: 0, medianMs: null, p95Ms: null },
+      },
+    },
+    failure:
+      "Original frame endpoint unobservable in all twenty isolated attempts; no timing was substituted",
+  };
+  const artifactPath = path.join(evidenceRoot, "artifact.json");
+  await writeFile(artifactPath, JSON.stringify(artifact), "utf8");
+  const originalBytes = await readFile(artifactPath);
+  await writeFile(
+    path.join(beforeRoot, "transfer", "report.json"),
+    JSON.stringify({
+      errors: [],
+      config: { workers: 1, projects: [{ retries: 0 }] },
+      suites: [
+        {
+          specs: [
+            {
+              file: "shopping-transfer-accepted.performance.spec.ts",
+              title: "original range frame",
+              tests: [
+                {
+                  expectedStatus: "passed",
+                  results: [
+                    {
+                      retry: 0,
+                      status: "failed",
+                      attachments: [
+                        {
+                          name: "shopping-transfer-rendering",
+                          contentType: "application/json",
+                          path: artifactPath,
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }),
+    "utf8",
+  );
+  const { exitCode, result } = await compareBrowserEvidence({
+    beforeRoot,
+    afterRoot,
+  });
+  const row = result.rows.find(
+    (entry) =>
+      entry.group === "transfer" &&
+      entry.measurementKind === "frame" &&
+      entry.condition.scenario === "range" &&
+      entry.condition.input === "native" &&
+      entry.condition.direction === "candidate-to-execute",
+  );
+  assert.equal(exitCode, 1);
+  assert.equal(result.status, "incomplete");
+  assert.equal(row.status, "uncomparable");
+  assert.equal(row.beforeAbsolute, "unobservable");
+  assert.equal(row.afterAbsolute, "missing");
+  assert.equal(row.before, null);
+  assert.equal(row.after, null);
+  assert.equal(row.deltaMs, null);
+  assert.deepEqual(row.beforeObservation, {
+    attempted: 20,
+    completedCount: 0,
+    unobservableCount: 20,
+    numericTimingAvailable: false,
+  });
+  assert.equal(result.coverage.baselineUnobservable, 1);
+  assert.equal(result.before.baselineFrameObservations.length, 1);
+  assert.equal(
+    result.before.baselineFrameObservations[0].observations.every(
+      (entry) => !Object.hasOwn(entry, "durationMs"),
+    ),
+    true,
+  );
+  assert.equal(
+    result.before.errors.some((error) =>
+      error.includes("original range frame:"),
+    ),
+    false,
+  );
+  assert.ok(
+    Object.keys(result.before.sourceHashes).some((name) =>
+      name.endsWith("original-frame-20-trace"),
+    ),
+  );
+  const shoppingRow = result.rows.find(
+    (entry) => entry.group === "shopping" && entry.metric === "ui",
+  );
+  assert.equal(shoppingRow.beforeAbsolute, "failed");
+  assert.equal(shoppingRow.afterAbsolute, "passed");
+  assert.equal(shoppingRow.status, "compared");
+  assert.deepEqual(await readFile(artifactPath), originalBytes);
+  const reportPath = path.join(beforeRoot, "transfer", "report.json");
+  const contradictoryReport = JSON.parse(await readFile(reportPath, "utf8"));
+  contradictoryReport.suites[0].specs[0].tests[0].results[0].status = "passed";
+  await writeFile(reportPath, JSON.stringify(contradictoryReport), "utf8");
+  const rejected = await compareBrowserEvidence({ beforeRoot, afterRoot });
+  assert.equal(rejected.exitCode, 1);
+  assert.equal(rejected.result.coverage.baselineUnobservable, 0);
+  assert.equal(rejected.result.before.baselineFrameObservations.length, 0);
+  assert.ok(
+    rejected.result.before.errors.some((error) =>
+      error.includes("failed producer result"),
+    ),
+  );
+  assert.deepEqual(await readFile(artifactPath), originalBytes);
+});
+
+test("normal and censored comparison reporting retains original partial functional failure identities", () => {
+  const artifact = {
+    baselineFrameObservations: [
+      {
+        sampleIndex: 1,
+        measurementId: "original-1",
+        outcome: "endpoint-unobservable",
+      },
+      {
+        sampleIndex: 7,
+        measurementId: "original-7",
+        outcome: "completed",
+        durationMs: 42,
+      },
+    ],
+    postconditionErrors: [
+      {
+        sampleIndex: 7,
+        measurementId: "original-7",
+        code: "selection-not-consumed",
+        message: "Moved card remained selected",
+        itemIds: ["c2"],
+      },
+    ],
+  };
+  const original = structuredClone(artifact);
+  const key = 'frame:[["count",500],["scenario","range"]]';
+  const failure = comparisonFunctionalFailure(
+    artifact,
+    "transfer",
+    key,
+    "before",
+  );
+  assert.deepEqual(failure.record, {
+    group: "transfer",
+    key,
+    postconditionErrors: original.postconditionErrors,
+  });
+  assert.match(
+    failure.message,
+    /completed timings retained with failed functional postconditions/,
+  );
+  assert.equal(failure.record.postconditionErrors[0].sampleIndex, 7);
+  assert.equal(
+    failure.record.postconditionErrors[0].measurementId,
+    "original-7",
+  );
+  assert.deepEqual(artifact, original);
+  assert.equal(
+    comparisonFunctionalFailure(
+      { postconditionErrors: [] },
+      "transfer",
+      key,
+      "before",
+    ),
+    null,
+  );
 });
