@@ -4,6 +4,9 @@ import { summarizePerformanceSamples } from "./performance-summary";
 import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import {
   measureShoppingResponse,
+  prepareShoppingResponse,
+  performanceMeasurementSampleCount,
+  performanceMeasurementProfile,
   shoppingEvidenceIdentity,
   shoppingPerformanceThresholds,
   shoppingBrowserEnvironment,
@@ -15,9 +18,11 @@ import {
   shoppingPerformanceTestTag,
 } from "../../scripts/shopping-performance-evidence-contract.mjs";
 
+import { shoppingOperationSamplingPlan } from "./shopping-operation-sampling";
+
 const shoppingOperationEvidenceIdentity = (count: number) => ({
   ...shoppingEvidenceIdentity("shopping"),
-  ...shoppingCollectionMetadataForCount(count),
+  ...shoppingCollectionMetadataForCount(count, performanceMeasurementProfile),
 });
 // Keep response timings free from video and trace capture on every attempt.
 test.use({ video: "off", trace: "off" });
@@ -553,7 +558,12 @@ for (const count of [150, 500, 1500]) {
       body: JSON.stringify(
         {
           count,
-          ...(count === 1500 ? shoppingCollectionMetadataForCount(count) : {}),
+          ...(count === 1500
+            ? shoppingCollectionMetadataForCount(
+                count,
+                performanceMeasurementProfile,
+              )
+            : {}),
           cells: 40000,
           historicalItems: 10000,
           cards,
@@ -709,6 +719,37 @@ for (const count of [150, 500, 1500])
         }, action);
       await diagnostics("enable");
       await diagnostics("reset");
+      const samplingPlan = shoppingOperationSamplingPlan(
+        performanceMeasurementSampleCount,
+        concentrated,
+      );
+      const inputJournal: Array<{
+        order: number;
+        operation: string;
+        targetId: string;
+        expected: ShoppingUiExpectation;
+        measured: boolean;
+        reason: string;
+        verified: boolean;
+      }> = [];
+      const declareInput = (
+        operation: string,
+        expected: ShoppingUiExpectation,
+        measured: boolean,
+        reason: string,
+      ) => {
+        const input = {
+          order: inputJournal.length,
+          operation,
+          targetId: expected.targetId,
+          expected,
+          measured,
+          reason,
+          verified: false,
+        };
+        inputJournal.push(input);
+        return input;
+      };
       const timings: Record<string, number[]> = {
         execute: [],
         executeRecord: [],
@@ -759,6 +800,8 @@ for (const count of [150, 500, 1500])
         timings,
         uiTimings,
         uiSamples,
+        samplingPlan,
+        inputJournal,
       }));
       const recordResponse = (
         group: string,
@@ -781,6 +824,10 @@ for (const count of [150, 500, 1500])
         button: string,
         group: string,
         expected?: ShoppingUiExpectation,
+        record = true,
+        reason = record
+          ? "profile-selected measurement"
+          : "preserve original fixed-ID state before later operations",
       ) => {
         await locator.scrollIntoViewIfNeeded();
         if (!expected) {
@@ -805,10 +852,24 @@ for (const count of [150, 500, 1500])
             };
           }
         }
-        recordResponse(
-          group,
-          await measureShoppingResponse(locator, button, expected),
-        );
+        const declared = declareInput(group, expected, record, reason);
+        if (record) {
+          const result = await measureShoppingResponse(
+            locator,
+            button,
+            expected,
+          );
+          declared.verified = result.matched;
+          recordResponse(group, result);
+        } else {
+          const result = await prepareShoppingResponse(
+            locator,
+            button,
+            expected,
+          );
+          expect(result.matched, result.reason).toBe(true);
+          declared.verified = true;
+        }
       };
       const navigateResponse = async (
         direction: "next" | "back",
@@ -831,6 +892,14 @@ for (const count of [150, 500, 1500])
             concentrated && nextIndex === 0 ? 1 : itemIndex + 1,
           ),
         };
+        const setup = !record
+          ? declareInput(
+              direction,
+              expected,
+              false,
+              "preserve original visit order outside response measurement",
+            )
+          : undefined;
         if (layout === "pc") {
           const button = page.getByTitle(
             direction === "next" ? "次の訪問先" : "前の訪問先",
@@ -838,42 +907,40 @@ for (const count of [150, 500, 1500])
           );
           if (record)
             await clickResponse(button, "button", direction, expected);
-          else await button.click();
-        } else if (record) {
-          recordResponse(
-            direction,
-            await measureShoppingResponse(
-              page.getByTestId("focus-mode-scroll-region"),
-              "div",
+          else {
+            const result = await prepareShoppingResponse(
+              button,
+              "button",
               expected,
-              direction,
-            ),
+            );
+            expect(result.matched, result.reason).toBe(true);
+          }
+        } else if (record) {
+          const declared = declareInput(
+            direction,
+            expected,
+            true,
+            "profile-selected measurement",
           );
+          const result = await measureShoppingResponse(
+            page.getByTestId("focus-mode-scroll-region"),
+            "div",
+            expected,
+            direction,
+          );
+          declared.verified = result.matched;
+          recordResponse(direction, result);
         } else {
-          await page
-            .getByTestId("focus-mode-scroll-region")
-            .evaluate(async (root, direction) => {
-              for (const type of ["touchstart", "touchmove", "touchend"]) {
-                const point = {
-                  clientX:
-                    type === "touchstart"
-                      ? 200
-                      : direction === "next"
-                        ? 80
-                        : 320,
-                  clientY: 200,
-                };
-                const event = new Event(type, { bubbles: true });
-                Object.defineProperties(event, {
-                  touches: { value: type === "touchend" ? [] : [point] },
-                  changedTouches: { value: [point] },
-                });
-                root.dispatchEvent(event);
-              }
-              await new Promise(requestAnimationFrame);
-              await new Promise((resolve) => setTimeout(resolve, 0));
-            }, direction);
+          const result = await prepareShoppingResponse(
+            page.getByTestId("focus-mode-scroll-region"),
+            "div",
+            expected,
+            direction,
+          );
+          expect(result.matched, result.reason).toBe(true);
         }
+        if (setup) setup.verified = true;
+
         focusVisitIndex = nextIndex;
       };
       // Scroll across the complete list before measuring, so old cards must be released.
@@ -918,13 +985,15 @@ for (const count of [150, 500, 1500])
         : undefined;
       await profiler?.send("Profiler.enable");
       await profiler?.send("Profiler.start");
-      for (let index = 0; index < 20; index++) {
-        const row = page.locator(`[data-item-id="perf-${index}"]`);
-        await prepareItem(`item:"perf-${index}"`, `perf-${index}`);
+      for (const planned of samplingPlan.execute) {
+        const row = page.locator(`[data-item-id="${planned.targetId}"]`);
+        await prepareItem(`item:"${planned.targetId}"`, planned.targetId);
         await clickResponse(
           row,
           'button[aria-label^="Current status:"]',
           "execute",
+          undefined,
+          planned.measured,
         );
       }
       await expect
@@ -952,7 +1021,11 @@ for (const count of [150, 500, 1500])
         name: "事後通販･頒布可否確認",
       });
       await expect(executionDialog).toBeVisible();
-      for (let sample = 0; sample < 20; sample++) {
+      for (
+        let sample = 0;
+        sample < performanceMeasurementSampleCount;
+        sample++
+      ) {
         if (sample > 0) {
           await executionRow.evaluate(async (root) => {
             const button = root.querySelector<HTMLButtonElement>(
@@ -966,7 +1039,7 @@ for (const count of [150, 500, 1500])
         }
         await executionDialog
           .getByRole("combobox", { name: "回答内容", exact: true })
-          .selectOption({ index: 1 + (sample % 2) });
+          .selectOption({ index: samplingPlan.recordAnswers[sample] });
         await clickResponse(
           executionDialog.getByRole("button", {
             name: "記録",
@@ -995,19 +1068,21 @@ for (const count of [150, 500, 1500])
       if (mapVisible)
         await page.getByTitle("マップを表示", { exact: true }).click();
       await diagnostics("reset");
-      for (let index = 20; index < 40; index++) {
-        const row = page.locator(`[data-item-id="perf-${index}"]`);
+      for (const planned of samplingPlan.focus) {
+        const row = page.locator(`[data-item-id="${planned.targetId}"]`);
         if (concentrated)
-          await prepareItem(`focus:perf-${index}`, `perf-${index}`);
+          await prepareItem(`focus:${planned.targetId}`, planned.targetId);
         await expect(row).toBeVisible();
         await clickResponse(
           row,
           'button[aria-label^="Current status:"]',
           "focus",
+          undefined,
+          planned.measured,
         );
-        if (!concentrated) await navigateResponse("next");
+        if (!concentrated) await navigateResponse("next", false);
       }
-      const target = concentrated ? "perf-39" : "perf-40";
+      const target = samplingPlan.focusSoldOut.targetId;
       recordTarget = target;
       const row = page.locator(`[data-item-id="${target}"]`);
       if (!concentrated)
@@ -1025,7 +1100,11 @@ for (const count of [150, 500, 1500])
         name: "事後通販･頒布可否確認",
       });
       await expect(dialog).toBeVisible();
-      for (let sample = 0; sample < 20; sample++) {
+      for (
+        let sample = 0;
+        sample < performanceMeasurementSampleCount;
+        sample++
+      ) {
         if (sample > 0) {
           // Exercise all six transitions before React renders; the final intent
           // equals the rendered status and must still be accepted in order.
@@ -1041,7 +1120,7 @@ for (const count of [150, 500, 1500])
         }
         await dialog
           .getByRole("combobox", { name: "回答内容", exact: true })
-          .selectOption({ index: 1 + (sample % 2) });
+          .selectOption({ index: samplingPlan.recordAnswers[sample] });
         await clickResponse(
           dialog.getByRole("button", { name: "記録", exact: true }),
           "button",
@@ -1068,9 +1147,9 @@ for (const count of [150, 500, 1500])
       await backProfiler?.send("Profiler.enable");
       await backProfiler?.send("Profiler.start");
       // Returning to the large first space also exercises retained input state.
-      for (let sample = 0; sample < 20; sample++) {
-        await navigateResponse("back");
-        await navigateResponse("next");
+      for (const cycle of samplingPlan.returnCycles) {
+        await navigateResponse("back", cycle.backMeasured);
+        await navigateResponse("next", cycle.nextMeasured);
       }
       if (backProfiler) {
         const profile = await backProfiler.send("Profiler.stop");
@@ -1111,6 +1190,8 @@ for (const count of [150, 500, 1500])
             uiTimings,
             uiSummary,
             uiSamples,
+            samplingPlan,
+            inputJournal,
             timings,
             summary,
             diagnostic,
@@ -1136,6 +1217,8 @@ for (const count of [150, 500, 1500])
             uiTimings,
             uiSummary,
             uiSamples,
+            samplingPlan,
+            inputJournal,
             timings,
             summary,
             diagnostic,
@@ -1155,10 +1238,9 @@ for (const count of [150, 500, 1500])
           Object.entries(uiSummary).map(([key, value]) => [`ui:${key}`, value]),
         ),
       })) {
-        expect(
-          result.count,
-          operation + " sample count",
-        ).toBeGreaterThanOrEqual(shoppingPerformanceThresholds.minimumCount);
+        expect(result.count, operation + " sample count").toBe(
+          performanceMeasurementSampleCount,
+        );
         expect(result.medianMs, operation + " median").toBeLessThanOrEqual(
           shoppingPerformanceThresholds.medianMs,
         );

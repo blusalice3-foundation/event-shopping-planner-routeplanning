@@ -1,0 +1,40 @@
+/** Decide every measured input before execution; fixed fixture preparation stays explicit. */
+export function shoppingOperationSamplingPlan(
+  sampleCount: number,
+  concentrated: boolean,
+) {
+  if (![2, 10].includes(sampleCount))
+    throw new Error("Unsupported shopping sample count");
+  if (typeof concentrated !== "boolean")
+    throw new Error("Invalid shopping concentration condition");
+  const ordinaryFocusSamples = sampleCount - (concentrated ? 1 : 2);
+  return {
+    sampleCount,
+    execute: Array.from({ length: 20 }, (_, index) => ({
+      targetId: `perf-${index}`,
+      measured: index < sampleCount,
+    })),
+    focus: Array.from({ length: 20 }, (_, offset) => ({
+      targetId: `perf-${offset + 20}`,
+      measured: offset < ordinaryFocusSamples,
+    })),
+    extraFocusPurchase: concentrated
+      ? null
+      : { targetId: "perf-40", measured: true },
+    focusSoldOut: {
+      targetId: concentrated ? "perf-39" : "perf-40",
+      measured: true,
+    },
+    recordAnswers: Array.from(
+      { length: sampleCount },
+      (_, index) => 1 + (index % 2),
+    ),
+    postRecordNext: { measured: true },
+    returnCycles: Array.from({ length: sampleCount }, (_, index) => ({
+      backMeasured: true,
+      nextMeasured: index < sampleCount - 1,
+    })),
+    setupPolicy:
+      "Original fixed-ID actions preserve the fixture state and order; unmeasured setup never starts a response clock.",
+  };
+}

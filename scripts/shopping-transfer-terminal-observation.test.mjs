@@ -1,3 +1,5 @@
+import { performanceSamplingProfile } from "./shopping-performance-evidence-contract.mjs";
+const sampleCount = performanceSamplingProfile().sampleCount;
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
@@ -81,8 +83,8 @@ test("multiple observed transactions remain actual counts without inventing sing
     ["actual-op-1", "actual-op-2"],
   );
 });
-test("the artifact aggregates each of twenty original samples once and preserves full transactions", () => {
-  const samples = Array.from({ length: 20 }, (_, index) => {
+test("the artifact aggregates each original profile-selected sample once and preserves full transactions", () => {
+  const samples = Array.from({ length: sampleCount }, (_, index) => {
     const commits = [commit(`actual-op-${index}`, 1001 + index)];
     return {
       sampleIndex: index + 1,
@@ -93,7 +95,7 @@ test("the artifact aggregates each of twenty original samples once and preserves
     };
   });
   const observation = terminalPersistenceObservation(samples);
-  assert.equal(observation.writeCount, 20);
+  assert.equal(observation.writeCount, sampleCount);
   assert.equal(observation.operationId, null);
   assert.equal(observation.samples, samples);
   assert.deepEqual(
@@ -102,7 +104,7 @@ test("the artifact aggregates each of twenty original samples once and preserves
   );
   assert.deepEqual(
     observation.commits.map((entry) => entry.operationId),
-    Array.from({ length: 20 }, (_, index) => `actual-op-${index}`),
+    Array.from({ length: sampleCount }, (_, index) => `actual-op-${index}`),
   );
 });
 test("artifact counts derive from actual transactions rather than a claimed per-sample count", () => {

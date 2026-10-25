@@ -1,3 +1,7 @@
+import {
+  performanceSamplingProfile,
+  validatePerformanceSamplingMetadata,
+} from "./shopping-performance-evidence-contract.mjs";
 import { isDeepStrictEqual } from "node:util";
 
 const assert = (condition, message) => {
@@ -114,7 +118,13 @@ function validateCommits(sample) {
 }
 
 /** This validates retained before observations, never an acceptance exception. */
-export function validateBaselineNoopObservation(artifact, identity = {}) {
+export function validateBaselineNoopObservation(
+  artifact,
+  identity = {},
+  profile = "completion",
+) {
+  validatePerformanceSamplingMetadata(artifact, profile);
+  const sampleCount = performanceSamplingProfile(profile).sampleCount;
   assert(
     object(artifact) &&
       artifact.group === "transfer" &&
@@ -151,10 +161,10 @@ export function validateBaselineNoopObservation(artifact, identity = {}) {
     assert(
       object(metric) &&
         Array.isArray(metric.samples) &&
-        metric.samples.length === 20 &&
+        metric.samples.length === sampleCount &&
         Array.isArray(metric.raw) &&
-        metric.raw.length === 20,
-      "Baseline noop needs twenty complete samples for every original metric",
+        metric.raw.length === sampleCount,
+      `Baseline noop needs ${sampleCount} complete samples for every original metric`,
     );
     const map = new Map();
     for (const [index, sample] of metric.samples.entries()) {
@@ -196,7 +206,7 @@ export function validateBaselineNoopObservation(artifact, identity = {}) {
         text(record.message) &&
         Number.isSafeInteger(record.sampleIndex) &&
         record.sampleIndex >= 1 &&
-        record.sampleIndex <= 20 &&
+        record.sampleIndex <= sampleCount &&
         record.expectedWriteCount === 0 &&
         Number.isSafeInteger(record.actualWriteCount) &&
         record.actualWriteCount > 0 &&
@@ -264,9 +274,9 @@ export function validateBaselineNoopObservation(artifact, identity = {}) {
     keys(persistence, persistenceFields) &&
       persistence.operationId === null &&
       Array.isArray(persistence.samples) &&
-      persistence.samples.length === 20 &&
+      persistence.samples.length === sampleCount &&
       Array.isArray(persistence.commits),
-    "Baseline noop must retain all twenty physical persistence samples",
+    `Baseline noop must retain all ${sampleCount} physical persistence samples`,
   );
   const flattened = [];
   let writeCount = 0;

@@ -2,6 +2,7 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
 import {
   shoppingEvidenceIdentity,
+  performanceMeasurementSampleCount,
   performanceAcceptanceCriteriaForGroup,
   shoppingBrowserEnvironment,
 } from "./shopping-performance-evidence";
@@ -2615,7 +2616,11 @@ for (const count of [150, 500])
         const pointerIOBefore = await physicalIO();
         await start(page, input, "merge-a");
         await finish(page, input, false);
-        for (let sample = 0; sample < 20; sample++) {
+        for (
+          let sample = 0;
+          sample < performanceMeasurementSampleCount;
+          sample++
+        ) {
           await page.evaluate(async () => {
             window.scrollTo(0, 0);
             await new Promise(requestAnimationFrame);
@@ -2682,7 +2687,7 @@ for (const count of [150, 500])
             to: string;
           }> = [];
           let previousBoundary = initialHover.guides[0]?.edge;
-          for (let i = 0; i < 20; i++) {
+          for (let i = 0; i < performanceMeasurementSampleCount; i++) {
             if (scenario.name === "rejected") {
               const accepted = await hover(
                 page,
@@ -2831,7 +2836,9 @@ for (const count of [150, 500])
             }
           }
           if (scenario.name === "boundary-switch")
-            expect(boundarySwitches).toHaveLength(20);
+            expect(boundarySwitches).toHaveLength(
+              performanceMeasurementSampleCount,
+            );
           const render = await renderCounts(page);
           expect(
             render.known.filter((key) => key.startsWith("item:")).length,
@@ -2922,7 +2929,11 @@ for (const count of [150, 500])
             }
           ).__dragRenderProbe.setEnabled(false),
         );
-        for (let i = 0; i < (compareProbe ? 40 : 20); i++) {
+        for (
+          let i = 0;
+          i < performanceMeasurementSampleCount * (compareProbe ? 2 : 1);
+          i++
+        ) {
           await page.evaluate(async () => {
             window.scrollTo(0, 0);
             await new Promise(requestAnimationFrame);
@@ -3021,7 +3032,7 @@ for (const count of [150, 500])
             profile,
             intervals: cpuProfileIntervals,
             samplingIntervalUs: 250,
-            note: "Diagnostic only; restrict profile timeDeltas to the20 drop intervals and exclude idle samples.",
+            note: "Diagnostic only; restrict profile timeDeltas to the recorded drop intervals and exclude idle samples.",
           });
         }
         if (cdp) await cdp.detach();
@@ -3100,8 +3111,8 @@ for (const count of [150, 500])
         });
         expect(errors).toEqual([]);
         for (const [operation, value] of Object.entries(records)) {
-          expect(value.samples.length, operation).toBeGreaterThanOrEqual(
-            shoppingPerformanceThresholds.minimumCount,
+          expect(value.samples.length, operation).toBe(
+            performanceMeasurementSampleCount,
           );
           expect(value.medianMs, operation).toBeLessThanOrEqual(
             shoppingPerformanceThresholds.medianMs,
@@ -3141,7 +3152,7 @@ for (const count of [150, 500])
         const ends: number[] = [];
         await start(page, input, "merge-a");
         await finish(page, input, false);
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < performanceMeasurementSampleCount; i++) {
           await page.evaluate(async () => {
             window.scrollTo(0, 0);
             await new Promise(requestAnimationFrame);

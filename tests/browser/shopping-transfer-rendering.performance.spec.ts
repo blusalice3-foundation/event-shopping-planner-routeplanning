@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
 import {
   shoppingEvidenceIdentity,
+  performanceMeasurementSampleCount,
   performanceAcceptanceCriteriaForGroup,
 } from "./shopping-performance-evidence";
 import {
@@ -66,7 +67,11 @@ for (const condition of transferConditions)
           false,
           testInfo,
         );
-        for (let index = 1; index <= 20; index++) {
+        for (
+          let index = 1;
+          index <= performanceMeasurementSampleCount;
+          index++
+        ) {
           const measured = await measureTransfer(
             page,
             session,
@@ -119,7 +124,7 @@ for (const condition of transferConditions)
         },
         method: {
           warmupMoves: 1,
-          repetitions: 20,
+          repetitions: performanceMeasurementSampleCount,
           uniqueSourceIds: true,
           trace: measurementKind === "frame",
           video: false,
@@ -155,10 +160,9 @@ for (const condition of transferConditions)
       expect(errors).toEqual([]);
       if (failure) throw failure;
       for (const [name, metric] of Object.entries(metrics)) {
-        expect(
-          metric.raw.length,
-          `${name}: missing samples`,
-        ).toBeGreaterThanOrEqual(shoppingPerformanceThresholds.minimumCount);
+        expect(metric.raw.length, `${name}: missing samples`).toBe(
+          performanceMeasurementSampleCount,
+        );
         expect(
           metric.raw.every((value) => Number.isFinite(value) && value >= 0),
           `${name}: invalid raw timing`,

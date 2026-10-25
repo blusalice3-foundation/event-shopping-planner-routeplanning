@@ -4,6 +4,7 @@ import { expect, test } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
 import {
   shoppingEvidenceIdentity,
+  performanceMeasurementSampleCount,
   performanceAcceptanceCriteriaForGroup,
 } from "./shopping-performance-evidence";
 import {
@@ -73,7 +74,11 @@ for (const condition of acceptedTransferConditions)
       const baselineFrameObservations: BaselineFrameObservation[] = [];
       let failure: unknown, environment: unknown;
       try {
-        for (let index = 1; index <= 20; index++) {
+        for (
+          let index = 1;
+          index <= performanceMeasurementSampleCount;
+          index++
+        ) {
           // Close the preceding Worker and its IDB connections before reseeding.
           // Context setup, fixture restore and one unrelated warmup precede the clocks.
           const context = await browser.newContext({
@@ -497,7 +502,7 @@ for (const condition of acceptedTransferConditions)
         method: {
           warmupMoves: 1,
           warmupPerFixture: true,
-          repetitions: 20,
+          repetitions: performanceMeasurementSampleCount,
           sampleIsolation: "new-browser-context-per-sample",
           uniqueMeasuredMovePerFixture: true,
           trace: measurementKind === "frame",

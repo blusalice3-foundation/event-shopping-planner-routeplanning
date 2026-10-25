@@ -1,3 +1,7 @@
+import {
+  performanceSamplingMetadata,
+  performanceSamplingProfile,
+} from "./shopping-performance-evidence-contract.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
@@ -14,9 +18,10 @@ const proof = () => ({
   publicTree: "90071a462092c45bc3ae11df5e696a053fc8a1ed",
   sourceState: "clean",
 });
-function artifact(kind = "response") {
+function artifact(kind = "response", profile = "completion") {
   const names = kind === "frame" ? ["frame"] : ["response", "nextApplied"];
   const data = {
+    ...performanceSamplingMetadata(profile),
     group: "transfer",
     phase: "before",
     runId: "baseline-run",
@@ -29,7 +34,11 @@ function artifact(kind = "response") {
     postconditionErrors: [],
     persistence: { writeCount: 0, operationId: null, commits: [], samples: [] },
   };
-  for (let index = 0; index < 20; index++) {
+  for (
+    let index = 0;
+    index < performanceSamplingProfile(profile).sampleCount;
+    index++
+  ) {
     const count = index === 1 ? 0 : index === 2 ? 2 : 1;
     const startEpoch = 1000 + index * 100;
     const commits = Array.from({ length: count }, (_, ordinal) => ({
@@ -184,7 +193,7 @@ for (const kind of ["response", "frame"])
     const data = artifact(kind),
       original = structuredClone(data);
     const records = validateBaselineNoopObservation(data, identity);
-    assert.equal(records.size, 19);
+    assert.equal(records.size, performanceSamplingProfile().sampleCount - 1);
     assert.equal(records.get("measurement-1"), data.postconditionErrors[0]);
     assert.equal(records.has("measurement-2"), false);
     assert.equal(records.get("measurement-3").actualWriteCount, 2);
@@ -351,7 +360,8 @@ for (const [label, change] of [
   [
     "out-of-range ordinal",
     (data) => {
-      data.postconditionErrors[0].sampleIndex = 21;
+      data.postconditionErrors[0].sampleIndex =
+        performanceSamplingProfile().sampleCount + 1;
     },
   ],
   [
@@ -646,3 +656,19 @@ test("next-input clock follows the maximum actual transaction timestamp, not jus
     /every actual transaction/,
   );
 });
+
+for (const kind of ["response", "frame"])
+  test(`PR baseline noop ${kind} retains the original two attempts without completion eligibility`, () => {
+    const data = artifact(kind, "pr");
+    const records = validateBaselineNoopObservation(data, identity, "pr");
+    assert.equal(
+      data.metrics[kind === "frame" ? "frame" : "response"].raw.length,
+      2,
+    );
+    assert.equal(records.size, 1);
+    assert.equal(data.samplingProfile.completionEligible, false);
+    assert.throws(
+      () => validateBaselineNoopObservation(data, identity),
+      /sampling metadata/,
+    );
+  });

@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
 import {
   shoppingEvidenceIdentity,
+  performanceMeasurementSampleCount,
   performanceAcceptanceCriteriaForGroup,
 } from "./shopping-performance-evidence";
 import {
@@ -60,7 +61,11 @@ for (const condition of terminalConditions)
       let fixture: unknown;
       let environment: unknown;
       try {
-        for (let index = 0; index < 20; index++) {
+        for (
+          let index = 0;
+          index < performanceMeasurementSampleCount;
+          index++
+        ) {
           // Context isolation closes every previous Worker/IDB connection before reseeding.
           // Preparation is identical before/after and outside every measured clock.
           const context = await browser.newContext({
@@ -173,7 +178,7 @@ for (const condition of terminalConditions)
           ? { baselineComparisonObservation }
           : {}),
         method: {
-          repetitions: 20,
+          repetitions: performanceMeasurementSampleCount,
           freshFixturePerSample: true,
           isolation: "new-browser-context-per-sample",
           warmupMoves: 0,

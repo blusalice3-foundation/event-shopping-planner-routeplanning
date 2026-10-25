@@ -1,11 +1,22 @@
 import type { Locator, Page } from "@playwright/test";
 import {
-  performanceAcceptanceCriteriaForGroup,
-  shoppingPerformanceThresholds,
+  performanceAcceptanceCriteriaForGroup as criteriaForGroup,
+  performanceSamplingProfile,
+  resolvePerformanceProfile,
 } from "../../scripts/shopping-performance-evidence-contract.mjs";
 
-export { shoppingPerformanceThresholds, performanceAcceptanceCriteriaForGroup };
-export const shoppingInstrumentVersion = "shopping-rendering-v2";
+export const performanceMeasurementProfile = resolvePerformanceProfile(
+  undefined,
+  process.env,
+);
+export const performanceMeasurementSampleCount = performanceSamplingProfile(
+  performanceMeasurementProfile,
+).sampleCount;
+export const performanceAcceptanceCriteriaForGroup = (group: string) =>
+  criteriaForGroup(group, performanceMeasurementProfile);
+export const shoppingPerformanceThresholds =
+  performanceAcceptanceCriteriaForGroup("shopping").acceptanceThresholds;
+export const shoppingInstrumentVersion = "shopping-rendering-v3";
 export function shoppingEvidenceIdentity(
   group: "shopping" | "range" | "drag" | "transfer",
   measurementKind: "response" | "frame" = "response",
@@ -38,8 +49,43 @@ export async function measureShoppingResponse(
   expected: ShoppingUiExpectation,
   swipe?: "next" | "back",
 ) {
+  const result = await observeShoppingResponse(
+    locator,
+    selector,
+    expected,
+    swipe,
+    true,
+  );
+  if (result.legacyMs === null || result.uiMs === null)
+    throw new Error("Missing measured response clocks");
+  return { ...result, legacyMs: result.legacyMs, uiMs: result.uiMs };
+}
+
+/** The same expected UI and post-frame acknowledgement, without reading either clock. */
+export async function prepareShoppingResponse(
+  locator: Locator,
+  selector: string,
+  expected: ShoppingUiExpectation,
+  swipe?: "next" | "back",
+) {
+  const {
+    matched,
+    reason,
+    targetId,
+    expected: acknowledged,
+  } = await observeShoppingResponse(locator, selector, expected, swipe, false);
+  return { matched, reason, targetId, expected: acknowledged };
+}
+
+async function observeShoppingResponse(
+  locator: Locator,
+  selector: string,
+  expected: ShoppingUiExpectation,
+  swipe: "next" | "back" | undefined,
+  measured: boolean,
+) {
   return locator.evaluate(
-    async (root, { selector, expected, swipe }) => {
+    async (root, { selector, expected, swipe, measured }) => {
       const button = root.matches(selector)
         ? root
         : root.querySelector(selector);
@@ -203,12 +249,12 @@ export async function measureShoppingResponse(
         return true;
       };
       let resolveUi!: (value: {
-        uiMs: number;
+        uiMs: number | null;
         matched: boolean;
         reason?: string;
       }) => void;
       const ui = new Promise<{
-        uiMs: number;
+        uiMs: number | null;
         matched: boolean;
         reason?: string;
       }>((resolve) => {
@@ -224,7 +270,7 @@ export async function measureShoppingResponse(
         observer.disconnect();
         clearTimeout(timeout);
         resolveUi({
-          uiMs: performance.now() - start,
+          uiMs: measured ? performance.now() - start : null,
           matched,
           ...(reason ? { reason } : {}),
         });
@@ -261,7 +307,7 @@ export async function measureShoppingResponse(
         });
       if (scope !== document.body)
         observer.observe(document.body, { childList: true });
-      start = performance.now();
+      start = measured ? performance.now() : 0;
       const timeout = setTimeout(
         () => finish(false, "Expected target UI did not settle within 15000ms"),
         15000,
@@ -280,17 +326,19 @@ export async function measureShoppingResponse(
         emit("touchmove", swipe === "next" ? 80 : 320);
         emit("touchend", swipe === "next" ? 80 : 320);
       } else (button as HTMLButtonElement).click();
-      const legacy = new Promise<number>((resolve) => {
-        requestAnimationFrame(() =>
-          setTimeout(() => resolve(performance.now() - start), 0),
-        );
-      });
+      const legacy = measured
+        ? new Promise<number>((resolve) => {
+            requestAnimationFrame(() =>
+              setTimeout(() => resolve(performance.now() - start), 0),
+            );
+          })
+        : Promise.resolve(null);
       check(); // React may already have applied the expected UI synchronously.
       const [legacyMs, result] = await Promise.all([legacy, ui]);
       observer.disconnect();
       return { legacyMs, ...result, targetId: expected.targetId, expected };
     },
-    { selector, expected, swipe },
+    { selector, expected, swipe, measured },
   );
 }
 /** Capture actual case settings after measurement, outside every response clock. */

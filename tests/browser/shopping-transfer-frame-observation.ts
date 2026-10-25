@@ -1,3 +1,4 @@
+import { performanceMeasurementSampleCount } from "./shopping-performance-evidence.ts";
 import {
   isTerminalBaselineObservation,
   type TerminalBaselineObservation,
@@ -179,7 +180,7 @@ export function appendBaselineFrameObservation(
 ) {
   if (
     observation.sampleIndex !== observations.length + 1 ||
-    observation.sampleIndex > 20 ||
+    observation.sampleIndex > performanceMeasurementSampleCount ||
     observations.some(
       (entry) => entry.measurementId === observation.measurementId,
     ) ||

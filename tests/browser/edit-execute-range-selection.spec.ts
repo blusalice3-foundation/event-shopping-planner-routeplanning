@@ -1,5 +1,6 @@
 import {
   shoppingEvidenceIdentity,
+  performanceMeasurementSampleCount,
   performanceAcceptanceCriteriaForGroup,
   shoppingBrowserEnvironment,
 } from "./shopping-performance-evidence";
@@ -1904,7 +1905,10 @@ for (const condition of conditions) {
     // no state-changing operation occurs between that validation and reset.
     for (
       let repeat = -1;
-      repeat < (diagnosticOnly && !continuousDiagnostic ? 0 : 20);
+      repeat <
+      (diagnosticOnly && !continuousDiagnostic
+        ? 0
+        : performanceMeasurementSampleCount);
       repeat++
     ) {
       await clearSelection(page);
@@ -2176,8 +2180,12 @@ for (const condition of conditions) {
         ],
         endpoints: ["r1", endpoint(condition)],
         targetIds: targetIds(condition),
-        repetitions: continuousDiagnostic ? 21 : 1,
-        recordedDiagnosticRepetitions: continuousDiagnostic ? 20 : 0,
+        repetitions: continuousDiagnostic
+          ? performanceMeasurementSampleCount + 1
+          : 1,
+        recordedDiagnosticRepetitions: continuousDiagnostic
+          ? performanceMeasurementSampleCount
+          : 0,
         operations: diagnosticOperations,
         warmupAssetReadiness,
         cspViolations: await rangeCspViolations(page),
@@ -2211,7 +2219,7 @@ for (const condition of conditions) {
         start: "performance.now immediately before DOM click",
         end: "requestAnimationFrame then setTimeout(0), matching responsive-performance.spec.ts",
         summary: "two middle samples for even median; nearest-rank p95",
-        repetitions: 20,
+        repetitions: performanceMeasurementSampleCount,
         warmupCycles: 1,
         direction: "forward",
         excluded: [
@@ -2235,8 +2243,8 @@ for (const condition of conditions) {
     expect(errors).toEqual([]);
     expect(await rangeCspViolations(page)).toEqual([]);
     for (const [operation, result] of Object.entries(summary)) {
-      expect(result.count, `${operation} sample count`).toBeGreaterThanOrEqual(
-        shoppingPerformanceThresholds.minimumCount,
+      expect(result.count, `${operation} sample count`).toBe(
+        performanceMeasurementSampleCount,
       );
       expect(result.medianMs, `${operation} median`).toBeLessThanOrEqual(
         shoppingPerformanceThresholds.medianMs,

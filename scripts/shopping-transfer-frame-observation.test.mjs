@@ -1,3 +1,6 @@
+import { spawnSync } from "node:child_process";
+import { performanceSamplingProfile } from "./shopping-performance-evidence-contract.mjs";
+const sampleCount = performanceSamplingProfile().sampleCount;
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
@@ -247,11 +250,11 @@ const identity = (sampleIndex) => ({
   fixtureHash: hash,
   effectiveIds: ["c1", "c2", "c3"],
 });
-test("records exactly the original 20 attempts while keeping unobservable frames out of numeric samples", () => {
+test("records exactly the original profile-count attempts while keeping unobservable frames out of numeric samples", () => {
   const observations = [];
   const raw = [];
   const attempted = [];
-  for (let sampleIndex = 1; sampleIndex <= 20; sampleIndex++) {
+  for (let sampleIndex = 1; sampleIndex <= sampleCount; sampleIndex++) {
     attempted.push(sampleIndex);
     if (sampleIndex % 5 === 0) {
       appendBaselineFrameObservation(observations, {
@@ -275,11 +278,14 @@ test("records exactly the original 20 attempts while keeping unobservable frames
   }
   assert.deepEqual(
     attempted,
-    Array.from({ length: 20 }, (_, index) => index + 1),
+    Array.from({ length: sampleCount }, (_, index) => index + 1),
   );
-  assert.equal(observations.length, 20);
-  assert.equal(new Set(observations.map((row) => row.measurementId)).size, 20);
-  assert.equal(raw.length, 16);
+  assert.equal(observations.length, sampleCount);
+  assert.equal(
+    new Set(observations.map((row) => row.measurementId)).size,
+    sampleCount,
+  );
+  assert.equal(raw.length, sampleCount - Math.floor(sampleCount / 5));
   assert.deepEqual(
     observations
       .filter((row) => row.outcome === "completed")
@@ -289,12 +295,12 @@ test("records exactly the original 20 attempts while keeping unobservable frames
   const unobservable = observations.filter(
     (row) => row.outcome === "endpoint-unobservable",
   );
-  assert.equal(unobservable.length, 4);
+  assert.equal(unobservable.length, Math.floor(sampleCount / 5));
   assert.ok(unobservable.every((row) => !Object.hasOwn(row, "durationMs")));
   assert.throws(
     () =>
       appendBaselineFrameObservation(observations, {
-        ...identity(21),
+        ...identity(sampleCount + 1),
         outcome: "completed",
         durationMs: 1,
       }),
@@ -342,7 +348,7 @@ test("duplicate, reordered or fabricated failure durations cannot refill the ori
   assert.equal(observations.length, 1);
 });
 
-test("source guards and the fixed 20-fixture collection remain distinct from endpoint bookkeeping", async () => {
+test("source guards and the fixed profile-count fixture collection remain distinct from endpoint bookkeeping", async () => {
   const measurement = await readFile(
     new URL(
       "../tests/browser/shopping-transfer-measurement.ts",
@@ -367,7 +373,7 @@ test("source guards and the fixed 20-fixture collection remain distinct from end
     ),
     "utf8",
   );
-  assert.match(spec, /for \(let index = 1; index <= 20; index\+\+\)/);
+  assert.match(spec, /index <= performanceMeasurementSampleCount/);
   assert.match(spec, /resolveBaselineProductObservation\(\{ phase \}\)/);
   assert.match(
     spec,
@@ -393,4 +399,27 @@ test("source guards and the fixed 20-fixture collection remain distinct from end
     spec,
     /expectedTransferredIds:\s*originalFrameAttempt\.expectedTransferredIds/,
   );
+});
+
+test("PR frame bookkeeping uses exactly the selected two original attempts without starting a browser", () => {
+  const url = new URL(
+    "../tests/browser/shopping-transfer-frame-observation.ts",
+    import.meta.url,
+  ).href;
+  const source = `const { appendBaselineFrameObservation } = await import(${JSON.stringify(url)});
+    const observations = [];
+    for (let index = 1; index <= 2; index++) appendBaselineFrameObservation(observations, {sampleIndex:index,measurementId:String(index),fixtureHash:"b".repeat(64),effectiveIds:["c1","c2","c3"],outcome:"completed",durationMs:index});
+    let rejected = false;
+    try { appendBaselineFrameObservation(observations, {sampleIndex:3,measurementId:"3",fixtureHash:"b".repeat(64),effectiveIds:["c1","c2","c3"],outcome:"completed",durationMs:3}); } catch { rejected = true; }
+    process.stdout.write(JSON.stringify({count:observations.length,rejected}));`;
+  const child = spawnSync(
+    process.execPath,
+    ["--input-type=module", "-e", source],
+    {
+      env: { ...process.env, ESP_PERFORMANCE_PROFILE: "pr" },
+      encoding: "utf8",
+    },
+  );
+  assert.equal(child.status, 0, child.stderr);
+  assert.deepEqual(JSON.parse(child.stdout), { count: 2, rejected: true });
 });

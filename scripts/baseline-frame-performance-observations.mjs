@@ -6,6 +6,8 @@ import {
   expectedPerformanceCases,
   performanceConditionKey,
   validateAcceptanceCriteriaMetadata,
+  validatePerformanceSamplingMetadata,
+  performanceSamplingProfile,
 } from "./shopping-performance-evidence-contract.mjs";
 import { validateBaselineProductObservation } from "./baseline-shopping-performance-observations.mjs";
 
@@ -285,12 +287,13 @@ export function validateBaselineFrameObservations(
   artifact,
   identity = {},
   instrumentVersion,
+  profile = "completion",
 ) {
   assert(
     object(artifact) &&
       artifact.schemaVersion === 1 &&
       text(instrumentVersion) &&
-      instrumentVersion === "shopping-rendering-v2" &&
+      instrumentVersion === "shopping-rendering-v3" &&
       artifact.instrumentVersion === instrumentVersion,
     "unsupported schema/instrument version",
   );
@@ -317,7 +320,9 @@ export function validateBaselineFrameObservations(
     artifact.baselineComparisonObservation,
     identity.productCommit,
   );
-  validateAcceptanceCriteriaMetadata(artifact, "transfer");
+  validatePerformanceSamplingMetadata(artifact, profile);
+  const sampleCount = performanceSamplingProfile(profile).sampleCount;
+  validateAcceptanceCriteriaMetadata(artifact, "transfer", { profile });
   const condition = artifact.condition;
   assert(
     object(condition) &&
@@ -349,10 +354,10 @@ export function validateBaselineFrameObservations(
   const observations = artifact.baselineFrameObservations;
   assert(
     Array.isArray(observations) &&
-      observations.length === 20 &&
+      observations.length === sampleCount &&
       Array.isArray(artifact.fixtures) &&
-      artifact.fixtures.length === 20,
-    "exactly 20 original fixture attempts are required",
+      artifact.fixtures.length === sampleCount,
+    `exactly ${sampleCount} original fixture attempts are required`,
   );
   assert(
     unique(observations.map((entry) => entry?.measurementId)),
@@ -495,7 +500,7 @@ export function validateBaselineFrameObservations(
   return {
     key,
     condition,
-    attempted: 20,
+    attempted: sampleCount,
     completedCount: completed.length,
     unobservableCount,
     fixtureHashes: observations.map((entry) => entry.fixtureHash),

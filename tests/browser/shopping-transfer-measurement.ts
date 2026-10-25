@@ -8,6 +8,7 @@ import {
   type TestInfo,
   type Worker as BrowserWorker,
 } from "@playwright/test";
+import { performanceMeasurementSampleCount } from "./shopping-performance-evidence";
 import { FrameObservationError } from "./shopping-transfer-frame-observation";
 export {
   FrameObservationError,
@@ -2075,7 +2076,10 @@ export async function verifyContinuousTransferResult(
     { length: condition.count - half },
     (_, i) => `c${i}`,
   );
-  const moved = Array.from({ length: 21 }, (_, i) => i).reverse();
+  const moved = Array.from(
+    { length: performanceMeasurementSampleCount + 1 },
+    (_, i) => i,
+  ).reverse();
   let expectedItems = [...execute, ...candidates];
   if (condition.direction === "execute-to-candidate") {
     let executing = new Set(execute);
@@ -2085,7 +2089,7 @@ export async function verifyContinuousTransferResult(
         : half + Number(id.slice(1)) + 1;
     // The user-visible candidate order is numeric, while durable order retains
     // all event slots and uses the next displayed item as the insertion boundary.
-    for (let i = 0; i <= 20; i++) {
+    for (let i = 0; i <= performanceMeasurementSampleCount; i++) {
       const id = `e${i}`;
       const rawCandidates = expectedItems.filter(
         (item) => !executing.has(item),
@@ -2115,7 +2119,7 @@ export async function verifyContinuousTransferResult(
   const expectedExecute =
     condition.direction === "candidate-to-execute"
       ? ["e0", ...moved.map((i) => `c${i}`), ...execute.slice(1)]
-      : execute.slice(21);
+      : execute.slice(performanceMeasurementSampleCount + 1);
   expect(saved.items.map((item) => item.id)).toEqual(expectedItems);
   expect(saved.executeIds).toEqual(expectedExecute);
   const expectedVisible =

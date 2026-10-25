@@ -4,18 +4,22 @@ import { mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { performanceAcceptanceCriteriaForGroup } from "./shopping-performance-evidence-contract.mjs";
+import {
+  performanceAcceptanceCriteriaForGroup,
+  performanceSamplingProfile,
+} from "./shopping-performance-evidence-contract.mjs";
 import {
   validateBaselineFrameObservations,
   verifyBaselineFrameObservationFiles,
 } from "./baseline-frame-performance-observations.mjs";
 
-const version = "shopping-rendering-v2";
+const version = "shopping-rendering-v3";
+const sampleCount = performanceSamplingProfile().sampleCount;
 const sourceCommit = "a".repeat(40);
 const fixtureHash = "b".repeat(64);
 const identity = {
   phase: "before",
-  runId: "original-20",
+  runId: "original-profile",
   productCommit: sourceCommit,
 };
 const png = Buffer.from(
@@ -42,11 +46,16 @@ const file = (name, bytes = png) => ({
   [`${name}Path`]: path.resolve(`${name}.png`),
   [`${name}Sha256`]: sha(bytes),
 });
-function fixtureArtifact(completedIndices = [], code = "identity-clipped") {
+function fixtureArtifact(
+  completedIndices = [],
+  code = "identity-clipped",
+  profile = "completion",
+) {
+  const sampleCount = performanceSamplingProfile(profile).sampleCount;
   const observations = [],
     fixtures = [],
     samples = [];
-  for (let sampleIndex = 1; sampleIndex <= 20; sampleIndex++) {
+  for (let sampleIndex = 1; sampleIndex <= sampleCount; sampleIndex++) {
     const measurementId = `original-${sampleIndex}`;
     const common = {
       sampleIndex,
@@ -155,7 +164,7 @@ function fixtureArtifact(completedIndices = [], code = "identity-clipped") {
     measurementKind: "frame",
     diagnosticOnly: false,
     acceptanceMeasurement: true,
-    ...performanceAcceptanceCriteriaForGroup("transfer"),
+    ...performanceAcceptanceCriteriaForGroup("transfer", profile),
     condition: {
       count: 500,
       input: "native",
@@ -176,7 +185,7 @@ function fixtureArtifact(completedIndices = [], code = "identity-clipped") {
     fixtures,
     errors: [],
     postconditionErrors: [],
-    ...(count < 20
+    ...(count < sampleCount
       ? { failure: "Original baseline frame endpoint unobservable" }
       : {}),
     metrics: {
@@ -196,27 +205,36 @@ function fixtureArtifact(completedIndices = [], code = "identity-clipped") {
     },
   };
 }
-const validate = (artifact) =>
-  validateBaselineFrameObservations(artifact, identity, version);
+const validate = (artifact, profile = "completion") =>
+  validateBaselineFrameObservations(artifact, identity, version, profile);
 
-test("20 unobservable original attempts have no numeric frame value or pass claim", () => {
+test("profile-count unobservable original attempts have no numeric frame value or pass claim", () => {
   const result = validate(fixtureArtifact());
-  assert.equal(result.attempted, 20);
+  assert.equal(result.attempted, sampleCount);
   assert.equal(result.completedCount, 0);
-  assert.equal(result.unobservableCount, 20);
-  assert.equal(result.fixtureHashes.length, 20);
+  assert.equal(result.unobservableCount, sampleCount);
+  assert.equal(result.fixtureHashes.length, sampleCount);
   assert.equal(new Set(result.fixtureHashes).size, 1);
   assert.equal(Object.hasOwn(result, "passed"), false);
 });
 test("partial original indices retain only real completed values with recomputed summary", () => {
-  const artifact = fixtureArtifact([2, 7, 20], "no-content-verified-frame");
+  const artifact = fixtureArtifact(
+    [2, 7, sampleCount],
+    "no-content-verified-frame",
+  );
   assert.equal(validate(artifact).completedCount, 3);
-  assert.deepEqual(artifact.metrics.frame.raw, [2.25, 7.25, 20.25]);
+  assert.deepEqual(artifact.metrics.frame.raw, [
+    2.25,
+    7.25,
+    sampleCount + 0.25,
+  ]);
 });
-test("all 20 actually completed before frames can retain normal observations without failure", () => {
+test("all profile-count actually completed before frames can retain normal observations without failure", () => {
   assert.equal(
     validate(
-      fixtureArtifact(Array.from({ length: 20 }, (_, index) => index + 1)),
+      fixtureArtifact(
+        Array.from({ length: sampleCount }, (_, index) => index + 1),
+      ),
     ).unobservableCount,
     0,
   );
@@ -240,7 +258,7 @@ test("completed selection errors bind original index, measurement ID and effecti
 test("completed observations bind effective identities to the actual original metric sample", () => {
   for (const completedIndices of [
     [2, 7],
-    Array.from({ length: 20 }, (_, index) => index + 1),
+    Array.from({ length: sampleCount }, (_, index) => index + 1),
   ]) {
     const artifact = fixtureArtifact(completedIndices);
     const original = structuredClone(artifact);
@@ -375,7 +393,7 @@ for (const [name, mutate] of Object.entries(mutations))
   });
 for (const [name, mutate] of Object.entries({
   "unrecomputed partial summary": (a) => {
-    a.metrics.frame.summary.count = 20;
+    a.metrics.frame.summary.count = sampleCount;
   },
   "compacted measurement identity": (a) => {
     a.metrics.frame.samples[0].measurementId = "original-1";
@@ -472,7 +490,7 @@ test("all failed witness files are hashed and actual trace/probe/PNG metadata ve
   const { artifact, root } = await actualFiles(t);
   const hashes = {};
   await verifyBaselineFrameObservationFiles(artifact, root, hashes);
-  assert.equal(Object.keys(hashes).length, 18 * 6);
+  assert.equal(Object.keys(hashes).length, (sampleCount - 2) * 6);
 });
 test("actual no-content candidate evidence is verified separately from accepted frames", async (t) => {
   const { artifact, root } = await actualFiles(t, "no-content-verified-frame");
@@ -622,4 +640,15 @@ test("rehashed candidate count cannot hide the actual verification records", asy
     verifyBaselineFrameObservationFiles(artifact, root, {}),
     /count differs/,
   );
+});
+
+test("PR baseline frame observations retain exactly two original attempts and cannot claim completion", () => {
+  const data = fixtureArtifact([], "identity-clipped", "pr");
+  const result = validate(data, "pr");
+  assert.equal(result.attempted, 2);
+  assert.equal(result.unobservableCount, 2);
+  assert.equal(data.samplingProfile.completionEligible, false);
+  assert.throws(() => validate(data), /sampling metadata/);
+  data.samplingProfile = { ...data.samplingProfile, sampleCount: 10 };
+  assert.throws(() => validate(data, "pr"), /sampling metadata/);
 });
