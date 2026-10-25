@@ -488,6 +488,7 @@ export function planShoppingOrderMutation(
   input: Pick<MutationContext, "eventName" | "day">,
   choices: MutationChoices,
   currentProjection: PersistenceSnapshot,
+  reuseReadonlyItems = false,
 ): MutationPlan {
   if (
     Object.keys(patch).some(
@@ -503,6 +504,7 @@ export function planShoppingOrderMutation(
     currentProjection,
     true,
     true,
+    reuseReadonlyItems,
   );
 }
 
@@ -514,6 +516,7 @@ function planProjectedMutationWithOwnership(
   currentProjection?: PersistenceSnapshot,
   reuseUnchangedMapData = false,
   ownShoppingRepairInput = false,
+  reuseReadonlyItems = false,
 ): MutationPlan {
   // All stages read the same unmodified source until a day merge replaces it.
   const projection =
@@ -560,6 +563,7 @@ function planProjectedMutationWithOwnership(
           projection,
           reuseUnchangedMapData,
           ownShoppingRepairInput,
+          reuseReadonlyItems,
         );
       const before = remapProjectedHalls(projection, merged, remapHall);
       const after = projectConsistencySnapshot(
@@ -633,15 +637,21 @@ function planProjectedMutationAfterMerge(
   ),
   reuseUnchangedMapData = false,
   ownShoppingRepairInput = false,
+  reuseReadonlyItems = false,
 ): MutationPlan {
   const proposed = { ...beforeProjection, ...patch };
   // The state layer owns immutable geometry. Map edits and public callers
   // retain the original copy isolation; other UI edits do not copy all cells.
   const keepMapData = reuseUnchangedMapData && patch.mapData === undefined;
+  const cloneSource = keepMapData ? { ...source, mapData: {} } : source;
+  // Only planShoppingMove discards these read-only planner items at its boundary.
+  // Public planners and the day-merge path retain their original copy isolation.
+  const shareItems = reuseReadonlyItems && ownShoppingRepairInput;
   const next = structuredClone(
-    keepMapData ? { ...source, mapData: {} } : source,
+    shareItems ? { ...cloneSource, eventLists: {} } : cloneSource,
   );
   if (keepMapData) next.mapData = source.mapData;
+  if (shareItems) next.eventLists = source.eventLists;
   const details: string[] = [];
   const comparisons: unknown[] = [];
   const affectedContexts: Array<{

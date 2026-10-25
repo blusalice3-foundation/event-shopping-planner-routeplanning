@@ -2087,7 +2087,7 @@ describe("owned shopping repair inputs", () => {
     },
   );
 
-  it("removes one complete scoped-item clone while retaining identical repaired results", () => {
+  it("omits complete scoped-item planner clones while retaining identical repaired results", () => {
     const source = shoppingPlanSnapshot(500);
     const command = shoppingPlanCommand(source);
     freezeShoppingPlanInput(source);
@@ -2098,49 +2098,53 @@ describe("owned shopping repair inputs", () => {
       planShoppingMove(source, command),
     );
     expect(expected.snapshotClones).toBe(2);
-    expect(actual.snapshotClones).toBe(1);
+    expect(actual.snapshotClones).toBe(0);
     expect(actual.result).toEqual(expected.result);
   });
 
-  it("keeps repair writes private when an unchanged execution patch retains invalid references", () => {
-    const source = snapshot();
-    source.executeModeItems.event[" 1日目　"].push("deleted");
-    const original = structuredClone(source);
-    freezeShoppingPlanInput(source);
-    const projected = projectConsistencySnapshot(source, "event", "1日目");
-    freezeShoppingPlanInput(projected);
-    const patch = {
-      eventLists: { event: [...projected.eventLists.event].reverse() },
-      executeModeItems: projected.executeModeItems,
-    };
-    freezeShoppingPlanInput(patch);
-    const input = { eventName: "event", day: "1日目" };
-    const expected = planProjectedMutation(
-      source,
-      patch,
-      input,
-      {},
-      projected,
-      true,
-    );
-    const actual = planShoppingOrderMutation(
-      source,
-      patch,
-      input,
-      {},
-      projected,
-    );
-    expect(actual).toEqual(expected);
-    expect(actual.snapshot.executeModeItems.event[" 1日目　"]).not.toContain(
-      "deleted",
-    );
-    actual.snapshot.executeModeItems.event[" 1日目　"].push("local-only");
-    actual.snapshot.eventConsistency.event.days[
-      " 1日目　"
-    ].mapless!.hallOrder.push({ hall: null, priority: "priority" });
-    expect(source).toEqual(original);
-    expect(projected.executeModeItems.event["1日目"]).toContain("deleted");
-  });
+  it.each([false, true])(
+    "keeps repair writes private with invalid execution references (share=%s)",
+    (share) => {
+      const source = snapshot();
+      source.executeModeItems.event[" 1日目　"].push("deleted");
+      const original = structuredClone(source);
+      freezeShoppingPlanInput(source);
+      const projected = projectConsistencySnapshot(source, "event", "1日目");
+      freezeShoppingPlanInput(projected);
+      const patch = {
+        eventLists: { event: [...projected.eventLists.event].reverse() },
+        executeModeItems: projected.executeModeItems,
+      };
+      freezeShoppingPlanInput(patch);
+      const input = { eventName: "event", day: "1日目" };
+      const expected = planProjectedMutation(
+        source,
+        patch,
+        input,
+        {},
+        projected,
+        true,
+      );
+      const actual = planShoppingOrderMutation(
+        source,
+        patch,
+        input,
+        {},
+        projected,
+        share,
+      );
+      expect(actual).toEqual(expected);
+      expect(actual.snapshot.executeModeItems.event[" 1日目　"]).not.toContain(
+        "deleted",
+      );
+      actual.snapshot.executeModeItems.event[" 1日目　"].push("local-only");
+      actual.snapshot.eventConsistency.event.days[
+        " 1日目　"
+      ].mapless!.hallOrder.push({ hall: null, priority: "priority" });
+      expect(source).toEqual(original);
+      expect(projected.executeModeItems.event["1日目"]).toContain("deleted");
+    },
+  );
 
   it("uses the general clone path for day merging and keeps its review intact", () => {
     const source = shoppingPlanSnapshot();

@@ -261,6 +261,7 @@ export function planShoppingMove(
     { eventName, day },
     choices,
     projected,
+    true,
   );
   const next = mergeDaySnapshot(
     snapshot,
