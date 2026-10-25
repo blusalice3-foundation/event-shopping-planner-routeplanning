@@ -13,6 +13,7 @@ interface ViewportRegistry {
   observer: IntersectionObserver;
   subscribers: Map<Element, Subscription>;
   visibility: WeakMap<Element, boolean>;
+  visibilityRefreshedAt: WeakMap<Element, number>;
   listSizes: Map<HTMLElement, number>;
   sizeObserver?: ResizeObserver;
   requestedKeys: Map<string, number>;
@@ -94,6 +95,80 @@ function initiallyVisible(
     top + height >= -PRELOAD_MARGIN_PX && top <= bottom && withinViewport(root)
   );
 }
+/** Refresh only the visible slots of a retained vertical list after unhiding it. */
+export function refreshViewportListVisibility(
+  list: HTMLElement,
+  viewport?: HTMLElement | null,
+): void {
+  const registry = registries.get(list.ownerDocument);
+  const browser = list.ownerDocument.defaultView;
+  if (!registry || !browser || list.closest('[hidden], [aria-hidden="true"]'))
+    return;
+  let top = 0,
+    bottom = browser.innerHeight,
+    left = 0,
+    right = browser.innerWidth;
+  if (viewport) {
+    const rect = viewport.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    top = Math.max(top, rect.top);
+    bottom = Math.min(bottom, rect.bottom);
+    left = Math.max(left, rect.left);
+    right = Math.min(right, rect.right);
+  }
+  const bounds = list.getBoundingClientRect();
+  if (
+    bottom <= top ||
+    right <= left ||
+    bounds.width <= 0 ||
+    bounds.height <= 0 ||
+    bounds.bottom <= top ||
+    bounds.top >= bottom ||
+    bounds.right <= left ||
+    bounds.left >= right
+  )
+    return;
+  // FocusVisitRows keeps one ordered slot per item, even for deferred cards.
+  // Start at the visible frontier without reading all preceding offscreen rows.
+  const slots = list.children;
+  const slotRoot = (slot: Element) =>
+    slot.matches("[data-viewport-row-key]")
+      ? (slot as HTMLElement)
+      : slot.querySelector<HTMLElement>("[data-viewport-row-key]");
+  let low = 0,
+    high = slots.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    const root = slotRoot(slots[middle]);
+    if (!root) return;
+    const rect = root.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    if (rect.bottom <= top) low = middle + 1;
+    else high = middle;
+  }
+  const refreshedAt = browser.performance.now();
+  for (let index = low; index < slots.length; index++) {
+    const root = slotRoot(slots[index]);
+    if (!root) return;
+    const rect = root.getBoundingClientRect();
+    if (rect.top >= bottom) break;
+    if (
+      rect.width <= 0 ||
+      rect.height <= 0 ||
+      rect.bottom <= top ||
+      rect.right <= left ||
+      rect.left >= right
+    )
+      continue;
+    const subscription = registry.subscribers.get(root);
+    if (!subscription) continue;
+    registry.visibilityRefreshedAt.set(root, refreshedAt);
+    registry.visibility.set(root, true);
+    subscription.visible = true;
+    subscription.update();
+  }
+}
+
 const requestKey = (registry: ViewportRegistry, key: string) =>
   registry.requestedKeys.set(key, (registry.requestedKeys.get(key) ?? 0) + 1);
 const releaseKey = (registry: ViewportRegistry, key: string) => {
@@ -119,6 +194,9 @@ const getRegistry = (document: Document): ViewportRegistry => {
       for (const entry of entries) {
         const subscription = subscribers.get(entry.target);
         if (!subscription) continue;
+        // A record captured while parked must not undo the synchronous reveal.
+        const refreshedAt = registry.visibilityRefreshedAt.get(entry.target);
+        if (refreshedAt !== undefined && entry.time < refreshedAt) continue;
         subscription.visible = entry.isIntersecting;
         registry.visibility.set(entry.target, entry.isIntersecting);
         subscription.update();
@@ -130,6 +208,7 @@ const getRegistry = (document: Document): ViewportRegistry => {
     observer,
     subscribers,
     visibility: new WeakMap(),
+    visibilityRefreshedAt: new WeakMap(),
     listSizes: new Map(),
     requestedKeys: new Map(),
     initialOffsets: new WeakMap(),

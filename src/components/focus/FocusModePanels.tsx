@@ -11,6 +11,7 @@ import ShoppingItemCard from "../ShoppingItemCard";
 import {
   ViewportContent,
   focusPendingViewportContent,
+  refreshViewportListVisibility,
 } from "../../features/shopping-list/renderers/ViewportContent";
 import MapRotationControls from "../map/MapRotationControls";
 import {
@@ -373,19 +374,34 @@ const FocusVisitItems = React.memo(
   ),
 );
 const FocusVisitRows = React.memo(
-  ({ hidden, ...itemProps }: FocusVisitRowsProps) => (
-    <div
-      hidden={hidden}
-      aria-hidden={hidden || undefined}
-      data-focus-parked={hidden && !itemProps.prewarm ? "true" : undefined}
-      data-viewport-list
-      className={
-        itemProps.layoutMode === "smartphone" ? "space-y-2" : "space-y-4"
-      }
-    >
-      <FocusVisitItems {...itemProps} />
-    </div>
-  ),
+  ({ hidden, ...itemProps }: FocusVisitRowsProps) => {
+    const listRef = React.useRef<HTMLDivElement>(null);
+    const previouslyHidden = React.useRef(hidden);
+    React.useLayoutEffect(() => {
+      const returning = previouslyHidden.current && !hidden;
+      previouslyHidden.current = hidden;
+      const list = listRef.current;
+      if (returning && list)
+        refreshViewportListVisibility(
+          list,
+          list.closest<HTMLElement>('[data-testid="focus-mode-scroll-region"]'),
+        );
+    }, [hidden]);
+    return (
+      <div
+        ref={listRef}
+        hidden={hidden}
+        aria-hidden={hidden || undefined}
+        data-focus-parked={hidden && !itemProps.prewarm ? "true" : undefined}
+        data-viewport-list
+        className={
+          itemProps.layoutMode === "smartphone" ? "space-y-2" : "space-y-4"
+        }
+      >
+        <FocusVisitItems {...itemProps} />
+      </div>
+    );
+  },
 );
 type CachedFocusVisit = { key: string; items: readonly ShoppingItem[] };
 export const FocusModeItemList: React.FC<FocusModeItemListProps> = React.memo(

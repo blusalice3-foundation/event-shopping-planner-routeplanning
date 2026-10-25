@@ -206,11 +206,12 @@ describe("focus visit head survives parked visibility without another IO deliver
   const reportVisibility = (
     visible: boolean,
     targets = [...subscriptions.keys()],
+    time = window.performance.now(),
   ) => {
     for (const callback of new Set(subscriptions.values())) {
       const entries = targets
         .filter((target) => subscriptions.get(target) === callback)
-        .map((target) => ({ target, isIntersecting: visible }));
+        .map((target) => ({ target, isIntersecting: visible, time }));
       callback(
         entries as unknown as IntersectionObserverEntry[],
         {} as IntersectionObserver,
@@ -269,7 +270,7 @@ describe("focus visit head survives parked visibility without another IO deliver
     vi.unstubAllGlobals();
   });
 
-  it("keeps only the first of 1490 controls mounted through park/back before IO reports visible", () => {
+  it("keeps only the retained first control when every slot is outside the viewport", () => {
     const large = Array.from({ length: 1490 }, (_, index) =>
       makeItem(`io-large-${index}`),
     );
@@ -354,6 +355,205 @@ describe("focus visit head survives parked visibility without another IO deliver
       visit.querySelector('[data-item-id="io-large-1"] input'),
     ).not.toBeNull();
     expect(visit.querySelector("input")).toBe(input);
+  }, 15000);
+
+  const parkedViewportFixture = (layoutMode: "pc" | "smartphone" = "pc") => {
+    const large = Array.from({ length: 1490 }, (_, index) =>
+      makeItem(`visible-${layoutMode}-${index}`),
+    );
+    const small = makeItem(`visible-${layoutMode}-small`);
+    const geometry = { height: 250, reads: new Set<string>() };
+    const rect = (top: number, height: number) => ({
+      x: 0,
+      y: top,
+      top,
+      bottom: top + height,
+      left: 0,
+      right: 800,
+      width: 800,
+      height,
+      toJSON() {},
+    });
+    vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(
+      function (this: HTMLElement) {
+        if (this.closest('[hidden], [aria-hidden="true"]')) return rect(0, 0);
+        const viewport = this.ownerDocument.querySelector<HTMLElement>(
+          '[data-testid="focus-mode-scroll-region"]',
+        );
+        if (this === viewport) return rect(0, geometry.height);
+        if (this.hasAttribute("data-viewport-list"))
+          return rect(-(viewport?.scrollTop ?? 0), this.children.length * 100);
+        const key = this.dataset.viewportRowKey;
+        if (key) {
+          geometry.reads.add(key);
+          const index = Number(key.split("-").at(-1));
+          return rect(
+            (Number.isFinite(index) ? index : 0) * 100 -
+              (viewport?.scrollTop ?? 0),
+            100,
+          );
+        }
+        return rect(0, 100);
+      },
+    );
+    const onUpdateItem = vi.fn();
+    const blinking = new Set<string>();
+    const has = vi.spyOn(blinking, "has");
+    const shared = {
+      itemListRef: React.createRef<HTMLDivElement>(),
+      layoutMode,
+      isMapVisible: false,
+      blinkingPriceItemIds: blinking,
+      blinkingLimitedMissingItemIds: new Set<string>(),
+      retainedItemIds: new Set<string>(),
+      skipLimitedPurchaseForSingleQuantity: false,
+      onUpdateItem,
+    };
+    const project = (
+      items: ShoppingItem[],
+      id: string,
+      update = onUpdateItem,
+    ) => (
+      <div data-testid="focus-mode-scroll-region">
+        <FocusModeItemList
+          {...shared}
+          visitId={id}
+          currentVisitDisplayItems={items}
+          onUpdateItem={update}
+        />
+      </div>
+    );
+    const view = render(project(large, "large"));
+    const viewport = view.getByTestId("focus-mode-scroll-region");
+    const head = view.container.querySelector<HTMLInputElement>(
+      `[data-item-id="${large[0].id}"] input`,
+    )!;
+    fireEvent.change(head, { target: { value: "先頭の入力を維持" } });
+    act(() => reportVisibility(false));
+    const visit = head.closest<HTMLElement>("[data-viewport-list]")!;
+    expect(visit.querySelectorAll("input")).toHaveLength(1);
+    view.rerender(project([small], "small"));
+    act(() => reportVisibility(false));
+    expect(visit.hidden).toBe(true);
+    geometry.reads.clear();
+    has.mockClear();
+    return {
+      large,
+      geometry,
+      project,
+      view,
+      viewport,
+      head,
+      visit,
+      has,
+      onUpdateItem,
+    };
+  };
+
+  for (const layoutMode of ["pc", "smartphone"] as const) {
+    it(`restores every visible control before another IO delivery without remapping 1490 rows: ${layoutMode}`, () => {
+      const { large, geometry, project, view, head, visit, has } =
+        parkedViewportFixture(layoutMode);
+      view.rerender(project(large, "large"));
+      expect(visit.hidden).toBe(false);
+      expect(visit.querySelectorAll("input")).toHaveLength(3);
+      expect(
+        visit.querySelectorAll('[data-viewport-active="false"]'),
+      ).toHaveLength(1487);
+      expect(visit.querySelector("input")).toBe(head);
+      expect(head).toHaveValue("先頭の入力を維持");
+      expect(has).not.toHaveBeenCalled();
+      expect(geometry.reads.size).toBeLessThan(25);
+      const second = visit.querySelector<HTMLElement>(
+        `[data-viewport-row-key="focus:${large[1].id}"]`,
+      )!;
+      act(() => reportVisibility(false, [second], 0));
+      expect(second).toHaveAttribute("data-viewport-active", "true");
+      geometry.height = 100;
+      act(() =>
+        reportVisibility(false, [second], window.performance.now() + 1),
+      );
+      expect(second).toHaveAttribute("data-viewport-active", "false");
+      expect(visit.querySelector("input")).toBe(head);
+    }, 15000);
+  }
+
+  it("uses the viewport size after a parked resize and keeps all lower placeholders deferred", () => {
+    const { large, geometry, project, view, visit, head } =
+      parkedViewportFixture();
+    geometry.height = 350;
+    view.rerender(project(large, "large"));
+    expect(visit.querySelectorAll("input")).toHaveLength(4);
+    expect(
+      visit.querySelectorAll('[data-viewport-active="false"]'),
+    ).toHaveLength(1486);
+    expect(visit.querySelector("input")).toBe(head);
+    expect(geometry.reads.size).toBeLessThan(25);
+  }, 15000);
+
+  it("finds the deeply scrolled visible frontier without resetting scroll or scanning preceding rows", () => {
+    const { large, geometry, project, view, viewport, visit, head } =
+      parkedViewportFixture();
+    viewport.scrollTop = 100000;
+    view.rerender(project(large, "large"));
+    expect(viewport.scrollTop).toBe(100000);
+    expect(visit.querySelectorAll("input")).toHaveLength(4);
+    for (const index of [1000, 1001, 1002])
+      expect(
+        visit.querySelector(`[data-item-id="${large[index].id}"] input`),
+      ).not.toBeNull();
+    expect(visit.querySelector("input")).toBe(head);
+    expect(head).toHaveValue("先頭の入力を維持");
+    expect(
+      visit.querySelectorAll('[data-viewport-active="false"]'),
+    ).toHaveLength(1486);
+    expect(geometry.reads.size).toBeLessThan(25);
+  }, 15000);
+
+  it("leaves zero-size restoration to the existing IO subscription", () => {
+    const { large, geometry, project, view, visit } = parkedViewportFixture();
+    geometry.height = 0;
+    view.rerender(project(large, "large"));
+    expect(visit.querySelectorAll("input")).toHaveLength(1);
+    expect(geometry.reads.size).toBe(0);
+    const second = visit.querySelector<HTMLElement>(
+      `[data-viewport-row-key="focus:${large[1].id}"]`,
+    )!;
+    geometry.height = 250;
+    act(() => reportVisibility(true, [second]));
+    expect(visit.querySelectorAll("input")).toHaveLength(2);
+  }, 15000);
+
+  it("mounts newly visible cards with the latest optional fields and handlers while retaining the dirty head", () => {
+    const { large, project, view, visit, head, onUpdateItem } =
+      parkedViewportFixture();
+    const latest = vi.fn();
+    const current = large.map((item, index) =>
+      index === 1
+        ? {
+            ...item,
+            quantity: 9,
+            url: "https://example.test/updated-visible",
+          }
+        : item,
+    );
+    view.rerender(project(current, "large", latest));
+    const second = visit.querySelector<HTMLElement>(
+      `[data-item-id="${large[1].id}"]`,
+    )!;
+    expect(second.querySelector("a")).toHaveAttribute("href", current[1].url);
+    fireEvent.click(second.querySelector("button")!);
+    expect(latest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: large[1].id,
+        quantity: 10,
+        url: current[1].url,
+      }),
+    );
+    expect(onUpdateItem).not.toHaveBeenCalled();
+    expect(visit.querySelector("input")).toBe(head);
+    expect(head).toHaveValue("先頭の入力を維持");
+    expect(visit.querySelectorAll("input")).toHaveLength(3);
   }, 15000);
 
   it("preserves another dirty retained row and uses current optional fields and handlers after returning", () => {
