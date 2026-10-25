@@ -20,7 +20,10 @@ import {
   verifyGroupEvidence,
 } from "./verify-shopping-performance-evidence.mjs";
 
-import { performanceAcceptanceCriteriaByGroup } from "./shopping-performance-evidence-contract.mjs";
+import {
+  performanceAcceptanceCriteriaByGroup,
+  shoppingLargeListDiagnosticTag,
+} from "./shopping-performance-evidence-contract.mjs";
 
 export const GROUPS = [
   { group: "functional", script: null },
@@ -75,7 +78,7 @@ export function groupInvocation({
         path.join(cwd, "node_modules/@playwright/test/cli.js"),
         "test",
         "--grep-invert",
-        "@shopping-performance",
+        `@shopping-performance|${shoppingLargeListDiagnosticTag}`,
       ];
   args.push("--output", output, "--reporter=line,html,json");
   return {

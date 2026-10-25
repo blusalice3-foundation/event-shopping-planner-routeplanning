@@ -9,7 +9,16 @@ import {
   shoppingBrowserEnvironment,
   type ShoppingUiExpectation,
 } from "./shopping-performance-evidence";
+import {
+  shoppingCollectionMetadataForCount,
+  shoppingLargeListDiagnosticTag,
+  shoppingPerformanceTestTag,
+} from "../../scripts/shopping-performance-evidence-contract.mjs";
 
+const shoppingOperationEvidenceIdentity = (count: number) => ({
+  ...shoppingEvidenceIdentity("shopping"),
+  ...shoppingCollectionMetadataForCount(count),
+});
 // Keep response timings free from video and trace capture on every attempt.
 test.use({ video: "off", trace: "off" });
 
@@ -28,10 +37,11 @@ test.afterEach(async ({ page }, testInfo) => {
     )
   )
     return;
+  const incomplete = snapshot();
   const body = JSON.stringify(
     {
-      ...snapshot(),
-      ...shoppingEvidenceIdentity("shopping"),
+      ...incomplete,
+      ...shoppingOperationEvidenceIdentity(Number(incomplete.count)),
       acceptanceMeasurement: false,
       completed: false,
       failureStatus: testInfo.status,
@@ -237,7 +247,7 @@ async function durableItem(page: Page, id: string) {
   return item;
 }
 for (const count of [150, 500, 1500]) {
-  test(`bounded DOM and response timings: ${count} items, 40000 cells, 10000 historical items`, async ({
+  test(`bounded DOM and response timings: ${count} items, 40000 cells, 10000 historical items${count === 1500 ? ` ${shoppingLargeListDiagnosticTag}` : ""}`, async ({
     page,
   }, testInfo) => {
     test.setTimeout(240000);
@@ -543,6 +553,7 @@ for (const count of [150, 500, 1500]) {
       body: JSON.stringify(
         {
           count,
+          ...(count === 1500 ? shoppingCollectionMetadataForCount(count) : {}),
           cells: 40000,
           historicalItems: 10000,
           cards,
@@ -661,7 +672,7 @@ const shoppingProfiles = [false, true].flatMap((concentrated) =>
 );
 for (const count of [150, 500, 1500])
   for (const { concentrated, mapVisible, layout } of shoppingProfiles) {
-    test(`local shopping operations: ${count} items, concentrated=${concentrated}, mapVisible=${mapVisible}, layout=${layout} @shopping-performance`, async ({
+    test(`local shopping operations: ${count} items, concentrated=${concentrated}, mapVisible=${mapVisible}, layout=${layout} ${shoppingPerformanceTestTag(count)}`, async ({
       page,
     }, testInfo) => {
       test.setTimeout(360000);
@@ -1094,7 +1105,7 @@ for (const count of [150, 500, 1500])
             concentrated,
             mapVisible,
             layout,
-            ...shoppingEvidenceIdentity("shopping"),
+            ...shoppingOperationEvidenceIdentity(count),
             environment: measuredEnvironment,
             visitedCount,
             uiTimings,
@@ -1119,7 +1130,7 @@ for (const count of [150, 500, 1500])
             concentrated,
             mapVisible,
             layout,
-            ...shoppingEvidenceIdentity("shopping"),
+            ...shoppingOperationEvidenceIdentity(count),
             environment: measuredEnvironment,
             visitedCount,
             uiTimings,

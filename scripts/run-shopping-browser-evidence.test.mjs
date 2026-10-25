@@ -74,6 +74,23 @@ test("normal runner keeps group order, siblings, argument boundaries and parent 
     assert.ok(call.args.includes("--reporter=line,html,json"));
     if (env.ESP_EVIDENCE_GROUP === "functional") {
       assert.ok(call.args.includes("--grep-invert"));
+      const exclusion = call.args[call.args.indexOf("--grep-invert") + 1];
+      assert.equal(
+        exclusion,
+        "@shopping-performance|@shopping-large-list-diagnostic",
+      );
+      assert.equal(
+        new RegExp(exclusion).test("1500 @shopping-large-list-diagnostic"),
+        true,
+      );
+      assert.equal(
+        new RegExp(exclusion).test("core @shopping-performance"),
+        true,
+      );
+      assert.equal(
+        new RegExp(exclusion).test("ordinary functional regression"),
+        false,
+      );
       assert.ok(!call.args.includes("--retries=0"));
     } else {
       assert.equal(call.args[0], options.npmCli);
@@ -545,4 +562,35 @@ test("actual source proof rejects tracked, staged and untracked product changes 
     else git(["restore", "--source=HEAD", "--staged", "--worktree", relative]);
   }
   assert.deepEqual(collectBrowserSourceIdentity(cwd), clean);
+});
+
+test("1500 diagnostics are opt-in and never join the default or CI acceptance groups", async () => {
+  assert.deepEqual(
+    GROUPS.map(({ group }) => group),
+    ["functional", "shopping", "range", "drag", "transfer"],
+  );
+  const pkg = JSON.parse(
+    await readFile(path.join(repository, "package.json"), "utf8"),
+  );
+  assert.equal(
+    pkg.scripts["test:shopping-large-list-diagnostic:run"],
+    "node scripts/verify-shopping-performance-evidence.mjs preflight && playwright test tests/browser/responsive-performance.spec.ts --grep @shopping-large-list-diagnostic --workers=1 --retries=0",
+  );
+  for (const { script } of GROUPS.filter((row) => row.script))
+    assert.doesNotMatch(pkg.scripts[script], /shopping-large-list-diagnostic/);
+  const source = await readFile(
+    path.join(repository, "tests/browser/responsive-performance.spec.ts"),
+    "utf8",
+  );
+  assert.match(source, /for \(const count of \[150, 500, 1500\]\)/);
+  assert.match(
+    source,
+    /10000 historical items\$\{count === 1500 \? ` \$\{shoppingLargeListDiagnosticTag\}` : ""\}/,
+  );
+  assert.match(
+    source,
+    /layout=\$\{layout\} \$\{shoppingPerformanceTestTag\(count\)\}/,
+  );
+  assert.match(source, /shoppingOperationEvidenceIdentity\(count\)/);
+  assert.match(source, /shoppingCollectionMetadataForCount\(count\)/);
 });

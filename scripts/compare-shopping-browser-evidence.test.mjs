@@ -236,12 +236,14 @@ test("missing extra categories retain every valid core before/after row and expl
   assert.equal(exitCode, 1);
   assert.equal(result.status, "incomplete");
   assert.deepEqual(result.coverage, {
-    expectedMetrics: 672,
-    compared: 288,
+    expectedMetrics: 576,
+    compared: 192,
     uncomparable: 384,
     baselineUnobservable: 0,
     unmeasuredMissing: 384,
   });
+  assert.equal(result.rows.filter((row) => !row.auxiliary).length, 530);
+  assert.equal(result.rows.filter((row) => row.auxiliary).length, 46);
   const core = result.rows.find(
     (row) => row.group === "shopping" && row.metric === "ui",
   );
@@ -303,7 +305,7 @@ test("a missing UI condition leaves its rows incomparable while other valid cond
     }),
     afterRoot = await partialShoppingRun(directory, "after", 12);
   const { result } = await compareBrowserEvidence({ beforeRoot, afterRoot });
-  assert.equal(result.coverage.compared, 276);
+  assert.equal(result.coverage.compared, 180);
   assert.ok(result.before.errors.some((error) => error.includes("uiSummary")));
   assert.ok(
     result.rows.some(
@@ -378,7 +380,7 @@ test("comparison requires actual clean release capability and allows different p
   assert.equal(
     (await compareBrowserEvidence({ beforeRoot, afterRoot })).result.coverage
       .compared,
-    288,
+    192,
   );
   delete run.releaseCapability;
   await writeFile(file, JSON.stringify(run), "utf8");

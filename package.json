@@ -49,6 +49,7 @@
     "test:browser": "npm run build:release-a && node scripts/run-shopping-browser-evidence.mjs --phase after",
     "test:shopping-performance": "npm run build:app && npm run test:shopping-performance:run",
     "test:shopping-performance:run": "node scripts/verify-shopping-performance-evidence.mjs preflight && playwright test tests/browser/responsive-performance.spec.ts --grep @shopping-performance --workers=1 --retries=0",
+    "test:shopping-large-list-diagnostic:run": "node scripts/verify-shopping-performance-evidence.mjs preflight && playwright test tests/browser/responsive-performance.spec.ts --grep @shopping-large-list-diagnostic --workers=1 --retries=0",
     "test:range-selection-performance:run": "node scripts/verify-shopping-performance-evidence.mjs preflight && playwright test tests/browser/edit-execute-range-selection.spec.ts --grep @range-selection-performance --workers=1 --retries=0",
     "test:shopping-drag-performance:run": "node scripts/verify-shopping-performance-evidence.mjs preflight && playwright test tests/browser/shopping-cross-column-drag.spec.ts --grep @shopping-drag-performance --workers=1 --retries=0",
     "test:shopping-transfer-rendering-performance:run": "node scripts/verify-shopping-performance-evidence.mjs preflight && playwright test tests/browser/shopping-transfer-rendering.performance.spec.ts tests/browser/shopping-transfer-accepted.performance.spec.ts tests/browser/shopping-transfer-terminal.performance.spec.ts --grep @shopping-transfer-rendering-performance --workers=1 --retries=0",

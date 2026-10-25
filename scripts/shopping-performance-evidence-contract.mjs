@@ -1,5 +1,8 @@
 // Current user-specified acceptance criteria. Historical raw evidence is never rewritten.
-export const shoppingPerformanceCriteriaDate = "2026-10-24";
+export const shoppingPerformanceCriteriaDate = "2026-10-25";
+export const dndSelectionRenderingPerformanceCriteriaDate = "2026-10-24";
+export const shoppingAcceptanceItemCounts = Object.freeze([150, 500]);
+export const shoppingLargeListDiagnosticTag = "@shopping-large-list-diagnostic";
 export const shoppingPerformanceThresholds = Object.freeze({
   minimumCount: 20,
   medianMs: 65,
@@ -21,16 +24,44 @@ export const dndSelectionRenderingPerformanceThresholds = Object.freeze({
 });
 const shoppingCriteria = Object.freeze({
   acceptanceScope: "shopping-operations",
-  acceptanceCriteriaId: "shopping-operations-65-100-2026-10-24",
+  acceptanceCriteriaId: "shopping-operations-150-500-65-100-2026-10-25",
   acceptanceCriteriaDate: shoppingPerformanceCriteriaDate,
   acceptanceThresholds: shoppingPerformanceThresholds,
 });
 const dndCriteria = Object.freeze({
   acceptanceScope: "dnd-selection-rendering",
   acceptanceCriteriaId: "dnd-selection-rendering-110-110-2026-10-24",
-  acceptanceCriteriaDate: shoppingPerformanceCriteriaDate,
+  acceptanceCriteriaDate: dndSelectionRenderingPerformanceCriteriaDate,
   acceptanceThresholds: dndSelectionRenderingPerformanceThresholds,
 });
+const shoppingAcceptanceCollection = Object.freeze({
+  diagnosticOnly: false,
+  acceptanceMeasurement: true,
+});
+const shoppingLargeListDiagnosticCollection = Object.freeze({
+  diagnosticOnly: true,
+  acceptanceMeasurement: false,
+  collectionScope: "optional-large-list-diagnostic",
+  excludedFromDefaultAcceptance: true,
+  acceptanceExclusion: Object.freeze({
+    decisionDate: shoppingPerformanceCriteriaDate,
+    reason: "user-excluded-1500-item-workload",
+    itemCount: 1500,
+    mandatoryItemCounts: shoppingAcceptanceItemCounts,
+  }),
+  referenceAcceptanceCriteria: shoppingCriteria,
+});
+export function shoppingCollectionMetadataForCount(count) {
+  if (shoppingAcceptanceItemCounts.includes(count))
+    return shoppingAcceptanceCollection;
+  if (count === 1500) return shoppingLargeListDiagnosticCollection;
+  throw new Error(`Unknown shopping item count: ${String(count)}`);
+}
+export function shoppingPerformanceTestTag(count) {
+  return shoppingCollectionMetadataForCount(count).diagnosticOnly
+    ? shoppingLargeListDiagnosticTag
+    : "@shopping-performance";
+}
 export const performanceAcceptanceCriteriaByGroup = Object.freeze({
   shopping: shoppingCriteria,
   range: dndCriteria,
@@ -119,7 +150,7 @@ export const acceptedTransferScenarios = [
 export function expectedPerformanceConditions(group) {
   const rows = [];
   if (group === "shopping")
-    for (const count of [150, 500, 1500])
+    for (const count of shoppingAcceptanceItemCounts)
       for (const concentrated of [false, true])
         for (const mapVisible of [false, true])
           for (const layout of ["pc", "smartphone"])

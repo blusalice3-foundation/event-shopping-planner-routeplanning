@@ -21,6 +21,7 @@ import {
   expectedPerformanceCases,
   expectedTransferMetricNames,
   shoppingPerformanceThresholds,
+  shoppingCollectionMetadataForCount,
 } from "./shopping-performance-evidence-contract.mjs";
 const identity = { phase: "after", runId: "fixture-run" };
 const env = {
@@ -669,7 +670,7 @@ test("known normal matrices pass with exact expected coverage and response/frame
     ["shopping", "range", "drag", "transfer"].map(
       (g) => expectedConditions(g).length,
     ),
-    [24, 20, 8, 52],
+    [16, 20, 8, 52],
   );
   for (const group of ["shopping", "range", "drag", "transfer"]) {
     const f = await fixture(t, group);
@@ -857,7 +858,7 @@ for (const kind of ["legacy", "ui"])
 
 test("new evidence labels its current criteria without changing earlier artifact fields", () => {
   const a = artifact("shopping");
-  assert.equal(a.acceptanceCriteriaDate, "2026-10-24");
+  assert.equal(a.acceptanceCriteriaDate, "2026-10-25");
   assert.deepEqual(a.acceptanceThresholds, shoppingPerformanceThresholds);
   a.method = { thresholds: { minimumCount: 20, medianMs: 55, p95Ms: 100 } };
   const original = structuredClone(a);
@@ -2680,3 +2681,21 @@ for (const partial of [false, true]) {
     );
   });
 }
+
+test("1500 diagnostics and forged normal flags cannot replace mandatory shopping evidence", () => {
+  const diagnostic = artifact("shopping", {
+    ...expectedConditions("shopping")[0],
+    count: 1500,
+  });
+  Object.assign(diagnostic, shoppingCollectionMetadataForCount(1500));
+  assert.throws(
+    () => validateEvidenceArtifact(diagnostic, "shopping", identity),
+    /Normal acceptance artifact required/,
+  );
+  diagnostic.diagnosticOnly = false;
+  diagnostic.acceptanceMeasurement = true;
+  assert.throws(
+    () => validateEvidenceArtifact(diagnostic, "shopping", identity),
+    /Unexpected performance condition/,
+  );
+});

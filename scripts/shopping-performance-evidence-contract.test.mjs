@@ -8,18 +8,23 @@ import {
   performanceConditionKey,
   performanceGroupSpecs,
   shoppingPerformanceCriteriaDate,
+  dndSelectionRenderingPerformanceCriteriaDate,
+  shoppingAcceptanceItemCounts,
+  shoppingCollectionMetadataForCount,
+  shoppingPerformanceTestTag,
+  shoppingLargeListDiagnosticTag,
   performanceAcceptanceCriteriaByGroup,
   performanceAcceptanceCriteriaForGroup,
   validateAcceptanceCriteriaMetadata,
   validateRunAcceptanceCriteriaMetadata,
   shoppingPerformanceThresholds,
 } from "./shopping-performance-evidence-contract.mjs";
-test("fixed performance inventory retains all original matrices and each expanded category", () => {
+test("fixed performance inventory retains mandatory 150/500 matrices and each expanded category", () => {
   assert.deepEqual(
     ["shopping", "range", "drag", "transfer"].map(
       (group) => expectedPerformanceConditions(group).length,
     ),
-    [24, 20, 8, 52],
+    [16, 20, 8, 52],
   );
   const cases = expectedPerformanceCases("transfer");
   assert.equal(cases.length, 100);
@@ -74,7 +79,8 @@ test("an omitted single scenario preserves the original condition identity; cate
 });
 
 test("current acceptance criteria are shared and immutable without changing the sample or p95 limits", () => {
-  assert.equal(shoppingPerformanceCriteriaDate, "2026-10-24");
+  assert.equal(shoppingPerformanceCriteriaDate, "2026-10-25");
+  assert.equal(dndSelectionRenderingPerformanceCriteriaDate, "2026-10-24");
   assert.deepEqual(shoppingPerformanceThresholds, {
     minimumCount: 20,
     medianMs: 65,
@@ -97,6 +103,11 @@ test("only trusted plan groups select 110ms criteria and retain the 20-sample mi
   for (const group of ["range", "drag", "transfer"]) {
     const criteria = performanceAcceptanceCriteriaForGroup(group);
     assert.equal(criteria.acceptanceScope, "dnd-selection-rendering");
+    assert.equal(
+      criteria.acceptanceCriteriaId,
+      "dnd-selection-rendering-110-110-2026-10-24",
+    );
+    assert.equal(criteria.acceptanceCriteriaDate, "2026-10-24");
     assert.deepEqual(criteria.acceptanceThresholds, {
       minimumCount: 20,
       medianMs: 110,
@@ -172,4 +183,84 @@ test("criteria metadata rejects forged values, partial scopes, and incomplete or
       ),
     /metadata/,
   );
+});
+
+test("2026-10-25 shopping inventory excludes 1500 and keeps all 16 mandatory combinations", () => {
+  assert.deepEqual(shoppingAcceptanceItemCounts, [150, 500]);
+  assert.ok(Object.isFrozen(shoppingAcceptanceItemCounts));
+  const rows = expectedPerformanceConditions("shopping");
+  for (const count of shoppingAcceptanceItemCounts)
+    assert.equal(rows.filter((row) => row.count === count).length, 8);
+  assert.equal(
+    rows.some((row) => row.count === 1500),
+    false,
+  );
+  assert.equal(rows.length * 6 * 2, 192);
+  assert.equal(
+    ["shopping", "range", "drag", "transfer"].reduce(
+      (sum, group) => sum + expectedPerformanceCases(group).length,
+      0,
+    ),
+    144,
+  );
+  const transferMetrics = expectedPerformanceCases("transfer").flatMap((row) =>
+    expectedTransferMetricNames(row.condition, row.measurementKind),
+  );
+  assert.equal(transferMetrics.length, 244);
+  assert.equal(
+    transferMetrics.filter((metric) => metric !== "save").length,
+    198,
+  );
+  assert.equal(rows.length * 12 + 80 + 60 + 198, 530);
+  assert.equal(rows.length * 12 + 80 + 60 + transferMetrics.length, 576);
+  const criteria = performanceAcceptanceCriteriaForGroup("shopping");
+  assert.equal(
+    criteria.acceptanceCriteriaId,
+    "shopping-operations-150-500-65-100-2026-10-25",
+  );
+  assert.equal(criteria.acceptanceCriteriaDate, "2026-10-25");
+});
+
+test("optional 1500 records carry exclusion and reference budgets without acceptance identity", () => {
+  for (const count of shoppingAcceptanceItemCounts) {
+    assert.deepEqual(shoppingCollectionMetadataForCount(count), {
+      diagnosticOnly: false,
+      acceptanceMeasurement: true,
+    });
+    assert.equal(shoppingPerformanceTestTag(count), "@shopping-performance");
+  }
+  const diagnostic = shoppingCollectionMetadataForCount(1500);
+  assert.equal(diagnostic.diagnosticOnly, true);
+  assert.equal(diagnostic.acceptanceMeasurement, false);
+  assert.equal(diagnostic.excludedFromDefaultAcceptance, true);
+  assert.equal(diagnostic.collectionScope, "optional-large-list-diagnostic");
+  assert.deepEqual(diagnostic.acceptanceExclusion, {
+    decisionDate: "2026-10-25",
+    reason: "user-excluded-1500-item-workload",
+    itemCount: 1500,
+    mandatoryItemCounts: [150, 500],
+  });
+  assert.deepEqual(
+    diagnostic.referenceAcceptanceCriteria,
+    performanceAcceptanceCriteriaForGroup("shopping"),
+  );
+  assert.equal(
+    shoppingPerformanceTestTag(1500),
+    shoppingLargeListDiagnosticTag,
+  );
+  assert.equal(
+    shoppingPerformanceTestTag(1500).includes("@shopping-performance"),
+    false,
+  );
+  assert.ok(Object.isFrozen(diagnostic));
+  for (const count of [0, 149, 501, 1490, "150", undefined]) {
+    assert.throws(
+      () => shoppingCollectionMetadataForCount(count),
+      /Unknown shopping item count/,
+    );
+    assert.throws(
+      () => shoppingPerformanceTestTag(count),
+      /Unknown shopping item count/,
+    );
+  }
 });
