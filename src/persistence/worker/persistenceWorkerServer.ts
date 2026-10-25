@@ -239,9 +239,11 @@ export function createPersistenceWorkerServer(
           read = await freshRead(true);
           usingCached = false;
         }
-        // An order-only acknowledgement is valid only for the exact published baseline.
+        // Non-retained publications still advance the client baseline (e.g. item edits).
+        // Scoped observations retain their complete backing snapshot separately.
         // Fresh/conflict reads may contain content, other-day or other-event changes.
         const requiresCompleteBaseline =
+          read!.snapshot !== previous &&
           read!.snapshot !== observedSnapshots.get(sequence);
         let committedReceipt: ApplicationSnapshotRead | void;
         try {

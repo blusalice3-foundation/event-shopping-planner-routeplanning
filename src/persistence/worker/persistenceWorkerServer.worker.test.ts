@@ -2472,9 +2472,15 @@ function shoppingStoragePort(h: Awaited<ReturnType<typeof setupShopping>>) {
                   )
                 : request.method === "readFull"
                   ? await h.server.readFull()
-                  : (() => {
-                      throw new Error("Unexpected protocol method");
-                    })();
+                  : request.method === "items"
+                    ? await h.server.items(
+                        request.args[0] as ItemContentEdit[],
+                        request.args[1] as string[],
+                        request.args[2] as Record<string, number>,
+                      )
+                    : (() => {
+                        throw new Error("Unexpected protocol method");
+                      })();
           this.onmessage?.({
             data: { id: request.id, result },
           } as MessageEvent);
@@ -2495,6 +2501,85 @@ function shoppingStoragePort(h: Awaited<ReturnType<typeof setupShopping>>) {
   return { methods, port: createWorkerPersistenceCommandAdapter() };
 }
 
+it.each([false, true])(
+  "uses the published quantity/memo baseline for moves, recovering only a corrupt delta (%s)",
+  async (corruptDelta) => {
+    const h = await setupShopping();
+    const { port, methods } = shoppingStoragePort(h);
+    const initial = await port.readApplicationSnapshot();
+    const edited = await port.commitItemContentEdits!(
+      [
+        edit(
+          "quantity",
+          9,
+          initial.snapshot.eventLists.event[0] as typeof item,
+        ),
+        edit("remarks", "移動前に保存したメモ", {
+          ...(initial.snapshot.eventLists.event[0] as typeof item),
+          quantity: 9,
+        }),
+      ],
+      ["edit:quantity", "edit:memo"],
+      {},
+    );
+    expect(edited.status).toBe("committed");
+    if (edited.status !== "committed") throw new Error("edit not committed");
+    expect(edited.read.snapshot.eventLists.event[0]).toMatchObject({
+      quantity: 9,
+      remarks: "移動前に保存したメモ",
+    });
+    h.read.mockClear();
+    const fault = corruptDelta
+      ? vi
+          .spyOn(snapshotDeltas, "daySnapshotDelta")
+          .mockImplementationOnce(() => {
+            throw new Error("edited move delta build failed");
+          })
+      : undefined;
+    const moved = await port.commitShoppingMove!(
+      shoppingCommand(),
+      "edited:move",
+      {},
+    );
+    fault?.mockRestore();
+    expect(moved.status).toBe("committed");
+    if (moved.status !== "committed") throw new Error("move not committed");
+    expect(methods).toEqual(
+      corruptDelta
+        ? ["read", "items", "shopping", "readFull"]
+        : ["read", "items", "shopping"],
+    );
+    expect(h.read).toHaveBeenCalledTimes(corruptDelta ? 1 : 0);
+    expect(h.commit).toHaveBeenCalledOnce();
+    expect(moved.read.snapshot.eventLists.event[1]).toMatchObject({
+      id: "1",
+      quantity: 9,
+      remarks: "移動前に保存したメモ",
+    });
+    expect(moved.read.snapshot.eventLists.past[0]).toMatchObject({
+      quantity: 9,
+    });
+    expect(moved.read.snapshot.executeModeItems.event["2日目"]).toEqual([
+      "other-day",
+    ]);
+    // Both the normal acknowledgement and one-time recovery become a warm baseline.
+    const next = await port.commitShoppingMove!(
+      nextShoppingOrder(moved.read.snapshot),
+      "edited:next-move",
+      {},
+    );
+    expect(next.status).toBe("committed");
+    expect(methods.filter((method) => method === "readFull")).toHaveLength(
+      corruptDelta ? 1 : 0,
+    );
+    expect(h.commit).toHaveBeenCalledTimes(2);
+    expect(port.getWriteStopReason!()).toBeUndefined();
+    if (next.status !== "committed") throw new Error("next move not committed");
+    expect(next.read.snapshot).toEqual(
+      (await db.readApplicationSnapshot()).snapshot,
+    );
+  },
+);
 it("recovers a native receipt delta failure once without resending or postcommit command reads", async () => {
   const h = await setupShopping();
   const { port, methods } = shoppingStoragePort(h);
