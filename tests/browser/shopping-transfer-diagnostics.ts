@@ -22,7 +22,19 @@ type GeometryRead = {
   overheadMs: number;
 };
 type LongTask = { at: number; durationMs: number; name: string };
-type InputStage = { at: number; type: string; trusted: boolean };
+export type InputStage = { at: number; type: string; trusted: boolean };
+export type MoveLifecycleRecord = {
+  phase: string;
+  atMs: number;
+  epochMs: number;
+  diagnosticToken?: string;
+  draggedItemId?: string;
+  sourceColumn?: string;
+  targetColumn?: string;
+  operationId?: string;
+  moveId?: string;
+};
+
 type DiagnosticProbe = {
   reset(): void;
   read(
@@ -35,11 +47,17 @@ type DiagnosticProbe = {
     geometryReads: GeometryRead[];
     longTasks: LongTask[];
     inputs: InputStage[];
+    moveLifecycle: MoveLifecycleRecord[];
   };
 };
 declare global {
   interface Window {
     __shoppingTransferDiagnostics?: DiagnosticProbe;
+    __espShoppingPerformance?: {
+      enable(value?: boolean): void;
+      reset(): void;
+      read(): { lifecycle?: MoveLifecycleRecord[] };
+    };
   }
 }
 
@@ -96,9 +114,14 @@ export async function installTransferDiagnostics(page: Page) {
         longTasks = [];
         inputs = [];
         enabled = true;
+        window.__espShoppingPerformance?.reset();
+        window.__espShoppingPerformance?.enable(true);
       },
       read(start, end) {
         consumeLongTasks(observer.takeRecords());
+        const moveLifecycle =
+          window.__espShoppingPerformance?.read().lifecycle ?? [];
+        window.__espShoppingPerformance?.enable(false);
         enabled = false;
         const inWindow = (entry: { at: number }) =>
           entry.at >= start && entry.at <= end;
@@ -111,6 +134,9 @@ export async function installTransferDiagnostics(page: Page) {
             (entry) => entry.at <= end && entry.at + entry.durationMs >= start,
           ),
           inputs: inputs.filter(inWindow),
+          moveLifecycle: moveLifecycle.filter(
+            (entry) => entry.epochMs >= start && entry.epochMs <= end,
+          ),
         };
       },
     };

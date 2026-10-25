@@ -1,4 +1,8 @@
 import { readFile, writeFile } from "node:fs/promises";
+import {
+  correlateTransferMoves,
+  type MoveFrameMeasurement,
+} from "./shopping-transfer-move-correlation";
 import { createHash } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import {
@@ -15,6 +19,7 @@ import {
   createWorkerCpuProfiler,
   selectWorkerDispatchWindow,
   type DiagnosticCpuProfile,
+  type MoveLifecycleRecord,
 } from "./shopping-transfer-diagnostics";
 import {
   restoreTransferFixture,
@@ -223,16 +228,10 @@ for (const profile of [
       const frame = (
         sample as
           | {
-              frame?: {
-                startEpoch?: number;
-                durationMs?: number;
+              frame?: MoveFrameMeasurement & {
                 markerDelayMs?: number;
                 commits?: Array<{ at: number; operationId?: string }>;
                 tracePath?: string;
-                correlation?: {
-                  input: { pid: number; ts: number };
-                  frame: { traceTs: number };
-                };
               };
             }
           | undefined
@@ -245,6 +244,21 @@ for (const profile of [
         start,
         end,
       );
+      const moveCorrelation = correlateTransferMoves(
+        diagnostics.moveLifecycle,
+        diagnostics.inputs,
+        frame,
+        selectWorkerDispatchWindow(
+          workerDiagnostics.events,
+          frame?.commits ?? [],
+          workerDiagnostics.handlerHook,
+        ),
+      );
+      if (frame)
+        Object.assign(frame, {
+          moveIds: moveCorrelation.moves.map((move) => move.moveId),
+          moveCorrelation,
+        });
       let cpuProfile;
       let workerCpuProfile;
       if (rawWorkerCpuProfile) {
@@ -386,6 +400,7 @@ for (const profile of [
           },
           diagnosticWindow: { startEpoch: start, endEpoch: end },
           diagnostics,
+          moveCorrelation,
           counts: {
             commits: diagnostics.commits.length,
             renders: diagnostics.commits.reduce(
@@ -459,6 +474,8 @@ for (const profile of [
         contentType: "application/json",
       });
       if (failure) throw failure;
+      expect(moveCorrelation.status).toBe("available");
+      expect(moveCorrelation.moves).toHaveLength(1);
       expect(diagnostics.rendererInjected).toBe(true);
       expect(diagnostics.commits.length).toBeGreaterThan(0);
       expect(workerDiagnostics.events.length).toBeGreaterThan(0);
@@ -1104,4 +1121,150 @@ test("@shopping-performance @shopping-transfer-worker-probe-contract @shopping-t
       );
     }),
   ).toBe(true);
+});
+
+function moveCorrelationFixture() {
+  const operationId = "actual-batch";
+  const lifecycle: MoveLifecycleRecord[] = [];
+  for (let index = 1; index <= 2; index++) {
+    const link = {
+      diagnosticToken: `actual-drag:${index}`,
+      draggedItemId: `item-${index}`,
+      sourceColumn: "candidate",
+      targetColumn: "execute",
+    };
+    for (const [phase, epochMs] of [
+      ["move-command-entry", 101 + index * 2],
+      ["plan-ready", 102 + index * 2],
+      ["queue-accepted", 103 + index * 2],
+      ["ui-apply-start", 150],
+      ["ui-apply-success", 155],
+    ] as const)
+      lifecycle.push({
+        ...link,
+        phase,
+        epochMs,
+        atMs: epochMs - 100,
+        ...(phase !== "move-command-entry" && phase !== "plan-ready"
+          ? { operationId, moveId: `${operationId}:move:${index}` }
+          : {}),
+      });
+  }
+  const inputs = [
+    { at: 101, type: "drop", trusted: true },
+    { at: 105, type: "drop", trusted: true },
+  ];
+  const worker = selectWorkerDispatchWindow(
+    [
+      {
+        at: 120,
+        stage: "handler-dispatch",
+        actualMessageEvent: true,
+        id: 9,
+        method: "shopping",
+        operationId,
+      },
+      { at: 145, stage: "reply-posted", id: 9 },
+    ],
+    [{ at: 140 }],
+    { status: "installed" },
+  );
+  const frame: MoveFrameMeasurement = {
+    measurementId: "test-sample",
+    startEpoch: 100,
+    domMs: 60,
+    operationId,
+    durationMs: 80,
+    correlation: {
+      input: { pid: 1, ts: 1000 },
+      dom: { pid: 1, ts: 61000 },
+      paint: { pid: 1, ts: 62000 },
+      drawFrame: { pid: 1, ts: 63000 },
+      frame: { epochMs: 180, traceTs: 81000, sessionId: 3 },
+    },
+  };
+  return { lifecycle, inputs, worker, frame };
+}
+
+test("@shopping-performance @shopping-transfer-move-correlation-contract preserves each actual move in a shared save batch", () => {
+  const fixture = moveCorrelationFixture();
+  const result = correlateTransferMoves(
+    fixture.lifecycle,
+    fixture.inputs,
+    fixture.frame,
+    fixture.worker,
+  );
+  expect(result.status).toBe("available");
+  expect(result.moves.map((move) => move.moveId)).toEqual([
+    "actual-batch:move:1",
+    "actual-batch:move:2",
+  ]);
+  expect(result.moves.map((move) => move.input.actualEvent?.at)).toEqual([
+    101, 105,
+  ]);
+  for (const [index, move] of result.moves.entries()) {
+    expect(move.operationId).toBe("actual-batch");
+    expect(move.input.commandEntry?.diagnosticToken).toBe(
+      `actual-drag:${index + 1}`,
+    );
+    expect(move.queueAccepted.moveId).toBe(move.moveId);
+    expect(move.uiApply.success?.moveId).toBe(move.moveId);
+    expect(move.worker.requestId).toBe(9);
+    expect(move.frame.sessionId).toBe(3);
+  }
+});
+
+for (const missing of [
+  "queue-accepted",
+  "move-command-entry",
+  "plan-ready",
+  "ui-apply-start",
+  "ui-apply-success",
+])
+  test(`@shopping-performance @shopping-transfer-move-correlation-contract rejects missing ${missing}`, () => {
+    const fixture = moveCorrelationFixture();
+    const result = correlateTransferMoves(
+      fixture.lifecycle.filter((record) => record.phase !== missing),
+      fixture.inputs,
+      fixture.frame,
+      fixture.worker,
+    );
+    expect(result.status).toBe("unavailable");
+    expect(result.moves).toEqual([]);
+  });
+
+test("@shopping-performance @shopping-transfer-move-correlation-contract rejects stale, duplicate and untrusted identity evidence", () => {
+  const fixture = moveCorrelationFixture();
+  for (const lifecycle of [
+    [...fixture.lifecycle, fixture.lifecycle[2]],
+    fixture.lifecycle.map((record) =>
+      record.phase === "ui-apply-success"
+        ? { ...record, operationId: "other-batch" }
+        : record,
+    ),
+  ])
+    expect(
+      correlateTransferMoves(
+        lifecycle,
+        fixture.inputs,
+        fixture.frame,
+        fixture.worker,
+      ).status,
+    ).toBe("unavailable");
+  expect(
+    correlateTransferMoves(
+      fixture.lifecycle,
+      fixture.inputs.map((input) => ({ ...input, trusted: false })),
+      fixture.frame,
+      fixture.worker,
+    ).status,
+  ).toBe("unavailable");
+  expect(
+    correlateTransferMoves(
+      fixture.lifecycle,
+      fixture.inputs,
+      { ...fixture.frame, operationId: "other-batch" },
+      fixture.worker,
+    ).status,
+  ).toBe("unavailable");
 });
