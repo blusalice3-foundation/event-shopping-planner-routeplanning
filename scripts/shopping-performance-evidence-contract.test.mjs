@@ -18,6 +18,7 @@ import {
   validateAcceptanceCriteriaMetadata,
   validateRunAcceptanceCriteriaMetadata,
   shoppingPerformanceThresholds,
+  dndSelectionRenderingPerformanceThresholds,
 } from "./shopping-performance-evidence-contract.mjs";
 test("fixed performance inventory retains mandatory 150/500 matrices and each expanded category", () => {
   assert.deepEqual(
@@ -78,18 +79,24 @@ test("an omitted single scenario preserves the original condition identity; cate
   );
 });
 
-test("current acceptance criteria are shared and immutable without changing the sample or p95 limits", () => {
+test("current criteria retain shopping budgets and explicitly revise only D&D budgets", () => {
   assert.equal(shoppingPerformanceCriteriaDate, "2026-10-25");
-  assert.equal(dndSelectionRenderingPerformanceCriteriaDate, "2026-10-24");
+  assert.equal(dndSelectionRenderingPerformanceCriteriaDate, "2026-10-26");
   assert.deepEqual(shoppingPerformanceThresholds, {
     minimumCount: 10,
     medianMs: 65,
     p95Ms: 100,
   });
   assert.ok(Object.isFrozen(shoppingPerformanceThresholds));
+  assert.deepEqual(dndSelectionRenderingPerformanceThresholds, {
+    minimumCount: 10,
+    medianMs: 150,
+    p95Ms: 150,
+  });
+  assert.ok(Object.isFrozen(dndSelectionRenderingPerformanceThresholds));
 });
 
-test("only trusted plan groups select 110ms criteria and retain completion sampling", () => {
+test("only trusted plan groups select 150ms criteria and retain completion sampling", () => {
   assert.deepEqual(Object.keys(performanceAcceptanceCriteriaByGroup), [
     "shopping",
     "range",
@@ -105,13 +112,13 @@ test("only trusted plan groups select 110ms criteria and retain completion sampl
     assert.equal(criteria.acceptanceScope, "dnd-selection-rendering");
     assert.equal(
       criteria.acceptanceCriteriaId,
-      "dnd-selection-rendering-110-110-2026-10-24",
+      "dnd-selection-rendering-150-150-2026-10-26",
     );
-    assert.equal(criteria.acceptanceCriteriaDate, "2026-10-24");
+    assert.equal(criteria.acceptanceCriteriaDate, "2026-10-26");
     assert.deepEqual(criteria.acceptanceThresholds, {
       minimumCount: 10,
-      medianMs: 110,
-      p95Ms: 110,
+      medianMs: 150,
+      p95Ms: 150,
     });
     assert.ok(Object.isFrozen(criteria));
     assert.ok(Object.isFrozen(criteria.acceptanceThresholds));
@@ -287,11 +294,11 @@ test("sampling profiles change only the requested repetition count and purpose",
       assert.equal(table[group].acceptanceThresholds.minimumCount, count);
       assert.equal(
         table[group].acceptanceThresholds.medianMs,
-        group === "shopping" ? 65 : 110,
+        group === "shopping" ? 65 : 150,
       );
       assert.equal(
         table[group].acceptanceThresholds.p95Ms,
-        group === "shopping" ? 100 : 110,
+        group === "shopping" ? 100 : 150,
       );
       assert.equal(
         expectedPerformanceCases(group).length,
@@ -327,4 +334,43 @@ test("sampling profiles change only the requested repetition count and purpose",
     () => resolvePerformanceProfile(undefined, { ESP_PERFORMANCE_PROFILE: "" }),
     /Unknown/,
   );
+});
+test("the 2026-10-26 D&D revision does not relabel historical110 or widen shopping criteria", () => {
+  for (const profile of ["pr", "completion"]) {
+    for (const group of ["range", "drag", "transfer"]) {
+      const current = performanceAcceptanceCriteriaForGroup(group, profile);
+      const historical = structuredClone(current);
+      historical.acceptanceCriteriaId =
+        "dnd-selection-rendering-110-110-2026-10-24";
+      historical.acceptanceCriteriaDate = "2026-10-24";
+      historical.acceptanceThresholds.medianMs = 110;
+      historical.acceptanceThresholds.p95Ms = 110;
+      assert.throws(
+        () =>
+          validateAcceptanceCriteriaMetadata(historical, group, { profile }),
+        /metadata/,
+      );
+      const mislabeled = structuredClone(current);
+      mislabeled.acceptanceThresholds.medianMs = 110;
+      mislabeled.acceptanceThresholds.p95Ms = 110;
+      assert.throws(
+        () =>
+          validateAcceptanceCriteriaMetadata(mislabeled, group, { profile }),
+        /acceptanceThresholds/,
+      );
+      assert.doesNotThrow(() =>
+        validateAcceptanceCriteriaMetadata(current, group, { profile }),
+      );
+    }
+    const shopping = structuredClone(
+      performanceAcceptanceCriteriaForGroup("shopping", profile),
+    );
+    shopping.acceptanceThresholds.medianMs = 150;
+    shopping.acceptanceThresholds.p95Ms = 150;
+    assert.throws(
+      () =>
+        validateAcceptanceCriteriaMetadata(shopping, "shopping", { profile }),
+      /acceptanceThresholds/,
+    );
+  }
 });

@@ -1,5 +1,19 @@
 # D&D・選択・描画プランの実装状況（2026-10-24）
 
+## 2026-10-26：対象3群を150msへ変更した後の状態
+
+最新ユーザー指定により、D&D計画に直接関連する `range`／`drag`／`transfer` の中央値・95%点をともに150.0ms以下へ変更した。shoppingは65.0ms／100ms、PR各2回／完了各10回、150／500品目のshopping16・range20・drag8・transfer100の全144ケース、530主指標・46保存補助、全操作・終了点・fixture・保存整合性・retry 0を維持する。1,500品目は通常の修正・必須受入対象外である。基準IDは `dnd-selection-rendering-150-150-2026-10-26`。旧50／55／65／110msの元値・当初合否・rawを保持し、150ms再判定は別記録に保存する。
+
+製品source be259は、Worker私有freezeのgeometry／ordinary分離、planShoppingMove内部だけのreadonly item clone省略、pickupの装飾を保つCSS限定drop opacity即時化、forced viewportの不要な親bbox取得の遅延を含む。一般API隔離、原子性・修復・optional field・確認・manualHallId、offset／anchor／initialBatch、既存のkey・focus・入力保持を維持する。150msの契約・文書変更と製品sourceの識別を分け、後日のsourceへ旧採取を付け替えない。
+
+be259製品の品質記録はunit2,381／integration930通過・既存88skip／Worker254、計3,565通過、foundation1,353通過・skip0。型・lint・encoding・test membership・architecture・DB互換・全体format・Release A buildも通過済みである（[品質ログ](D:/esp-dnd-audit-remediation-validation-20261025/completion10-20261026/lazy-be259e8-validation)）。これは150ms契約変更後の検証や正式全条件受入の代替ではない。
+
+Windows installed PWAのbe259 run `20261026T032753Z-d44cf835` は2操作ケース成功、[独立rawレビュー](D:/esp-dnd-audit-remediation-validation-20261025/completion10-20261026/pwa-passed-raw-independent-review/review.json)37確認・0失敗。自然pending、gate付き数量・メモ、同じe1 DOM・focus・caret、後発選択、保存順、全500品目と3順、reloadを確認した。gate付き機能診断を性能値へ混ぜず、physical touch・human feel・モニター走査の証明とはしない。
+
+旧110msのbe259通常runは、最新基準へのユーザー変更によりfunctional段階で中断した。shopping／range／drag／transferは全not-runであり、原run-resultの初期status failedは製品失敗の判定ではない。[中断sidecar](D:/esp-dnd-audit-remediation-validation-20261025/completion10-20261026/final-normal-be259e8-20261026T033140806Z-126ee514/user-criteria-change-interruption.json)とrawを保持する。新150msでの全条件通常runner・前後比較は未実施、実GitHub CIも未実施であり、P5・計画全体の完了は未認定である。過去bfffの4性能失敗、d467の1性能失敗と旧PWA失敗も履歴として残す。
+
+以下の回数・scope変更と旧実装記録は各時点の履歴である。回数2／10・1500除外は現行でも維持し、旧110msの時間基準は本節で150msへ上書きする。
+
 ## 2026-10-26の測定回数変更
 
 最新のユーザー指定により、性能の測定回数だけをPR確認 `pr` の各2回、実装完了判定 `completion` の各10回へ変更する。既定は `completion`。`npm run test:browser:pr`／`npm run test:browser:completion` と通常runnerの `--profile`、各性能群へ渡す `ESP_PERFORMANCE_PROFILE`、CIのPR／非PR選択を揃える。

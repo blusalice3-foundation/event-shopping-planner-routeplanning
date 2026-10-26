@@ -662,22 +662,24 @@ cleanなworktreeでpreviewを停止した後、`npm run test:release-a-rollback`
 
 2026-10-25のユーザー指定により、通常の `shopping` 受入は150／500品目の16条件です。1,500品目は通常利用の範疇ではないため修正対象外とし、既存の買い物8条件とbounded DOM 1件は `npm run test:shopping-large-list-diagnostic:run` による任意診断として保持します。通常runner／CIの必須判定や未完了判定に使わず、過去のraw・当初合否はそのまま残します。
 
-2026-10-24のユーザー指定により、D&D・選択・描画改善プランに直接関連する動作だけ、中央値・95%点ともに110.0ms以下を通過基準とします。変更・追加する操作の内容から、次の性能試験群を選んでください。
+2026-10-26の最新ユーザー指定により、D&D・選択・描画改善プランに直接関連する動作だけ、中央値・95%点ともに150.0ms以下を通過基準とします。変更・追加する操作の内容から、次の性能試験群を選んでください。
 
 | 性能試験群                    | 対象                                |      中央値 |       95%点 |        測定回数 |
 | ----------------------------- | ----------------------------------- | ----------: | ----------: | --------------: |
-| `range` / `drag` / `transfer` | D&D・範囲選択・描画・移動後の次操作 | 110.0ms以下 | 110.0ms以下 | PR各2／完了各10 |
+| `range` / `drag` / `transfer` | D&D・範囲選択・描画・移動後の次操作 | 150.0ms以下 | 150.0ms以下 | PR各2／完了各10 |
 | `shopping`                    | 通常の買い物6操作                   |  65.0ms以下 | 100.0ms以下 | PR各2／完了各10 |
 
 通常6操作など本プランの対象外の動作は、計画書に回帰確認として掲載されている場合も従来の65.0ms／100ms基準を維持します。保存完了時間は操作反応と分けた補助指標です。
 
-2026-10-26のユーザー指定により、測定回数だけをPR確認用の各2回と実装完了判定用の各10回へ変更します。profileは `pr`／`completion`、環境変数は `ESP_PERFORMANCE_PROFILE`、通常runnerのCLIは `--profile pr|completion` です。指定なしは `completion`。PRの2回が通過しても、実装完了とは判定しません。
+2026-10-26の先行ユーザー指定による測定回数は、PR確認用の各2回と実装完了判定用の各10回を維持します。profileは `pr`／`completion`、環境変数は `ESP_PERFORMANCE_PROFILE`、通常runnerのCLIは `--profile pr|completion` です。指定なしは `completion`。PRの2回が通過しても、実装完了とは判定しません。
 
 - `npm run test:browser:pr`: PR確認。全条件・全操作を各2回で確認します。
 - `npm run test:browser:completion`: 実装完了判定。全条件・全操作を各10回で確認します。
 - `npm run test:browser`: 環境変数でprofileを選択し、未指定なら10回です。CIはPR eventで `pr`、非PRで `completion` を指定します。
 
 判定には[性能基準の共通定義](scripts/shopping-performance-evidence-contract.mjs)の `performanceAcceptanceCriteriaForGroup(group, profile)` を使います。`samplingPolicyId` と `samplingProfile` に用途・回数・完了判定へ利用可能かを記録し、前後比較も同じprofileで揃えてください。必須条件はshopping16・range20・drag8・transfer100、時間基準、入力・DOM反映・実フレーム・次操作の終了点、fixture、ウォームアップ、保存の原子性・整合性検証、retry 0を維持します。過去20回のraw・当初合否・中断runは保持し、新しい回数のrunは別記録にします。部分実行・診断・PR2回の通過を、実装完了の全条件合格へ流用しません。
+
+対象3群の現行基準は `dnd-selection-rendering-150-150-2026-10-26` で識別します。shopping65／100ms、全条件・操作・終了点・保存整合性は維持します。過去の50／55／65／110msのraw・当初合否・元artifactと基準変更による中断runは保持し、150ms再判定は別記録にします。旧110msの途中中断や新150msへの配線更新を、全条件通過・計画完了の証拠にはしません。
 
 適用範囲の詳細は[プラン限定の性能基準](docs/dnd-selection-rendering-performance-criteria-20261024.md)、作業時のルールは[AGENTS.md](AGENTS.md)を参照してください。
 
