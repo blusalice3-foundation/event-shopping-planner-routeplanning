@@ -3296,7 +3296,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
             {/* スペースグループヘッダー */}
             <div
-              className={`sticky top-0 z-20 rounded-lg border-l-4 border-l-[#9CA3AF] select-none cursor-pointer ${
+              className={`esp-shopping-drag-header-opacity sticky top-0 z-20 rounded-lg border-l-4 border-l-[#9CA3AF] select-none cursor-pointer ${
                 blockColor?.light || "bg-slate-100 dark:bg-slate-800"
               } hover:brightness-95 dark:hover:brightness-110 transition-all ${
                 layoutMode === "smartphone" &&
@@ -4101,7 +4101,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                       onTouchCancel={
                         !isInspecting ? handleItemTouchCancel : undefined
                       }
-                      className="relative"
+                      className="transition-opacity duration-200 esp-shopping-drag-item-opacity relative"
                       data-is-selected={selectedItemIds.has(item.id)}
                     >
                       <ShoppingItemCard
@@ -4907,7 +4907,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                   onTouchCancel={
                     !isInspecting ? handleItemTouchCancel : undefined
                   }
-                  className={`relative ${
+                  className={`transition-opacity duration-200 esp-shopping-drag-item-opacity relative ${
                     group.priority === "highest"
                       ? "bg-red-50/30 dark:bg-red-950/20"
                       : group.priority === "priority"
@@ -5233,7 +5233,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         onTouchMove={!isInspecting ? handleItemTouchMove : undefined}
         onTouchEnd={!isInspecting ? handleItemTouchEnd : undefined}
         onTouchCancel={!isInspecting ? handleItemTouchCancel : undefined}
-        className="relative"
+        className="transition-opacity duration-200 esp-shopping-drag-item-opacity relative"
         data-is-selected={selectedItemIds.has(item.id)}
       >
         <ShoppingItemCard

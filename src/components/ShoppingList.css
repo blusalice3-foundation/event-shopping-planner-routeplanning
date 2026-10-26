@@ -117,3 +117,26 @@
     filter: opacity(1);
   }
 }
+
+/* Animate pickup feedback only; removing the drag marker restores opacity at once. */
+.esp-shopping-drag-item-opacity:not(.opacity-40) {
+  transition-duration: 0s;
+}
+
+.esp-shopping-drag-item-opacity.opacity-40 {
+  transition-duration: 200ms;
+}
+
+/* The final opacity entry overrides all without changing hover/filter timing. */
+.esp-shopping-drag-header-opacity.transition-all {
+  transition-property: all, opacity;
+  transition-duration:
+    var(--tw-duration, var(--default-transition-duration, 150ms)),
+    0s;
+}
+
+.esp-shopping-drag-header-opacity.transition-all.opacity-40 {
+  transition-duration:
+    var(--tw-duration, var(--default-transition-duration, 150ms)),
+    var(--tw-duration, var(--default-transition-duration, 150ms));
+}
