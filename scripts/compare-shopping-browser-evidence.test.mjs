@@ -1,9 +1,17 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import {
+  HISTORICAL_POLICY_TRANSITION,
+  proveKnownPolicyTransition,
+  loadBeforePolicyBridge,
+  expectedHistoricalInventory,
+} from "./browser-evidence-before-policy.mjs";
 import {
   comparableFixtureIdentity,
   comparableMetrics,
@@ -126,10 +134,22 @@ async function partialShoppingRun(directory, phase, base = 10, options = {}) {
     runId,
     instrumentVersion: "shopping-rendering-v3",
     ...performanceSamplingMetadata(),
-    acceptanceCriteriaByGroup: performanceAcceptanceCriteriaByGroup,
-    instrumentPatch: { sha256: (options.instrumentHash ?? "a").repeat(64) },
-    fixtureSources: { sha256: "b".repeat(64) },
-    productCommit: (phase === "before" ? "a" : "b").repeat(40),
+    acceptanceCriteriaByGroup:
+      options.criteria ?? performanceAcceptanceCriteriaByGroup,
+    instrumentPatch: options.instrumentPatch ?? {
+      sha256: (options.instrumentHash ?? "a").repeat(64),
+    },
+    fixtureSources: options.fixtureSources ?? { sha256: "b".repeat(64) },
+    productCommit:
+      options.productCommit ?? (phase === "before" ? "a" : "b").repeat(40),
+    ...(options.finishedAt
+      ? {
+          status:
+            options.producerStatus ??
+            (phase === "before" ? "failed" : "passed"),
+          finishedAt: options.finishedAt,
+        }
+      : {}),
     sourceState: "clean",
     sourceDiffSha256: createHash("sha256").update("").digest("hex"),
     releaseCapability: {
@@ -139,8 +159,10 @@ async function partialShoppingRun(directory, phase, base = 10, options = {}) {
       releaseChannel: "release-a",
       legacyLocalStorageCleanup: "forced-off",
       sourceState: "clean",
-      sourceSha: (phase === "before" ? "a" : "b").repeat(40),
-      buildId: (phase === "before" ? "a" : "b").repeat(40),
+      sourceSha:
+        options.productCommit ?? (phase === "before" ? "a" : "b").repeat(40),
+      buildId:
+        options.productCommit ?? (phase === "before" ? "a" : "b").repeat(40),
     },
     releaseCapabilitySha256: "c".repeat(64),
     environment: {
@@ -485,7 +507,13 @@ test("comparison requires actual transfer fixture identities without inventing m
   assert.equal(comparableFixtureIdentity(shopping(), "shopping"), null);
 });
 
-async function addRangeReport(runRoot, phase, values) {
+async function addRangeReport(
+  runRoot,
+  phase,
+  values,
+  identityFactory = evidenceIdentity,
+  producerStatus = "passed",
+) {
   const operations = [
     "firstEndpoint",
     "secondEndpoint",
@@ -504,18 +532,18 @@ async function addRangeReport(runRoot, phase, values) {
             tests: [
               {
                 expectedStatus: "passed",
-                status: "expected",
+                status: producerStatus === "passed" ? "expected" : "unexpected",
                 results: [
                   {
                     retry: 0,
-                    status: "passed",
+                    status: producerStatus,
                     attachments: [
                       {
                         name: "edit-execute-range-selection-timings",
                         contentType: "application/json",
                         body: Buffer.from(
                           JSON.stringify({
-                            ...evidenceIdentity("range", "response", {
+                            ...identityFactory("range", "response", {
                               ESP_EVIDENCE_PHASE: phase,
                               ESP_EVIDENCE_RUN_ID: `${phase}-run`,
                             }),
@@ -560,18 +588,18 @@ async function addRangeReport(runRoot, phase, values) {
     "utf8",
   );
 }
-test("mixed runs independently judge shopping at 65/100 and range at inclusive 110/110 while retaining historical metadata", async (t) => {
+test("mixed runs independently judge shopping at 65/100 and range at inclusive 150/150 while retaining historical metadata", async (t) => {
   const directory = await mkdtemp(
     path.join(os.tmpdir(), "esp scoped compare "),
   );
   t.after(() => rm(directory, { recursive: true, force: true }));
   const beforeRoot = await partialShoppingRun(directory, "before", 70);
   const afterRoot = await partialShoppingRun(directory, "after", 70);
-  await addRangeReport(beforeRoot, "before", Array(10).fill(110));
+  await addRangeReport(beforeRoot, "before", Array(10).fill(150));
   await addRangeReport(afterRoot, "after", [
     ...Array(8).fill(100),
-    110.001,
-    110.001,
+    150.001,
+    150.001,
   ]);
   const file = path.join(afterRoot, "run-result.json");
   const run = JSON.parse(await readFile(file, "utf8"));
@@ -589,8 +617,8 @@ test("mixed runs independently judge shopping at 65/100 and range at inclusive 1
   assert.equal(rangeRow.acceptanceScope, "dnd-selection-rendering");
   assert.deepEqual(rangeRow.acceptanceThresholds, {
     minimumCount: 10,
-    medianMs: 110,
-    p95Ms: 110,
+    medianMs: 150,
+    p95Ms: 150,
   });
   assert.deepEqual(
     result.before.recordedAcceptanceCriteria.acceptanceCriteriaByGroup,
@@ -633,316 +661,339 @@ test("comparison refuses a present but incomplete criteria table", async (t) => 
   assert.equal(result.rows.length, 0);
 });
 
-test("comparison retains a file-verified unobservable baseline without creating a numeric frame or borrowing after acceptance", async (t) => {
-  const directory = await mkdtemp(
-    path.join(os.tmpdir(), "esp observed baseline compare "),
-  );
-  t.after(() => rm(directory, { recursive: true, force: true }));
-  const beforeRoot = await partialShoppingRun(directory, "before", 80);
-  const afterRoot = await partialShoppingRun(directory, "after", 10);
-  const metadataPath = path.join(beforeRoot, "run-result.json");
-  const metadata = JSON.parse(await readFile(metadataPath, "utf8"));
-  metadata.productCommit = "a".repeat(40);
-  await writeFile(metadataPath, JSON.stringify(metadata), "utf8");
-  const evidenceRoot = path.join(
-    beforeRoot,
-    "transfer",
-    "test-results",
-    "observed",
-  );
-  await mkdir(evidenceRoot, { recursive: true });
-  const png = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aDLcAAAAASUVORK5CYII=",
-    "base64",
-  );
-  const put = async (stem, name, bytes) => {
-    const filename = path.join(evidenceRoot, `${stem}-${name}`);
-    await writeFile(filename, bytes);
-    return {
-      [`${name}Path`]: filename,
-      [`${name}Sha256`]: createHash("sha256").update(bytes).digest("hex"),
+for (const historical of [false, true])
+  test(`${historical ? "explicit110-to150 bridge: " : ""}comparison retains a file-verified unobservable baseline without creating a numeric frame or borrowing after acceptance`, async (t) => {
+    const historicalFixture = historical
+      ? await historicalComparisonFixture(t)
+      : null;
+    const directory =
+      historicalFixture?.directory ??
+      (await mkdtemp(path.join(os.tmpdir(), "esp observed baseline compare ")));
+    if (!historicalFixture)
+      t.after(() => rm(directory, { recursive: true, force: true }));
+    const beforeRoot =
+      historicalFixture?.beforeRoot ??
+      (await partialShoppingRun(directory, "before", 80));
+    const afterRoot =
+      historicalFixture?.afterRoot ??
+      (await partialShoppingRun(directory, "after", 10));
+    const identityFactory =
+      historicalFixture?.legacyVerifier.evidenceIdentity ?? evidenceIdentity;
+    const beforePolicyRoot = historicalFixture?.root;
+    const metadataPath = path.join(beforeRoot, "run-result.json");
+    const metadata = JSON.parse(await readFile(metadataPath, "utf8"));
+    await writeFile(metadataPath, JSON.stringify(metadata), "utf8");
+    const evidenceRoot = path.join(
+      beforeRoot,
+      "transfer",
+      "test-results",
+      "observed",
+    );
+    await mkdir(evidenceRoot, { recursive: true });
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aDLcAAAAASUVORK5CYII=",
+      "base64",
+    );
+    const put = async (stem, name, bytes) => {
+      const filename = path.join(evidenceRoot, `${stem}-${name}`);
+      await writeFile(filename, bytes);
+      return {
+        [`${name}Path`]: filename,
+        [`${name}Sha256`]: createHash("sha256").update(bytes).digest("hex"),
+      };
     };
-  };
-  const sharedImage = await put("shared", "frame", png);
-  const image = (name) => ({
-    [`${name}Path`]: sharedImage.framePath,
-    [`${name}Sha256`]: sharedImage.frameSha256,
-  });
-  const allIds = Array.from(
-    { length: 500 },
-    (_, index) => `${index < 250 ? "c" : "e"}${index % 250}`,
-  );
-  const executeIds = allIds.filter((id) => id.startsWith("e"));
-  const effectiveIds = ["c1", "c2", "c3"];
-  const selectionPreparation = {
-    requestedIds: [...effectiveIds],
-    requestedDisplayOrder: [...effectiveIds],
-    mountedCheckedIds: [...effectiveIds],
-    exactSelectionVerified: true,
-    requestedCount: 3,
-    effectiveCount: 3,
-    headerText: "Candidate (3件)",
-    checkboxChecks: effectiveIds.map((targetId) => ({
-      targetId,
-      checked: true,
-      scrollY: 0,
-      rect: { x: 10, y: 10, width: 100, height: 100 },
-    })),
-  };
-  const durableProof = {
-    fullItemContentPreserved: true,
-    actualItemOrder: [...allIds],
-    actualExecuteIds: [...executeIds, ...effectiveIds],
-    expectedExecuteMembership: [...executeIds, ...effectiveIds],
-    selectionPreparation,
-    candidateOrderProof: null,
-    mergeTailProof: [],
-  };
-  const fixtures = [],
-    observations = [];
-  for (let sampleIndex = 1; sampleIndex <= 10; sampleIndex++) {
-    const measurementId = `original-frame-${sampleIndex}`,
-      fixtureHash = "b".repeat(64),
-      startEpoch = 100000 + sampleIndex * 1000;
-    const inputMarker = { pid: 17, ts: sampleIndex * 10000 },
-      domMarker = { pid: 17, ts: sampleIndex * 10000 + 42000 };
-    const rects = (role) =>
-      effectiveIds.map((itemId, index) => ({
-        itemId,
-        x: role === "destination-card" ? 200 : 10,
-        y: 20 + index * 100,
-        width: 100,
-        height: role === "destination-card" && index === 2 ? 16.15625 : 100,
-        role,
-      }));
-    const evidence = {
-      postInput: true,
-      trusted: true,
-      matched: true,
-      startEpoch,
-      domMs: 42,
-      markerDelayMs: 1,
-      commits: [{ at: startEpoch + 50, stores: ["eventLists"], writes: [] }],
-      sourceRects: rects("source-gap"),
-      targetRects: rects("destination-card"),
-      captures: [
-        {
-          index: 0,
-          ...sharedImage,
-          sessionId: sampleIndex,
-          acknowledged: true,
-          metadata: { timestamp: (startEpoch + 100) / 1000 },
-        },
-      ],
-      inputMarkerCount: 1,
-      inputMarker,
-      domMarker,
-      ...(await put(
-        measurementId,
-        "trace",
-        JSON.stringify({
-          traceEvents: [
-            { name: `${measurementId}:input`, ...inputMarker },
-            { name: `${measurementId}:dom`, ...domMarker },
-          ],
-        }),
-      )),
-      ...(await put(
-        measurementId,
-        "failedObservation",
-        JSON.stringify({
-          probe: {
-            id: "c1",
-            trusted: true,
-            matched: true,
-            startEpoch,
-            domMs: 42,
-            markerDelayMs: 1,
+    const sharedImage = await put("shared", "frame", png);
+    const image = (name) => ({
+      [`${name}Path`]: sharedImage.framePath,
+      [`${name}Sha256`]: sharedImage.frameSha256,
+    });
+    const allIds = Array.from(
+      { length: 500 },
+      (_, index) => `${index < 250 ? "c" : "e"}${index % 250}`,
+    );
+    const executeIds = allIds.filter((id) => id.startsWith("e"));
+    const effectiveIds = ["c1", "c2", "c3"];
+    const selectionPreparation = {
+      requestedIds: [...effectiveIds],
+      requestedDisplayOrder: [...effectiveIds],
+      mountedCheckedIds: [...effectiveIds],
+      exactSelectionVerified: true,
+      requestedCount: 3,
+      effectiveCount: 3,
+      headerText: "Candidate (3件)",
+      checkboxChecks: effectiveIds.map((targetId) => ({
+        targetId,
+        checked: true,
+        scrollY: 0,
+        rect: { x: 10, y: 10, width: 100, height: 100 },
+      })),
+    };
+    const durableProof = {
+      fullItemContentPreserved: true,
+      actualItemOrder: [...allIds],
+      actualExecuteIds: [...executeIds, ...effectiveIds],
+      expectedExecuteMembership: [...executeIds, ...effectiveIds],
+      selectionPreparation,
+      candidateOrderProof: null,
+      mergeTailProof: [],
+    };
+    const fixtures = [],
+      observations = [];
+    for (let sampleIndex = 1; sampleIndex <= 10; sampleIndex++) {
+      const measurementId = `original-frame-${sampleIndex}`,
+        fixtureHash = "b".repeat(64),
+        startEpoch = 100000 + sampleIndex * 1000;
+      const inputMarker = { pid: 17, ts: sampleIndex * 10000 },
+        domMarker = { pid: 17, ts: sampleIndex * 10000 + 42000 };
+      const rects = (role) =>
+        effectiveIds.map((itemId, index) => ({
+          itemId,
+          x: role === "destination-card" ? 200 : 10,
+          y: 20 + index * 100,
+          width: 100,
+          height: role === "destination-card" && index === 2 ? 16.15625 : 100,
+          role,
+        }));
+      const evidence = {
+        postInput: true,
+        trusted: true,
+        matched: true,
+        startEpoch,
+        domMs: 42,
+        markerDelayMs: 1,
+        commits: [{ at: startEpoch + 50, stores: ["eventLists"], writes: [] }],
+        sourceRects: rects("source-gap"),
+        targetRects: rects("destination-card"),
+        captures: [
+          {
+            index: 0,
+            ...sharedImage,
+            sessionId: sampleIndex,
+            acknowledged: true,
+            metadata: { timestamp: (startEpoch + 100) / 1000 },
           },
-          columns: [{ column: "execute", ids: [...effectiveIds] }],
-        }),
-      )),
-      ...image("baseline"),
-      ...image("failureScreenshot"),
-      ...(await put(
-        measurementId,
-        "failureDom",
-        "- document: original failed frame endpoint\n",
-      )),
-      durableProof,
-      scenarioEvidence: { selectionPreparation },
-      expectedTransferredIds: [...effectiveIds],
-      guard: {
-        itemId: "c3",
-        actualHeight: 16.15625,
-        minimumHeightExclusive: 20,
-      },
-    };
-    fixtures.push({
-      index: sampleIndex,
-      measurementId,
-      fixtureHash,
-      initialCount: 500,
-      isolation: "new-browser-context-per-sample",
-      baselineItemOrder: [...allIds],
-      baselineExecuteIds: [...executeIds],
-    });
-    observations.push({
-      sampleIndex,
-      measurementId,
-      fixtureHash,
-      effectiveIds: [...effectiveIds],
-      outcome: "endpoint-unobservable",
-      failure: {
-        code: "identity-clipped",
-        message:
-          "The third actual moved identity was clipped below the unchanged 20px guard",
-        evidence,
-      },
-    });
-  }
-  const artifact = {
-    ...evidenceIdentity("transfer", "frame", {
-      ESP_EVIDENCE_PHASE: "before",
-      ESP_EVIDENCE_RUN_ID: metadata.runId,
-    }),
-    condition: {
-      count: 500,
-      input: "native",
-      grouped: true,
-      load: "light",
-      direction: "candidate-to-execute",
-      scenario: "range",
-    },
-    baselineComparisonObservation: {
-      phase: "before",
-      sourceCommit: metadata.productCommit,
-      sourceState: "clean",
-      referenceProductCommit: "200cd7564772a17e2264907ae22e9a93ad30f5dc",
-      sourceTree: "4155d4dc250e69b16be9a0455bd99a208b9f8d93",
-      publicTree: "90071a462092c45bc3ae11df5e696a053fc8a1ed",
-    },
-    fixtures,
-    baselineFrameObservations: observations,
-    environment: browserEnvironment,
-    errors: [],
-    postconditionErrors: [],
-    metrics: {
-      frame: {
-        raw: [],
-        samples: [],
-        summary: { count: 0, medianMs: null, p95Ms: null },
-      },
-    },
-    failure:
-      "Original frame endpoint unobservable in all original profile attempts; no timing was substituted",
-  };
-  const artifactPath = path.join(evidenceRoot, "artifact.json");
-  await writeFile(artifactPath, JSON.stringify(artifact), "utf8");
-  const originalBytes = await readFile(artifactPath);
-  await writeFile(
-    path.join(beforeRoot, "transfer", "report.json"),
-    JSON.stringify({
-      errors: [],
-      config: { workers: 1, projects: [{ retries: 0 }] },
-      suites: [
-        {
-          specs: [
-            {
-              file: "shopping-transfer-accepted.performance.spec.ts",
-              title: "original range frame",
-              tests: [
-                {
-                  expectedStatus: "passed",
-                  results: [
-                    {
-                      retry: 0,
-                      status: "failed",
-                      attachments: [
-                        {
-                          name: "shopping-transfer-rendering",
-                          contentType: "application/json",
-                          path: artifactPath,
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
+        ],
+        inputMarkerCount: 1,
+        inputMarker,
+        domMarker,
+        ...(await put(
+          measurementId,
+          "trace",
+          JSON.stringify({
+            traceEvents: [
+              { name: `${measurementId}:input`, ...inputMarker },
+              { name: `${measurementId}:dom`, ...domMarker },
+            ],
+          }),
+        )),
+        ...(await put(
+          measurementId,
+          "failedObservation",
+          JSON.stringify({
+            probe: {
+              id: "c1",
+              trusted: true,
+              matched: true,
+              startEpoch,
+              domMs: 42,
+              markerDelayMs: 1,
             },
-          ],
+            columns: [{ column: "execute", ids: [...effectiveIds] }],
+          }),
+        )),
+        ...image("baseline"),
+        ...image("failureScreenshot"),
+        ...(await put(
+          measurementId,
+          "failureDom",
+          "- document: original failed frame endpoint\n",
+        )),
+        durableProof,
+        scenarioEvidence: { selectionPreparation },
+        expectedTransferredIds: [...effectiveIds],
+        guard: {
+          itemId: "c3",
+          actualHeight: 16.15625,
+          minimumHeightExclusive: 20,
         },
-      ],
-    }),
-    "utf8",
-  );
-  const { exitCode, result } = await compareBrowserEvidence({
-    beforeRoot,
-    afterRoot,
+      };
+      fixtures.push({
+        index: sampleIndex,
+        measurementId,
+        fixtureHash,
+        initialCount: 500,
+        isolation: "new-browser-context-per-sample",
+        baselineItemOrder: [...allIds],
+        baselineExecuteIds: [...executeIds],
+      });
+      observations.push({
+        sampleIndex,
+        measurementId,
+        fixtureHash,
+        effectiveIds: [...effectiveIds],
+        outcome: "endpoint-unobservable",
+        failure: {
+          code: "identity-clipped",
+          message:
+            "The third actual moved identity was clipped below the unchanged 20px guard",
+          evidence,
+        },
+      });
+    }
+    const artifact = {
+      ...identityFactory("transfer", "frame", {
+        ESP_EVIDENCE_PHASE: "before",
+        ESP_EVIDENCE_RUN_ID: metadata.runId,
+      }),
+      condition: {
+        count: 500,
+        input: "native",
+        grouped: true,
+        load: "light",
+        direction: "candidate-to-execute",
+        scenario: "range",
+      },
+      baselineComparisonObservation: {
+        phase: "before",
+        sourceCommit: metadata.productCommit,
+        sourceState: "clean",
+        referenceProductCommit: "200cd7564772a17e2264907ae22e9a93ad30f5dc",
+        sourceTree: "4155d4dc250e69b16be9a0455bd99a208b9f8d93",
+        publicTree: "90071a462092c45bc3ae11df5e696a053fc8a1ed",
+      },
+      fixtures,
+      baselineFrameObservations: observations,
+      environment: browserEnvironment,
+      errors: [],
+      postconditionErrors: [],
+      metrics: {
+        frame: {
+          raw: [],
+          samples: [],
+          summary: { count: 0, medianMs: null, p95Ms: null },
+        },
+      },
+      failure:
+        "Original frame endpoint unobservable in all original profile attempts; no timing was substituted",
+    };
+    const artifactPath = path.join(evidenceRoot, "artifact.json");
+    await writeFile(artifactPath, JSON.stringify(artifact), "utf8");
+    const originalBytes = await readFile(artifactPath);
+    await writeFile(
+      path.join(beforeRoot, "transfer", "report.json"),
+      JSON.stringify({
+        errors: [],
+        config: { workers: 1, projects: [{ retries: 0 }] },
+        suites: [
+          {
+            specs: [
+              {
+                file: "shopping-transfer-accepted.performance.spec.ts",
+                title: "original range frame",
+                tests: [
+                  {
+                    expectedStatus: "passed",
+                    results: [
+                      {
+                        retry: 0,
+                        status: "failed",
+                        attachments: [
+                          {
+                            name: "shopping-transfer-rendering",
+                            contentType: "application/json",
+                            path: artifactPath,
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+      "utf8",
+    );
+    const { exitCode, result } = await compareBrowserEvidence({
+      beforeRoot,
+      afterRoot,
+      beforePolicyRoot,
+    });
+    const row = result.rows.find(
+      (entry) =>
+        entry.group === "transfer" &&
+        entry.measurementKind === "frame" &&
+        entry.condition.scenario === "range" &&
+        entry.condition.input === "native" &&
+        entry.condition.direction === "candidate-to-execute",
+    );
+    assert.equal(exitCode, 1);
+    assert.equal(result.status, "incomplete");
+    assert.equal(row.status, "uncomparable");
+    assert.equal(row.beforeAbsolute, "unobservable");
+    if (historical) {
+      assert.equal(row.beforeOriginalAbsolute, "unobservable");
+      assert.equal(row.beforeReevaluatedAbsolute, "unobservable");
+      assert.equal(row.beforeFunctionalStatus, "unobservable");
+      assert.equal(row.beforeOriginalProducerTestStatus, "failed");
+    }
+    assert.equal(row.afterAbsolute, "missing");
+    assert.equal(row.before, null);
+    assert.equal(row.after, null);
+    assert.equal(row.deltaMs, null);
+    assert.deepEqual(row.beforeObservation, {
+      attempted: 10,
+      completedCount: 0,
+      unobservableCount: 10,
+      numericTimingAvailable: false,
+    });
+    assert.equal(result.coverage.baselineUnobservable, 1);
+    assert.equal(result.before.baselineFrameObservations.length, 1);
+    assert.equal(
+      result.before.baselineFrameObservations[0].observations.every(
+        (entry) => !Object.hasOwn(entry, "durationMs"),
+      ),
+      true,
+    );
+    assert.equal(
+      result.before.errors.some((error) =>
+        error.includes("original range frame:"),
+      ),
+      false,
+    );
+    assert.ok(
+      Object.keys(result.before.sourceHashes).some((name) =>
+        name.endsWith("original-frame-10-trace"),
+      ),
+    );
+    const shoppingRow = result.rows.find(
+      (entry) => entry.group === "shopping" && entry.metric === "ui",
+    );
+    assert.equal(shoppingRow.beforeAbsolute, "failed");
+    assert.equal(shoppingRow.afterAbsolute, "passed");
+    assert.equal(shoppingRow.status, "compared");
+    assert.deepEqual(await readFile(artifactPath), originalBytes);
+    const reportPath = path.join(beforeRoot, "transfer", "report.json");
+    const contradictoryReport = JSON.parse(await readFile(reportPath, "utf8"));
+    contradictoryReport.suites[0].specs[0].tests[0].results[0].status =
+      "passed";
+    await writeFile(reportPath, JSON.stringify(contradictoryReport), "utf8");
+    const rejected = await compareBrowserEvidence({
+      beforeRoot,
+      afterRoot,
+      beforePolicyRoot,
+    });
+    assert.equal(rejected.exitCode, 1);
+    assert.equal(rejected.result.coverage.baselineUnobservable, 0);
+    assert.equal(rejected.result.before.baselineFrameObservations.length, 0);
+    assert.ok(
+      rejected.result.before.errors.some((error) =>
+        error.includes("failed producer result"),
+      ),
+    );
+    assert.deepEqual(await readFile(artifactPath), originalBytes);
   });
-  const row = result.rows.find(
-    (entry) =>
-      entry.group === "transfer" &&
-      entry.measurementKind === "frame" &&
-      entry.condition.scenario === "range" &&
-      entry.condition.input === "native" &&
-      entry.condition.direction === "candidate-to-execute",
-  );
-  assert.equal(exitCode, 1);
-  assert.equal(result.status, "incomplete");
-  assert.equal(row.status, "uncomparable");
-  assert.equal(row.beforeAbsolute, "unobservable");
-  assert.equal(row.afterAbsolute, "missing");
-  assert.equal(row.before, null);
-  assert.equal(row.after, null);
-  assert.equal(row.deltaMs, null);
-  assert.deepEqual(row.beforeObservation, {
-    attempted: 10,
-    completedCount: 0,
-    unobservableCount: 10,
-    numericTimingAvailable: false,
-  });
-  assert.equal(result.coverage.baselineUnobservable, 1);
-  assert.equal(result.before.baselineFrameObservations.length, 1);
-  assert.equal(
-    result.before.baselineFrameObservations[0].observations.every(
-      (entry) => !Object.hasOwn(entry, "durationMs"),
-    ),
-    true,
-  );
-  assert.equal(
-    result.before.errors.some((error) =>
-      error.includes("original range frame:"),
-    ),
-    false,
-  );
-  assert.ok(
-    Object.keys(result.before.sourceHashes).some((name) =>
-      name.endsWith("original-frame-10-trace"),
-    ),
-  );
-  const shoppingRow = result.rows.find(
-    (entry) => entry.group === "shopping" && entry.metric === "ui",
-  );
-  assert.equal(shoppingRow.beforeAbsolute, "failed");
-  assert.equal(shoppingRow.afterAbsolute, "passed");
-  assert.equal(shoppingRow.status, "compared");
-  assert.deepEqual(await readFile(artifactPath), originalBytes);
-  const reportPath = path.join(beforeRoot, "transfer", "report.json");
-  const contradictoryReport = JSON.parse(await readFile(reportPath, "utf8"));
-  contradictoryReport.suites[0].specs[0].tests[0].results[0].status = "passed";
-  await writeFile(reportPath, JSON.stringify(contradictoryReport), "utf8");
-  const rejected = await compareBrowserEvidence({ beforeRoot, afterRoot });
-  assert.equal(rejected.exitCode, 1);
-  assert.equal(rejected.result.coverage.baselineUnobservable, 0);
-  assert.equal(rejected.result.before.baselineFrameObservations.length, 0);
-  assert.ok(
-    rejected.result.before.errors.some((error) =>
-      error.includes("failed producer result"),
-    ),
-  );
-  assert.deepEqual(await readFile(artifactPath), originalBytes);
-});
 
 test("normal and censored comparison reporting retains original partial functional failure identities", () => {
   const artifact = {
@@ -1148,5 +1199,343 @@ test("v3 comparison cannot hide forged sample thresholds by deleting time criter
   assert.throws(
     () => comparableMetrics(data, "shopping"),
     /acceptanceScope metadata/,
+  );
+});
+function historicalPolicyBytes(current) {
+  const text = current
+    .toString("utf8")
+    .replace(
+      "// D&D budgets changed on 2026-10-26; shopping budgets and workload conditions are unchanged.\n// Sampling remains PR2/completion10 under its separate 2026-10-26 policy.\n",
+      "// Time budgets and workload conditions are unchanged. Sampling changed on 2026-10-26.\n",
+    )
+    .replace(
+      'export const dndSelectionRenderingPerformanceCriteriaDate = "2026-10-26";',
+      'export const dndSelectionRenderingPerformanceCriteriaDate = "2026-10-24";',
+    )
+    .replace(
+      "  medianMs: 150,\n  p95Ms: 150,",
+      "  medianMs: 110,\n  p95Ms: 110,",
+    )
+    .replace(
+      'acceptanceCriteriaId: "dnd-selection-rendering-150-150-2026-10-26",',
+      'acceptanceCriteriaId: "dnd-selection-rendering-110-110-2026-10-24",',
+    );
+  const bytes = Buffer.from(text, "utf8");
+  assert.equal(
+    createHash("sha256").update(bytes).digest("hex"),
+    HISTORICAL_POLICY_TRANSITION.beforePolicySha256,
+  );
+  return bytes;
+}
+function manifestFor(entries) {
+  const hash = createHash("sha256"),
+    files = {};
+  for (const [name, bytes] of entries) {
+    files[name] = createHash("sha256").update(bytes).digest("hex");
+    hash.update(name).update("\0").update(bytes).update("\0");
+  }
+  return { sha256: hash.digest("hex"), files };
+}
+async function historicalComparisonFixture(t) {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "esp policy bridge "));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const root = path.join(directory, "historical-policy");
+  await mkdir(path.join(root, "scripts"), { recursive: true });
+  const currentRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+  );
+  const policy = HISTORICAL_POLICY_TRANSITION.policyPath;
+  const current = await readFile(path.join(currentRoot, policy));
+  const files = new Map();
+  const inventory = expectedHistoricalInventory(currentRoot);
+  for (const name of inventory.instrument) {
+    const bytes =
+      name === policy
+        ? historicalPolicyBytes(current)
+        : await readFile(path.join(currentRoot, name));
+    files.set(name, bytes);
+    await mkdir(path.dirname(path.join(root, name)), { recursive: true });
+    await writeFile(path.join(root, name), bytes);
+  }
+  const git = (...args) =>
+    execFileSync("git", ["-C", root, ...args], {
+      encoding: "utf8",
+      windowsHide: true,
+    }).trim();
+  git("init", "--quiet");
+  git("config", "core.autocrlf", "false");
+  git("config", "user.name", "Policy fixture");
+  git("config", "user.email", "fixture@example.invalid");
+  git("add", "--all");
+  git("commit", "--quiet", "-m", "known historical policy fixture");
+  const commit = git("rev-parse", "HEAD");
+  const legacyPolicy = await import(
+    pathToFileURL(path.join(root, policy)).href
+  );
+  const legacyVerifier = await import(
+    pathToFileURL(
+      path.join(root, "scripts/verify-shopping-performance-evidence.mjs"),
+    ).href
+  );
+  const afterFiles = new Map(files);
+  afterFiles.set(policy, current);
+  const fixtureSources = manifestFor(
+    new Map(inventory.fixtures.map((name) => [name, files.get(name)])),
+  );
+  const beforeRoot = await partialShoppingRun(directory, "before", 70, {
+    criteria: legacyPolicy.performanceAcceptanceCriteriaByGroup,
+    productCommit: commit,
+    instrumentPatch: manifestFor(files),
+    fixtureSources,
+    finishedAt: "2026-10-26T00:00:00.000Z",
+    producerStatus: "failed",
+  });
+  const afterRoot = await partialShoppingRun(directory, "after", 60, {
+    instrumentPatch: manifestFor(afterFiles),
+    fixtureSources,
+    finishedAt: "2026-10-26T01:00:00.000Z",
+    producerStatus: "passed",
+  });
+  await addRangeReport(
+    beforeRoot,
+    "before",
+    Array(10).fill(130),
+    legacyVerifier.evidenceIdentity,
+    "failed",
+  );
+  await addRangeReport(afterRoot, "after", Array(10).fill(130));
+  const read = async (phase) =>
+    JSON.parse(
+      await readFile(
+        path.join(
+          phase === "before" ? beforeRoot : afterRoot,
+          "run-result.json",
+        ),
+        "utf8",
+      ),
+    );
+  const change = async (phase, update) => {
+    const file = path.join(
+      phase === "before" ? beforeRoot : afterRoot,
+      "run-result.json",
+    );
+    const data = JSON.parse(await readFile(file, "utf8"));
+    update(data);
+    await writeFile(file, JSON.stringify(data), "utf8");
+  };
+  return {
+    directory,
+    root,
+    beforeRoot,
+    afterRoot,
+    legacyPolicy,
+    legacyVerifier,
+    current,
+    files,
+    afterFiles,
+    policy,
+    currentPolicyPath: path.join(currentRoot, policy),
+    read,
+    change,
+    git,
+  };
+}
+test("known policy proof recognizes only exact110-to150 literals, preserving sampling/inventory", async () => {
+  const current = await readFile(
+    new URL("./shopping-performance-evidence-contract.mjs", import.meta.url),
+  );
+  const before = historicalPolicyBytes(current);
+  const proof = proveKnownPolicyTransition(before, current);
+  assert.equal(proof.byteExactKnownLiteralReplacement, true);
+  assert.equal(proof.replacementCount, 4);
+  for (const changed of [
+    Buffer.concat([current, Buffer.from("\n")]),
+    Buffer.from(
+      current.toString().replace("sampleCount: 10", "sampleCount: 20"),
+    ),
+    Buffer.from(current.toString().replace("medianMs: 65", "medianMs: 150")),
+  ])
+    assert.throws(
+      () => proveKnownPolicyTransition(before, changed),
+      /Unrecognized current policy/,
+    );
+});
+test("default comparison still rejects explicit historical110 metadata without the policy switch", async (t) => {
+  const f = await historicalComparisonFixture(t);
+  const { result } = await compareBrowserEvidence({
+    beforeRoot: f.beforeRoot,
+    afterRoot: f.afterRoot,
+  });
+  assert.equal(result.status, "incomplete");
+  assert.ok(
+    result.errors.some((error) => /invalid acceptanceCriteriaId/.test(error)),
+  );
+  assert.equal(result.beforePolicyReevaluation, undefined);
+});
+test("explicit policy root validates old110 records then separately reevaluates150 without promoting incomplete coverage", async (t) => {
+  const f = await historicalComparisonFixture(t);
+  const beforeBytes = await readFile(
+    path.join(f.beforeRoot, "run-result.json"),
+  );
+  const beforeRange = await readFile(
+    path.join(f.beforeRoot, "range/report.json"),
+  );
+  const afterBytes = await readFile(path.join(f.afterRoot, "run-result.json"));
+  const { result, exitCode } = await compareBrowserEvidence({
+    beforeRoot: f.beforeRoot,
+    afterRoot: f.afterRoot,
+    beforePolicyRoot: f.root,
+  });
+  const row = result.rows.find((row) => row.group === "range");
+  assert.equal(row.status, "compared");
+  assert.equal(row.beforeOriginalCriteria.acceptanceThresholds.medianMs, 110);
+  assert.equal(row.beforeOriginalAbsolute, "failed");
+  assert.equal(row.beforeOriginalProducerTestStatus, "failed");
+  assert.equal(
+    row.beforeReevaluatedCriteria.acceptanceThresholds.medianMs,
+    150,
+  );
+  assert.equal(row.beforeReevaluatedAbsolute, "passed");
+  assert.equal(row.beforeAbsolute, "passed");
+  assert.equal(
+    result.before.recordedAcceptanceCriteria.originalStatus,
+    "failed",
+  );
+  assert.equal(
+    result.beforePolicyReevaluation.transition.byteExactKnownLiteralReplacement,
+    true,
+  );
+  assert.ok(result.coverage.uncomparable > 0);
+  assert.equal(result.status, "incomplete");
+  assert.equal(exitCode, 1);
+  assert.deepEqual(
+    await readFile(path.join(f.beforeRoot, "run-result.json")),
+    beforeBytes,
+  );
+  assert.deepEqual(
+    await readFile(path.join(f.beforeRoot, "range/report.json")),
+    beforeRange,
+  );
+  assert.deepEqual(
+    await readFile(path.join(f.afterRoot, "run-result.json")),
+    afterBytes,
+  );
+});
+for (const change of [
+  "non-policy-hash",
+  "inventory",
+  "aggregate",
+  "fixture-inventory",
+  "fixture-aggregate",
+  "both-missing-file",
+  "both-extra-file",
+  "both-missing-fixture",
+  "after-old-policy",
+  "unfinished",
+]) {
+  test(`explicit historical bridge rejects ${change} instead of allowing a generic mismatch`, async (t) => {
+    const f = await historicalComparisonFixture(t);
+    await f.change("after", (data) => {
+      if (change === "non-policy-hash")
+        data.instrumentPatch.files[
+          "scripts/verify-shopping-performance-evidence.mjs"
+        ] = "a".repeat(64);
+      if (change === "inventory") delete data.instrumentPatch.files[f.policy];
+      if (change === "aggregate") data.instrumentPatch.sha256 = "a".repeat(64);
+      if (change === "fixture-inventory") data.fixtureSources.files = {};
+      if (change === "fixture-aggregate")
+        data.fixtureSources.sha256 = "a".repeat(64);
+      if (change === "after-old-policy")
+        data.acceptanceCriteriaByGroup =
+          f.legacyPolicy.performanceAcceptanceCriteriaByGroup;
+      if (change === "unfinished") delete data.finishedAt;
+    });
+    if (
+      change === "both-missing-file" ||
+      change === "both-extra-file" ||
+      change === "both-missing-fixture"
+    ) {
+      for (const phase of ["before", "after"])
+        await f.change(phase, (data) => {
+          if (change === "both-missing-file")
+            delete data.instrumentPatch.files[
+              "scripts/run-shopping-browser-evidence.mjs"
+            ];
+          if (change === "both-extra-file")
+            data.instrumentPatch.files["scripts/extra.mjs"] = "a".repeat(64);
+          if (change === "both-missing-fixture")
+            delete data.fixtureSources.files[
+              "tests/browser/shopping-operation-sampling.ts"
+            ];
+        });
+    }
+    const { result, exitCode } = await compareBrowserEvidence({
+      beforeRoot: f.beforeRoot,
+      afterRoot: f.afterRoot,
+      beforePolicyRoot: f.root,
+    });
+    assert.equal(exitCode, 1);
+    assert.equal(result.status, "incomplete");
+    assert.ok(result.errors.length > 0);
+    assert.equal(result.beforePolicyReevaluation, undefined);
+  });
+}
+test("historical dependency edits are rejected before a changed legacy module can be imported", async (t) => {
+  const f = await historicalComparisonFixture(t);
+  const validator = path.join(
+    f.root,
+    "scripts/verify-shopping-performance-evidence.mjs",
+  );
+  await writeFile(
+    validator,
+    Buffer.concat([
+      await readFile(validator),
+      Buffer.from("\nglobalThis.__untrustedLegacyPolicyExecuted = true;\n"),
+    ]),
+  );
+  delete globalThis.__untrustedLegacyPolicyExecuted;
+  await assert.rejects(
+    loadBeforePolicyBridge({
+      beforeRoot: f.beforeRoot,
+      afterRoot: f.afterRoot,
+      beforePolicyRoot: f.root,
+      currentPolicyPath: f.currentPolicyPath,
+      profile: "completion",
+    }),
+    /not clean/,
+  );
+  assert.equal(globalThis.__untrustedLegacyPolicyExecuted, undefined);
+});
+test("historical root HEAD must match the producer and PR2 cannot be reused as completion10", async (t) => {
+  const f = await historicalComparisonFixture(t);
+  await f.change("before", (data) => {
+    data.productCommit = "d".repeat(40);
+  });
+  await assert.rejects(
+    loadBeforePolicyBridge({
+      beforeRoot: f.beforeRoot,
+      afterRoot: f.afterRoot,
+      beforePolicyRoot: f.root,
+      currentPolicyPath: f.currentPolicyPath,
+      profile: "completion",
+    }),
+    /HEAD differs/,
+  );
+  await f.change("before", (data) => {
+    data.productCommit = f.git("rev-parse", "HEAD");
+    Object.assign(data, f.legacyPolicy.performanceSamplingMetadata("pr"));
+    data.acceptanceCriteriaByGroup =
+      f.legacyPolicy.performanceAcceptanceCriteriaByGroupForProfile("pr");
+  });
+  await assert.rejects(
+    loadBeforePolicyBridge({
+      beforeRoot: f.beforeRoot,
+      afterRoot: f.afterRoot,
+      beforePolicyRoot: f.root,
+      currentPolicyPath: f.currentPolicyPath,
+      profile: "completion",
+    }),
+    /mixed completion/,
   );
 });

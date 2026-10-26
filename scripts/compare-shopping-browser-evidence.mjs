@@ -24,6 +24,7 @@ import {
   validateRunAcceptanceCriteriaMetadata,
 } from "./shopping-performance-evidence-contract.mjs";
 import { validateBrowserSourceIdentity } from "./run-shopping-browser-evidence.mjs";
+import { loadBeforePolicyBridge } from "./browser-evidence-before-policy.mjs";
 const groups = ["shopping", "range", "drag", "transfer"];
 const names = {
   shopping: "shopping-operation-timings",
@@ -120,6 +121,9 @@ export function comparableMetrics(
     allowBaselinePostconditionFailures: true,
     profile,
   });
+  return projectComparableMetrics(artifact, group);
+}
+function projectComparableMetrics(artifact, group) {
   const metrics = [];
   const add = (operation, metric, summary, auxiliary = false) =>
     metrics.push({ operation, metric, summary, auxiliary });
@@ -165,10 +169,27 @@ function recordedCriteria(run) {
     originalStatus: run.status ?? null,
   };
 }
-async function readRun(runRoot, phase, profile) {
+async function readRun(runRoot, phase, profile, historical = null) {
+  const policyTools = historical?.legacyPolicy ?? {
+    validateRunAcceptanceCriteriaMetadata,
+  };
+  const evidenceTools = historical?.legacyVerifier ?? {
+    validateEvidenceArtifact,
+    validateBaselineFrameObservationArtifact,
+    verifyFrameFiles,
+    verifyBaselineFrameObservationFiles,
+  };
   const bytes = await readFile(path.join(runRoot, "run-result.json"));
   const run = JSON.parse(bytes.toString("utf8"));
-  validateRunAcceptanceCriteriaMetadata(run, { profile, required: true });
+  if (historical)
+    assert(
+      hash(bytes) === historical.beforeRunSha256,
+      "Before run changed after the policy proof",
+    );
+  policyTools.validateRunAcceptanceCriteriaMetadata(run, {
+    profile,
+    required: true,
+  });
   assert(
     run.phase === phase &&
       typeof run.runId === "string" &&
@@ -321,15 +342,16 @@ async function readRun(runRoot, phase, profile) {
               test.results[0].status === "failed",
               "unobservable baseline artifact must retain its failed producer result",
             );
-            const observed = validateBaselineFrameObservationArtifact(
-              artifact,
-              {
-                phase,
-                runId: run.runId,
-                productCommit: run.productCommit,
-              },
-              profile,
-            );
+            const observed =
+              evidenceTools.validateBaselineFrameObservationArtifact(
+                artifact,
+                {
+                  phase,
+                  runId: run.runId,
+                  productCommit: run.productCommit,
+                },
+                profile,
+              );
             assert(
               expected.includes(observed.key) &&
                 definitions.find((row) => row.key === observed.key)?.spec ===
@@ -338,14 +360,21 @@ async function readRun(runRoot, phase, profile) {
               "duplicate, foreign baseline observation or wrong spec",
             );
             const output = path.join(runRoot, group, "test-results");
-            await verifyFrameFiles(artifact, output, sourceHashes);
-            await verifyBaselineFrameObservationFiles(
+            await evidenceTools.verifyFrameFiles(
+              artifact,
+              output,
+              sourceHashes,
+            );
+            await evidenceTools.verifyBaselineFrameObservationFiles(
               artifact,
               output,
               sourceHashes,
             );
             const artifactKey = `${group}:${observed.key}`;
-            baselineObservations.set(artifactKey, observed);
+            baselineObservations.set(artifactKey, {
+              ...observed,
+              producerStatus: test.results[0].status,
+            });
             const functional = comparisonFunctionalFailure(
               artifact,
               group,
@@ -360,7 +389,7 @@ async function readRun(runRoot, phase, profile) {
             seen.add(observed.key);
             continue;
           }
-          const checked = validateEvidenceArtifact(
+          const checked = evidenceTools.validateEvidenceArtifact(
             artifact,
             group,
             { phase, runId: run.runId, productCommit: run.productCommit },
@@ -379,7 +408,7 @@ async function readRun(runRoot, phase, profile) {
             "duplicate, foreign condition or wrong spec",
           );
           if (group === "transfer" && artifact.measurementKind === "frame")
-            await verifyFrameFiles(
+            await evidenceTools.verifyFrameFiles(
               artifact,
               path.join(runRoot, group, "test-results"),
               sourceHashes,
@@ -398,7 +427,7 @@ async function readRun(runRoot, phase, profile) {
             errors.push(functional.message);
           }
           artifacts.set(artifactKey, artifact);
-          for (const metric of comparableMetrics(
+          for (const metric of projectComparableMetrics(
             artifact,
             group,
             {
@@ -415,6 +444,7 @@ async function readRun(runRoot, phase, profile) {
               condition: checked.condition,
               measurementKind: artifact.measurementKind,
               ...metric,
+              producerStatus: test.results[0].status,
             });
           }
         } catch (error) {
@@ -512,6 +542,7 @@ export async function compareBrowserEvidence({
   output,
   profile: requestedProfile,
   env = process.env,
+  beforePolicyRoot,
 }) {
   const profile = resolvePerformanceProfile(requestedProfile, env);
   const result = {
@@ -526,13 +557,40 @@ export async function compareBrowserEvidence({
     rows: [],
   };
   try {
-    const before = await readRun(path.resolve(beforeRoot), "before", profile),
+    const policyBridge = beforePolicyRoot
+      ? await loadBeforePolicyBridge({
+          beforeRoot: path.resolve(beforeRoot),
+          afterRoot: path.resolve(afterRoot),
+          beforePolicyRoot,
+          currentPolicyPath: path.join(
+            path.dirname(fileURLToPath(import.meta.url)),
+            "shopping-performance-evidence-contract.mjs",
+          ),
+          profile,
+        })
+      : null;
+    const before = await readRun(
+        path.resolve(beforeRoot),
+        "before",
+        profile,
+        policyBridge,
+      ),
       after = await readRun(path.resolve(afterRoot), "after", profile);
+    if (policyBridge) {
+      assert(
+        after.sourceHashes["run-result.json"] === policyBridge.afterRunSha256,
+        "After run changed after the policy proof",
+      );
+      result.beforePolicyReevaluation = policyBridge.proof;
+    }
     const compatibility = [];
     if (before.run.instrumentVersion !== after.run.instrumentVersion)
       compatibility.push("instrumentVersion mismatch");
     for (const field of ["instrumentPatch", "fixtureSources"])
-      if (before.run[field].sha256 !== after.run[field].sha256)
+      if (
+        before.run[field].sha256 !== after.run[field].sha256 &&
+        !(field === "instrumentPatch" && policyBridge)
+      )
         compatibility.push(`${field} mismatch`);
     for (const field of [
       "platform",
@@ -613,14 +671,15 @@ export async function compareBrowserEvidence({
         descriptor.group,
         profile,
       );
-      const absolute = (metric) =>
+      const absolute = (metric, evaluationCriteria = criteria) =>
         !metric
           ? "missing"
           : descriptor.auxiliary
             ? "not-applicable"
             : metric.summary.medianMs <=
-                  criteria.acceptanceThresholds.medianMs &&
-                metric.summary.p95Ms <= criteria.acceptanceThresholds.p95Ms
+                  evaluationCriteria.acceptanceThresholds.medianMs &&
+                metric.summary.p95Ms <=
+                  evaluationCriteria.acceptanceThresholds.p95Ms
               ? "passed"
               : "failed";
       const compared = reasons.length === 0;
@@ -651,6 +710,41 @@ export async function compareBrowserEvidence({
             }
           : null,
         beforePostconditionErrors: oldArtifact?.postconditionErrors ?? [],
+        ...(policyBridge
+          ? {
+              beforeOriginalCriteria:
+                policyBridge.legacyPolicy.performanceAcceptanceCriteriaForGroup(
+                  descriptor.group,
+                  profile,
+                ),
+              beforeOriginalAbsolute: baselineObservation
+                ? "unobservable"
+                : absolute(
+                    oldMetric,
+                    policyBridge.legacyPolicy.performanceAcceptanceCriteriaForGroup(
+                      descriptor.group,
+                      profile,
+                    ),
+                  ),
+              beforeOriginalProducerTestStatus:
+                oldMetric?.producerStatus ??
+                baselineObservation?.producerStatus ??
+                null,
+              beforeReevaluatedCriteria: criteria,
+              beforeReevaluatedAbsolute: baselineObservation
+                ? "unobservable"
+                : absolute(oldMetric),
+              beforeFunctionalStatus: baselineObservation
+                ? "unobservable"
+                : !oldArtifact
+                  ? "missing"
+                  : oldArtifact.postconditionErrors?.length
+                    ? "failed"
+                    : oldMetric
+                      ? "passed"
+                      : "incomplete",
+            }
+          : {}),
         beforeAbsolute: baselineObservation
           ? "unobservable"
           : absolute(oldMetric),
@@ -702,6 +796,12 @@ export async function compareBrowserEvidence({
       runId: before.run.runId,
       productCommit: before.run.productCommit,
       recordedAcceptanceCriteria: recordedCriteria(before.run),
+      ...(policyBridge
+        ? {
+            beforeOriginalCriteria: before.run.acceptanceCriteriaByGroup,
+            policyReevaluation: policyBridge.proof,
+          }
+        : {}),
       sourceHashes: before.sourceHashes,
       errors: before.errors,
       functionalFailures: before.functionalFailures,
@@ -755,14 +855,18 @@ if (
     const args = process.argv.slice(2),
       options = {};
     assert(
-      [6, 8].includes(args.length),
-      "Usage: --before-root path --after-root path --output path",
+      [6, 8, 10].includes(args.length),
+      "Usage: --before-root path --after-root path --output path [--profile pr|completion] [--before-policy-root clean-historical-worktree]",
     );
     for (let i = 0; i < args.length; i += 2) {
       assert(
-        ["--before-root", "--after-root", "--output", "--profile"].includes(
-          args[i],
-        ) && args[i + 1],
+        [
+          "--before-root",
+          "--after-root",
+          "--output",
+          "--profile",
+          "--before-policy-root",
+        ].includes(args[i]) && args[i + 1],
         "Invalid comparison argument",
       );
       const name = args[i]

@@ -57,3 +57,15 @@
 f068a71の部分7ケースは17主指標すべて新基準内だが、上記未達条件の実フレームは含まない。部分結果で全条件の合格を判定せず、追加候補の採用も別に判断する。旧runの終了状態・旧基準での合否・元データ・before欠測90行は保持している。
 
 新しい比較結果の基準表は `acceptanceCriteriaByGroup`、各指標行の適用基準は `acceptanceThresholds` に記録する。旧外部report generatorの単一トップレベル `acceptanceThresholds` 前提を、新しい結果へ流用しない。新結果のレポートは群別基準に対応させ、厳密な計測器・fixtureのSHA照合を維持する。
+
+## 110ms記録と150ms記録を比較する場合
+
+通常の比較は現行150msのmetadataと計測器一致を要求し、明示された旧110ms metadataを自動では受理しない。旧110msのbeforeを使う場合だけ、そのbeforeの製品コミットと一致するclean Git作業ツリーを明示する。
+
+```text
+node scripts/compare-shopping-browser-evidence.mjs --before-root <旧110msのrunRoot> --after-root <新150msのrunRoot> --before-policy-root <beforeのclean Git作業ツリー> --profile completion --output <新しい比較JSON>
+```
+
+`--before-policy-root` は比較時だけの指定であり、採取の入力・条件・終了点・rawを変えない。旧検証器の依存4ファイル、runner、24計測ソース、17fixtureソースをGit・SHA・完全な集合と照合してから旧beforeを元の110ms metadataのまま検証する。許す差分は、既知のD&D基準の110→150・ID・基準日・対応コメントの変更だけである。その他の計測器差、fixture差、profile差、途中run、未知policyは拒否し、afterには現行150msを必須とする。
+
+新しい比較JSONの `beforePolicyReevaluation` に再判定の根拠を保存する。各行の `beforeOriginalCriteria`／`beforeOriginalAbsolute`／`beforeOriginalProducerTestStatus` に元の基準・数値判定・producer判定を保持し、150msでの数値判定とは分ける。元artifact・元run-result・元比較の判定は書き換えない。観測不能や機能postcondition失敗はそのまま残し、時間上限の変更で比較完了へ読み替えない。PR2回を完了10回へ昇格したり、旧20回を切り詰めたりする指定ではない。
