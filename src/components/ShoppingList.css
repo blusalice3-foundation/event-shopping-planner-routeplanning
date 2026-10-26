@@ -131,8 +131,7 @@
 .esp-shopping-drag-header-opacity.transition-all {
   transition-property: all, opacity;
   transition-duration:
-    var(--tw-duration, var(--default-transition-duration, 150ms)),
-    0s;
+    var(--tw-duration, var(--default-transition-duration, 150ms)), 0s;
 }
 
 .esp-shopping-drag-header-opacity.transition-all.opacity-40 {
