@@ -681,6 +681,8 @@ cleanなworktreeでpreviewを停止した後、`npm run test:release-a-rollback`
 
 対象3群の現行基準は `dnd-selection-rendering-150-150-2026-10-26` で識別します。shopping65／100ms、全条件・操作・終了点・保存整合性は維持します。過去の50／55／65／110msのraw・当初合否・元artifactと基準変更による中断runは保持し、150ms再判定は別記録にします。旧110msの途中中断や新150msへの配線更新を、全条件通過・計画完了の証拠にはしません。
 
+現行の正式150ms通常runnerは採取HEAD `6b95af67d75b5a4cc81c8535cd2d7b2e27987ce3`（製品src／publicはbe259と同一）で全5群完走・passed・exit0となりました。性能144ケース・各10・全576行を確認し、530主指標は基準内です。比較はbefore4真正未観測によりincompleteで、before24機能postcondition失敗を保持します。全180増加を列挙して正常2経路・最大2件を区間評価し、因果未確定部分を記録しました。一般機能は408 expected・54skip・flaky1・unexpected0で、当該初回timeout／retry1成功を保持します。同caseの別診断5回はretry0で通過して再現しませんでしたが、正式flakyを置き換えず、環境起因とも断定しません。品質はcore3,565件通過・既存88skip、foundation1,370件通過、静的検査とRelease A build通過。installed Windows PWAの2操作は独立raw37確認・0失敗ですが、実GitHub CIとphysical touch／human feelは未確認です。採取HEADと後続docs-only HEADを分け、最終根拠・限界は[実装状況](docs/dnd-selection-rendering-implementation-20261024.md)へ記録します。
+
 適用範囲の詳細は[プラン限定の性能基準](docs/dnd-selection-rendering-performance-criteria-20261024.md)、作業時のルールは[AGENTS.md](AGENTS.md)を参照してください。
 
 ### 技術構成

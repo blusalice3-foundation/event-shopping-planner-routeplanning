@@ -4,7 +4,7 @@
 
 `run-shopping-browser-evidence.mjs` が実行する4群は、PR確認 `pr` が各操作・指標2回、実装完了判定 `completion` が各操作・指標10回である。`ESP_PERFORMANCE_PROFILE` またはrunnerの `--profile` で選び、指定なしは `completion` とする。PR2回の `passed` は実装完了へ流用せず、完了の前後比較は同じ `completion` profileで採取する。
 
-必須条件shopping16（150／500品目・各6操作）・range20・drag8・transfer100、時間基準shopping65／100ms・対象3群110／110ms、全操作、fixture、ウォームアップ、入力・DOM・実フレーム・次操作の終了点、保存・再読込・整合性検証、retry 0は維持する。通常一括実行は `npm run test:browser:pr`／`npm run test:browser:completion`。`.github/workflows/quality.yml` はPR eventで `pr`、非PRで `completion` を指定する。
+必須条件shopping16（150／500品目・各6操作）・range20・drag8・transfer100、時間基準shopping65／100ms・対象3群150／150ms（2026-10-26改訂）、全操作、fixture、ウォームアップ、入力・DOM・実フレーム・次操作の終了点、保存・再読込・整合性検証、retry 0は維持する。通常一括実行は `npm run test:browser:pr`／`npm run test:browser:completion`。`.github/workflows/quality.yml` はPR eventで `pr`、非PRで `completion` を指定する。
 
 runとartifactには `samplingPolicyId: "performance-samples-2026-10-26"` と `samplingProfile`（`id`、`sampleCount`、`policyDate`、`completionEligible`）を保存し、時間基準のcriteria IDとは分けて識別する。異なるprofileを合算したり、過去20回のrawを切り詰めたりしない。旧raw・当初合否・元artifactと中断runは履歴として保持し、新回数のrunは独立して保存する。詳細は[現行の性能基準](dnd-selection-rendering-performance-criteria-20261024.md)と[AGENTS.md](../AGENTS.md)を参照する。
 
