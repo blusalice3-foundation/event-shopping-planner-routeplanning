@@ -19,9 +19,9 @@ interface ViewportRegistry {
   initialOffsets: WeakMap<
     Element,
     {
-      top: number;
+      top?: number;
       offset: number;
-      width: number;
+      width?: number;
       anchor: HTMLElement;
       initialBatch: boolean;
     }
@@ -68,11 +68,8 @@ function initiallyVisible(
   )
     position = undefined;
   if (!position) {
-    const rect = parent.getBoundingClientRect();
     const initial = {
-      top: rect.top,
       offset: 0,
-      width: rect.width,
       anchor: root,
       initialBatch: true,
     };
@@ -85,9 +82,16 @@ function initiallyVisible(
     // Insertions beside existing rows use their committed position, not the old list's end offset.
     return measureVisibility ? withinViewport(root) : undefined;
   }
-  const top = position.top + position.offset;
+  const offset = position.offset;
   position.offset += height;
   if (!measureVisibility) return undefined;
+  // Forced rows still contribute offsets, but need no synchronous geometry.
+  if (position.top === undefined) {
+    const rect = parent.getBoundingClientRect();
+    position.top = rect.top;
+    position.width = rect.width;
+  }
+  const top = position.top + offset;
   const bottom =
     (root.ownerDocument.defaultView?.innerHeight ?? 0) + PRELOAD_MARGIN_PX;
   return (

@@ -2558,6 +2558,70 @@ describe("forced viewport activation keeps unknown visibility private", () => {
       .mock.instances.filter((element) => element === root).length;
 
   it.each(["nondeferred", "retained"] as const)(
+    "measures a forced %s prefix parent only when a deferred sibling needs it",
+    (reason) => {
+      noSynchronousHeightRead();
+      const measure = vi.mocked(HTMLElement.prototype.getBoundingClientRect);
+      const originalMeasure = measure.getMockImplementation()!;
+      measure.mockImplementation(function (this: HTMLElement) {
+        const original = originalMeasure.call(this);
+        if (this.dataset.testid === "lazy-prefix-parent")
+          return { ...original, top: -1000, y: -1000 };
+        if (this.dataset.viewportRowKey === "lazy-prefix-next")
+          return { ...original, top: 500, bottom: 636, y: 500 };
+        return original;
+      });
+      let beforeSibling: number | undefined;
+      let originalInput: HTMLInputElement | null = null;
+      function Harness() {
+        const [next, setNext] = React.useState(false);
+        const parent = React.useRef<HTMLDivElement>(null);
+        React.useLayoutEffect(() => {
+          beforeSibling = measuredCount(parent.current!);
+          originalInput = parent.current!.querySelector("input");
+          setNext(true);
+        }, []);
+        return (
+          <div data-list-renderer="virtual" data-testid="lazy-prefix-list">
+            <div ref={parent} data-testid="lazy-prefix-parent">
+              <ViewportContent
+                rowKey="lazy-prefix-first"
+                defer={reason !== "nondeferred"}
+                retain={reason === "retained"}
+                estimatedHeight={1500}
+                placeholder={<span>pending-prefix</span>}
+                render={() => (
+                  <input aria-label="lazy-prefix-first" defaultValue="draft" />
+                )}
+              />
+              {next && (
+                <ViewportContent
+                  rowKey="lazy-prefix-next"
+                  estimatedHeight={136}
+                  placeholder={<span>pending-next</span>}
+                  render={() => <input aria-label="lazy-prefix-next" />}
+                />
+              )}
+            </div>
+          </div>
+        );
+      }
+      const view = render(<Harness />);
+      const prefix = rootOf(view, "lazy-prefix-first");
+      const following = rootOf(view, "lazy-prefix-next");
+      expect(beforeSibling).toBe(0);
+      expect(measuredCount(view.getByTestId("lazy-prefix-parent"))).toBe(1);
+      expect(measuredCount(view.getByTestId("lazy-prefix-list"))).toBe(1);
+      expect(measuredCount(prefix)).toBe(0);
+      expect(measuredCount(following)).toBe(1);
+      expect(prefix.querySelector("input")).toBe(originalInput);
+      expect(originalInput).toHaveValue("draft");
+      expect(following).toHaveAttribute("data-viewport-active", "true");
+      expect(following.querySelector("input")).not.toBeNull();
+    },
+  );
+
+  it.each(["nondeferred", "retained"] as const)(
     "does not measure a new %s root merely to force its body active",
     (reason) => {
       noSynchronousHeightRead();
