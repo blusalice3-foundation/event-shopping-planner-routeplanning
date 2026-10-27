@@ -783,7 +783,49 @@ for (const historical of [false, true])
           height: role === "destination-card" && index === 2 ? 16.15625 : 100,
           role,
         }));
+      const sourcePoint = { x: 20, y: 30 };
+      const sourceRect = { x: 10, y: 20, width: 100, height: 100 };
+      const sourceHit = {
+        origin: "card-edge",
+        point: sourcePoint,
+        withinSource: true,
+        withinViewport: true,
+        interactive: false,
+        sourceContainsHit: true,
+        sourceOwnerMatched: true,
+        hitItemId: effectiveIds[0],
+        hitRect: { ...sourceRect },
+        matched: true,
+      };
       const evidence = {
+        ...(!historical
+          ? {
+              measurementId,
+              targetId: effectiveIds[0],
+              probeCpuMs: 0.2,
+              probeChecks: 4,
+              operationId: null,
+              operationIdUnavailableReason:
+                "Persistence request did not expose an operation ID",
+              gestureObservation: {
+                sourcePoint,
+                sourceOrigin: sourceHit.origin,
+                sourceHitTest: {
+                  sourceId: effectiveIds[0],
+                  sourceRect,
+                  attempts: [sourceHit],
+                  selectedHit: { ...sourceHit },
+                  initialRejection: null,
+                },
+              },
+              requiredDestinationIds: [...effectiveIds],
+              destinationCardExemptions: [],
+              requiredDestinationCardsVerified: true,
+              mountedTransferredIds: [...effectiveIds],
+              expectedDestinationDisplayIds: [...executeIds, ...effectiveIds],
+              visibleTransferredIds: [...effectiveIds],
+            }
+          : {}),
         postInput: true,
         trusted: true,
         matched: true,

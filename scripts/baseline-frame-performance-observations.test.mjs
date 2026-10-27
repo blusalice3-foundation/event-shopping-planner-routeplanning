@@ -10,8 +10,10 @@ import {
 } from "./shopping-performance-evidence-contract.mjs";
 import {
   validateBaselineFrameObservations,
+  validateBaselineReverseFixtureOrder,
   verifyBaselineFrameObservationFiles,
 } from "./baseline-frame-performance-observations.mjs";
+import { validateBaselineFrameObservationArtifact } from "./verify-shopping-performance-evidence.mjs";
 
 const version = "shopping-rendering-v4";
 const sampleCount = performanceSamplingProfile().sampleCount;
@@ -46,6 +48,76 @@ const file = (name, bytes = png) => ({
   [`${name}Path`]: path.resolve(`${name}.png`),
   [`${name}Sha256`]: sha(bytes),
 });
+const browserEnvironment = {
+  browserVersion: "151.0.7922.34",
+  userAgent: "fixture-browser",
+  browserChannel: "bundled-chromium",
+  viewport: { width: 1440, height: 1000 },
+  devicePixelRatio: 1,
+  headed: false,
+  workers: 1,
+  retries: 0,
+};
+function sourceGesture() {
+  const point = { x: 20, y: 30 };
+  const sourceRect = { x: 10, y: 20, width: 100, height: 100 };
+  const hit = {
+    origin: "card-edge",
+    point,
+    withinSource: true,
+    withinViewport: true,
+    interactive: false,
+    sourceContainsHit: true,
+    sourceOwnerMatched: true,
+    hitItemId: moved[0],
+    hitRect: { ...sourceRect },
+    matched: true,
+  };
+  return {
+    sourcePoint: point,
+    sourceOrigin: hit.origin,
+    sourceHitTest: {
+      sourceId: moved[0],
+      sourceRect,
+      attempts: [hit],
+      selectedHit: { ...hit },
+      initialRejection: null,
+    },
+  };
+}
+function forwardExpectation() {
+  return {
+    contract: "execution-visit-tail-and-anchor-boundary",
+    beforeItemOrder: [...allIds],
+    beforeExecuteIds: [...execute],
+    sourceIds: [...moved],
+    beforeVisits: execute.map((id) => ({ key: id, itemIds: [id] })),
+    sourceVisits: moved.map((id) => ({ key: id, itemIds: [id] })),
+    anchorId: execute.at(-1),
+    boundaryKind: "after-reference-visit",
+    boundaryId: null,
+    expectedItemOrder: [...allIds],
+    expectedExecuteIds: [...execute, ...moved],
+    expectedDisplayIds: [...execute, ...moved],
+  };
+}
+function preparedSelection() {
+  return {
+    requestedIds: [...moved],
+    requestedDisplayOrder: [...moved],
+    mountedCheckedIds: [...moved],
+    exactSelectionVerified: true,
+    requestedCount: 3,
+    effectiveCount: 3,
+    headerText: "Candidate (3件)",
+    checkboxChecks: moved.map((targetId) => ({
+      targetId,
+      checked: true,
+      scrollY: 0,
+      rect: { x: 10, y: 20, width: 100, height: 100 },
+    })),
+  };
+}
 function fixtureArtifact(
   completedIndices = [],
   code = "identity-clipped",
@@ -87,7 +159,21 @@ function fixtureArtifact(
       });
       continue;
     }
+    const selectionPreparation = preparedSelection();
+    const forwardOrderExpectation = forwardExpectation();
     const evidence = {
+      measurementId,
+      targetId: moved[0],
+      probeCpuMs: 0.2,
+      probeChecks: 4,
+      operationId: `application:${sampleIndex}`,
+      gestureObservation: sourceGesture(),
+      requiredDestinationIds: [...moved],
+      destinationCardExemptions: [],
+      requiredDestinationCardsVerified: true,
+      mountedTransferredIds: [...moved],
+      expectedDestinationDisplayIds: [...execute, ...moved],
+      visibleTransferredIds: [...moved],
       postInput: true,
       trusted: true,
       matched: true,
@@ -95,7 +181,12 @@ function fixtureArtifact(
       domMs: 42,
       markerDelayMs: 1,
       commits: [
-        { at: 100050 + sampleIndex * 1000, stores: ["eventLists"], writes: [] },
+        {
+          at: 100050 + sampleIndex * 1000,
+          stores: ["eventLists"],
+          writes: [],
+          operationId: `application:${sampleIndex}`,
+        },
       ],
       sourceRects: rects("source-origin"),
       targetRects: rects(
@@ -124,9 +215,19 @@ function fixtureArtifact(
         actualItemOrder: [...allIds],
         actualExecuteIds: [...execute, ...moved],
         expectedExecuteMembership: [...execute, ...moved],
-        selectionPreparation: { requestedIds: [...moved] },
+        selectionPreparation,
+        candidateOrderProof: null,
+        mergeTailProof: [],
+        forwardOrderProof: {
+          ...structuredClone(forwardOrderExpectation),
+          actualItemOrder: [...allIds],
+          actualExecuteIds: [...execute, ...moved],
+          actualMountedDisplayIds: [...execute, ...moved],
+          rawOrderVerified: true,
+          displayOrderVerified: true,
+        },
       },
-      scenarioEvidence: { selectionPreparation: { requestedIds: [...moved] } },
+      scenarioEvidence: { selectionPreparation, forwardOrderExpectation },
       expectedTransferredIds: [...moved],
       ...(code === "identity-clipped"
         ? {
@@ -181,6 +282,7 @@ function fixtureArtifact(
       sourceTree: "4155d4dc250e69b16be9a0455bd99a208b9f8d93",
       publicTree: "90071a462092c45bc3ae11df5e696a053fc8a1ed",
     },
+    environment: structuredClone(browserEnvironment),
     baselineFrameObservations: observations,
     fixtures,
     errors: [],
@@ -205,8 +307,271 @@ function fixtureArtifact(
     },
   };
 }
+function reverseFixtureArtifact(code = "identity-clipped") {
+  const artifact = fixtureArtifact([], code);
+  artifact.condition.direction = "execute-to-candidate";
+  const source = ["e1", "e2", "e3"];
+  const candidates = allIds.filter((id) => !execute.includes(id));
+  const expectedExecuteIds = execute.filter((id) => !source.includes(id));
+  const expectedRawCandidateIds = [...candidates, ...source];
+  // The remaining execution e0 slot stays between the candidate/vacated slots.
+  // For this end-boundary fixture, refilling those slots preserves all raw IDs.
+  const expectedItemOrder = [...allIds];
+  for (const observation of artifact.baselineFrameObservations) {
+    observation.effectiveIds = [...source];
+    const e = observation.failure.evidence;
+    e.targetId = source[0];
+    e.expectedTransferredIds = [...source];
+    e.requiredDestinationIds = [...source];
+    e.mountedTransferredIds = [...source];
+    e.visibleTransferredIds = [...source];
+    e.expectedDestinationDisplayIds = [...expectedRawCandidateIds];
+    e.sourceRects.forEach((rect, index) => {
+      rect.itemId = source[index];
+    });
+    e.targetRects.forEach((rect, index) => {
+      rect.itemId = source[index];
+    });
+    if (e.guard) e.guard.itemId = source[2];
+    e.gestureObservation.sourceHitTest.sourceId = source[0];
+    e.gestureObservation.sourceHitTest.selectedHit.hitItemId = source[0];
+    e.gestureObservation.sourceHitTest.attempts[0].hitItemId = source[0];
+    const selection = preparedSelection();
+    selection.requestedIds = [...source];
+    selection.requestedDisplayOrder = [...source];
+    selection.mountedCheckedIds = [...source];
+    selection.checkboxChecks.forEach((check, index) => {
+      check.targetId = source[index];
+    });
+    e.scenarioEvidence = { selectionPreparation: selection };
+    e.durableProof = {
+      fullItemContentPreserved: true,
+      actualItemOrder: [...expectedItemOrder],
+      actualExecuteIds: [...expectedExecuteIds],
+      expectedExecuteMembership: [...expectedExecuteIds],
+      selectionPreparation: selection,
+      forwardOrderProof: null,
+      mergeTailProof: [],
+      candidateOrderProof: {
+        contract: "candidate-raw-boundary-and-default-display",
+        rawOrderVerified: true,
+        defaultDisplayOrderVerified: true,
+        expectedItemOrder: [...expectedItemOrder],
+        actualItemOrder: [...expectedItemOrder],
+        expectedExecuteIds: [...expectedExecuteIds],
+        actualExecuteIds: [...expectedExecuteIds],
+        expectedRawCandidateIds: [...expectedRawCandidateIds],
+        actualRawCandidateIds: [...expectedRawCandidateIds],
+        expectedDisplayIds: [...expectedRawCandidateIds],
+        actualMountedDisplayIds: [...expectedRawCandidateIds],
+        sourceIds: [...source],
+        displayedBeforeIds: [...candidates],
+        anchorId: candidates.at(-1),
+        boundaryKind: "next-displayed-row",
+        boundaryId: null,
+      },
+    };
+  }
+  return artifact;
+}
 const validate = (artifact, profile = "completion") =>
   validateBaselineFrameObservations(artifact, identity, version, profile);
+const validateV4 = (artifact) =>
+  validateBaselineFrameObservationArtifact(artifact, identity, "completion");
+for (const code of ["identity-clipped", "no-content-verified-frame"])
+  test(`v4 ${code} retains actual emitted metadata without a latency or pass claim`, () => {
+    const artifact = fixtureArtifact([], code);
+    const original = structuredClone(artifact);
+    const checked = validateV4(artifact);
+    assert.equal(checked.unobservableCount, sampleCount);
+    assert.deepEqual(artifact, original);
+    assert.deepEqual(artifact.metrics.frame.raw, []);
+    assert.equal(artifact.metrics.frame.summary.medianMs, null);
+    assert.equal(artifact.metrics.frame.summary.p95Ms, null);
+    assert.equal(Object.hasOwn(checked, "passed"), false);
+  });
+test("reverse fixture golden retains the interleaved remaining execution slot", () => {
+  const fixture = {
+    baselineItemOrder: ["e0", "e1", "c0", "c1"],
+    baselineExecuteIds: ["e0", "e1"],
+  };
+  const order = {
+    sourceIds: ["e0"],
+    displayedBeforeIds: ["c0", "c1"],
+    anchorId: "c0",
+    boundaryKind: "next-displayed-row",
+    boundaryId: "c1",
+    expectedExecuteIds: ["e1"],
+    expectedRawCandidateIds: ["c0", "e0", "c1"],
+    expectedItemOrder: ["c0", "e1", "e0", "c1"],
+  };
+  assert.doesNotThrow(() =>
+    validateBaselineReverseFixtureOrder(order, fixture, ["e0"]),
+  );
+  // This tempting full-array remove/splice result moves e1 to another slot.
+  order.expectedItemOrder = ["e1", "c0", "e0", "c1"];
+  assert.throws(
+    () => validateBaselineReverseFixtureOrder(order, fixture, ["e0"]),
+    /original fixture candidate slots/,
+  );
+});
+for (const code of ["identity-clipped", "no-content-verified-frame"])
+  test(`v4 reverse ${code} binds all original raw items and execution members`, () => {
+    assert.equal(
+      validateV4(reverseFixtureArtifact(code)).unobservableCount,
+      sampleCount,
+    );
+  });
+test("v4 failed forward order inputs cannot replace the original fixture", () => {
+  const artifact = fixtureArtifact();
+  const ids = artifact.fixtures[0].baselineItemOrder;
+  [ids[100], ids[101]] = [ids[101], ids[100]];
+  assert.throws(() => validateV4(artifact), /original fixture/);
+});
+test("v4 failed reverse raw order cannot consistently forge an unrelated before item", () => {
+  const artifact = reverseFixtureArtifact();
+  const proof =
+    artifact.baselineFrameObservations[0].failure.evidence.durableProof;
+  const order = proof.candidateOrderProof;
+  for (const ids of [
+    proof.actualItemOrder,
+    order.expectedItemOrder,
+    order.actualItemOrder,
+    order.expectedRawCandidateIds,
+    order.actualRawCandidateIds,
+  ])
+    [ids[0], ids[1]] = [ids[1], ids[0]];
+  assert.throws(() => validateV4(artifact), /original fixture candidate slots/);
+});
+test("v4 explicitly unavailable operation IDs stay bound to their original transaction", () => {
+  const artifact = fixtureArtifact();
+  for (const observation of artifact.baselineFrameObservations) {
+    const evidence = observation.failure.evidence;
+    evidence.operationId = null;
+    delete evidence.commits[0].operationId;
+    evidence.operationIdUnavailableReason =
+      "Persistence request did not expose an operation ID";
+  }
+  assert.equal(validateV4(artifact).unobservableCount, sampleCount);
+  artifact.baselineFrameObservations[0].failure.evidence.commits[0].operationId =
+    "foreign-operation";
+  assert.throws(() => validateV4(artifact), /operation identity/);
+});
+for (const field of [
+  "measurementId",
+  "targetId",
+  "probeCpuMs",
+  "probeChecks",
+  "operationId",
+  "gestureObservation",
+  "requiredDestinationIds",
+  "destinationCardExemptions",
+  "requiredDestinationCardsVerified",
+  "mountedTransferredIds",
+  "expectedDestinationDisplayIds",
+  "visibleTransferredIds",
+])
+  test(`v4 failed witnesses reject missing ${field}`, () => {
+    const artifact = fixtureArtifact();
+    delete artifact.baselineFrameObservations[0].failure.evidence[field];
+    assert.throws(() => validateV4(artifact));
+  });
+for (const [name, mutate] of Object.entries({
+  "unknown field": (e) => {
+    e.acceptedFrame = true;
+  },
+  "foreign measurement": (e) => {
+    e.measurementId = "another-attempt";
+  },
+  "foreign source": (e) => {
+    e.targetId = "e99";
+  },
+  "negative probe cost": (e) => {
+    e.probeCpuMs = -1;
+  },
+  "null probe cost": (e) => {
+    e.probeCpuMs = null;
+  },
+  "string probe count": (e) => {
+    e.probeChecks = "4";
+  },
+  "fractional probe count": (e) => {
+    e.probeChecks = 0.5;
+  },
+  "foreign operation": (e) => {
+    e.operationId = "foreign-operation";
+  },
+  "unavailable operation without reason": (e) => {
+    e.operationId = null;
+    delete e.commits[0].operationId;
+  },
+  "unavailable reason for a present operation": (e) => {
+    e.operationIdUnavailableReason = "not applicable";
+  },
+  "missing required secondary card": (e) => {
+    e.requiredDestinationIds.pop();
+  },
+  "missing mounted secondary card": (e) => {
+    e.mountedTransferredIds.pop();
+  },
+  "forged offscreen exemption": (e) => {
+    e.destinationCardExemptions.push({
+      itemId: "c3",
+      reason: "offscreen-merge-target",
+      targetId: "e3",
+    });
+  },
+  "unverified required card": (e) => {
+    e.requiredDestinationCardsVerified = false;
+  },
+  "swapped visible cards": (e) => {
+    e.visibleTransferredIds.reverse();
+  },
+  "swapped mounted cards": (e) => {
+    e.mountedTransferredIds.reverse();
+  },
+  "missing expected destination member": (e) => {
+    e.expectedDestinationDisplayIds.pop();
+  },
+  "invented frame pass": (e) => {
+    e.frameVerified = true;
+  },
+  "negative input clock": (e) => {
+    e.startEpoch = -1;
+  },
+  "null DOM clock": (e) => {
+    e.domMs = null;
+  },
+  "invalid card geometry": (e) => {
+    e.targetRects[1].width = 0;
+  },
+  "lost durable item": (e) => {
+    e.durableProof.actualItemOrder.pop();
+  },
+  "forged actual hit": (e) => {
+    e.gestureObservation.sourceHitTest.selectedHit = {
+      ...e.gestureObservation.sourceHitTest.selectedHit,
+      interactive: true,
+    };
+  },
+  "out of viewport source": (e) => {
+    e.gestureObservation.sourceHitTest.sourceRect.x = 2000;
+  },
+  "self-consistent forged display order": (e) => {
+    for (const ids of [
+      e.expectedDestinationDisplayIds,
+      e.durableProof.forwardOrderProof.expectedDisplayIds,
+      e.durableProof.forwardOrderProof.actualMountedDisplayIds,
+      e.scenarioEvidence.forwardOrderExpectation.expectedDisplayIds,
+    ])
+      [ids[0], ids[1]] = [ids[1], ids[0]];
+  },
+}))
+  test(`v4 failed witnesses reject ${name}`, () => {
+    const artifact = fixtureArtifact();
+    mutate(artifact.baselineFrameObservations[0].failure.evidence);
+    assert.throws(() => validateV4(artifact));
+  });
 
 test("profile-count unobservable original attempts have no numeric frame value or pass claim", () => {
   const result = validate(fixtureArtifact());

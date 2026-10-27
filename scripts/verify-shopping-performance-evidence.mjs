@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import {
   validateBaselineFrameObservations,
+  validateBaselineReverseFixtureOrder,
   verifyBaselineFrameObservationFiles,
 } from "./baseline-frame-performance-observations.mjs";
 export { verifyBaselineFrameObservationFiles };
@@ -710,7 +711,11 @@ export function validateAcceptedScenarioProof(sample, condition) {
     }
   }
 }
-function validateAcceptedDestinationProof(sample, condition) {
+function validateAcceptedDestinationProof(
+  sample,
+  condition,
+  requireVisibleOrder = false,
+) {
   if ((condition.scenario ?? "single") === "single") return;
   const moved = sample.expectedTransferredIds;
   const proof = sample.durableProof;
@@ -745,7 +750,10 @@ function validateAcceptedDestinationProof(sample, condition) {
       ),
     "Accepted response lacks every frozen required destination card in independent display order",
   );
-  if (sample.frameVerified && (sample.visualTarget ?? "card") === "card") {
+  if (
+    (sample.frameVerified || requireVisibleOrder) &&
+    (sample.visualTarget ?? "card") === "card"
+  ) {
     const visible = sample.visibleTransferredIds;
     assert(
       uniqueStrings(visible) &&
@@ -995,15 +1003,39 @@ export function validateBaselineFrameObservationArtifact(
   for (const sample of artifact.metrics.frame.samples)
     validateFrameVisualProof(sample, checked.condition);
   validateTransferPhaseProofs(artifact, checked.condition);
-  for (const observation of checked.observations)
-    if (observation.outcome === "endpoint-unobservable")
-      validateAcceptedScenarioProof(
-        {
-          ...observation.failure.evidence,
-          expectedTransferredIds: observation.effectiveIds,
-        },
-        checked.condition,
+  for (const observation of checked.observations) {
+    if (observation.outcome !== "endpoint-unobservable") continue;
+    const failedSample = {
+      ...observation.failure.evidence,
+      expectedTransferredIds: observation.effectiveIds,
+    };
+    // The DOM/source/order witnesses still require the same independent checks.
+    // A failed compositor endpoint never acquires frameVerified or a duration.
+    validateTransferSourceProof(failedSample, artifact.environment);
+    const fixture = artifact.fixtures[observation.sampleIndex - 1];
+    const proof = failedSample.durableProof;
+    if (checked.condition.direction === "candidate-to-execute") {
+      assert(
+        sameJson(
+          proof.forwardOrderProof?.beforeItemOrder,
+          fixture.baselineItemOrder,
+        ) &&
+          sameJson(
+            proof.forwardOrderProof?.beforeExecuteIds,
+            fixture.baselineExecuteIds,
+          ),
+        "Failed forward witness order inputs differ from its original fixture",
       );
+    } else {
+      validateBaselineReverseFixtureOrder(
+        proof.candidateOrderProof,
+        fixture,
+        observation.effectiveIds,
+      );
+    }
+    validateAcceptedScenarioProof(failedSample, checked.condition);
+    validateAcceptedDestinationProof(failedSample, checked.condition, true);
+  }
   return checked;
 }
 // Completed clocks may be retained when a later, independent functional assertion

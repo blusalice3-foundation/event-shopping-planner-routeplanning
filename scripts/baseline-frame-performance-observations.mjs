@@ -60,6 +60,19 @@ const evidenceFields = [
   "durableProof",
   "scenarioEvidence",
   "expectedTransferredIds",
+  "measurementId",
+  "targetId",
+  "probeCpuMs",
+  "probeChecks",
+  "operationId",
+  "operationIdUnavailableReason",
+  "gestureObservation",
+  "requiredDestinationIds",
+  "destinationCardExemptions",
+  "requiredDestinationCardsVerified",
+  "mountedTransferredIds",
+  "expectedDestinationDisplayIds",
+  "visibleTransferredIds",
   ...fileNames.flatMap((name) => [`${name}Path`, `${name}Sha256`]),
   "guard",
   "candidateCount",
@@ -279,6 +292,117 @@ function validateFailedEvidence(observation, fixture, condition) {
       ) &&
       same(evidence.expectedTransferredIds, observation.effectiveIds),
     "scenario selection/moved identity proof differs from attempt",
+  );
+  // These fields are emitted by the v4 producer's shared post-input record.
+  // Accept only that exact shape, without inventing a verified frame or latency.
+  assert(
+    evidence.measurementId === observation.measurementId &&
+      text(evidence.targetId) &&
+      observation.effectiveIds.includes(evidence.targetId) &&
+      object(evidence.gestureObservation) &&
+      evidence.gestureObservation.sourceHitTest?.sourceId === evidence.targetId,
+    "failed v4 witness differs from its actual measurement/source identity",
+  );
+  assert(
+    finite(evidence.probeCpuMs) &&
+      evidence.probeCpuMs >= 0 &&
+      Number.isSafeInteger(evidence.probeChecks) &&
+      evidence.probeChecks > 0,
+    "failed v4 witness has invalid probe counters",
+  );
+  assert(
+    text(evidence.operationId)
+      ? commit.operationId === evidence.operationId &&
+          evidence.operationIdUnavailableReason === undefined
+      : evidence.operationId === null &&
+          (commit.operationId === undefined || commit.operationId === null) &&
+          evidence.operationIdUnavailableReason ===
+            "Persistence request did not expose an operation ID",
+    "failed v4 witness operation identity differs from its durable transaction",
+  );
+  const display = evidence.expectedDestinationDisplayIds;
+  const destinationIds =
+    condition.direction === "candidate-to-execute"
+      ? proof.actualExecuteIds
+      : proof.actualItemOrder.filter(
+          (id) => !proof.actualExecuteIds.includes(id),
+        );
+  assert(
+    unique(display) &&
+      same([...display].sort(), [...destinationIds].sort()) &&
+      same(evidence.requiredDestinationIds, observation.effectiveIds) &&
+      same(evidence.destinationCardExemptions, []) &&
+      evidence.requiredDestinationCardsVerified === true &&
+      same(
+        evidence.mountedTransferredIds,
+        display.filter((id) => observation.effectiveIds.includes(id)),
+      ) &&
+      same(
+        evidence.visibleTransferredIds,
+        evidence.targetRects.map((rect) => rect.itemId),
+      ) &&
+      same(
+        evidence.visibleTransferredIds,
+        display.filter((id) => observation.effectiveIds.includes(id)),
+      ),
+    "failed range witness lacks all required destination cards in recorded display order",
+  );
+}
+
+// Reverse moves refill the original candidate/vacated-source slots. Remaining
+// execution slots stay in place; removing/splicing the full array is incorrect.
+export function validateBaselineReverseFixtureOrder(
+  order,
+  fixture,
+  effectiveIds,
+) {
+  const before = fixture?.baselineItemOrder;
+  const executing = fixture?.baselineExecuteIds;
+  assert(
+    object(order) &&
+      unique(before) &&
+      unique(executing) &&
+      unique(effectiveIds) &&
+      effectiveIds.length > 0 &&
+      executing.every((id) => before.includes(id)) &&
+      effectiveIds.every((id) => executing.includes(id)),
+    "failed reverse witness lacks original fixture/source identities",
+  );
+  const source = before.filter((id) => effectiveIds.includes(id));
+  const candidates = before.filter((id) => !executing.includes(id));
+  assert(
+    unique(order.displayedBeforeIds) &&
+      same([...order.displayedBeforeIds].sort(), [...candidates].sort()) &&
+      order.boundaryKind === "next-displayed-row" &&
+      order.displayedBeforeIds.includes(order.anchorId) &&
+      order.boundaryId ===
+        (order.displayedBeforeIds[
+          order.displayedBeforeIds.indexOf(order.anchorId) + 1
+        ] ?? null),
+    "failed reverse witness boundary differs from its original candidates",
+  );
+  const index =
+    order.boundaryId === null
+      ? candidates.length
+      : candidates.indexOf(order.boundaryId);
+  assert(
+    index >= 0,
+    "failed reverse witness boundary is absent from original fixture",
+  );
+  const rawCandidates = [...candidates];
+  rawCandidates.splice(index, 0, ...source);
+  const expectedExecute = executing.filter((id) => !effectiveIds.includes(id));
+  const remaining = new Set(expectedExecute);
+  let candidateIndex = 0;
+  const expectedItems = before.map((id) =>
+    remaining.has(id) ? id : rawCandidates[candidateIndex++],
+  );
+  assert(
+    same(order.sourceIds, source) &&
+      same(order.expectedExecuteIds, expectedExecute) &&
+      same(order.expectedRawCandidateIds, rawCandidates) &&
+      same(order.expectedItemOrder, expectedItems),
+    "failed reverse witness raw order differs from original fixture candidate slots",
   );
 }
 
