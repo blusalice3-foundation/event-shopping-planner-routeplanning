@@ -14,7 +14,8 @@ import {
   itemExplicitFields,
   itemLimitedPurchaseIntent,
 } from "../../utils/itemUpdateBaseline";
-import { useCallback, useRef } from "react";
+import { useCallback, useLayoutEffect, useRef } from "react";
+import { selectCurrentMode } from "../selectors/appMapViewSelectors";
 import type { UpdateItemFieldsInput } from "../state/itemFieldMutation";
 import { editableItemContentFields } from "../state/itemContentEdits";
 import { applyChangedFields } from "../../features/consistency/domain/mutations";
@@ -305,6 +306,14 @@ export const useShoppingItemMutationCommands = ({
     spaceGroupDragItemIdsRef,
     eventUpdatePreviewEpochRef,
   } = state;
+  const reorderContextRef = useRef({
+    activeEventName,
+    activeEventDate,
+    dayModes,
+  });
+  useLayoutEffect(() => {
+    reorderContextRef.current = { activeEventName, activeEventDate, dayModes };
+  }, [activeEventName, activeEventDate, dayModes]);
   const {
     setEventLists,
     updateItemFields,
@@ -740,6 +749,16 @@ export const useShoppingItemMutationCommands = ({
       sourceColumn?: ShoppingListColumn,
       dragContext?: ShoppingDragMoveContext,
     ) => {
+      const latestContext = reorderContextRef.current;
+      const mode = selectCurrentMode(latestContext);
+      if (
+        !activeEventName ||
+        latestContext.activeEventName !== activeEventName ||
+        latestContext.activeEventDate !== activeEventDate ||
+        !recordEntry(eventListsRef.current, activeEventName) ||
+        mode !== "edit"
+      )
+        return;
       const lifecycleScope = beginShoppingMoveLifecycle(
         dragContext?.token,
         dragId,
@@ -747,14 +766,12 @@ export const useShoppingItemMutationCommands = ({
         targetColumn,
       );
       try {
-        if (!activeEventName) return;
         if (!dragContext) {
           clearRangeSelection();
           setSortState("Manual");
           setBlockSortDirection(null);
         }
 
-        const mode = recordEntry(dayModes, activeEventName)?.[activeEventDate];
         if (
           dragContext &&
           (!sourceColumn ||
@@ -887,7 +904,6 @@ export const useShoppingItemMutationCommands = ({
       clearRangeSelection,
       removeSelectedItemIds,
       queueShoppingMovePatch,
-      dayModes,
       eventLists,
       eventListsRef,
       getEventGeneration,
@@ -909,12 +925,19 @@ export const useShoppingItemMutationCommands = ({
       itemId: string,
       targetColumn?: ShoppingListColumn,
     ) => {
-      if (!activeEventName) return;
+      const latestContext = reorderContextRef.current;
+      const mode = selectCurrentMode(latestContext);
+      if (
+        !activeEventName ||
+        latestContext.activeEventName !== activeEventName ||
+        latestContext.activeEventDate !== activeEventDate ||
+        !recordEntry(eventListsRef.current, activeEventName) ||
+        mode !== "edit"
+      )
+        return;
       clearRangeSelection();
       setSortState("Manual");
       setBlockSortDirection(null);
-
-      const mode = recordEntry(dayModes, activeEventName)?.[activeEventDate];
       const currentEventExecuteItems =
         recordEntry(executeModeItemsRef.current, activeEventName) || {};
       const spaceGroupIds = spaceGroupDragItemIdsRef.current;
@@ -984,8 +1007,8 @@ export const useShoppingItemMutationCommands = ({
       areItemsInSameHall,
       areItemsInSameHallGroup,
       clearRangeSelection,
-      dayModes,
       eventLists,
+      eventListsRef,
       executeModeItemsRef,
       items,
       selectedItemIds,

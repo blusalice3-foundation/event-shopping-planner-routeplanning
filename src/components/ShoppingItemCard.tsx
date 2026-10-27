@@ -500,6 +500,7 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
   readOnly = false,
   preferNativeOptions = false,
 }) => {
+  const allowReorder = viewMode === "edit" && !readOnly;
   const [menuVisible, setMenuVisible] = useState(false);
   recordShoppingRender("card");
   const captureItemGuard = useContext(ItemGuardContext);
@@ -1455,8 +1456,8 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
 
         <div className="flex flex-col">
           <div
-            data-drag-handle
-            className="relative p-1 flex flex-row items-center cursor-grab text-slate-400 dark:text-slate-500 border-b border-slate-200/80 dark:border-slate-700/80 gap-0.5 z-10"
+            data-drag-handle={allowReorder || undefined}
+            className={`relative p-1 flex flex-row items-center ${allowReorder ? "cursor-grab" : ""} text-slate-400 dark:text-slate-500 border-b border-slate-200/80 dark:border-slate-700/80 gap-0.5 z-10`}
           >
             {hallIndex !== undefined && (
               <div
@@ -1480,7 +1481,7 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
               className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
               aria-label={`Select item ${item.circle} - ${item.title}`}
             />
-            {onMoveUp && !readOnly && (
+            {allowReorder && onMoveUp && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1494,8 +1495,8 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
                 <ChevronUpIcon className="w-3.5 h-3.5" />
               </button>
             )}
-            <GripVerticalIcon className="w-4 h-4 mx-1" />
-            {onMoveDown && !readOnly && (
+            {allowReorder && <GripVerticalIcon className="w-4 h-4 mx-1" />}
+            {allowReorder && onMoveDown && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1612,8 +1613,8 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
 
       {/* 左サイドバー */}
       <div
-        data-drag-handle
-        className="relative p-3 flex flex-col items-center justify-start cursor-grab text-slate-400 dark:text-slate-500 border-r border-slate-200/80 dark:border-slate-700/80 space-y-2 z-10 flex-shrink-0"
+        data-drag-handle={allowReorder || undefined}
+        className={`relative p-3 flex flex-col items-center justify-start ${allowReorder ? "cursor-grab" : ""} text-slate-400 dark:text-slate-500 border-r border-slate-200/80 dark:border-slate-700/80 space-y-2 z-10 flex-shrink-0`}
       >
         {/* ホール内番号表示 */}
         {hallIndex !== undefined && (
@@ -1638,7 +1639,7 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
           className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500"
           aria-label={`Select item ${item.circle} - ${item.title}`}
         />
-        {onMoveUp && !readOnly && (
+        {allowReorder && onMoveUp && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -1657,8 +1658,8 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
             <ChevronUpIcon className="w-4 h-4" />
           </button>
         )}
-        <GripVerticalIcon className="w-6 h-6" />
-        {onMoveDown && !readOnly && (
+        {allowReorder && <GripVerticalIcon className="w-6 h-6" />}
+        {allowReorder && onMoveDown && (
           <button
             onClick={(e) => {
               e.stopPropagation();

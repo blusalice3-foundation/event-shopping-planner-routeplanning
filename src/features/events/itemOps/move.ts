@@ -31,10 +31,9 @@ export interface MoveItemResult {
 }
 
 /**
- * D&Dによるアイテム移動。5つのコードパスを統合:
+ * 編集モードのD&Dによるアイテム移動:
  * - editモード列間移動（candidate→execute, execute→candidate）
  * - editモード同列リオーダー（execute列内, candidate列内）
- * - executeモードリオーダー
  */
 export function computeMoveItem(params: {
   dragId: string;
@@ -64,6 +63,8 @@ export function computeMoveItem(params: {
     areItemsInSameHall,
     dragContext,
   } = params;
+
+  if (mode !== "edit") return {};
 
   const isDragInEffectiveSelection = effectiveSelectedIds.has(dragId);
   const isAppendToEnd = hoverId === "__END_OF_LIST__";
@@ -498,45 +499,6 @@ export function computeMoveItem(params: {
     }
   }
 
-  // ---- executeモードリオーダー ----
-  if (mode === "execute") {
-    const newItems = [...allItems];
-
-    if (isDragInEffectiveSelection) {
-      const selectedBlock = newItems.filter((item) =>
-        effectiveSelectedIds.has(item.id),
-      );
-      const listWithoutSelection = newItems.filter(
-        (item) => !effectiveSelectedIds.has(item.id),
-      );
-
-      if (isAppendToEnd) {
-        return { eventListItems: [...listWithoutSelection, ...selectedBlock] };
-      }
-
-      const targetIndex = listWithoutSelection.findIndex(
-        (item) => item.id === hoverId,
-      );
-      if (targetIndex === -1) return {};
-      listWithoutSelection.splice(targetIndex, 0, ...selectedBlock);
-
-      return { eventListItems: listWithoutSelection };
-    } else {
-      const dragIndex = newItems.findIndex((item) => item.id === dragId);
-      if (dragIndex === -1) return {};
-
-      const [draggedItem] = newItems.splice(dragIndex, 1);
-      if (isAppendToEnd) {
-        newItems.push(draggedItem);
-      } else {
-        const hoverIndex = newItems.findIndex((item) => item.id === hoverId);
-        if (hoverIndex === -1) return {};
-        newItems.splice(hoverIndex, 0, draggedItem);
-      }
-      return { eventListItems: newItems };
-    }
-  }
-
   return {};
 }
 
@@ -560,6 +522,8 @@ export function computeMoveItemVertical(
   dayName: string,
   areItemsInSameHall: (id1: string, id2: string) => boolean,
 ): MoveItemResult {
+  if (mode !== "edit") return {};
+
   const isDragInEffectiveSelection = effectiveSelectedIds.has(itemId);
   const savedDayName = existingDayKey(executeModeItems, dayName) ?? dayName;
   const executeIdsSet = new Set(
@@ -771,81 +735,6 @@ export function computeMoveItemVertical(
           candidateItems[currentIndex],
         ];
         return { eventListItems: rebuildItems(candidateItems) };
-      }
-    }
-  }
-
-  // ---- executeモード ----
-  if (mode === "execute") {
-    const newItems = [...allItems];
-    const currentIndex = newItems.findIndex((item) => item.id === itemId);
-
-    if (direction === "up") {
-      if (currentIndex <= 0) return {};
-
-      if (isDragInEffectiveSelection) {
-        const selectedBlock = newItems.filter((item) =>
-          effectiveSelectedIds.has(item.id),
-        );
-        const listWithoutSelection = newItems.filter(
-          (item) => !effectiveSelectedIds.has(item.id),
-        );
-        const firstSelectedIndex = newItems.findIndex((item) =>
-          effectiveSelectedIds.has(item.id),
-        );
-
-        if (firstSelectedIndex > 0) {
-          const newTargetIndex = firstSelectedIndex - 1;
-          listWithoutSelection.splice(newTargetIndex, 0, ...selectedBlock);
-          return { eventListItems: listWithoutSelection };
-        }
-        return {};
-      } else {
-        [newItems[currentIndex - 1], newItems[currentIndex]] = [
-          newItems[currentIndex],
-          newItems[currentIndex - 1],
-        ];
-        return { eventListItems: newItems };
-      }
-    } else {
-      // down
-      if (currentIndex < 0 || currentIndex >= newItems.length - 1) return {};
-
-      if (isDragInEffectiveSelection) {
-        const selectedBlock = newItems.filter((item) =>
-          effectiveSelectedIds.has(item.id),
-        );
-        const listWithoutSelection = newItems.filter(
-          (item) => !effectiveSelectedIds.has(item.id),
-        );
-
-        let lastSelectedIndex = -1;
-        newItems.forEach((item, index) => {
-          if (effectiveSelectedIds.has(item.id)) lastSelectedIndex = index;
-        });
-
-        if (lastSelectedIndex >= 0 && lastSelectedIndex < newItems.length - 1) {
-          const jumpOverItemId = newItems[lastSelectedIndex + 1].id;
-          const targetIndexInListWithout = listWithoutSelection.findIndex(
-            (item) => item.id === jumpOverItemId,
-          );
-
-          if (targetIndexInListWithout !== -1) {
-            listWithoutSelection.splice(
-              targetIndexInListWithout + 1,
-              0,
-              ...selectedBlock,
-            );
-            return { eventListItems: listWithoutSelection };
-          }
-        }
-        return {};
-      } else {
-        [newItems[currentIndex], newItems[currentIndex + 1]] = [
-          newItems[currentIndex + 1],
-          newItems[currentIndex],
-        ];
-        return { eventListItems: newItems };
       }
     }
   }

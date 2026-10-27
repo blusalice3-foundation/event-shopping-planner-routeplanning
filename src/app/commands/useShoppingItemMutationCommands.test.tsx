@@ -15,7 +15,7 @@ import {
   renderHook,
   screen,
 } from "@testing-library/react";
-import { useState } from "react";
+import { Suspense, startTransition, useState } from "react";
 import ShoppingList from "../../components/ShoppingList";
 import { useListInteractionState } from "../../features/lists/hooks/useListInteractionState";
 import { describe, expect, it, vi } from "vitest";
@@ -352,6 +352,248 @@ const frozenDrag = (
 });
 
 describe("useShoppingItemMutationCommands", () => {
+  it.each(["execute", "focus"] as const)(
+    "rejects new drag and vertical moves in %s mode without queue, selection, or sort effects",
+    (mode) => {
+      const items = [item("a", { number: "1" }), item("b", { number: "2" })];
+      const harness = createHarness({
+        eventLists: { [EVENT]: items },
+        items,
+        dayModes: { [EVENT]: { [DAY]: mode } },
+        executeModeItems: { [EVENT]: { [DAY]: ["a", "b"] } },
+        selectedItemIds: new Set(["a"]),
+        spaceGroupDragItemIds: ["a"],
+        blockSortDirection: "asc",
+      });
+      const before = structuredClone(harness.stores);
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(harness.ports),
+      );
+      act(() => {
+        result.current.moveItem("a", "b", "execute", "execute");
+        result.current.moveItem(
+          "a",
+          "b",
+          "execute",
+          "execute",
+          frozenDrag("execute", "execute", ["a"], ["a"], items),
+        );
+        result.current.moveItemUp("b", "execute");
+        result.current.moveItemDown("a", "execute");
+      });
+      expect(harness.stores).toEqual(before);
+      expect(harness.refs.spaceGroupDragItemIdsRef.current).toEqual(["a"]);
+      for (const spy of Object.values(harness.spies))
+        expect(spy).not.toHaveBeenCalled();
+      expect(
+        harness.ports.persistence.commitApplicationSnapshotPatch,
+      ).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["execute", "focus"] as const)(
+    "rejects callbacks and gestures captured in edit mode after changing to %s",
+    (mode) => {
+      const items = [item("a", { number: "1" }), item("b", { number: "2" })];
+      const harness = createHarness({
+        eventLists: { [EVENT]: items },
+        items,
+        executeModeItems: { [EVENT]: { [DAY]: ["a", "b"] } },
+      });
+      const { result, rerender } = renderHook(
+        ({ dayModes }) =>
+          useShoppingItemMutationCommands({
+            ...harness.ports,
+            state: { ...harness.ports.state, dayModes },
+          }),
+        { initialProps: { dayModes: harness.stores.dayModes } },
+      );
+      const captured = result.current;
+      const drag = frozenDrag("execute", "execute", ["a"], ["a"], items);
+      const before = structuredClone(harness.stores);
+      rerender({ dayModes: { [EVENT]: { [DAY]: mode } } });
+      act(() => {
+        captured.moveItem("a", "b", "execute", "execute", drag);
+        captured.moveItem("a", "b", "execute", "execute");
+        captured.moveItemUp("b", "execute");
+        captured.moveItemDown("a", "execute");
+        result.current.moveItemDown("a", "execute");
+      });
+      expect(harness.stores).toEqual(before);
+      for (const spy of Object.values(harness.spies))
+        expect(spy).not.toHaveBeenCalled();
+      expect(
+        harness.ports.persistence.commitApplicationSnapshotPatch,
+      ).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["execute", "focus"] as const)(
+    "keeps committed %s mode guarded when an edit render is abandoned",
+    (mode) => {
+      const items = [item("a", { number: "1" }), item("b", { number: "2" })];
+      const harness = createHarness({
+        eventLists: { [EVENT]: items },
+        items,
+        executeModeItems: { [EVENT]: { [DAY]: ["a", "b"] } },
+      });
+      const suspendedRender = vi.fn();
+      const pending = new Promise<void>(() => {});
+      const { result, rerender } = renderHook(
+        ({ dayModes, suspended }) => {
+          const commands = useShoppingItemMutationCommands({
+            ...harness.ports,
+            state: { ...harness.ports.state, dayModes },
+          });
+          if (suspended) {
+            suspendedRender();
+            throw pending;
+          }
+          return commands;
+        },
+        {
+          initialProps: { dayModes: harness.stores.dayModes, suspended: false },
+          wrapper: ({ children }) => (
+            <Suspense fallback={null}>{children}</Suspense>
+          ),
+        },
+      );
+      const captured = result.current;
+      rerender({ dayModes: { [EVENT]: { [DAY]: mode } }, suspended: false });
+      const committed = result.current;
+      const before = structuredClone(harness.stores);
+      act(() => {
+        startTransition(() =>
+          rerender({ dayModes: harness.stores.dayModes, suspended: true }),
+        );
+      });
+      expect(suspendedRender).toHaveBeenCalled();
+      expect(result.current).toBe(committed);
+      act(() => {
+        captured.moveItem(
+          "a",
+          "b",
+          "execute",
+          "execute",
+          frozenDrag("execute", "execute", ["a"], ["a"], items),
+        );
+        captured.moveItem("a", "b", "execute", "execute");
+        captured.moveItemUp("b", "execute");
+        captured.moveItemDown("a", "execute");
+      });
+      expect(harness.stores).toEqual(before);
+      for (const spy of Object.values(harness.spies))
+        expect(spy).not.toHaveBeenCalled();
+      expect(
+        harness.ports.persistence.commitApplicationSnapshotPatch,
+      ).not.toHaveBeenCalled();
+    },
+  );
+
+  it("keeps committed edit moves available when an execute render is abandoned", () => {
+    const items = [item("a", { number: "1" }), item("b", { number: "2" })];
+    const harness = createHarness({ eventLists: { [EVENT]: items }, items });
+    const suspendedRender = vi.fn();
+    const pending = new Promise<void>(() => {});
+    const { result, rerender } = renderHook(
+      ({ dayModes, suspended }) => {
+        const commands = useShoppingItemMutationCommands({
+          ...harness.ports,
+          state: { ...harness.ports.state, dayModes },
+        });
+        if (suspended) {
+          suspendedRender();
+          throw pending;
+        }
+        return commands;
+      },
+      {
+        initialProps: { dayModes: harness.stores.dayModes, suspended: false },
+        wrapper: ({ children }) => (
+          <Suspense fallback={null}>{children}</Suspense>
+        ),
+      },
+    );
+    const committed = result.current;
+    act(() => {
+      startTransition(() =>
+        rerender({
+          dayModes: { [EVENT]: { [DAY]: "execute" } },
+          suspended: true,
+        }),
+      );
+    });
+    expect(suspendedRender).toHaveBeenCalled();
+    expect(result.current).toBe(committed);
+    act(() => committed.moveItemDown("a", "candidate"));
+    expect(harness.stores.eventLists[EVENT].map(({ id }) => id)).toEqual([
+      "b",
+      "a",
+    ]);
+    expect(harness.spies.setEventLists).toHaveBeenCalledOnce();
+  });
+
+  it.each(["event", "day"] as const)(
+    "rejects move callbacks retained from a different active %s",
+    (changedScope) => {
+      const items = [item("a", { number: "1" }), item("b", { number: "2" })];
+      const harness = createHarness({ eventLists: { [EVENT]: items }, items });
+      const { result, rerender } = renderHook(
+        ({ state }) =>
+          useShoppingItemMutationCommands({ ...harness.ports, state }),
+        { initialProps: { state: harness.ports.state } },
+      );
+      const captured = result.current;
+      const before = structuredClone(harness.stores);
+      rerender({
+        state: {
+          ...harness.ports.state,
+          ...(changedScope === "event"
+            ? { activeEventName: "other-event" }
+            : { activeEventDate: "other-day" }),
+        },
+      });
+      act(() => {
+        captured.moveItem("b", "a", "candidate", "candidate");
+        captured.moveItemUp("b", "candidate");
+        captured.moveItemDown("a", "candidate");
+      });
+      expect(harness.stores).toEqual(before);
+      for (const spy of Object.values(harness.spies))
+        expect(spy).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["event", "day"] as const)(
+    "uses the displayed edit default when the %s mode bucket is missing",
+    (missingBucket) => {
+      for (const operation of ["drag", "up", "down"] as const) {
+        const items = [item("a", { number: "1" }), item("b", { number: "2" })];
+        const harness = createHarness({
+          eventLists: { [EVENT]: items },
+          items,
+          dayModes: missingBucket === "event" ? {} : { [EVENT]: {} },
+        });
+        const { result, unmount } = renderHook(() =>
+          useShoppingItemMutationCommands(harness.ports),
+        );
+        act(() => {
+          if (operation === "drag")
+            result.current.moveItem("b", "a", "candidate", "candidate");
+          else if (operation === "up")
+            result.current.moveItemUp("b", "candidate");
+          else result.current.moveItemDown("a", "candidate");
+        });
+        expect(harness.stores.eventLists[EVENT].map(({ id }) => id)).toEqual([
+          "b",
+          "a",
+        ]);
+        expect(harness.spies.setEventLists).toHaveBeenCalledOnce();
+        unmount();
+      }
+    },
+  );
+
   it.each(["candidate", "execute"] as const)(
     "supplies the accepted baseline for a second %s move before the screen rerenders",
     (sourceColumn) => {

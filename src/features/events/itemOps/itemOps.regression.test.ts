@@ -9,6 +9,7 @@ import {
   computeDeleteItem,
   computeInsertIntoExecuteAtPosition,
   computeMoveItem,
+  computeMoveItemVertical,
   computeRemoveFromExecuteListFromMap,
   computeRemoveFromExecuteListFromMapWithResult,
   computeUpdateItemPriority,
@@ -48,6 +49,52 @@ const halls: HallDefinition[] = [
 const emptySettings: HallRouteSettings = { hallOrder: [], hallVisitLists: [] };
 
 describe("itemOps regressions", () => {
+  it.each(["execute", "focus", undefined] as const)(
+    "rejects drag and vertical reorders outside edit mode (%s) without changing inputs",
+    (mode) => {
+      const allItems = [makeItem("a", "A", "01"), makeItem("b", "A", "02")];
+      const executeModeItems = { [dayName]: ["a", "b"] };
+      const selectedIds = new Set(["a"]);
+      const before = structuredClone({
+        allItems,
+        executeModeItems,
+        selectedIds,
+      });
+      for (const column of ["candidate", "execute"] as const) {
+        expect(
+          computeMoveItem({
+            dragId: "a",
+            hoverId: "__END_OF_LIST__",
+            sourceColumn: column,
+            targetColumn: column,
+            mode,
+            effectiveSelectedIds: selectedIds,
+            allItems,
+            executeModeItems,
+            dayName,
+            selectedBlockFilters: new Set(),
+          }),
+        ).toEqual({});
+        for (const direction of ["up", "down"] as const) {
+          expect(
+            computeMoveItemVertical(
+              direction,
+              direction === "up" ? "b" : "a",
+              column,
+              mode,
+              selectedIds,
+              allItems,
+              executeModeItems,
+              dayName,
+              () => true,
+            ),
+          ).toEqual({});
+        }
+      }
+      expect({ allItems, executeModeItems, selectedIds }).toEqual(before);
+    },
+  );
+
   it("promotes the first surviving visit member when deleting its representative", () => {
     const a1 = makeItem("a1", "A", "01a");
     const between = makeItem("between", "B", "02");
