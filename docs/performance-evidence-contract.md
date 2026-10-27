@@ -22,6 +22,8 @@ v3とv4は終了条件の意味が異なるため、旧v3のrawをv4の正式受
 
 2026-10-28確認：製品ソース3e6cece・同じv4／fixture／completion10の独立した通常runは全144ケース・576指標が成立した。オフラインconsumer7fd1c0cの比較結果は、変更前4frameの真正未観測と旧機能失敗によりincompleteを維持する。絶対基準の通過と相対性能の解消を分け、正常操作で繰り返し残る増加を通過へ読み替えない。実行根拠・原失敗の保全・sourceの対応は[レビュー修正記録](dnd-selection-rendering-review-remediation-20261027.md)を参照する。
 
+新160msの読み取り専用再判定は、確定方針source `b9cea9f` に結び付けて1回完了した。実測source3eの変更後主530指標は全通過し、保存46指標は別扱い。元150msのrun・raw・当初合否、変更前の機能失敗・真正未観測、全277相対増加行を保持し、受容注記は指定の同列500touch responseだけとした。[別再判定の最終記録](D:/esp-fix-validation-20261027/criteria-160-actual-reassessment-20261027T174731976Z-1d69efc8/final-handoff.json)。
+
 ## 買い物ブラウザ性能の測定回数（2026-10-26）
 
 `run-shopping-browser-evidence.mjs` が実行する4群は、PR確認 `pr` が各操作・指標2回、実装完了判定 `completion` が各操作・指標10回である。`ESP_PERFORMANCE_PROFILE` またはrunnerの `--profile` で選び、指定なしは `completion` とする。PR2回の `passed` は実装完了へ流用せず、完了の前後比較は同じ `completion` profileで採取する。
