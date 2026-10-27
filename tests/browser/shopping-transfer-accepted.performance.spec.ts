@@ -163,6 +163,7 @@ for (const condition of acceptedTransferConditions)
                 session,
                 condition,
                 scenario,
+                before,
               );
               const measurementId = `accepted-${condition.scenario}-${condition.input}-${condition.direction}-${measurementKind}-${index}`;
               let rangeFramePreparation:
@@ -319,12 +320,15 @@ for (const condition of acceptedTransferConditions)
                   "The frozen engine must preserve the prepared source position",
                 ).toBeLessThanOrEqual(1);
                 expect(frame.visibleSourceIds).toHaveLength(3);
-                expect(frame.visibleSourceIds).toEqual(
-                  expect.arrayContaining(scenario.effectiveIds),
-                );
+                expect(frame.visibleSourceIds).toEqual(scenario.effectiveIds);
                 expect(frame.visibleTransferredIds).toHaveLength(3);
+                const expectedDestinationOrder =
+                  scenario.forwardOrderExpectation?.expectedDisplayIds ??
+                  scenario.reverseOrderExpectation!.expectedDisplayIds;
                 expect(frame.visibleTransferredIds).toEqual(
-                  expect.arrayContaining(scenario.effectiveIds),
+                  expectedDestinationOrder.filter((id) =>
+                    scenario.effectiveIds.includes(id),
+                  ),
                 );
                 expect(frame.correlation.sourceProofs).toHaveLength(3);
                 expect(frame.correlation.targetProofs).toHaveLength(3);

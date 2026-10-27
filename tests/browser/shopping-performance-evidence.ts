@@ -16,7 +16,7 @@ export const performanceAcceptanceCriteriaForGroup = (group: string) =>
   criteriaForGroup(group, performanceMeasurementProfile);
 export const shoppingPerformanceThresholds =
   performanceAcceptanceCriteriaForGroup("shopping").acceptanceThresholds;
-export const shoppingInstrumentVersion = "shopping-rendering-v3";
+export const shoppingInstrumentVersion = "shopping-rendering-v4";
 export function shoppingEvidenceIdentity(
   group: "shopping" | "range" | "drag" | "transfer",
   measurementKind: "response" | "frame" = "response",

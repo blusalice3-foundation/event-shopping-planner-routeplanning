@@ -26,7 +26,7 @@ import {
   validatePerformanceSamplingMetadata,
 } from "./shopping-performance-evidence-contract.mjs";
 export const SCHEMA_VERSION = 1;
-export const INSTRUMENT_VERSION = "shopping-rendering-v3";
+export const INSTRUMENT_VERSION = "shopping-rendering-v4";
 const ownPath = fileURLToPath(import.meta.url);
 const groupSpecs = performanceGroupSpecs;
 const attachmentNames = performanceAttachmentNames;
@@ -370,6 +370,141 @@ export function validateTransferSourceProof(sample, environment) {
     "Trusted drag source point does not match its selected real source hit",
   );
 }
+// This oracle uses only frozen pre-input membership, visit groups and the target
+// boundary. Durable output and the reference image never supply expected order.
+function validateForwardOrderProof(sample, condition) {
+  const proof = sample.durableProof;
+  const order = proof.forwardOrderProof;
+  const before = order?.beforeItemOrder;
+  const executing = order?.beforeExecuteIds;
+  const source = order?.sourceIds;
+  assert(
+    order?.contract === "execution-visit-tail-and-anchor-boundary" &&
+      uniqueStrings(before) &&
+      before.length === condition.count &&
+      uniqueStrings(executing) &&
+      executing.every((id) => before.includes(id)) &&
+      uniqueStrings(source) &&
+      sameMembers(source, sample.expectedTransferredIds) &&
+      sameJson(
+        source,
+        before.filter((id) => source.includes(id)),
+      ) &&
+      source.every((id) => !executing.includes(id)),
+    "Forward order proof lacks frozen independent item/execution/source order",
+  );
+  const validateVisits = (visits, ids) => {
+    assert(
+      Array.isArray(visits) &&
+        uniqueStrings(visits.map((visit) => visit.key)) &&
+        visits.every(
+          (visit) =>
+            uniqueStrings(visit.itemIds) &&
+            visit.itemIds.length > 0 &&
+            sameJson(
+              visit.itemIds,
+              ids.filter((id) => visit.itemIds.includes(id)),
+            ),
+        ) &&
+        sameMembers(
+          visits.flatMap((visit) => visit.itemIds),
+          ids,
+        ) &&
+        sameJson(
+          visits.map((visit) => visit.itemIds[0]),
+          ids.filter((id) => visits.some((visit) => visit.itemIds[0] === id)),
+        ),
+      "Forward order proof lacks complete frozen visit membership/order",
+    );
+  };
+  validateVisits(order.beforeVisits, executing);
+  validateVisits(order.sourceVisits, source);
+  const anchorVisit = order.beforeVisits.findIndex((visit) =>
+    visit.itemIds.includes(order.anchorId),
+  );
+  assert(
+    anchorVisit >= 0 &&
+      order.boundaryKind ===
+        (condition.scenario === "collapsed"
+          ? "collapsed-after-reference-visit"
+          : "after-reference-visit"),
+    "Forward order proof has no independent execution anchor",
+  );
+  const boundary = order.beforeVisits[anchorVisit + 1]?.itemIds[0] ?? null;
+  assert(
+    order.boundaryId === boundary,
+    "Forward order proof changed the frozen target boundary",
+  );
+  const inserted = new Map();
+  const unmerged = [];
+  for (const visit of order.sourceVisits) {
+    const existing = order.beforeVisits.find(
+      (entry) => entry.key === visit.key,
+    );
+    if (existing) inserted.set(existing.itemIds.at(-1), visit.itemIds);
+    else unmerged.push(...visit.itemIds);
+  }
+  const expectedExecuteIds = executing.flatMap((id) => [
+    id,
+    ...(inserted.get(id) ?? []),
+  ]);
+  const insertionIndex =
+    boundary === null
+      ? expectedExecuteIds.length
+      : expectedExecuteIds.indexOf(boundary);
+  assert(
+    insertionIndex >= 0,
+    "Forward order proof boundary is absent from baseline execution",
+  );
+  expectedExecuteIds.splice(insertionIndex, 0, ...unmerged);
+  const keyById = new Map(
+    [...order.beforeVisits, ...order.sourceVisits].flatMap((visit) =>
+      visit.itemIds.map((id) => [id, visit.key]),
+    ),
+  );
+  const displayVisits = new Map();
+  for (const id of expectedExecuteIds) {
+    const key = keyById.get(id);
+    if (!displayVisits.has(key)) displayVisits.set(key, []);
+    displayVisits.get(key).push(id);
+  }
+  const expectedDisplayIds = [...displayVisits.values()].flat();
+  const expectation = Object.fromEntries(
+    Object.entries(order).filter(
+      ([key]) =>
+        ![
+          "actualItemOrder",
+          "actualExecuteIds",
+          "actualMountedDisplayIds",
+          "rawOrderVerified",
+          "displayOrderVerified",
+        ].includes(key),
+    ),
+  );
+  assert(
+    sameJson(sample.scenarioEvidence?.forwardOrderExpectation, expectation) &&
+      order.rawOrderVerified === true &&
+      order.displayOrderVerified === true &&
+      sameJson(order.expectedItemOrder, before) &&
+      sameJson(order.expectedExecuteIds, expectedExecuteIds) &&
+      sameJson(order.expectedDisplayIds, expectedDisplayIds) &&
+      sameJson(order.actualItemOrder, before) &&
+      sameJson(order.actualExecuteIds, expectedExecuteIds) &&
+      sameJson(proof.actualItemOrder, before) &&
+      sameJson(proof.actualExecuteIds, expectedExecuteIds) &&
+      uniqueStrings(order.actualMountedDisplayIds) &&
+      order.actualMountedDisplayIds.every((id) =>
+        expectedDisplayIds.includes(id),
+      ) &&
+      sameJson(
+        order.actualMountedDisplayIds,
+        expectedDisplayIds.filter((id) =>
+          order.actualMountedDisplayIds.includes(id),
+        ),
+      ),
+    "Forward scenario does not independently prove complete durable and display order",
+  );
+}
 export function validateAcceptedScenarioProof(sample, condition) {
   const scenario = condition.scenario ?? "single";
   if (scenario === "single" || terminalScenarios.has(scenario)) return;
@@ -542,6 +677,7 @@ export function validateAcceptedScenarioProof(sample, condition) {
       "Reverse scenario moved block does not precede its independent candidate boundary",
     );
   } else {
+    validateForwardOrderProof(sample, condition);
     const expectedTailCount =
       scenario === "same-visit-merge"
         ? 1
@@ -572,6 +708,55 @@ export function validateAcceptedScenarioProof(sample, condition) {
         "Forward merge did not append after the existing durable visit tail",
       );
     }
+  }
+}
+function validateAcceptedDestinationProof(sample, condition) {
+  if ((condition.scenario ?? "single") === "single") return;
+  const moved = sample.expectedTransferredIds;
+  const proof = sample.durableProof;
+  const expectedDisplayIds =
+    condition.direction === "candidate-to-execute"
+      ? proof.forwardOrderProof.expectedDisplayIds
+      : proof.candidateOrderProof.expectedDisplayIds;
+  const offscreen =
+    condition.scenario === "offscreen" ? proof.offscreenIdentityProof : null;
+  const exemptions = offscreen
+    ? [
+        {
+          itemId: offscreen.source,
+          reason: "offscreen-merge-target",
+          targetId: offscreen.target,
+        },
+      ]
+    : [];
+  const required = moved.filter((id) => !offscreen || id !== offscreen.source);
+  const mounted = sample.mountedTransferredIds;
+  assert(
+    sameJson(sample.requiredDestinationIds, required) &&
+      sameJson(sample.destinationCardExemptions, exemptions) &&
+      sample.requiredDestinationCardsVerified === true &&
+      sameJson(sample.expectedDestinationDisplayIds, expectedDisplayIds) &&
+      uniqueStrings(mounted) &&
+      mounted.every((id) => moved.includes(id)) &&
+      required.every((id) => mounted.includes(id)) &&
+      sameJson(
+        mounted,
+        expectedDisplayIds.filter((id) => mounted.includes(id)),
+      ),
+    "Accepted response lacks every frozen required destination card in independent display order",
+  );
+  if (sample.frameVerified && (sample.visualTarget ?? "card") === "card") {
+    const visible = sample.visibleTransferredIds;
+    assert(
+      uniqueStrings(visible) &&
+        visible.length > 0 &&
+        visible.every((id) => moved.includes(id)) &&
+        sameJson(
+          visible,
+          expectedDisplayIds.filter((id) => visible.includes(id)),
+        ),
+      "Accepted frame visible identities do not follow the independent pre-input destination order",
+    );
   }
 }
 function validateTransferPhaseProofs(
@@ -609,6 +794,7 @@ function validateTransferPhaseProofs(
       if (!terminalScenarios.has(condition.scenario)) {
         validateTransferSourceProof(sample, artifact.environment);
         validateAcceptedScenarioProof(sample, condition);
+        validateAcceptedDestinationProof(sample, condition);
         if (
           condition.scenario === "range" &&
           artifact.measurementKind === "frame"

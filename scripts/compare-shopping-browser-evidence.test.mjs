@@ -132,7 +132,7 @@ async function partialShoppingRun(directory, phase, base = 10, options = {}) {
   const metadata = {
     phase,
     runId,
-    instrumentVersion: "shopping-rendering-v3",
+    instrumentVersion: options.instrumentVersion ?? "shopping-rendering-v4",
     ...performanceSamplingMetadata(),
     acceptanceCriteriaByGroup:
       options.criteria ?? performanceAcceptanceCriteriaByGroup,
@@ -197,10 +197,14 @@ async function partialShoppingRun(directory, phase, base = 10, options = {}) {
             const data = {
               ...shopping(base),
               ...condition,
-              ...evidenceIdentity("shopping", "response", {
-                ESP_EVIDENCE_PHASE: phase,
-                ESP_EVIDENCE_RUN_ID: runId,
-              }),
+              ...(options.identityFactory ?? evidenceIdentity)(
+                "shopping",
+                "response",
+                {
+                  ESP_EVIDENCE_PHASE: phase,
+                  ESP_EVIDENCE_RUN_ID: runId,
+                },
+              ),
             };
             if (index === 0 && options.omitUi) delete data.uiSummary;
             return {
@@ -680,6 +684,8 @@ for (const historical of [false, true])
     const identityFactory =
       historicalFixture?.legacyVerifier.evidenceIdentity ?? evidenceIdentity;
     const beforePolicyRoot = historicalFixture?.root;
+    const compare =
+      historicalFixture?.compareBrowserEvidence ?? compareBrowserEvidence;
     const metadataPath = path.join(beforeRoot, "run-result.json");
     const metadata = JSON.parse(await readFile(metadataPath, "utf8"));
     await writeFile(metadataPath, JSON.stringify(metadata), "utf8");
@@ -737,6 +743,29 @@ for (const historical of [false, true])
       candidateOrderProof: null,
       mergeTailProof: [],
     };
+    const forwardOrderExpectation = {
+      contract: "execution-visit-tail-and-anchor-boundary",
+      beforeItemOrder: [...allIds],
+      beforeExecuteIds: [...executeIds],
+      sourceIds: [...effectiveIds],
+      beforeVisits: executeIds.map((id) => ({ key: id, itemIds: [id] })),
+      sourceVisits: effectiveIds.map((id) => ({ key: id, itemIds: [id] })),
+      anchorId: executeIds.at(-1),
+      boundaryKind: "after-reference-visit",
+      boundaryId: null,
+      expectedItemOrder: [...allIds],
+      expectedExecuteIds: [...executeIds, ...effectiveIds],
+      expectedDisplayIds: [...executeIds, ...effectiveIds],
+    };
+    if (!historical)
+      durableProof.forwardOrderProof = {
+        ...forwardOrderExpectation,
+        actualItemOrder: [...allIds],
+        actualExecuteIds: [...executeIds, ...effectiveIds],
+        actualMountedDisplayIds: [...executeIds, ...effectiveIds],
+        rawOrderVerified: true,
+        displayOrderVerified: true,
+      };
     const fixtures = [],
       observations = [];
     for (let sampleIndex = 1; sampleIndex <= 10; sampleIndex++) {
@@ -809,7 +838,10 @@ for (const historical of [false, true])
           "- document: original failed frame endpoint\n",
         )),
         durableProof,
-        scenarioEvidence: { selectionPreparation },
+        scenarioEvidence: {
+          selectionPreparation,
+          ...(!historical ? { forwardOrderExpectation } : {}),
+        },
         expectedTransferredIds: [...effectiveIds],
         guard: {
           itemId: "c3",
@@ -915,7 +947,7 @@ for (const historical of [false, true])
       }),
       "utf8",
     );
-    const { exitCode, result } = await compareBrowserEvidence({
+    const { exitCode, result } = await compare({
       beforeRoot,
       afterRoot,
       beforePolicyRoot,
@@ -979,7 +1011,7 @@ for (const historical of [false, true])
     contradictoryReport.suites[0].specs[0].tests[0].results[0].status =
       "passed";
     await writeFile(reportPath, JSON.stringify(contradictoryReport), "utf8");
-    const rejected = await compareBrowserEvidence({
+    const rejected = await compare({
       beforeRoot,
       afterRoot,
       beforePolicyRoot,
@@ -1248,12 +1280,19 @@ async function historicalComparisonFixture(t) {
   const policy = HISTORICAL_POLICY_TRANSITION.policyPath;
   const current = await readFile(path.join(currentRoot, policy));
   const files = new Map();
-  const inventory = expectedHistoricalInventory(currentRoot);
+  // Historical bridge fixtures are actual pinned v3 bytes. Current v4 endpoint
+  // contracts must never be written into an invented v3 producer manifest.
+  const historicalSource = "62087221941e10a55562842288a8cc1ab298b1c4";
+  const historicalBytes = (name) =>
+    execFileSync(
+      "git",
+      ["-C", currentRoot, "show", `${historicalSource}:${name}`],
+      { windowsHide: true, maxBuffer: 32 * 1024 * 1024 },
+    );
+  const inventory = expectedHistoricalInventory(currentRoot, historicalSource);
   for (const name of inventory.instrument) {
     const bytes =
-      name === policy
-        ? historicalPolicyBytes(current)
-        : await readFile(path.join(currentRoot, name));
+      name === policy ? historicalPolicyBytes(current) : historicalBytes(name);
     files.set(name, bytes);
     await mkdir(path.dirname(path.join(root, name)), { recursive: true });
     await writeFile(path.join(root, name), bytes);
@@ -1280,11 +1319,41 @@ async function historicalComparisonFixture(t) {
   );
   const afterFiles = new Map(files);
   afterFiles.set(policy, current);
+  // Run the old comparison contract with its own v3 tools and known150 policy.
+  // The current v4 comparator continues to reject historical endpoint semantics.
+  const consumerRoot = path.join(directory, "historical-consumer");
+  const consumerFiles = new Map(afterFiles);
+  for (const name of [
+    "scripts/compare-shopping-browser-evidence.mjs",
+    "scripts/browser-evidence-before-policy.mjs",
+  ])
+    consumerFiles.set(name, historicalBytes(name));
+  for (const [name, bytes] of consumerFiles) {
+    await mkdir(path.dirname(path.join(consumerRoot, name)), {
+      recursive: true,
+    });
+    await writeFile(path.join(consumerRoot, name), bytes);
+  }
+  const historicalComparator = await import(
+    pathToFileURL(
+      path.join(consumerRoot, "scripts/compare-shopping-browser-evidence.mjs"),
+    ).href
+  );
+  const historicalAfterVerifier = await import(
+    pathToFileURL(
+      path.join(
+        consumerRoot,
+        "scripts/verify-shopping-performance-evidence.mjs",
+      ),
+    ).href
+  );
   const fixtureSources = manifestFor(
     new Map(inventory.fixtures.map((name) => [name, files.get(name)])),
   );
   const beforeRoot = await partialShoppingRun(directory, "before", 70, {
     criteria: legacyPolicy.performanceAcceptanceCriteriaByGroup,
+    instrumentVersion: "shopping-rendering-v3",
+    identityFactory: legacyVerifier.evidenceIdentity,
     productCommit: commit,
     instrumentPatch: manifestFor(files),
     fixtureSources,
@@ -1292,6 +1361,8 @@ async function historicalComparisonFixture(t) {
     producerStatus: "failed",
   });
   const afterRoot = await partialShoppingRun(directory, "after", 60, {
+    instrumentVersion: "shopping-rendering-v3",
+    identityFactory: historicalAfterVerifier.evidenceIdentity,
     instrumentPatch: manifestFor(afterFiles),
     fixtureSources,
     finishedAt: "2026-10-26T01:00:00.000Z",
@@ -1304,7 +1375,12 @@ async function historicalComparisonFixture(t) {
     legacyVerifier.evidenceIdentity,
     "failed",
   );
-  await addRangeReport(afterRoot, "after", Array(10).fill(130));
+  await addRangeReport(
+    afterRoot,
+    "after",
+    Array(10).fill(130),
+    historicalAfterVerifier.evidenceIdentity,
+  );
   const read = async (phase) =>
     JSON.parse(
       await readFile(
@@ -1331,6 +1407,7 @@ async function historicalComparisonFixture(t) {
     afterRoot,
     legacyPolicy,
     legacyVerifier,
+    compareBrowserEvidence: historicalComparator.compareBrowserEvidence,
     current,
     files,
     afterFiles,
@@ -1341,6 +1418,30 @@ async function historicalComparisonFixture(t) {
     git,
   };
 }
+for (const afterVersion of ["shopping-rendering-v3", "shopping-rendering-v4"])
+  test(`current v4 comparison rejects v3 before clocks with ${afterVersion} after metadata`, async (t) => {
+    const directory = await mkdtemp(
+      path.join(os.tmpdir(), "esp endpoint version "),
+    );
+    t.after(() => rm(directory, { recursive: true, force: true }));
+    const beforeRoot = await partialShoppingRun(directory, "before", 10, {
+      instrumentVersion: "shopping-rendering-v3",
+    });
+    const afterRoot = await partialShoppingRun(directory, "after", 10, {
+      instrumentVersion: afterVersion,
+    });
+    const { exitCode, result } = await compareBrowserEvidence({
+      beforeRoot,
+      afterRoot,
+    });
+    assert.equal(exitCode, 1);
+    assert.equal(result.rows.length, 0);
+    assert.ok(
+      result.errors.some((message) =>
+        message.includes("unknown instrumentVersion"),
+      ),
+    );
+  });
 test("known policy proof recognizes only exact110-to150 literals, preserving sampling/inventory", async () => {
   const current = await readFile(
     new URL("./shopping-performance-evidence-contract.mjs", import.meta.url),
@@ -1382,7 +1483,7 @@ test("explicit policy root validates old110 records then separately reevaluates1
     path.join(f.beforeRoot, "range/report.json"),
   );
   const afterBytes = await readFile(path.join(f.afterRoot, "run-result.json"));
-  const { result, exitCode } = await compareBrowserEvidence({
+  const { result, exitCode } = await f.compareBrowserEvidence({
     beforeRoot: f.beforeRoot,
     afterRoot: f.afterRoot,
     beforePolicyRoot: f.root,

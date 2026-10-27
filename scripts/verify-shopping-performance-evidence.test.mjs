@@ -140,8 +140,71 @@ function acceptedFixtureProof(condition, moved) {
           },
         ]
       : [];
+  const beforeExecuteIds = ["anchor-1", "other-candidate"];
+  const beforeVisits = beforeExecuteIds.map((id, i) => ({
+    key: `visit-${i}`,
+    itemIds: [id],
+  }));
+  const sourceVisits =
+    count === 1
+      ? [{ key: "visit-0", itemIds: [...moved] }]
+      : moved.map((id, i) => ({
+          key: count === 2 && i < 2 ? `visit-${i}` : `source-${i}`,
+          itemIds: [id],
+        }));
+  const expectedExecuteIds = beforeExecuteIds.flatMap((id, i) => [
+    id,
+    ...sourceVisits
+      .filter((visit) => visit.key === `visit-${i}`)
+      .flatMap((visit) => visit.itemIds),
+  ]);
+  const unmerged = sourceVisits
+    .filter(
+      (visit) => !beforeVisits.some((existing) => existing.key === visit.key),
+    )
+    .flatMap((visit) => visit.itemIds);
+  expectedExecuteIds.splice(
+    expectedExecuteIds.indexOf("other-candidate"),
+    0,
+    ...unmerged,
+  );
+  const forwardOrderExpectation = {
+    contract: "execution-visit-tail-and-anchor-boundary",
+    beforeItemOrder: raw,
+    beforeExecuteIds,
+    sourceIds: moved,
+    beforeVisits,
+    sourceVisits,
+    anchorId: "anchor-1",
+    boundaryKind:
+      condition.scenario === "collapsed"
+        ? "collapsed-after-reference-visit"
+        : "after-reference-visit",
+    boundaryId: "other-candidate",
+    expectedItemOrder: raw,
+    expectedExecuteIds,
+    expectedDisplayIds: expectedExecuteIds,
+  };
   return {
+    requiredDestinationIds:
+      condition.scenario === "offscreen" ? moved.slice(0, 1) : [...moved],
+    destinationCardExemptions:
+      condition.scenario === "offscreen"
+        ? [
+            {
+              itemId: moved[1],
+              reason: "offscreen-merge-target",
+              targetId: "other-candidate",
+            },
+          ]
+        : [],
+    requiredDestinationCardsVerified: true,
+    expectedDestinationDisplayIds: reversed ? raw : expectedExecuteIds,
+    mountedTransferredIds: (reversed ? raw : expectedExecuteIds).filter((id) =>
+      moved.includes(id),
+    ),
     scenarioEvidence: {
+      ...(!reversed ? { forwardOrderExpectation } : {}),
       selectionPreparation: selection,
       ...(condition.scenario === "offscreen"
         ? {
@@ -157,13 +220,23 @@ function acceptedFixtureProof(condition, moved) {
       fullItemContentPreserved: true,
       selectionPreparation: selection,
       actualItemOrder: raw,
-      actualExecuteIds: [],
+      actualExecuteIds: reversed ? [] : expectedExecuteIds,
       mergeProof,
       offscreenIdentityProof:
         condition.scenario === "offscreen"
           ? { ...mergeProof[0], beforeItemPreserved: true }
           : null,
       mergeTailProof: tail,
+      forwardOrderProof: reversed
+        ? null
+        : {
+            ...forwardOrderExpectation,
+            actualItemOrder: raw,
+            actualExecuteIds: expectedExecuteIds,
+            actualMountedDisplayIds: expectedExecuteIds,
+            rawOrderVerified: true,
+            displayOrderVerified: true,
+          },
       candidateOrderProof: reversed
         ? {
             contract: "candidate-raw-boundary-and-default-display",
@@ -275,6 +348,7 @@ const metric = (kind = "response", operation = "response", condition = {}) => {
             sourceAbsent: true,
             destinationOrderVerified: true,
             controlsVerified: true,
+            visibleTransferredIds: [...moved],
             frameTimestampMs: durationMs,
             ...(condition.scenario === "range"
               ? {
@@ -1688,6 +1762,29 @@ test("all accepted category proof fixtures retain direction-specific raw and dis
     );
   }
 });
+test("collapsed forward header preserves its independent after-reference-visit boundary", () => {
+  const condition = {
+    count: 500,
+    input: "native",
+    grouped: true,
+    load: "light",
+    scenario: "collapsed",
+    direction: "candidate-to-execute",
+  };
+  const moved = movedIds(condition);
+  const sample = structuredClone({
+    expectedTransferredIds: moved,
+    ...acceptedFixtureProof(condition, moved),
+  });
+  validateAcceptedScenarioProof(sample, condition);
+  sample.durableProof.forwardOrderProof.boundaryKind = "collapsed-first-member";
+  sample.scenarioEvidence.forwardOrderExpectation.boundaryKind =
+    "collapsed-first-member";
+  assert.throws(
+    () => validateAcceptedScenarioProof(sample, condition),
+    /independent execution anchor/,
+  );
+});
 const acceptedCondition = (
   scenario = "same-visit-merge",
   direction = "execute-to-candidate",
@@ -1770,6 +1867,61 @@ for (const [name, scenario, direction, mutate] of [
     (s) => s.durableProof.mergeTailProof[0].expectedIds.reverse(),
   ],
   [
+    "forward missing independent order proof",
+    "range",
+    "candidate-to-execute",
+    (s) => delete s.durableProof.forwardOrderProof,
+  ],
+  [
+    "forward swapped durable multiple members",
+    "multiple",
+    "candidate-to-execute",
+    (s) => {
+      const actual = s.durableProof.actualExecuteIds;
+      [actual[1], actual[2]] = [actual[2], actual[1]];
+      s.durableProof.forwardOrderProof.actualExecuteIds = [...actual];
+    },
+  ],
+  [
+    "forward swapped durable range members",
+    "range",
+    "candidate-to-execute",
+    (s) => {
+      const actual = s.durableProof.actualExecuteIds;
+      [actual[2], actual[3]] = [actual[3], actual[2]];
+      s.durableProof.forwardOrderProof.actualExecuteIds = [...actual];
+    },
+  ],
+  [
+    "forward self-consistent swapped expected and actual order",
+    "range",
+    "candidate-to-execute",
+    (s) => {
+      const actual = s.durableProof.actualExecuteIds;
+      [actual[2], actual[3]] = [actual[3], actual[2]];
+      const order = s.durableProof.forwardOrderProof;
+      order.actualExecuteIds = [...actual];
+      order.expectedExecuteIds = [...actual];
+      order.expectedDisplayIds = [...actual];
+      order.actualMountedDisplayIds = [...actual];
+      s.scenarioEvidence.forwardOrderExpectation.expectedExecuteIds = [
+        ...actual,
+      ];
+      s.scenarioEvidence.forwardOrderExpectation.expectedDisplayIds = [
+        ...actual,
+      ];
+    },
+  ],
+  [
+    "forward swapped mounted range members",
+    "range",
+    "candidate-to-execute",
+    (s) => {
+      const mounted = s.durableProof.forwardOrderProof.actualMountedDisplayIds;
+      [mounted[2], mounted[3]] = [mounted[3], mounted[2]];
+    },
+  ],
+  [
     "offscreen scroll not restored",
     "offscreen",
     "candidate-to-execute",
@@ -1814,6 +1966,74 @@ for (const [name, scenario, direction, mutate] of [
     assert.throws(() => validateAcceptedScenarioProof(sample, condition));
   });
 
+for (const [name, kind, scenario, mutate] of [
+  [
+    "missing secondary destination card",
+    "response",
+    "range",
+    (s) => s.mountedTransferredIds.pop(),
+  ],
+  [
+    "removed frozen required identity",
+    "response",
+    "range",
+    (s) => s.requiredDestinationIds.pop(),
+  ],
+  [
+    "forged offscreen exemption",
+    "response",
+    "range",
+    (s) => {
+      s.requiredDestinationIds.pop();
+      s.destinationCardExemptions.push({
+        itemId: "item-3",
+        reason: "offscreen-merge-target",
+        targetId: "anchor-1",
+      });
+    },
+  ],
+  [
+    "missing verified destination flag",
+    "response",
+    "multiple",
+    (s) => delete s.requiredDestinationCardsVerified,
+  ],
+  [
+    "swapped visible frame identities",
+    "frame",
+    "range",
+    (s) => {
+      [s.visibleTransferredIds[1], s.visibleTransferredIds[2]] = [
+        s.visibleTransferredIds[2],
+        s.visibleTransferredIds[1],
+      ];
+    },
+  ],
+  [
+    "forged frame expected order",
+    "frame",
+    "range",
+    (s) =>
+      (s.expectedDestinationDisplayIds = [
+        ...s.expectedDestinationDisplayIds,
+      ].reverse()),
+  ],
+  [
+    "false offscreen target exemption",
+    "response",
+    "offscreen",
+    (s) => (s.destinationCardExemptions[0].targetId = "foreign"),
+  ],
+])
+  test(`accepted destination proof rejects ${name}`, () => {
+    const condition = acceptedCondition(scenario, "candidate-to-execute");
+    const data = structuredClone(artifact("transfer", condition, kind));
+    mutate(data.metrics[kind].samples[0]);
+    assert.throws(
+      () => validateEvidenceArtifact(data, "transfer", identity),
+      /destination card|destination order|pre-input destination order/,
+    );
+  });
 for (const operation of ["response", "nextPending", "nextApplied", "save"])
   test(`saving metric membership rejects an unrelated ${operation} measurement set`, () => {
     const a = artifact("transfer");
@@ -2410,9 +2630,8 @@ function baselineFrameIntegrationFixture(partial = false) {
   for (const [index, sample] of data.metrics.frame.samples.entries()) {
     sample.fixtureHash = fixtureHash;
     sample.postconditionErrors = [];
-    sample.durableProof.actualExecuteIds = [...sample.expectedTransferredIds];
     sample.durableProof.expectedExecuteMembership = [
-      ...sample.expectedTransferredIds,
+      ...sample.durableProof.actualExecuteIds,
     ];
     data.fixtures.push({
       index: index + 1,
@@ -2421,7 +2640,9 @@ function baselineFrameIntegrationFixture(partial = false) {
       initialCount: 500,
       isolation: "new-browser-context-per-sample",
       baselineItemOrder: [...sample.durableProof.actualItemOrder],
-      baselineExecuteIds: [],
+      baselineExecuteIds: [
+        ...sample.durableProof.forwardOrderProof.beforeExecuteIds,
+      ],
     });
     data.baselineFrameObservations.push({
       sampleIndex: index + 1,
@@ -2456,10 +2677,7 @@ function baselineFrameIntegrationFixture(partial = false) {
     [`${name}Sha256`]: "e".repeat(64),
   });
   const durableProof = structuredClone(unobservable.durableProof);
-  durableProof.actualExecuteIds = [...unobservable.expectedTransferredIds];
-  durableProof.expectedExecuteMembership = [
-    ...unobservable.expectedTransferredIds,
-  ];
+  durableProof.expectedExecuteMembership = [...durableProof.actualExecuteIds];
   const evidence = {
     postInput: true,
     trusted: true,

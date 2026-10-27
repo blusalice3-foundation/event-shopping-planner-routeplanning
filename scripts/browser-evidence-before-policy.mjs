@@ -44,12 +44,12 @@ const PRODUCER_SPECS = Object.freeze([
   "tests/browser/shopping-transfer-accepted.performance.spec.ts",
   "tests/browser/shopping-transfer-terminal.performance.spec.ts",
 ]);
-export function expectedHistoricalInventory(root) {
+export function expectedHistoricalInventory(root, revision = "HEAD") {
   const transfers = git(root, [
     "ls-tree",
     "-r",
     "--name-only",
-    "HEAD",
+    revision,
     "--",
     "tests/browser",
   ])

@@ -13,7 +13,7 @@ import {
   verifyBaselineFrameObservationFiles,
 } from "./baseline-frame-performance-observations.mjs";
 
-const version = "shopping-rendering-v3";
+const version = "shopping-rendering-v4";
 const sampleCount = performanceSamplingProfile().sampleCount;
 const sourceCommit = "a".repeat(40);
 const fixtureHash = "b".repeat(64);

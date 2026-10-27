@@ -3,7 +3,9 @@ import { verifyTransferLogicalOrder } from "./shopping-transfer-measurement";
 import {
   acceptedScenarioFixture,
   defaultCandidateOrder,
+  forwardExecutionOrderExpectation,
   reverseCandidateOrderExpectation,
+  verifyForwardExecutionOrder,
 } from "./shopping-transfer-scenarios";
 
 const item = (
@@ -255,6 +257,198 @@ test("mixed fixture retains raw requested order and distinct candidate display o
   expect(fixture.effectiveIds).toEqual(["c1", "c2", "c3"]);
 });
 
+const forwardFixture = () => ({
+  items: [
+    item("c0", "01a"),
+    item("c1", "41a"),
+    item("c2", "42a"),
+    item("c3", "43a"),
+    item("e0", "90a"),
+    item("e1", "100a"),
+  ],
+  // The unrelated warmup c0 has already moved, as in the measured fixtures.
+  executeIds: ["e0", "c0", "e1"],
+});
+
+test("forward multiple/range oracle freezes complete source and anchor order before input", () => {
+  const before = forwardFixture();
+  const original = structuredClone(before);
+  const result = forwardExecutionOrderExpectation(before, ["c3", "c1", "c2"], {
+    anchorId: "e0",
+  });
+  expect(result.contract).toBe("execution-visit-tail-and-anchor-boundary");
+  expect(result.sourceIds).toEqual(["c1", "c2", "c3"]);
+  expect(result.boundaryId).toBe("c0");
+  expect(result.expectedExecuteIds).toEqual([
+    "e0",
+    "c1",
+    "c2",
+    "c3",
+    "c0",
+    "e1",
+  ]);
+  expect(result.expectedDisplayIds).toEqual(result.expectedExecuteIds);
+  expect(result.expectedItemOrder).toEqual(
+    before.items.map((entry) => entry.id),
+  );
+  expect(before).toEqual(original);
+});
+
+test("forward complete order verifier rejects the review's c2/c3 swap despite unchanged membership", () => {
+  const before = forwardFixture();
+  const result = forwardExecutionOrderExpectation(before, ["c1", "c2", "c3"], {
+    anchorId: "e0",
+  });
+  const valid = {
+    itemOrder: result.expectedItemOrder,
+    executeIds: ["e0", "c1", "c2", "c3", "c0", "e1"],
+    mountedDisplayIds: ["e0", "c1", "c2", "c3", "c0", "e1"],
+  };
+  expect(verifyForwardExecutionOrder(result, valid).rawOrderVerified).toBe(
+    true,
+  );
+  expect(() =>
+    verifyForwardExecutionOrder(result, {
+      ...valid,
+      executeIds: ["e0", "c1", "c3", "c2", "c0", "e1"],
+    }),
+  ).toThrow("independent complete execution order");
+  expect(() =>
+    verifyForwardExecutionOrder(result, {
+      ...valid,
+      mountedDisplayIds: ["e0", "c1", "c3", "c2", "c0", "e1"],
+    }),
+  ).toThrow("independent execution order");
+  expect(() =>
+    verifyForwardExecutionOrder(result, {
+      ...valid,
+      itemOrder: [...valid.itemOrder].reverse(),
+    }),
+  ).toThrow("full item-array order");
+});
+
+test("forward merges append at every existing raw visit tail and position new visits at one boundary", () => {
+  const before = {
+    items: [
+      item("c1", "90a3"),
+      item("c2", "100a2"),
+      item("c3", "95a"),
+      item("c4", "90a4"),
+      item("e0", "90a"),
+      item("e1", "100a"),
+      item("e2", "90a2"),
+      item("e3", "110a"),
+    ],
+    executeIds: ["e0", "e1", "e2", "e3"],
+  };
+  const result = forwardExecutionOrderExpectation(
+    before,
+    ["c1", "c2", "c3", "c4"],
+    {
+      anchorId: "e0",
+    },
+  );
+  expect(result.sourceVisits.map((visit) => visit.itemIds)).toEqual([
+    ["c1", "c4"],
+    ["c2"],
+    ["c3"],
+  ]);
+  expect(result.boundaryId).toBe("e1");
+  expect(result.expectedExecuteIds).toEqual([
+    "e0",
+    "c3",
+    "e1",
+    "c2",
+    "e2",
+    "c1",
+    "c4",
+    "e3",
+  ]);
+  expect(result.expectedDisplayIds).toEqual([
+    "e0",
+    "e2",
+    "c1",
+    "c4",
+    "c3",
+    "e1",
+    "c2",
+    "e3",
+  ]);
+});
+
+test("forward collapsed lower-half header inserts new visits after its complete visit", () => {
+  const before = {
+    items: [
+      item("c0", "01a"),
+      item("c1", "95a"),
+      item("c2", "96a"),
+      item("e0", "90a"),
+      item("e1", "90a2"),
+      item("e2", "110a"),
+    ],
+    executeIds: ["c0", "e0", "e1", "e2"],
+  };
+  // The gesture targets the lower half of the collapsed e0/e1 header;
+  // scenario.anchorId e2 remains the first card after that header.
+  const result = forwardExecutionOrderExpectation(before, ["c1", "c2"], {
+    anchorId: "e2",
+    collapsedFirstMemberId: "e0",
+  });
+  expect(result.anchorId).toBe("e0");
+  expect(result.boundaryKind).toBe("collapsed-after-reference-visit");
+  expect(result.boundaryId).toBe("e2");
+  expect(result.expectedExecuteIds).toEqual([
+    "c0",
+    "e0",
+    "e1",
+    "c1",
+    "c2",
+    "e2",
+  ]);
+});
+test("forward oracle preserves other-day slots and existing execution order at the end boundary", () => {
+  const before = {
+    items: [item("old", "01a", "2日目"), ...forwardFixture().items],
+    executeIds: ["e1", "e0", "c0"],
+  };
+  const result = forwardExecutionOrderExpectation(before, ["c2", "c1"], {
+    anchorId: "c0",
+  });
+  expect(result.boundaryId).toBeNull();
+  expect(result.expectedExecuteIds).toEqual(["e1", "e0", "c0", "c1", "c2"]);
+  expect(result.expectedItemOrder[0]).toBe("old");
+});
+
+test("forward visit identity keeps priority and day boundaries separate", () => {
+  const before = {
+    items: [
+      { ...item("c1", "90a2"), priorityLevel: "high" },
+      item("e0", "90a"),
+      item("e1", "100a"),
+      item("old", "90a", "2日目"),
+    ],
+    executeIds: ["e0", "e1"],
+  };
+  const result = forwardExecutionOrderExpectation(before, ["c1"], {
+    anchorId: "e0",
+  });
+  expect(result.expectedExecuteIds).toEqual(["e0", "c1", "e1"]);
+  expect(result.beforeVisits[0].key).not.toBe(result.sourceVisits[0].key);
+  expect(() =>
+    forwardExecutionOrderExpectation(before, ["c1", "old"], { anchorId: "e0" }),
+  ).toThrow();
+});
+
+test("forward oracle rejects duplicate, missing, and already-executing inputs", () => {
+  const before = forwardFixture();
+  for (const ids of [[], ["c1", "c1"], ["missing"], ["e0"]])
+    expect(() =>
+      forwardExecutionOrderExpectation(before, ids, { anchorId: "e0" }),
+    ).toThrow();
+  expect(() =>
+    forwardExecutionOrderExpectation(before, ["c1"], { anchorId: "missing" }),
+  ).toThrow();
+});
 test.describe("logical transfer DOM order", () => {
   const expectedIds = [
     "e20",

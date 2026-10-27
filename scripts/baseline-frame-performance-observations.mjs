@@ -293,7 +293,7 @@ export function validateBaselineFrameObservations(
     object(artifact) &&
       artifact.schemaVersion === 1 &&
       text(instrumentVersion) &&
-      instrumentVersion === "shopping-rendering-v3" &&
+      instrumentVersion === "shopping-rendering-v4" &&
       artifact.instrumentVersion === instrumentVersion,
     "unsupported schema/instrument version",
   );

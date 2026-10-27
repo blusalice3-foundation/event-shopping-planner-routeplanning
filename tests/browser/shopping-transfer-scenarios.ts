@@ -53,6 +53,7 @@ type OracleItem = {
   block: string;
   number: string;
   eventDate: string;
+  priorityLevel?: string;
 };
 export function defaultCandidateOrder(items: readonly OracleItem[]) {
   const collator = new Intl.Collator("ja", {
@@ -138,6 +139,137 @@ export function reverseCandidateOrderExpectation(
     expectedDisplayIds: defaultCandidateOrder(
       expectedRawCandidateIds.map((id) => byId.get(id)!),
     ),
+  };
+}
+// Independent fixture oracle: source visits keep raw member order; existing
+// visits append at their durable tail, and new visits share the hovered boundary.
+export function forwardExecutionOrderExpectation(
+  before: { items: readonly OracleItem[]; executeIds: readonly string[] },
+  effectiveIds: readonly string[],
+  target: { anchorId: string; collapsedFirstMemberId?: string },
+) {
+  const byId = new Map(before.items.map((item) => [item.id, item]));
+  const executing = new Set(before.executeIds);
+  const moving = new Set(effectiveIds);
+  const day = byId.get(effectiveIds[0])?.eventDate;
+  if (
+    byId.size !== before.items.length ||
+    executing.size !== before.executeIds.length ||
+    before.executeIds.some((id) => !byId.has(id)) ||
+    moving.size !== effectiveIds.length ||
+    !day ||
+    effectiveIds.some(
+      (id) => executing.has(id) || byId.get(id)?.eventDate !== day,
+    )
+  )
+    throw new Error(
+      "Forward oracle requires unique candidate members from one frozen day",
+    );
+  // These fixtures use the ordinary A/90a/90a2 space convention. Keep this
+  // identity implementation separate from production visit/placement helpers.
+  const visitKey = (id: string) => {
+    const item = byId.get(id)!;
+    return JSON.stringify([
+      item.eventDate.replace(/\u3000/g, " ").trim(),
+      item.block,
+      item.number.replace(/([a-zA-Z])\d+$/, "$1"),
+      item.priorityLevel || "none",
+    ]);
+  };
+  const visits = (ids: readonly string[]) => {
+    const groups = new Map<string, { key: string; itemIds: string[] }>();
+    for (const id of ids) {
+      const key = visitKey(id);
+      const existing = groups.get(key);
+      if (existing) existing.itemIds.push(id);
+      else groups.set(key, { key, itemIds: [id] });
+    }
+    return [...groups.values()];
+  };
+  const sourceIds = before.items
+    .filter((item) => moving.has(item.id))
+    .map((item) => item.id);
+  const beforeVisits = visits(before.executeIds);
+  const sourceVisits = visits(sourceIds);
+  const anchorId = target.collapsedFirstMemberId ?? target.anchorId;
+  const anchorVisitIndex = beforeVisits.findIndex((visit) =>
+    visit.itemIds.includes(anchorId),
+  );
+  if (anchorVisitIndex === -1)
+    throw new Error("Forward oracle anchor is not an execution member");
+  // A forward lower-half header gesture goes after the entire collapsed visit.
+  const boundaryId = beforeVisits[anchorVisitIndex + 1]?.itemIds[0] ?? null;
+  const expectedExecuteIds = [...before.executeIds];
+  const positionedIds: string[] = [];
+  for (const sourceVisit of sourceVisits) {
+    const existing = beforeVisits.find(
+      (visit) => visit.key === sourceVisit.key,
+    );
+    if (!existing) {
+      positionedIds.push(...sourceVisit.itemIds);
+      continue;
+    }
+    const tail = expectedExecuteIds.indexOf(existing.itemIds.at(-1)!);
+    expectedExecuteIds.splice(tail + 1, 0, ...sourceVisit.itemIds);
+  }
+  expectedExecuteIds.splice(
+    boundaryId === null
+      ? expectedExecuteIds.length
+      : expectedExecuteIds.indexOf(boundaryId),
+    0,
+    ...positionedIds,
+  );
+  return {
+    contract: "execution-visit-tail-and-anchor-boundary" as const,
+    beforeItemOrder: before.items.map((item) => item.id),
+    beforeExecuteIds: [...before.executeIds],
+    sourceIds,
+    beforeVisits,
+    sourceVisits,
+    anchorId,
+    boundaryKind: target.collapsedFirstMemberId
+      ? ("collapsed-after-reference-visit" as const)
+      : ("after-reference-visit" as const),
+    boundaryId,
+    expectedItemOrder: before.items.map((item) => item.id),
+    expectedExecuteIds,
+    expectedDisplayIds: visits(expectedExecuteIds).flatMap(
+      (visit) => visit.itemIds,
+    ),
+  };
+}
+
+export function verifyForwardExecutionOrder(
+  expected: ReturnType<typeof forwardExecutionOrderExpectation>,
+  actual: {
+    itemOrder: string[];
+    executeIds: string[];
+    mountedDisplayIds: string[];
+  },
+) {
+  expect(
+    actual.itemOrder,
+    "Forward transfer preserves the full item-array order",
+  ).toEqual(expected.expectedItemOrder);
+  expect(
+    actual.executeIds,
+    "Forward transfer follows the independent complete execution order",
+  ).toEqual(expected.expectedExecuteIds);
+  expect(
+    actual.mountedDisplayIds,
+    "Forward mounted display follows the independent execution order",
+  ).toEqual(
+    expected.expectedDisplayIds.filter((id) =>
+      actual.mountedDisplayIds.includes(id),
+    ),
+  );
+  return {
+    ...expected,
+    actualItemOrder: actual.itemOrder,
+    actualExecuteIds: actual.executeIds,
+    actualMountedDisplayIds: actual.mountedDisplayIds,
+    rawOrderVerified: true,
+    displayOrderVerified: true,
   };
 }
 type SelectionPreparationProof = {
@@ -247,6 +379,12 @@ export function acceptedScenarioFixture(condition: AcceptedTransferCondition) {
     warmupAnchorId: target(0),
     mergePairs,
     preparationProof: undefined as SelectionPreparationProof | undefined,
+    forwardOrderExpectation: undefined as
+      | ReturnType<typeof forwardExecutionOrderExpectation>
+      | undefined,
+    reverseOrderExpectation: undefined as
+      | ReturnType<typeof reverseCandidateOrderExpectation>
+      | undefined,
     fixtureHash: createHash("sha256")
       .update(JSON.stringify(backup))
       .digest("hex"),
@@ -433,7 +571,27 @@ export async function prepareAcceptedScenario(
   session: CDPSession,
   condition: AcceptedTransferCondition,
   scenario: ReturnType<typeof acceptedScenarioFixture>,
+  preparedBefore?: Awaited<ReturnType<typeof readTransferDurable>>,
 ): Promise<TransferMeasurementOptions> {
+  const before = preparedBefore ?? (await readTransferDurable(page));
+  const target = {
+    anchorId: scenario.anchorId,
+    ...(condition.scenario === "collapsed"
+      ? { collapsedFirstMemberId: `${scenario.targetPrefix}0` }
+      : {}),
+  };
+  if (condition.direction === "candidate-to-execute")
+    scenario.forwardOrderExpectation = forwardExecutionOrderExpectation(
+      { items: before.items as OracleItem[], executeIds: before.executeIds },
+      scenario.effectiveIds,
+      target,
+    );
+  else
+    scenario.reverseOrderExpectation = reverseCandidateOrderExpectation(
+      { items: before.items as OracleItem[], executeIds: before.executeIds },
+      scenario.effectiveIds,
+      target,
+    );
   const checkboxChecks: SelectionPreparationProof["checkboxChecks"] = [];
   const checkActualCheckbox = async (id: string) => {
     const checkbox = transferRow(page, id).locator('input[type="checkbox"]');
@@ -576,10 +734,16 @@ export async function prepareAcceptedScenario(
     sourceId: scenario.sourceId,
     anchorId: scenario.anchorId,
     expectedTransferredIds: scenario.effectiveIds,
+    requiredDestinationIds: [...scenario.effectiveIds],
     nextInputTarget: "topmost-visible-unmoved-destination",
     anchorPosition: scenario.anchorPosition,
     guideKind: "either",
-    scenarioEvidence: { selectionPreparation: scenario.preparationProof },
+    scenarioEvidence: {
+      selectionPreparation: scenario.preparationProof,
+      ...(scenario.forwardOrderExpectation
+        ? { forwardOrderExpectation: scenario.forwardOrderExpectation }
+        : { reverseOrderExpectation: scenario.reverseOrderExpectation }),
+    },
   };
   if (condition.scenario === "collapsed") {
     const selector = `[data-shopping-drag-column="${scenario.targetPrefix === "e" ? "execute" : "candidate"}"] [data-space-group-key="A-90a"]`;
@@ -618,6 +782,17 @@ export async function prepareAcceptedScenario(
       outside,
       "merge destination must actually be outside the viewport",
     ).toBe(true);
+    const exemptId = `${scenario.sourcePrefix}2`;
+    options.requiredDestinationIds = scenario.effectiveIds.filter(
+      (id) => id !== exemptId,
+    );
+    options.destinationCardExemptions = [
+      {
+        itemId: exemptId,
+        reason: "offscreen-merge-target",
+        targetId,
+      },
+    ];
     options.scenarioEvidence = {
       ...options.scenarioEvidence,
       offscreenTargetId: targetId,
@@ -852,12 +1027,34 @@ export async function verifyAcceptedScenario(
       rawOrderVerified: true,
       defaultDisplayOrderVerified: true,
     };
-  } else {
-    // Forward transfer modifies execution order, never the full item-array order.
-    expect(after.items.map((item) => item.id)).toEqual(
-      before.items.map((item) => item.id),
-    );
   }
+  const forwardOrderProof =
+    condition.direction === "candidate-to-execute"
+      ? verifyForwardExecutionOrder(
+          forwardExecutionOrderExpectation(
+            {
+              items: before.items as OracleItem[],
+              executeIds: before.executeIds,
+            },
+            scenario.effectiveIds,
+            {
+              anchorId: scenario.anchorId,
+              ...(condition.scenario === "collapsed"
+                ? { collapsedFirstMemberId: `${scenario.targetPrefix}0` }
+                : {}),
+            },
+          ),
+          {
+            itemOrder: after.items.map((item) => item.id),
+            executeIds: after.executeIds,
+            mountedDisplayIds: mountedDestinationIds,
+          },
+        )
+      : null;
+  if (scenario.forwardOrderExpectation)
+    expect(forwardOrderProof).toMatchObject(scenario.forwardOrderExpectation);
+  if (scenario.reverseOrderExpectation)
+    expect(candidateOrderProof).toMatchObject(scenario.reverseOrderExpectation);
   const mergeTailProof = (reverseOrder ? [] : [...mergedVisits]).map(
     ([key, targetId]) => {
       const existingIds = beforeDestinationIds.filter(
@@ -937,6 +1134,7 @@ export async function verifyAcceptedScenario(
         : null,
     mergeTailProof,
     candidateOrderProof,
+    forwardOrderProof,
     selectionPreparation: scenario.preparationProof,
     visibleTransferredIds,
     offscreenTransferredIds: scenario.effectiveIds.filter(

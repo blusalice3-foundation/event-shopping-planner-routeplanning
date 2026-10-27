@@ -41,6 +41,13 @@ export type TransferMeasurementOptions = {
   sourceColumn?: "execute" | "candidate";
   sameColumn?: boolean;
   expectedTransferredIds?: readonly string[];
+  requiredDestinationIds?: readonly string[];
+  destinationCardExemptions?: readonly {
+    itemId: string;
+    reason: "offscreen-merge-target";
+    targetId: string;
+  }[];
+  expectedDestinationDisplayIds?: readonly string[];
   anchorPosition?: "before" | "after" | "any";
   gestureTargetSelector?: string;
   guideKind?: "insert" | "merge" | "either";
@@ -97,6 +104,7 @@ type Probe = {
   responseMs: number | null;
   matched: boolean;
   trusted: boolean;
+  mountedTransferredIds: string[];
   pending?: ClickObservation;
   applied?: ClickObservation;
   clicks: number;
@@ -535,7 +543,7 @@ export async function waitForTransferIdle(page: Page) {
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
   });
 }
-async function armProbe(
+export async function armTransferResponseProbe(
   page: Page,
   id: string,
   anchor: string,
@@ -547,6 +555,8 @@ async function armProbe(
     | "sourceColumn"
     | "sameColumn"
     | "expectedTransferredIds"
+    | "requiredDestinationIds"
+    | "expectedDestinationDisplayIds"
     | "anchorPosition"
     | "pendingInput"
     | "nextInputId"
@@ -573,6 +583,7 @@ async function armProbe(
         responseMs: null,
         matched: false,
         trusted: false,
+        mountedTransferredIds: [],
         clicks: 0,
       };
       window.__shoppingTransferProbe = state;
@@ -590,6 +601,13 @@ async function armProbe(
           .querySelector<HTMLElement>(
             `[data-item-id="${item}"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
           );
+      const removed = options.expectedTransferredIds ?? [id];
+      const required = options.requiredDestinationIds ?? removed;
+      const moved = new Set(removed);
+      const expectedTransferredOrder =
+        options.expectedDestinationDisplayIds?.filter((item) =>
+          moved.has(item),
+        );
       const correct = () => {
         const began = performance.now();
         state.probeChecks++;
@@ -597,7 +615,6 @@ async function armProbe(
           const target = row(destination, id),
             anchorRow = row(destination, anchor);
           if (!target || !anchorRow) return false;
-          const removed = options.expectedTransferredIds ?? [id];
           if (!options.sameColumn && removed.some((item) => row(source, item)))
             return false;
           const position = options.anchorPosition ?? "after";
@@ -611,14 +628,42 @@ async function armProbe(
             )
           )
             return false;
-          // DOM response checks every mounted moved card without forcing layout.
-          // Actual viewport visibility and pixels are proved separately by the frame pass.
-          return removed.every((item) => {
-            const element = row(destination, item);
-            return (
-              !element || !!element.querySelector('input[type="checkbox"]')
-            );
-          });
+          // Freeze the required identities before input. Missing offscreen cards are
+          // allowed only by the scenario's explicit pre-input visibility exemption.
+          // This hot path uses targeted selectors and DOM order, never layout reads.
+          const mounted = new Map(
+            removed.flatMap((item) => {
+              const element = row(destination, item);
+              return element ? [[item, element] as const] : [];
+            }),
+          );
+          if (
+            required.some((item) => !mounted.has(item)) ||
+            [...mounted.values()].some(
+              (element) => !element.querySelector('input[type="checkbox"]'),
+            )
+          )
+            return false;
+          const expectedOrder = expectedTransferredOrder;
+          const orderedIds = expectedOrder
+            ? expectedOrder.filter((item) => mounted.has(item))
+            : [...mounted.keys()];
+          if (
+            expectedOrder &&
+            orderedIds.some(
+              (item, index) =>
+                index > 0 &&
+                !(
+                  mounted
+                    .get(orderedIds[index - 1])!
+                    .compareDocumentPosition(mounted.get(item)!) &
+                  Node.DOCUMENT_POSITION_FOLLOWING
+                ),
+            )
+          )
+            return false;
+          state.mountedTransferredIds = orderedIds;
+          return true;
         } finally {
           state.probeCpuMs += performance.now() - began;
         }
@@ -1129,7 +1174,51 @@ export async function measureTransfer(
         )
       : undefined;
     const nextInputId = nextInput?.targetId ?? anchor;
-    await armProbe(
+    const transferredIds = [...(options.expectedTransferredIds ?? [id])];
+    const requiredDestinationIds = [
+      ...(options.requiredDestinationIds ?? transferredIds),
+    ];
+    const destinationCardExemptions = [
+      ...(options.destinationCardExemptions ?? []),
+    ];
+    const independentOrder = (options.scenarioEvidence
+      ?.forwardOrderExpectation ??
+      options.scenarioEvidence?.reverseOrderExpectation) as
+      | { expectedDisplayIds: readonly string[] }
+      | undefined;
+    const expectedDestinationDisplayIds =
+      options.expectedDestinationDisplayIds ??
+      independentOrder?.expectedDisplayIds;
+    expect(new Set(requiredDestinationIds).size).toBe(
+      requiredDestinationIds.length,
+    );
+    expect(requiredDestinationIds).toContain(id);
+    expect(
+      requiredDestinationIds.every((item) => transferredIds.includes(item)),
+    ).toBe(true);
+    expect(
+      transferredIds.filter((item) => !requiredDestinationIds.includes(item)),
+    ).toEqual(destinationCardExemptions.map((entry) => entry.itemId));
+    if (destinationCardExemptions.length > 0) {
+      expect(options.scenarioEvidence?.offscreenBeforeDrop).toBe(true);
+      for (const exemption of destinationCardExemptions) {
+        expect(exemption.reason).toBe("offscreen-merge-target");
+        expect(exemption.targetId).toBe(
+          options.scenarioEvidence?.offscreenTargetId,
+        );
+      }
+    }
+    if (expectedDestinationDisplayIds) {
+      expect(new Set(expectedDestinationDisplayIds).size).toBe(
+        expectedDestinationDisplayIds.length,
+      );
+      expect(
+        transferredIds.every((item) =>
+          expectedDestinationDisplayIds.includes(item),
+        ),
+      ).toBe(true);
+    }
+    await armTransferResponseProbe(
       page,
       id,
       anchor,
@@ -1139,7 +1228,9 @@ export async function measureTransfer(
       {
         sourceColumn: options.sourceColumn,
         sameColumn: options.sameColumn,
-        expectedTransferredIds: options.expectedTransferredIds,
+        expectedTransferredIds: transferredIds,
+        requiredDestinationIds,
+        expectedDestinationDisplayIds,
         anchorPosition:
           options.anchorPosition ?? (prefix === "e" ? "before" : "after"),
         pendingInput: options.pendingInput,
@@ -1226,7 +1317,12 @@ export async function measureTransfer(
       commits,
       gestureObservation,
       scenarioEvidence: options.scenarioEvidence,
-      expectedTransferredIds: options.expectedTransferredIds ?? [id],
+      expectedTransferredIds: transferredIds,
+      requiredDestinationIds,
+      destinationCardExemptions,
+      requiredDestinationCardsVerified: state.matched,
+      mountedTransferredIds: state.mountedTransferredIds,
+      expectedDestinationDisplayIds,
       visibleTransferredIds: observedVisibleIds,
       ...(!frame ? { nextInputId, nextInputStrategy } : {}),
     };
@@ -1391,6 +1487,7 @@ export async function measureTransfer(
           measurementId,
           error instanceof Error ? error.message : String(error),
           {
+            ...common,
             postInput: true,
             trusted: state.trusted,
             matched: state.matched,
@@ -1409,6 +1506,34 @@ export async function measureTransfer(
           },
         );
       }
+    }
+    if (expectedDestinationDisplayIds) {
+      const mountedDestinationIds = await page.evaluate(
+        (column) =>
+          [
+            ...document.querySelectorAll<HTMLElement>(
+              `[data-shopping-drag-column="${column}"] [data-item-id]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
+            ),
+          ].map((element) => element.dataset.itemId!),
+        destination,
+      );
+      expect(
+        mountedDestinationIds,
+        "frame reference follows the frozen independent display order",
+      ).toEqual(
+        expectedDestinationDisplayIds.filter((item) =>
+          mountedDestinationIds.includes(item),
+        ),
+      );
+      const visibleIds = visibleTargets.map((target) => target.itemId);
+      expect(
+        visibleIds,
+        "frame target coordinates follow the frozen independent display order",
+      ).toEqual(
+        expectedDestinationDisplayIds.filter((item) =>
+          visibleIds.includes(item),
+        ),
+      );
     }
     const reference = await page.screenshot({ animations: "allow" });
     await session.send("Page.stopScreencast");
@@ -1608,6 +1733,7 @@ export async function measureTransfer(
         measurementId,
         error instanceof Error ? error.message : String(error),
         {
+          ...common,
           postInput: true,
           trusted: state.trusted,
           matched: state.matched,
