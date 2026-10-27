@@ -2679,6 +2679,27 @@ function baselineFrameIntegrationFixture(partial = false) {
   const durableProof = structuredClone(unobservable.durableProof);
   durableProof.expectedExecuteMembership = [...durableProof.actualExecuteIds];
   const evidence = {
+    measurementId: unobservable.measurementId,
+    targetId: unobservable.targetId,
+    gestureObservation: structuredClone(unobservable.gestureObservation),
+    probeCpuMs: 0,
+    probeChecks: 1,
+    operationId: unobservable.operationId,
+    operationIdUnavailableReason:
+      "Persistence request did not expose an operation ID",
+    requiredDestinationIds: [...unobservable.requiredDestinationIds],
+    destinationCardExemptions: structuredClone(
+      unobservable.destinationCardExemptions,
+    ),
+    requiredDestinationCardsVerified:
+      unobservable.requiredDestinationCardsVerified,
+    expectedDestinationDisplayIds: [
+      ...unobservable.expectedDestinationDisplayIds,
+    ],
+    mountedTransferredIds: [...unobservable.mountedTransferredIds],
+    visibleTransferredIds: rects("destination-card").map(
+      ({ itemId }) => itemId,
+    ),
     postInput: true,
     trusted: true,
     matched: true,
@@ -2876,6 +2897,9 @@ for (const [label, mutate, pattern] of [
 ]) {
   test(`baseline frame wrapper integration rejects ${label} in an unobservable attempt`, () => {
     const data = baselineFrameIntegrationFixture(true);
+    assert.doesNotThrow(() =>
+      validateBaselineFrameObservationArtifact(data, baselineNoopExpectedRun),
+    );
     mutate(data.baselineFrameObservations[0].failure.evidence);
     assert.throws(
       () =>
@@ -2887,6 +2911,9 @@ for (const [label, mutate, pattern] of [
 for (const partial of [false, true]) {
   test(`baseline frame wrapper integration keeps completed frame visual proof for ${partial ? "partial" : "complete"} observations`, () => {
     const data = baselineFrameIntegrationFixture(partial);
+    assert.doesNotThrow(() =>
+      validateBaselineFrameObservationArtifact(data, baselineNoopExpectedRun),
+    );
     data.metrics.frame.samples[0].controlsVerified = false;
     assert.throws(
       () =>
