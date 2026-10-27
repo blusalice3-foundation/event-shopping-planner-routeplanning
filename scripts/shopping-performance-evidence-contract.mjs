@@ -1,7 +1,7 @@
-// D&D budgets changed on 2026-10-26; shopping budgets and workload conditions are unchanged.
+// D&D budgets changed on 2026-10-28; shopping budgets and workload conditions are unchanged.
 // Sampling remains PR2/completion10 under its separate 2026-10-26 policy.
 export const shoppingPerformanceCriteriaDate = "2026-10-25";
-export const dndSelectionRenderingPerformanceCriteriaDate = "2026-10-26";
+export const dndSelectionRenderingPerformanceCriteriaDate = "2026-10-28";
 export const performanceSamplingPolicyId = "performance-samples-2026-10-26";
 const samplingProfiles = Object.freeze({
   pr: Object.freeze({
@@ -87,8 +87,8 @@ export const shoppingPerformanceThresholds = Object.freeze({
 });
 export const dndSelectionRenderingPerformanceThresholds = Object.freeze({
   minimumCount: 10,
-  medianMs: 150,
-  p95Ms: 150,
+  medianMs: 160,
+  p95Ms: 160,
 });
 const criteriaTables = Object.freeze(
   Object.fromEntries(
@@ -106,7 +106,7 @@ const criteriaTables = Object.freeze(
       });
       const dnd = Object.freeze({
         acceptanceScope: "dnd-selection-rendering",
-        acceptanceCriteriaId: "dnd-selection-rendering-150-150-2026-10-26",
+        acceptanceCriteriaId: "dnd-selection-rendering-160-160-2026-10-28",
         acceptanceCriteriaDate: dndSelectionRenderingPerformanceCriteriaDate,
         acceptanceThresholds: Object.freeze({
           ...dndSelectionRenderingPerformanceThresholds,

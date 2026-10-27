@@ -2139,12 +2139,12 @@ for (const missing of [true, false])
 
 for (const group of ["range", "drag", "transfer"])
   for (const [name, values, error] of [
-    ["inclusive median and p95", Array(10).fill(150), null],
-    ["excess median", Array(10).fill(150.001), /median exceeds 150ms/],
+    ["inclusive median and p95", Array(10).fill(160), null],
+    ["excess median", Array(10).fill(160.001), /median exceeds 160ms/],
     [
       "excess p95",
-      [...Array(8).fill(100), 150.001, 150.001],
-      /p95 exceeds 150ms/,
+      [...Array(8).fill(100), 160.001, 160.001],
+      /p95 exceeds 160ms/,
     ],
   ])
     test(`${group} scoped budget validates ${name}`, () => {

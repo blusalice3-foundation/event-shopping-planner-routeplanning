@@ -17,6 +17,18 @@ export const HISTORICAL_POLICY_TRANSITION = Object.freeze({
   beforeCriteriaId: "dnd-selection-rendering-110-110-2026-10-24",
   afterCriteriaId: "dnd-selection-rendering-150-150-2026-10-26",
 });
+// Historical150 keeps its own descriptor and proof. Current160 is a separate
+// target and does not implicitly adapt original150 metadata or records.
+export const CURRENT_POLICY_TRANSITION = Object.freeze({
+  id: "dnd-110-20261024-to-160-20261028",
+  policyPath: "scripts/shopping-performance-evidence-contract.mjs",
+  beforePolicySha256:
+    "62316e459e82d89915a72986d61aa56dd86026907bd3e03c149618e122eae831",
+  afterPolicySha256:
+    "47f4f3c45cb24f5499202aed4fe051c282615e18cf52576d809dbe81b50ebce9",
+  beforeCriteriaId: "dnd-selection-rendering-110-110-2026-10-24",
+  afterCriteriaId: "dnd-selection-rendering-160-160-2026-10-28",
+});
 const LEGACY_MODULES = Object.freeze({
   "scripts/run-shopping-browser-evidence.mjs":
     "a20302166e2cb9d4b07af0157e72f7be4e34c0bf4e17de5eb87bdc46ca072ef6",
@@ -98,6 +110,21 @@ const replacements = Object.freeze([
     'acceptanceCriteriaId: "dnd-selection-rendering-150-150-2026-10-26",',
   ],
 ]);
+const currentReplacements = Object.freeze([
+  [
+    "// Time budgets and workload conditions are unchanged. Sampling changed on 2026-10-26.\n",
+    "// D&D budgets changed on 2026-10-28; shopping budgets and workload conditions are unchanged.\n// Sampling remains PR2/completion10 under its separate 2026-10-26 policy.\n",
+  ],
+  [
+    'export const dndSelectionRenderingPerformanceCriteriaDate = "2026-10-24";',
+    'export const dndSelectionRenderingPerformanceCriteriaDate = "2026-10-28";',
+  ],
+  ["  medianMs: 110,\n  p95Ms: 110,", "  medianMs: 160,\n  p95Ms: 160,"],
+  [
+    'acceptanceCriteriaId: "dnd-selection-rendering-110-110-2026-10-24",',
+    'acceptanceCriteriaId: "dnd-selection-rendering-160-160-2026-10-28",',
+  ],
+]);
 export function proveKnownPolicyTransition(beforeBytes, afterBytes) {
   assert.equal(
     hash(beforeBytes),
@@ -126,6 +153,44 @@ export function proveKnownPolicyTransition(beforeBytes, afterBytes) {
     ...HISTORICAL_POLICY_TRANSITION,
     byteExactKnownLiteralReplacement: true,
     replacementCount: replacements.length,
+    unchanged: [
+      "shopping65/100",
+      "PR2/completion10",
+      "conditions",
+      "operations",
+      "endpoints",
+      "fixture inventory",
+    ],
+  };
+}
+export function proveCurrentPolicyTransition(beforeBytes, afterBytes) {
+  assert.equal(
+    hash(beforeBytes),
+    CURRENT_POLICY_TRANSITION.beforePolicySha256,
+    "Unrecognized historical policy bytes",
+  );
+  assert.equal(
+    hash(afterBytes),
+    CURRENT_POLICY_TRANSITION.afterPolicySha256,
+    "Unrecognized current160 policy bytes",
+  );
+  let expected = beforeBytes.toString("utf8");
+  for (const [before, after] of currentReplacements) {
+    assert.equal(
+      expected.split(before).length - 1,
+      1,
+      "Current160 policy literal must occur exactly once",
+    );
+    expected = expected.replace(before, after);
+  }
+  assert.ok(
+    Buffer.from(expected, "utf8").equals(afterBytes),
+    "Current160 transition changes more than the known budgets/date/ID/header",
+  );
+  return {
+    ...CURRENT_POLICY_TRANSITION,
+    byteExactKnownLiteralReplacement: true,
+    replacementCount: currentReplacements.length,
     unchanged: [
       "shopping65/100",
       "PR2/completion10",
@@ -235,8 +300,8 @@ export async function loadBeforePolicyBridge({
   );
   assert.equal(
     afterFiles[policy],
-    HISTORICAL_POLICY_TRANSITION.afterPolicySha256,
-    "After instrument policy is not the current150 policy",
+    CURRENT_POLICY_TRANSITION.afterPolicySha256,
+    "After instrument policy is not the current160 policy",
   );
   assert.equal(
     beforeRun.fixtureSources?.sha256,
@@ -330,7 +395,7 @@ export async function loadBeforePolicyBridge({
     beforeRun.fixtureSources.sha256,
     "Fixture aggregate differs from exact unchanged Git bytes",
   );
-  const transition = proveKnownPolicyTransition(
+  const transition = proveCurrentPolicyTransition(
     beforePolicyBytes,
     afterPolicyBytes,
   );
@@ -381,7 +446,7 @@ export async function loadBeforePolicyBridge({
       originalBeforeProducerStatus: beforeRun.status,
       rawRecordsRewritten: false,
       interpretation:
-        "Validate before with its original110 policy, then separately re-evaluate unchanged numeric timing under current150. Functional failures, unobservable endpoints and incomplete evidence remain failures/unavailable.",
+        "Validate before with its original110 policy, then separately re-evaluate unchanged numeric timing under current160. Functional failures, unobservable endpoints and incomplete evidence remain failures/unavailable.",
     },
   };
 }

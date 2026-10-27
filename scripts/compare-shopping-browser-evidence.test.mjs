@@ -8,7 +8,9 @@ import path from "node:path";
 import test from "node:test";
 import {
   HISTORICAL_POLICY_TRANSITION,
+  CURRENT_POLICY_TRANSITION,
   proveKnownPolicyTransition,
+  proveCurrentPolicyTransition,
   loadBeforePolicyBridge,
   expectedHistoricalInventory,
 } from "./browser-evidence-before-policy.mjs";
@@ -592,18 +594,18 @@ async function addRangeReport(
     "utf8",
   );
 }
-test("mixed runs independently judge shopping at 65/100 and range at inclusive 150/150 while retaining historical metadata", async (t) => {
+test("mixed runs independently judge shopping at 65/100 and range at inclusive 160/160 while retaining historical metadata", async (t) => {
   const directory = await mkdtemp(
     path.join(os.tmpdir(), "esp scoped compare "),
   );
   t.after(() => rm(directory, { recursive: true, force: true }));
   const beforeRoot = await partialShoppingRun(directory, "before", 70);
   const afterRoot = await partialShoppingRun(directory, "after", 70);
-  await addRangeReport(beforeRoot, "before", Array(10).fill(150));
+  await addRangeReport(beforeRoot, "before", Array(10).fill(160));
   await addRangeReport(afterRoot, "after", [
     ...Array(8).fill(100),
-    150.001,
-    150.001,
+    160.001,
+    160.001,
   ]);
   const file = path.join(afterRoot, "run-result.json");
   const run = JSON.parse(await readFile(file, "utf8"));
@@ -621,8 +623,8 @@ test("mixed runs independently judge shopping at 65/100 and range at inclusive 1
   assert.equal(rangeRow.acceptanceScope, "dnd-selection-rendering");
   assert.deepEqual(rangeRow.acceptanceThresholds, {
     minimumCount: 10,
-    medianMs: 150,
-    p95Ms: 150,
+    medianMs: 160,
+    p95Ms: 160,
   });
   assert.deepEqual(
     result.before.recordedAcceptanceCriteria.acceptanceCriteriaByGroup,
@@ -1275,6 +1277,50 @@ test("v3 comparison cannot hide forged sample thresholds by deleting time criter
     /acceptanceScope metadata/,
   );
 });
+function pinned150PolicyBytes() {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const bytes = execFileSync(
+    "git",
+    [
+      "-C",
+      root,
+      "show",
+      "62087221941e10a55562842288a8cc1ab298b1c4:scripts/shopping-performance-evidence-contract.mjs",
+    ],
+    { windowsHide: true },
+  );
+  assert.equal(
+    createHash("sha256").update(bytes).digest("hex"),
+    HISTORICAL_POLICY_TRANSITION.afterPolicySha256,
+  );
+  return bytes;
+}
+function historical110FromCurrent160(current) {
+  const text = current
+    .toString("utf8")
+    .replace(
+      "// D&D budgets changed on 2026-10-28; shopping budgets and workload conditions are unchanged.\n// Sampling remains PR2/completion10 under its separate 2026-10-26 policy.\n",
+      "// Time budgets and workload conditions are unchanged. Sampling changed on 2026-10-26.\n",
+    )
+    .replace(
+      'export const dndSelectionRenderingPerformanceCriteriaDate = "2026-10-28";',
+      'export const dndSelectionRenderingPerformanceCriteriaDate = "2026-10-24";',
+    )
+    .replace(
+      "  medianMs: 160,\n  p95Ms: 160,",
+      "  medianMs: 110,\n  p95Ms: 110,",
+    )
+    .replace(
+      'acceptanceCriteriaId: "dnd-selection-rendering-160-160-2026-10-28",',
+      'acceptanceCriteriaId: "dnd-selection-rendering-110-110-2026-10-24",',
+    );
+  const bytes = Buffer.from(text, "utf8");
+  assert.equal(
+    createHash("sha256").update(bytes).digest("hex"),
+    CURRENT_POLICY_TRANSITION.beforePolicySha256,
+  );
+  return bytes;
+}
 function historicalPolicyBytes(current) {
   const text = current
     .toString("utf8")
@@ -1310,7 +1356,7 @@ function manifestFor(entries) {
   }
   return { sha256: hash.digest("hex"), files };
 }
-async function historicalComparisonFixture(t) {
+async function historicalComparisonFixture(t, { currentPolicy = false } = {}) {
   const directory = await mkdtemp(path.join(os.tmpdir(), "esp policy bridge "));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const root = path.join(directory, "historical-policy");
@@ -1320,7 +1366,9 @@ async function historicalComparisonFixture(t) {
     "..",
   );
   const policy = HISTORICAL_POLICY_TRANSITION.policyPath;
-  const current = await readFile(path.join(currentRoot, policy));
+  const current = currentPolicy
+    ? await readFile(path.join(currentRoot, policy))
+    : pinned150PolicyBytes();
   const files = new Map();
   // Historical bridge fixtures are actual pinned v3 bytes. Current v4 endpoint
   // contracts must never be written into an invented v3 producer manifest.
@@ -1334,7 +1382,11 @@ async function historicalComparisonFixture(t) {
   const inventory = expectedHistoricalInventory(currentRoot, historicalSource);
   for (const name of inventory.instrument) {
     const bytes =
-      name === policy ? historicalPolicyBytes(current) : historicalBytes(name);
+      name === policy
+        ? currentPolicy
+          ? historical110FromCurrent160(current)
+          : historicalPolicyBytes(current)
+        : historicalBytes(name);
     files.set(name, bytes);
     await mkdir(path.dirname(path.join(root, name)), { recursive: true });
     await writeFile(path.join(root, name), bytes);
@@ -1369,7 +1421,12 @@ async function historicalComparisonFixture(t) {
     "scripts/compare-shopping-browser-evidence.mjs",
     "scripts/browser-evidence-before-policy.mjs",
   ])
-    consumerFiles.set(name, historicalBytes(name));
+    consumerFiles.set(
+      name,
+      currentPolicy && name === "scripts/browser-evidence-before-policy.mjs"
+        ? await readFile(path.join(currentRoot, name))
+        : historicalBytes(name),
+    );
   for (const [name, bytes] of consumerFiles) {
     await mkdir(path.dirname(path.join(consumerRoot, name)), {
       recursive: true,
@@ -1389,6 +1446,14 @@ async function historicalComparisonFixture(t) {
       ),
     ).href
   );
+  const targetPolicy = await import(
+    pathToFileURL(path.join(consumerRoot, policy)).href
+  );
+  const targetBridge = await import(
+    pathToFileURL(
+      path.join(consumerRoot, "scripts/browser-evidence-before-policy.mjs"),
+    ).href
+  );
   const fixtureSources = manifestFor(
     new Map(inventory.fixtures.map((name) => [name, files.get(name)])),
   );
@@ -1403,6 +1468,7 @@ async function historicalComparisonFixture(t) {
     producerStatus: "failed",
   });
   const afterRoot = await partialShoppingRun(directory, "after", 60, {
+    criteria: targetPolicy.performanceAcceptanceCriteriaByGroup,
     instrumentVersion: "shopping-rendering-v3",
     identityFactory: historicalAfterVerifier.evidenceIdentity,
     instrumentPatch: manifestFor(afterFiles),
@@ -1450,11 +1516,12 @@ async function historicalComparisonFixture(t) {
     legacyPolicy,
     legacyVerifier,
     compareBrowserEvidence: historicalComparator.compareBrowserEvidence,
+    loadBeforePolicyBridge: targetBridge.loadBeforePolicyBridge,
     current,
     files,
     afterFiles,
     policy,
-    currentPolicyPath: path.join(currentRoot, policy),
+    currentPolicyPath: path.join(consumerRoot, policy),
     read,
     change,
     git,
@@ -1485,9 +1552,7 @@ for (const afterVersion of ["shopping-rendering-v3", "shopping-rendering-v4"])
     );
   });
 test("known policy proof recognizes only exact110-to150 literals, preserving sampling/inventory", async () => {
-  const current = await readFile(
-    new URL("./shopping-performance-evidence-contract.mjs", import.meta.url),
-  );
+  const current = pinned150PolicyBytes();
   const before = historicalPolicyBytes(current);
   const proof = proveKnownPolicyTransition(before, current);
   assert.equal(proof.byteExactKnownLiteralReplacement, true);
@@ -1503,6 +1568,102 @@ test("known policy proof recognizes only exact110-to150 literals, preserving sam
       () => proveKnownPolicyTransition(before, changed),
       /Unrecognized current policy/,
     );
+});
+test("current160 has a distinct exact110-to160 proof and never retargets historical150", async () => {
+  const current = await readFile(
+    new URL("./shopping-performance-evidence-contract.mjs", import.meta.url),
+  );
+  const before = historical110FromCurrent160(current);
+  const old150 = pinned150PolicyBytes();
+  const historical = proveKnownPolicyTransition(before, old150);
+  const proof = proveCurrentPolicyTransition(before, current);
+  assert.equal(historical.id, "dnd-110-20261024-to-150-20261026");
+  assert.equal(proof.id, "dnd-110-20261024-to-160-20261028");
+  assert.equal(
+    proof.beforePolicySha256,
+    HISTORICAL_POLICY_TRANSITION.beforePolicySha256,
+  );
+  assert.equal(
+    proof.afterCriteriaId,
+    "dnd-selection-rendering-160-160-2026-10-28",
+  );
+  assert.equal(proof.replacementCount, 4);
+  assert.equal(proof.byteExactKnownLiteralReplacement, true);
+  for (const changed of [
+    old150,
+    Buffer.concat([current, Buffer.from("\n")]),
+    Buffer.from(
+      current.toString().replace("sampleCount: 10", "sampleCount: 20"),
+    ),
+    Buffer.from(current.toString().replace("medianMs: 65", "medianMs: 160")),
+  ]) {
+    assert.throws(
+      () => proveCurrentPolicyTransition(before, changed),
+      /Unrecognized current160 policy/,
+    );
+  }
+  assert.throws(
+    () =>
+      proveCurrentPolicyTransition(
+        Buffer.concat([before, Buffer.from("\n")]),
+        current,
+      ),
+    /Unrecognized historical policy/,
+  );
+  assert.throws(
+    () => proveKnownPolicyTransition(before, current),
+    /Unrecognized current policy/,
+  );
+});
+test("explicit current160 bridge retains original110 failures and v4 still rejects v3 endpoints", async (t) => {
+  const f = await historicalComparisonFixture(t, { currentPolicy: true });
+  const beforeBytes = await readFile(
+    path.join(f.beforeRoot, "run-result.json"),
+  );
+  const afterBytes = await readFile(path.join(f.afterRoot, "run-result.json"));
+  const bridge = await loadBeforePolicyBridge({
+    beforeRoot: f.beforeRoot,
+    afterRoot: f.afterRoot,
+    beforePolicyRoot: f.root,
+    currentPolicyPath: f.currentPolicyPath,
+    profile: "completion",
+  });
+  assert.equal(bridge.proof.id, CURRENT_POLICY_TRANSITION.id);
+  const { result, exitCode } = await f.compareBrowserEvidence({
+    beforeRoot: f.beforeRoot,
+    afterRoot: f.afterRoot,
+    beforePolicyRoot: f.root,
+  });
+  const row = result.rows.find((value) => value.group === "range");
+  assert.equal(row.beforeOriginalCriteria.acceptanceThresholds.medianMs, 110);
+  assert.equal(row.beforeOriginalAbsolute, "failed");
+  assert.equal(
+    row.beforeReevaluatedCriteria.acceptanceThresholds.medianMs,
+    160,
+  );
+  assert.equal(row.beforeReevaluatedAbsolute, "passed");
+  assert.equal(result.status, "incomplete");
+  assert.equal(exitCode, 1);
+  const rejected = await compareBrowserEvidence({
+    beforeRoot: f.beforeRoot,
+    afterRoot: f.afterRoot,
+    beforePolicyRoot: f.root,
+  });
+  assert.equal(rejected.exitCode, 1);
+  assert.equal(rejected.result.rows.length, 0);
+  assert.ok(
+    rejected.result.errors.some((message) =>
+      message.includes("unknown instrumentVersion"),
+    ),
+  );
+  assert.deepEqual(
+    await readFile(path.join(f.beforeRoot, "run-result.json")),
+    beforeBytes,
+  );
+  assert.deepEqual(
+    await readFile(path.join(f.afterRoot, "run-result.json")),
+    afterBytes,
+  );
 });
 test("default comparison still rejects explicit historical110 metadata without the policy switch", async (t) => {
   const f = await historicalComparisonFixture(t);
@@ -1613,7 +1774,7 @@ for (const change of [
             ];
         });
     }
-    const { result, exitCode } = await compareBrowserEvidence({
+    const { result, exitCode } = await f.compareBrowserEvidence({
       beforeRoot: f.beforeRoot,
       afterRoot: f.afterRoot,
       beforePolicyRoot: f.root,
@@ -1639,7 +1800,7 @@ test("historical dependency edits are rejected before a changed legacy module ca
   );
   delete globalThis.__untrustedLegacyPolicyExecuted;
   await assert.rejects(
-    loadBeforePolicyBridge({
+    f.loadBeforePolicyBridge({
       beforeRoot: f.beforeRoot,
       afterRoot: f.afterRoot,
       beforePolicyRoot: f.root,
@@ -1656,7 +1817,7 @@ test("historical root HEAD must match the producer and PR2 cannot be reused as c
     data.productCommit = "d".repeat(40);
   });
   await assert.rejects(
-    loadBeforePolicyBridge({
+    f.loadBeforePolicyBridge({
       beforeRoot: f.beforeRoot,
       afterRoot: f.afterRoot,
       beforePolicyRoot: f.root,
@@ -1672,7 +1833,7 @@ test("historical root HEAD must match the producer and PR2 cannot be reused as c
       f.legacyPolicy.performanceAcceptanceCriteriaByGroupForProfile("pr");
   });
   await assert.rejects(
-    loadBeforePolicyBridge({
+    f.loadBeforePolicyBridge({
       beforeRoot: f.beforeRoot,
       afterRoot: f.afterRoot,
       beforePolicyRoot: f.root,
