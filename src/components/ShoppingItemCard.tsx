@@ -41,6 +41,7 @@ import ChevronUpIcon from "./icons/ChevronUpIcon";
 import ChevronDownIcon from "./icons/ChevronDownIcon";
 import { areSameItemSnapshot } from "./itemSnapshot";
 import {
+  ShoppingItemBackgroundProvider,
   ShoppingItemSelectionCheckbox,
   ShoppingItemSelectionFrame,
   ShoppingItemSelectionInfoBackground,
@@ -428,7 +429,10 @@ export const SHOPPING_ITEM_CARD_COMPARISON_KEYS = [
   "preferNativeOptions",
 ] as const satisfies readonly (keyof ShoppingItemCardProps)[];
 
-type ShoppingItemCardContentProps = Omit<ShoppingItemCardProps, "isSelected">;
+type ShoppingItemCardContentProps = Omit<
+  ShoppingItemCardProps,
+  "isSelected" | "isStriped" | "blockBackgroundColor"
+>;
 
 const areSameShoppingItemCardContentProps = (
   prev: ShoppingItemCardContentProps,
@@ -441,8 +445,6 @@ const areSameShoppingItemCardContentProps = (
   prev.onSelectItem === next.onSelectItem &&
   prev.onMoveUp === next.onMoveUp &&
   prev.onMoveDown === next.onMoveDown &&
-  prev.isStriped === next.isStriped &&
-  prev.blockBackgroundColor === next.blockBackgroundColor &&
   prev.canMoveUp === next.canMoveUp &&
   prev.canMoveDown === next.canMoveDown &&
   prev.isDuplicateCircle === next.isDuplicateCircle &&
@@ -469,16 +471,16 @@ export const areSameShoppingItemCardProps = (
   next: ShoppingItemCardProps,
 ): boolean =>
   prev.isSelected === next.isSelected &&
+  prev.isStriped === next.isStriped &&
+  prev.blockBackgroundColor === next.blockBackgroundColor &&
   areSameShoppingItemCardContentProps(prev, next);
 
 const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
   item: sourceItem,
   onUpdate,
-  isStriped,
   onEditRequest,
   onDeleteRequest,
   onSelectItem,
-  blockBackgroundColor,
   onMoveUp,
   onMoveDown,
   canMoveUp = true,
@@ -1139,27 +1141,9 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
   const hasWarningTags = warningTags.length > 0;
 
   const isUnpurchased = item.purchaseStatus === "None";
-  const useBlockColor = isUnpurchased && blockBackgroundColor;
-
-  const textAreaOverlayClassName = useMemo(() => {
-    if (useBlockColor) {
-      return "bg-transparent dark:bg-slate-900/45";
-    }
-    if (isStriped) {
-      return "bg-blue-50/40 dark:bg-slate-900/25";
-    }
-    return "bg-white/80 dark:bg-slate-800/35";
-  }, [useBlockColor, isStriped]);
-
   const focusInfoAreaClassName = !onMoveUp
     ? "dark:bg-slate-900/35 dark:rounded-md dark:px-2"
     : "";
-
-  const baseBg = useBlockColor
-    ? blockBackgroundColor
-    : isStriped
-      ? "bg-blue-50/50 dark:bg-slate-900/50"
-      : "bg-white dark:bg-slate-800";
 
   const cardTransitionClassName =
     preferNativeOptions && viewMode === "edit"
@@ -1352,7 +1336,7 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
       return (
         <ShoppingItemSelectionFrame
           className={cardClasses}
-          unselectedBackgroundClassName={baseBg}
+          blockColorEligible={isUnpurchased}
           ref={cardRef}
           onPointerDown={readOnly ? undefined : handlePointerDown}
           onPointerUp={handlePointerUp}
@@ -1442,7 +1426,7 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
     return (
       <ShoppingItemSelectionFrame
         className={cardClasses}
-        unselectedBackgroundClassName={baseBg}
+        blockColorEligible={isUnpurchased}
         ref={cardRef}
         onPointerDown={readOnly ? undefined : handlePointerDown}
         onPointerUp={handlePointerUp}
@@ -1593,7 +1577,7 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
   return (
     <ShoppingItemSelectionFrame
       className={pcCardClasses}
-      unselectedBackgroundClassName={baseBg}
+      blockColorEligible={isUnpurchased}
       ref={cardRef}
       onPointerDown={readOnly ? undefined : handlePointerDown}
       onPointerUp={handlePointerUp}
@@ -1700,7 +1684,7 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
       <div className="relative z-20 grid min-w-0 flex-grow grid-rows-[auto_1fr_auto] gap-2 p-4">
         {/* 背景オーバーレイ */}
         <ShoppingItemSelectionInfoBackground
-          unselectedBackgroundClassName={textAreaOverlayClassName}
+          blockColorEligible={isUnpurchased}
         />
 
         {/* Row 1: 日付バッジ + 配置バッジ + サークル名 + 警告バッジ列 */}
@@ -1963,11 +1947,21 @@ const MemoizedShoppingItemCardContent = React.memo(
 
 const ShoppingItemCard: React.FC<ShoppingItemCardProps> = ({
   isSelected,
+  isStriped,
+  blockBackgroundColor,
   ...contentProps
-}) => (
-  <ShoppingItemSelectionProvider value={isSelected}>
-    <MemoizedShoppingItemCardContent {...contentProps} />
-  </ShoppingItemSelectionProvider>
-);
+}) => {
+  const background = useMemo(
+    () => ({ isStriped, blockBackgroundColor }),
+    [isStriped, blockBackgroundColor],
+  );
+  return (
+    <ShoppingItemSelectionProvider value={isSelected}>
+      <ShoppingItemBackgroundProvider value={background}>
+        <MemoizedShoppingItemCardContent {...contentProps} />
+      </ShoppingItemBackgroundProvider>
+    </ShoppingItemSelectionProvider>
+  );
+};
 
 export default React.memo(ShoppingItemCard, areSameShoppingItemCardProps);

@@ -1,25 +1,63 @@
 import React, { createContext, useContext } from "react";
 
 const ShoppingItemSelectionContext = createContext(false);
+type CardBackground = {
+  readonly isStriped: boolean;
+  readonly blockBackgroundColor?: string;
+};
+const ShoppingItemBackgroundContext = createContext<CardBackground | null>(
+  null,
+);
 
 export const ShoppingItemSelectionProvider =
   ShoppingItemSelectionContext.Provider;
+export const ShoppingItemBackgroundProvider =
+  ShoppingItemBackgroundContext.Provider;
 
 type BackgroundProps = {
   unselectedBackgroundClassName?: string;
+  blockColorEligible?: boolean;
+};
+
+const backgroundClassName = (
+  background: CardBackground | null,
+  blockColorEligible: boolean | undefined,
+  info: boolean,
+  fallback: string | undefined,
+): string | undefined => {
+  if (!background) return fallback;
+  if (blockColorEligible && background.blockBackgroundColor) {
+    return info
+      ? "bg-transparent dark:bg-slate-900/45"
+      : background.blockBackgroundColor;
+  }
+  if (info) {
+    return background.isStriped
+      ? "bg-blue-50/40 dark:bg-slate-900/25"
+      : "bg-white/80 dark:bg-slate-800/35";
+  }
+  return background.isStriped
+    ? "bg-blue-50/50 dark:bg-slate-900/50"
+    : "bg-white dark:bg-slate-800";
 };
 
 export const ShoppingItemSelectionFrame = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & BackgroundProps
 >(function ShoppingItemSelectionFrame(
-  { className, unselectedBackgroundClassName, ...props },
+  { className, unselectedBackgroundClassName, blockColorEligible, ...props },
   ref,
 ) {
   const selected = useContext(ShoppingItemSelectionContext);
+  const currentBackground = useContext(ShoppingItemBackgroundContext);
   const background = selected
     ? "bg-blue-100 dark:bg-blue-900/50"
-    : unselectedBackgroundClassName;
+    : backgroundClassName(
+        currentBackground,
+        blockColorEligible,
+        false,
+        unselectedBackgroundClassName,
+      );
   return (
     <div
       {...props}
@@ -51,11 +89,18 @@ export const ShoppingItemSelectionCheckbox = React.forwardRef<
 
 export const ShoppingItemSelectionInfoBackground = ({
   unselectedBackgroundClassName,
+  blockColorEligible,
 }: BackgroundProps) => {
   const selected = useContext(ShoppingItemSelectionContext);
+  const currentBackground = useContext(ShoppingItemBackgroundContext);
   const background = selected
     ? "bg-blue-100/80 dark:bg-blue-900/30"
-    : unselectedBackgroundClassName;
+    : backgroundClassName(
+        currentBackground,
+        blockColorEligible,
+        true,
+        unselectedBackgroundClassName,
+      );
   return (
     <div
       className={`absolute inset-0 rounded-lg pointer-events-none ${background ?? ""}`}

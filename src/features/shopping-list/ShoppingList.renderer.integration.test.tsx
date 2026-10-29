@@ -9,7 +9,10 @@ import {
   it,
   vi,
 } from "vitest";
-import ShoppingList from "../../components/ShoppingList";
+import ShoppingList, {
+  calculateBlockColors,
+} from "../../components/ShoppingList";
+import { shoppingPerformance } from "../../utils/shoppingPerformance";
 import type { ShoppingItem } from "../../types/item";
 import { getSpaceKey } from "../../utils/spaceGrouping";
 import { useListInteractionState } from "../lists/hooks/useListInteractionState";
@@ -964,5 +967,206 @@ describe("ShoppingList range selection across renderer strategies", () => {
       view.unmount();
     },
     30_000,
+  );
+});
+
+describe("ShoppingList transfer background presentation", () => {
+  it.each(["full", "retained"] as const)(
+    "keeps unchanged %s card bodies while a three-item transfer updates palette and accessibility",
+    async (renderer) => {
+      setViewportScale(1);
+      vi.stubGlobal(
+        "IntersectionObserver",
+        class {
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        },
+      );
+      const geometry = vi
+        .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+        .mockReturnValue({
+          x: 0,
+          y: 0,
+          top: 0,
+          left: 0,
+          right: 640,
+          bottom: 160,
+          width: 640,
+          height: 160,
+          toJSON: () => ({}),
+        } as DOMRect);
+      const makeColumn = (prefix: string, offset: number) =>
+        Array.from(
+          { length: 20 },
+          (_, index): ShoppingItem => ({
+            ...item(index + 1),
+            id: prefix + index,
+            block: "A",
+            number: String(offset + index) + "a",
+            priorityLevel: "none",
+          }),
+        );
+      const candidates = makeColumn("c", 40);
+      const execution = makeColumn("e", 90);
+      const moving = candidates.slice(1, 4);
+      const movedIds = new Set(moving.map((entry) => entry.id));
+      const nextCandidates = candidates.filter(
+        (entry) => !movedIds.has(entry.id),
+      );
+      const nextExecution = [execution[0], ...moving, ...execution.slice(1)];
+      const retainedIds = [...candidates, ...execution].map(
+        (entry) => entry.id,
+      );
+      const emptySelection = new Set<string>();
+      const port = preferencePort({
+        status: "ok",
+        value: renderer === "full" ? "full" : "auto",
+      });
+      const callbacks = {
+        onUpdateItem: vi.fn(),
+        onMoveItem: vi.fn(),
+        onEditRequest: vi.fn(),
+        onDeleteRequest: vi.fn(),
+        onSelectItem: vi.fn(),
+      };
+      const columns = (
+        candidateItems: ShoppingItem[],
+        executeItems: ShoppingItem[],
+        selected: Set<string>,
+      ) => (
+        <>
+          <ShoppingList
+            {...callbacks}
+            items={candidateItems}
+            selectedItemIds={selected}
+            columnType="candidate"
+            showSpaceGroups
+            layoutMode="pc"
+            viewMode="edit"
+            skipLimitedPurchaseForSingleQuantity={false}
+            listRendererPreferencePort={port}
+            forceFullListRenderer={renderer === "full"}
+            retainedItemIds={retainedIds}
+          />
+          <ShoppingList
+            {...callbacks}
+            items={executeItems}
+            selectedItemIds={selected}
+            columnType="execute"
+            showSpaceGroups
+            layoutMode="pc"
+            viewMode="edit"
+            skipLimitedPurchaseForSingleQuantity={false}
+            listRendererPreferencePort={port}
+            forceFullListRenderer={renderer === "full"}
+            retainedItemIds={retainedIds}
+          />
+        </>
+      );
+      shoppingPerformance.enable();
+      try {
+        const view = render(columns(candidates, execution, movedIds));
+        const roots = [
+          ...view.container.querySelectorAll<HTMLElement>(
+            "[data-list-renderer]",
+          ),
+        ];
+        expect(roots).toHaveLength(2);
+        const [source, destination] = roots;
+        if (renderer === "retained") {
+          expect(source).toHaveAttribute(
+            "data-list-renderer-strategy",
+            "retained-viewport",
+          );
+          expect(destination).toHaveAttribute(
+            "data-list-renderer-strategy",
+            "retained-viewport",
+          );
+        } else {
+          expect(source).toHaveAttribute("data-list-renderer", "full");
+        }
+        const rowFor = (root: HTMLElement, id: string) => {
+          const row = root.querySelector<HTMLElement>(
+            '[data-item-id="' + id + '"]:not([data-space-group-key])',
+          );
+          if (!row) throw new Error("Missing mounted item " + id);
+          return row;
+        };
+        const sourceItem = rowFor(source, "c4");
+        const destinationItem = rowFor(destination, "e1");
+        const sourceCard = sourceItem.firstElementChild as HTMLElement;
+        const destinationCard =
+          destinationItem.firstElementChild as HTMLElement;
+        const sourceRow = sourceItem.closest("[aria-posinset]");
+        const destinationRow = destinationItem.closest("[aria-posinset]");
+        const price = sourceCard.querySelector<HTMLSelectElement>(
+          'select[aria-label="購入金額"]',
+        )!;
+        const quantity = sourceCard.querySelector<HTMLSelectElement>(
+          'select[aria-label="購入予定数量"]',
+        )!;
+        const firstPriceChoice = price.options[0];
+        const firstQuantityChoice = quantity.options[0];
+        expect(sourceRow).toHaveAttribute("aria-posinset", "5");
+        expect(sourceRow).toHaveAttribute("aria-setsize", "20");
+        expect(destinationRow).toHaveAttribute("aria-posinset", "2");
+        expect(destinationRow).toHaveAttribute("aria-setsize", "20");
+        act(() => price.focus());
+        shoppingPerformance.reset();
+
+        view.rerender(columns(nextCandidates, nextExecution, emptySelection));
+        await waitFor(() => {
+          expect(sourceRow).toHaveAttribute("aria-posinset", "2");
+          expect(sourceRow).toHaveAttribute("aria-setsize", "17");
+          expect(destinationRow).toHaveAttribute("aria-posinset", "5");
+          expect(destinationRow).toHaveAttribute("aria-setsize", "23");
+        });
+        expect(rowFor(source, "c4")).toBe(sourceItem);
+        expect(rowFor(destination, "e1")).toBe(destinationItem);
+        expect(sourceItem.firstElementChild).toBe(sourceCard);
+        expect(destinationItem.firstElementChild).toBe(destinationCard);
+        expect(calculateBlockColors(candidates).get("c4")).not.toBe(
+          calculateBlockColors(nextCandidates).get("c4"),
+        );
+        expect(calculateBlockColors(execution).get("e1")).not.toBe(
+          calculateBlockColors(nextExecution).get("e1"),
+        );
+        expect(sourceCard).toHaveClass(
+          ...calculateBlockColors(nextCandidates).get("c4")!.split(/\s+/),
+        );
+        expect(destinationCard).toHaveClass(
+          ...calculateBlockColors(nextExecution).get("e1")!.split(/\s+/),
+        );
+        expect(sourceCard.querySelector('select[aria-label="購入金額"]')).toBe(
+          price,
+        );
+        expect(
+          sourceCard.querySelector('select[aria-label="購入予定数量"]'),
+        ).toBe(quantity);
+        expect(price.options[0]).toBe(firstPriceChoice);
+        expect(quantity.options[0]).toBe(firstQuantityChoice);
+        expect(price).toHaveFocus();
+        // Three cards mount in the other list. The other 37 bodies stay current
+        // without rebuilding their controls for background-only prop changes.
+        expect(shoppingPerformance.read().renders.card).toBe(3);
+        for (const moved of moving) {
+          expect(
+            source.querySelector('[data-item-id="' + moved.id + '"]'),
+          ).toBeNull();
+          expect(
+            rowFor(destination, moved.id).querySelector(
+              'input[type="checkbox"]',
+            ),
+          ).not.toBeChecked();
+        }
+        view.unmount();
+      } finally {
+        shoppingPerformance.enable(false);
+        shoppingPerformance.reset();
+        geometry.mockRestore();
+        vi.unstubAllGlobals();
+      }
+    },
   );
 });

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ShoppingItem } from "../types/item";
 import ShoppingItemCard from "./ShoppingItemCard";
+import { shoppingPerformance } from "../utils/shoppingPerformance";
 
 const item: ShoppingItem = {
   id: "selection-card",
@@ -326,4 +327,197 @@ describe("ShoppingItemCard selection updates", () => {
     expect(firstCard).toHaveClass("bg-white");
     expect(secondCard).toHaveClass("bg-blue-100");
   });
+});
+
+describe("ShoppingItemCard background presentation updates", () => {
+  it.each(nativePresentations)(
+    "updates both background inputs without rendering controls again in $layoutMode/$viewMode (native=$preferNativeOptions)",
+    ({ layoutMode, viewMode, preferNativeOptions }) => {
+      const firstColor = "bg-amber-50 dark:bg-amber-950";
+      const nextColor = "bg-emerald-50 dark:bg-emerald-950";
+      const current = {
+        ...makeProps(),
+        layoutMode,
+        viewMode,
+        preferNativeOptions,
+      };
+      shoppingPerformance.enable();
+      try {
+        const view = render(
+          <ShoppingItemCard {...current} blockBackgroundColor={firstColor} />,
+        );
+        const card = getCard(view.container);
+        const price = priceControl();
+        const quantity = quantityControl();
+        const priceChoices = [...price.options];
+        const quantityChoices = [...quantity.options];
+        price.focus();
+        shoppingPerformance.reset();
+
+        view.rerender(
+          <ShoppingItemCard
+            {...current}
+            isStriped
+            blockBackgroundColor={nextColor}
+          />,
+        );
+        expect(card).toHaveClass("bg-emerald-50", "dark:bg-emerald-950");
+        expect(card).not.toHaveClass("bg-amber-50");
+        if (layoutMode === "pc") {
+          expect(
+            card.querySelector(
+              ".grid.flex-grow > .absolute.inset-0.rounded-lg.pointer-events-none",
+            ),
+          ).toHaveClass("bg-transparent", "dark:bg-slate-900/45");
+        }
+
+        view.rerender(<ShoppingItemCard {...current} isSelected />);
+        expect(card).toHaveClass("bg-blue-100", "dark:bg-blue-900/50");
+        view.rerender(
+          <ShoppingItemCard
+            {...current}
+            isSelected
+            isStriped
+            blockBackgroundColor={firstColor}
+          />,
+        );
+        expect(card).toHaveClass("bg-blue-100", "dark:bg-blue-900/50");
+        if (layoutMode === "pc") {
+          expect(
+            card.querySelector(
+              ".grid.flex-grow > .absolute.inset-0.rounded-lg.pointer-events-none",
+            ),
+          ).toHaveClass("bg-blue-100/80", "dark:bg-blue-900/30");
+        }
+
+        view.rerender(<ShoppingItemCard {...current} isStriped />);
+        expect(card).toHaveClass("bg-blue-50/50", "dark:bg-slate-900/50");
+        if (layoutMode === "pc") {
+          expect(
+            card.querySelector(
+              ".grid.flex-grow > .absolute.inset-0.rounded-lg.pointer-events-none",
+            ),
+          ).toHaveClass("bg-blue-50/40", "dark:bg-slate-900/25");
+        }
+        view.rerender(<ShoppingItemCard {...current} />);
+        expect(card).toHaveClass("bg-white", "dark:bg-slate-800");
+        if (layoutMode === "pc") {
+          expect(
+            card.querySelector(
+              ".grid.flex-grow > .absolute.inset-0.rounded-lg.pointer-events-none",
+            ),
+          ).toHaveClass("bg-white/80", "dark:bg-slate-800/35");
+        }
+        expect(getCard(view.container)).toBe(card);
+        expect(priceControl()).toBe(price);
+        expect(quantityControl()).toBe(quantity);
+        expect([...price.options]).toEqual(priceChoices);
+        expect([...quantity.options]).toEqual(quantityChoices);
+        priceChoices.forEach((choice, index) =>
+          expect(price.options[index]).toBe(choice),
+        );
+        quantityChoices.forEach((choice, index) =>
+          expect(quantity.options[index]).toBe(choice),
+        );
+        expect(price).toHaveFocus();
+        expect(shoppingPerformance.read().renders.card ?? 0).toBe(0);
+        expect(current.onUpdate).not.toHaveBeenCalled();
+      } finally {
+        shoppingPerformance.enable(false);
+        shoppingPerformance.reset();
+      }
+    },
+  );
+
+  it.each(presentations)(
+    "uses the current optimistic purchase status for $layoutMode/$viewMode backgrounds",
+    ({ layoutMode, viewMode }) => {
+      const current = {
+        ...makeProps(),
+        item: { ...item, quantity: 1 },
+        layoutMode,
+        viewMode,
+        preferNativeOptions: true,
+      };
+      const latestColor = "bg-emerald-50 dark:bg-emerald-950";
+      shoppingPerformance.enable();
+      try {
+        const view = render(
+          <ShoppingItemCard
+            {...current}
+            blockBackgroundColor="bg-amber-50 dark:bg-amber-950"
+          />,
+        );
+        const card = getCard(view.container);
+        const status = screen.getByRole("button", { name: /Current status/i });
+        fireEvent.click(status);
+        expect(current.onUpdate).toHaveBeenLastCalledWith(
+          expect.objectContaining({ purchaseStatus: "Purchased" }),
+        );
+        expect(card).toHaveClass("bg-white");
+        shoppingPerformance.reset();
+
+        // The source still says None while the local purchase save is pending.
+        view.rerender(
+          <ShoppingItemCard
+            {...current}
+            isStriped
+            blockBackgroundColor={latestColor}
+          />,
+        );
+        expect(card).toHaveClass("bg-blue-50/50", "dark:bg-slate-900/50");
+        expect(card).not.toHaveClass("bg-emerald-50");
+        if (layoutMode === "pc") {
+          expect(
+            card.querySelector(
+              ".grid.flex-grow > .absolute.inset-0.rounded-lg.pointer-events-none",
+            ),
+          ).toHaveClass("bg-blue-50/40", "dark:bg-slate-900/25");
+        }
+        view.rerender(
+          <ShoppingItemCard
+            {...current}
+            isSelected
+            isStriped
+            blockBackgroundColor={latestColor}
+          />,
+        );
+        expect(card).toHaveClass("bg-blue-100", "dark:bg-blue-900/50");
+        view.rerender(
+          <ShoppingItemCard
+            {...current}
+            isStriped
+            blockBackgroundColor={latestColor}
+          />,
+        );
+        expect(card).toHaveClass("bg-blue-50/50");
+        expect(shoppingPerformance.read().renders.card ?? 0).toBe(0);
+
+        for (const purchaseStatus of [
+          "SoldOut",
+          "Absent",
+          "Postpone",
+          "Late",
+          "None",
+        ]) {
+          fireEvent.click(status);
+          expect(current.onUpdate).toHaveBeenLastCalledWith(
+            expect.objectContaining({ purchaseStatus }),
+          );
+        }
+        expect(getCard(view.container)).toBe(card);
+        expect(card).toHaveClass("bg-emerald-50", "dark:bg-emerald-950");
+        if (layoutMode === "pc") {
+          expect(
+            card.querySelector(
+              ".grid.flex-grow > .absolute.inset-0.rounded-lg.pointer-events-none",
+            ),
+          ).toHaveClass("bg-transparent", "dark:bg-slate-900/45");
+        }
+      } finally {
+        shoppingPerformance.enable(false);
+        shoppingPerformance.reset();
+      }
+    },
+  );
 });
