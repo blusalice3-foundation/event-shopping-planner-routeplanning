@@ -1436,6 +1436,8 @@ it("keeps an appended offscreen row deferred after the original parent anchor is
   expect(pending).toHaveAttribute("data-viewport-active", "false");
 });
 
+// This full 500-group DOM equivalence fixture also runs under V8 coverage.
+// Its completion budget is separate from interaction latency assertions.
 it("keeps all 500 placeholder attributes equivalent and updates only the changed metadata consumer", () => {
   const members = Array.from({ length: 500 }, (_, index) => ({
     ...items[0],
@@ -1493,12 +1495,19 @@ it("keeps all 500 placeholder attributes equivalent and updates only the changed
       ...view.container.querySelectorAll<HTMLElement>("[aria-posinset]"),
     ];
     expect(rows).toHaveLength(reordered.length);
-    rows.forEach((row, index) => {
-      expect(row).toHaveAttribute("aria-posinset", String(index + 1));
-      expect(row).toHaveAttribute("aria-setsize", String(reordered.length));
-    });
+    expect(
+      rows.map((row) => [
+        row.getAttribute("aria-posinset"),
+        row.getAttribute("aria-setsize"),
+      ]),
+    ).toEqual(
+      reordered.map((_, index) => [
+        String(index + 1),
+        String(reordered.length),
+      ]),
+    );
   }
-}, 15_000);
+}, 30_000);
 
 describe.each(fixedSlotModes)(
   "fixed group slot strategy %s",

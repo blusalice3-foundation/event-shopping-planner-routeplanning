@@ -15,3 +15,11 @@ config/audit-waivers.jsonの例外VERCEL-ZOD3-2026-10-30は、Build/Quality所�
 例外は「全Highを許可する」ものにしない。別GHSA、別version/path、未解決の依存グラフ、期限切れ、criticalへの変化を拒否する。本番依存のhigh／criticalは例外にかかわらず失敗させる。通常品質検証でVercel deployを起動せず、信頼できないリポジトリに対してVercel dev/buildを実行しない。上流の互換修正版、依存変更、または期限到来時に再確認する。
 
 旧353f84fのCI失敗run40917253182と元監査は保持する。新しいPRチェックの通過を、Zod3自体の脆弱性修正や計画全体の性能完了へ読み替えない。
+
+## coverage付き500群の機能比較
+
+run40923269884では通常Vitestの500placeholder同値テストは5,724msで通ったが、coverage付きでは22,747msとなり15,000msの実行待ち時間を超えた。coverage率の不足ではなく、この1テストのタイムアウトである。
+
+全行のARIA属性を完全な配列として一括比較し、約2,000回の個別matcher呼び出しを避ける。500件、全HTML一致、metadata consumer1回／body0回、挿入・反転・削除、全行のARIA位置・総数の検証は維持する。単独のcoverage付き診断では対象テストが11,367msで通過したが、1件だけの実行なので全体coverageの合格証拠にはしない。
+
+この機能比較テストだけ完走待ち時間を30,000msへ変更する。実際の操作応答時間をassertする性能試験ではないため、shopping65／100ms、range／drag／transfer160／160ms、coverage率、PR各2回／completion各10回は変更しない。製品のrendererコードは変更しない。
