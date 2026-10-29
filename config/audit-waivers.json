@@ -1,4 +1,98 @@
 {
   "schemaVersion": 1,
-  "waivers": []
+  "waivers": [
+    {
+      "id": "VERCEL-ZOD3-2026-10-30",
+      "advisory": "https://github.com/advisories/GHSA-mrhx-c7xc-m3w5",
+      "severity": "high",
+      "owner": "Build/Quality",
+      "reason": "Vercel58.5.1 has fixed Zod3.22.4 dependencies with no upstream compatible patch; the latest Vercel release also retains these Zod3 dependencies. A forced Zod3-to-4 replacement is not treated as compatible remediation.",
+      "expiry": "2026-11-13",
+      "mitigation": "Keep this exact development-only dependency graph and advisory bound; do not run Vercel dev/build against untrusted repositories. Normal PR quality does not deploy. Production high/critical and any additional advisory remain blocking. Revisit before expiry or any dependency change.",
+      "installedPackage": "vercel",
+      "installedVersion": "58.5.1",
+      "affectedPackages": [
+        "@vercel/backends",
+        "@vercel/build-utils",
+        "@vercel/cervel",
+        "@vercel/express",
+        "@vercel/gatsby-plugin-vercel-builder",
+        "@vercel/hono",
+        "@vercel/node",
+        "@vercel/python",
+        "@vercel/python-analysis",
+        "@vercel/static-build",
+        "vercel",
+        "zod"
+      ],
+      "lockedDependencies": [
+        {
+          "path": "node_modules/@vercel/backends",
+          "version": "0.8.32"
+        },
+        {
+          "path": "node_modules/@vercel/backends/node_modules/zod",
+          "version": "3.22.4"
+        },
+        {
+          "path": "node_modules/@vercel/build-utils",
+          "version": "14.0.1"
+        },
+        {
+          "path": "node_modules/@vercel/cervel",
+          "version": "0.1.40"
+        },
+        {
+          "path": "node_modules/@vercel/express",
+          "version": "0.1.123"
+        },
+        {
+          "path": "node_modules/@vercel/express/node_modules/zod",
+          "version": "3.22.4"
+        },
+        {
+          "path": "node_modules/@vercel/gatsby-plugin-vercel-builder",
+          "version": "2.2.35"
+        },
+        {
+          "path": "node_modules/@vercel/hono",
+          "version": "0.2.112"
+        },
+        {
+          "path": "node_modules/@vercel/hono/node_modules/zod",
+          "version": "3.22.4"
+        },
+        {
+          "path": "node_modules/@vercel/node",
+          "version": "5.9.5"
+        },
+        {
+          "path": "node_modules/@vercel/python",
+          "version": "6.55.1"
+        },
+        {
+          "path": "node_modules/@vercel/python-analysis",
+          "version": "0.13.1"
+        },
+        {
+          "path": "node_modules/@vercel/python-analysis/node_modules/zod",
+          "version": "3.22.4"
+        },
+        {
+          "path": "node_modules/@vercel/static-build",
+          "version": "2.12.1"
+        },
+        {
+          "path": "node_modules/vercel",
+          "version": "58.5.1"
+        }
+      ],
+      "reachability": {
+        "production": "No application/API import of vercel or zod; npm audit --omit=dev is independently required to have no high/critical vulnerabilities.",
+        "release-tool": "The Vercel CLI is used by the protected artifact build, prebuilt deployment and prepared promotion paths. Zod3 parsing remains reachable for local manifests and backend introspection if general Vercel dev/build is invoked; this exception does not declare that usage safe.",
+        "test": "Normal PR quality runs verification and fixture tests, not a real Vercel deployment or development server.",
+        "build": "The application is a static Vite/PWA build; development CLI builder schemas are not bundled into the application."
+      }
+    }
+  ]
 }
